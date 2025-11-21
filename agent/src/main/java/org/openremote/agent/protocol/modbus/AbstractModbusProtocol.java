@@ -393,7 +393,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     }
                     LOG.fine("Removed empty batch group " + groupKey);
                 } else {
-                    LOG.info("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
+                    LOG.fine("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
                 }
             }
         }
@@ -475,7 +475,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         String reason = hasIllegalInGap
                             ? "illegal register " + firstIllegalRegister + " detected in gap (registers " + currentEnd + "-" + (address - 1) + ")"
                             : "would exceed maxRegisterLength (" + newQuantity + " > " + maxRegisterLength + ")";
-                        LOG.info("Split batch before register " + address + ": " + reason);
+                        LOG.fine("Split batch before register " + address + ": " + reason);
                     }
                 }
 
@@ -500,7 +500,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      * Schedule a batched polling task for a group of attributes
      */
     protected ScheduledFuture<?> scheduleBatchedPollingTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long pollingMillis, Integer unitId) {
-        LOG.info("Scheduling batched polling task for group " + groupKey + " every " + pollingMillis + "ms");
+        LOG.fine("Scheduling batched polling task for group " + groupKey + " every " + pollingMillis + "ms");
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -518,7 +518,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         String illegalRegistersStr = getIllegalRegistersString(unitId);
                         Set<RegisterRange> illegalRegistersForUnit = parseIllegalRegisters(illegalRegistersStr);
 
-                        LOG.info("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (unitId=" + unitId + ", maxRegisterLength=" + maxRegisterLength + ")");
+                        LOG.fine("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (unitId=" + unitId + ", maxRegisterLength=" + maxRegisterLength + ")");
                         batches = createBatchRequests(group, illegalRegistersForUnit, maxRegisterLength);
                         cachedBatches.put(groupKey, batches);
                     }

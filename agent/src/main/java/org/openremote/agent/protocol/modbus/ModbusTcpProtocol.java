@@ -35,6 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+import static org.openremote.agent.protocol.modbus.ModbusAgentLink.ModbusDataType.*;
 
 public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol, ModbusTcpAgent> {
 
@@ -43,7 +44,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     private ModbusTcpIOClient client = null;
     private String connectionString;
     private final Object requestLock = new Object();
-    private final Map<Integer, CompletableFuture<ModbusTcpIOClient.ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();
+    private final Map<Integer, CompletableFuture<ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> timedOutRequests = new ConcurrentHashMap<>(); // Track timed-out TxIDs with timestamp
 
     public ModbusTcpProtocol(ModbusTcpAgent agent) {
         super(agent);
@@ -56,77 +58,31 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
     @Override
     protected void doStartProtocol(Container container) throws Exception {
-        setConnectionStatus(ConnectionStatus.CONNECTING);
-
         String host = agent.getHost().orElseThrow(() -> new IllegalStateException("Host not configured"));
         int port = agent.getPort().orElseThrow(() -> new IllegalStateException("Port not configured"));
         connectionString = "modbus-tcp://" + host + ":" + port;
 
-        // Create and connect client
-        client = new ModbusTcpIOClient(host, port);
+        try {
+            LOG.info("Creating Modbus TCP client for " + connectionString);
 
-        // Set up message consumer to handle incoming frames
-        client.addMessageConsumer(this::handleIncomingFrame);
+            // Create client
+            client = new ModbusTcpIOClient(host, port);
 
-        // Retry logic with exponential backoff
-        int maxRetries = 3;
-        int retryDelayMs = 500;
-        Exception lastException = null;
+            // Set up message consumer to handle incoming frames
+            client.addMessageConsumer(this::handleIncomingFrame);
 
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                LOG.info("Attempting to connect to Modbus TCP " + host + ":" + port + " (attempt " + attempt + "/" + maxRetries + ")");
+            // Set up connection status consumer to track connection state
+            client.addConnectionStatusConsumer(this::setConnectionStatus);
 
-                client.connect();
+            // Connect (AbstractNettyIOClient handles retries automatically)
+            client.connect();
 
-                // Wait a bit for connection to establish
-                Thread.sleep(100);
-
-                if (client.getConnectionStatus() == ConnectionStatus.CONNECTED) {
-                    setConnectionStatus(ConnectionStatus.CONNECTED);
-                    LOG.info("Modbus TCP connection established successfully: " + connectionString);
-                    return; // Success
-                } else {
-                    lastException = new Exception("Client not in connected state: " + client.getConnectionStatus());
-                    LOG.warning("Modbus TCP connection failed on attempt " + attempt + "/" + maxRetries + ": " + lastException.getMessage());
-
-                    try {
-                        client.disconnect();
-                    } catch (Exception closeEx) {
-                        LOG.log(Level.FINE, "Error closing failed connection: " + closeEx.getMessage(), closeEx);
-                    }
-                }
-            } catch (Exception e) {
-                lastException = e;
-                LOG.log(Level.WARNING, "Exception during Modbus TCP connection (attempt " + attempt + "/" + maxRetries + "): " + e.getMessage(), e);
-
-                try {
-                    if (client != null) {
-                        client.disconnect();
-                    }
-                } catch (Exception closeEx) {
-                    LOG.log(Level.FINE, "Error closing failed connection: " + closeEx.getMessage(), closeEx);
-                }
-            }
-
-            // Wait before retrying
-            if (attempt < maxRetries) {
-                try {
-                    LOG.info("Waiting " + retryDelayMs + "ms before retry...");
-                    Thread.sleep(retryDelayMs);
-                    retryDelayMs *= 2; // Exponential backoff
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    LOG.warning("Retry delay interrupted, aborting connection attempt");
-                    break;
-                }
-            }
+            LOG.info("Modbus TCP client created and connection initiated for " + connectionString);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to create Modbus TCP client: " + agent, e);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            throw e;
         }
-
-        // All retries exhausted
-        LOG.log(Level.SEVERE, "Failed to create Modbus TCP connection after " + maxRetries + " attempts: " + agent);
-        setConnectionStatus(ConnectionStatus.ERROR);
-        throw lastException != null ? lastException : new Exception("Failed to connect after " + maxRetries + " attempts");
     }
 
     @Override
@@ -156,35 +112,34 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                     // Write single coil
                     boolean value = processedValue instanceof Boolean ? (Boolean) processedValue : false;
                     pdu = buildWriteSingleCoilPDU(protocolAddress, value);
-                    LOG.info("Modbus TCP Write Coil - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
+                    LOG.fine("Modbus TCP Write Coil - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
                 }
                 case HOLDING -> {
                     if (registersCount == 1) {
                         // Write single register
                         int value = processedValue instanceof Number ? ((Number) processedValue).intValue() : 0;
                         pdu = buildWriteSingleRegisterPDU(protocolAddress, value);
-                        LOG.info("Modbus TCP Write Single Register - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
+                        LOG.fine("Modbus TCP Write Single Register - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
                     } else {
                         // Write multiple registers
-                        byte[] registerData = convertToRegisterBytes(processedValue, registersCount, agentLink.getWriteValueType(), unitId);
+                        byte[] registerData = convertToRegisterBytes(processedValue, registersCount, agentLink.getReadValueType(), unitId);
                         pdu = buildWriteMultipleRegistersPDU(protocolAddress, registerData);
-                        LOG.info("Modbus TCP Write Multiple Registers - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), RegisterCount: " + registersCount + ", DataType: " + agentLink.getWriteValueType());
+                        LOG.fine("Modbus TCP Write Multiple Registers - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), RegisterCount: " + registersCount + ", DataType: " + agentLink.getReadValueType());
                     }
                 }
                 default -> throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
             }
 
             // Send request and wait for response
-            ModbusTcpIOClient.ModbusTcpFrame response = sendRequestAndWaitForResponse(unitId, pdu, 3000);
+            ModbusTcpFrame response = sendRequestAndWaitForResponse(unitId, pdu, 3000);
 
             if (response.isException()) {
                 byte exceptionCode = response.getPdu()[1];
-                LOG.warning("Modbus TCP Write Failed - UnitId: " + unitId + ", Address: " + writeAddress + ", Exception: 0x" + Integer.toHexString(exceptionCode & 0xFF));
                 onRequestFailure(messageId, "Modbus TCP write address=" + writeAddress, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
                 throw new IllegalStateException("Modbus exception: 0x" + Integer.toHexString(exceptionCode & 0xFF));
             }
 
-            LOG.info("Modbus TCP Write Success - UnitId: " + unitId + ", Address: " + writeAddress);
+            LOG.fine("Modbus TCP Write Success - UnitId: " + unitId + ", Address: " + writeAddress);
             onRequestSuccess(messageId);
 
             // Handle attribute update based on read configuration
@@ -232,14 +187,13 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             // Build PDU for read request
             byte[] pdu = buildReadRequestPDU(functionCode, protocolAddress, batch.quantity);
 
-            LOG.info("Modbus TCP Read Request - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", StartAddress: " + batch.startAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Quantity: " + batch.quantity + ", AttributeCount: " + batch.attributes.size());
+            LOG.fine("Modbus TCP Read Request - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", StartAddress: " + batch.startAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Quantity: " + batch.quantity + ", AttributeCount: " + batch.attributes.size());
 
             // Send request and wait for response
-            ModbusTcpIOClient.ModbusTcpFrame response = sendRequestAndWaitForResponse(effectiveUnitId, pdu, 3000);
+            ModbusTcpFrame response = sendRequestAndWaitForResponse(effectiveUnitId, pdu, 3000);
 
             if (response.isException()) {
                 byte exceptionCode = response.getPdu()[1];
-                LOG.warning("Modbus TCP Read Failed - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", Address: " + batch.startAddress + ", Quantity: " + batch.quantity + ", Exception: 0x" + Integer.toHexString(exceptionCode & 0xFF));
                 onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
                 return;
             }
@@ -247,12 +201,11 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             // Extract data from response PDU
             byte[] data = extractDataFromResponsePDU(response.getPdu(), functionCode);
             if (data == null) {
-                LOG.warning("Failed to extract data from Modbus TCP response");
                 onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress, "Invalid response format");
                 return;
             }
 
-            LOG.info("Modbus TCP Read Success - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", DataBytes: " + data.length);
+            LOG.finest("Modbus TCP Read Success - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", DataBytes: " + data.length);
             onRequestSuccess(messageId);
 
             // Extract values for each attribute in the batch
@@ -276,7 +229,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                     Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, effectiveUnitId, memoryArea);
 
                     if (value != null) {
-                        LOG.info("Successfully extracted value for " + ref + " - Value: " + value + ", DataType: " + dataType + ", RegisterCount: " + registerCount);
+                        LOG.finest("Successfully extracted value for " + ref + " - Value: " + value + ", DataType: " + dataType + ", RegisterCount: " + registerCount);
                         updateLinkedAttribute(ref, value);
                     } else {
                         LOG.warning("Extracted null value for " + ref + " - DataType: " + dataType + ", RegisterCount: " + registerCount + ", Offset: " + offset);
@@ -287,10 +240,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             }
 
         } catch (TimeoutException e) {
-            LOG.warning("Modbus TCP Read Timeout - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", Address: " + batch.startAddress + ", Quantity: " + batch.quantity);
             onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, "Timeout");
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Modbus TCP Read Exception - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", Address: " + batch.startAddress + ", Quantity: " + batch.quantity + ": " + e.getMessage(), e);
             onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, e);
         }
     }
@@ -339,52 +290,70 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     /**
      * Send a Modbus request and wait for response with timeout
      */
-    private ModbusTcpIOClient.ModbusTcpFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+    private ModbusTcpFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+        int transactionId;
+        CompletableFuture<ModbusTcpFrame> responseFuture;
+
+        // Critical section: only synchronize sending the request
         synchronized (requestLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
                 throw new IllegalStateException("Client not connected");
             }
 
             // Get transaction ID and create frame
-            int transactionId = client.getNextTransactionId();
-            ModbusTcpIOClient.ModbusTcpFrame request = new ModbusTcpIOClient.ModbusTcpFrame(transactionId, unitId, pdu);
+            transactionId = client.getNextTransactionId();
+            ModbusTcpFrame request = new ModbusTcpFrame(transactionId, unitId, pdu);
 
             // Register pending request
-            CompletableFuture<ModbusTcpIOClient.ModbusTcpFrame> responseFuture = new CompletableFuture<>();
+            responseFuture = new CompletableFuture<>();
             pendingRequests.put(transactionId, responseFuture);
 
-            try {
-                // Send request
-                client.sendMessage(request);
-                LOG.finest(() -> "Sent Modbus TCP request - TxID: " + transactionId + ", UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+            // Send request
+            client.sendMessage(request);
+            LOG.finest(() -> "Sent Modbus TCP request - TxID: " + transactionId + ", UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+        }
 
-                // Wait for response
-                ModbusTcpIOClient.ModbusTcpFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
-                LOG.finest(() -> "Received Modbus TCP response - TxID: " + response.getTransactionId() + ", UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
-
-                return response;
-            } catch (TimeoutException e) {
-                LOG.warning("Modbus TCP request timeout - TxID: " + transactionId + ", UnitID: " + unitId);
-                throw e;
-            } finally {
-                pendingRequests.remove(transactionId);
-            }
+        // Wait for response outside synchronized block to avoid blocking other threads
+        try {
+            ModbusTcpFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+            LOG.finest(() -> "Received Modbus TCP response - TxID: " + response.getTransactionId() + ", UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
+            return response;
+        } catch (TimeoutException e) {
+            LOG.warning("Modbus TCP request timeout - TxID: " + transactionId + ", UnitID: " + unitId);
+            // Track this transaction ID as timed-out so we can handle late responses gracefully
+            timedOutRequests.put(transactionId, System.currentTimeMillis());
+            throw e;
+        } finally {
+            pendingRequests.remove(transactionId);
         }
     }
 
     /**
      * Handle incoming Modbus TCP frame from client
      */
-    private void handleIncomingFrame(ModbusTcpIOClient.ModbusTcpFrame frame) {
+    private void handleIncomingFrame(ModbusTcpFrame frame) {
         LOG.finest(() -> "Received frame - TxID: " + frame.getTransactionId() + ", UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 
+        int txId = frame.getTransactionId();
+
         // Find pending request for this transaction ID
-        CompletableFuture<ModbusTcpIOClient.ModbusTcpFrame> future = pendingRequests.get(frame.getTransactionId());
+        CompletableFuture<ModbusTcpFrame> future = pendingRequests.get(txId);
         if (future != null) {
             future.complete(frame);
         } else {
-            LOG.warning("Received response for unknown transaction ID: " + frame.getTransactionId());
+            // Check if this was a timed-out request
+            Long timeoutTime = timedOutRequests.remove(txId);
+            if (timeoutTime != null) {
+                long latency = System.currentTimeMillis() - timeoutTime;
+                LOG.fine("Received late response for timed-out transaction ID " + txId + " (arrived " + latency + "ms after timeout)");
+            } else {
+                LOG.warning("Received response for unknown transaction ID: " + txId);
+            }
         }
+
+        // Clean up old timed-out requests (older than 30 seconds)
+        long now = System.currentTimeMillis();
+        timedOutRequests.entrySet().removeIf(entry -> (now - entry.getValue()) > 30000);
     }
 
     /**
@@ -456,24 +425,24 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
         // Apply byte order
-        EndianFormat endianFormat = getEndianFormat(unitId);
-        buffer.order(endianFormat == EndianFormat.BIG_ENDIAN || endianFormat == EndianFormat.BIG_ENDIAN_BYTE_SWAP
+        ModbusAgent.EndianFormat endianFormat = getEndianFormat(unitId);
+        buffer.order(endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN || endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP
             ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
 
         // Convert based on data type
         switch (dataType) {
-            case INT16 -> buffer.putShort(((Number) value).shortValue());
-            case UINT16 -> buffer.putShort((short) (((Number) value).intValue() & 0xFFFF));
-            case INT32 -> buffer.putInt(((Number) value).intValue());
-            case UINT32 -> buffer.putInt((int) (((Number) value).longValue() & 0xFFFFFFFFL));
-            case INT64 -> buffer.putLong(((Number) value).longValue());
-            case FLOAT32 -> buffer.putFloat(((Number) value).floatValue());
-            case FLOAT64 -> buffer.putDouble(((Number) value).doubleValue());
+            case INT, SINT -> buffer.putShort(((Number) value).shortValue());
+            case UINT, USINT, BYTE, WORD -> buffer.putShort((short) (((Number) value).intValue() & 0xFFFF));
+            case DINT -> buffer.putInt(((Number) value).intValue());
+            case UDINT, DWORD -> buffer.putInt((int) (((Number) value).longValue() & 0xFFFFFFFFL));
+            case LINT -> buffer.putLong(((Number) value).longValue());
+            case REAL -> buffer.putFloat(((Number) value).floatValue());
+            case LREAL -> buffer.putDouble(((Number) value).doubleValue());
             default -> throw new IllegalArgumentException("Unsupported write data type: " + dataType);
         }
 
         // Apply byte swap if needed
-        if (endianFormat == EndianFormat.BIG_ENDIAN_BYTE_SWAP || endianFormat == EndianFormat.LITTLE_ENDIAN_BYTE_SWAP) {
+        if (endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP || endianFormat == ModbusAgent.EndianFormat.LITTLE_ENDIAN_BYTE_SWAP) {
             for (int i = 0; i < bytes.length; i += 2) {
                 byte temp = bytes[i];
                 bytes[i] = bytes[i + 1];

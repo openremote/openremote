@@ -1,15 +1,33 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.agent.protocol.modbus;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.tcp.TCPIOClient;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
@@ -17,38 +35,25 @@ import java.util.logging.Logger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * Netty-based Modbus TCP client implementation.
- * Handles Modbus TCP framing (MBAP header + PDU).
+ * Modbus TCP client that wraps TCPIOClient with Modbus TCP frame encoding/decoding
  */
-public class ModbusTcpIOClient extends AbstractNettyIOClient<ModbusTcpIOClient.ModbusTcpFrame, InetSocketAddress> {
+public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusTcpIOClient.class);
 
-    protected String host;
-    protected int port;
-    protected final AtomicInteger transactionIdCounter = new AtomicInteger(0);
+    private final AtomicInteger transactionIdCounter = new AtomicInteger(0);
 
     public ModbusTcpIOClient(String host, int port) {
-        this.host = host;
-        this.port = port;
-    }
+        super(host, port);
 
-    @Override
-    protected Class<SocketChannel> getChannelClass() {
-        return NioSocketChannel.class;
-    }
-
-    @Override
-    protected InetSocketAddress getRemoteAddress() {
-        return new InetSocketAddress(host, port);
-    }
-
-    @Override
-    protected ChannelHandler[] getEncodersAndDecoders() {
-        return new ChannelHandler[] {
-            new ModbusTcpEncoder(),
-            new ModbusTcpDecoder()
-        };
+        // Set up Modbus TCP encoder and decoder
+        setEncoderDecoderProvider(
+            () -> new ChannelHandler[] {
+                new ModbusTcpEncoder(),
+                new ModbusTcpDecoder(),
+                new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusTcpFrame.class, this)
+            }
+        );
     }
 
     /**
@@ -59,67 +64,11 @@ public class ModbusTcpIOClient extends AbstractNettyIOClient<ModbusTcpIOClient.M
     }
 
     /**
-     * Represents a Modbus TCP frame (MBAP header + PDU)
-     */
-    public static class ModbusTcpFrame {
-        private final int transactionId;
-        private final int protocolId;
-        private final int length;
-        private final int unitId;
-        private final byte[] pdu;
-
-        public ModbusTcpFrame(int transactionId, int unitId, byte[] pdu) {
-            this.transactionId = transactionId;
-            this.protocolId = 0; // Always 0 for Modbus TCP
-            this.length = 1 + pdu.length; // Unit ID + PDU
-            this.unitId = unitId;
-            this.pdu = pdu;
-        }
-
-        public ModbusTcpFrame(int transactionId, int protocolId, int length, int unitId, byte[] pdu) {
-            this.transactionId = transactionId;
-            this.protocolId = protocolId;
-            this.length = length;
-            this.unitId = unitId;
-            this.pdu = pdu;
-        }
-
-        public int getTransactionId() {
-            return transactionId;
-        }
-
-        public int getProtocolId() {
-            return protocolId;
-        }
-
-        public int getLength() {
-            return length;
-        }
-
-        public int getUnitId() {
-            return unitId;
-        }
-
-        public byte[] getPdu() {
-            return pdu;
-        }
-
-        public byte getFunctionCode() {
-            return pdu != null && pdu.length > 0 ? pdu[0] : 0;
-        }
-
-        public boolean isException() {
-            return pdu != null && pdu.length > 0 && (pdu[0] & 0x80) != 0;
-        }
-    }
-
-    /**
      * Encodes Modbus TCP frames to bytes (MBAP header + PDU)
      */
-    @ChannelHandler.Sharable
-    public static class ModbusTcpEncoder extends MessageToByteEncoder<ModbusTcpFrame> {
+    public static class ModbusTcpEncoder extends io.netty.handler.codec.MessageToByteEncoder<ModbusTcpFrame> {
         @Override
-        protected void encode(io.netty.channel.ChannelHandlerContext ctx, ModbusTcpFrame frame, ByteBuf out) {
+        protected void encode(ChannelHandlerContext ctx, ModbusTcpFrame frame, ByteBuf out) {
             // MBAP Header (7 bytes)
             out.writeShort(frame.getTransactionId());  // Transaction ID
             out.writeShort(frame.getProtocolId());     // Protocol ID (0 for Modbus)
@@ -140,9 +89,9 @@ public class ModbusTcpIOClient extends AbstractNettyIOClient<ModbusTcpIOClient.M
     /**
      * Decodes bytes to Modbus TCP frames (MBAP header + PDU)
      */
-    public static class ModbusTcpDecoder extends ByteToMessageDecoder {
+    public static class ModbusTcpDecoder extends io.netty.handler.codec.ByteToMessageDecoder {
         @Override
-        protected void decode(io.netty.channel.ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+        protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
             // Need at least 7 bytes for MBAP header
             if (in.readableBytes() < 7) {
                 return;
