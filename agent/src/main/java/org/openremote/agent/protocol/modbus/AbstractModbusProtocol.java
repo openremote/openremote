@@ -626,7 +626,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
         if (!isAgentDisabled() && getConnectionStatus() != ConnectionStatus.ERROR ) {
             setConnectionStatus(ConnectionStatus.ERROR);
-            LOG.log(Level.WARNING, "Request failed for " + operation + " [id=" + messageId + "]: " + e.getMessage(), e);
+            LOG.log(Level.WARNING, getProtocolName() + " request failed for " + operation + " [id=" + messageId + "]: " + e.getMessage(), e);
         }
     }
 
@@ -642,7 +642,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
         if (!isAgentDisabled() && getConnectionStatus() != ConnectionStatus.ERROR) {
             setConnectionStatus(ConnectionStatus.ERROR);
-            LOG.warning("Request failed for " + operation + " [id=" + messageId + "]: " + reason);
+            LOG.warning(getProtocolName() + " request failed for " + operation + " [id=" + messageId + "]: " + reason);
         }
     }
 

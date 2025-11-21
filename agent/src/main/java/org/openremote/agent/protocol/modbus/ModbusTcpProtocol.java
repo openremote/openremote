@@ -162,8 +162,14 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 }
             }
         } catch (Exception e) {
-            onRequestFailure(messageId, "Modbus TCP write address=" + writeAddress, e);
-            throw new RuntimeException(e);
+            String operation = "Modbus TCP write address=" + writeAddress;
+            // Log without stack trace for expected exceptions (timeout, connection not ready)
+            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
+                onRequestFailure(messageId, operation, e.getMessage());
+            } else {
+                onRequestFailure(messageId, operation, e);
+            }
+            throw (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
         }
     }
 
@@ -239,10 +245,14 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 }
             }
 
-        } catch (TimeoutException e) {
-            onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, "Timeout");
         } catch (Exception e) {
-            onRequestFailure(messageId, "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, e);
+            String operation = "Modbus TCP batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity;
+            // Log without stack trace for expected exceptions (timeout, connection not ready)
+            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
+                onRequestFailure(messageId, operation, e.getMessage());
+            } else {
+                onRequestFailure(messageId, operation, e);
+            }
         }
     }
 
@@ -345,7 +355,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             Long timeoutTime = timedOutRequests.remove(txId);
             if (timeoutTime != null) {
                 long latency = System.currentTimeMillis() - timeoutTime;
-                LOG.fine("Received late response for timed-out transaction ID " + txId + " (arrived " + latency + "ms after timeout)");
+                LOG.warning("Received late response for timed-out transaction ID " + txId + " (arrived " + latency + "ms after timeout)");
             } else {
                 LOG.warning("Received response for unknown transaction ID: " + txId);
             }
