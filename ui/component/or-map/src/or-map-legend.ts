@@ -4,7 +4,6 @@ import { mapAssetLegendStyle } from "./style";
 import { AssetModelUtil } from "@openremote/model";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import { Util } from "@openremote/core";
-import { i18next } from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 export class OrMapLegendEvent extends CustomEvent<string[]> {
@@ -62,7 +61,7 @@ export class OrMapLegend extends LitElement {
         return mapAssetLegendStyle;
     }
 
-    protected _onHeaderClick(evt: MouseEvent | null) {
+    protected _onHeaderClick() {
         if (this._showLegend) {
             this._showLegend.hidden = !this._showLegend.hidden;
         }
@@ -71,13 +70,13 @@ export class OrMapLegend extends LitElement {
     protected render() {
         return html`
             <div id="legend">
-                <div id="legend-title" @click="${(evt: MouseEvent) => this._onHeaderClick(evt)}">
+                <div id="legend-title" @click="${() => this._onHeaderClick()}">
                     <or-translate value="mapPage.legendTitle"></or-translate><or-icon style="cursor: pointer" icon="menu"></or-icon>
                 </div>
                 <div id="legend-content" hidden>
                     <ul>
                         ${this.assetTypes.map(
-                            (assetType) => html` <li id="asset-legend" style="display: flex;">
+                            (assetType) => html` <li id="asset-legend" data-asset-type="${assetType}" style="display: flex;">
                                 <or-icon
                                     icon="${this._assetTypesInfo[assetType].icon}"
                                     style="color: #${this._assetTypesInfo[assetType].color}"

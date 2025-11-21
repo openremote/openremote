@@ -33,7 +33,7 @@ test.describe("Map markers", () => {
 
     const asset = assets[0].name;
   
-    await expect(page.locator(".marker-icon")).toHaveCount(2);
+    await expect(page.locator(".or-map-marker")).toHaveCount(2);
 
     await page.click(".marker-container");
     await expect(page.locator("#card-container", { hasText: asset })).toBeVisible();
@@ -128,7 +128,7 @@ test.describe("Marker clustering", () => {
     await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
 
     await expect(page.locator("or-cluster-marker")).not.toBeVisible();
-    await expect(page.locator(".marker-icon")).toHaveCount(10);
+    await expect(page.locator(".or-map-marker")).toHaveCount(10);
   });
 });
 
@@ -151,10 +151,8 @@ test.describe("Asset type legend", () => {
     const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
       return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
     });
-    console.log(assets)
 
     await manager.setup("smartcity", { assets });
-    await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: true } } } })
     await manager.goToRealmStartPage("smartcity");
 
     await expect(page.locator("or-map")).toBeVisible();
@@ -165,18 +163,21 @@ test.describe("Asset type legend", () => {
 
     const assetTypes = getAssetTypes(assets);
 
-    function capitalize(w: string) {
-        return w.charAt(0).toUpperCase() + w.slice(1);
+    const options = await page.locator("or-map-legend #legend-content").getByRole("listitem").all();
+    for (const [i, option] of options.entries()) {
+      await expect(option).toHaveAttribute("data-asset-type", assetTypes[i]);
     }
 
-    const options = (await page.locator("or-map-legend #legend-content")
-      .getByRole("listitem")
-      .allTextContents())
-      .map((text) => text.trim().split(" ").map(capitalize).join(""));
-    expect(options).toEqual(assetTypes);
+    let count = 0;
+    for (const option of options) {
+      const checkbox = option.getByRole("checkbox");
+      await expect(checkbox).toBeChecked()
+      await expect(page.locator(".or-map-marker")).toHaveCount(10 - count);
 
-    // await expect(page.locator("or-cluster-marker")).not.toBeVisible();
-    // await expect(page.locator(".marker-icon")).toHaveCount(10);
+      for (const asset of assets) { if (asset.type == (await option.getAttribute("data-asset-type"))) count++ }
+      option.getByRole("checkbox").uncheck();
+      await expect(page.locator(".or-map-marker")).toHaveCount(10 - count);
+    }
   });
 });
 
