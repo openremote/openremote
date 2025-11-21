@@ -127,25 +127,25 @@ export const agent: Asset = {
   }
 };
 
+export type BBox = { south: number, north: number, west: number, east: number }
+
+const rotterdam: BBox = {
+  south: 51.89,
+  north: 51.99,
+  west: 4.24,
+  east: 4.51
+}
+
 /**
  * Generates assets with random location and asset types
  *
- * Rotterdam bounding box:
- * - South | 51.89
- * - North | 51.99
- * - West  |  4.24
- * - East  |  4.51
- *
  * @param asset The asset to assign the location attribute
+ * @param boundingBox The bounding box to add assets within
+ * @default {@link rotterdam}
  */
-export function assignLocation(asset: Asset): Asset {
-  const south = 51.89;
-  const north = 51.99;
-  const west = 4.24;
-  const east = 4.51;
-
-  const x = randomBetween(east, west);
+export function assignLocation(asset: Asset, { south, north, east, west }: BBox = rotterdam): Asset {
   const y = randomBetween(south, north);
+  const x = randomBetween(east, west);
 
   Object.assign(asset?.attributes ?? {}, { location: {
     name: "location",
@@ -170,6 +170,16 @@ export function randomAsset(assetInfos: AssetTypeInfo[]): Asset {
   );
 
   return { type, name: type, attributes }
+}
+
+export function getAssetTypes(assets: Asset[]) {
+  return assets
+    .map(({ type }) => type!)
+    .filter((value, index, array) => array.indexOf(value) === index);
+}
+
+export function getAssetTypeColour(type: string, infos: AssetTypeInfo[]) {
+  return infos.find(({ assetDescriptor }) => assetDescriptor?.name === type)?.assetDescriptor?.colour ?? ""
 }
 
 function randomBetween(max: number, min: number) {

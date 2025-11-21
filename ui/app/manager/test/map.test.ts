@@ -1,8 +1,9 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
-import { preparedAssetsWithLocation as assets, assignLocation, randomAsset } from "./fixtures/data/assets.js";
+import { preparedAssetsWithLocation as assets, assignLocation, BBox, getAssetTypeColour, getAssetTypes, randomAsset } from "./fixtures/data/assets.js";
 import { OrMap } from "@openremote/or-map/src/index.js";
 import { Asset, AssetTypeInfo } from "@openremote/model";
+import { OrClusterMarker } from "@openremote/or-map/lib/markers/or-cluster-marker.js";
 
 test.use({ storageState: userStatePath });
 
@@ -55,47 +56,51 @@ test.describe("Marker clustering", () => {
    * @and clustering is configured
    * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
    * @and Navigating to the "map" page
-   * @then Shows cluster marker
+   * @then Shows cluster marker with the expected asset type colours
    * @when Zooming in
-   * @then Shows cluster markers resize based on cluster size
-   * @and Shows normal markers
+   * @then Shows cluster marker reduce to 10
+   * @and Shows a normal marker
+   * @when When clicking the cluster marker
+   * @then Cluster marker disappears
+   * @and All 10 asset markers part of the cluster are shown
    *
    * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
    */
   test("should display clustered markers", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
-    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data
+    const bbox = { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 };
+    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
     const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
-      return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
+      return { ...assignLocation(randomAsset(assetInfos), bbox), name: String(i), realm: "smartcity" }
     });
+    const outlierbbox = { west: 4.483812, south: 51.916359, east: 4.484017, north: 51.916495 };
+    assets.push({ ...assignLocation(randomAsset(assetInfos), outlierbbox), name: "outlier", realm: "smartcity" })
+
     await manager.setup("smartcity", { assets });
     await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: true } } } })
     await manager.goToRealmStartPage("smartcity");
 
     await expect(page.locator("or-map")).toBeVisible();
-
     await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
 
-    const clusters = await page.locator("or-map").evaluate(
-      (map: OrMap) => map.getMapLibre()
-        ?.querySourceFeatures('mapPoints')
-        .filter((feature) => feature.properties.cluster)
-        .map(({ geometry }) => (geometry as any).coordinates)
-    );
-
-    expect(clusters).not.toBeUndefined();
-    console.log(clusters)
-
     const clusterMarker = page.locator("or-cluster-marker");
-    await expect(clusterMarker.locator("text")).toContainText("2");
+    const coords = await clusterMarker.evaluate((marker: OrClusterMarker) => [marker.lng,marker.lat]);
+    await expect(clusterMarker.locator("text")).toContainText("11");
+    const assetTypes = getAssetTypes(assets);
+    expect(
+      await clusterMarker.locator("path[fill]").evaluateAll(el => el.map(e => e.getAttribute("fill")!))
+    ).toStrictEqual(assetTypes.map((t) => "#" + getAssetTypeColour(t, assetInfos)));
 
-    const colors = await clusterMarker.locator("path[fill]").evaluateAll(el => el.map(e => e.getAttribute("fill")!))
-    expect(colors).toStrictEqual(["#"]); // default app color
+    // await page.locator("or-map").evaluate((map: OrMap) => map.flyTo([4.482259693115793, 51.91756799273], 17));
+    await page.locator("or-map").evaluate((map: OrMap, [lng,lat]) => map.flyTo([lng!,lat!], 16.1), coords);
 
-    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo([4.482259693115793, 51.91756799273], 17));
+    await expect(clusterMarker.locator("text")).toContainText("10");
+    await expect(page.locator('.or-map-marker')).toHaveCount(1);
+
+    await clusterMarker.click();
     await expect(clusterMarker).not.toBeVisible();
-    await expect(page.locator(".marker-icon")).toHaveCount(2);
+    await expect(page.locator('.or-map-marker')).toHaveCount(10);
   });
 
   /**
@@ -110,24 +115,20 @@ test.describe("Marker clustering", () => {
   test("should not display clustered markers", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
+    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+    const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
+      return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
+    });
+
     await manager.setup("smartcity", { assets });
     await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: false } } } })
     await manager.goToRealmStartPage("smartcity");
 
-    await expect(page.locator(".marker-icon")).toHaveCount(2);
-  });
+    await expect(page.locator("or-map")).toBeVisible();
+    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
 
-  /**
-   * @todo Implement feature
-   *
-   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
-   */
-  test.fixme("should allow clicking cluster markers", async ({ page, manager, browserName }) => {
-    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
-
-    await manager.setup("smartcity", { assets });
-    await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: true } } } })
-    await manager.goToRealmStartPage("smartcity");
+    await expect(page.locator("or-cluster-marker")).not.toBeVisible();
+    await expect(page.locator(".marker-icon")).toHaveCount(10);
   });
 });
 
@@ -143,14 +144,39 @@ test.describe("Asset type legend", () => {
    *
    * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
    */
-  test.fixme("Map legend", async ({ page, manager, browserName }) => {
+  test("should toggle asset types", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
+    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+    const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
+      return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
+    });
+    console.log(assets)
+
     await manager.setup("smartcity", { assets });
-    await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: false } } } })
+    await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: true } } } })
     await manager.goToRealmStartPage("smartcity");
 
-    await expect(page.locator("or-map-legend")).toBeVisible();
+    await expect(page.locator("or-map")).toBeVisible();
+    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+
+    await page.locator('or-map-legend [icon="menu"]').click();
+    await expect(page.locator("or-map-legend #legend-content")).toBeVisible();
+
+    const assetTypes = getAssetTypes(assets);
+
+    function capitalize(w: string) {
+        return w.charAt(0).toUpperCase() + w.slice(1);
+    }
+
+    const options = (await page.locator("or-map-legend #legend-content")
+      .getByRole("listitem")
+      .allTextContents())
+      .map((text) => text.trim().split(" ").map(capitalize).join(""));
+    expect(options).toEqual(assetTypes);
+
+    // await expect(page.locator("or-cluster-marker")).not.toBeVisible();
+    // await expect(page.locator(".marker-icon")).toHaveCount(10);
   });
 });
 

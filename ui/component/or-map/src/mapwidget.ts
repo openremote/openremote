@@ -571,7 +571,7 @@ export class MapWidget {
             this._mapGl.off('moveend', () => this._updateMarkers());
 
             this._mapGl.on('move', debounce(() => this._updateMarkers()));
-            this._mapGl.on('moveend', debounce(() => this._updateMarkers()));
+            this._mapGl.on('moveend', () => this._updateMarkers());
             this._updateMarkers()
         })
     }
@@ -785,8 +785,8 @@ export class MapWidget {
         for (const feature of features) {
             if (!feature.properties.cluster) continue;
             const id: number = feature.properties.cluster_id;
-            const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
-            const coords = geometry.coordinates;
+            const geometry = feature.geometry as Geometry & { coordinates: [number, number] };
+            const [lng, lat] = geometry.coordinates;
 
             let marker = this._cachedMarkers[id];
             if (!marker) {
@@ -795,8 +795,8 @@ export class MapWidget {
                     .map(([type, count]) => [type, this._assetTypesColors[type], count]);
 
                 marker = this._cachedMarkers[id] = new maplibregl.Marker({
-                    element: new OrClusterMarker(slices)
-                }).setLngLat(coords);
+                    element: new OrClusterMarker(slices, id, lng, lat, this._mapGl),
+                }).setLngLat([lng, lat]);
             }
             newMarkers[id] = marker;
 

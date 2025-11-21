@@ -1,5 +1,6 @@
 import { svg as html /** Aliased for syntax highlighting */, LitElement, TemplateResult, SVGTemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
+import { Event as MapEvent, GeoJSONSource, Map } from "maplibre-gl";
 
 /**
  * Slice of the donut chart for cluster markers
@@ -11,15 +12,24 @@ type SliceWithOffset = [...Slice, offset: number]
 @customElement("or-cluster-marker")
 export class OrClusterMarker extends LitElement {
 
+    public lng?: number;
+    public lat?: number;
+
     protected _slices: Slice[] = [];
+    protected _clusterId?: number;
+    protected _map: Map;
 
     protected _highThreshold = 99;
     protected _midTreshold = this._highThreshold / 10;
     protected _lowTreshold = this._midTreshold / 10;
 
-    constructor(slices: Slice[]) {
+    constructor(slices: Slice[], clusterId: number, lng: number, lat: number, map: Map) {
         super();
+        this._clusterId = clusterId;
         this._slices = slices;
+        this.lng = lng;
+        this.lat = lat;
+        this._map = map;
     }
 
     protected render() {
@@ -51,7 +61,7 @@ export class OrClusterMarker extends LitElement {
                 height="${w}"
                 viewbox="0 0 ${w} ${w}"
                 text-anchor="middle"
-                style="font: ${fontSize}px Helvetica Neue,Arial,Helvetica,sans-serif; display: block">
+                style="cursor: pointer; pointer-events: auto; font: ${fontSize}px Helvetica Neue,Arial,Helvetica,sans-serif; display: block">
                     ${(slices as [] as SliceWithOffset[]).map(([,color,count,offset]) => this._donutSegment(
                         offset / total,
                         (offset + count) / total,
@@ -90,5 +100,23 @@ export class OrClusterMarker extends LitElement {
             A ${r0} ${r0} 0 ${largeArc} 0 ${r + r0 * x0} ${r + r0 * y0}
             "
         />`;
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        this.addEventListener("click", this.onClick)
+    }
+
+    disconnectedCallback(): void {
+      super.disconnectedCallback();
+      this.removeEventListener("click", this.onClick)
+    }
+
+    protected async onClick() {
+        if (this.lng && this.lat) {
+            const zoom = await this._map.getSource<GeoJSONSource>('mapPoints')!.getClusterExpansionZoom(this._clusterId!);
+            // Offset 1 added to ensure cluster marker dissappears
+            this._map.easeTo({ center: [this.lng, this.lat], zoom: zoom + 1 });
+        }
     }
 }
