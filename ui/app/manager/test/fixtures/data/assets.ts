@@ -1,5 +1,5 @@
 import * as Util from "@openremote/core/lib/util";
-import { Asset } from "@openremote/model";
+import { Asset, AssetDescriptor, AssetInfo, AssetTypeInfo, Attribute, AttributeDescriptor } from "@openremote/model";
 
 export const assetMap = {
   Battery: "ElectricityBatteryAsset",
@@ -126,3 +126,52 @@ export const agent: Asset = {
     agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } }
   }
 };
+
+/**
+ * Generates assets with random location and asset types
+ *
+ * Rotterdam bounding box:
+ * - South | 51.89
+ * - North | 51.99
+ * - West  |  4.24
+ * - East  |  4.51
+ *
+ * @param asset The asset to assign the location attribute
+ */
+export function assignLocation(asset: Asset): Asset {
+  const south = 51.89;
+  const north = 51.99;
+  const west = 4.24;
+  const east = 4.51;
+
+  const x = randomBetween(east, west);
+  const y = randomBetween(south, north);
+
+  Object.assign(asset?.attributes ?? {}, { location: {
+    name: "location",
+    type: "GEO_JSONPoint",
+    value: { type: "Point", coordinates: [x, y] },
+    meta: {}
+  }});
+
+  return asset;
+}
+
+export function randomAsset(assetInfos: AssetTypeInfo[]): Asset {
+  const validAssetInfos = assetInfos
+    .filter(({ assetDescriptor }) => assetDescriptor?.name && assetDescriptor.descriptorType === "asset");
+
+  const randomIndex = Math.round(randomBetween(0, validAssetInfos.length - 1));
+  const info = validAssetInfos[randomIndex];
+
+  const type = info.assetDescriptor!.name;
+  const attributes = Object.fromEntries(
+    Object.values(info?.attributeDescriptors ?? {}).map(({ name, type }) => ([name, { name, type, meta: {} }]))
+  );
+
+  return { type, name: type, attributes }
+}
+
+function randomBetween(max: number, min: number) {
+  return Math.random() * (max - min) + min
+}

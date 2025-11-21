@@ -492,6 +492,14 @@ export class OrMap extends LitElement {
         }
     }
 
+    /**
+     * Useful for testing
+     * @returns The MapLibre Map object
+     */
+    public getMapLibre() {
+        return this._map?.getMapLibre();
+    }
+
     protected _onMarkerChangedEvent(evt: OrMapMarkerChangedEvent) {
         if (this._map) {
             this._map.onMarkerChanged(evt.detail.marker, evt.detail.property);

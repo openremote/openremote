@@ -1,7 +1,8 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
-import { preparedAssetsWithLocation as assets } from "./fixtures/data/assets.js";
+import { preparedAssetsWithLocation as assets, assignLocation, randomAsset } from "./fixtures/data/assets.js";
 import { OrMap } from "@openremote/or-map/src/index.js";
+import { Asset, AssetTypeInfo } from "@openremote/model";
 
 test.use({ storageState: userStatePath });
 
@@ -25,14 +26,14 @@ test.describe("Map markers", () => {
    */
   test("should show asset markers and navigate", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
-  
+
     await manager.setup("smartcity", { assets });
     await manager.goToRealmStartPage("smartcity");
-  
+
     const asset = assets[0].name;
   
     await expect(page.locator(".marker-icon")).toHaveCount(2);
-  
+
     await page.click(".marker-container");
     await expect(page.locator("#card-container", { hasText: asset })).toBeVisible();
   
@@ -64,14 +65,29 @@ test.describe("Marker clustering", () => {
   test("should display clustered markers", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
+    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data
+    const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
+      return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
+    });
     await manager.setup("smartcity", { assets });
     await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: true } } } })
     await manager.goToRealmStartPage("smartcity");
 
     await expect(page.locator("or-map")).toBeVisible();
 
+    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+
+    const clusters = await page.locator("or-map").evaluate(
+      (map: OrMap) => map.getMapLibre()
+        ?.querySourceFeatures('mapPoints')
+        .filter((feature) => feature.properties.cluster)
+        .map(({ geometry }) => (geometry as any).coordinates)
+    );
+
+    expect(clusters).not.toBeUndefined();
+    console.log(clusters)
+
     const clusterMarker = page.locator("or-cluster-marker");
-    await expect(clusterMarker).toBeVisible();
     await expect(clusterMarker.locator("text")).toContainText("2");
 
     const colors = await clusterMarker.locator("path[fill]").evaluateAll(el => el.map(e => e.getAttribute("fill")!))
