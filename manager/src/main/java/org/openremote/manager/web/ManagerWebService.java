@@ -34,10 +34,7 @@ import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.oas.models.servers.ServerVariables;
 import io.undertow.server.handlers.RedirectHandler;
 import jakarta.ws.rs.core.Application;
-import org.openremote.container.web.FileResource;
-import org.openremote.container.web.ResourceSource;
-import org.openremote.container.web.WebApplication;
-import org.openremote.container.web.WebService;
+import org.openremote.container.web.*;
 import org.openremote.model.Container;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
@@ -123,10 +120,13 @@ public class ManagerWebService extends WebService {
            resourceSources.add(new FileResource(builtInAppDocRoot));
         }
 
-        //
+        // Serve manager app from classpath if we are in dev mode (outside of docker) and it can be found
+        // this is used by custom projects so that they can serve the manager UI while running in an IDE
         if (Config.isDevMode()) {
-           URL url = ManagerWebService.class.getClassLoader().getResource("org/openremote/web" + path);
+           URL url = ManagerWebService.class.getClassLoader().getResource("org/openremote/web/manager");
            if (url != null) {
+              resourceSources.add(new ClassPathResource(getClass().getClassLoader(), "org/openremote/web"));
+           }
         }
 
         // If custom app docroot is a directory then make it the default file handler

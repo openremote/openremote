@@ -340,9 +340,7 @@ public abstract class WebService implements ContainerService {
    }
 
    /**
-    * Serve files from disk or classpath; paths provided should be in preference order. To serve from the classpath
-    * use the format:
-    * <p>classpath://FQN</p>
+    * Serve files from disk or classpath; {@link ResourceSource}s provided should be in preference order.
     */
    @SuppressWarnings("resource")
    public void deployFileServlet(
