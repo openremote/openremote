@@ -34,11 +34,15 @@ import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.oas.models.servers.ServerVariables;
 import io.undertow.server.handlers.RedirectHandler;
 import jakarta.ws.rs.core.Application;
+import org.openremote.container.web.FileResource;
+import org.openremote.container.web.ResourceSource;
 import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
+import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
 
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,7 +95,7 @@ public class ManagerWebService extends WebService {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-        Set<Path> staticFilePaths = new HashSet<>();
+        Set<ResourceSource> resourceSources = new HashSet<>();
         builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
         customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
@@ -115,17 +119,25 @@ public class ManagerWebService extends WebService {
 
         deployJaxRsApplication(application, API_PATH, "Manager HTTP API", 0, true, null);
 
-        staticFilePaths.add(builtInAppDocRoot);
+        if (Files.isDirectory(builtInAppDocRoot)) {
+           resourceSources.add(new FileResource(builtInAppDocRoot));
+        }
+
+        //
+        if (Config.isDevMode()) {
+           URL url = ManagerWebService.class.getClassLoader().getResource("org/openremote/web" + path);
+           if (url != null) {
+        }
 
         // If custom app docroot is a directory then make it the default file handler
         if (customAppDocRoot != null && Files.isDirectory(customAppDocRoot)) {
-            staticFilePaths.add(customAppDocRoot);
+            resourceSources.add(new FileResource(customAppDocRoot));
         } else if (customAppDocRoot != null) {
            LOG.info("Custom app doc root does not exist: " + customAppDocRoot.toAbsolutePath());
         }
 
         // Deploy static app files unsecured
-        deployFileServlet("/", "App Files", staticFilePaths.toArray(Path[]::new), null, null);
+        deployFileServlet("/", "App Files", resourceSources.toArray(ResourceSource[]::new), null, null);
     }
 
     protected Object getOpenApiResource() {

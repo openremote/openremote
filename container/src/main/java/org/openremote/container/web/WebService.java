@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,8 +20,6 @@
 package org.openremote.container.web;
 
 import com.google.common.collect.Lists;
-import com.thetransactioncompany.cors.CORSConfiguration;
-import com.thetransactioncompany.cors.CORSConfigurationException;
 import com.thetransactioncompany.cors.CORSFilter;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -341,25 +339,30 @@ public abstract class WebService implements ContainerService {
        deploy(deploymentInfo, false);
    }
 
+   /**
+    * Serve files from disk or classpath; paths provided should be in preference order. To serve from the classpath
+    * use the format:
+    * <p>classpath://FQN</p>
+    */
    @SuppressWarnings("resource")
    public void deployFileServlet(
            String deploymentPath,
            String deploymentName,
-           Path[] filePaths,
+           ResourceSource[] resourceSources,
            String[] requiredRoles,
            CORSConfig corsOverride) {
 
-        if (filePaths == null || filePaths.length == 0) {
+        if (resourceSources == null || resourceSources.length == 0) {
             throw new IllegalArgumentException("No file paths specified");
         }
 
        ResourceManager filesResourceManager;
-       if (filePaths.length == 1) {
-            filesResourceManager = new PathResourceManager(filePaths[0]);
+       if (resourceSources.length == 1) {
+            filesResourceManager = resourceSources[0].createManager();
        } else {
            CompositeResourceManager compositeResourceManager = new CompositeResourceManager();
-           for (Path path : filePaths) {
-               compositeResourceManager.addResourceManager(new PathResourceManager(path));
+           for (ResourceSource resourceSource : resourceSources) {
+               compositeResourceManager.addResourceManager(resourceSource.createManager());
            }
            filesResourceManager = compositeResourceManager;
        }

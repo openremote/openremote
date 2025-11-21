@@ -19,25 +19,13 @@
  */
 package org.openremote.container.web;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
-import org.openremote.model.Constants;
+import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 
-import java.io.IOException;
-
-/**
- * A {@link ClientRequestFilter} that injects the realm into the {@link Constants#REALM_PARAM_NAME} request header.
- */
-public class RealmInjectorFilter implements ClientRequestFilter {
-
-   protected String realm;
-
-   public RealmInjectorFilter(String realm) {
-      this.realm = realm;
-   }
-
+// 2. The new requirement: Wraps ClassLoader and Prefix
+public record ClassPathResource(ClassLoader classLoader, String prefix) implements ResourceSource {
    @Override
-   public void filter(ClientRequestContext requestContext) throws IOException {
-      requestContext.getHeaders().putSingle(Constants.REALM_PARAM_NAME, realm);
+   public ResourceManager createManager() {
+      return new ClassPathResourceManager(classLoader, prefix);
    }
 }

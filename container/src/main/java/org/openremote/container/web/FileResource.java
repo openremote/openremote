@@ -19,25 +19,15 @@
  */
 package org.openremote.container.web;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
-import org.openremote.model.Constants;
+import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 
-import java.io.IOException;
+import java.nio.file.Path;
 
-/**
- * A {@link ClientRequestFilter} that injects the realm into the {@link Constants#REALM_PARAM_NAME} request header.
- */
-public class RealmInjectorFilter implements ClientRequestFilter {
-
-   protected String realm;
-
-   public RealmInjectorFilter(String realm) {
-      this.realm = realm;
-   }
-
+// 1. The existing functionality: Wraps a simple Path
+public record FileResource(Path path) implements ResourceSource {
    @Override
-   public void filter(ClientRequestContext requestContext) throws IOException {
-      requestContext.getHeaders().putSingle(Constants.REALM_PARAM_NAME, realm);
+   public ResourceManager createManager() {
+      return new PathResourceManager(path);
    }
 }
