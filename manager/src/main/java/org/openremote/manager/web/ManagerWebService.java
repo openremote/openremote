@@ -118,6 +118,8 @@ public class ManagerWebService extends WebService {
 
         if (Files.isDirectory(builtInAppDocRoot)) {
            resourceSources.add(new FileResource(builtInAppDocRoot));
+        } else {
+           LOG.info("Built in app doc root does not exist: " + builtInAppDocRoot.toAbsolutePath());
         }
 
         // Serve manager app from classpath if we are in dev mode (outside of docker) and it can be found
