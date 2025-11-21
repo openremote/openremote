@@ -249,8 +249,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         synchronized (serialLock) {
             String messageId = "write_multiple_" + unitId + "_" + address + "_" + quantity;
             try {
-                // Convert value to byte array based on quantity, using unitId-specific endian format
-                byte[] registerData = convertValueToRegisters(value, quantity, unitId);
+                // Convert value to byte array using shared method from AbstractModbusProtocol
+                byte[] registerData = convertValueToRegisterBytes(value, quantity, agentLink.getReadValueType(), unitId);
 
                 byte[] request = createWriteMultipleRegistersRequest(unitId, (byte) 0x10, address, quantity, registerData);
 
@@ -353,78 +353,6 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         return buildRTUFrame(unitId, pdu);
     }
 
-    /**
-     * Convert a value to register bytes based on the number of registers.
-     * Applies byte and word order based on unitId-specific configuration.
-     */
-    private byte[] convertValueToRegisters(Object value, int registerCount, Integer unitId) {
-        byte[] data;
-
-        if (registerCount == 1) {
-            // Single register (16-bit)
-            int intValue;
-            if (value instanceof Integer) {
-                intValue = (Integer) value;
-            } else if (value instanceof Number) {
-                intValue = ((Number) value).intValue();
-            } else {
-                throw new IllegalArgumentException("Cannot convert value to register: " + value);
-            }
-            data = new byte[2];
-            data[0] = (byte) (intValue >> 8);
-            data[1] = (byte) (intValue & 0xFF);
-        } else if (registerCount == 2) {
-            // Two registers (32-bit int or float)
-            data = new byte[4];
-            if (value instanceof Float) {
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(4);
-                buffer.order(getJavaByteOrder(unitId));
-                buffer.putFloat((Float) value);
-                data = buffer.array();
-            } else if (value instanceof Integer) {
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(4);
-                buffer.order(getJavaByteOrder(unitId));
-                buffer.putInt((Integer) value);
-                data = buffer.array();
-            } else if (value instanceof Number) {
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(4);
-                buffer.order(getJavaByteOrder(unitId));
-                buffer.putInt(((Number) value).intValue());
-                data = buffer.array();
-            } else {
-                throw new IllegalArgumentException("Cannot convert value to 2 registers: " + value);
-            }
-            // Apply word order
-            data = applyWordOrder(data, 2, unitId);
-        } else if (registerCount == 4) {
-            // Four registers (64-bit int or double)
-            data = new byte[8];
-            if (value instanceof Double) {
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(8);
-                buffer.order(getJavaByteOrder(unitId));
-                buffer.putDouble((Double) value);
-                data = buffer.array();
-            } else if (value instanceof Long) {
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(8);
-                buffer.order(getJavaByteOrder(unitId));
-                buffer.putLong((Long) value);
-                data = buffer.array();
-            } else if (value instanceof Number) {
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(8);
-                buffer.order(getJavaByteOrder(unitId));
-                buffer.putLong(((Number) value).longValue());
-                data = buffer.array();
-            } else {
-                throw new IllegalArgumentException("Cannot convert value to 4 registers: " + value);
-            }
-            // Apply word order
-            data = applyWordOrder(data, 4, unitId);
-        } else {
-            throw new IllegalArgumentException("Unsupported register count for write: " + registerCount);
-        }
-
-        return data;
-    }
     
     private int calculateCRC16(byte[] data, int offset, int length) {
         int crc = 0xFFFF;
@@ -508,7 +436,17 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             }
 
             try {
-                Object value = extractValueFromBatchResponse(response, offset, agentLink.getReadValueType(), functionCode, unitId);
+                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount())
+                    .orElse(agentLink.getReadValueType().getRegisterCount());
+                ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
+
+                // Extract data from response (skip unitId, functionCode, byteCount)
+                int byteCount = response[2] & 0xFF;
+                byte[] data = new byte[byteCount];
+                System.arraycopy(response, 3, data, 0, byteCount);
+
+                // Use shared extraction method from AbstractModbusProtocol
+                Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, unitId, functionCode);
                 if (value != null) {
                     updateLinkedAttribute(attrRef, value);
                 }
@@ -585,90 +523,5 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }
     }
 
-    /**
-     * Extract a value from a batch response at a specific offset
-     */
-    private Object extractValueFromBatchResponse(byte[] response, int registerOffset, ModbusAgentLink.ModbusDataType dataType, byte functionCode, Integer unitId) {
-        int byteCount = response[2] & 0xFF;
-
-        if (functionCode == 0x01 || functionCode == 0x02) {
-            // Coils/Discrete - offset is in bits
-            int byteIndex = 3 + (registerOffset / 8);
-            int bitIndex = registerOffset % 8;
-            if (byteIndex < response.length) {
-                return ((response[byteIndex] >> bitIndex) & 0x01) != 0;
-            }
-        } else if (functionCode == 0x03 || functionCode == 0x04) {
-            // Holding/Input registers - offset is in registers (2 bytes each)
-            int byteOffset = 3 + (registerOffset * 2);
-            int registerCount = dataType.getRegisterCount();
-
-            if (byteOffset + (registerCount * 2) <= response.length) {
-                byte[] dataBytes = new byte[registerCount * 2];
-                System.arraycopy(response, byteOffset, dataBytes, 0, registerCount * 2);
-                return parseMultiRegisterValue(dataBytes, registerCount, dataType, unitId);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Trigger an immediate read operation to verify a write.
-     * Used when both read and write are configured to ensure attribute gets updated with actual device value.
-     */
-    private void triggerImmediateRead(AttributeRef ref, ModbusAgentLink agentLink) {
-        scheduledExecutorService.execute(() -> {
-            try {
-                // Create a single-attribute batch for this verification read
-                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(agentLink.getReadValueType().getRegisterCount());
-                BatchReadRequest batch = new BatchReadRequest(agentLink.getReadAddress(), registerCount);
-                batch.attributes.add(ref);
-                batch.offsets.add(0);
-
-                // Create temporary group
-                Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
-                tempGroup.put(ref, agentLink);
-
-                // Execute the verification read
-                executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
-                LOG.finest("Verification read completed for " + ref);
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Failed to execute verification read for " + ref + ": " + e.getMessage(), e);
-            }
-        });
-    }
-
-    @Override
-    protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(AttributeRef ref, ModbusAgentLink agentLink) {
-        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
-
-        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                // Get current attribute value from linkedAttributes map
-                // This map is kept up-to-date by doLinkedAttributeWrite after successful writes
-                Attribute<?> attribute = linkedAttributes.get(ref);
-                if (attribute == null || attribute.getValue().isEmpty()) {
-                    LOG.finest("Skipping write poll for " + ref + " - no value available");
-                    return;
-                }
-
-                Object currentValue = attribute.getValue().orElse(null);
-                if (currentValue == null) {
-                    return;
-                }
-
-                // Create a synthetic AttributeEvent for the write
-                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
-
-                // Perform the write using the existing write logic
-                doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
-
-                LOG.finest("Write poll executed for " + ref + " with value: " + currentValue);
-            } catch (Exception e) {
-                LOG.log(Level.FINE, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
-            }
-        }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
-    }
 
 }

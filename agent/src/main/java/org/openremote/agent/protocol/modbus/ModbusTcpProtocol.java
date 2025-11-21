@@ -26,8 +26,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -121,8 +119,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                         pdu = buildWriteSingleRegisterPDU(protocolAddress, value);
                         LOG.fine("Modbus TCP Write Single Register - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
                     } else {
-                        // Write multiple registers
-                        byte[] registerData = convertToRegisterBytes(processedValue, registersCount, agentLink.getReadValueType(), unitId);
+                        // Write multiple registers using shared conversion method
+                        byte[] registerData = convertValueToRegisterBytes(processedValue, registersCount, agentLink.getReadValueType(), unitId);
                         pdu = buildWriteMultipleRegistersPDU(protocolAddress, registerData);
                         LOG.fine("Modbus TCP Write Multiple Registers - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), RegisterCount: " + registersCount + ", DataType: " + agentLink.getReadValueType());
                     }
@@ -231,8 +229,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
 
                     LOG.fine("Extracting value for " + ref + " - DataType: " + dataType + ", RegisterCount: " + registerCount + ", Offset: " + offset + ", ReadAddress: " + agentLink.getReadAddress());
 
-                    // Extract value using helper method
-                    Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, effectiveUnitId, memoryArea);
+                    // Extract value using shared helper method from AbstractModbusProtocol
+                    Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, effectiveUnitId, functionCode);
 
                     if (value != null) {
                         LOG.finest("Successfully extracted value for " + ref + " - Value: " + value + ", DataType: " + dataType + ", RegisterCount: " + registerCount);
@@ -254,37 +252,6 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
                 onRequestFailure(messageId, operation, e);
             }
         }
-    }
-
-    @Override
-    protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(AttributeRef ref, ModbusAgentLink agentLink) {
-        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
-
-        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                // Get current attribute value from linkedAttributes map
-                Attribute<?> attribute = linkedAttributes.get(ref);
-                if (attribute == null || attribute.getValue().isEmpty()) {
-                    LOG.finest("Skipping write poll for " + ref + " - no value available");
-                    return;
-                }
-
-                Object currentValue = attribute.getValue().orElse(null);
-                if (currentValue == null) {
-                    return;
-                }
-
-                // Create a synthetic AttributeEvent for the write
-                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
-
-                // Perform the write using the existing write logic
-                doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
-
-                LOG.finest("Write poll executed for " + ref + " with value: " + currentValue);
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
-            }
-        }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -366,100 +333,4 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         timedOutRequests.entrySet().removeIf(entry -> (now - entry.getValue()) > 30000);
     }
 
-    /**
-     * Trigger an immediate read operation to verify a write
-     */
-    private void triggerImmediateRead(AttributeRef ref, ModbusAgentLink agentLink) {
-        scheduledExecutorService.execute(() -> {
-            try {
-                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount())
-                    .orElse(agentLink.getReadValueType().getRegisterCount());
-                BatchReadRequest batch = new BatchReadRequest(agentLink.getReadAddress(), registerCount);
-                batch.attributes.add(ref);
-                batch.offsets.add(0);
-
-                Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
-                tempGroup.put(ref, agentLink);
-
-                executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
-                LOG.finest("Verification read completed for " + ref);
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Failed to execute verification read for " + ref + ": " + e.getMessage(), e);
-            }
-        });
-    }
-
-    /**
-     * Extract value from batch response data
-     */
-    private Object extractValueFromBatchResponse(byte[] data, int offset, int registerCount,
-                                                 ModbusAgentLink.ModbusDataType dataType,
-                                                 Integer unitId,
-                                                 ModbusAgentLink.ReadMemoryArea memoryArea) {
-        try {
-            // For coils and discrete inputs, data is bit-packed
-            if (memoryArea == ModbusAgentLink.ReadMemoryArea.COIL ||
-                memoryArea == ModbusAgentLink.ReadMemoryArea.DISCRETE) {
-                int byteIndex = offset / 8;
-                int bitIndex = offset % 8;
-                if (byteIndex < data.length) {
-                    return ((data[byteIndex] >> bitIndex) & 0x01) == 1;
-                }
-                return null;
-            }
-
-            // For registers (holding/input), data is word-based (2 bytes per register)
-            int byteOffset = offset * 2;
-            if (byteOffset + (registerCount * 2) > data.length) {
-                LOG.warning("Not enough data in response: need " + (byteOffset + registerCount * 2) + " bytes, have " + data.length);
-                return null;
-            }
-
-            // Extract register bytes
-            byte[] registerBytes = new byte[registerCount * 2];
-            System.arraycopy(data, byteOffset, registerBytes, 0, registerBytes.length);
-
-            // Parse multi-register value
-            return parseMultiRegisterValue(registerBytes, registerCount, dataType, unitId);
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to extract value from batch response at offset " + offset + ": " + e.getMessage(), e);
-            return null;
-        }
-    }
-
-    /**
-     * Convert value to register bytes for writing
-     */
-    private byte[] convertToRegisterBytes(Object value, int registerCount, ModbusAgentLink.ModbusDataType dataType, Integer unitId) {
-        byte[] bytes = new byte[registerCount * 2];
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-
-        // Apply byte order
-        ModbusAgent.EndianFormat endianFormat = getEndianFormat(unitId);
-        buffer.order(endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN || endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP
-            ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
-
-        // Convert based on data type
-        switch (dataType) {
-            case INT, SINT -> buffer.putShort(((Number) value).shortValue());
-            case UINT, USINT, BYTE, WORD -> buffer.putShort((short) (((Number) value).intValue() & 0xFFFF));
-            case DINT -> buffer.putInt(((Number) value).intValue());
-            case UDINT, DWORD -> buffer.putInt((int) (((Number) value).longValue() & 0xFFFFFFFFL));
-            case LINT -> buffer.putLong(((Number) value).longValue());
-            case REAL -> buffer.putFloat(((Number) value).floatValue());
-            case LREAL -> buffer.putDouble(((Number) value).doubleValue());
-            default -> throw new IllegalArgumentException("Unsupported write data type: " + dataType);
-        }
-
-        // Apply byte swap if needed
-        if (endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP || endianFormat == ModbusAgent.EndianFormat.LITTLE_ENDIAN_BYTE_SWAP) {
-            for (int i = 0; i < bytes.length; i += 2) {
-                byte temp = bytes[i];
-                bytes[i] = bytes[i + 1];
-                bytes[i + 1] = temp;
-            }
-        }
-
-        return bytes;
-    }
 }

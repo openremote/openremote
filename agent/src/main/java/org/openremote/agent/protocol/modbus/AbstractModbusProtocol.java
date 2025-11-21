@@ -573,12 +573,172 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     /**
      * Schedule a polling write request for an attribute with requestInterval set.
-     * Subclasses must implement protocol-specific polling write logic.
+     * This is a shared implementation used by both TCP and Serial protocols.
      */
-    protected abstract ScheduledFuture<?> scheduleModbusPollingWriteRequest(
+    protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(
             AttributeRef ref,
             ModbusAgentLink agentLink
-    );
+    ) {
+        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
+
+        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            try {
+                // Get current attribute value from linkedAttributes map
+                Attribute<?> attribute = linkedAttributes.get(ref);
+                if (attribute == null || attribute.getValue().isEmpty()) {
+                    LOG.finest("Skipping write poll for " + ref + " - no value available");
+                    return;
+                }
+
+                Object currentValue = attribute.getValue().orElse(null);
+                if (currentValue == null) {
+                    return;
+                }
+
+                // Create a synthetic AttributeEvent for the write
+                AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
+
+                // Perform the write using the existing write logic
+                doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
+
+                LOG.finest("Write poll executed for " + ref + " with value: " + currentValue);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
+            }
+        }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Trigger an immediate read operation to verify a write.
+     * Used when both read and write are configured to ensure attribute gets updated with actual device value.
+     */
+    protected void triggerImmediateRead(AttributeRef ref, ModbusAgentLink agentLink) {
+        scheduledExecutorService.execute(() -> {
+            try {
+                // Create a single-attribute batch for this verification read
+                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount())
+                    .orElse(agentLink.getReadValueType().getRegisterCount());
+                BatchReadRequest batch = new BatchReadRequest(agentLink.getReadAddress(), registerCount);
+                batch.attributes.add(ref);
+                batch.offsets.add(0);
+
+                // Create temporary group
+                Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
+                tempGroup.put(ref, agentLink);
+
+                // Execute the verification read
+                executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
+                LOG.finest("Verification read completed for " + ref);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to execute verification read for " + ref + ": " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Extract value from batch response data.
+     * Unified implementation for both TCP and Serial protocols.
+     * @param data The raw response data (register/coil bytes)
+     * @param offset Offset within the data (in registers for holding/input, in bits for coils/discrete)
+     * @param registerCount Number of registers for this value
+     * @param dataType The Modbus data type
+     * @param unitId Unit ID for endian format lookup
+     * @param functionCode Modbus function code (0x01=Coil, 0x02=Discrete, 0x03=Holding, 0x04=Input)
+     * @return The extracted value, or null if extraction fails
+     */
+    protected Object extractValueFromBatchResponse(byte[] data, int offset, int registerCount,
+                                                   ModbusAgentLink.ModbusDataType dataType,
+                                                   Integer unitId, byte functionCode) {
+        try {
+            // For coils and discrete inputs, data is bit-packed
+            if (functionCode == 0x01 || functionCode == 0x02) {
+                int byteIndex = offset / 8;
+                int bitIndex = offset % 8;
+                if (byteIndex < data.length) {
+                    return ((data[byteIndex] >> bitIndex) & 0x01) == 1;
+                }
+                return null;
+            }
+
+            // For registers (holding/input), data is word-based (2 bytes per register)
+            int byteOffset = offset * 2;
+            if (byteOffset + (registerCount * 2) > data.length) {
+                LOG.warning("Not enough data in response: need " + (byteOffset + registerCount * 2) + " bytes, have " + data.length);
+                return null;
+            }
+
+            // Extract register bytes
+            byte[] registerBytes = new byte[registerCount * 2];
+            System.arraycopy(data, byteOffset, registerBytes, 0, registerBytes.length);
+
+            // Parse multi-register value
+            return parseMultiRegisterValue(registerBytes, registerCount, dataType, unitId);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to extract value from batch response at offset " + offset + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Convert value to register bytes for writing.
+     * Unified implementation for both TCP and Serial protocols.
+     * Applies byte order and word order based on unitId-specific configuration.
+     * @param value The value to convert
+     * @param registerCount Number of registers (1, 2, or 4)
+     * @param dataType The Modbus data type
+     * @param unitId Unit ID for endian format lookup
+     * @return Byte array containing the register data
+     */
+    protected byte[] convertValueToRegisterBytes(Object value, int registerCount,
+                                                 ModbusAgentLink.ModbusDataType dataType, Integer unitId) {
+        byte[] bytes = new byte[registerCount * 2];
+        java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(bytes);
+
+        // Apply byte order
+        ModbusAgent.EndianFormat endianFormat = getEndianFormat(unitId);
+        buffer.order(endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN ||
+                     endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP
+            ? java.nio.ByteOrder.BIG_ENDIAN : java.nio.ByteOrder.LITTLE_ENDIAN);
+
+        // Convert based on register count and data type
+        if (registerCount == 1) {
+            // Single register (16-bit)
+            if (value instanceof Number) {
+                int intValue = ((Number) value).intValue();
+                buffer.putShort((short) (intValue & 0xFFFF));
+            } else {
+                throw new IllegalArgumentException("Cannot convert value to register: " + value);
+            }
+        } else if (registerCount == 2) {
+            // Two registers (32-bit int or float)
+            if (dataType == ModbusAgentLink.ModbusDataType.REAL) {
+                buffer.putFloat(((Number) value).floatValue());
+            } else if (value instanceof Number) {
+                buffer.putInt(((Number) value).intValue());
+            } else {
+                throw new IllegalArgumentException("Cannot convert value to 2 registers: " + value);
+            }
+        } else if (registerCount == 4) {
+            // Four registers (64-bit int or double)
+            if (dataType == ModbusAgentLink.ModbusDataType.LREAL) {
+                buffer.putDouble(((Number) value).doubleValue());
+            } else if (value instanceof Number) {
+                buffer.putLong(((Number) value).longValue());
+            } else {
+                throw new IllegalArgumentException("Cannot convert value to 4 registers: " + value);
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported register count for write: " + registerCount);
+        }
+
+        // Apply word order (byte swap for multi-register values)
+        if (registerCount > 1 && (endianFormat == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP ||
+                                   endianFormat == ModbusAgent.EndianFormat.LITTLE_ENDIAN_BYTE_SWAP)) {
+            bytes = applyWordOrder(bytes, registerCount, unitId);
+        }
+
+        return bytes;
+    }
 
     /**
      * Get the current connection status of the protocol.
