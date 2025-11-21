@@ -645,4 +645,88 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             LOG.warning("Request failed for " + operation + " [id=" + messageId + "]: " + reason);
         }
     }
+
+    // ========================================
+    // Shared Modbus PDU Building Methods
+    // ========================================
+
+    /**
+     * Build Modbus PDU for read request (functions 0x01-0x04).
+     * PDU format: [Function Code][Start Address High][Start Address Low][Quantity High][Quantity Low]
+     */
+    protected byte[] buildReadRequestPDU(byte functionCode, int startAddress, int quantity) {
+        byte[] pdu = new byte[5];
+        pdu[0] = functionCode;
+        pdu[1] = (byte) (startAddress >> 8);
+        pdu[2] = (byte) (startAddress & 0xFF);
+        pdu[3] = (byte) (quantity >> 8);
+        pdu[4] = (byte) (quantity & 0xFF);
+        return pdu;
+    }
+
+    /**
+     * Build Modbus PDU for write single coil (function 0x05).
+     * PDU format: [Function Code][Address High][Address Low][Value High][Value Low]
+     */
+    protected byte[] buildWriteSingleCoilPDU(int address, boolean value) {
+        byte[] pdu = new byte[5];
+        pdu[0] = (byte) 0x05;
+        pdu[1] = (byte) (address >> 8);
+        pdu[2] = (byte) (address & 0xFF);
+        pdu[3] = value ? (byte) 0xFF : (byte) 0x00;
+        pdu[4] = (byte) 0x00;
+        return pdu;
+    }
+
+    /**
+     * Build Modbus PDU for write single register (function 0x06).
+     * PDU format: [Function Code][Address High][Address Low][Value High][Value Low]
+     */
+    protected byte[] buildWriteSingleRegisterPDU(int address, int value) {
+        byte[] pdu = new byte[5];
+        pdu[0] = (byte) 0x06;
+        pdu[1] = (byte) (address >> 8);
+        pdu[2] = (byte) (address & 0xFF);
+        pdu[3] = (byte) (value >> 8);
+        pdu[4] = (byte) (value & 0xFF);
+        return pdu;
+    }
+
+    /**
+     * Build Modbus PDU for write multiple registers (function 0x10).
+     * PDU format: [Function Code][Start Address High][Start Address Low][Quantity High][Quantity Low][Byte Count][Values...]
+     */
+    protected byte[] buildWriteMultipleRegistersPDU(int startAddress, byte[] registerData) {
+        int registerCount = registerData.length / 2;
+        byte[] pdu = new byte[6 + registerData.length];
+        pdu[0] = (byte) 0x10;
+        pdu[1] = (byte) (startAddress >> 8);
+        pdu[2] = (byte) (startAddress & 0xFF);
+        pdu[3] = (byte) (registerCount >> 8);
+        pdu[4] = (byte) (registerCount & 0xFF);
+        pdu[5] = (byte) registerData.length;
+        System.arraycopy(registerData, 0, pdu, 6, registerData.length);
+        return pdu;
+    }
+
+    /**
+     * Extract register data from a Modbus read response PDU.
+     * Handles both register reads (0x03, 0x04) and coil/discrete reads (0x01, 0x02).
+     * Returns the data bytes (after function code and byte count).
+     */
+    protected byte[] extractDataFromResponsePDU(byte[] responsePDU, byte functionCode) {
+        if (responsePDU == null || responsePDU.length < 2) {
+            return null;
+        }
+
+        // Response format: [Function Code][Byte Count][Data...]
+        int byteCount = responsePDU[1] & 0xFF;
+        if (responsePDU.length < 2 + byteCount) {
+            return null;
+        }
+
+        byte[] data = new byte[byteCount];
+        System.arraycopy(responsePDU, 2, data, 0, byteCount);
+        return data;
+    }
 }

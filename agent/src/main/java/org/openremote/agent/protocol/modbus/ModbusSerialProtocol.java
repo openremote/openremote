@@ -313,74 +313,44 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         return totalBytesRead;
     }
     
+    /**
+     * Wrap a Modbus PDU in RTU framing (Unit ID + PDU + CRC16).
+     * This is the serial-specific framing, while PDU building is shared with TCP.
+     */
+    private byte[] buildRTUFrame(int unitId, byte[] pdu) {
+        byte[] frame = new byte[1 + pdu.length + 2]; // unitId + PDU + CRC
+        frame[0] = (byte) unitId;
+        System.arraycopy(pdu, 0, frame, 1, pdu.length);
+
+        int crc = calculateCRC16(frame, 0, 1 + pdu.length);
+        frame[1 + pdu.length] = (byte) (crc & 0xFF);
+        frame[2 + pdu.length] = (byte) (crc >> 8);
+
+        return frame;
+    }
+
     private byte[] createModbusRequest(int unitId, byte functionCode, int startAddress, int quantity) {
-        byte[] frame = new byte[8];
-        frame[0] = (byte) unitId;
-        frame[1] = functionCode;
-        frame[2] = (byte) (startAddress >> 8);
-        frame[3] = (byte) (startAddress & 0xFF);
-        frame[4] = (byte) (quantity >> 8);
-        frame[5] = (byte) (quantity & 0xFF);
-        
-        int crc = calculateCRC16(frame, 0, 6);
-        frame[6] = (byte) (crc & 0xFF);
-        frame[7] = (byte) (crc >> 8);
-        
-        return frame;
+        // Use shared PDU building method from AbstractModbusProtocol
+        byte[] pdu = buildReadRequestPDU(functionCode, startAddress, quantity);
+        return buildRTUFrame(unitId, pdu);
     }
-    
+
     private byte[] createWriteCoilRequest(int unitId, byte functionCode, int coilAddress, boolean value) {
-        byte[] frame = new byte[8];
-        frame[0] = (byte) unitId;
-        frame[1] = functionCode;
-        frame[2] = (byte) (coilAddress >> 8);
-        frame[3] = (byte) (coilAddress & 0xFF);
-        frame[4] = value ? (byte) 0xFF : (byte) 0x00;
-        frame[5] = (byte) 0x00;
-        
-        int crc = calculateCRC16(frame, 0, 6);
-        frame[6] = (byte) (crc & 0xFF);
-        frame[7] = (byte) (crc >> 8);
-        
-        return frame;
+        // Use shared PDU building method from AbstractModbusProtocol
+        byte[] pdu = buildWriteSingleCoilPDU(coilAddress, value);
+        return buildRTUFrame(unitId, pdu);
     }
-    
+
     private byte[] createWriteRegisterRequest(int unitId, byte functionCode, int registerAddress, int value) {
-        byte[] frame = new byte[8];
-        frame[0] = (byte) unitId;
-        frame[1] = functionCode;
-        frame[2] = (byte) (registerAddress >> 8);
-        frame[3] = (byte) (registerAddress & 0xFF);
-        frame[4] = (byte) (value >> 8);
-        frame[5] = (byte) (value & 0xFF);
-
-        int crc = calculateCRC16(frame, 0, 6);
-        frame[6] = (byte) (crc & 0xFF);
-        frame[7] = (byte) (crc >> 8);
-
-        return frame;
+        // Use shared PDU building method from AbstractModbusProtocol
+        byte[] pdu = buildWriteSingleRegisterPDU(registerAddress, value);
+        return buildRTUFrame(unitId, pdu);
     }
 
     private byte[] createWriteMultipleRegistersRequest(int unitId, byte functionCode, int startAddress, int quantity, byte[] registerData) {
-        int byteCount = quantity * 2;
-        byte[] frame = new byte[9 + byteCount];
-
-        frame[0] = (byte) unitId;
-        frame[1] = functionCode;
-        frame[2] = (byte) (startAddress >> 8);
-        frame[3] = (byte) (startAddress & 0xFF);
-        frame[4] = (byte) (quantity >> 8);
-        frame[5] = (byte) (quantity & 0xFF);
-        frame[6] = (byte) byteCount;
-
-        // Copy register data
-        System.arraycopy(registerData, 0, frame, 7, byteCount);
-
-        int crc = calculateCRC16(frame, 0, 7 + byteCount);
-        frame[7 + byteCount] = (byte) (crc & 0xFF);
-        frame[8 + byteCount] = (byte) (crc >> 8);
-
-        return frame;
+        // Use shared PDU building method from AbstractModbusProtocol
+        byte[] pdu = buildWriteMultipleRegistersPDU(startAddress, registerData);
+        return buildRTUFrame(unitId, pdu);
     }
 
     /**
