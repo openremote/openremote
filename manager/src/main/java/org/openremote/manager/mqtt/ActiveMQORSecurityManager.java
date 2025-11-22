@@ -34,8 +34,12 @@ import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -43,7 +47,10 @@ import javax.naming.ldap.Rdn;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -113,25 +120,33 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 user = realmAndUsername[1];
             }
         } else if (certs != null && certs.length > 0) {
-            X509Certificate leaf = certs[0];
+            List<X509Certificate> clientAuthCerts = Arrays.stream(certs).filter(e -> {
+                try {
+                    return e.getExtendedKeyUsage().contains(CLIENT_AUTH_EKU_OID);
+                } catch (CertificateParsingException ex) {
+                    throw new RuntimeException(ex);
+                } catch (NullPointerException ignored){return false;}
+            }).toList();
+
+            if (clientAuthCerts.size() != 1) {
+                String errMsg = "Presented certificate chain contains " + clientAuthCerts.size() +
+                        " certificates with Client Authentication Extended Key Usage. " +
+                        "Expected exactly 1 certificate. Please provide a valid certificate chain. "+ connectionToString(remotingConnection);
+                LOG.log(Level.SEVERE, errMsg);
+                throw new LoginException(errMsg);
+            }
+
+            X509Certificate leaf = clientAuthCerts.getFirst();
+
             String dn = leaf.getSubjectX500Principal().getName();
             try {
-                // Check for Client Authentication EKU (This denotes that this is the actual client certificate to enforce)
-                if (!leaf.getExtendedKeyUsage().contains(CLIENT_AUTH_EKU_OID)) {
-                    // TODO: Not sure about what extent to which we would like to enforce this.
-                    // I have seen codebases use this EKU key to ensure that the certificate they are examining for client
-                    // auth is the correct one to inspect. I will have to perform some more research about it, but I think
-                    // that the client certificate is always going to be the leaf. For now, log a warning about it.
-                    LOG.log(Level.WARNING, "Presented certificate DOES NOT have Client Authentication Extended Key Usage. " +
-                            "Attempting to use, but please fix this for subsequent requests.");
-                }
                 LdapName ldapName = new LdapName(dn);
                 for (Rdn rdn : ldapName.getRdns()) {
                     String type = rdn.getType();
                     String value = rdn.getValue().toString();
-                    if ("OU".equalsIgnoreCase(type) && realm == null) {
+                    if (realm == null && "OU".equalsIgnoreCase(type)) {
                         realm = value;
-                    } else if ("CN".equalsIgnoreCase(type) && (user == null || user.isEmpty())) {
+                    } else if (TextUtil.isNullOrEmpty(user) && "CN".equalsIgnoreCase(type)) {
                         user = value;
                     }
                 }
@@ -141,11 +156,30 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 LOG.log(Level.SEVERE, "Failed to process given client certificate");
             }
 
-            if(!(user == null || user.isEmpty())) {
-                User dbUser = identityProvider.getUserByUsername(
-                        realm,
-                        SERVICE_ACCOUNT_PREFIX + user
-                );
+            if(realm == null){
+                LOG.log(Level.INFO, "Client certificate was provided, but no realm found in certificate subject. " +
+                        "Falling back to the username as a realm name. Subject DN=" + dn);
+
+                if (identityProvider.getRealm(user) != null) {
+                    realm = user;
+                }else{
+                    LOG.log(Level.WARNING, "No realm found matching the username. " +
+                            "Failing login attempt. Subject DN=" + dn);
+                    throw new LoginException("No realm found matching the username from client certificate.");
+                }
+            }
+
+            if(!TextUtil.isNullOrEmpty(user)) {
+                User dbUser = null;
+                User[] users = identityProvider.queryUsers(new UserQuery().usernames(new StringPredicate(SERVICE_ACCOUNT_PREFIX + user).match(AssetQuery.Match.EXACT)));
+                if (users != null && users.length == 1) {
+                    dbUser = users[0];
+                }else if(users != null && users.length > 1) {
+                    String errMsg = "Multiple service users found with the same username. " +
+                            "Disallowing connect. username=" + user + ", " + connectionToString(remotingConnection);
+                    LOG.log(Level.WARNING, errMsg);
+                    throw new LoginException(errMsg);
+                }
                 if (dbUser != null) {
                     password = dbUser.getSecret();
                 } else {

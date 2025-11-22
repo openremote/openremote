@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelId;
+import jakarta.ws.rs.core.UriBuilder;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
 import org.apache.activemq.artemis.api.core.QueueConfiguration;
@@ -91,9 +92,9 @@ import java.util.stream.Collectors;
 import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.Container.OR_DEV_MODE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 // TODO: Add queue size limiting in canPublish of MQTTHandlers (needs to be done at auth time to allow pub to be rejected)
@@ -671,7 +672,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         try {
-            String mtlsServerURI = new URIBuilder()
+            URIBuilder mtlsServerURI = new URIBuilder()
                 .setScheme("tcp")
                 .setHost(mtlsHost)
                 .setPort(mtlsPort)
@@ -684,10 +685,15 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 .setParameter("keyStorePath", keystorePath)
                 .setParameter("keyStorePassword", keystorePassword)
                 .setParameter("trustStorePath", truststorePath)
-                .setParameter("trustStorePassword", truststorePassword)
-                .build().toString();
+                .setParameter("trustStorePassword", truststorePassword);
 
-            serverConfiguration.addAcceptorConfiguration("mqtt-mtls", mtlsServerURI);
+            if (getBoolean(container.getConfig(), OR_DEV_MODE, false)) {
+                mtlsServerURI.setParameter("trustAll", "true");
+            }
+
+            String mtlsServer = mtlsServerURI.build().toString();
+
+            serverConfiguration.addAcceptorConfiguration("mqtt-mtls", mtlsServer);
             LOG.log(INFO, "Added mTLS MQTT acceptor listening on " + mtlsHost + ":" + mtlsPort);
 
         } catch (Exception e) {
