@@ -396,13 +396,15 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
-        when: "the agent is deleted"
-        assetStorageService.delete([agent.id, asset.id])
-
-        then: "the connection should be removed"
+        cleanup: "the agent and assets are deleted"
+        if (asset != null) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
         conditions.eventually {
-            def connections = brokerService.getUserConnections(keycloakTestSetup.serviceUser.id)
-            assert connections.isEmpty()
+            assert brokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
     }
 
@@ -528,10 +530,17 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert asset.getAttribute("switchStatus").flatMap { it.value }.map { it == false }.orElse(false)
         }
 
-        when: "the agent is deleted"
-        assetStorageService.delete([agent.id, testThing.id, asset.id])
 
-        then: "the connection should be removed"
+        cleanup: "the agent and assets are deleted"
+        if (asset != null) {
+            assetStorageService.delete([asset.id])
+        }
+        if (testThing != null) {
+            assetStorageService.delete([testThing.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
         conditions.eventually {
             assert brokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
@@ -729,10 +738,22 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert asset.getAttribute("uvIndex").flatMap { it.value }.map { it == 4.0 }.orElse(false)
         }
 
-        when: "the agent is deleted"
-        assetStorageService.delete([agent.id, testThing1.id, testThing2.id, testThing3.id, asset.id])
-
-        then: "the connection should be removed"
+        cleanup: "the agent and assets are deleted"
+        if (testThing1 != null) {
+            assetStorageService.delete([testThing1.id])
+        }
+        if (testThing2 != null) {
+            assetStorageService.delete([testThing2.id])
+        }
+        if (testThing3 != null) {
+            assetStorageService.delete([testThing3.id])
+        }
+        if (asset != null) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent != null) {
+            assetStorageService.delete([agent.id])
+        }
         conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
@@ -831,6 +852,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 .setSecureMode(true)
                 .setCertificateAlias(aliasName)
 //                .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
+
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
