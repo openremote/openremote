@@ -72,10 +72,11 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             // Set up connection status consumer to track connection state
             client.addConnectionStatusConsumer(this::setConnectionStatus);
 
-            // Connect (AbstractNettyIOClient handles retries automatically)
+            // Connect (AbstractNettyIOClient handles retries automatically with exponential backoff)
+            // This returns immediately - connection happens in background with infinite retries
             client.connect();
 
-            LOG.info("Modbus TCP client created and connection initiated for " + connectionString);
+            LOG.info("Modbus TCP client created and connection initiated for " + connectionString + " (retrying in background until connected)");
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to create Modbus TCP client: " + agent, e);
             setConnectionStatus(ConnectionStatus.ERROR);

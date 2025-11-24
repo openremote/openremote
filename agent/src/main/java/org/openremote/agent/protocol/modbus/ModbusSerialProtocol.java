@@ -19,16 +19,14 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import com.fazecast.jSerialComm.SerialPort;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.ValueType;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,22 +37,15 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
 
-    private SerialPort serialPort;
+    private ModbusSerialIOClient client = null;
     private String connectionString;
-    private final Object serialLock = new Object(); // Synchronization lock for serial port operations
+    private final Object requestLock = new Object();
+    private CompletableFuture<ModbusSerialFrame> pendingRequest = null;
+    private long lastRequestTime = 0;
+    private static final long MIN_REQUEST_INTERVAL_MS = 50; // Minimum time between requests
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
-    }
-
-    @Override
-    public String getProtocolName() {
-        return "Modbus Serial Protocol";
-    }
-
-    @Override
-    public String getProtocolInstanceUri() {
-        return connectionString != null ? connectionString : "modbus-rtu://" + agent.getSerialPort().orElse("unknown");
     }
 
     @Override
@@ -62,18 +53,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         return agent.getDeviceConfig();
     }
 
-    /**
-     * Factory method for creating SerialPort instance.
-     * This method can be overridden in tests to provide a mock serial port.
-     */
-    protected SerialPort createSerialPort(String portName) {
-        return SerialPort.getCommPort(portName);
-    }
-
     @Override
     protected void doStartProtocol(Container container) throws Exception {
-        setConnectionStatus(ConnectionStatus.CONNECTING);
-
         String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
         int baudRate = agent.getBaudRate();
         int dataBits = agent.getDataBits();
@@ -83,81 +64,98 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
         try {
-            // Open serial port directly (no shared port management)
-            serialPort = createSerialPort(portName);
-            serialPort.setBaudRate(baudRate);
-            serialPort.setNumDataBits(dataBits);
-            serialPort.setNumStopBits(stopBits);
-            serialPort.setParity(mapParityToSerialPort(parity));
-            serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 100, 0);
+            LOG.info("Creating Modbus Serial client for " + connectionString);
 
-            if (serialPort.openPort()) {
-                Thread.sleep(100); // Delay to allow port initialization
-                setConnectionStatus(ConnectionStatus.CONNECTED);
-                LOG.info("Modbus Serial Protocol started successfully: " + connectionString);
-                return; // Success
-            } else {
-                LOG.warning("Failed to open serial port: " + portName);
-            }
+            // Create client
+            client = new ModbusSerialIOClient(portName, baudRate, dataBits, stopBits, parity);
+
+            // Set up message consumer to handle incoming frames
+            client.addMessageConsumer(this::handleIncomingFrame);
+
+            // Set up connection status consumer to track connection state
+            client.addConnectionStatusConsumer(this::setConnectionStatus);
+
+            // Connect (SerialIOClient handles retries automatically with exponential backoff)
+            // This returns immediately - connection happens in background with infinite retries
+            client.connect();
+
+            LOG.info("Modbus Serial client created and connection initiated for " + connectionString + " (retrying in background until connected)");
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Exception during serial port opening: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Failed to create Modbus Serial client: " + agent, e);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            throw e;
         }
-
-        // Failed to open port
-        LOG.log(Level.SEVERE, "Failed to start Modbus Serial Protocol for " + connectionString);
-        setConnectionStatus(ConnectionStatus.ERROR);
     }
 
     @Override
     protected void doStopProtocol(Container container) throws Exception {
-        // Close serial port directly
-        if (serialPort != null && serialPort.isOpen()) {
-            serialPort.closePort();
-            LOG.info("Closed Modbus Serial port: " + agent.getSerialPort().orElse("unknown"));
+        if (client != null) {
+            client.disconnect();
+            client = null;
         }
-        serialPort = null;
-
-        setConnectionStatus(ConnectionStatus.DISCONNECTED);
+        synchronized (requestLock) {
+            if (pendingRequest != null) {
+                pendingRequest.cancel(true);
+                pendingRequest = null;
+            }
+        }
     }
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        int unitId = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getUnitId()), "unit ID");
+        int unitId = agentLink.getUnitId();
         int writeAddress = getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
+        String messageId = "serial_write_" + unitId + "_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
 
-        // Convert from 1-based user address to 0-based protocol address
+        // Convert 1-based user address to 0-based protocol address
         int protocolAddress = writeAddress - 1;
 
-        boolean writeSuccess = false;
         try {
+            byte[] pdu;
+
             switch (agentLink.getWriteMemoryArea()) {
-                case COIL:
-                    writeSuccess = writeSingleCoil(unitId, protocolAddress, (Boolean) processedValue);
-                    break;
-                case HOLDING:
-                    if (registersCount > 1) {
-                        writeSuccess = writeMultipleHoldingRegisters(unitId, protocolAddress, registersCount, processedValue, agentLink);
+                case COIL -> {
+                    // Write single coil
+                    boolean value = processedValue instanceof Boolean ? (Boolean) processedValue : false;
+                    pdu = buildWriteSingleCoilPDU(protocolAddress, value);
+                    LOG.fine("Modbus Serial Write Coil - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
+                }
+                case HOLDING -> {
+                    if (registersCount == 1) {
+                        // Write single register
+                        int value = processedValue instanceof Number ? ((Number) processedValue).intValue() : 0;
+                        pdu = buildWriteSingleRegisterPDU(protocolAddress, value);
+                        LOG.fine("Modbus Serial Write Single Register - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
                     } else {
-                        writeSuccess = writeSingleHoldingRegister(unitId, protocolAddress, processedValue);
+                        // Write multiple registers using shared conversion method
+                        byte[] registerData = convertValueToRegisterBytes(processedValue, registersCount, agentLink.getReadValueType(), unitId);
+                        pdu = buildWriteMultipleRegistersPDU(protocolAddress, registerData);
+                        LOG.fine("Modbus Serial Write Multiple Registers - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), RegisterCount: " + registersCount + ", DataType: " + agentLink.getReadValueType());
                     }
-                    break;
-                default:
-                    throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
+                }
+                default -> throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
             }
 
+            // Send request and wait for response
+            ModbusSerialFrame response = sendRequestAndWaitForResponse(unitId, pdu, 3000);
+
+            if (response.isException()) {
+                byte exceptionCode = response.getPdu()[1];
+                onRequestFailure(messageId, "Modbus Serial write address=" + writeAddress, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+                throw new IllegalStateException("Modbus exception: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+            }
+
+            LOG.fine("Modbus Serial Write Success - UnitId: " + unitId + ", Address: " + writeAddress);
+            onRequestSuccess(messageId);
+
             // Handle attribute update based on read configuration
-            if (writeSuccess && event.getSource() != null) {
+            if (event.getSource() != null) {
                 // Not a synthetic write (from continuous write task)
                 if (agentLink.getReadAddress() == null) {
                     // Write-only: update immediately based on write success
-                    Attribute<?> attribute = linkedAttributes.get(event.getRef());
-                    if (attribute != null) {
-                        @SuppressWarnings("unchecked")
-                        Attribute<Object> attr = (Attribute<Object>) attribute;
-                        attr.setValue(processedValue);
-                    }
                     updateLinkedAttribute(event.getRef(), processedValue);
+                    LOG.finest("Write-only attribute updated: " + event.getRef());
                 } else {
                     // Write + Read: trigger immediate read to verify write
                     LOG.finest("Triggering verification read after write for " + event.getRef());
@@ -165,363 +163,173 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 }
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Error writing to Modbus device: " + e.getMessage(), e);
-        }
-    }
-    
-    private boolean writeSingleCoil(int unitId, int address, boolean value) {
-        // Synchronize to ensure atomic write-read cycles
-        synchronized (serialLock) {
-            String messageId = "write_coil_" + unitId + "_" + address;
-            try {
-                byte[] request = createWriteCoilRequest(unitId, (byte) 0x05, address, value);
-
-                int bytesWritten = serialPort.writeBytes(request, request.length);
-                if (bytesWritten != request.length) {
-                    LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
-                    return false;
-                }
-
-                // Read response (8 bytes for write single coil)
-                byte[] response = new byte[8];
-                int totalBytesRead = readWithTimeout(response, 50);
-
-                if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
-                    int exceptionCode = response[2] & 0xFF;
-                    onRequestFailure(messageId, "Write single coil address=" + address,
-                        "Exception code: " + exceptionCode);
-                    return false;
-                }
-                onRequestSuccess(messageId);
-                return true;
-
-            } catch (Exception e) {
-                onRequestFailure(messageId, "Write single coil address=" + address, e);
-                return false;
+            String operation = "Modbus Serial write address=" + writeAddress;
+            // Log without stack trace for expected exceptions (timeout, connection not ready)
+            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
+                onRequestFailure(messageId, operation, e.getMessage());
+            } else {
+                onRequestFailure(messageId, operation, e);
             }
-        }
-    }
-    
-    private boolean writeSingleHoldingRegister(int unitId, int address, Object value) {
-        // Synchronize to ensure atomic write-read cycles
-        synchronized (serialLock) {
-            String messageId = "write_holding_" + unitId + "_" + address;
-            try {
-                int registerValue;
-                if (value instanceof Integer) {
-                    registerValue = (Integer) value;
-                } else if (value instanceof Number) {
-                    registerValue = ((Number) value).intValue();
-                } else {
-                    throw new IllegalArgumentException("Cannot convert value to register value: " + value);
-                }
-
-                byte[] request = createWriteRegisterRequest(unitId, (byte) 0x06, address, registerValue);
-
-                int bytesWritten = serialPort.writeBytes(request, request.length);
-                if (bytesWritten != request.length) {
-                    LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
-                    return false;
-                }
-
-                // Read response (8 bytes for write single register)
-                byte[] response = new byte[8];
-                int totalBytesRead = readWithTimeout(response, 50);
-
-                if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
-                    int exceptionCode = response[2] & 0xFF;
-                    onRequestFailure(messageId, "Write single register address=" + address,
-                        "Exception code: " + exceptionCode);
-                    return false;
-                }
-                onRequestSuccess(messageId);
-                return true;
-
-            } catch (Exception e) {
-                onRequestFailure(messageId, "Write single register address=" + address, e);
-                return false;
-            }
+            throw (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
         }
     }
 
-    private boolean writeMultipleHoldingRegisters(int unitId, int address, int quantity, Object value, ModbusAgentLink agentLink) {
-        // Synchronize to ensure atomic write-read cycles
-        synchronized (serialLock) {
-            String messageId = "write_multiple_" + unitId + "_" + address + "_" + quantity;
-            try {
-                // Convert value to byte array using shared method from AbstractModbusProtocol
-                byte[] registerData = convertValueToRegisterBytes(value, quantity, agentLink.getReadValueType(), unitId);
-
-                byte[] request = createWriteMultipleRegistersRequest(unitId, (byte) 0x10, address, quantity, registerData);
-
-                int bytesWritten = serialPort.writeBytes(request, request.length);
-                if (bytesWritten != request.length) {
-                    LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
-                    return false;
-                }
-
-                // Read response (8 bytes for write multiple registers)
-                byte[] response = new byte[8];
-                int totalBytesRead = readWithTimeout(response, 50);
-
-                if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
-                    int exceptionCode = response[2] & 0xFF;
-                    onRequestFailure(messageId, "Write multiple registers address=" + address + " quantity=" + quantity,
-                        "Exception code: " + exceptionCode);
-                    return false;
-                }
-                onRequestSuccess(messageId);
-                return true;
-
-            } catch (Exception e) {
-                onRequestFailure(messageId, "Write multiple registers address=" + address + " quantity=" + quantity, e);
-                return false;
-            }
-        }
-    }
-    
-    /**
-     * Flush any remaining data from the serial buffer.
-     * Should be called on error paths before releasing the synchronization lock.
-     */
-    private void flushSerialBuffer() {
-        try {
-            int available = serialPort.bytesAvailable();
-            if (available > 0) {
-                byte[] flush = new byte[available];
-                serialPort.readBytes(flush, available, 0);
-                LOG.fine("Flushed " + available + " stale bytes from serial buffer");
-            }
-        } catch (Exception e) {
-            LOG.log(Level.FINE, "Error flushing serial buffer: " + e.getMessage(), e);
-        }
-    }
-
-    private int readWithTimeout(byte[] buffer, long timeoutMs) throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        int totalBytesRead = 0;
-
-        while (totalBytesRead < buffer.length && (System.currentTimeMillis() - startTime) < timeoutMs) {
-            int available = serialPort.bytesAvailable();
-            if (available > 0) {
-                int bytesRead = serialPort.readBytes(buffer, buffer.length - totalBytesRead, totalBytesRead);
-                if (bytesRead > 0) { totalBytesRead += bytesRead; }
-            }
-            Thread.sleep(5);
-        }
-
-        return totalBytesRead;
-    }
-    
-    /**
-     * Wrap a Modbus PDU in RTU framing (Unit ID + PDU + CRC16).
-     * This is the serial-specific framing, while PDU building is shared with TCP.
-     */
-    private byte[] buildRTUFrame(int unitId, byte[] pdu) {
-        byte[] frame = new byte[1 + pdu.length + 2]; // unitId + PDU + CRC
-        frame[0] = (byte) unitId;
-        System.arraycopy(pdu, 0, frame, 1, pdu.length);
-
-        int crc = calculateCRC16(frame, 0, 1 + pdu.length);
-        frame[1 + pdu.length] = (byte) (crc & 0xFF);
-        frame[2 + pdu.length] = (byte) (crc >> 8);
-
-        return frame;
-    }
-
-    private byte[] createModbusRequest(int unitId, byte functionCode, int startAddress, int quantity) {
-        // Use shared PDU building method from AbstractModbusProtocol
-        byte[] pdu = buildReadRequestPDU(functionCode, startAddress, quantity);
-        return buildRTUFrame(unitId, pdu);
-    }
-
-    private byte[] createWriteCoilRequest(int unitId, byte functionCode, int coilAddress, boolean value) {
-        // Use shared PDU building method from AbstractModbusProtocol
-        byte[] pdu = buildWriteSingleCoilPDU(coilAddress, value);
-        return buildRTUFrame(unitId, pdu);
-    }
-
-    private byte[] createWriteRegisterRequest(int unitId, byte functionCode, int registerAddress, int value) {
-        // Use shared PDU building method from AbstractModbusProtocol
-        byte[] pdu = buildWriteSingleRegisterPDU(registerAddress, value);
-        return buildRTUFrame(unitId, pdu);
-    }
-
-    private byte[] createWriteMultipleRegistersRequest(int unitId, byte functionCode, int startAddress, int quantity, byte[] registerData) {
-        // Use shared PDU building method from AbstractModbusProtocol
-        byte[] pdu = buildWriteMultipleRegistersPDU(startAddress, registerData);
-        return buildRTUFrame(unitId, pdu);
-    }
-
-    
-    private int calculateCRC16(byte[] data, int offset, int length) {
-        int crc = 0xFFFF;
-        for (int i = offset; i < offset + length; i++) {
-            crc ^= (data[i] & 0xFF);
-            for (int j = 0; j < 8; j++) {
-                if ((crc & 1) != 0) {
-                    crc = (crc >> 1) ^ 0xA001;
-                } else {
-                    crc = crc >> 1;
-                }
-            }
-        }
-        return crc;
-    }
-    
-    /**
-     * Map parity integer value to jSerialComm parity constant
-     * @param parity 0=NONE, 1=ODD, 2=EVEN, 3=MARK, 4=SPACE
-     * @return jSerialComm parity constant
-     */
-    private int mapParityToSerialPort(int parity) {
-        switch (parity) {
-            case 0:
-                return SerialPort.NO_PARITY;
-            case 1:
-                return SerialPort.ODD_PARITY;
-            case 2:
-                return SerialPort.EVEN_PARITY;
-            case 3:
-                return SerialPort.MARK_PARITY;
-            case 4:
-                return SerialPort.SPACE_PARITY;
-            default:
-                LOG.warning("Unknown parity value " + parity + ", defaulting to EVEN");
-                return SerialPort.EVEN_PARITY; // Default for Modbus RTU
-        }
-    }
-
-    /**
-     * Execute a batch read request and distribute values to attributes
-     */
     @Override
     protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId) {
-        byte functionCode;
-        switch (memoryArea) {
-            case COIL:
-                functionCode = 0x01;
-                break;
-            case DISCRETE:
-                functionCode = 0x02;
-                break;
-            case HOLDING:
-                functionCode = 0x03;
-                break;
-            case INPUT:
-                functionCode = 0x04;
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported read memory area: " + memoryArea);
-        }
+        int effectiveUnitId = unitId != null ? unitId : 1;
+        String messageId = "serial_batch_" + effectiveUnitId + "_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
 
-        // Convert from 1-based user address to 0-based protocol address
-        int protocolAddress = batch.startAddress - 1;
+        try {
+            // Convert 1-based user address to 0-based protocol address
+            int protocolAddress = batch.startAddress - 1;
 
-        // Perform the batch read
-        byte[] response = performModbusBatchRead(unitId, functionCode, protocolAddress, batch.quantity);
+            // Build function code for memory area
+            byte functionCode = switch (memoryArea) {
+                case COIL -> (byte) 0x01;           // Read Coils
+                case DISCRETE -> (byte) 0x02;       // Read Discrete Inputs
+                case HOLDING -> (byte) 0x03;        // Read Holding Registers
+                case INPUT -> (byte) 0x04;          // Read Input Registers
+            };
 
-        if (response == null) {
-            return;
-        }
+            // Build PDU for read request
+            byte[] pdu = buildReadRequestPDU(functionCode, protocolAddress, batch.quantity);
 
-        // Distribute values to each attribute in the batch
-        for (int i = 0; i < batch.attributes.size(); i++) {
-            AttributeRef attrRef = batch.attributes.get(i);
-            int offset = batch.offsets.get(i);
-            ModbusAgentLink agentLink = group.get(attrRef);
+            LOG.fine("Modbus Serial Read Request - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", StartAddress: " + batch.startAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Quantity: " + batch.quantity + ", AttributeCount: " + batch.attributes.size());
 
-            if (agentLink == null) {
-                continue;
+            // Send request and wait for response
+            ModbusSerialFrame response = sendRequestAndWaitForResponse(effectiveUnitId, pdu, 3000);
+
+            if (response.isException()) {
+                byte exceptionCode = response.getPdu()[1];
+                onRequestFailure(messageId, "Modbus Serial batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+                return;
             }
 
-            try {
-                int registerCount = Optional.ofNullable(agentLink.getRegistersAmount())
-                    .orElse(agentLink.getReadValueType().getRegisterCount());
-                ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
+            // Extract data from response PDU
+            byte[] data = extractDataFromResponsePDU(response.getPdu(), functionCode);
+            if (data == null) {
+                onRequestFailure(messageId, "Modbus Serial batch read " + memoryArea + " address=" + batch.startAddress, "Invalid response format");
+                return;
+            }
 
-                // Extract data from response (skip unitId, functionCode, byteCount)
-                int byteCount = response[2] & 0xFF;
-                byte[] data = new byte[byteCount];
-                System.arraycopy(response, 3, data, 0, byteCount);
+            LOG.finest("Modbus Serial Read Success - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", DataBytes: " + data.length);
+            onRequestSuccess(messageId);
 
-                // Use shared extraction method from AbstractModbusProtocol
-                Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, unitId, functionCode);
-                if (value != null) {
-                    updateLinkedAttribute(attrRef, value);
+            // Extract values for each attribute in the batch
+            for (int i = 0; i < batch.attributes.size(); i++) {
+                AttributeRef ref = batch.attributes.get(i);
+                int offset = batch.offsets.get(i);
+                ModbusAgentLink agentLink = group.get(ref);
+
+                if (agentLink == null) {
+                    continue;
                 }
-            } catch (Exception e) {
-                LOG.log(Level.FINE, "Error extracting value for " + attrRef + " from batch: " + e.getMessage(), e);
+
+                try {
+                    int registerCount = Optional.ofNullable(agentLink.getRegistersAmount())
+                        .orElse(agentLink.getReadValueType().getRegisterCount());
+                    ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
+
+                    LOG.fine("Extracting value for " + ref + " - DataType: " + dataType + ", RegisterCount: " + registerCount + ", Offset: " + offset + ", ReadAddress: " + agentLink.getReadAddress());
+
+                    // Extract value using shared helper method from AbstractModbusProtocol
+                    Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, effectiveUnitId, functionCode);
+
+                    if (value != null) {
+                        LOG.finest("Successfully extracted value for " + ref + " - Value: " + value + ", DataType: " + dataType + ", RegisterCount: " + registerCount);
+                        updateLinkedAttribute(ref, value);
+                    } else {
+                        LOG.warning("Extracted null value for " + ref + " - DataType: " + dataType + ", RegisterCount: " + registerCount + ", Offset: " + offset);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Failed to extract value for " + ref + " at offset " + offset + " (DataType: " + agentLink.getReadValueType() + ", RegisterCount: " + agentLink.getRegistersAmount() + "): " + e.getMessage(), e);
+                }
+            }
+
+        } catch (Exception e) {
+            String operation = "Modbus Serial batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity;
+            // Log without stack trace for expected exceptions (timeout, connection not ready)
+            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
+                onRequestFailure(messageId, operation, e.getMessage());
+            } else {
+                onRequestFailure(messageId, operation, e);
+            }
+        }
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "Modbus Serial Protocol";
+    }
+
+    @Override
+    public String getProtocolInstanceUri() {
+        return connectionString;
+    }
+
+    /**
+     * Send a Modbus request and wait for response with timeout.
+     * Enforces serial request/response pattern (only one request at a time).
+     */
+    private ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+        CompletableFuture<ModbusSerialFrame> responseFuture;
+
+        // Critical section: only synchronize sending the request
+        // Modbus RTU requires strict serial request/response (no transaction IDs)
+        synchronized (requestLock) {
+            if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
+                throw new IllegalStateException("Client not connected");
+            }
+
+            // Wait for minimum interval between requests (Modbus RTU requires gaps)
+            long timeSinceLastRequest = System.currentTimeMillis() - lastRequestTime;
+            if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
+                try {
+                    Thread.sleep(MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting for request interval", e);
+                }
+            }
+
+            // Create frame and register pending request
+            ModbusSerialFrame request = new ModbusSerialFrame(unitId, pdu);
+            responseFuture = new CompletableFuture<>();
+            pendingRequest = responseFuture;
+
+            // Send request
+            client.sendMessage(request);
+            lastRequestTime = System.currentTimeMillis();
+            LOG.finest("Sent Modbus Serial request - UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+        }
+
+        // Wait for response outside synchronized block to avoid blocking other threads
+        try {
+            ModbusSerialFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+            LOG.finest("Received Modbus Serial response - UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
+            return response;
+        } catch (TimeoutException e) {
+            LOG.warning("Modbus Serial request timeout - UnitID: " + unitId);
+            throw e;
+        } finally {
+            synchronized (requestLock) {
+                pendingRequest = null;
             }
         }
     }
 
     /**
-     * Perform a batch Modbus read and return the raw response data
+     * Handle incoming Modbus Serial frame from client
      */
-    private byte[] performModbusBatchRead(int unitId, byte functionCode, int address, int quantity) {
-        // Synchronize to ensure atomic write-read cycles
-        synchronized (serialLock) {
-            String messageId = "batch_" + unitId + "_" + functionCode + "_" + address + "_" + quantity;
-            LOG.fine("Performing batch Modbus read: unit=" + unitId + ", function=" + functionCode + ", address=" + address + ", quantity=" + quantity);
-            try {
-                byte[] request = createModbusRequest(unitId, functionCode, address, quantity);
+    private void handleIncomingFrame(ModbusSerialFrame frame) {
+        LOG.finest("Received frame - UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 
-                int bytesWritten = serialPort.writeBytes(request, request.length);
-                if (bytesWritten != request.length) {
-                    LOG.warning("Incomplete write: " + bytesWritten + " of " + request.length + " bytes");
-                    return null;
-                }
-
-                // Calculate expected response length
-                int expectedResponseLength;
-                if (functionCode == 0x01 || functionCode == 0x02) {
-                    expectedResponseLength = 5 + ((quantity + 7) / 8);
-                } else {
-                    expectedResponseLength = 5 + (quantity * 2);
-                }
-
-                byte[] response = new byte[expectedResponseLength];
-                int totalBytesRead = readWithTimeout(response, 150);
-
-                if (totalBytesRead == expectedResponseLength && response[0] == unitId && response[1] == functionCode) {
-                    onRequestSuccess(messageId);
-                    try {
-                        Thread.sleep(10); //Modbus Frame spacing
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    return response;
-                } else if (totalBytesRead > 0 && (response[1] & 0x80) != 0) {
-                    int exceptionCode = response[2] & 0xFF;
-                    int endAddress = address + quantity - 1;
-                    onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
-                        "Exception code: " + exceptionCode + " - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
-                    flushSerialBuffer();
-                } else if (totalBytesRead == 0) {
-                    int endAddress = address + quantity - 1;
-                    onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
-                        "Timeout - no response received");
-                    flushSerialBuffer();
-                } else if (totalBytesRead != expectedResponseLength) {
-                    int endAddress = address + quantity - 1;
-                    onRequestFailure(messageId, "Batch read function=" + functionCode + " registers=" + address + "-" + endAddress + " unit=" + unitId,
-                        "Invalid response - received " + totalBytesRead + " bytes, expected " + expectedResponseLength + " - This may indicate illegal/unsupported registers in range. Consider adding them to 'illegalRegisters' agent configuration.");
-                    flushSerialBuffer();
-                } else {
-                    onRequestFailure(messageId, "Batch read function=" + functionCode + " address=" + address + " unit=" + unitId,
-                        "Response validation failed - Unit ID or Function Code mismatch (received unitId=" + (response[0] & 0xFF) + ", expected=" + unitId + ", received function=" + (response[1] & 0xFF) + ", expected=" + functionCode + ")");
-                    flushSerialBuffer();
-                }
-
-            } catch (Exception e) {
-                onRequestFailure(messageId, "Batch read function=" + functionCode + " address=" + address + " quantity=" + quantity, e);
-                flushSerialBuffer();
+        synchronized (requestLock) {
+            if (pendingRequest != null) {
+                pendingRequest.complete(frame);
+            } else {
+                LOG.warning("Received response with no pending request - UnitID: " + frame.getUnitId());
             }
-
-            return null;
         }
     }
-
-
 }

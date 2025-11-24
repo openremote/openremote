@@ -43,7 +43,7 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     @JsonPropertyDescription("Memory area to read from during read request")
     private ReadMemoryArea readMemoryArea;
 
-    @JsonPropertyDescription("Type to convert the returned data to. As specified by the PLC4X Modbus data types.")
+    @JsonPropertyDescription("Type to convert the returned data to.")
     private ModbusDataType readValueType;
 
     @JsonPropertyDescription("1-based address from which the value is read from (e.g., HOLDING register 1 = 40001)")
