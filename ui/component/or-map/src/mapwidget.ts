@@ -94,14 +94,6 @@ export class MapWidget {
         this._clusterConfig = clusterConfig;
     }
 
-    /**
-     * Useful for testing
-     * @returns The MapLibre Map object
-     */
-    public getMapLibre() {
-        return this._mapGl
-    }
-
     public setCenter(center?: LngLatLike): this {
 
         this._center = getLngLat(center);
