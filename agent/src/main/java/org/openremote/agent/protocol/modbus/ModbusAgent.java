@@ -20,8 +20,6 @@
 package org.openremote.agent.protocol.modbus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.Entity;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.value.ValueDescriptor;
@@ -58,13 +56,6 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
         }
 
         /**
-         * Constructor with endianFormat only, using default values for other fields
-         */
-        public ModbusDeviceConfig(EndianFormat endianFormat) {
-            this(endianFormat, null, 1);
-        }
-
-        /**
          * Default configuration factory method
          */
         public static ModbusDeviceConfig createDefault() {
@@ -75,25 +66,14 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
             return endianFormat;
         }
 
-        public void setEndianFormat(EndianFormat endianFormat) {
-            this.endianFormat = endianFormat;
-        }
-
         public String getIllegalRegisters() {
             return illegalRegisters;
-        }
-
-        public void setIllegalRegisters(String illegalRegisters) {
-            this.illegalRegisters = illegalRegisters;
         }
 
         public int getMaxRegisterLength() {
             return maxRegisterLength;
         }
 
-        public void setMaxRegisterLength(int maxRegisterLength) {
-            this.maxRegisterLength = maxRegisterLength;
-        }
     }
 
     // Map type for per-unitId device configuration (unitId string -> ModbusDeviceConfig)

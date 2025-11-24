@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.tcp.TCPIOClient;
 import org.openremote.model.syslog.SyslogCategory;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;

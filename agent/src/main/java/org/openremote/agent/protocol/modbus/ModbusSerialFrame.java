@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.modbus;
 /**
  * Represents a Modbus RTU frame (Unit ID + PDU + CRC16)
  */
-public class ModbusSerialFrame {
+public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse {
     private final int unitId;
     private final byte[] pdu;
     private byte[] fullFrame; // Cached full frame with CRC

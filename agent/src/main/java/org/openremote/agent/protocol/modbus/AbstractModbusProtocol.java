@@ -26,11 +26,11 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -42,15 +42,28 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractModbusProtocol.class);
 
+    /**
+     * Common interface for Modbus response frames (TCP and Serial)
+     */
+    protected interface ModbusResponse {
+        boolean isException();
+        byte[] getPdu();
+        int getUnitId();
+        byte getFunctionCode();
+    }
+
     protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>();
     protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
     protected final Map<String, ScheduledFuture<?>> batchReadIntervalTasks = new ConcurrentHashMap<>();
     protected final Map<AttributeRef, ScheduledFuture<?>> writeIntervalMap = new HashMap<>();
 
-    protected Set<RegisterRange> illegalRegisters = new HashSet<>();
-
-    // Track failed message identifiers - only clear ERROR state when this set is empty
     protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
+    protected String connectionString;
+    protected final Object requestLock = new Object();
+
+    public AbstractModbusProtocol(T agent) {
+        super(agent);
+    }
 
     /**
      * Get per-unitId device configuration from the agent.
@@ -58,6 +71,28 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      */
     protected abstract Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig();
 
+    /**
+     * Protocol-specific start logic. Subclasses implement connection setup here.
+     */
+    protected abstract void doStartProtocol(Container container) throws Exception;
+
+    @Override
+    protected void doStop(Container container) throws Exception {
+        batchReadIntervalTasks.values().forEach(future -> future.cancel(false));
+        batchReadIntervalTasks.clear();
+        batchGroups.clear();
+        cachedBatches.clear();
+        writeIntervalMap.forEach((key, value) -> value.cancel(false));
+        writeIntervalMap.clear();
+
+        // Call protocol-specific stop
+        doStopProtocol(container);
+    }
+
+    /**
+     * Protocol-specific stop logic. Subclasses implement connection cleanup here.
+     */
+    protected abstract void doStopProtocol(Container container) throws Exception;
     /**
      * Get ModbusDeviceConfig for a specific unitId, falling back to "default" key.
      */
@@ -72,8 +107,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         if (unitId != null && configMap.containsKey(String.valueOf(unitId))) {
             return configMap.get(String.valueOf(unitId));
         }
-
-        // Fall back to "default" key, or create default config if not present
         return configMap.getOrDefault("default", ModbusAgent.ModbusDeviceConfig.createDefault());
     }
 
@@ -93,8 +126,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      */
     protected java.nio.ByteOrder getJavaByteOrder(Integer unitId) {
         ModbusAgent.EndianFormat format = getEndianFormat(unitId);
-        // BIG_ENDIAN and BIG_ENDIAN_BYTE_SWAP use big-endian byte order
-        // LITTLE_ENDIAN and LITTLE_ENDIAN_BYTE_SWAP use little-endian byte order
         return (format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP)
             ? java.nio.ByteOrder.BIG_ENDIAN
             : java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -107,12 +138,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected byte[] applyWordOrder(byte[] data, int registerCount, Integer unitId) {
         ModbusAgent.EndianFormat format = getEndianFormat(unitId);
 
-        // No swapping needed for single register or BIG_ENDIAN/LITTLE_ENDIAN formats
+        // No swap single register or BIG_ENDIAN/LITTLE_ENDIAN
         if (registerCount <= 1 || format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.LITTLE_ENDIAN) {
             return data;
         }
-
-        // BYTE_SWAP formats: reverse the order of registers
+        // BYTE_SWAP
         byte[] result = new byte[data.length];
         for (int i = 0; i < registerCount; i++) {
             int srcIdx = i * 2;
@@ -120,7 +150,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             result[dstIdx] = data[srcIdx];
             result[dstIdx + 1] = data[srcIdx + 1];
         }
-
         return result;
     }
 
@@ -145,7 +174,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
                 // Filter out NaN and Infinity values
                 if (Float.isNaN(value) || Float.isInfinite(value)) {
-                    LOG.warning("Invalid float value (NaN or Infinity), ignoring");
+                    LOG.warning(getProtocolName() + " - Invalid float value (NaN or Infinity), ignoring");
                     return null;
                 }
                 return value;
@@ -165,7 +194,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 double value = buffer.getDouble();
 
                 if (Double.isNaN(value) || Double.isInfinite(value)) {
-                    LOG.warning("Invalid double value (NaN or Infinity), ignoring");
+                    LOG.warning(getProtocolName() + " - Invalid double value (NaN or Infinity), ignoring");
                     return null;
                 }
                 return value;
@@ -193,10 +222,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         return null;
     }
 
-    public AbstractModbusProtocol(T agent) {
-        super(agent);
-    }
-
     /**
      * Represents a range of illegal registers that should not be read
      */
@@ -213,9 +238,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             return register >= start && register <= end;
         }
 
-        boolean overlaps(int start, int end) {
-            return !(this.end < start || this.start > end);
-        }
     }
 
     /**
@@ -259,14 +281,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     int end = Integer.parseInt(rangeParts[1].trim());
                     ranges.add(new RegisterRange(start, end));
                 } catch (NumberFormatException e) {
-                    LOG.warning("Invalid register range format: " + part);
+                    LOG.warning(getProtocolName() + " - Invalid register range format: " + part);
                 }
             } else {
                 try {
                     int register = Integer.parseInt(part);
                     ranges.add(new RegisterRange(register, register));
                 } catch (NumberFormatException e) {
-                    LOG.warning("Invalid register format: " + part);
+                    LOG.warning(getProtocolName() + " - Invalid register format: " + part);
                 }
             }
         }
@@ -285,7 +307,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         // Initialize deviceConfig if it's empty
         Optional<ModbusAgent.DeviceConfigMap> deviceConfigOpt = getDeviceConfig();
         if (deviceConfigOpt.isEmpty() || deviceConfigOpt.get().isEmpty()) {
-            LOG.info("Initializing deviceConfig with default configuration for agent: " + agent.getName());
+            LOG.info(getProtocolName() + " - Initializing deviceConfig with default configuration for agent: " + agent.getName());
             ModbusAgent.DeviceConfigMap defaultConfig = new ModbusAgent.DeviceConfigMap();
             defaultConfig.put("default", ModbusAgent.ModbusDeviceConfig.createDefault());
             sendAttributeEvent(new AttributeEvent(agent.getId(), ModbusAgent.DEVICE_CONFIG, defaultConfig));
@@ -295,29 +317,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         doStartProtocol(container);
     }
 
-    /**
-     * Protocol-specific start logic. Subclasses implement connection setup here.
-     */
-    protected abstract void doStartProtocol(Container container) throws Exception;
 
-    @Override
-    protected void doStop(Container container) throws Exception {
-        batchReadIntervalTasks.values().forEach(future -> future.cancel(false));
-        batchReadIntervalTasks.clear();
-        batchGroups.clear();
-        cachedBatches.clear();
-
-        writeIntervalMap.forEach((key, value) -> value.cancel(false));
-        writeIntervalMap.clear();
-
-        // Call protocol-specific stop
-        doStopProtocol(container);
-    }
-
-    /**
-     * Protocol-specific stop logic. Subclasses implement connection cleanup here.
-     */
-    protected abstract void doStopProtocol(Container container) throws Exception;
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) throws RuntimeException {
@@ -341,24 +341,24 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     if (!batchReadIntervalTasks.containsKey(groupKey)) {
                         ScheduledFuture<?> batchTask = scheduleBatchedReadIntervalTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getRequestInterval(), agentLink.getUnitId());
                         batchReadIntervalTasks.put(groupKey, batchTask);
-                        LOG.fine("Scheduled new read interval task for batch group " + groupKey);
+                        LOG.fine(getProtocolName() + " - Scheduled new read interval task for batch group " + groupKey);
                     }
 
-                    LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
+                    LOG.fine(getProtocolName() + " - Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
                 } else {
                     // No requestInterval: execute one-time read on connection
-                    LOG.fine("Scheduling one-time read on connection for " + ref);
+                    LOG.fine(getProtocolName() + " - Scheduling one-time read on connection for " + ref);
                     scheduleOneTimeRead(ref, agentLink);
                 }
             } else {
-                LOG.fine("Skipping read interval for " + ref + " - read configuration incomplete (unitId, readMemoryArea, readValueType, and readAddress all required)");
+                LOG.fine(getProtocolName() + " - Skipping read interval for " + ref + " - read configuration incomplete (unitId, readMemoryArea, readValueType, and readAddress all required)");
             }
 
             // Check if write interval is enabled (requestInterval set, writeAddress present, no read address)
             if (agentLink.getRequestInterval() != null && agentLink.getWriteAddress() != null && agentLink.getReadAddress() == null) {
                 ScheduledFuture<?> writeTask = scheduleModbusWriteRequestInterval(ref, agentLink);
                 writeIntervalMap.put(ref, writeTask);
-                LOG.fine("Scheduled write interval task for attribute " + ref + " every " + agentLink.getRequestInterval() + "ms");
+                LOG.fine(getProtocolName() + " - Scheduled write interval task for attribute " + ref + " every " + agentLink.getRequestInterval() + "ms");
             }
     }
 
@@ -388,9 +388,9 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     if (task != null) {
                         task.cancel(false);
                     }
-                    LOG.fine("Removed empty batch group " + groupKey);
+                    LOG.fine(getProtocolName() + " - Removed empty batch group " + groupKey);
                 } else {
-                    LOG.fine("Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
+                    LOG.fine(getProtocolName() + " - Removed attribute " + attributeRef + " from batch group " + groupKey + " (remaining attributes: " + group.size() + ")");
                 }
             }
         }
@@ -464,7 +464,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         currentBatch.addAttribute(entry.getKey(), offset);
                         currentBatch.quantity = newQuantity;
                         currentEnd = address + registerCount;
-                        LOG.finest("Added register " + address + " to batch starting at " + currentBatch.startAddress + " (new quantity=" + newQuantity + ")");
+                        LOG.finest(getProtocolName() + " - Added register " + address + " to batch starting at " + currentBatch.startAddress + " (new quantity=" + newQuantity + ")");
                         continue;
                     } else {
                         // Finalize current batch
@@ -472,7 +472,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         String reason = hasIllegalInGap
                             ? "illegal register " + firstIllegalRegister + " detected in gap (registers " + currentEnd + "-" + (address - 1) + ")"
                             : "would exceed maxRegisterLength (" + newQuantity + " > " + maxRegisterLength + ")";
-                        LOG.fine("Split batch before register " + address + ": " + reason);
+                        LOG.fine(getProtocolName() + " - Split batch before register " + address + ": " + reason);
                     }
                 }
 
@@ -480,13 +480,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 currentBatch = new BatchReadRequest(address, registerCount);
                 currentBatch.addAttribute(entry.getKey(), 0);
                 currentEnd = address + registerCount;
-                LOG.fine("Started new batch at address " + address);
+                LOG.fine(getProtocolName() + " - Started new batch at address " + address);
             }
 
             // Add final batch
             if (currentBatch != null) {
                 batches.add(currentBatch);
-                LOG.fine("Finalized batch: startAddress=" + currentBatch.startAddress + ", quantity=" + currentBatch.quantity + ", attributes=" + currentBatch.attributes.size());
+                LOG.fine(getProtocolName() + " - Finalized batch: startAddress=" + currentBatch.startAddress + ", quantity=" + currentBatch.quantity + ", attributes=" + currentBatch.attributes.size());
             }
         }
 
@@ -497,7 +497,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      * Schedule a batched read interval task for a group of attributes
      */
     protected ScheduledFuture<?> scheduleBatchedReadIntervalTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long requestInterval, Integer unitId) {
-        LOG.fine("Scheduling batched read interval task for group " + groupKey + " every " + requestInterval + "ms");
+        LOG.fine(getProtocolName() + " - Scheduling batched read interval task for group " + groupKey + " every " + requestInterval + "ms");
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -515,7 +515,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                         String illegalRegistersStr = getIllegalRegistersString(unitId);
                         Set<RegisterRange> illegalRegistersForUnit = parseIllegalRegisters(illegalRegistersStr);
 
-                        LOG.fine("Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (unitId=" + unitId + ", maxRegisterLength=" + maxRegisterLength + ")");
+                        LOG.fine(getProtocolName() + " - Creating batch requests for group " + groupKey + " with " + group.size() + " attribute(s) (unitId=" + unitId + ", maxRegisterLength=" + maxRegisterLength + ")");
                         batches = createBatchRequests(group, illegalRegistersForUnit, maxRegisterLength);
                         cachedBatches.put(groupKey, batches);
                     }
@@ -525,7 +525,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 for (int i = 0; i < batches.size(); i++) {
                     BatchReadRequest batch = batches.get(i);
                     int endAddress = batch.startAddress + batch.quantity - 1;
-                    LOG.finest("Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
+                    LOG.finest(getProtocolName() + " - Executing batch " + (i + 1) + "/" + batches.size() + ": registers=" + batch.startAddress + "-" + endAddress + " (quantity=" + batch.quantity + ", attributes=" + batch.attributes.size() + ")");
                     executeBatchRead(batch, memoryArea, group, unitId);
                 }
 
@@ -536,9 +536,162 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
-     * Execute a batch read request. Must be implemented by subclasses for protocol-specific communication.
+     * Send a Modbus request and wait for response. Must be implemented by subclasses for protocol-specific communication.
+     * @param unitId The Modbus unit ID
+     * @param pdu The Protocol Data Unit (function code + data)
+     * @param timeoutMs Timeout in milliseconds
+     * @return The Modbus response
+     * @throws Exception If the request fails or times out
      */
-    protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId);
+    protected abstract ModbusResponse sendModbusRequest(int unitId, byte[] pdu, long timeoutMs) throws Exception;
+
+    @Override
+    protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        int unitId = agentLink.getUnitId();
+        int writeAddress = org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
+        int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
+        String messageId = getProtocolShortName() + "_write_" + unitId + "_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
+
+        // Convert 1-based user address to 0-based protocol address
+        int protocolAddress = writeAddress - 1;
+
+        try {
+            byte[] pdu;
+
+            switch (agentLink.getWriteMemoryArea()) {
+                case COIL -> {
+                    // Write single coil
+                    boolean value = processedValue instanceof Boolean ? (Boolean) processedValue : false;
+                    pdu = buildWriteSingleCoilPDU(protocolAddress, value);
+                    LOG.fine(getProtocolName() + " Write Coil - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
+                }
+                case HOLDING -> {
+                    if (registersCount == 1) {
+                        // Write single register
+                        int value = processedValue instanceof Number ? ((Number) processedValue).intValue() : 0;
+                        pdu = buildWriteSingleRegisterPDU(protocolAddress, value);
+                        LOG.fine(getProtocolName() + " Write Single Register - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Value: " + value);
+                    } else {
+                        // Write multiple registers using shared conversion method
+                        byte[] registerData = convertValueToRegisterBytes(processedValue, registersCount, agentLink.getReadValueType(), unitId);
+                        pdu = buildWriteMultipleRegistersPDU(protocolAddress, registerData);
+                        LOG.fine(getProtocolName() + " Write Multiple Registers - UnitId: " + unitId + ", Address: " + writeAddress + " (0x" + Integer.toHexString(protocolAddress) + "), RegisterCount: " + registersCount + ", DataType: " + agentLink.getReadValueType());
+                    }
+                }
+                default -> throw new IllegalStateException("Only COIL and HOLDING memory areas are supported for writing");
+            }
+
+            // Send request and wait for response
+            ModbusResponse response = sendModbusRequest(unitId, pdu, 3000);
+
+            if (response.isException()) {
+                byte exceptionCode = response.getPdu()[1];
+                onRequestFailure(messageId, getProtocolName() + " write address=" + writeAddress, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+                throw new IllegalStateException("Modbus exception: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+            }
+
+            LOG.fine(getProtocolName() + " Write Success - UnitId: " + unitId + ", Address: " + writeAddress);
+            onRequestSuccess(messageId);
+
+            // Handle attribute update based on read configuration
+            if (event.getSource() != null) {
+                // Not a synthetic write (from continuous write task)
+                if (agentLink.getReadAddress() == null) {
+                    // Write-only: update immediately based on write success
+                    updateLinkedAttribute(event.getRef(), processedValue);
+                    LOG.finest(getProtocolName() + " - Write-only attribute updated: " + event.getRef());
+                } else {
+                    // Write + Read: trigger immediate read to verify write
+                    LOG.finest(getProtocolName() + " - Triggering verification read after write for " + event.getRef());
+                    triggerImmediateRead(event.getRef(), agentLink);
+                }
+            }
+        } catch (Exception e) {
+            String operation = getProtocolName() + " write address=" + writeAddress;
+            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
+                onRequestFailure(messageId, operation, e.getMessage());
+            } else {
+                onRequestFailure(messageId, operation, e);
+            }
+            throw (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Execute a batch read request using the protocol-specific communication method.
+     */
+    protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId) {
+        int effectiveUnitId = unitId != null ? unitId : 1;
+        String messageId = getProtocolShortName() + "_batch_" + effectiveUnitId + "_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
+
+        try {
+            // Convert 1-based user address to 0-based protocol address
+            int protocolAddress = batch.startAddress - 1;
+
+            byte functionCode = switch (memoryArea) {
+                case COIL -> (byte) 0x01;           // Read Coils
+                case DISCRETE -> (byte) 0x02;       // Read Discrete Inputs
+                case HOLDING -> (byte) 0x03;        // Read Holding Registers
+                case INPUT -> (byte) 0x04;          // Read Input Registers
+            };
+
+            byte[] pdu = buildReadRequestPDU(functionCode, protocolAddress, batch.quantity);
+
+            LOG.fine(getProtocolName() + " Read Request - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", StartAddress: " + batch.startAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Quantity: " + batch.quantity + ", AttributeCount: " + batch.attributes.size());
+            ModbusResponse response = sendModbusRequest(effectiveUnitId, pdu, 3000);
+
+            if (response.isException()) {
+                byte exceptionCode = response.getPdu()[1];
+                onRequestFailure(messageId, getProtocolName() + " batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+                return;
+            }
+
+            byte[] data = extractDataFromResponsePDU(response.getPdu(), functionCode);
+            if (data == null) {
+                onRequestFailure(messageId, getProtocolName() + " batch read " + memoryArea + " address=" + batch.startAddress, "Invalid response format");
+                return;
+            }
+
+            LOG.finest(getProtocolName() + " Read Success - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", DataBytes: " + data.length);
+            onRequestSuccess(messageId);
+
+            for (int i = 0; i < batch.attributes.size(); i++) {
+                AttributeRef ref = batch.attributes.get(i);
+                int offset = batch.offsets.get(i);
+                ModbusAgentLink agentLink = group.get(ref);
+
+                if (agentLink == null) {
+                    continue;
+                }
+
+                try {
+                    int registerCount = Optional.ofNullable(agentLink.getRegistersAmount())
+                        .orElse(agentLink.getReadValueType().getRegisterCount());
+                    ModbusAgentLink.ModbusDataType dataType = agentLink.getReadValueType();
+
+                    LOG.fine(getProtocolName() + " - Extracting value for " + ref + " - DataType: " + dataType + ", RegisterCount: " + registerCount + ", Offset: " + offset + ", ReadAddress: " + agentLink.getReadAddress());
+                    Object value = extractValueFromBatchResponse(data, offset, registerCount, dataType, effectiveUnitId, functionCode);
+
+                    if (value != null) {
+                        LOG.finest(getProtocolName() + " - Successfully extracted value for " + ref + " - Value: " + value + ", DataType: " + dataType + ", RegisterCount: " + registerCount);
+                        updateLinkedAttribute(ref, value);
+                    } else {
+                        LOG.warning(getProtocolName() + " - Extracted null value for " + ref + " - DataType: " + dataType + ", RegisterCount: " + registerCount + ", Offset: " + offset);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Failed to extract value for " + ref + " at offset " + offset + " (DataType: " + agentLink.getReadValueType() + ", RegisterCount: " + agentLink.getRegistersAmount() + "): " + e.getMessage(), e);
+                }
+            }
+
+        } catch (Exception e) {
+            String operation = getProtocolName() + " batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity;
+            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
+                onRequestFailure(messageId, operation, e.getMessage());
+            } else {
+                onRequestFailure(messageId, operation, e);
+            }
+        }
+    }
 
     /**
      * Schedule a one-time read for an attribute on connection.
@@ -558,12 +711,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
                 tempGroup.put(ref, agentLink);
 
-                // Execute the batch read
                 executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
 
-                LOG.fine("One-time read executed for " + ref);
+                LOG.fine(getProtocolName() + " - One-time read executed for " + ref);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception during one-time read for " + ref + ": " + e.getMessage(), e);
+                LOG.log(Level.WARNING, getProtocolName() + " - Exception during one-time read for " + ref + ": " + e.getMessage(), e);
             }
         });
     }
@@ -576,14 +728,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             AttributeRef ref,
             ModbusAgentLink agentLink
     ) {
-        LOG.fine("Scheduling Modbus Write interval request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
+        LOG.fine("Scheduling " + getProtocolName() + " Write interval request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 // Get current attribute value from linkedAttributes map
                 Attribute<?> attribute = linkedAttributes.get(ref);
                 if (attribute == null || attribute.getValue().isEmpty()) {
-                    LOG.finest("Skipping write interval for " + ref + " - no value available");
+                    LOG.finest(getProtocolName() + " - Skipping write interval for " + ref + " - no value available");
                     return;
                 }
 
@@ -596,9 +748,9 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
                 doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
 
-                LOG.finest("Write interval executed for " + ref + " with value: " + currentValue);
+                LOG.finest(getProtocolName() + " - Write interval executed for " + ref + " with value: " + currentValue);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception during Modbus write interval for " + ref + ": " + e.getMessage(), e);
+                LOG.log(Level.WARNING, getProtocolName() + " - Exception during write interval for " + ref + ": " + e.getMessage(), e);
             }
         }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
     }
@@ -617,15 +769,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 batch.attributes.add(ref);
                 batch.offsets.add(0);
 
-                // Create temporary group
+
                 Map<AttributeRef, ModbusAgentLink> tempGroup = new ConcurrentHashMap<>();
                 tempGroup.put(ref, agentLink);
 
-                // Execute the verification read
                 executeBatchRead(batch, agentLink.getReadMemoryArea(), tempGroup, agentLink.getUnitId());
-                LOG.finest("Verification read completed for " + ref);
+                LOG.finest(getProtocolName() + " - Verification read completed for " + ref);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Failed to execute verification read for " + ref + ": " + e.getMessage(), e);
+                LOG.log(Level.WARNING, getProtocolName() + " - Failed to execute verification read for " + ref + ": " + e.getMessage(), e);
             }
         });
     }
@@ -658,7 +809,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             // For registers (holding/input), data is word-based (2 bytes per register)
             int byteOffset = offset * 2;
             if (byteOffset + (registerCount * 2) > data.length) {
-                LOG.warning("Not enough data in response: need " + (byteOffset + registerCount * 2) + " bytes, have " + data.length);
+                LOG.warning(getProtocolName() + " - Not enough data in response: need " + (byteOffset + registerCount * 2) + " bytes, have " + data.length);
                 return null;
             }
 
@@ -766,7 +917,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
         if (getConnectionStatus() == ConnectionStatus.ERROR && failedMessageIds.isEmpty()) {
             setConnectionStatus(ConnectionStatus.CONNECTED);
-            LOG.info("Connection recovered - all messages now succeeding");
+            LOG.info(getProtocolName() + " - Connection recovered - all messages now succeeding");
         }
     }
 
@@ -801,9 +952,22 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         }
     }
 
-    // ========================================
-    // Shared Modbus PDU Building Methods
-    // ========================================
+    /**
+     * Get the protocol instance URI for identification.
+     * @return The connection string for this protocol instance
+     */
+    public String getProtocolInstanceUri() {
+        return connectionString;
+    }
+
+    /**
+     * Get a short identifier for this protocol (e.g., "tcp", "serial") for message IDs.
+     * @return Short protocol identifier (lowercase protocol name)
+     */
+    protected String getProtocolShortName() {
+        return getProtocolName();
+    }
+
 
     /**
      * Build Modbus PDU for read request (functions 0x01-0x04).

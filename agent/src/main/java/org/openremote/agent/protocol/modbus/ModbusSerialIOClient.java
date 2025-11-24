@@ -23,9 +23,7 @@ import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.model.syslog.SyslogCategory;
-
 import java.util.logging.Logger;
-
 import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 

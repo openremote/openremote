@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.modbus;
 /**
  * Represents a Modbus TCP frame (MBAP header + PDU)
  */
-public class ModbusTcpFrame {
+public class ModbusTcpFrame implements AbstractModbusProtocol.ModbusResponse {
     private final int transactionId;
     private final int protocolId;
     private final int length;

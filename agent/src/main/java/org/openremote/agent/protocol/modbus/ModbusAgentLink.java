@@ -20,14 +20,10 @@
 package org.openremote.agent.protocol.modbus;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import org.openremote.model.asset.agent.AgentLink;
-
 import java.math.BigInteger;
-import java.util.Optional;
 
 //TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
