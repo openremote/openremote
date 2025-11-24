@@ -170,6 +170,11 @@ repositories {
     // Needs to be above central due to org.geotools:gt-main issues
     maven {
         url = "https://repo.osgeo.org/repository/release/"
+        content {
+            includeGroup "javax.media"
+            includeGroup "it.geosolutions.jgridshift"
+            includeGroupByRegex "org\\.geotools.*"
+        }
     }
     mavenCentral()
     maven {
