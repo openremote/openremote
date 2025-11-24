@@ -1,11 +1,11 @@
 import { svg as html /** Aliased for syntax highlighting */, LitElement, TemplateResult, SVGTemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import { Event as MapEvent, GeoJSONSource, Map } from "maplibre-gl";
+import { GeoJSONSource, Map } from "maplibre-gl";
 
 /**
  * Slice of the donut chart for cluster markers
  */
-export type Slice = [name: string, color: string, count: number]
+export type Slice = [type: string, color: string, count: number]
 
 type SliceWithOffset = [...Slice, offset: number]
 
@@ -30,6 +30,20 @@ export class OrClusterMarker extends LitElement {
         this.lng = lng;
         this.lat = lat;
         this._map = map;
+    }
+
+    /**
+     * Checks that all types exactly match the cluster marker types
+     * @param types The types that must be present
+     * @returns Whether all types are present in the cluster marker
+     */
+    public hasTypes(types: string[]) {
+        for (const type of types) {
+            if (!this._slices.some(([t]) => t === type)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected render() {
@@ -115,8 +129,8 @@ export class OrClusterMarker extends LitElement {
     protected async onClick() {
         if (this.lng && this.lat) {
             const zoom = await this._map.getSource<GeoJSONSource>('mapPoints')!.getClusterExpansionZoom(this._clusterId!);
-            // Offset 1 added to ensure cluster marker dissappears
-            this._map.easeTo({ center: [this.lng, this.lat], zoom: zoom + 1 });
+            // Offset 0.99 added to ensure cluster marker dissappears
+            this._map.easeTo({ center: [this.lng, this.lat], zoom: zoom + 0.99 });
         }
     }
 }
