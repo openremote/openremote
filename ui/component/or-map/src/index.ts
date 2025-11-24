@@ -312,7 +312,6 @@ export class OrMap extends LitElement {
     @property({type: Object})
     public cluster?: ClusterConfig;
 
-    protected _markerStyles: string[] = [];
     @property({type: String, converter: {
             fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
                 if (!value) {
@@ -366,7 +365,6 @@ export class OrMap extends LitElement {
     protected _initCallback?: EventCallback;
     protected _map?: MapWidget;
     protected _loaded: boolean = false;
-    protected _markers: OrMapMarker[] = [];
 
     protected _resizeObserver?: ResizeObserver;
 
