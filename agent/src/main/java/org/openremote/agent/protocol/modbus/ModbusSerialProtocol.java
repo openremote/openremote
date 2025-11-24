@@ -24,13 +24,11 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
 public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent> {
@@ -64,22 +62,11 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
         try {
-            LOG.info("Creating Modbus Serial client for " + connectionString);
-
-            // Create client
             client = new ModbusSerialIOClient(portName, baudRate, dataBits, stopBits, parity);
-
-            // Set up message consumer to handle incoming frames
             client.addMessageConsumer(this::handleIncomingFrame);
-
-            // Set up connection status consumer to track connection state
             client.addConnectionStatusConsumer(this::setConnectionStatus);
-
-            // Connect (SerialIOClient handles retries automatically with exponential backoff)
-            // This returns immediately - connection happens in background with infinite retries
             client.connect();
-
-            LOG.info("Modbus Serial client created and connection initiated for " + connectionString + " (retrying in background until connected)");
+            LOG.info("Modbus Serial client created and connection initiated for " + connectionString);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to create Modbus Serial client: " + agent, e);
             setConnectionStatus(ConnectionStatus.ERROR);

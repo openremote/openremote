@@ -750,7 +750,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
             assert protocol != null
-            assert protocol.writePollingMap.size() == 1
+            assert protocol.writeIntervalMap.size() == 1
         }
 
         def assetDatapointService = container.getService(org.openremote.manager.datapoint.AssetDatapointService.class)

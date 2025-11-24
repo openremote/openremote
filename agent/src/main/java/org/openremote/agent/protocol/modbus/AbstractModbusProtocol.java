@@ -26,7 +26,6 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.ValueType;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,8 +44,8 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     protected final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>();
     protected final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
-    protected final Map<String, ScheduledFuture<?>> batchPollingTasks = new ConcurrentHashMap<>();
-    protected final Map<AttributeRef, ScheduledFuture<?>> writePollingMap = new HashMap<>();
+    protected final Map<String, ScheduledFuture<?>> batchReadIntervalTasks = new ConcurrentHashMap<>();
+    protected final Map<AttributeRef, ScheduledFuture<?>> writeIntervalMap = new HashMap<>();
 
     protected Set<RegisterRange> illegalRegisters = new HashSet<>();
 
@@ -303,13 +302,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     @Override
     protected void doStop(Container container) throws Exception {
-        batchPollingTasks.values().forEach(future -> future.cancel(false));
-        batchPollingTasks.clear();
+        batchReadIntervalTasks.values().forEach(future -> future.cancel(false));
+        batchReadIntervalTasks.clear();
         batchGroups.clear();
         cachedBatches.clear();
 
-        writePollingMap.forEach((key, value) -> value.cancel(false));
-        writePollingMap.clear();
+        writeIntervalMap.forEach((key, value) -> value.cancel(false));
+        writeIntervalMap.clear();
 
         // Call protocol-specific stop
         doStopProtocol(container);
@@ -332,18 +331,17 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
             if (hasReadConfig) {
                 if (agentLink.getRequestInterval() != null) {
-                    // Setup continuous read polling using batching
-                    // Group by agent, unitId, memory area, and request interval
+                    // Setup continuous read interval using batching
                     String groupKey = agent.getId() + "_" + agentLink.getUnitId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getRequestInterval();
 
                     batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
                     cachedBatches.remove(groupKey); // Invalidate cache
 
                     // Only schedule task if one doesn't exist yet for this group
-                    if (!batchPollingTasks.containsKey(groupKey)) {
-                        ScheduledFuture<?> batchTask = scheduleBatchedPollingTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getRequestInterval(), agentLink.getUnitId());
-                        batchPollingTasks.put(groupKey, batchTask);
-                        LOG.fine("Scheduled new polling task for batch group " + groupKey);
+                    if (!batchReadIntervalTasks.containsKey(groupKey)) {
+                        ScheduledFuture<?> batchTask = scheduleBatchedReadIntervalTask(groupKey, agentLink.getReadMemoryArea(), agentLink.getRequestInterval(), agentLink.getUnitId());
+                        batchReadIntervalTasks.put(groupKey, batchTask);
+                        LOG.fine("Scheduled new read interval task for batch group " + groupKey);
                     }
 
                     LOG.fine("Added attribute " + ref + " to batch group " + groupKey + " (total attributes in group: " + batchGroups.get(groupKey).size() + ")");
@@ -353,14 +351,14 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                     scheduleOneTimeRead(ref, agentLink);
                 }
             } else {
-                LOG.fine("Skipping read polling for " + ref + " - read configuration incomplete (unitId, readMemoryArea, readValueType, and readAddress all required)");
+                LOG.fine("Skipping read interval for " + ref + " - read configuration incomplete (unitId, readMemoryArea, readValueType, and readAddress all required)");
             }
 
-            // Check if write polling is enabled (requestInterval set, writeAddress present, no read address)
+            // Check if write interval is enabled (requestInterval set, writeAddress present, no read address)
             if (agentLink.getRequestInterval() != null && agentLink.getWriteAddress() != null && agentLink.getReadAddress() == null) {
-                ScheduledFuture<?> writeTask = scheduleModbusPollingWriteRequest(ref, agentLink);
-                writePollingMap.put(ref, writeTask);
-                LOG.fine("Scheduled write polling task for attribute " + ref + " every " + agentLink.getRequestInterval() + "ms");
+                ScheduledFuture<?> writeTask = scheduleModbusWriteRequestInterval(ref, agentLink);
+                writeIntervalMap.put(ref, writeTask);
+                LOG.fine("Scheduled write interval task for attribute " + ref + " every " + agentLink.getRequestInterval() + "ms");
             }
     }
 
@@ -368,11 +366,10 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-        // Remove from write polling
-        ScheduledFuture<?> writeTask = writePollingMap.remove(attributeRef);
+        // Remove from write interval
+        ScheduledFuture<?> writeTask = writeIntervalMap.remove(attributeRef);
         if (writeTask != null) {
             writeTask.cancel(false);
-            LOG.fine("Cancelled write polling task for attribute " + attributeRef);
         }
 
         // Remove from batch group (if read config was present)
@@ -387,7 +384,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 if (group.isEmpty()) {
                     batchGroups.remove(groupKey);
                     cachedBatches.remove(groupKey);
-                    ScheduledFuture<?> task = batchPollingTasks.remove(groupKey);
+                    ScheduledFuture<?> task = batchReadIntervalTasks.remove(groupKey);
                     if (task != null) {
                         task.cancel(false);
                     }
@@ -497,10 +494,10 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
-     * Schedule a batched polling task for a group of attributes
+     * Schedule a batched read interval task for a group of attributes
      */
-    protected ScheduledFuture<?> scheduleBatchedPollingTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long pollingMillis, Integer unitId) {
-        LOG.fine("Scheduling batched polling task for group " + groupKey + " every " + pollingMillis + "ms");
+    protected ScheduledFuture<?> scheduleBatchedReadIntervalTask(String groupKey, ModbusAgentLink.ReadMemoryArea memoryArea, long requestInterval, Integer unitId) {
+        LOG.fine("Scheduling batched read interval task for group " + groupKey + " every " + requestInterval + "ms");
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -533,9 +530,9 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 }
 
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Exception during batched polling: " + e.getMessage(), e);
+                LOG.log(Level.FINE, "Exception during batched reading interval: " + e.getMessage(), e);
             }
-        }, 0, pollingMillis, TimeUnit.MILLISECONDS);
+        }, 0, requestInterval, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -544,7 +541,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected abstract void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId);
 
     /**
-     * Schedule a one-time read for an attribute on connection (no continuous polling).
+     * Schedule a one-time read for an attribute on connection.
      * Executes a single read request immediately using the batch read mechanism.
      */
     protected void scheduleOneTimeRead(AttributeRef ref, ModbusAgentLink agentLink) {
@@ -572,21 +569,21 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
-     * Schedule a polling write request for an attribute with requestInterval set.
+     * Schedule an interval write request for an attribute with requestInterval set.
      * This is a shared implementation used by both TCP and Serial protocols.
      */
-    protected ScheduledFuture<?> scheduleModbusPollingWriteRequest(
+    protected ScheduledFuture<?> scheduleModbusWriteRequestInterval(
             AttributeRef ref,
             ModbusAgentLink agentLink
     ) {
-        LOG.fine("Scheduling Modbus Write polling request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
+        LOG.fine("Scheduling Modbus Write interval request to execute every " + agentLink.getRequestInterval() + "ms for attributeRef: " + ref);
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 // Get current attribute value from linkedAttributes map
                 Attribute<?> attribute = linkedAttributes.get(ref);
                 if (attribute == null || attribute.getValue().isEmpty()) {
-                    LOG.finest("Skipping write poll for " + ref + " - no value available");
+                    LOG.finest("Skipping write interval for " + ref + " - no value available");
                     return;
                 }
 
@@ -597,13 +594,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
                 // Create a synthetic AttributeEvent for the write
                 AttributeEvent syntheticEvent = new AttributeEvent(ref, currentValue);
-
-                // Perform the write using the existing write logic
                 doLinkedAttributeWrite(agentLink, syntheticEvent, currentValue);
 
-                LOG.finest("Write poll executed for " + ref + " with value: " + currentValue);
+                LOG.finest("Write interval executed for " + ref + " with value: " + currentValue);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception during Modbus Write polling for " + ref + ": " + e.getMessage(), e);
+                LOG.log(Level.WARNING, "Exception during Modbus write interval for " + ref + ": " + e.getMessage(), e);
             }
         }, 0, agentLink.getRequestInterval(), TimeUnit.MILLISECONDS);
     }

@@ -29,7 +29,6 @@ import net.solarnetwork.io.modbus.netty.msg.BaseModbusMessage
 import net.solarnetwork.io.modbus.tcp.netty.NettyTcpModbusServer
 import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
-import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
 import org.openremote.agent.protocol.modbus.ModbusTcpAgent
 import org.openremote.agent.protocol.modbus.ModbusTcpProtocol
 import org.openremote.manager.agent.AgentService
@@ -791,7 +790,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
-            assert protocol.writePollingMap.size() == 1
+            assert protocol.writeIntervalMap.size() == 1
         }
 
 

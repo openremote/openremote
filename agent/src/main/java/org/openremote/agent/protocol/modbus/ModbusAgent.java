@@ -36,11 +36,6 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
         LITTLE_ENDIAN,           // DCBA - Little byte order, Little word order
         BIG_ENDIAN_BYTE_SWAP,    // BADC - Big byte order, Little word order
         LITTLE_ENDIAN_BYTE_SWAP; // CDAB - Little byte order, Big word order
-
-        @JsonValue
-        public String getJsonValue() {
-            return toString();
-        }
     }
 
     /**
@@ -50,23 +45,30 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
     public static class ModbusDeviceConfig implements java.io.Serializable {
         private EndianFormat endianFormat;
         private String illegalRegisters;
-        private Integer maxRegisterLength;
+        private int maxRegisterLength;
 
         @JsonCreator
         public ModbusDeviceConfig(
-                @JsonProperty("endianFormat") EndianFormat endianFormat,
-                @JsonProperty("illegalRegisters") String illegalRegisters,
-                @JsonProperty("maxRegisterLength") Integer maxRegisterLength) {
+                EndianFormat endianFormat,
+                String illegalRegisters,
+                Integer maxRegisterLength) {
             this.endianFormat = endianFormat != null ? endianFormat : EndianFormat.BIG_ENDIAN;
-            this.illegalRegisters = illegalRegisters != null ? illegalRegisters : "";
+            this.illegalRegisters = illegalRegisters;
             this.maxRegisterLength = maxRegisterLength != null ? maxRegisterLength : 1;
+        }
+
+        /**
+         * Constructor with endianFormat only, using default values for other fields
+         */
+        public ModbusDeviceConfig(EndianFormat endianFormat) {
+            this(endianFormat, null, 1);
         }
 
         /**
          * Default configuration factory method
          */
         public static ModbusDeviceConfig createDefault() {
-            return new ModbusDeviceConfig(EndianFormat.BIG_ENDIAN, "", 1);
+            return new ModbusDeviceConfig(EndianFormat.BIG_ENDIAN, null, 1);
         }
 
         public EndianFormat getEndianFormat() {
@@ -85,11 +87,11 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
             this.illegalRegisters = illegalRegisters;
         }
 
-        public Integer getMaxRegisterLength() {
+        public int getMaxRegisterLength() {
             return maxRegisterLength;
         }
 
-        public void setMaxRegisterLength(Integer maxRegisterLength) {
+        public void setMaxRegisterLength(int maxRegisterLength) {
             this.maxRegisterLength = maxRegisterLength;
         }
     }

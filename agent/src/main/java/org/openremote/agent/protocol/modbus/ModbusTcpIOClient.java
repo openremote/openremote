@@ -22,8 +22,6 @@ package org.openremote.agent.protocol.modbus;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.codec.MessageToByteEncoder;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.tcp.TCPIOClient;
 import org.openremote.model.syslog.SyslogCategory;
@@ -105,9 +103,8 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
             int protocolId = in.readUnsignedShort();
             int length = in.readUnsignedShort();
             int unitId = in.readUnsignedByte();
-
-            // Check if we have enough bytes for the PDU
             int pduLength = length - 1; // Length includes unit ID
+
             if (in.readableBytes() < pduLength) {
                 // Not enough data yet, reset and wait
                 in.resetReaderIndex();

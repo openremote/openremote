@@ -44,32 +44,15 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<>("parity", VALUE_MODBUS_PARITY);
 
     public enum ModbusClientParity {
-        NO(0),
-        ODD(1),
-        EVEN(2),
-        MARK(3),
-        SPACE(4);
-        
-        private final int value;
-        
-        ModbusClientParity(int value) {
-            this.value = value;
-        }
-        
-        public int getValue() {
-            return value;
-        }
-        
-        @JsonValue
-        public String getJsonValue() {
-            return toString();
-        }
-        
+        NO,
+        ODD,
+        EVEN,
+        MARK,
+        SPACE;
+
         public static ModbusClientParity fromValue(int value) {
-            for (ModbusClientParity parity : values()) {
-                if (parity.value == value) {
-                    return parity;
-                }
+            if (value >= 0 && value < values().length) {
+                return values()[value];
             }
             return EVEN; // Default for Modbus RTU
         }
@@ -108,9 +91,9 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public ModbusClientParity getParity() {
         return getAttribute(PARITY).map(attr -> attr.getValue().orElse(ModbusClientParity.EVEN)).orElse(ModbusClientParity.EVEN);
     }
-    
-    public Integer getParityValue() {
-        return getParity().getValue();
+
+    public int getParityValue() {
+        return getParity().ordinal();
     }
 
     public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {

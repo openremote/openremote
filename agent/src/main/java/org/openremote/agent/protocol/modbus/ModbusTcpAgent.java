@@ -18,16 +18,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.openremote.agent.protocol.modbus;
-
-import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.ValueType;
-
 import java.util.Optional;
 
 @Entity
