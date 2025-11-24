@@ -29,15 +29,13 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        Container container = null;
+
+        Container container = new Container();
 
         try {
-            container = new Container();
             container.startBackground();
         } catch (Exception e) {
-            if (container != null) {
-                container.stop();
-            }
+            container.stop();
             System.exit(1);
         }
     }
