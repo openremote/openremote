@@ -1,12 +1,13 @@
 package org.openremote.manager.rules.flow;
 
 import org.openremote.manager.rules.RulesFacts;
+import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,8 @@ public class NodeExecutionRequestInfo {
     private Notifications notifications;
     private HistoricDatapoints historicDatapoints;
     private PredictedDatapoints predictedDatapoints;
+
+    private Map<AttributeRef, AttributeInfo> attributeInfoCache;
     protected Logger LOG;
 
     public NodeExecutionRequestInfo() {
@@ -44,12 +47,14 @@ public class NodeExecutionRequestInfo {
         notifications = null;
         historicDatapoints = null;
         predictedDatapoints = null;
+        attributeInfoCache = null;
     }
 
     public NodeExecutionRequestInfo(NodeCollection collection, int outputSocketIndex, NodeSocket outputSocket,
                                     Node node, NodeSocket[] inputs, NodeSocket[] outputs, NodeInternal[] internals,
                                     RulesFacts facts, Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints) {
+                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
+                                    Map<AttributeRef, AttributeInfo> attributeInfoCache) {
         this.collection = collection;
         this.outputSocketIndex = outputSocketIndex;
         this.outputSocket = outputSocket;
@@ -63,11 +68,13 @@ public class NodeExecutionRequestInfo {
         this.notifications = notifications;
         this.historicDatapoints = historicDatapoints;
         this.predictedDatapoints = predictedDatapoints;
+        this.attributeInfoCache = attributeInfoCache;
     }
 
     public NodeExecutionRequestInfo(NodeCollection collection, Node node, NodeSocket socket, RulesFacts facts,
                                     Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints, Logger log) {
+                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
+                                    Map<AttributeRef, AttributeInfo> attributeInfoCache, Logger log) {
         if (socket != null && Arrays.stream(node.getOutputs()).noneMatch(c -> c.getNodeId().equals(node.getId())))
             throw new IllegalArgumentException("Given socket does not belong to given node");
 
@@ -96,20 +103,43 @@ public class NodeExecutionRequestInfo {
         this.notifications = notifications;
         this.historicDatapoints = historicDatapoints;
         this.predictedDatapoints = predictedDatapoints;
+        this.attributeInfoCache = attributeInfoCache;
         this.LOG = log;
     }
 
     public Object getValueFromInput(int index) {
         NodeSocket aSocket = getInputs()[index];
         Node aNode = getCollection().getNodeById(aSocket.getNodeId());
-        return NodeModel.getImplementationFor(aNode.getName()).execute(
-            new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
+        NodeExecutionResult result = NodeModel.getImplementationFor(aNode.getName()).execute(
+            new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), getAttributeInfoCache(), LOG)
         );
+        if (result == null) {
+            return null;
+        }
+        cacheNodeExecutionResult(result);
+        return result.getValue();
     }
 
     public NodeDataType getTypeFromInput(int index) {
         NodeSocket aSocket = getInputs()[index];
         return aSocket.getType();
+    }
+
+    public Optional<AttributeInfo> findCachedAttribute(AttributeRef attributeRef) {
+        if (attributeInfoCache == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(attributeInfoCache.get(attributeRef));
+    }
+
+    public void cacheNodeExecutionResult(NodeExecutionResult result) {
+        if (result.getAttributeInfo() == null) {
+            return;
+        }
+        if (attributeInfoCache == null) {
+            attributeInfoCache = new ConcurrentHashMap<>();
+        }
+        attributeInfoCache.put(result.getAttributeRef(), result.getAttributeInfo());
     }
 
     public NodeCollection getCollection() {
@@ -202,6 +232,14 @@ public class NodeExecutionRequestInfo {
 
     public void setPredictedDatapoints(PredictedDatapoints predictedDatapoints) {
         this.predictedDatapoints = predictedDatapoints;
+    }
+
+    public Map<AttributeRef, AttributeInfo> getAttributeInfoCache() {
+        return attributeInfoCache;
+    }
+
+    public void setAttributeInfoCache(Map<AttributeRef, AttributeInfo> attributeInfoCache) {
+        this.attributeInfoCache = attributeInfoCache;
     }
 
     public RulesFacts getFacts() {
