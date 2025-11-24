@@ -1,7 +1,8 @@
-import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
+import {css, CSSResult, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
 import {DefaultBoxShadow} from "@openremote/core";
+import { OrMap } from "..";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -367,12 +368,43 @@ export class OrMapMarker extends LitElement {
         div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
         return div;
     }
+    
+    protected _applyMapMarkerStyles() {
+        if (this.parentElement instanceof OrMap) {
+            const container = this.parentElement.shadowRoot?.querySelector("#map");
+            const styles = (this.constructor as any).styles;
+
+            let stylesArr: CSSResult[] = [];
+            if (container && styles) {
+                if (!Array.isArray(styles)) {
+                    stylesArr.push(styles as CSSResult);
+                } else {
+                    stylesArr = styles as CSSResult[];
+                }
+
+                stylesArr.forEach((styleItem) => {
+                    const styleElem = document.createElement("style");
+                    styleElem.textContent = String(styleItem);
+                    if (container.children.length > 0) {
+                        container.insertBefore(styleElem, container.children[0]);
+                    } else {
+                        container.appendChild(styleElem);
+                    }
+                })
+            }
+        }
+    }
 
     public hasPosition(): boolean {
         return typeof this.lat === "number"
             && typeof this.lng === "number"
             && this.lat >= -90 && this.lat < 90
             && this.lng >= -180 && this.lng < 180;
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        this._applyMapMarkerStyles();
     }
 
     disconnectedCallback(): void {
