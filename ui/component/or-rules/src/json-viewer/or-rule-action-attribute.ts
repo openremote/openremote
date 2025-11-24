@@ -115,7 +115,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         const ids = getAssetIdsFromQuery(query);
         const idValue = ids && ids.length > 0 ? ids[0] : "*";
         const idOptions: Map<string, string> = new Map([
-            ["*", i18next.t("anyOfThisType")]
+            ["*", i18next.t("matched")]
         ]);
 
         // Set list of displayed assets, and filtering assets out if needed.
