@@ -24,7 +24,9 @@ import io.undertow.server.handlers.resource.ResourceManager;
 
 import java.nio.file.Path;
 
-// 1. The existing functionality: Wraps a simple Path
+/**
+ * A resource source that loads resources from a file system path.
+ */
 public record FileResource(Path path) implements ResourceSource {
    @Override
    public ResourceManager createManager() {

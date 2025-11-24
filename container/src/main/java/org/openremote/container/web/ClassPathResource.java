@@ -19,13 +19,14 @@
  */
 package org.openremote.container.web;
 
-import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 
-// 2. The new requirement: Wraps ClassLoader and Prefix
+/**
+ * A resource source that loads resources from the classpath.
+ */
 public record ClassPathResource(ClassLoader classLoader, String prefix) implements ResourceSource {
    @Override
    public ResourceManager createManager() {
-      return new ClassPathResourceManager(classLoader, prefix);
+      return new DirectoryAwareClassPathResourceManager(classLoader, prefix);
    }
 }
