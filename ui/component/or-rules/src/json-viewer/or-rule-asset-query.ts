@@ -506,8 +506,12 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected set _assetId(assetId: string | undefined) {
-        !assetId || assetId === "*" ? this.query.ids = undefined : this.query.ids! = [assetId];
-        this._selected = this._cache?.assets?.find(a => a.id === assetId);
+        if(!assetId || assetId === "*") {
+            this.query.ids = undefined;
+        } else {
+            this._selected = this._cache?.assets?.find(a => a.id === assetId);
+            this.query.ids = [assetId];
+        }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
