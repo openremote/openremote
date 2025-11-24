@@ -112,7 +112,7 @@ public class LogUtil {
             // Look for the file on the classpath
             configFile = Thread.currentThread().getContextClassLoader().getResourceAsStream(System.getenv(OR_LOGGING_CONFIG_FILE));
             if (configFile != null) {
-                LOG.log(INFO,"Using logging configuration from classpath: " + System.getenv(OR_LOGGING_CONFIG_FILE));
+                LOG.log(INFO, "Using logging configuration from classpath: " + System.getenv(OR_LOGGING_CONFIG_FILE));
                 return configFile;
             }
         }
@@ -124,7 +124,7 @@ public class LogUtil {
         InputStream configFile = org.openremote.model.Container.class.getClassLoader().getResourceAsStream(loggingFile);
 
         if (configFile != null) {
-            LOG.log(INFO,"Using built in logging configuration from classpath: " + loggingFile);
+            LOG.log(INFO, "Using built in logging configuration from classpath: " + loggingFile);
             return configFile;
         }
 

@@ -343,7 +343,7 @@ Resources:
                               },
                               {
                                 "source_labels": [ "job", "source" ],
-                                "label_matcher": "manager;.*",
+                                "label_matcher": "manager;(RulesEngine|AgentService|DefaultMQTTHandler|AssetResource|WebsocketClient)",
                                 "dimensions": [
                                   [ "InstanceName", "source" ]
                                 ],
@@ -1107,44 +1107,6 @@ Resources:
       EvaluationPeriods: 3
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
-      AlarmActions:
-        - !Ref SnsTopic
-      OKActions:
-        - !Ref SnsTopic
-
-  AttributeEventAnomalyDetector:
-    Type: AWS::CloudWatch::AnomalyDetector
-    Condition: MetricsEnabled
-    Properties:
-      Namespace: CWAgent-Prometheus
-      MetricName: or_attributes_seconds_count
-      Stat: Average
-      Dimensions:
-        - Name: InstanceName
-          Value: !Ref Host
-
-  AttributeEventAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: MetricsEnabled
-    Properties:
-      AlarmDescription: Attribute event anomaly
-      ComparisonOperator: LessThanLowerOrGreaterThanUpperThreshold
-      EvaluationPeriods: 1
-      Metrics:
-        - Expression: ANOMALY_DETECTION_BAND(m1, 2)
-          Id: ad1
-        - Id: m1
-          MetricStat:
-            Metric:
-              MetricName: or_attributes_seconds_count
-              Namespace: CWAgent-Prometheus
-              Dimensions:
-                - Name: InstanceName
-                  Value: !Ref Host
-            Period: 300
-            Stat: Average
-      ThresholdMetricId: ad1
-      TreatMissingData: breaching
       AlarmActions:
         - !Ref SnsTopic
       OKActions:
