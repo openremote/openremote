@@ -1,5 +1,5 @@
 import { expect } from "@openremote/test";
-import { test, userStatePath } from "./fixtures/manager.js";
+import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsWithLocation as assets, assignLocation, BBox, getAssetTypeColour, getAssetTypes, randomAsset } from "./fixtures/data/assets.js";
 import { OrMap } from "@openremote/or-map/src/index.js";
 import { Asset, AssetTypeInfo } from "@openremote/model";
@@ -129,6 +129,44 @@ test.describe("Marker clustering", () => {
 
     await expect(page.locator("or-cluster-marker")).not.toBeVisible();
     await expect(page.locator(".or-map-marker")).toHaveCount(10);
+  });
+
+  test.use({ storageState: adminStatePath });
+
+  /**
+   * @given Assets with location are set up in the "smartcity" realm
+   * @and clustering is enabled
+   * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+   * @and Navigating to the "map" page
+   * @then Shows markers
+   * @when Switching to the "master" realm
+   * @then Shows no markers
+   *
+   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+   */
+  test("should update markers when switching realm", async ({ page, manager, browserName }) => {
+    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+    const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
+      return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
+    });
+    await manager.setup("smartcity", { assets });
+    await manager.configureAppConfig({ pages: { map: { legend: { show: true }, clustering: { cluster: true } } } })
+
+    await manager.goToRealmStartPage("master");
+    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+    await expect(page.locator("or-cluster-marker")).not.toBeVisible();
+    await expect(page.locator(".or-map-marker")).not.toBeVisible();
+
+    await manager.switchToRealmByRealmPicker("smartcity");
+    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+    await expect(page.locator(".or-map-marker").or(page.locator("or-cluster-marker")).first()).toBeVisible();
+
+    await manager.switchToRealmByRealmPicker("master");
+    await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+    await expect(page.locator("or-cluster-marker")).not.toBeVisible();
+    await expect(page.locator(".or-map-marker")).not.toBeVisible();
   });
 });
 

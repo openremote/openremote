@@ -824,7 +824,7 @@ export class MapWidget {
 
     public cleanUpAssetMarkers(): void {
         this._assetTypesColors = {};
-        this._cachedMarkers = {};
+        // this._cachedMarkers = {};
         this._pointsMap = {
             type: "FeatureCollection",
             features: []
