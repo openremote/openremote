@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.time.*;
@@ -27,8 +28,8 @@ public class JSONSchemaUtilTest {
         ValueUtil.doInitialise();
     }
 
-    private static URL loadResource(String resourcePath) {
-        return JSONSchemaUtilTest.class.getResource("/org/openremote/model/util/" + resourcePath + ".json");
+    private static InputStream loadResourceAsStream(String resourcePath) {
+        return JSONSchemaUtilTest.class.getResourceAsStream("/org/openremote/model/util/" + resourcePath + ".json");
     }
 
     static class Title {}
@@ -85,7 +86,7 @@ public class JSONSchemaUtilTest {
 
     @Test
     public void shouldRemapByte() throws IOException, JSONException {
-        JsonNode expected = ValueUtil.JSON.readTree(loadResource(java.lang.Byte.class.getName()));
+        JsonNode expected = ValueUtil.JSON.readTree(loadResourceAsStream(java.lang.Byte.class.getName()));
         JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
@@ -150,7 +151,7 @@ public class JSONSchemaUtilTest {
             org.openremote.model.value.ValueType.MultivaluedStringMap.class,
     })
     public void shouldHandleMapTypes() throws IOException, JSONException {
-        JsonNode expected = ValueUtil.JSON.readTree(loadResource(java.lang.Byte.class.getName()));
+        JsonNode expected = ValueUtil.JSON.readTree(loadResourceAsStream(java.lang.Byte.class.getName()));
         JsonNode actual = ValueUtil.getSchema(java.lang.Byte.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
