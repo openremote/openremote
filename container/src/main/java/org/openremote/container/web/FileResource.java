@@ -19,17 +19,10 @@
  */
 package org.openremote.container.web;
 
-import io.undertow.server.handlers.resource.PathResourceManager;
-import io.undertow.server.handlers.resource.ResourceManager;
-
 import java.nio.file.Path;
 
 /**
  * A resource source that loads resources from a file system path.
  */
 public record FileResource(Path path) implements ResourceSource {
-   @Override
-   public ResourceManager createManager() {
-      return new PathResourceManager(path);
-   }
 }

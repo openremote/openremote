@@ -19,14 +19,8 @@
  */
 package org.openremote.container.web;
 
-import io.undertow.server.handlers.resource.ResourceManager;
-
 /**
  * A resource source that loads resources from the classpath.
  */
 public record ClassPathResource(ClassLoader classLoader, String prefix) implements ResourceSource {
-   @Override
-   public ResourceManager createManager() {
-      return new DirectoryAwareClassPathResourceManager(classLoader, prefix);
-   }
 }

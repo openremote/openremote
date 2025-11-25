@@ -32,6 +32,7 @@ import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
+import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.*;
@@ -58,6 +59,7 @@ import org.xnio.Options;
 
 import java.net.Inet4Address;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -354,11 +356,11 @@ public abstract class WebService implements ContainerService {
 
        ResourceManager filesResourceManager;
        if (resourceSources.length == 1) {
-            filesResourceManager = resourceSources[0].createManager();
+            filesResourceManager = createResourceManager(resourceSources[0]);
        } else {
            CompositeResourceManager compositeResourceManager = new CompositeResourceManager();
            for (ResourceSource resourceSource : resourceSources) {
-               compositeResourceManager.addResourceManager(resourceSource.createManager());
+               compositeResourceManager.addResourceManager(createResourceManager(resourceSource));
            }
            filesResourceManager = compositeResourceManager;
        }
@@ -395,6 +397,16 @@ public abstract class WebService implements ContainerService {
                requiredRoles != null && requiredRoles.length > 0,
                corsOverride);
        deploy(deploymentInfo, true);
+   }
+
+   protected ResourceManager createResourceManager(ResourceSource resourceSources) {
+      if (resourceSources instanceof FileResource(Path path)) {
+         return new PathResourceManager(path);
+      }
+      if (resourceSources instanceof ClassPathResource(ClassLoader classLoader, String prefix)) {
+         return new DirectoryAwareClassPathResourceManager(classLoader, prefix);
+      }
+      throw new UnsupportedOperationException("ResourceSource not currently supported");
    }
 
     public void configureDeploymentInfo(

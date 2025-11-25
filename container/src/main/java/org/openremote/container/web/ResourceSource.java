@@ -19,9 +19,6 @@
  */
 package org.openremote.container.web;
 
-import io.undertow.server.handlers.resource.ResourceManager;
-
 public sealed interface ResourceSource permits FileResource, ClassPathResource {
-   ResourceManager createManager();
 }
 
