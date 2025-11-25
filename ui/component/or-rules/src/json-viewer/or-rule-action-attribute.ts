@@ -266,7 +266,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             query.names.push({ predicateType: "string", value: search });
         }
         // If the cache contains assets from the same query, don't send HTTP request again
-        const isQueryCached = this._cache?.query && JSON.stringify(this._cache.query) === JSON.stringify(query);
+        const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
         if(!this._loading && !isQueryCached) {
             this._loading = true;
 
