@@ -449,7 +449,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                             await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
                             if (search) {
                                 return assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
-                            } else if (assets.length <= 99) {
+                            } else if (assets.length <= 100) {
                                 assets.forEach(a => idOptions.set(a.id!, a.name!));
                                 return [...idOptions];
                             } else {
@@ -943,7 +943,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             query.names.push({ predicateType: "string", value: search });
         }
         // If the cache contains assets from the same query, don't send HTTP request again
-        const isQueryCached = this._cache?.query && JSON.stringify(this._cache.query) === JSON.stringify(query);
+        const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
         if(!this._loading && !isQueryCached) {
             this._loading = true;
 

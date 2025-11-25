@@ -143,7 +143,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                         await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
                         if (search) {
                             return assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
-                        } else if (assets.length <= 99) {
+                        } else if (assets.length <= 100) {
                             assets.forEach(a => idOptions.set(a.id!, a.name!));
                             return [...idOptions];
                         } else {
