@@ -42,19 +42,19 @@ public class CompositeResourceManager implements ResourceManager {
     }
 
     public void addResourceManager(ResourceManager resourceManager) {
-        this.resourceManagers.add(resourceManager);
+       resourceManagers.add(resourceManager);
     }
 
     @Override
     public void close() throws IOException {
-        for (ResourceManager resourceManager : this.resourceManagers) {
+        for (ResourceManager resourceManager : resourceManagers) {
             resourceManager.close();
         }
     }
 
     @Override
     public Resource getResource(String path) throws IOException {
-        for (ResourceManager resourceManager : this.resourceManagers) {
+        for (ResourceManager resourceManager : resourceManagers) {
             Resource resource = resourceManager.getResource(path);
             if (resource != null) {
                 return resource;

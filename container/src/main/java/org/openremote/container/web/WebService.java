@@ -399,11 +399,11 @@ public abstract class WebService implements ContainerService {
        deploy(deploymentInfo, true);
    }
 
-   protected ResourceManager createResourceManager(ResourceSource resourceSources) {
-      if (resourceSources instanceof FileResource(Path path)) {
+   protected ResourceManager createResourceManager(ResourceSource resourceSource) {
+      if (resourceSource instanceof FileResource(Path path)) {
          return new PathResourceManager(path);
       }
-      if (resourceSources instanceof ClassPathResource(ClassLoader classLoader, String prefix)) {
+      if (resourceSource instanceof ClassPathResource(ClassLoader classLoader, String prefix)) {
          return new DirectoryAwareClassPathResourceManager(classLoader, prefix);
       }
       throw new UnsupportedOperationException("ResourceSource not currently supported");
