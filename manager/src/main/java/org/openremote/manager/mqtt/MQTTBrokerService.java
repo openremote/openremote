@@ -93,7 +93,7 @@ import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+ import static org.openremote.model.Constants.*;
 import static org.openremote.model.Container.OR_DEV_MODE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -105,13 +105,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
-    public static final String OR_MQTT_MTLS_SERVER_LISTEN_HOST = "OR_MQTT_MTLS_SERVER_LISTEN_HOST";
-    public static final String OR_MQTT_MTLS_SERVER_LISTEN_PORT = "OR_MQTT_MTLS_SERVER_LISTEN_PORT";
-    public static final String OR_MQTT_MTLS_KEYSTORE_PATH = "OR_MQTT_MTLS_KEYSTORE_PATH";
-    public static final String OR_MQTT_MTLS_KEYSTORE_PASSWORD = "OR_MQTT_MTLS_KEYSTORE_PASSWORD";
-    public static final String OR_MQTT_MTLS_TRUSTSTORE_PATH = "OR_MQTT_MTLS_TRUSTSTORE_PATH";
-    public static final String OR_MQTT_MTLS_TRUSTSTORE_PASSWORD = "OR_MQTT_MTLS_TRUSTSTORE_PASSWORD";
-//    public static final String OR_MQTT_MTLS_ENABLED = "MQTT_MTLS_ENABLED";
+
     public static final String ANONYMOUS_USERNAME = "anonymous";
     // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
     public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
@@ -143,6 +137,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ServerLocator serverLocator;
     protected ClientSessionFactory sessionFactory;
 
+    protected boolean mtlsDisabled;
+    protected int mtlsPort;
+    protected String keystorePath;
+    protected String keystorePassword;
+    protected String truststorePath;
+    protected String truststorePassword;
+
     @Override
     public int getPriority() {
         return PRIORITY;
@@ -162,6 +163,15 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         persistenceService = container.getService(PersistenceService.class);
+
+        // mTLS values
+        final Path keystoreDirPath = Paths.get("keystores");
+        this.mtlsPort = getInteger(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_PORT, OR_MQTT_MTLS_PORT_DEFAULT);
+        this.mtlsDisabled = getBoolean(container.getConfig(), OR_MQTT_MTLS_DISABLED, true);
+        this.keystorePath = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_keystore.p12")).toString());
+        this.keystorePassword = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PASSWORD, "secret");
+        this.truststorePath = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_truststore.p12")).toString());
+        this.truststorePassword = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, "secret");
 
         userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(), id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         // This allows last will messages to be processed
@@ -191,7 +201,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
 
         // Add mTLS acceptor if enabled
-        addMTLSAcceptor(container);
+        if (!mtlsDisabled) {
+            addMTLSAcceptor(container);
+        }
 
         serverConfiguration.registerBrokerPlugin(this);
         if (container.getMeterRegistry() != null) {
@@ -655,18 +667,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
      * Add mTLS acceptor configuration to the server
      */
     protected void addMTLSAcceptor(Container container) throws Exception {
-        String mtlsHost = getString(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_HOST, "0.0.0.0");
-        int mtlsPort = getInteger(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_PORT, 8884);
-        final Path keystoreDirPath = Paths.get("keystores");
-        String keystorePath = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_keystore.p12")).toString());
-        String keystorePassword = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PASSWORD, "secret");
-        String truststorePath = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_truststore.p12")).toString());
-        String truststorePassword = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, "secret");
-
-        if (TextUtil.isNullOrEmpty(keystorePath)
-           || TextUtil.isNullOrEmpty(truststorePath)
-           || TextUtil.isNullOrEmpty(keystorePassword)
-           || TextUtil.isNullOrEmpty(truststorePassword)) {
+        if (TextUtil.isNullOrEmpty(this.keystorePath)
+           || TextUtil.isNullOrEmpty(this.truststorePath)
+           || TextUtil.isNullOrEmpty(this.keystorePassword)
+           || TextUtil.isNullOrEmpty(this.truststorePassword)) {
             LOG.log(INFO, "MQTT mTLS acceptor not being started, as environment variables not configured");
             return;
         }
@@ -674,18 +678,18 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         try {
             URIBuilder mtlsServerURI = new URIBuilder()
                 .setScheme("tcp")
-                .setHost(mtlsHost)
-                .setPort(mtlsPort)
+                .setHost(this.host)
+                .setPort(this.mtlsPort)
                 .setParameter("protocols", "MQTT")
                 .setParameter("allowLinkStealing", "false")
                 .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
                 // SSL/TLS configuration for mTLS
                 .setParameter("sslEnabled", "true")
                 .setParameter("needClientAuth", "true") // Require client certificates (mTLS)
-                .setParameter("keyStorePath", keystorePath)
-                .setParameter("keyStorePassword", keystorePassword)
-                .setParameter("trustStorePath", truststorePath)
-                .setParameter("trustStorePassword", truststorePassword);
+                .setParameter("keyStorePath", this.keystorePath)
+                .setParameter("keyStorePassword", this.keystorePassword)
+                .setParameter("trustStorePath", this.truststorePath)
+                .setParameter("trustStorePassword", this.truststorePassword);
 
             if (getBoolean(container.getConfig(), OR_DEV_MODE, false)) {
                 mtlsServerURI.setParameter("trustAll", "true");
@@ -694,7 +698,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             String mtlsServer = mtlsServerURI.build().toString();
 
             serverConfiguration.addAcceptorConfiguration("mqtt-mtls", mtlsServer);
-            LOG.log(INFO, "Added mTLS MQTT acceptor listening on " + mtlsHost + ":" + mtlsPort);
+            LOG.log(INFO, "Added mTLS MQTT acceptor listening on " + host + ":" + mtlsPort);
 
         } catch (Exception e) {
             LOG.log(WARNING, "Failed to configure mTLS acceptor: " + e.getMessage());

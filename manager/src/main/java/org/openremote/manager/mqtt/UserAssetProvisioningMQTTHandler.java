@@ -363,6 +363,12 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
             uniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
+
+            if(!topicClientID(topic).equals(certUniqueId)) {
+                LOG.info("Client ID does not match certificate CN: " + MQTTBrokerService.connectionToString(connection));
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
         } else {
             LOG.info("Unsupported provisioning message type: " + provisioningMessage.getClass().getName() + " " + MQTTBrokerService.connectionToString(connection));
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
@@ -422,17 +428,6 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             if (ou == null) {
                 // OU RDN not found in subject, meaning that no realm was supplied in the DN
                 LOG.info(() -> "mTLS Subject DN missing OU (realm): " + MQTTBrokerService.connectionToString(connection));
-                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
-                return;
-            }
-
-            if (!realm.equalsIgnoreCase(ou)) {
-                // Realm that was configured in the Provisioning Config doesn't match the realm supplied in the certificate DN.
-                // Why this is a problem: The device will subsequently disconnect from the broker and try to reconnect.
-                // The service user will be created in a different realm than the one that the device is trying to connect to.
-                // Which means that when the device reconnects it will fail to authenticate as the service user won't exist in that realm.
-                // Instead of making a weird decision about which realm to use, we just reject the connection outright.
-                LOG.info(() -> "mTLS certificate subject realm doesn't match provisioning config realm: " + MQTTBrokerService.connectionToString(connection));
                 publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
                 return;
             }

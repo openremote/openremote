@@ -1,13 +1,11 @@
 package org.openremote.model.provisioning;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class MTLSProvisioningMessage extends ProvisioningMessage {
-    protected String req;
 
-    public MTLSProvisioningMessage(String req) {
-        this.req = req;
-    }
+    @JsonCreator
+    public MTLSProvisioningMessage() {
 
-    public String getRequest() {
-        return req;
     }
 }

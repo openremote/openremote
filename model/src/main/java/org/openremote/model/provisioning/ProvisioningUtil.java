@@ -63,18 +63,6 @@ public class ProvisioningUtil {
 
         return certificate;
     }
-    public static String getPemString(X509Certificate certificate) throws Exception {
-        StringWriter sw = new StringWriter();
-        sw.write("-----BEGIN CERTIFICATE-----\n");
-
-        // Encode the binary certificate data to Base64, with line wrapping at 64 chars
-        String base64 = Base64.getMimeEncoder(64, new byte[]{'\n'})
-                .encodeToString(certificate.getEncoded());
-        sw.write(base64);
-        sw.write("\n-----END CERTIFICATE-----\n");
-
-        return sw.toString();
-    }
 
     public static String getSubjectCN(X500Principal principal) {
         // Use LDAP RFC 2253 which is same spec as X500 principal to get CN
