@@ -14,7 +14,6 @@ import { CollapsiblePanel } from "../../../../component/or-components/test/fixtu
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
 import { type AxiosRequestConfig } from "axios";
-import { WebSocketMsgPrefix } from "@openremote/core";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
@@ -22,6 +21,7 @@ export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 export class Manager {
   private readonly clientId = "openremote";
   private readonly managerHost: String;
+  readonly api: RestApi["api"];
   readonly axios: RestApi["_axiosInstance"];
 
   public realm?: string;
@@ -33,6 +33,7 @@ export class Manager {
   constructor(readonly page: Page, readonly baseURL: string) {
     this.managerHost = process.env.managerUrl || "http://localhost:8080";
     rest.initialise(`${this.managerHost}/api/master/`);
+    this.api = rest.api;
     this.axios = rest.axiosInstance;
   }
 
@@ -129,7 +130,7 @@ export class Manager {
     return access_token;
   }
 
-  async sendWebSocketEvent(type: string, payload: any) {
+  async sendWebSocketEvent(payload: any) {
     await this.page.evaluate((message) => {
       if ("ws" in window) {
         const ws = window.ws as WebSocket;
@@ -138,7 +139,7 @@ export class Manager {
         }
       }
       console.warn('No active WebSocket found.');
-    }, `${type}:${JSON.stringify(payload)}`);
+    }, `EVENT:${JSON.stringify(payload)}`);
   }
 
   /**

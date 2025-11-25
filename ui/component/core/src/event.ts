@@ -76,14 +76,6 @@ const UNAUTHORIZED_MESSAGE_PREFIX = "UNAUTHORIZED:";
 const TRIGGERED_MESSAGE_PREFIX = "TRIGGERED:";
 const EVENT_MESSAGE_PREFIX = "EVENT:";
 
-export type WebSocketMsgPrefix = 
-    | typeof SUBSCRIBE_MESSAGE_PREFIX
-    | typeof SUBSCRIBED_MESSAGE_PREFIX
-    | typeof UNSUBSCRIBE_MESSAGE_PREFIX
-    | typeof UNAUTHORIZED_MESSAGE_PREFIX
-    | typeof TRIGGERED_MESSAGE_PREFIX
-    | typeof EVENT_MESSAGE_PREFIX
-
 abstract class EventProviderImpl implements EventProvider {
 
     protected static MIN_RECONNECT_DELAY: number = 0;

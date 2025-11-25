@@ -1,10 +1,10 @@
 import { expect } from "@openremote/test";
 import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
-import { preparedAssetsWithLocation as assets, assignLocation, BBox, commonAttrs, getAssetTypeColour, getAssetTypes, randomAsset, rgbToHex } from "./fixtures/data/assets.js";
-import { OrMap } from "@openremote/or-map/src/index.js";
-import { Asset, AssetTypeInfo, WellknownMetaItems } from "@openremote/model";
-import { OrClusterMarker } from "@openremote/or-map/lib/markers/or-cluster-marker.js";
+import { preparedAssetsWithLocation as assets, assignLocation, commonAttrs, getAssetTypeColour, getAssetTypes, randomAsset, rgbToHex } from "./fixtures/data/assets.js";
 import { markers } from "./fixtures/data/manager.js";
+import type { OrMap } from "@openremote/or-map/src/index.js";
+import type { OrClusterMarker } from "@openremote/or-map/lib/markers/or-cluster-marker.js";
+import { type Asset, WellknownMetaItems } from "@openremote/model";
 
 test.use({ storageState: userStatePath });
 
@@ -156,7 +156,7 @@ test.describe("Marker config", () => {
     const off = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(off)).toBe(markers[0].colours.false);
 
-    await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "onOff" }, value: true });
+    await manager.sendWebSocketEvent({ eventType: "attribute", ref: { id: manager.assets[0].id, name: "onOff" }, value: true });
     await expect(page.locator('#attribute-list', { hasText: "true" })).toBeVisible();
 
     const on = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
@@ -206,21 +206,21 @@ test.describe("Marker config", () => {
     const _default = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(_default)).toBe("4c4c4c");
 
-    await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 0 });
+    await manager.sendWebSocketEvent({ eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 0 });
     await expect(page.locator('#attribute-list', { hasText: "0" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "0" })).toBeVisible();
 
     const green = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(green)).toBe(markers[1].colours.ranges[0].colour);
 
-    await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 30 });
+    await manager.sendWebSocketEvent({ eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 30 });
     await expect(page.locator('#attribute-list', { hasText: "30" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "30" })).toBeVisible();
 
     const orange = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(orange)).toBe(markers[1].colours.ranges[1].colour);
 
-    await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 40 });
+    await manager.sendWebSocketEvent({ eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 40 });
     await expect(page.locator('#attribute-list', { hasText: "40" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "40" })).toBeVisible();
 
@@ -249,7 +249,7 @@ test.describe("Marker clustering", () => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
     const bbox = { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 };
-    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+    const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
     const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
       return { ...assignLocation(randomAsset(assetInfos), bbox), name: String(i), realm: "smartcity" }
     });
@@ -294,7 +294,7 @@ test.describe("Marker clustering", () => {
   test("should not display clustered markers", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
-    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+    const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
     const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
       return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
     });
@@ -327,7 +327,7 @@ test.describe("Marker clustering", () => {
     test("should update markers when switching realm", async ({ page, manager, browserName }) => {
       test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
   
-      const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+      const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
       const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
         return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
       });
@@ -366,7 +366,7 @@ test.describe("Asset type legend", () => {
   test("should toggle asset types", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
-    const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+    const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
     const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
       return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
     });
@@ -446,7 +446,7 @@ test.describe("Asset type legend", () => {
     test("should reset when switching realm", async ({ page, manager, browserName }) => {
         test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
-        const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+        const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
         const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
           return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
         });
