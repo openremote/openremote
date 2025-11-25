@@ -461,7 +461,7 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "value=./gradlew test -x npmTest" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew test --info --tests SimulatorProtocolTest -x npmTest" >> $GITHUB_OUTPUT
 
       - name: Define UI component test command
         id: test-ui-components-command
