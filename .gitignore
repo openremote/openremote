@@ -31,7 +31,7 @@ bower_components/
 node_modules/
 manager/src/main/resources/version.properties
 ui/app/shared/cache
-ui/app/shared/fonts/Material Design Icons/
+ui/app/shared/fonts
 .pnp.*
 .yarn/*
 !.yarn/patches

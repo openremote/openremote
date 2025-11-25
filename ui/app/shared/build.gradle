@@ -131,7 +131,7 @@ tasks.register('extractOpenMapTilesFontsZip', Copy) {
         include fontNames.collect(({ "${it}/**" } as Closure<String>))
     }
 
-    def outputDir = layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}/fonts").get().asFile
+    def outputDir = layout.projectDirectory.dir("fonts").asFile
     into outputDir
 
     doLast {
@@ -159,6 +159,7 @@ tasks.register('generateSources', Copy) {
     from fileTree(projectDir) {
         exclude 'build.gradle'
         exclude 'build/**'
+        exclude 'cache/**'
     }
     into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
 }
