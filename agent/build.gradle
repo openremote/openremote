@@ -48,8 +48,8 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 

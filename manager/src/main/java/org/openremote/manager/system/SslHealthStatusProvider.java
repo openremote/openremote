@@ -34,8 +34,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider {
 

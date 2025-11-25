@@ -288,7 +288,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                     throw new RuntimeException("Returned access token is null");
                 }
-                LOG.finest("Retrieved access token via OAuth: " + getClientUri());
+                LOG.fine("Retrieved access token via OAuth: " + getClientUri());
             } catch (Exception e) {
                 throw new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage());
             }
