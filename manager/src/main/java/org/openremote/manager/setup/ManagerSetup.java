@@ -47,7 +47,7 @@ import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;

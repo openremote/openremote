@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,15 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.web.file;
+package org.openremote.container.web;
 
-import java.io.File;
-import java.net.URL;
-
-public interface Resource {
-    File getFile();
-    long getLength();
-    long getLastModified();
-    String getETag();
-    URL getURL();
+/**
+ * A resource source that loads resources from the classpath.
+ */
+public record ClassPathResource(ClassLoader classLoader, String prefix) implements ResourceSource {
 }
