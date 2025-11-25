@@ -25,6 +25,7 @@ import { CenterControl } from "./controls/center";
 export {Util, LngLatLike, LngLat, ClusterConfig};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
+export * from "./markers/or-cluster-marker";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";

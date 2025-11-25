@@ -2,8 +2,7 @@ import { expect } from "@openremote/test";
 import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsWithLocation as assets, assignLocation, commonAttrs, getAssetTypeColour, getAssetTypes, randomAsset, rgbToHex } from "./fixtures/data/assets.js";
 import { markers } from "./fixtures/data/manager.js";
-import type { OrMap } from "@openremote/or-map/src/index.js";
-import type { OrClusterMarker } from "@openremote/or-map/lib/markers/or-cluster-marker.js";
+import type { OrMap, OrClusterMarker } from "@openremote/or-map";
 import { type Asset, WellknownMetaItems } from "@openremote/model";
 
 test.use({ storageState: userStatePath });
