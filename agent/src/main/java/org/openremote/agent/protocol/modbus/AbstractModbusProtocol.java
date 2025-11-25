@@ -57,7 +57,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Map<String, ScheduledFuture<?>> batchReadIntervalTasks = new ConcurrentHashMap<>();
     protected final Map<AttributeRef, ScheduledFuture<?>> writeIntervalMap = new HashMap<>();
 
-    protected final Set<String> failedMessageIds = ConcurrentHashMap.newKeySet();
     protected String connectionString;
     protected final Object requestLock = new Object();
 
@@ -547,10 +546,15 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        // Check connection status before attempting write
+        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
+            LOG.fine("Skipping write operation - not connected (status: " + getConnectionStatus() + ")");
+            return;
+        }
+
         int unitId = agentLink.getUnitId();
         int writeAddress = org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
-        String messageId = getProtocolShortName() + "_write_" + unitId + "_" + event.getRef().getId() + "_" + event.getRef().getName() + "_" + writeAddress;
 
         // Convert 1-based user address to 0-based protocol address
         int protocolAddress = writeAddress - 1;
@@ -586,12 +590,12 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
             if (response.isException()) {
                 byte exceptionCode = response.getPdu()[1];
-                onRequestFailure(messageId, getProtocolName() + " write address=" + writeAddress, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
-                throw new IllegalStateException("Modbus exception: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+                String exceptionDesc = getModbusExceptionDescription(exceptionCode);
+                LOG.warning(getProtocolName() + " - Write failed for address=" + writeAddress + ": " + exceptionDesc);
+                return;
             }
 
             LOG.fine(getProtocolName() + " Write Success - UnitId: " + unitId + ", Address: " + writeAddress);
-            onRequestSuccess(messageId);
 
             // Handle attribute update based on read configuration
             if (event.getSource() != null) {
@@ -607,11 +611,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
                 }
             }
         } catch (Exception e) {
-            String operation = getProtocolName() + " write address=" + writeAddress;
-            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
-                onRequestFailure(messageId, operation, e.getMessage());
+            String operation = "write address=" + writeAddress;
+            if (e instanceof TimeoutException) {
+                LOG.warning(getProtocolName() + " - " + operation + " timed out: " + e.getMessage());
             } else {
-                onRequestFailure(messageId, operation, e);
+                LOG.log(Level.WARNING, getProtocolName() + " - " + operation + " failed: " + e.getMessage(), e);
             }
             throw (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
         }
@@ -621,8 +625,13 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
      * Execute a batch read request using the protocol-specific communication method.
      */
     protected void executeBatchRead(BatchReadRequest batch, ModbusAgentLink.ReadMemoryArea memoryArea, Map<AttributeRef, ModbusAgentLink> group, Integer unitId) {
+        // Check connection status before attempting read
+        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
+            LOG.fine("Skipping batch read operation - not connected (status: " + getConnectionStatus() + ")");
+            return;
+        }
+
         int effectiveUnitId = unitId != null ? unitId : 1;
-        String messageId = getProtocolShortName() + "_batch_" + effectiveUnitId + "_" + memoryArea + "_" + batch.startAddress + "_" + batch.quantity;
 
         try {
             // Convert 1-based user address to 0-based protocol address
@@ -642,18 +651,18 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
 
             if (response.isException()) {
                 byte exceptionCode = response.getPdu()[1];
-                onRequestFailure(messageId, getProtocolName() + " batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity, "Exception code: 0x" + Integer.toHexString(exceptionCode & 0xFF));
+                String exceptionDesc = getModbusExceptionDescription(exceptionCode);
+                LOG.warning(getProtocolName() + " - Batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity + " failed: " + exceptionDesc);
                 return;
             }
 
             byte[] data = extractDataFromResponsePDU(response.getPdu(), functionCode);
             if (data == null) {
-                onRequestFailure(messageId, getProtocolName() + " batch read " + memoryArea + " address=" + batch.startAddress, "Invalid response format");
+                LOG.warning(getProtocolName() + " - Batch read " + memoryArea + " address=" + batch.startAddress + " failed: Invalid response format");
                 return;
             }
 
             LOG.finest(getProtocolName() + " Read Success - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", DataBytes: " + data.length);
-            onRequestSuccess(messageId);
 
             for (int i = 0; i < batch.attributes.size(); i++) {
                 AttributeRef ref = batch.attributes.get(i);
@@ -684,11 +693,11 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             }
 
         } catch (Exception e) {
-            String operation = getProtocolName() + " batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity;
-            if (e instanceof TimeoutException || (e instanceof IllegalStateException && "Client not connected".equals(e.getMessage()))) {
-                onRequestFailure(messageId, operation, e.getMessage());
+            String operation = "batch read " + memoryArea + " address=" + batch.startAddress + " quantity=" + batch.quantity;
+            if (e instanceof TimeoutException) {
+                LOG.warning(getProtocolName() + " - " + operation + " timed out: " + e.getMessage());
             } else {
-                onRequestFailure(messageId, operation, e);
+                LOG.log(Level.WARNING, getProtocolName() + " - " + operation + " failed: " + e.getMessage(), e);
             }
         }
     }
@@ -895,61 +904,31 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     }
 
     /**
+     * Translate Modbus exception code to human-readable description.
+     * @param exceptionCode The Modbus exception code
+     * @return Human-readable description
+     */
+    protected static String getModbusExceptionDescription(byte exceptionCode) {
+        return switch (exceptionCode & 0xFF) {
+            case 0x01 -> "Illegal Function";
+            case 0x02 -> "Illegal Data Address";
+            case 0x03 -> "Illegal Data Value";
+            case 0x04 -> "Slave Device Failure";
+            case 0x05 -> "Acknowledge (request in queue)";
+            case 0x06 -> "Slave Device Busy";
+            case 0x08 -> "Memory Parity Error";
+            case 0x0A -> "Gateway Path Unavailable";
+            case 0x0B -> "Gateway Target Device Failed to Respond";
+            default -> "Unknown Exception";
+        };
+    }
+
+    /**
      * Check if the agent is currently disabled.
      * @return true if the agent is disabled, false otherwise
      */
     protected boolean isAgentDisabled() {
         return agent.isDisabled().orElse(false);
-    }
-
-    /**
-     * Called when a Modbus request succeeds. Removes this message from failed set.
-     * If all messages have succeeded (failed set is empty), recovers connection to CONNECTED.
-     * @param messageId Unique identifier for this message/request
-     */
-    protected void onRequestSuccess(String messageId) {
-        failedMessageIds.remove(messageId);
-
-        // Don't change status if agent is disabled
-        if (isAgentDisabled()) {
-            return;
-        }
-
-        if (getConnectionStatus() == ConnectionStatus.ERROR && failedMessageIds.isEmpty()) {
-            setConnectionStatus(ConnectionStatus.CONNECTED);
-            LOG.info(getProtocolName() + " - Connection recovered - all messages now succeeding");
-        }
-    }
-
-    /**
-     * Called when a Modbus request fails. Adds this message to failed set and sets connection status to ERROR.
-     * @param messageId Unique identifier for this message/request
-     * @param operation Description of the operation that failed
-     * @param e The exception that occurred
-     */
-    protected void onRequestFailure(String messageId, String operation, Exception e) {
-        failedMessageIds.add(messageId);
-
-        if (!isAgentDisabled() && getConnectionStatus() != ConnectionStatus.ERROR ) {
-            setConnectionStatus(ConnectionStatus.ERROR);
-            LOG.log(Level.WARNING, getProtocolName() + " request failed for " + operation + " [id=" + messageId + "]: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Called when a Modbus request times out or receives invalid response.
-     * Adds this message to failed set and sets connection status to ERROR.
-     * @param messageId Unique identifier for this message/request
-     * @param operation Description of the operation that failed
-     * @param reason Reason for the failure
-     */
-    protected void onRequestFailure(String messageId, String operation, String reason) {
-        failedMessageIds.add(messageId);
-
-        if (!isAgentDisabled() && getConnectionStatus() != ConnectionStatus.ERROR) {
-            setConnectionStatus(ConnectionStatus.ERROR);
-            LOG.warning(getProtocolName() + " request failed for " + operation + " [id=" + messageId + "]: " + reason);
-        }
     }
 
     /**
