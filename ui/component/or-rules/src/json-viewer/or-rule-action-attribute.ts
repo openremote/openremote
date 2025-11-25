@@ -268,17 +268,17 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         // If the cache contains assets from the same query, don't send HTTP request again
         const isQueryCached = this._cache?.query && JSON.stringify(this._cache.query) === JSON.stringify(query);
         if(!this._loading && !isQueryCached) {
+            this._loading = true;
 
             // Use assetProvider from the parent component to retrieve assets using HTTP
             promises.push(this.assetProvider(type, {...query}));
 
             // When idValue is present, it should also be fetched alongside the other assets
-            if(idValue) {
+            if(idValue && idValue !== "*") {
                 promises.push(this.assetProvider(type, { ids: [idValue] }));
             }
 
             // Start retrieving assets through the assetProvider
-            this._loading = true;
             const responses = await Promise.all(promises);
             this._loading = false;
 

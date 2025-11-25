@@ -233,7 +233,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             query.realm ??= {
                 name: this._ruleset.type == "realm" ? this._ruleset.realm : undefined
             };
-            const promise = getAssetsByType(type, query/*, this._loadedAssets*/);
+            const promise = getAssetsByType(type, query);
             this._activeAssetPromises.set(type, promise);
             const data = await promise;
             this._activeAssetPromises.delete(type);
