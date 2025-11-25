@@ -2,7 +2,7 @@ import { expect } from "@openremote/test";
 import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
 import { preparedAssetsWithLocation as assets, assignLocation, BBox, commonAttrs, getAssetTypeColour, getAssetTypes, randomAsset, rgbToHex } from "./fixtures/data/assets.js";
 import { OrMap } from "@openremote/or-map/src/index.js";
-import { Asset, AssetTypeInfo } from "@openremote/model";
+import { Asset, AssetTypeInfo, WellknownMetaItems } from "@openremote/model";
 import { OrClusterMarker } from "@openremote/or-map/lib/markers/or-cluster-marker.js";
 import { markers } from "./fixtures/data/manager.js";
 
@@ -26,7 +26,7 @@ test.describe("Map markers", () => {
    *
    * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
    */
-  test("should show asset markers and navigate", async ({ page, manager, browserName }) => {
+  test("should show asset and navigate", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
     await manager.setup("smartcity", { assets });
@@ -48,10 +48,73 @@ test.describe("Map markers", () => {
     await page.locator("or-mwc-input[icon=crosshairs-gps]").click();
     await expect(page.locator("or-map").locator(".marker-container")).toBeVisible();
   });
+
+  /**
+   * @given Assets with location are set up in the "smartcity" realm
+   * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+   * @and Navigating to the "map" page
+   *
+   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+   */
+  test('should not show when "show on dashboard" is disabled', async ({ page, manager, browserName }) => {
+    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+    const assets = [
+      ["ShownOnMap", { [WellknownMetaItems.SHOWONDASHBOARD]: true }, 4.482259693115793, 51.91756799273],
+      ["NotShownOnMap", { [WellknownMetaItems.SHOWONDASHBOARD]: false }, 4.4845127486877345, 51.917435642781214]
+    ].map(([name, meta, ...coordinates]) => Object.assign({ name, type: "ThingAsset", realm: "smartcity" }, {
+      attributes: {
+        ...commonAttrs,
+        location: { meta, value: { type: "Point", coordinates } }
+      }
+    })) as Asset[];
+    await manager.setup("smartcity", { assets });
+    await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false } } } });
+    await manager.goToRealmStartPage("smartcity");
+  
+    await expect(page.locator(".or-map-marker")).toHaveCount(1);
+
+    await page.click(".marker-container");
+    await expect(page.locator("#card-container", { hasText: assets[0].name })).toBeVisible();
+  });
+
+  /**
+   * @given Assets with location are set up in the "smartcity" realm
+   * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+   * @and Navigating to the "map" page
+   *
+   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+   */
+  test("should show marker direction", async ({ page, manager, browserName }) => {
+    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+    const assets = [
+      ["Thing1", 30, 4.482259693115793, 51.91756799273],
+      ["Thing2", 60, 4.4845127486877345, 51.917435642781214],
+      ["Thing3", 180, 4.486293735477517, 51.91605818019178]
+    ].map(([name, direction, ...coordinates]) => Object.assign({ name, type: "ThingAsset", realm: "smartcity" }, {
+      attributes: {
+        ...commonAttrs,
+        location: { value: { type: "Point", coordinates } },
+        direction: { type: "direction", value: direction }
+      }
+    })) as Asset[];
+    await manager.setup("smartcity", { assets });
+    await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false } } } });
+    await manager.goToRealmStartPage("smartcity");
+
+    await expect(page.locator(".or-map-marker")).toHaveCount(3);
+
+    for (const [i, asset] of assets.entries()) {
+      await page.locator(".marker-container").nth(i).click();
+      await expect(page.locator("#card-container", { hasText: asset.name })).toBeVisible();
+      await expect(page.locator('#attribute-list', { hasText: asset.attributes!.direction.value })).toBeVisible();
+    }
+  });
 })
 
 test.describe("Marker config", () => {
-  const getBackgroundColor = (el: Element): string[] => window.getComputedStyle(el).color.match(/\d+/g)!;
+  const getRGBColor = (el: Element): string[] => window.getComputedStyle(el).color.match(/\d+/g)!;
 
   /**
    * @given Asset with location is set up in the "smartcity" realm
@@ -60,7 +123,6 @@ test.describe("Marker config", () => {
    * @and Navigating to the "map" page
    * @then 1 asset marker is displayed on the map
    * @and It is colored black
-   * @and the 
    * @when An update is sent to toggle the attribute value
    * @then The marker changes to yellow
    *
@@ -91,13 +153,13 @@ test.describe("Marker config", () => {
     await expect(page.locator("#card-container", { hasText: assets[0].name })).toBeVisible();
     await expect(page.locator('#attribute-list', { hasText: "-" })).toBeVisible();
 
-    const off = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    const off = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(off)).toBe(markers[0].colours.false);
 
     await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "onOff" }, value: true });
     await expect(page.locator('#attribute-list', { hasText: "true" })).toBeVisible();
 
-    const on = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    const on = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(on)).toBe(markers[0].colours.true);
   });
 
@@ -141,28 +203,28 @@ test.describe("Marker config", () => {
     await expect(page.locator('#attribute-list', { hasText: "-" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "-" })).toBeVisible();
 
-    const _default = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    const _default = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(_default)).toBe("4c4c4c");
 
     await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 0 });
     await expect(page.locator('#attribute-list', { hasText: "0" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "0" })).toBeVisible();
 
-    const green = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    const green = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(green)).toBe(markers[1].colours.ranges[0].colour);
 
     await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 30 });
     await expect(page.locator('#attribute-list', { hasText: "30" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "30" })).toBeVisible();
 
-    const orange = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    const orange = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(orange)).toBe(markers[1].colours.ranges[1].colour);
 
     await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "temperature" }, value: 40 });
     await expect(page.locator('#attribute-list', { hasText: "40" })).toBeVisible();
     await expect(page.locator(".marker-container .label", { hasText: "40" })).toBeVisible();
 
-    const red = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    const red = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
     expect(rgbToHex(red)).toBe(markers[1].colours.ranges[2].colour);
   });
 })
@@ -336,6 +398,99 @@ test.describe("Asset type legend", () => {
       option.getByRole("checkbox").uncheck();
       await expect(page.locator(".or-map-marker")).toHaveCount(10 - count);
     }
+  });
+
+  /**
+   * @given Assets with location are set up in the "smartcity" realm
+   * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+   * @and Navigating to the "map" tab
+   * @and Checking that asset markers are displayed on the map
+   * @and Clicking on a marker for the asset "Battery"
+   * @and Navigating to the asset detail page from the map card
+   * @then The asset detail page for "Battery" is visible
+   *
+   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+   */
+  test("should not not be shown with 1 asset type", async ({ page, manager, browserName }) => {
+    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+    const assets = [assignLocation({
+      name: "Thing",
+      type: "ThingAsset",
+      realm: "smartcity",
+      attributes: { ...commonAttrs }
+    }, { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 })]
+
+    await manager.setup("smartcity", { assets });
+    await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false } } } });
+    await manager.goToRealmStartPage("smartcity");
+
+    await expect(page.locator("or-map")).toBeVisible();
+    await expect(page.locator("or-map-legend")).not.toBeVisible();
+  });
+
+  test.describe(() => {
+    test.use({ storageState: adminStatePath });
+
+    /**
+     * @given Assets with location are set up in the "smartcity" realm
+     * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+     * @and Navigating to the "map" tab
+     * @and Checking that asset markers are displayed on the map
+     * @and Clicking on a marker for the asset "Battery"
+     * @and Navigating to the asset detail page from the map card
+     * @then The asset detail page for "Battery" is visible
+     *
+     * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+     */
+    test("should reset when switching realm", async ({ page, manager, browserName }) => {
+        test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+        const assetInfos = (await manager.axios.request<AssetTypeInfo[]>({ url: "/model/assetInfos" })).data;
+        const assets: Asset[] = Array.from({ length: 10 }).map((_, i) => {
+          return { ...assignLocation(randomAsset(assetInfos)), name: String(i), realm: "smartcity" }
+        });
+
+        await manager.setup("smartcity", { assets });
+        await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false } } } });
+        await manager.goToRealmStartPage("master");
+        await manager.switchToRealmByRealmPicker("smartcity");
+
+        await expect(page.locator("or-map")).toBeVisible();
+        await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+        await expect(page.locator(".or-map-marker")).toHaveCount(10);
+
+        await page.locator('or-map-legend [icon="menu"]').click();
+        await expect(page.locator("or-map-legend #legend-content")).toBeVisible();
+
+        const assetTypes = getAssetTypes(assets);
+
+        const options = await page.locator("or-map-legend #legend-content").getByRole("listitem").all();
+        for (const [i, option] of options.entries()) {
+          await expect(option).toHaveAttribute("data-asset-type", assetTypes[i]);
+        }
+
+        for (const option of options) {
+          const checkbox = option.getByRole("checkbox");
+          await expect(checkbox).toBeChecked()
+          option.getByRole("checkbox").uncheck();
+        }
+        await expect(page.locator(".or-map-marker")).toHaveCount(0);
+
+        await manager.switchToRealmByRealmPicker("master");
+        await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+        await expect(page.locator(".or-map-marker")).toHaveCount(0);
+        await expect(page.locator('or-map-legend')).not.toBeVisible();
+
+        await manager.switchToRealmByRealmPicker("smartcity");
+        await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+        await expect(page.locator(".or-map-marker")).toHaveCount(10);
+        await page.locator('or-map-legend [icon="menu"]').click();
+        for (const option of options) {
+          const checkbox = option.getByRole("checkbox");
+          await expect(checkbox).toBeChecked()
+        }
+    });
   });
 });
 
