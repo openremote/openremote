@@ -19,6 +19,7 @@
  */
 package org.openremote.container.util;
 
+import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
 
 import java.io.IOException;
@@ -29,7 +30,7 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import static org.openremote.model.Container.OR_DEV_MODE;
+import static org.openremote.model.util.Config.OR_DEV_MODE;
 
 /**
  * If system property <code>java.util.logging.config.file</code> or <code>java.util.logging.config.file</code> has been
@@ -72,9 +73,9 @@ public class LogUtil {
     protected static InputStream getConfigInputStream() {
 
         // Look for env variable config file
-        boolean envConfigFileSet = !TextUtil.isNullOrEmpty(System.getenv(OR_LOGGING_CONFIG_FILE));
+        boolean envConfigFileSet = !TextUtil.isNullOrEmpty(Config.getString(OR_LOGGING_CONFIG_FILE, null));
         if (envConfigFileSet) {
-            InputStream configFile = getFileInputStream(System.getenv(OR_LOGGING_CONFIG_FILE));
+            InputStream configFile = getFileInputStream(Config.getString(OR_LOGGING_CONFIG_FILE, null));
 
             if (configFile != null) {
                 LOG.log(System.Logger.Level.INFO, "Using logging configuration: " + System.getenv(OR_LOGGING_CONFIG_FILE));
