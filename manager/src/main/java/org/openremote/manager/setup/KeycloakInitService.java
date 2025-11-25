@@ -41,8 +41,8 @@ import static jakarta.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.security.IdentityService.OR_IDENTITY_PROVIDER;
 import static org.openremote.container.security.IdentityService.OR_IDENTITY_PROVIDER_DEFAULT;
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.*;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 
 /**
  * Service just to wait for keycloak availability

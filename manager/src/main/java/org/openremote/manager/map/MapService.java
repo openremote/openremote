@@ -53,9 +53,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
@@ -247,7 +246,7 @@ public class MapService implements ContainerService {
                 proxyHandler.handleRequest(exchange);
             };
 
-            webService.getRequestHandlers().addFirst(pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
+            webService.deploy(RASTER_MAP_TILE_PATH, proxyWrapper);
         }
     }
 
