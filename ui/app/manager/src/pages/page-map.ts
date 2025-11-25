@@ -336,7 +336,6 @@ export class PageMap extends Page<MapStateKeyed> {
           }
           this.unsubscribeAssets();
           this.subscribeAssets(realm).then(() => {
-              console.log(realm)
               if (this._prevRealm && this._prevRealm !== realm) {
                   this._map?.reload();
               }
@@ -417,6 +416,8 @@ export class PageMap extends Page<MapStateKeyed> {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
         this.getRealmState(state);
+        this._updateMarkers();
+        this._map?.reload();
     }
 
     protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {

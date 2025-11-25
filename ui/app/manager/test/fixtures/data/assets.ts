@@ -1,5 +1,9 @@
 import * as Util from "@openremote/core/lib/util";
-import { Asset, AssetDescriptor, AssetInfo, AssetTypeInfo, Attribute, AttributeDescriptor } from "@openremote/model";
+import { Asset, AssetTypeInfo } from "@openremote/model";
+
+export const notes = { name: "notes", type: "text" };
+export const location = { name: "location", type: "GEO_JSONPoint" };
+export const commonAttrs = { notes, location };
 
 export const assetMap = {
   Battery: "ElectricityBatteryAsset",
@@ -11,8 +15,7 @@ const assets = [
     type: "ThingAsset",
     realm: "smartcity",
     attributes: {
-      notes: { name: "notes", type: "text" },
-      location: { name: "location", type: "GEO_JSONPoint" },
+      ...commonAttrs,
       energyLevel: { name: "energyLevel", type: "positiveNumber", meta: { readOnly: true } },
       power: { name: "power", type: "number", meta: { readOnly: false } },
       powerSetpoint: { name: "powerSetpoint", type: "number" },
@@ -24,8 +27,7 @@ const assets = [
     type: "ThingAsset",
     realm: "smartcity",
     attributes: {
-      notes: { name: "notes", type: "text" },
-      location: { name: "location", type: "GEO_JSONPoint" },
+      ...commonAttrs,
       panelPitch: { name: "panelPitch", type: "positiveInteger", meta: { readOnly: true } },
       power: { name: "power", type: "number", meta: { readOnly: false } },
       powerForecast: { name: "powerForecast", type: "number", meta: { readOnly: true } }
@@ -109,10 +111,7 @@ export const thing: Asset = {
   name: "Thing",
   realm: "smartcity",
   type: "ThingAsset",
-  attributes: {
-    notes: { name: "notes", type: "text", meta: {} },
-    location: { name: "location", type: "GEO_JSONPoint", meta: {} },
-  },
+  attributes: { ...commonAttrs },
 };
 
 export const agent: Asset = {
@@ -120,9 +119,8 @@ export const agent: Asset = {
   realm: "smartcity",
   type: "SimulatorAgent",
   attributes: {
-    notes: { name: "notes", type: "text", meta: {} },
+    ...commonAttrs,
     agentDisabled: { name: "agentDisabled", type: "boolean", meta: {} },
-    location: { name: "location", type: "GEO_JSONPoint", meta: {} },
     agentStatus: { name: "agentStatus", type: "connectionStatus", meta: { readOnly: true } }
   }
 };
@@ -180,6 +178,21 @@ export function getAssetTypes(assets: Asset[]) {
 
 export function getAssetTypeColour(type: string, infos: AssetTypeInfo[]) {
   return infos.find(({ assetDescriptor }) => assetDescriptor?.name === type)?.assetDescriptor?.colour ?? ""
+}
+
+export function getRGBToHex([r,g,b]: (number | string)[]) {
+  r = r.toString(16);
+  g = g.toString(16);
+  b = b.toString(16);
+
+  if (r.length == 1)
+    r = "0" + r;
+  if (g.length == 1)
+    g = "0" + g;
+  if (b.length == 1)
+    b = "0" + b;
+
+  return r + g + b;
 }
 
 function randomBetween(max: number, min: number) {

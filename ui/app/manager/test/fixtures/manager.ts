@@ -14,6 +14,7 @@ import { CollapsiblePanel } from "../../../../component/or-components/test/fixtu
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
 import { type AxiosRequestConfig } from "axios";
+import { WebSocketMsgPrefix } from "@openremote/core";
 
 export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
@@ -126,6 +127,21 @@ export class Manager {
       })
     ).data;
     return access_token;
+  }
+
+  async sendWebSocketEvent(type: string, payload: any) {
+    await this.page.evaluate((message) => {
+      if ("__wsList" in window && Array.isArray(window.__wsList) && window.__wsList.length) {
+        const ws = window.__wsList[0];
+        console.log(ws)
+        console.log(ws instanceof WebSocket)
+        console.log(ws.url)
+        if (ws && ws.readyState === ws.OPEN) {
+          return ws.send(message);
+        }
+      }
+      console.warn('No active WebSocket found.');
+    }, `${type}:${JSON.stringify(payload)}`);
   }
 
   /**

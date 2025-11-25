@@ -1,9 +1,10 @@
 import { expect } from "@openremote/test";
 import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
-import { preparedAssetsWithLocation as assets, assignLocation, BBox, getAssetTypeColour, getAssetTypes, randomAsset } from "./fixtures/data/assets.js";
+import { preparedAssetsWithLocation as assets, assignLocation, BBox, commonAttrs, getAssetTypeColour, getAssetTypes, randomAsset, getRGBToHex } from "./fixtures/data/assets.js";
 import { OrMap } from "@openremote/or-map/src/index.js";
 import { Asset, AssetTypeInfo } from "@openremote/model";
 import { OrClusterMarker } from "@openremote/or-map/lib/markers/or-cluster-marker.js";
+import { markers } from "./fixtures/data/manager.js";
 
 test.use({ storageState: userStatePath });
 
@@ -48,9 +49,115 @@ test.describe("Map markers", () => {
   });
 })
 
-test.describe("Marker clustering", () => {
-  test.use({ storageState: userStatePath });
+test.describe("Marker config", () => {
+  const getBackgroundColor = (el: Element) => window.getComputedStyle(el).backgroundColor;
 
+  /**
+   * @given Asset with location is set up in the "smartcity" realm
+   * @and And a marker config is configured
+   * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+   * @and Navigating to the "map" page
+   * @then 1 asset marker is displayed on the map
+   * @and It is colored black
+   * @when An update is sent to toggle the attribute value
+   * @then The marker changes to yellow
+   *
+   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+   */
+  test("should toggle asset marker colour based on attribute value", async ({ page, manager, browserName }) => {
+    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+    await page.addInitScript(() => {
+      window.__wsList = [];
+
+      const OriginalWS = WebSocket;
+      window.WebSocket = function(...args: any) {
+        const ws = new OriginalWS(...args);
+        window.__wsList.push(ws);
+        console.log(ws)
+        console.log(ws instanceof WebSocket)
+        console.log(ws.url)
+        console.log(window.__wsList)
+        return ws;
+      };
+    });
+
+    const assets = [assignLocation({
+      name: "Light",
+      type: "ThingAsset",
+      realm: "smartcity",
+      attributes: { ...commonAttrs, onOff: { name: "onOff", type: "boolean" } }
+    }, { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 })]
+    await manager.setup("smartcity", { assets });
+    await manager.configureAppConfig({ pages: { map: { markers: { ThingAsset: markers[0] } } } });
+
+    page.on('websocket', ws => {
+      console.log('WebSocket:', ws.url());
+      ws.on('framesent', frame => {
+        console.log(`➡️ Sent: ${frame.payload}`);
+      });
+      ws.on('framereceived', (frame) => {
+        console.log(`⬅️ Received: ${frame.payload}`);
+      });
+    });
+    await manager.goToRealmStartPage("smartcity");
+
+    await expect(page.locator(".or-map-marker")).toHaveCount(1);
+    await page.click(".marker-container");
+    await expect(page.locator("#card-container", { hasText: assets[0].name })).toBeVisible();
+
+    const off = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    expect(getRGBToHex(off.match(/\d+/g)!)).toBe(markers[0].colours.false);
+
+    await manager.sendWebSocketEvent("EVENT", { eventType: "attribute", ref: { id: manager.assets[0].id, name: "onOff" }, value: true });
+
+    const on = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    expect(getRGBToHex(on.match(/\d+/g)!)).toBe(markers[0].colours.true);
+  });
+
+  /**
+   * @given Asset with location is set up in the "smartcity" realm
+   * @and And a marker config is configured
+   * @when Logging in to OpenRemote "smartcity" realm as "smartcity"
+   * @and Navigating to the "map" page
+   * @then 1 asset marker is displayed on the map
+   * @and It is colored green
+   * @when An update is sent with a value of 30
+   * @then The marker changes to orange
+   * @when An update is sent with a value of 40
+   * @then The marker changes to red
+   *
+   * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+   */
+  test("should display marker with label and change marker colour based on attribute range", async ({ page, manager, browserName }) => {
+    test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+    const assets = [assignLocation({
+      name: "Thermometer",
+      type: "ThingAsset",
+      realm: "smartcity",
+      attributes: { ...commonAttrs, onOff: { name: "temperature", type: "number" } }
+    }, { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 })]
+    await manager.setup("smartcity", { assets });
+    await manager.configureAppConfig({ pages: { map: { markers: { ThingAsset: markers[1] } } } });
+    await manager.goToRealmStartPage("smartcity");
+
+    await expect(page.locator(".or-map-marker")).toHaveCount(1);
+    await page.click(".marker-container");
+    await expect(page.locator("#card-container", { hasText: assets[0].name })).toBeVisible();
+
+    const below30 = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    expect(below30).toBe(markers[1].colours.ranges[0].colour);
+
+    const below40 = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    expect(below40).toBe(markers[1].colours.ranges[1].colour);
+
+    const above40 = await page.locator('or-icon[icon="or:marker"]').evaluate(getBackgroundColor);
+    expect(above40).toBe(markers[1].colours.ranges[2].colour);
+  });
+})
+
+test.describe("Marker clustering", () => {
   /**
    * @given Assets with location are set up in the "smartcity" realm
    * @and clustering is configured
