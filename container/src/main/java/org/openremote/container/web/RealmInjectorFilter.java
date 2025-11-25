@@ -20,32 +20,24 @@
 package org.openremote.container.web;
 
 import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import org.openremote.model.Constants;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
- * A filter for updating response headers.
+ * A {@link ClientRequestFilter} that injects the realm into the {@link Constants#REALM_PARAM_NAME} request header.
  */
-public class ResponseHeaderUpdateFilter implements ClientResponseFilter {
+public class RealmInjectorFilter implements ClientRequestFilter {
 
-    protected Set<Map.Entry<String, List<String>>> headers;
+   protected String realm;
 
-    public ResponseHeaderUpdateFilter(Map<String, List<String>> headers) {
-        this.headers = headers.entrySet();
-    }
+   public RealmInjectorFilter(String realm) {
+      this.realm = realm;
+   }
 
-    @Override
-    public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
-        headers.forEach(headerAndValues -> {
-            responseContext.getHeaders().remove(headerAndValues.getKey());
-            if (!headerAndValues.getValue().isEmpty()) {
-                responseContext.getHeaders().addAll(headerAndValues.getKey(), headerAndValues.getValue());
-            }
-        });
-    }
+   @Override
+   public void filter(ClientRequestContext requestContext) throws IOException {
+      requestContext.getHeaders().putSingle(Constants.REALM_PARAM_NAME, realm);
+   }
 }

@@ -71,7 +71,7 @@ public interface MapResource {
     @Produces("application/vnd.mapbox-vector-tile")
     @Path("tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
-    byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+    Response getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
 
     /**
      * Saves mbtiles file

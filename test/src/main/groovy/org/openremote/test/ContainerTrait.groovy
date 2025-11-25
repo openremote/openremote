@@ -38,7 +38,7 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.security.keycloak.KeycloakResource
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
-import org.openremote.container.util.MapAccess
+import org.openremote.model.util.MapAccess
 import org.openremote.container.web.WebClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -269,7 +269,7 @@ trait ContainerTrait {
                     }
 
                     long endTime = System.currentTimeMillis()
-                    LOG.info("Container reuse took: " + (startTime - endTime) + "ms")
+                    LOG.info("Container reuse took: " + (endTime - startTime) + "ms")
                 } catch (IllegalStateException e) {
                     LOG.info("Failed to clean the existing container so creating a new one", e)
                     stopContainer()
