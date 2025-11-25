@@ -79,7 +79,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.util.MapAccess.*;
 
 public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
