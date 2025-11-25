@@ -31,7 +31,7 @@ public enum NodeModel {
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
                 AttributeRef attributeRef = new AttributeRef(assetId, attributeName);
-                Optional<AttributeInfo> readValue = info.findCachedAttribute(attributeRef)
+                Optional<AttributeInfo> readValue = info.getFacts().findCachedAttribute(attributeRef)
                         .or(() -> info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)));
                 Object value = readValue.flatMap(ValueHolder::getValue).orElse(null);
                 return new NodeExecutionResult(value, attributeRef, readValue.orElse(null));
@@ -64,7 +64,7 @@ public enum NodeModel {
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
                 AttributeRef attributeRef = new AttributeRef(assetId, attributeName);
-                Optional<AttributeInfo> attr = info.findCachedAttribute(attributeRef)
+                Optional<AttributeInfo> attr = info.getFacts().findCachedAttribute(attributeRef)
                         .or(() -> info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)));
                 if (attr.isPresent()) {
                     AttributeInfo attributeInfo = attr.get();
@@ -120,7 +120,7 @@ public enum NodeModel {
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
                 AttributeRef attributeRef = new AttributeRef(assetId, attributeName);
-                Optional<AttributeInfo> attr = info.findCachedAttribute(attributeRef)
+                Optional<AttributeInfo> attr = info.getFacts().findCachedAttribute(attributeRef)
                         .or(() -> info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)));
 
                 double integral = 0.0;
