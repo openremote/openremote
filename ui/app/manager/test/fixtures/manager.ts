@@ -131,11 +131,8 @@ export class Manager {
 
   async sendWebSocketEvent(type: string, payload: any) {
     await this.page.evaluate((message) => {
-      if ("__wsList" in window && Array.isArray(window.__wsList) && window.__wsList.length) {
-        const ws = window.__wsList[0];
-        console.log(ws)
-        console.log(ws instanceof WebSocket)
-        console.log(ws.url)
+      if ("ws" in window) {
+        const ws = window.ws as WebSocket;
         if (ws && ws.readyState === ws.OPEN) {
           return ws.send(message);
         }

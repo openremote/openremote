@@ -389,8 +389,8 @@ export class OrMap extends LitElement {
         this._map?.cleanUpAssetMarkers();
     }
 
-    public reload(): void {
-        this._map?.load();
+    public async reload() {
+        await this._map?.load();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {

@@ -26,6 +26,11 @@ declare global {
 
 @customElement("or-map-legend")
 export class OrMapLegend extends LitElement {
+
+    static get styles(): CSSResultGroup {
+        return mapAssetLegendStyle;
+    }
+
     @property({ type: Array })
     public assetTypes: string[] = [];
 
@@ -55,10 +60,6 @@ export class OrMapLegend extends LitElement {
         }
 
         return super.shouldUpdate(changedProperties);
-    }
-
-    static get styles(): CSSResultGroup {
-        return mapAssetLegendStyle;
     }
 
     protected _onHeaderClick() {

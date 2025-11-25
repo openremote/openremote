@@ -499,8 +499,7 @@ export class MapWidget {
             }
 
             this._initLongPressEvent();
-
-            this._mapGl.on("load", () => this.load())
+            this._mapGl.on("load", async () => await this.load());
         }
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
@@ -511,8 +510,8 @@ export class MapWidget {
     /**
      * Load map sources, layers and events
      */
-    public load() {
-        if (!this._mapGl) {
+    public async load() {
+        if (!this._mapGl || !this._loaded) {
             console.warn("MapLibre Map not initialized!");
             return;
         }
@@ -532,7 +531,7 @@ export class MapWidget {
 
         this._mapGl.addSource('mapPoints', {
             'type': 'geojson',
-            'cluster': this._clusterConfig?.cluster ?? false,
+            'cluster': this._clusterConfig?.cluster ?? true,
             'clusterRadius': this._clusterConfig?.clusterRadius ?? 180,
             'clusterMaxZoom': this._clusterConfig?.clusterMaxZoom ?? 17,
             'data': this._pointsMap,
@@ -545,17 +544,11 @@ export class MapWidget {
                 type: 'circle',
                 source: 'mapPoints',
                 filter: ['!', ['has', 'point_count']],
-                paint: {
-                    'circle-radius': 0,
-                    // 'circle-color': '#11b4da',
-                    // 'circle-radius': 4,
-                    // 'circle-stroke-width': 1,
-                    // 'circle-stroke-color': '#fff'
-                }
+                paint: { 'circle-radius': 0 }
             });
         }
 
-        this._mapGl.on("data", (e: any) => {
+        this._mapGl.on("data", async (e: any) => {
             if (!this._mapGl) return;
             if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
 

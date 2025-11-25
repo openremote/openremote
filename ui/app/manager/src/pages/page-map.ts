@@ -210,9 +210,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _attributeSubscriptionId: string;
 
     protected _assetTypes: string[] = [];
-    protected _exclude: string[] = [];
-
-    protected _prevRealm?: string;
+    protected _excludedTypes: string[] = [];
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -334,12 +332,13 @@ export class PageMap extends Page<MapStateKeyed> {
               // Clear existing assets
               this._assets = [];
           }
+          if (this._excludedTypes.length > 0) {
+              this._excludedTypes = [];
+          }
+
           this.unsubscribeAssets();
-          this.subscribeAssets(realm).then(() => {
-              if (this._prevRealm && this._prevRealm !== realm) {
-                  this._map?.reload();
-              }
-              this._prevRealm = realm;
+          this.subscribeAssets(realm).then(async () => {
+              await this._map?.reload();
           });
           this._map?.refresh();
       }
@@ -377,6 +376,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
+        console.log(this._assetTypes)
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
@@ -439,7 +439,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
         if (this._map) {
-            this._exclude = e.detail;
+            this._excludedTypes = e.detail;
             this._updateMarkers();
             this._map.reload();
         }
@@ -451,7 +451,7 @@ export class PageMap extends Page<MapStateKeyed> {
             this._map.cleanUpAssetMarkers();
             this._assets.forEach((asset: Asset) => {
                 if (MapUtil.isAssetWithLocation(asset)) {
-                    if (!this._exclude.includes(asset.type)) {
+                    if (!this._excludedTypes.includes(asset.type)) {
                         this._map.addMarker(asset)
                     }
                     if (!this._assetTypes.includes(asset.type)) {

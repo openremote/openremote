@@ -18,15 +18,15 @@ export const markers = [
             ranges: [
                 {
                     min: 0,
-                    colour: "39B54A",
+                    colour: "39b54a",
                 },
                 {
                     min: 30,
-                    colour: "F7931E",
+                    colour: "f7931e",
                 },
                 {
                     min: 40,
-                    colour: "C1272D",
+                    colour: "c1272d",
                 },
             ],
         },
