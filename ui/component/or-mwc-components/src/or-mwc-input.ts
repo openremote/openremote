@@ -892,9 +892,9 @@ export class OrMwcInput extends LitElement {
 
     public focus() {
         if (this.type === InputType.RANGE && this._mdcComponent2 && typeof (this._mdcComponent2 as any).focus === "function") {
-            (this._mdcComponent2 as any)?.focus();
+            (this._mdcComponent2 as any).focus();
         } else if (this._mdcComponent && typeof (this._mdcComponent as any).focus === "function") {
-            (this._mdcComponent as any)?.focus();
+            (this._mdcComponent as any).focus();
         }
     }
 

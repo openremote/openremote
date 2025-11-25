@@ -6,6 +6,10 @@ import {Asset} from "@openremote/model";
 
 test.use({storageState: userStatePath});
 
+/**
+ * Simple function that generates assets based on {@link assets}
+ * @param multiplier - Amount of assets to generate per asset type
+ */
 function generateALotOfAssets(multiplier = 5): Asset[] {
     return Array.from({length: multiplier}, (_, i) =>
         assets.map((a: Asset) => ({...a, name: `${a.name} ${i}`}))
@@ -61,7 +65,6 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
  * @and Configuring a Then action by searching for a different asset
  * @and Saving the rule
  * @then The When-Then rule should appear in the rule list
- * TODO: Update description
  */
 test("Create a When-Then rule by searching for an asset", async ({page, manager, shared}) => {
     const multiplier = 100;

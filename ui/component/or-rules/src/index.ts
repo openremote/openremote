@@ -547,6 +547,9 @@ export async function getAssetsByType(type: string, customQuery?: AssetQuery, lo
     } else {
         loadedAssets ??= new Map<string, any[]>();
         const assetQuery: AssetQuery = {
+            realm: {
+                name: manager.displayRealm
+            },
             types: [type],
             orderBy: {
                 property: AssetQueryOrderBy$Property.NAME

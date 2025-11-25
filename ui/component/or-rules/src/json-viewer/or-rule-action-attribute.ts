@@ -15,8 +15,8 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {i18next, translate} from "@openremote/or-translate"
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
-import { ifDefined } from "lit/directives/if-defined.js";
-import { when } from "lit/directives/when.js";
+import {ifDefined} from "lit/directives/if-defined.js";
+import {when} from "lit/directives/when.js";
 
 // language=CSS
 const style = css`
@@ -138,7 +138,6 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             `, () => {
                 if (!searchable) {
                     assets.forEach(a => idOptions.set(a.id!, a.name!));
-                    // idOptions.push(assets.map(a => [a.id!, a.name!] as [string, string]));
                 } else {
                     searchProvider = async (search?: string) => {
                         await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
