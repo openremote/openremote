@@ -294,7 +294,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .process(exchange -> {
                 AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                 String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-                System.out.println("PROCESS");
 
                 if (exchange.getIn().getBody() instanceof EventSubscription<?> subscription) {
                     String sessionKey = getSessionKey(exchange);

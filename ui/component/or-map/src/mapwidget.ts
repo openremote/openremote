@@ -452,20 +452,12 @@ export class MapWidget {
                 }, 300);
                 this._mapGl!.addControl(this._geocoder, 'top-left');
 
-                this._mapGl!.addSource('mapPoints', {
-                    type: 'geojson',
-                    data: {
-                        type: 'FeatureCollection',
-                        features: []
-                    }
-                });
-
                 // There's no callback parameter in the options of the MaplibreGeocoder,
                 // so this is how we get the selected result.
                 this._geocoder._inputEl.addEventListener("change", () => {
                     var selected = this._geocoder._typeahead.selected;
                     this._onGeocodeChange(selected);
-                });                
+                });
             }
 
             // Add custom controls
@@ -505,6 +497,14 @@ export class MapWidget {
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
         this.createBoundaryBox()
+    }
+
+    protected _styleLoaded(): Promise<void> {
+        return new Promise(resolve => {
+            if (this._mapGl) {
+                this._mapGl.once('style.load', resolve);
+            }
+        });
     }
 
     /**
@@ -559,14 +559,6 @@ export class MapWidget {
             this._mapGl.on('moveend', () => this._updateMarkers());
             this._updateMarkers()
         })
-    }
-
-    protected _styleLoaded(): Promise<void> {
-        return new Promise(resolve => {
-            if (this._mapGl) {
-                this._mapGl.once('style.load', resolve);
-            }
-        });
     }
 
     // Clean up of internal resources associated with the map.

@@ -380,7 +380,7 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
-    public addMarker(asset: AssetWithLocation) {
+    public addAssetMarker(asset: AssetWithLocation) {
         const coordinates = asset?.attributes?.location.value;
         if (!coordinates?.coordinates) return;
         this._map?.addAssetMarker(asset.id ?? '', asset.name ?? '', asset.type ?? '', coordinates.coordinates[0], coordinates.coordinates[1], asset);

@@ -376,7 +376,6 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        console.log(this._assetTypes)
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
@@ -452,7 +451,7 @@ export class PageMap extends Page<MapStateKeyed> {
             this._assets.forEach((asset: Asset) => {
                 if (MapUtil.isAssetWithLocation(asset)) {
                     if (!this._excludedTypes.includes(asset.type)) {
-                        this._map.addMarker(asset)
+                        this._map.addAssetMarker(asset)
                     }
                     if (!this._assetTypes.includes(asset.type)) {
                         this._assetTypes.push(asset.type);
