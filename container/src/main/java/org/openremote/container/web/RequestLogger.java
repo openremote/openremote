@@ -20,6 +20,7 @@
 package org.openremote.container.web;
 
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.syslog.SyslogCategory;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,10 +32,13 @@ import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 
+/**
+ * JAX-RS {@link ContainerRequestFilter} that logs incoming requests to the {@link #REQUEST_LOG}.
+ */
 @Provider
 public class RequestLogger implements ContainerRequestFilter {
 
-    public static final System.Logger REQUEST_LOG = System.getLogger(RequestLogger.class.getName() + "." + SyslogCategory.API.name());
+    protected static final System.Logger REQUEST_LOG = System.getLogger(RequestLogger.class.getName() + "." + SyslogCategory.API.name());
 
     @Context
     private HttpServletRequest request;
@@ -50,7 +54,7 @@ public class RequestLogger implements ContainerRequestFilter {
             String port = String.valueOf(request.getRemotePort());
             String forwardedAddress = requestContext.getHeaderString("X-Forwarded-For");
             String method = requestContext.getMethod();
-            String realm = requestContext.getHeaderString("Realm");
+            String realm = requestContext.getHeaderString(Constants.REALM_PARAM_NAME);
             String responseType = requestContext.getHeaderString(HttpHeaders.ACCEPT);
             String usernameAndRealm = securityContext != null
                 ? KeycloakIdentityProvider.getSubjectNameAndRealm(securityContext.getUserPrincipal())

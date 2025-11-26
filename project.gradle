@@ -170,6 +170,11 @@ repositories {
     // Needs to be above central due to org.geotools:gt-main issues
     maven {
         url = "https://repo.osgeo.org/repository/release/"
+        content {
+            includeGroup "it.geosolutions.jgridshift"
+            includeGroup "org.eclipse.imagen"
+            includeGroupByRegex "org\\.geotools.*"
+        }
     }
     mavenCentral()
     maven {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,15 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.web.file;
+package org.openremote.container.util;
 
-import java.io.File;
-import java.net.URL;
+import java.io.IOException;
+import java.util.logging.FileHandler;
+import java.util.logging.LogManager;
 
-public interface Resource {
-    File getFile();
-    long getLength();
-    long getLastModified();
-    String getETag();
-    URL getURL();
+/**
+ * This {@link FileHandler} allows injection of system property into the pattern
+ */
+public class LoggingFileHandler extends FileHandler {
+
+    private static String pattern() throws IOException {
+        String prefix = LoggingFileHandler.class.getName();
+        String v = LogManager.getLogManager().getProperty(prefix +".pattern");
+        return v.replace("${" + LogUtil.OR_LOGGING_PROPERTY_NAME + "}", System.getProperty(LogUtil.OR_LOGGING_PROPERTY_NAME));
+    }
+
+    public LoggingFileHandler() throws IOException {
+        super(pattern());
+    }
 }
