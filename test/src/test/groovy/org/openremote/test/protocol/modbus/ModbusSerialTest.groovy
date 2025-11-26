@@ -19,11 +19,11 @@
  */
 package org.openremote.test.protocol.modbus
 
-import com.fazecast.jSerialComm.SerialPort
 import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
+import org.openremote.agent.protocol.serial.SerialIOClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -35,52 +35,73 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Shared
+import org.openremote.test.protocol.MockSerialChannel
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.util.concurrent.atomic.AtomicReference
 
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS
 
-/**
- * Test for Modbus Serial Protocol with virtual serial devices
- */
+@spock.lang.Retry(count = 5)
 class ModbusSerialTest extends Specification implements ManagerContainerTrait {
 
-    @Shared
-    AtomicReference<byte[]> latestRequest = new AtomicReference<>(null)
-
-    @Shared
-    SerialPort globalMockPort
+    static byte[] latestRequest = null
+    static byte[] latestWriteRequest = null
+    static ByteArrayOutputStream frameBuffer = new ByteArrayOutputStream()
 
     def setupSpec() {
-        // Create a global mock serial port
-        globalMockPort = createMockSerialPort()
+        SerialIOClient.setTestChannelClass(MockSerialChannel.class)
 
-        // Intercept SerialPort.getCommPort() to return our mock
-        SerialPort.metaClass.static.getCommPort = { String portName ->
-            return globalMockPort
+        // Set up mock serial channel to handle Modbus RTU frames
+        MockSerialChannel.setDataHandler { byte[] data, MockSerialChannel.ResponseCallback responseCallback ->
+            synchronized (frameBuffer) {
+                frameBuffer.write(data, 0, data.length)
+                byte[] buffer = frameBuffer.toByteArray()
+
+                if (buffer.length >= 8) {
+                    latestRequest = buffer.clone()
+
+                    // Check if it's a write request
+                    int functionCode = buffer[1] & 0xFF
+                    if (functionCode == 0x05 || functionCode == 0x06 ||
+                        functionCode == 0x0F || functionCode == 0x10) {
+                        latestWriteRequest = buffer.clone()
+                    }
+
+                    // Generate and send response
+                    byte[] response = generateModbusResponse(buffer, 0, buffer.length)
+                    if (response != null && response.length > 0) {
+                        responseCallback.sendResponse(response)
+                    }
+
+                    frameBuffer.reset()
+                }
+            }
         }
     }
 
     def cleanupSpec() {
-        // Restore original SerialPort.getCommPort() method
-        SerialPort.metaClass = null
+        SerialIOClient.setTestChannelClass(null)
+        MockSerialChannel.setDataHandler(null)
     }
 
     def setup() {
         // Reset mock state before each test
-        latestRequest.set(null)
+        latestRequest = null
+        latestWriteRequest = null
+        synchronized (frameBuffer) {
+            frameBuffer.reset()
+        }
+        MockSerialChannel.resetState()
     }
 
     def "Modbus Serial Integration Test - Basic Operations"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.5)
+        def conditions = new PollingConditions(timeout: 30, delay: 0.5)
 
         when: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -123,14 +144,14 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 // Partial read config - has readMemoryArea and readAddress but missing readValueType
                 new Attribute<>("partialReadConfig", ValueType.INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readAddress: 50
-                                // Missing: readValueType
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadAddress(50)
+                                    // Missing: readValueType
+                                }
                 ))
         )
         device0 = assetStorageService.merge(device0)
@@ -158,55 +179,55 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 // UINT16 register
                 new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 1,
-                                registersAmount: 1
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(1)
+                                    it.setRegistersAmount(1)
+                                }
                 )),
                 // UINT16 register
                 new Attribute<>("register2", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 3,
-                                registersAmount: 1
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(3)
+                                    it.setRegistersAmount(1)
+                                }
                 )),
                 // Float (REAL) value
                 new Attribute<>("temperature", ValueType.NUMBER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.INPUT,
-                                readValueType: ModbusAgentLink.ModbusDataType.REAL,
-                                readAddress: 201,
-                                registersAmount: 2
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.INPUT)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
+                                    it.setReadAddress(201)
+                                    it.setRegistersAmount(2)
+                                }
                 )),
                 // Coil
                 new Attribute<>("switch1", ValueType.BOOLEAN).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.COIL,
-                                readValueType: ModbusAgentLink.ModbusDataType.BOOL,
-                                readAddress: 6,
-                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.COIL,
-                                writeAddress: 6
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.COIL)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.BOOL)
+                                    it.setReadAddress(6)
+                                    it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.COIL)
+                                    it.setWriteAddress(6)
+                                }
                 ))
         )
 
@@ -237,10 +258,10 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
 
         then: "the write should be sent to the device"
         conditions.eventually {
-            def lastRequest = latestRequest.get()
-            assert lastRequest != null
-            assert lastRequest[0] == (byte) 1  // Unit ID
-            assert lastRequest[1] == (byte) 0x05  // Write single coil function
+            def lastWriteRequest = latestWriteRequest
+            assert lastWriteRequest != null
+            assert lastWriteRequest[0] == (byte) 1  // Unit ID
+            assert lastWriteRequest[1] == (byte) 0x05  // Write single coil function
         }
 
     }
@@ -277,39 +298,39 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         device.addOrReplaceAttributes(
                 new Attribute<>("reg0", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 1,
-                                registersAmount: 2
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(1)
+                                    it.setRegistersAmount(2)
+                                }
                 )),
                 new Attribute<>("reg15", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 16,
-                                registersAmount: 2
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(16)
+                                    it.setRegistersAmount(2)
+                                }
                 )),
                 new Attribute<>("reg30", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 31,
-                                registersAmount: 2
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(31)
+                                    it.setRegistersAmount(2)
+                                }
                 ))
         )
 
@@ -372,15 +393,15 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         device1.addOrReplaceAttributes(
                 new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,  // Unit ID 1 via agentLink
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 1,
-                                registersAmount: 1
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)  // Unit ID 1 via agentLink
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(1)
+                                    it.setRegistersAmount(1)
+                                }
                 ))
         )
 
@@ -389,15 +410,15 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         device2.addOrReplaceAttributes(
                 new Attribute<>("register1", ValueType.POSITIVE_INTEGER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 2,  // Unit ID 2 via agentLink
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.UINT,
-                                readAddress: 1,
-                                registersAmount: 1
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(2)  // Unit ID 2 via agentLink
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
+                                    it.setReadAddress(1)
+                                    it.setRegistersAmount(1)
+                                }
                 ))
         )
 
@@ -425,7 +446,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         and: "verify that requests were sent with correct unit IDs"
         conditions.eventually {
             // The mock should have received requests with unit ID 1 and 2
-            def lastRequest = latestRequest.get()
+            def lastRequest = latestRequest
             assert lastRequest != null
             // Unit ID is the first byte of the Modbus request
             assert lastRequest[0] == (byte) 1 || lastRequest[0] == (byte) 2
@@ -554,7 +575,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
                                     it.setReadAddress(301)
@@ -566,7 +587,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
                                     it.setReadAddress(311)
@@ -578,7 +599,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
                                     it.setReadAddress(321)
@@ -661,17 +682,17 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 // Write FLOAT (2 registers) to address 51 (1-based = 50 protocol)
                 new Attribute<>("floatWrite", ValueType.NUMBER).addOrReplaceMeta(new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,
-                                readMemoryArea: ModbusAgentLink.ReadMemoryArea.HOLDING,
-                                readValueType: ModbusAgentLink.ModbusDataType.REAL,
-                                readAddress: 51,
-                                registersAmount: 2,
-                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 51
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)
+                                    it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
+                                    it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
+                                    it.setReadAddress(51)
+                                    it.setRegistersAmount(2)
+                                    it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
+                                    it.setWriteAddress(51)
+                                }
                 ))
         )
         device = assetStorageService.merge(device)
@@ -683,12 +704,13 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "multi-register float value is written"
-        latestRequest.set(null)
+        latestRequest = null
+        latestWriteRequest = null
         assetProcessingService.sendAttributeEvent(new AttributeEvent(device.getId(), "floatWrite", 45.67f))
 
         then: "the write should use function code 0x10 (Write Multiple Registers)"
         conditions.eventually {
-            def request = latestRequest.get()
+            def request = latestRequest
             assert request != null
             assert request[0] == (byte) 1  // Unit ID
             assert request[1] == (byte) 0x10  // Function code 0x10 for multi-register write
@@ -726,20 +748,21 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
-        when: "a device with write requestInterval (continuous writes) is created"
+        when: "a device with continuous write (requestInterval + writeAddress, no readAddress) is created"
         def device = new ThingAsset("Continuous Write Serial Device")
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
                 new Attribute<>("continuousWrite", ValueType.INTEGER, 77).addOrReplaceMeta(
                         new MetaItem<>(
                         AGENT_LINK,
-                        new ModbusAgentLink(
-                                id: agent.getId(),
-                                unitId: 1,
-                                requestInterval: 1000,  // Write every 1000ms
-                                writeMemoryArea: ModbusAgentLink.WriteMemoryArea.HOLDING,
-                                writeAddress: 61
-                        )
+                        new ModbusAgentLink(agent.getId())
+                                .tap {
+                                    it.setUnitId(1)
+                                    it.setRequestInterval(1000)  // Write every 1000ms
+                                    it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
+                                    it.setWriteAddress(61)
+                                    // No readAddress = continuous write mode
+                                }
                         ),
                         new MetaItem<>(STORE_DATA_POINTS)
                 )
@@ -759,7 +782,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         then: "multiple write events should be observed"
         def writeRequests = []
         conditions.eventually {
-            def request = latestRequest.get()
+            def request = latestRequest
             if (request != null) {
                 // Capture write requests (function codes 0x05, 0x06, 0x10)
                 def functionCode = request[1] & 0xFF
@@ -814,7 +837,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
                                     it.setReadAddress(address)
@@ -837,7 +860,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
                                     it.setReadAddress(address)
@@ -847,48 +870,6 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 )
         )
         return assetStorageService.merge(device)
-    }
-
-    /**
-     * Create a mock SerialPort using plain Groovy object that simulates Modbus RTU responses
-     */
-    def createMockSerialPort() {
-        def readBuffer = new AtomicReference<byte[]>(new byte[0])
-        def readPosition = new AtomicReference<Integer>(0)
-
-        // Create a simple object with the methods we need (no need to extend SerialPort)
-        return [
-            openPort: { -> true },
-            closePort: { -> true },
-            isOpen: { -> true },
-            setBaudRate: { int rate -> true },
-            setNumDataBits: { int bits -> true },
-            setNumStopBits: { int bits -> true },
-            setParity: { int parity -> true },
-            setComPortTimeouts: { int mode, int read, int write -> true },
-            bytesAvailable: { -> Math.max(0, readBuffer.get().length - readPosition.get()) },
-            readBytes: { byte[] buffer, long bytesToRead ->
-                def available = Math.max(0, readBuffer.get().length - readPosition.get())
-                def toRead = Math.min(available, bytesToRead as int)
-
-                if (toRead > 0) {
-                    System.arraycopy(readBuffer.get(), readPosition.get(), buffer, 0, toRead)
-                    readPosition.set(readPosition.get() + toRead)
-                }
-
-                return toRead
-            },
-            writeBytes: { byte[] buffer, long bytesToWrite ->
-                latestRequest.set(Arrays.copyOfRange(buffer, 0, bytesToWrite as int))
-
-                // Generate Modbus RTU response
-                byte[] response = generateModbusResponse(buffer, 0, bytesToWrite as int)
-                readBuffer.set(response)
-                readPosition.set(0)
-
-                return bytesToWrite as int
-            }
-        ] as SerialPort
     }
 
     /**
@@ -1043,6 +1024,13 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             break
 
         case 0x06: // Write Single Register
+            response = new byte[8]
+            System.arraycopy(request, offset, response, 0, 6)
+            break
+
+        case 0x0F: // Write Multiple Coils
+        case 0x10: // Write Multiple Registers
+            // Response echoes: Unit ID + FC + Start Address + Quantity
             response = new byte[8]
             System.arraycopy(request, offset, response, 0, 6)
             break

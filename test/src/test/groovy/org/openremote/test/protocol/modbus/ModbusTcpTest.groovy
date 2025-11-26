@@ -75,8 +75,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     AtomicReference<ModbusMessage> latestWriteMessage = new AtomicReference(null)
-//    @Shared
-//    Map<, Number> messageMap = [:]
 
     def setupSpec() {
         modbusServerPort = findEphemeralPort()
@@ -139,10 +137,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         server.stop()
     }
 
-    /**
-     * Generate mock holding register data based on address and count.
-     * This simulates different test data for different register ranges.
-     */
     static short[] generateMockHoldingData(int address, int count) {
         short[] data = new short[count]
 
@@ -151,7 +145,6 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         // Byte/Word order test registers (200-207): values to test endianness
 
         for (int i = 0; i < count; i++) {
-            // PLC4X uses 0-indexed addresses, so address 99 = register 100 in 1-indexed notation
             int registerAddress = address + i + 1
 
             if (registerAddress >= 1 && registerAddress <= 10) {
@@ -252,7 +245,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadAddress(550)
                                     // Missing: readValueType
@@ -414,7 +407,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
                                     it.setReadAddress(1)
@@ -425,7 +418,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
                                     it.setReadAddress(2)
@@ -436,7 +429,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.UINT)
                                     it.setReadAddress(3)
@@ -504,7 +497,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LINT)
                                     it.setReadAddress(100)
@@ -517,7 +510,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.ULINT)
                                     it.setReadAddress(104)
@@ -530,7 +523,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.LREAL)
                                     it.setReadAddress(108)
@@ -599,7 +592,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.DINT)
                                     it.setReadAddress(200)
@@ -611,7 +604,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
                                     it.setReadAddress(202)
@@ -671,7 +664,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.REAL)
                                     it.setReadAddress(300)
@@ -686,7 +679,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)
+                                    it.setRequestInterval(1000)
                                     it.setReadMemoryArea(ModbusAgentLink.ReadMemoryArea.HOLDING)
                                     it.setReadValueType(ModbusAgentLink.ModbusDataType.DINT)
                                     it.setReadAddress(302)
@@ -768,7 +761,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
-        when: "a device with writeWithPollingRate enabled is created"
+        when: "a device with continuous write (requestInterval + writeAddress, no readAddress) is created"
         def device = new ThingAsset("Polling Write Test Device")
         device.setRealm(MASTER_REALM)
         device.addOrReplaceAttributes(
@@ -776,10 +769,10 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(AGENT_LINK, new ModbusAgentLink(agent.getId())
                                 .tap {
                                     it.setUnitId(1)
-                                    it.setPollingMillis(1000)  // Write every 500ms
+                                    it.setRequestInterval(1000)  // Write every 1000ms
                                     it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
                                     it.setWriteAddress(400)
-                                    it.setWriteWithPollingRate(true)  // Enable periodic write
+                                    // No readAddress = continuous write mode
                                 }
                         )
                 )
@@ -872,7 +865,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
                                     it.setUnitId(1)
                                     it.setWriteMemoryArea(ModbusAgentLink.WriteMemoryArea.HOLDING)
                                     it.setWriteAddress(500)
-                                    it.setPollingMillis(1000)
+                                    // No requestInterval = write on demand only
                                 }
                         )
                 )

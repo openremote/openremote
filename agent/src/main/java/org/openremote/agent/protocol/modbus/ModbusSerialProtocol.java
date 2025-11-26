@@ -32,9 +32,12 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
 
     private ModbusSerialIOClient client = null;
-    private CompletableFuture<ModbusSerialFrame> pendingRequest = null;
+    private volatile CompletableFuture<ModbusSerialFrame> pendingRequest = null;
     private long lastRequestTime = 0;
     private static final long MIN_REQUEST_INTERVAL_MS = 50; // Minimum time between requests
+
+    // Separate lock for serializing request-response cycles (prevents concurrent requests)
+    private final Object sendLock = new Object();
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
@@ -95,13 +98,16 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
     /**
      * Send a Modbus request and wait for response with timeout.
      * Enforces serial request/response pattern (only one request at a time).
+     *
+     * IMPORTANT: Modbus RTU has no transaction IDs, so we MUST ensure only one request
+     * is in-flight at any time. We use sendLock to serialize entire request-response cycles,
+     * while requestLock is only used to safely access/modify pendingRequest without blocking
+     * the response handler callback.
      */
     private ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
-        CompletableFuture<ModbusSerialFrame> responseFuture;
-
-        // Critical section: only synchronize sending the request
-        // Modbus RTU requires strict serial request/response (no transaction IDs)
-        synchronized (requestLock) {
+        // sendLock ensures only ONE request-response cycle can be active at a time
+        // This prevents race conditions in Modbus RTU which has no transaction IDs
+        synchronized (sendLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
                 throw new IllegalStateException("Client not connected");
             }
@@ -117,28 +123,33 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 }
             }
 
-            // Create frame and register pending request
+            // Create frame and future for response
             ModbusSerialFrame request = new ModbusSerialFrame(unitId, pdu);
-            responseFuture = new CompletableFuture<>();
-            pendingRequest = responseFuture;
+            CompletableFuture<ModbusSerialFrame> responseFuture = new CompletableFuture<>();
 
-            // Send request
-            client.sendMessage(request);
-            lastRequestTime = System.currentTimeMillis();
-            LOG.finest("Sent Modbus Serial request - UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
-        }
-
-        // Wait for response outside synchronized block to avoid blocking other threads
-        try {
-            ModbusSerialFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
-            LOG.finest("Received Modbus Serial response - UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
-            return response;
-        } catch (TimeoutException e) {
-            LOG.warning("Modbus Serial request timeout - UnitID: " + unitId);
-            throw e;
-        } finally {
+            // Register pending request (use requestLock for thread-safe access)
             synchronized (requestLock) {
-                pendingRequest = null;
+                pendingRequest = responseFuture;
+            }
+
+            try {
+                // Send request
+                client.sendMessage(request);
+                lastRequestTime = System.currentTimeMillis();
+                LOG.finest("Sent Modbus Serial request - UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+
+                // Wait for response (NOT holding requestLock so handler can complete the future)
+                ModbusSerialFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+                LOG.finest("Received Modbus Serial response - UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
+                return response;
+            } catch (TimeoutException e) {
+                LOG.warning("Modbus Serial request timeout - UnitID: " + unitId);
+                throw e;
+            } finally {
+                // Clear pending request
+                synchronized (requestLock) {
+                    pendingRequest = null;
+                }
             }
         }
     }
