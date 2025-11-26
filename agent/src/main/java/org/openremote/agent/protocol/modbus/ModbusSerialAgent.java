@@ -20,6 +20,8 @@
 package org.openremote.agent.protocol.modbus;
 
 import jakarta.persistence.Entity;
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
@@ -37,25 +39,12 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
     public static final AttributeDescriptor<Integer> BAUD_RATE = Agent.SERIAL_BAUDRATE.withOptional(false);
     public static final AttributeDescriptor<Integer> DATA_BITS = new AttributeDescriptor<>("dataBits", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> STOP_BITS = new AttributeDescriptor<>("stopBits", ValueType.POSITIVE_INTEGER);
 
-    public static final ValueDescriptor<ModbusClientParity> VALUE_MODBUS_PARITY = new ValueDescriptor<>("ModbusParity", ModbusClientParity.class);
-    public static final AttributeDescriptor<ModbusClientParity> PARITY = new AttributeDescriptor<>("parity", VALUE_MODBUS_PARITY);
+    public static final ValueDescriptor<Stopbits> VALUE_STOPBITS = new ValueDescriptor<>("Stopbits", Stopbits.class);
+    public static final AttributeDescriptor<Stopbits> STOP_BITS = new AttributeDescriptor<>("stopBits", VALUE_STOPBITS);
 
-    public enum ModbusClientParity {
-        NO,
-        ODD,
-        EVEN,
-        MARK,
-        SPACE;
-
-        public static ModbusClientParity fromValue(int value) {
-            if (value >= 0 && value < values().length) {
-                return values()[value];
-            }
-            return EVEN; // Default for Modbus RTU
-        }
-    }
+    public static final ValueDescriptor<Paritybit> VALUE_PARITYBIT = new ValueDescriptor<>("Paritybit", Paritybit.class);
+    public static final AttributeDescriptor<Paritybit> PARITY = new AttributeDescriptor<>("parity", VALUE_PARITYBIT);
 
     public static final AgentDescriptor<ModbusSerialAgent, ModbusSerialProtocol, ModbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
             ModbusSerialAgent.class, ModbusSerialProtocol.class, ModbusAgentLink.class
@@ -75,24 +64,20 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
         return getAttributes().getValue(SERIAL_PORT);
     }
 
-    public Integer getBaudRate() {
-        return getAttributes().getValue(BAUD_RATE).orElse(null);
+    public int getBaudRate() {
+        return getAttributes().getValue(BAUD_RATE).orElse(9600);
     }
 
-    public Integer getDataBits() {
-        return getAttributes().getValue(DATA_BITS).orElse(null);
+    public int getDataBits() {
+        return getAttributes().getValue(DATA_BITS).orElse(8);
     }
 
-    public Integer getStopBits() {
-        return getAttributes().getValue(STOP_BITS).orElse(null);
+    public Stopbits getStopBits() {
+        return getAttributes().getValue(STOP_BITS).orElse(Stopbits.STOPBITS_1);
     }
 
-    public ModbusClientParity getParity() {
-        return getAttribute(PARITY).map(attr -> attr.getValue().orElse(ModbusClientParity.EVEN)).orElse(ModbusClientParity.EVEN);
-    }
-
-    public int getParityValue() {
-        return getParity().ordinal();
+    public Paritybit getParity() {
+        return getAttributes().getValue(PARITY).orElse(Paritybit.EVEN);
     }
 
     public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {

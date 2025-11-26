@@ -23,6 +23,8 @@ import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits
 import org.openremote.agent.protocol.serial.SerialIOClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -96,7 +98,6 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         synchronized (frameBuffer) {
             frameBuffer.reset()
         }
-        MockSerialChannel.resetState()
     }
 
     def "Modbus Serial Integration Test - Basic Operations"() {
@@ -116,8 +117,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN),
                 new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
                         "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "101,151-161", 30)
                 ] as ModbusAgent.DeviceConfigMap)
@@ -282,8 +283,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN),
                 new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
                         "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "6-11,21-26", 30)
                 ] as ModbusAgent.DeviceConfigMap)
@@ -370,8 +371,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN),
                 new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
                         "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 30)
                 ] as ModbusAgent.DeviceConfigMap)
@@ -556,8 +557,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN),
                 new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
                         "default": new ModbusAgent.ModbusDeviceConfig(ModbusAgent.EndianFormat.BIG_ENDIAN, "", 50)
                 ] as ModbusAgent.DeviceConfigMap)
@@ -664,8 +665,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN)
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN)
         )
         agent = assetStorageService.merge(agent)
 
@@ -737,8 +738,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN)
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN)
         )
         agent = assetStorageService.merge(agent)
 
@@ -817,8 +818,8 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModbusSerialAgent.SERIAL_PORT, "/dev/ttyUSB0"),
                 new Attribute<>(ModbusSerialAgent.BAUD_RATE, 9600),
                 new Attribute<>(ModbusSerialAgent.DATA_BITS, 8),
-                new Attribute<>(ModbusSerialAgent.STOP_BITS, 1),
-                new Attribute<>(ModbusSerialAgent.PARITY, ModbusSerialAgent.ModbusClientParity.EVEN),
+                new Attribute<>(ModbusSerialAgent.STOP_BITS, Stopbits.STOPBITS_1),
+                new Attribute<>(ModbusSerialAgent.PARITY, Paritybit.EVEN),
                 new Attribute<>(ModbusAgent.DEVICE_CONFIG, [
                         "default": new ModbusAgent.ModbusDeviceConfig(endianFormat, "", 50)
                 ] as ModbusAgent.DeviceConfigMap)

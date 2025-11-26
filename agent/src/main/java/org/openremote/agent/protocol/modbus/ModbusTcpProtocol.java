@@ -31,14 +31,11 @@ import java.util.logging.Logger;
 public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol, ModbusTcpAgent> {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusTcpProtocol.class);
-
     private ModbusTcpIOClient client = null;
     private final Map<Integer, CompletableFuture<ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();
     private final Map<Integer, Long> timedOutRequests = new ConcurrentHashMap<>(); // Track timed-out TxIDs with timestamp
 
-    public ModbusTcpProtocol(ModbusTcpAgent agent) {
-        super(agent);
-    }
+    public ModbusTcpProtocol(ModbusTcpAgent agent) {super(agent);}
 
     @Override
     protected void doStartProtocol(Container container) throws Exception {
@@ -83,9 +80,6 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         return "TCP";
     }
 
-    /**
-     * Send a Modbus request and wait for response with timeout
-     */
     private ModbusTcpFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
         int transactionId;
         CompletableFuture<ModbusTcpFrame> responseFuture;
@@ -119,9 +113,6 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         }
     }
 
-    /**
-     * Handle incoming Modbus TCP frame from client
-     */
     private void handleIncomingFrame(ModbusTcpFrame frame) {
         LOG.finest(() -> "Received frame - TxID: " + frame.getTransactionId() + ", UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 

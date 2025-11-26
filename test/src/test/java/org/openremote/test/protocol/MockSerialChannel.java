@@ -33,7 +33,6 @@ import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Mock Serial Channel for testing serial-based protocols without actual hardware.
@@ -46,43 +45,20 @@ public class MockSerialChannel extends OioByteStreamChannel {
 
     private static final JSerialCommDeviceAddress LOCAL_ADDRESS = new JSerialCommDeviceAddress("localhost");
 
-    /**
-     * Handler for processing data written to the serial port and generating responses.
-     */
+
     public interface DataHandler {
-        /**
-         * Called when data is written to the serial port.
-         * @param data the data that was written
-         * @param responseCallback callback to send response data back to the reader
-         */
         void onDataWritten(byte[] data, ResponseCallback responseCallback);
     }
 
-    /**
-     * Callback interface for sending response data.
-     */
     public interface ResponseCallback {
-        /**
-         * Queue response bytes to be read by the channel.
-         * @param response the response bytes to queue
-         */
         void sendResponse(byte[] response);
     }
 
-    // Static handler for processing data - set by tests
     private static volatile DataHandler dataHandler = null;
-
-    // Static reference for the last data written (useful for test assertions)
-    private static final AtomicReference<byte[]> lastWrittenData = new AtomicReference<>(null);
-
     private final ChannelConfig config;
     private boolean open = true;
     private JSerialCommDeviceAddress deviceAddress;
-
-    // Instance-specific response queue - each channel has its own queue
     private final BlockingQueue<Byte> responseQueue = new LinkedBlockingQueue<>();
-
-    // Instance-specific streams
     private MockInputStream mockInputStream;
     private MockOutputStream mockOutputStream;
 
@@ -91,27 +67,8 @@ public class MockSerialChannel extends OioByteStreamChannel {
         config = new DefaultChannelConfig(this);
     }
 
-    /**
-     * Set the data handler for processing writes and generating responses.
-     * @param handler the handler, or null to disable
-     */
     public static void setDataHandler(DataHandler handler) {
         dataHandler = handler;
-    }
-
-    /**
-     * Get the last data that was written to the channel.
-     * @return the last written data, or null if nothing has been written
-     */
-    public static byte[] getLastWrittenData() {
-        return lastWrittenData.get();
-    }
-
-    /**
-     * Reset mock state before each test.
-     */
-    public static void resetState() {
-        lastWrittenData.set(null);
     }
 
     @Override
@@ -190,10 +147,6 @@ public class MockSerialChannel extends OioByteStreamChannel {
         return newFailedFuture(new UnsupportedOperationException("shutdownInput"));
     }
 
-    /**
-     * Queue response bytes to be read by the channel.
-     * This is called by the DataHandler via the ResponseCallback.
-     */
     private void queueResponse(byte[] response) {
         if (response != null) {
             for (byte b : response) {
@@ -202,13 +155,9 @@ public class MockSerialChannel extends OioByteStreamChannel {
         }
     }
 
-    /**
-     * Mock InputStream that reads from the response queue.
-     * Uses short timeouts to allow the OIO thread to process pending writes.
-     */
     private class MockInputStream extends InputStream {
         @Override
-        public int read() throws IOException {
+        public int read() {
             if (!open) return -1;
 
             try {
@@ -224,7 +173,7 @@ public class MockSerialChannel extends OioByteStreamChannel {
         }
 
         @Override
-        public int read(byte[] b, int off, int len) throws IOException {
+        public int read(byte[] b, int off, int len) {
             if (!open) return -1;
             if (len == 0) return 0;
 
@@ -254,26 +203,21 @@ public class MockSerialChannel extends OioByteStreamChannel {
         }
 
         @Override
-        public int available() throws IOException {
+        public int available() {
             return responseQueue.size();
         }
     }
 
-    /**
-     * Mock OutputStream that captures writes and invokes the data handler.
-     */
     private class MockOutputStream extends OutputStream {
         @Override
-        public void write(int b) throws IOException {
+        public void write(int b) {
             write(new byte[]{(byte) b}, 0, 1);
         }
 
         @Override
-        public void write(byte[] b, int off, int len) throws IOException {
+        public void write(byte[] b, int off, int len) {
             byte[] data = new byte[len];
             System.arraycopy(b, off, data, 0, len);
-
-            lastWrittenData.set(data);
 
             DataHandler handler = dataHandler;
             if (handler != null) {
@@ -282,8 +226,8 @@ public class MockSerialChannel extends OioByteStreamChannel {
         }
 
         @Override
-        public void flush() throws IOException {
-            // No-op for mock
+        public void flush() {
+            // Nothing for mock
         }
     }
 

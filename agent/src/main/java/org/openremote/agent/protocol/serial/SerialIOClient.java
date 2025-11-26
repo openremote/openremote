@@ -42,30 +42,10 @@ import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
  */
 public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDeviceAddress> {
 
-    /**
-     * Test mode channel class - when set, this class will be used instead of JSerialCommChannel.
-     * This allows tests to inject a mock channel without requiring actual serial hardware.
-     */
-    private static final AtomicReference<Class<? extends Channel>> testChannelClass = new AtomicReference<>(null);
-
-    /**
-     * Set a test channel class to be used instead of JSerialCommChannel.
-     * Call with null to disable test mode.
-     */
-    public static void setTestChannelClass(Class<? extends Channel> channelClass) {
-        testChannelClass.set(channelClass);
-    }
-
-    /**
-     * Get the current test channel class, or null if not in test mode.
-     */
-    public static Class<? extends Channel> getTestChannelClass() {
-        return testChannelClass.get();
-    }
-
     protected String port;
     protected int baudRate;
     public static int DEFAULT_BAUD_RATE = 38400;
+    private static final AtomicReference<Class<? extends Channel>> testChannelClass = new AtomicReference<>(null);
 
     public SerialIOClient(String port, Integer baudRate) {
         TextUtil.requireNonNullAndNonEmpty(port);
@@ -108,4 +88,9 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
         bootstrap.option(STOP_BITS, STOPBITS_1);
         bootstrap.option(PARITY_BIT, NONE);
     }
+
+    public static void setTestChannelClass(Class<? extends Channel> channelClass) {
+        testChannelClass.set(channelClass);
+    }
+
 }

@@ -30,13 +30,10 @@ import java.util.logging.Logger;
 public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent> {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
-
     private ModbusSerialIOClient client = null;
     private volatile CompletableFuture<ModbusSerialFrame> pendingRequest = null;
     private long lastRequestTime = 0;
-    private static final long MIN_REQUEST_INTERVAL_MS = 50; // Minimum time between requests
-
-    // Separate lock for serializing request-response cycles (prevents concurrent requests)
+    private static final long MIN_REQUEST_INTERVAL_MS = 10; // Gap between requests per modbus.org (conservative number)
     private final Object sendLock = new Object();
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
@@ -48,8 +45,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
         int baudRate = agent.getBaudRate();
         int dataBits = agent.getDataBits();
-        int stopBits = agent.getStopBits();
-        int parity = agent.getParityValue();
+        var stopBits = agent.getStopBits();
+        var parity = agent.getParity();
 
         connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
 
@@ -95,18 +92,8 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         return "Serial";
     }
 
-    /**
-     * Send a Modbus request and wait for response with timeout.
-     * Enforces serial request/response pattern (only one request at a time).
-     *
-     * IMPORTANT: Modbus RTU has no transaction IDs, so we MUST ensure only one request
-     * is in-flight at any time. We use sendLock to serialize entire request-response cycles,
-     * while requestLock is only used to safely access/modify pendingRequest without blocking
-     * the response handler callback.
-     */
     private ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
-        // sendLock ensures only ONE request-response cycle can be active at a time
-        // This prevents race conditions in Modbus RTU which has no transaction IDs
+        // sendLock ensures only one request-response cycle can be active at a time
         synchronized (sendLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
                 throw new IllegalStateException("Client not connected");
@@ -154,9 +141,6 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }
     }
 
-    /**
-     * Handle incoming Modbus Serial frame from client
-     */
     private void handleIncomingFrame(ModbusSerialFrame frame) {
         LOG.finest("Received frame - UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 

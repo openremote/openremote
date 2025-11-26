@@ -44,18 +44,13 @@ public class ModbusRTUDecoder extends ByteToMessageDecoder {
             return;
         }
 
-        // Mark reader index in case we need to reset
         in.markReaderIndex();
 
-        // Read unit ID and function code without consuming
         int unitId = in.getUnsignedByte(in.readerIndex());
         int functionCode = in.getUnsignedByte(in.readerIndex() + 1);
-
-        // Determine expected frame length based on function code
         int expectedLength = determineExpectedLength(in, functionCode);
 
         if (expectedLength < 0) {
-            // Can't determine length yet, wait for more data
             return;
         }
 
@@ -69,14 +64,12 @@ public class ModbusRTUDecoder extends ByteToMessageDecoder {
         byte[] frameBytes = new byte[expectedLength];
         in.readBytes(frameBytes);
 
-        // Validate CRC
         if (!ModbusSerialFrame.isValidCRC(frameBytes)) {
             LOG.warning("Invalid CRC in Modbus RTU frame, discarding: UnitId=" + unitId +
                        ", FunctionCode=0x" + Integer.toHexString(functionCode));
             return;
         }
 
-        // Create frame and add to output
         ModbusSerialFrame frame = ModbusSerialFrame.fromBytes(frameBytes);
         if (frame != null) {
             out.add(frame);
@@ -84,10 +77,6 @@ public class ModbusRTUDecoder extends ByteToMessageDecoder {
         }
     }
 
-    /**
-     * Determine the expected frame length based on function code and available data.
-     * Returns -1 if we need more data to determine the length.
-     */
     private int determineExpectedLength(ByteBuf in, int functionCode) {
         // For exception responses (function code with 0x80 bit set)
         if ((functionCode & 0x80) != 0) {

@@ -25,7 +25,6 @@ import jakarta.validation.constraints.Min;
 import org.openremote.model.asset.agent.AgentLink;
 import java.math.BigInteger;
 
-//TODO: Make non-primitive parameters required
 public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
 
     @JsonPropertyDescription("Modbus unit ID (1-255). Required for Serial, optional for TCP (defaults to 1)")
@@ -162,7 +161,6 @@ public class ModbusAgentLink extends AgentLink<ModbusAgentLink> {
     public enum WriteMemoryArea {
         COIL, HOLDING
     }
-
 
     public ModbusAgentLink(String id) {super(id);}
 

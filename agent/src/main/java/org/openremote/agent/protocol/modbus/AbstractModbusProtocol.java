@@ -47,9 +47,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected String connectionString;
     protected final Object requestLock = new Object();
 
-    public AbstractModbusProtocol(T agent) {
-        super(agent);
-    }
+    public AbstractModbusProtocol(T agent) {super(agent);}
 
     protected abstract void doStartProtocol(Container container) throws Exception;
     protected abstract void doStopProtocol(Container container) throws Exception;
@@ -74,7 +72,6 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
         boolean contains(int register) {
             return register >= start && register <= end;
         }
-
     }
 
     protected static class BatchReadRequest {

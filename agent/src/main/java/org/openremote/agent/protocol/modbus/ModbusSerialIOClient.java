@@ -21,30 +21,23 @@ package org.openremote.agent.protocol.modbus;
 
 import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits;
 import org.openremote.agent.protocol.serial.SerialIOClient;
-import org.openremote.model.syslog.SyslogCategory;
-import java.util.logging.Logger;
 import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-/**
- * Modbus RTU serial client that wraps SerialIOClient with Modbus RTU frame encoding/decoding
- */
 public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
 
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusSerialIOClient.class);
-
     private final int dataBits;
-    private final int stopBits;
-    private final int parity;
+    private final Stopbits stopBits;
+    private final Paritybit parity;
 
-    public ModbusSerialIOClient(String port, int baudRate, int dataBits, int stopBits, int parity) {
+    public ModbusSerialIOClient(String port, int baudRate, int dataBits, Stopbits stopBits, Paritybit parity) {
         super(port, baudRate);
         this.dataBits = dataBits;
         this.stopBits = stopBits;
         this.parity = parity;
 
-        // Set up Modbus RTU encoder and decoder
         setEncoderDecoderProvider(
             () -> new ChannelHandler[] {
                 new ModbusRTUEncoder(),
@@ -57,42 +50,9 @@ public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
     @Override
     protected void configureChannel() {
         super.configureChannel();
-
-        // Configure serial port parameters
         bootstrap.option(DATA_BITS, dataBits);
-        bootstrap.option(STOP_BITS, convertStopBits(stopBits));
-        bootstrap.option(PARITY_BIT, convertParity(parity));
-    }
-
-    private org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits convertStopBits(int stopBits) {
-        switch (stopBits) {
-            case 1:
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
-            case 2:
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_2;
-            default:
-                LOG.warning("Invalid stop bits value: " + stopBits + ", defaulting to 1");
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
-        }
-    }
-
-    private org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit convertParity(int parity) {
-        // Convert parity integer to enum (matches jSerialComm/ModbusSerialAgent values)
-        switch (parity) {
-            case 0: // NO_PARITY
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
-            case 1: // ODD_PARITY
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.ODD;
-            case 2: // EVEN_PARITY
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.EVEN;
-            case 3: // MARK_PARITY
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.MARK;
-            case 4: // SPACE_PARITY
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.SPACE;
-            default:
-                LOG.warning("Invalid parity value: " + parity + ", defaulting to EVEN");
-                return org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.EVEN;
-        }
+        bootstrap.option(STOP_BITS, stopBits);
+        bootstrap.option(PARITY_BIT, parity);
     }
 
     @Override

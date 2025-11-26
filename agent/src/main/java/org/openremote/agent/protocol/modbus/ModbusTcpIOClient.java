@@ -31,9 +31,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-/**
- * Modbus TCP client that wraps TCPIOClient with Modbus TCP frame encoding/decoding
- */
 public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusTcpIOClient.class);
@@ -53,16 +50,11 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
         );
     }
 
-    /**
-     * Get next transaction ID (wraps around at 65536)
-     */
+
     public int getNextTransactionId() {
         return transactionIdCounter.updateAndGet(current -> (current + 1) % 65536);
     }
 
-    /**
-     * Encodes Modbus TCP frames to bytes (MBAP header + PDU)
-     */
     public static class ModbusTcpEncoder extends io.netty.handler.codec.MessageToByteEncoder<ModbusTcpFrame> {
         @Override
         protected void encode(ChannelHandlerContext ctx, ModbusTcpFrame frame, ByteBuf out) {
@@ -83,9 +75,6 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
         }
     }
 
-    /**
-     * Decodes bytes to Modbus TCP frames (MBAP header + PDU)
-     */
     public static class ModbusTcpDecoder extends io.netty.handler.codec.ByteToMessageDecoder {
         @Override
         protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
@@ -94,7 +83,6 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
                 return;
             }
 
-            // Mark reader index in case we need to reset
             in.markReaderIndex();
 
             // Read MBAP header
@@ -110,7 +98,6 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
                 return;
             }
 
-            // Read PDU
             byte[] pdu = new byte[pduLength];
             in.readBytes(pdu);
 

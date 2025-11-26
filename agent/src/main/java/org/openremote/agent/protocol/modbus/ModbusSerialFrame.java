@@ -32,9 +32,6 @@ public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse 
         this.pdu = pdu;
     }
 
-    /**
-     * Create frame from raw bytes (including unit ID and CRC)
-     */
     public static ModbusSerialFrame fromBytes(byte[] frameBytes) {
         if (frameBytes == null || frameBytes.length < 4) {
             // Minimum: 1 byte unit ID + 1 byte function code + 2 bytes CRC
@@ -65,9 +62,6 @@ public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse 
         return pdu != null && pdu.length > 0 && (pdu[0] & 0x80) != 0;
     }
 
-    /**
-     * Pack the frame into bytes: [Unit ID][PDU][CRC16 Low][CRC16 High]
-     */
     public byte[] pack() {
         if (fullFrame != null) {
             return fullFrame;
@@ -77,7 +71,6 @@ public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse 
         fullFrame[0] = (byte) unitId;
         System.arraycopy(pdu, 0, fullFrame, 1, pdu.length);
 
-        // Calculate and append CRC16
         int crc = calculateCRC16(fullFrame, 0, 1 + pdu.length);
         fullFrame[1 + pdu.length] = (byte) (crc & 0xFF);        // CRC Low
         fullFrame[2 + pdu.length] = (byte) ((crc >> 8) & 0xFF); // CRC High
@@ -85,9 +78,6 @@ public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse 
         return fullFrame;
     }
 
-    /**
-     * Validate CRC16 of the frame
-     */
     public static boolean isValidCRC(byte[] frameBytes) {
         if (frameBytes == null || frameBytes.length < 4) {
             return false;
@@ -100,9 +90,6 @@ public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse 
         return receivedCRC == calculatedCRC;
     }
 
-    /**
-     * Calculate CRC16 (Modbus) for the given data
-     */
     private static int calculateCRC16(byte[] data, int offset, int length) {
         int crc = 0xFFFF;
         for (int i = offset; i < offset + length; i++) {
