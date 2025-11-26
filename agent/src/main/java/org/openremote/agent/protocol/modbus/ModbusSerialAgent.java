@@ -20,14 +20,14 @@
 package org.openremote.agent.protocol.modbus;
 
 import jakarta.persistence.Entity;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
-import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
-
 import java.util.Optional;
 
 /**
@@ -40,11 +40,30 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public static final AttributeDescriptor<Integer> BAUD_RATE = Agent.SERIAL_BAUDRATE.withOptional(false);
     public static final AttributeDescriptor<Integer> DATA_BITS = new AttributeDescriptor<>("dataBits", ValueType.POSITIVE_INTEGER);
 
-    public static final ValueDescriptor<Stopbits> VALUE_STOPBITS = new ValueDescriptor<>("Stopbits", Stopbits.class);
-    public static final AttributeDescriptor<Stopbits> STOP_BITS = new AttributeDescriptor<>("stopBits", VALUE_STOPBITS);
+    public static final ValueDescriptor<StopBits> VALUE_STOPBITS = new ValueDescriptor<>("StopBits", StopBits.class);
+    public static final AttributeDescriptor<StopBits> STOP_BITS = new AttributeDescriptor<>("stopBits", VALUE_STOPBITS);
 
-    public static final ValueDescriptor<Paritybit> VALUE_PARITYBIT = new ValueDescriptor<>("Paritybit", Paritybit.class);
-    public static final AttributeDescriptor<Paritybit> PARITY = new AttributeDescriptor<>("parity", VALUE_PARITYBIT);
+    public static final ValueDescriptor<Paritybit> VALUE_PARITY = new ValueDescriptor<>("Paritybit", Paritybit.class);
+    public static final AttributeDescriptor<Paritybit> PARITY = new AttributeDescriptor<>("parity", VALUE_PARITY);
+
+    public enum StopBits {
+        @JsonProperty("1")
+        ONE(JSerialCommChannelConfig.Stopbits.STOPBITS_1),
+        @JsonProperty("1,5")
+        ONE_HALF(JSerialCommChannelConfig.Stopbits.STOPBITS_1_5),
+        @JsonProperty("2")
+        TWO(JSerialCommChannelConfig.Stopbits.STOPBITS_2);
+
+        private final JSerialCommChannelConfig.Stopbits value;
+
+        StopBits(JSerialCommChannelConfig.Stopbits value) {
+            this.value = value;
+        }
+
+        public JSerialCommChannelConfig.Stopbits toJSerialComm() {
+            return value;
+        }
+    }
 
     public static final AgentDescriptor<ModbusSerialAgent, ModbusSerialProtocol, ModbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
             ModbusSerialAgent.class, ModbusSerialProtocol.class, ModbusAgentLink.class
@@ -72,8 +91,8 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
         return getAttributes().getValue(DATA_BITS).orElse(8);
     }
 
-    public Stopbits getStopBits() {
-        return getAttributes().getValue(STOP_BITS).orElse(Stopbits.STOPBITS_1);
+    public StopBits getStopBits() {
+        return getAttributes().getValue(STOP_BITS).orElse(StopBits.ONE);
     }
 
     public Paritybit getParity() {

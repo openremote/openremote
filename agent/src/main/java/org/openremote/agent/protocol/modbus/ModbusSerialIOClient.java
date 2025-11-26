@@ -22,17 +22,17 @@ package org.openremote.agent.protocol.modbus;
 import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
-import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits;
 import org.openremote.agent.protocol.serial.SerialIOClient;
+
 import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 
 public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
 
     private final int dataBits;
-    private final Stopbits stopBits;
+    private final ModbusSerialAgent.StopBits stopBits;
     private final Paritybit parity;
 
-    public ModbusSerialIOClient(String port, int baudRate, int dataBits, Stopbits stopBits, Paritybit parity) {
+    public ModbusSerialIOClient(String port, int baudRate, int dataBits, ModbusSerialAgent.StopBits stopBits, Paritybit parity) {
         super(port, baudRate);
         this.dataBits = dataBits;
         this.stopBits = stopBits;
@@ -51,7 +51,7 @@ public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(DATA_BITS, dataBits);
-        bootstrap.option(STOP_BITS, stopBits);
+        bootstrap.option(STOP_BITS, stopBits.toJSerialComm());
         bootstrap.option(PARITY_BIT, parity);
     }
 
