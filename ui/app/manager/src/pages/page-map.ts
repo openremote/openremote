@@ -1,4 +1,4 @@
-import {css, html} from "lit";
+import {css, html, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
@@ -212,6 +212,14 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assetTypes: string[] = [];
     protected _excludedTypes: string[] = [];
 
+    shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (_changedProperties.has("_assets")) {
+            this._updateMarkers();
+            this._map?.reload();
+        }
+        return super.shouldUpdate(_changedProperties);
+    }
+
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
         let markerLabelAttributes = [];
@@ -282,8 +290,6 @@ export class PageMap extends Page<MapStateKeyed> {
                 const assets = response.data;
 
                 this._store.dispatch(setAssets(assets));
-
-                this._updateMarkers();
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
@@ -415,8 +421,6 @@ export class PageMap extends Page<MapStateKeyed> {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
         this.getRealmState(state);
-        this._updateMarkers();
-        this._map?.reload();
     }
 
     protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {
