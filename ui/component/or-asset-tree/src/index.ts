@@ -264,7 +264,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public readonly rootAssetIds?: string[];
 
     @property({type: Object})
-    public readonly dataProvider?: () => Promise<Asset[]>;
+    public readonly dataProvider?: (offset: number, limit: number, parentId?: string) => Promise<Asset[]>;
 
     @property({type: Boolean})
     public readonly readonly: boolean = false;
@@ -1750,7 +1750,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._loading = true;
 
         if(this.dataProvider) {
-            this.dataProvider().then(assets => {
+            this.dataProvider(offset, this.queryLimit, parentId).then(assets => {
                 this._loading = false;
                 this._buildTreeNodes(assets);
                 if(this._filterInput?.value) {

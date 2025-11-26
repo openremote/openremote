@@ -296,8 +296,7 @@ export class AssettypesPanel extends LitElement {
             .setHeading(i18next.t("linkedAssets"))
             .setContent(html`
                 <div style="width: 400px;">
-                    <or-asset-tree ${ref(assetTreeRef)} .dataProvider="${this.assetTreeDataProvider}" expandAllNodes
-                                   id="chart-asset-tree" readonly .config="${config}" .selectedIds="${assetIds}"
+                    <or-asset-tree ${ref(assetTreeRef)} expandAllNodes id="chart-asset-tree" readonly .config="${config}" .selectedIds="${assetIds}"
                                    .showSortBtn="${false}" .showFilter="${false}" .checkboxes="${multi}"
                     ></or-asset-tree>
                 </div>
@@ -324,27 +323,7 @@ export class AssettypesPanel extends LitElement {
                 }
             ])
             .setDismissAction({
-                actionName: "cancel",
+                actionName: "cancel"
             }));
     }
-
-    protected assetTreeDataProvider = async (): Promise<Asset[]> => {
-        const assetQuery: AssetQuery = {
-            realm: {
-                name: manager.displayRealm
-            },
-            select: { // Just need the basic asset info
-                attributes: []
-            }
-        };
-        // At first, just fetch all accessible assets without attribute info...
-        const assets = (await manager.rest.api.AssetResource.queryAssets(assetQuery)).data;
-
-        // After fetching, narrow down the list to assets with the same assetType.
-        // Since it is a tree, we also include the parents of those assets, based on the 'asset.path' variable.
-        const pathsOfAssetType = assets.filter(a => a.type === this.assetType).map(a => a.path!);
-        const filteredAssetIds = [...new Set([].concat(...pathsOfAssetType as any[]))] as string[];
-        return assets.filter(a => filteredAssetIds.includes(a.id!));
-    }
-
 }
