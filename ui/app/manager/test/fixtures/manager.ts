@@ -130,6 +130,28 @@ export class Manager {
     return access_token;
   }
 
+  /**
+   * When an application initialises a WebSocket this will assign that instance to the `window.ws` object.
+   * 
+   * Must only be used inside a `await page.addInitScript` before the WebSocket gets initialised.
+   */
+  hijackWebSocket() {
+    return () => {
+      const OriginalWS = WebSocket;
+      window.WebSocket = function (url: string | URL, protocols?: string | string[]) {
+        return (window as any).ws = new OriginalWS(url, protocols);
+      } as any;
+    }
+  }
+
+  /**
+   * Send a WebSocket event to the server using an existing WebSocket connection.
+   * 
+   * You must add `await page.addInitScript(manager.hijackWebSocket())` 
+   * 
+   * @param payload The playload to send to WebSocket server.
+   * @see {@link hijackWebSocket}
+   */
   async sendWebSocketEvent(payload: any) {
     await this.page.evaluate((message) => {
       if ("ws" in window) {

@@ -1,5 +1,5 @@
 import * as Util from "@openremote/core/lib/util";
-import { Asset, AssetTypeInfo } from "@openremote/model";
+import { Asset, AssetInfo, AssetTypeInfo } from "@openremote/model";
 
 export const notes = { name: "notes", type: "text" };
 export const location = { name: "location", type: "GEO_JSONPoint" };
@@ -143,7 +143,7 @@ const rotterdam: BBox = {
 };
 
 /**
- * Generates assets with random location and asset types
+ * Assigns a random location within the specified bounding box
  *
  * @param asset The asset to assign the location attribute
  * @param boundingBox The bounding box to add assets within
@@ -165,13 +165,12 @@ export function assignLocation(asset: Asset, { south, north, east, west }: BBox 
     return asset;
 }
 
-export function randomAsset(assetInfos: AssetTypeInfo[]): Asset {
+export function getAssetAt(assetInfos: AssetTypeInfo[], index = 0): Asset {
     const validAssetInfos = assetInfos.filter(
         ({ assetDescriptor }) => assetDescriptor?.name && assetDescriptor.descriptorType === "asset"
     );
 
-    const randomIndex = Math.round(randomBetween(0, validAssetInfos.length - 1));
-    const info = validAssetInfos[randomIndex];
+    const info = validAssetInfos[index % validAssetInfos.length];
 
     const type = info.assetDescriptor!.name;
     const attributes = Object.fromEntries(
@@ -179,6 +178,12 @@ export function randomAsset(assetInfos: AssetTypeInfo[]): Asset {
     );
 
     return { type, name: type, attributes };
+}
+
+export function getAssetsForAllTypes(assetInfos: AssetTypeInfo[], options?: { realm?: string, limit?: number, bbox?: BBox }): Asset[] {
+  return Array.from({ length: options?.limit ?? assetInfos.length }).map((_, i) => {
+    return { ...assignLocation(getAssetAt(assetInfos, i), options?.bbox), name: String(i), realm: options?.realm ?? "smartcity" };
+  });
 }
 
 export function getAssetTypes(assets: Asset[]) {
