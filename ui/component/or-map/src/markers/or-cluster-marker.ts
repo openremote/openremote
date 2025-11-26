@@ -130,7 +130,8 @@ export class OrClusterMarker extends LitElement {
         if (this.lng && this.lat) {
             const zoom = await this._map.getSource<GeoJSONSource>('mapPoints')!.getClusterExpansionZoom(this._clusterId!);
             // Offset 0.99 added to ensure cluster marker dissappears
-            this._map.easeTo({ center: [this.lng, this.lat], zoom: zoom + 0.99 });
+            // Essential is enabled to ensure animations are always run for the offset to be applied
+            this._map.easeTo({ center: [this.lng, this.lat], zoom: zoom + 0.99, essential: true });
         }
     }
 }
