@@ -45,7 +45,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.util.MapAccess.*;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 
