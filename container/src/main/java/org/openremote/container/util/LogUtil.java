@@ -32,7 +32,6 @@ import java.util.Locale;
 import java.util.logging.LogManager;
 
 import static java.lang.System.Logger.Level.INFO;
-import static org.openremote.model.Container.OR_DEV_MODE;
 import static org.openremote.model.util.Config.OR_DEV_MODE;
 
 /**
