@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,28 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager;
+package org.openremote.container.web;
 
-import org.openremote.container.Container;
-import org.openremote.container.util.LogUtil;
+import java.nio.file.Path;
 
-public class Main {
-
-    static {
-        LogUtil.initialiseJUL();
-    }
-
-    public static void main(String[] args) throws Exception {
-        Container container = null;
-
-        try {
-            container = new Container();
-            container.startBackground();
-        } catch (Exception e) {
-            if (container != null) {
-                container.stop();
-            }
-            System.exit(1);
-        }
-    }
+/**
+ * A resource source that loads resources from a file system path.
+ */
+public record FileResource(Path path) implements ResourceSource {
 }

@@ -29,7 +29,8 @@ import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 import org.openremote.model.ContainerService;
-import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.Config;
+import org.openremote.model.util.MapAccess;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
@@ -40,8 +41,8 @@ import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getBoolean;
+import static org.openremote.model.util.MapAccess.getInteger;
 
 /**
  * A thread-safe registry of {@link ContainerService}s.
@@ -50,7 +51,7 @@ import static org.openremote.container.util.MapAccess.getInteger;
  * manage the life cycle of these services.
  * <p>
  * Access environment configuration through {@link #getConfig()} and the helper methods
- * in {@link org.openremote.container.util.MapAccess}. Consider using {@link org.openremote.model.Container#OR_DEV_MODE}
+ * in {@link MapAccess}. Consider using {@link Config#OR_DEV_MODE}
  * to distinguish between development and production environments.
  * To execute tasks in a standard way two {@link ExecutorService}s are provided:
  * <ul>
@@ -71,8 +72,6 @@ public class Container implements org.openremote.model.Container {
     public static final String OR_EXECUTOR_THREADS_MAX = "OR_EXECUTOR_THREADS_MAX";
     public static final int OR_EXECUTOR_THREADS_MIN_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 8);
     public static final int OR_EXECUTOR_THREADS_MAX_DEFAULT = Runtime.getRuntime().availableProcessors()*10;
-    protected final Map<String, String> config = new HashMap<>();
-    protected final boolean devMode;
     protected MeterRegistry meterRegistry;
 
     protected Thread waitingThread;
@@ -89,23 +88,17 @@ public class Container implements org.openremote.model.Container {
     }
 
     public Container(ContainerService... services) {
-        this(Arrays.asList(services));
+        this(null, Arrays.asList(services));
     }
 
     public Container(Iterable<ContainerService> services) {
-        this(System.getenv(), services);
+        this(null, services);
     }
 
     public Container(Map<String, String> config, Iterable<ContainerService> services) {
-        for (Map.Entry<String, String> entry : config.entrySet()) {
-            if (!TextUtil.isNullOrEmpty(entry.getValue())) {
-                this.config.put(entry.getKey(), entry.getValue());
-            }
-        }
+        Config.init(config);
 
-        this.devMode = getBoolean(this.config, OR_DEV_MODE, OR_DEV_MODE_DEFAULT);
-
-        boolean metricsEnabled = getBoolean(getConfig(), OR_METRICS_ENABLED, OR_METRICS_ENABLED_DEFAULT);
+        boolean metricsEnabled = getBoolean(getConfig(), Config.OR_METRICS_ENABLED, Config.OR_METRICS_ENABLED_DEFAULT);
         LOG.log(INFO, "Metrics enabled: " + metricsEnabled);
 
         if (metricsEnabled) {
@@ -123,6 +116,9 @@ public class Container implements org.openremote.model.Container {
 
         SCHEDULED_EXECUTOR = new ContainerScheduledExecutor("ContainerScheduledExecutor", scheduledExecutorThreads);
         EXECUTOR = new ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"), new ThreadPoolExecutor.CallerRunsPolicy());
+
+        LOG.log(INFO, EXECUTOR);
+        LOG.log(INFO, SCHEDULED_EXECUTOR);
 
         if (meterRegistry != null) {
             SCHEDULED_EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, SCHEDULED_EXECUTOR, "ContainerScheduledExecutor");
@@ -146,11 +142,11 @@ public class Container implements org.openremote.model.Container {
 
     @Override
     public Map<String, String> getConfig() {
-        return config;
+        return Config.get();
     }
 
     public boolean isDevMode() {
-        return devMode;
+        return Config.isDevMode();
     }
 
     public boolean isRunning() {
@@ -170,7 +166,7 @@ public class Container implements org.openremote.model.Container {
             // Initialise the asset model
             ValueUtil.initialise(this);
 
-            if (this.devMode) {
+            if (isDevMode()) {
                 ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
             }
 

@@ -55,7 +55,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.OR_HOSTNAME;
 import static org.openremote.model.alarm.Alarm.Source.*;
 
