@@ -117,6 +117,9 @@ public class Container implements org.openremote.model.Container {
         SCHEDULED_EXECUTOR = new ContainerScheduledExecutor("ContainerScheduledExecutor", scheduledExecutorThreads);
         EXECUTOR = new ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"), new ThreadPoolExecutor.CallerRunsPolicy());
 
+        LOG.log(INFO, EXECUTOR);
+        LOG.log(INFO, SCHEDULED_EXECUTOR);
+
         if (meterRegistry != null) {
             SCHEDULED_EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, SCHEDULED_EXECUTOR, "ContainerScheduledExecutor");
             EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR, "ContainerExecutor");
