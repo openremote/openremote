@@ -279,6 +279,14 @@ jobs:
         with:
           files: ".ci_cd/ci_cd.json"
 
+      - name: Set up JDK 21 and gradle cache
+        id: java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
       - name: Get version details
         id: get-version-details
         run: |
@@ -585,15 +593,6 @@ jobs:
         with:
           version: latest
           install: true
-
-      - name: Set up JDK 21 and gradle cache
-        id: java
-        if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path

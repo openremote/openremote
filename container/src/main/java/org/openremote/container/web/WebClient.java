@@ -21,6 +21,7 @@ package org.openremote.container.web;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.BearerAuthClientRequestFilter;
 import org.openremote.container.security.ClientSecretRequestFilter;
@@ -43,7 +44,8 @@ public interface WebClient {
             .register(new JacksonConfig())
             .register(new ProxyClientRequestFilter())
             .register(new BearerAuthClientRequestFilter())
-            .register(new ClientSecretRequestFilter());
+            .register(new ClientSecretRequestFilter())
+            .register(new GZIPDecodingInterceptor());
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor, URI forwardUri) {

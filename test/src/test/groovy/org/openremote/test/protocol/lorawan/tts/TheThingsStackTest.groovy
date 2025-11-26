@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackProtocol.THE_THINGS_STACK_TEST
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.Constants.*
 import static org.openremote.setup.integration.model.asset.TheThingsStackTestAsset.*
 
