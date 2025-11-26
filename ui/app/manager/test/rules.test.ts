@@ -88,12 +88,13 @@ test("Create a When-Then rule by searching for an asset", async ({page, manager,
     await page.click("or-rule-when #component span");
     await page.locator("or-rule-when li").filter({hasText: energyRule.asset_type}).click();
     await page.click(`text=Asset Any of this type`);
+    await expect(page.getByRole('textbox', { name: 'Search'})).toBeVisible();
     await page.getByRole('textbox', {name: 'Search'}).click();
     await page.keyboard.type(lastAssetName);
-    await expect(page.locator("or-mwc-input li[role=option]").getByText(lastAssetName, { exact: true })).toBeVisible();
-    await page.locator("or-mwc-input li[role=option]").filter({hasText: lastAssetName}).click();
+    await expect(page.locator("or-rule-asset-query or-mwc-input li[role=option]").getByText(lastAssetName, { exact: true })).toBeVisible();
+    await page.locator("or-rule-asset-query or-mwc-input li[role=option]").filter({hasText: lastAssetName}).click();
     await page.getByRole("button", {name: "Attribute", exact: true}).click();
-    await page.click(`or-mwc-input li[role="option"]:has-text("${energyRule.attribute_when}")`);
+    await page.click(`or-rule-asset-query or-mwc-input li[role="option"]:has-text("${energyRule.attribute_when}")`);
     await page.getByRole("button", {name: "Operator", exact: true}).click();
     await page.click("text=Less than or equal to");
     await page.getByRole("spinbutton", {name: "Energy level"}).fill(energyRule.value.toString());
@@ -102,12 +103,13 @@ test("Create a When-Then rule by searching for an asset", async ({page, manager,
     await page.getByRole("button", {name: "Add action"}).click();
     await page.click(`or-rule-then-otherwise li[role="menuitem"]:has-text("${energyRule.asset_type}")`);
     await page.click("text=Matched");
+    await expect(page.getByRole('textbox', { name: 'Search'})).toBeVisible();
     await page.getByRole('textbox', {name: 'Search'}).click();
     await page.keyboard.type(firstAssetName);
-    await expect(page.locator("or-mwc-input li[role=option]").getByText(firstAssetName, { exact: true })).toBeVisible();
-    await page.locator("or-mwc-input li[role=option]").filter({hasText: firstAssetName}).click();
+    await expect(page.locator("or-rule-action-attribute or-mwc-input li[role=option]").getByText(firstAssetName, { exact: true })).toBeVisible();
+    await page.locator("or-rule-action-attribute or-mwc-input li[role=option]").filter({hasText: firstAssetName}).click();
     await page.getByRole("button", {name: "Attribute", exact: true}).click();
-    await page.click(`or-mwc-input li[role=option]:has-text("${energyRule.attribute_then}")`);
+    await page.click(`or-rule-action-attribute or-mwc-input li[role=option]:has-text("${energyRule.attribute_then}")`);
     await page.getByRole("spinbutton", {name: "Value"}).fill(energyRule.value.toString());
 
     await shared.interceptResponse<number>("**/rules/realm", (rule) => {
