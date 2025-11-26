@@ -433,7 +433,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-pg17}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     restart: always
     # Shared memory should be increased for any reasonable DB size this should be increased further
     shm_size: 128mb
