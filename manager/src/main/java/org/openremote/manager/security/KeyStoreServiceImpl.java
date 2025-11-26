@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 import java.util.Optional;
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 
 /**
  * <p>
