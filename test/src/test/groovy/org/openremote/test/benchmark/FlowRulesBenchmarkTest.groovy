@@ -8,7 +8,10 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.model.Constants
 import org.openremote.model.asset.impl.ShipAsset
-import org.openremote.model.attribute.*
+import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.MetaItemType
@@ -51,7 +54,7 @@ class FlowRulesBenchmarkTest extends Specification implements ManagerContainerTr
                 )
         asset = assetStorageService.merge(asset);
 
-        and: "Some datapoints are added to the living room"
+        and: "Some datapoints are added to the ship asset"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 30D, timerService.getNow().minus(30, ChronoUnit.MINUTES).toEpochMilli()));
         sleep(100)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 20D, timerService.getNow().minus(20, ChronoUnit.MINUTES).toEpochMilli()));

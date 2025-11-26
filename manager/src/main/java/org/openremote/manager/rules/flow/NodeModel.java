@@ -85,7 +85,7 @@ public enum NodeModel {
                     }
                 }
 
-                return null;
+                return new NodeExecutionResult(null);
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
@@ -175,14 +175,14 @@ public enum NodeModel {
                 Number timeUnit;
                 timePeriod = TimePeriod.valueOf(info.getInternals()[2].getValue().toString()).getMillis();
                 timeUnit = Long.parseLong(info.getInternals()[1].getValue().toString());
-                if(timePeriod == null) return null;
+                if(timePeriod == null) return new NodeExecutionResult(null);
 
                 long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
 
                 Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
                 final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
-                if (valueDatapoints.length == 0) return null;
+                if (valueDatapoints.length == 0) return new NodeExecutionResult(null);
                 return new NodeExecutionResult(valueDatapoints[0].getValue());
             },
             params -> {
@@ -241,7 +241,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object value = info.getInternals()[0].getValue();
-                if (!(value instanceof Boolean)) new NodeExecutionResult(false);
+                if (!(value instanceof Boolean)) return new NodeExecutionResult(false);
                 return new NodeExecutionResult(value);
             }),
 
@@ -333,7 +333,7 @@ public enum NodeModel {
                 Number b = (Number) info.getValueFromInput(1);
 
                 if (a == null || b == null) {
-                    return null;
+                    return new NodeExecutionResult(null);
                 }
 
                 if (b.doubleValue() == 0d)
@@ -442,7 +442,7 @@ public enum NodeModel {
                 Number a = (Number) info.getValueFromInput(0);
 
                 if (a == null) {
-                    return null;
+                    return new NodeExecutionResult(null);
                 }
 
                 return new NodeExecutionResult(
@@ -499,7 +499,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object value = info.getInternals()[0].getValue();
-                if (!(value instanceof CharSequence charSequence)) return null;
+                if (!(value instanceof CharSequence charSequence)) return new NodeExecutionResult(null);
                 return new NodeExecutionResult(charSequence.toString());
             }),
 

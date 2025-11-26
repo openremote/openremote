@@ -88,17 +88,6 @@ public class RulesFacts extends Facts implements RuleListener {
         super.put(ANONYMOUS_FACTS, new ArrayDeque<>(INITIAL_CAPACITY));
     }
 
-    public Optional<AttributeInfo> findCachedAttribute(AttributeRef attributeRef) {
-        return Optional.ofNullable(attributeInfoCache.get(attributeRef));
-    }
-
-    public void cacheNodeExecutionResult(NodeExecutionResult result) {
-        if (result.getAttributeInfo() == null) {
-            return;
-        }
-        attributeInfoCache.put(result.getAttributeRef(), result.getAttributeInfo());
-    }
-
     protected void startTrackingLocationRules() {
         LOG.finest("Tracking location predicate rules: started");
         trackLocationRules = true;
@@ -417,6 +406,23 @@ public class RulesFacts extends Facts implements RuleListener {
         LOG.finest("Dispatching " + attributeEvent + " - on: " + loggingContext);
         assetsFacade.dispatch(attributeEvent);
         return this;
+    }
+
+    /**
+     * Tries getting matched asset state from temporary cache
+     */
+    public Optional<AttributeInfo> findCachedAttribute(AttributeRef attributeRef) {
+        return Optional.ofNullable(attributeInfoCache.get(attributeRef));
+    }
+
+    /**
+     * Saves matched asset state from execution result to the cache, if presents
+     */
+    public void cacheNodeExecutionResult(NodeExecutionResult result) {
+        if (result.getAttributeInfo() == null) {
+            return;
+        }
+        attributeInfoCache.put(result.getAttributeRef(), result.getAttributeInfo());
     }
 
     public void removeExpiredTemporaryFacts() {

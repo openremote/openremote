@@ -3,6 +3,11 @@ package org.openremote.manager.rules.flow;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 
+/**
+ * A wrapper class for the result of a node execution,
+ * optionally including AttributeRef and AttributeInfo for optimization purposes.
+ * All fields are nullable
+ */
 public class NodeExecutionResult {
     private final Object value;
     private final AttributeRef attributeRef;
