@@ -44,8 +44,8 @@ Resources:
                 "metrics": [
                   [ { "expression": "m8-m6-m5-m4-m3-m2-m1", "label": "Other", "id": "e1", "region": "eu-west-1" } ],
                   [ "CWAgent-Prometheus", "or_attributes_total", "InstanceName", "a", "source", "RulesEngine", { "id": "m1", "yAxis": "left", "label": "Rules" } ],
-                  [ "...", "AgentService", { "id": "m3", "yAxis": "left", "label": "Agents" } ],
                   [ "...", "DefaultMQTTHandler", { "id": "m2", "yAxis": "left", "label": "MQTT" } ],
+                  [ "...", "AgentService", { "id": "m3", "yAxis": "left", "label": "Agents" } ],
                   [ "...", "AssetResource", { "id": "m4", "yAxis": "left", "label": "HTTP API" } ],
                   [ "...", "WebsocketClient", { "id": "m5", "yAxis": "left", "label": "Websocket" } ],
                   [ "...", "GatewayService", { "id": "m6", "yAxis": "left", "label": "Gateways" } ],
