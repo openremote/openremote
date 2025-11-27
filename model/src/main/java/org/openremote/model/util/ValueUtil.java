@@ -939,8 +939,16 @@ public class ValueUtil {
         JSON.registerSubtypes(agentLinkSubTypes);
 
         doSchemaInit();
+    }
 
-        // Add JSON schemas for complex meta items and generate cache keys
+    protected static void doSchemaInit() {
+        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
+    }
+
+    /**
+     * Computes JSON schemas for complex meta items and generates cache keys
+     */
+    public static void cacheCommonValueDescriptorSchemas() {
         Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
         valueDescriptorSchemas.putAll(metaItems.values().stream()
                 .map(AbstractNameValueDescriptorHolder::getType)
@@ -956,10 +964,6 @@ public class ValueUtil {
                 Map.Entry::getKey,
                 v -> hash(v.getValue().toString())
         )));
-    }
-
-    protected static void doSchemaInit() {
-        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
     }
 
     public static JsonNode getValueDescriptorSchema(String name) {

@@ -1,4 +1,4 @@
-import {css, html} from "lit";
+import {css, html, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
@@ -10,7 +10,9 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent,
-    MapMarkerAssetConfig
+    MapMarkerAssetConfig,
+    OrMapMarkersChangedEvent,
+    OrMapLegendEvent
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -19,7 +21,6 @@ import {
     AssetEvent,
     AssetEventCause,
     AssetQuery,
-    Attribute,
     AttributeEvent,
     GeoJSONPoint,
     WellknownAttributes,
@@ -28,6 +29,7 @@ import {
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {GenericAxiosResponse} from "@openremote/rest";
+import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
 
 export interface MapState {
     assets: Asset[];
@@ -53,8 +55,7 @@ const pageMapSlice = createSlice({
                 // Update and delete handled by attribute handler
 
                 const asset = action.payload.asset;
-                const locationAttr = asset.attributes && asset.attributes.hasOwnProperty(WellknownAttributes.LOCATION) ? asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint> : undefined;
-                if (locationAttr && (!locationAttr.meta || locationAttr.meta && (!locationAttr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!locationAttr.meta[WellknownMetaItems.SHOWONDASHBOARD]))) {
+                if (MapUtil.isAssetWithLocation(asset)) {
                     return {
                         ...state,
                         assets: [...state.assets, action.payload.asset]
@@ -105,6 +106,10 @@ const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.act
 export const pageMapReducer = pageMapSlice.reducer;
 
 export interface PageMapConfig {
+    legend?: {
+      show: boolean
+    },
+    clustering?: ClusterConfig,
     card?: MapAssetCardConfig,
     assetQuery?: AssetQuery,
     markers?: MapMarkerAssetConfig
@@ -140,6 +145,15 @@ export class PageMap extends Page<MapStateKeyed> {
                 width: 100vw;
                 z-index: 3;
             }
+
+           or-map-legend {
+               position: absolute;
+               top: 60px;
+               left: 10px;
+               width: 254px;
+               margin: 10px 0;
+               z-index: 1;
+           }
         
             or-map {
                 display: block;
@@ -155,6 +169,17 @@ export class PageMap extends Page<MapStateKeyed> {
                     width: 320px;
                     margin: 0;
                     height: 400px; /* fallback for IE */
+                    height: max-content;
+                    max-height: calc(100vh - 150px);
+                }
+
+                or-map-legend {
+                    position: absolute;
+                    top: 60px;
+                    left: 10px;
+                    width: calc(100%);
+                    max-width: 254px;
+                    margin: 0;
                     height: max-content;
                     max-height: calc(100vh - 150px);
                 }
@@ -174,12 +199,26 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _currentAsset?: Asset;
 
+    @state()
+    protected _assetsOnScreen: AssetWithLocation[] = [];
+
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
 
-    protected assetSubscriptionId: string;
-    protected attributeSubscriptionId: string;
+    protected _assetSubscriptionId: string;
+    protected _attributeSubscriptionId: string;
+
+    protected _assetTypes: string[] = [];
+    protected _excludedTypes: string[] = [];
+
+    shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (_changedProperties.has("_assets")) {
+            this._updateMarkers();
+            this._map?.reload();
+        }
+        return super.shouldUpdate(_changedProperties);
+    }
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -261,34 +300,34 @@ export class PageMap extends Page<MapStateKeyed> {
                     return;
                 }
 
-                this.assetSubscriptionId = assetSubscriptionId;
+                this._assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
-                    this.assetSubscriptionId = undefined;
+                    this._assetSubscriptionId = undefined;
                     manager.events.unsubscribe(assetSubscriptionId);
                     manager.events.unsubscribe(attributeSubscriptionId);
                     return;
                 }
 
-                this.attributeSubscriptionId = attributeSubscriptionId;
+                this._attributeSubscriptionId = attributeSubscriptionId;
             }
         } catch (e) {
-            console.error("Failed to subscribe to assets", e)
+            console.error("Failed to subscribe to assets", e);
         }
     };
 
     protected unsubscribeAssets = () => {
-        if (this.assetSubscriptionId) {
-            manager.events.unsubscribe(this.assetSubscriptionId);
-            this.assetSubscriptionId = undefined;
+        if (this._assetSubscriptionId) {
+            manager.events.unsubscribe(this._assetSubscriptionId);
+            this._assetSubscriptionId = undefined;
         }
-        if (this.attributeSubscriptionId) {
-            manager.events.unsubscribe(this.attributeSubscriptionId);
-            this.attributeSubscriptionId = undefined;
+        if (this._attributeSubscriptionId) {
+            manager.events.unsubscribe(this._attributeSubscriptionId);
+            this._attributeSubscriptionId = undefined;
         }
     };
 
@@ -299,12 +338,15 @@ export class PageMap extends Page<MapStateKeyed> {
               // Clear existing assets
               this._assets = [];
           }
-          this.unsubscribeAssets();
-          this.subscribeAssets(realm);
-
-          if (this._map) {
-              this._map.refresh();
+          if (this._excludedTypes.length > 0) {
+              this._excludedTypes = [];
           }
+
+          this.unsubscribeAssets();
+          this.subscribeAssets(realm).then(async () => {
+              await this._map?.reload();
+          });
+          this._map?.refresh();
       }
     )
 
@@ -336,51 +378,42 @@ export class PageMap extends Page<MapStateKeyed> {
 
     constructor(store: Store<MapStateKeyed>) {
         super(store);
-        this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this.onLoadAssetEvent);
+        this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this._onLoadAssetEvent);
     }
 
     protected render() {
-
+        const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         return html`
-            
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
-            
-            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
-                ${
-          this._assets.filter((asset) => {
-              if (!asset.attributes) {
-                  return false;
-              }
-              const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-              return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-          })
-            .sort((a,b) => {
-                if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                    return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
-                } else {
-                    return;
-                }
-            })
-            .map(asset => {
-                return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
-                        `;
-            })
-        }
+
+            ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
+
+            <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
+                ${this._assetsOnScreen.sort((a,b) => {
+                    const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
+                    const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
+                    if (pointA && pointB){
+                        return pointB.coordinates[1] - pointA.coordinates[1];
+                    }
+                }).map(asset => html`
+                    <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
+                `)}
             </or-map>
         `;
     }
 
     public connectedCallback() {
         super.connectedCallback();
-        this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
-        this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
+        this.addEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
+        this.addEventListener(OrMapClickedEvent.NAME, this._onMapClick);
+        this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
-        this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
+        this.removeEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
+        this.removeEventListener(OrMapClickedEvent.NAME, this._onMapClick);
+        this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         this.unsubscribeAssets();
     }
 
@@ -390,20 +423,45 @@ export class PageMap extends Page<MapStateKeyed> {
         this.getRealmState(state);
     }
 
-    protected onMapMarkerClick(e: OrMapMarkerClickedEvent) {
+    protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {
         const asset = (e.detail.marker as OrMapMarkerAsset).asset;
         router.navigate(getMapRoute(asset.id));
     }
 
-    protected onMapClick(e: OrMapClickedEvent) {
+    protected _onMapClick(e: OrMapClickedEvent) {
         router.navigate(getMapRoute());
     }
 
-    protected getCurrentAsset() {
-        this._getCurrentAsset(this.getState());
+    protected _onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
+        this._assetsOnScreen = e.detail;
     }
 
-    protected onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
+    protected _onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
+    }
+
+    protected _onMapLegendChanged(e: OrMapLegendEvent) {
+        if (this._map) {
+            this._excludedTypes = e.detail;
+            this._updateMarkers();
+            this._map.reload();
+        }
+    }
+
+    protected _updateMarkers() {
+        if (this._map) {
+            this._assetTypes = [];
+            this._map.cleanUpAssetMarkers();
+            this._assets.forEach((asset: Asset) => {
+                if (MapUtil.isAssetWithLocation(asset)) {
+                    if (!this._excludedTypes.includes(asset.type)) {
+                        this._map.addAssetMarker(asset)
+                    }
+                    if (!this._assetTypes.includes(asset.type)) {
+                        this._assetTypes.push(asset.type);
+                    }
+                }
+            });
+        }
     }
 }

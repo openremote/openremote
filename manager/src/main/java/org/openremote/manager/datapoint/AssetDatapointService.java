@@ -43,7 +43,7 @@ import java.util.HashSet;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
