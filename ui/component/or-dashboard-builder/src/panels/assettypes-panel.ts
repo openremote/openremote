@@ -294,10 +294,16 @@ export class AssettypesPanel extends LitElement {
         } as AssetTreeConfig
         const dialog = showDialog(new OrMwcDialog()
             .setHeading(i18next.t("linkedAssets"))
+            .setStyles(html`<style>
+                or-asset-tree {
+                    min-height: 400px;
+                    max-height: 50vh;
+                }
+            </style>`)
             .setContent(html`
                 <div style="width: 400px;">
-                    <or-asset-tree ${ref(assetTreeRef)} expandAllNodes id="chart-asset-tree" readonly .config="${config}" .selectedIds="${assetIds}"
-                                   .showSortBtn="${false}" .showFilter="${false}" .checkboxes="${multi}"
+                    <or-asset-tree ${ref(assetTreeRef)} id="chart-asset-tree" readonly disableSubscribe .config="${config}" .selectedIds="${assetIds}"
+                                   .showSortBtn="${false}" .showFilterIcon="${false}" .checkboxes="${multi}"
                     ></or-asset-tree>
                 </div>
             `)

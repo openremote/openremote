@@ -287,6 +287,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public showFilter: boolean = true;
 
+    @property({type: Boolean})
+    public showFilterIcon: boolean = true;
+
     @property({type: String})
     public sortBy?: string = "name";
 
@@ -488,34 +491,36 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._onFilterInput(this._filterInput.nativeValue);
                                   }, 200)}">
                     </or-mwc-input>
-                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
-                        if (this._filterSettingOpen) {
-                            this._filterSettingOpen = false;
-                        } else {
-                            this._filterSettingOpen = true;
-                            // Avoid to build again the types
-                            if (this._assetTypes.length === 0) {
-                                let usedTypes: string[] = [];
-                                const types = this._getAllowedChildTypes(this._selectedNodes[0]);
-                                this._assetTypes = types.filter((t) => t.descriptorType === "asset");
-                            }
-
-                            if (this._filter.attribute.length > 0) {
-                                this._attributeNameFilter.value = this._filter.attribute[0];
-                            }
-
-                            if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
-                                this._attributeValueFilter.disabled = false;
-                                this._attributeValueFilter.value = this._filter.attributeValue[0];
-                            }
-
-                            if (this._filter.assetType.length > 0) {
-                                this._assetTypeFilter = this._filter.assetType[0];
+                    ${when(this.showFilterIcon, () => html`
+                        <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
+                            if (this._filterSettingOpen) {
+                                this._filterSettingOpen = false;
                             } else {
-                                this._assetTypeFilter = '';
+                                this._filterSettingOpen = true;
+                                // Avoid to build again the types
+                                if (this._assetTypes.length === 0) {
+                                    let usedTypes: string[] = [];
+                                    const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+                                    this._assetTypes = types.filter((t) => t.descriptorType === "asset");
+                                }
+
+                                if (this._filter.attribute.length > 0) {
+                                    this._attributeNameFilter.value = this._filter.attribute[0];
+                                }
+
+                                if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
+                                    this._attributeValueFilter.disabled = false;
+                                    this._attributeValueFilter.value = this._filter.attributeValue[0];
+                                }
+
+                                if (this._filter.assetType.length > 0) {
+                                    this._assetTypeFilter = this._filter.assetType[0];
+                                } else {
+                                    this._assetTypeFilter = '';
+                                }
                             }
-                        }
-                    }}"></or-icon>
+                        }}"></or-icon>
+                    `)}
                 </div>
                 <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                     <div class="advanced-filter">
