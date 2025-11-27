@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-or-asset-tree",
-  "version": "1.10.0-snapshot",
+  "version": "1.11.0-mg-feature-testing-2",
   "description": "Component Demo",
   "private": true,
   "scripts": {

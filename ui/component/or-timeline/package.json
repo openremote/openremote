@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-timeline",
-  "version": "1.10.0-snapshot",
+  "version": "1.11.0-mg-feature-testing-2",
   "description": "OpenRemote Timeline",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",

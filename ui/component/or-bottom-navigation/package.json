@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-bottom-navigation",
-  "version": "1.10.0-snapshot",
+  "version": "1.11.0-mg-feature-testing-2",
   "description": "Temporary bottom navigation component",
   "main": "dist/or-bottom-navigation.js",
   "module": "lib/or-bottom-navigation.js",
