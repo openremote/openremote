@@ -181,14 +181,15 @@ export class MapSettings extends AssetWidgetSettings {
                 this.widgetConfig.assetIds = ids?.length ? response.data.map((a) => a.id!) : [];
                 this.widgetConfig.valueType = response.data.length ? response.data[0].attributes![attrName].type : "text";
                 if (!response.data[0].attributes![attrName].type) {
-                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")}
+                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")
+                }
             } catch (reason) {
                 console.error(reason);
                 if (reason instanceof TypeError) {
                     showSnackbar(undefined, "noAttributesToShow");
                 } else {
                     showSnackbar(undefined, "errorOccurred");
-                    }
+                }
             }
         };
 
