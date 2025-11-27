@@ -5,6 +5,7 @@ import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.datapoint.DatapointExportFormat
 import org.openremote.model.datapoint.DatapointQueryTooLargeException
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.query.AssetQuery
@@ -87,12 +88,12 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
 
         /* ------------------------- */
 
-        when: "exporting with format 2 (crosstab)"
+        when: "exporting with format CSV_CROSSTAB"
         def csvExport2Future = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-                2
+                DatapointExportFormat.CSV_CROSSTAB
         )
         assert csvExport2Future != null
         def csvExport2 = csvExport2Future.get()
@@ -106,12 +107,12 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
 
         /* ------------------------- */
 
-        when: "exporting with format 3 (time-bucketed)"
+        when: "exporting with format CSV_CROSSTAB_MINUTE"
         def csvExport3Future = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-                3
+                DatapointExportFormat.CSV_CROSSTAB_MINUTE
         )
         assert csvExport3Future != null
         def csvExport3 = csvExport3Future.get()

@@ -3,6 +3,7 @@ package org.openremote.manager.datapoint;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
+import org.openremote.model.datapoint.DatapointExportFormat;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -255,7 +256,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
                                                   long toTimestamp) {
-        return exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, 1);
+        return exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, DatapointExportFormat.CSV);
     }
 
     /**
@@ -265,7 +266,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
                                                   long toTimestamp,
-                                                  int format) {
+                                                  DatapointExportFormat format) {
         try {
             String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
@@ -285,11 +286,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     protected ScheduledFuture<File> doExportDatapoints(AttributeRef[] attributeRefs,
                                                        long fromTimestamp,
                                                        long toTimestamp,
-                                                       int format) {
+                                                       DatapointExportFormat format) {
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            if (format == 2) {
+            if (format == DatapointExportFormat.CSV_CROSSTAB) {
                 String attributeFilter = getAttributeFilter(attributeRefs);
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +
@@ -308,7 +309,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
                 ));
                 persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            } else if (format == 3) {
+            } else if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
                 String attributeFilter = getAttributeFilter(attributeRefs);
                 StringBuilder sb = new StringBuilder(String.format(
                         "copy (select * from crosstab( " +

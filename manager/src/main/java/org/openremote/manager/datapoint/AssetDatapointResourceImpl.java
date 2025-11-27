@@ -39,6 +39,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointExportFormat;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
@@ -174,8 +175,12 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, int format) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, DatapointExportFormat format) {
         try {
+            if (format == null) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
             for (AttributeRef attributeRef : attributeRefs) {
@@ -187,10 +192,6 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
                 if (asset == null) {
                     throw new WebApplicationException(Response.Status.NOT_FOUND);
-                }
-
-                if (format > 3 || format < 1) {
-                    throw new WebApplicationException(Response.Status.BAD_REQUEST);
                 }
 
                 if (!isRealmActiveAndAccessible(asset.getRealm())) {

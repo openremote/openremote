@@ -8,7 +8,7 @@ import {i18next} from "@openremote/or-translate";
 import manager, { DefaultColor3, Util } from "@openremote/core";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrAssetAttributePickerPickedEvent, OrAssetAttributePicker} from "@openremote/or-attribute-picker";
-import { AttributeRef } from "@openremote/model";
+import { AttributeRef, DatapointExportFormat } from "@openremote/model";
 import moment from "moment";
 import { buttonStyle } from "@openremote/or-rules";
 import {createSelector} from "reselect";
@@ -207,10 +207,14 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: {[key: number]: string} = {1: 'CSVDefault', 2: "CSVCrosstab", 3: "CSVCrosstab | 1min interval"};
+    protected _exportFormats: Record<DatapointExportFormat, string> = {
+        [DatapointExportFormat.CSV]: i18next.t('exportFormatCSV'),
+        [DatapointExportFormat.CSV_CROSSTAB]: i18next.t('exportFormatCSVCrosstab'),
+        [DatapointExportFormat.CSV_CROSSTAB_MINUTE]: i18next.t('exportFormatCSVCrosstabMinute')
+    };
 
     @property()
-    private selectedFormat: number = 1;
+    private selectedFormat: DatapointExportFormat = DatapointExportFormat.CSV;
 
     private config?: OrExportConfig;
     private realm: string;
@@ -286,7 +290,7 @@ export class PageExport extends Page<AppStateKeyed> {
                             <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this._exportFormats[this.selectedFormat]}" style="width: 100%;" .options="${Object.values(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = +Object.keys(this._exportFormats).find(k => this._exportFormats[+k] === ev.detail.value)}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this._exportFormats[this.selectedFormat]}" style="width: 100%;" .options="${Object.values(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = (Object.keys(this._exportFormats) as DatapointExportFormat[]).find(k => this._exportFormats[k] === ev.detail.value)}"></or-mwc-input>
                         </div>
                     </div>
                     <div class="export-btn-wrapper">
