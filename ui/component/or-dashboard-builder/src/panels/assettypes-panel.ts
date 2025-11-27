@@ -1,11 +1,11 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetDescriptor, AssetModelUtil, AssetQuery, AssetTypeInfo} from "@openremote/model";
+import {AssetDescriptor, AssetModelUtil, AssetTypeInfo} from "@openremote/model";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {i18next} from "@openremote/or-translate";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {Util} from "@openremote/core";
+import {Util} from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {AssetTreeConfig, OrAssetTree} from "@openremote/or-asset-tree";
@@ -179,9 +179,10 @@ export class AssettypesPanel extends LitElement {
                 <!-- Select one or more assets -->
                 ${when(this.config.assets?.enabled, () => {
                     const assetIds = (typeof this.assetIds === 'string') ? [this.assetIds] : this.assetIds;
+                    const label = this.allOfType ? i18next.t("allAssets") : ((this.assetIds?.length || 0) + ' ' + i18next.t('assets'));
                     return html`
                         <div>
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${(this.assetIds?.length || 0) + ' ' + i18next.t('assets')}" .disabled="${!this.assetType || this.allOfType}" fullWidth outlined comfortable style="width: 100%;"
+                            <or-mwc-input .type="${InputType.BUTTON}" label="${label}" .disabled="${!this.assetType || this.allOfType}" fullWidth outlined comfortable style="width: 100%;"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._openAssetSelector(this.assetType!, assetIds, this.config.assets?.multi)}"
                             ></or-mwc-input>
                         </div>
