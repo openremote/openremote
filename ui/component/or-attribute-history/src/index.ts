@@ -15,8 +15,7 @@ import {
     unsafeCSS
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -464,20 +463,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             end: 100
                         },
                         {
+                            type: 'slider',
                             start: 0,
                             end: 100,
+                            showDataShadow: false,
                             backgroundColor: bgColor,
                             fillerColor: bgColor,
-                            dataBackground: {
-                                areaStyle: {
-                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
-                                }
-                            },
-                            selectedDataBackground: {
-                                areaStyle: {
-                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color"),
-                                }
-                            },
                             moveHandleStyle: {
                                 color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
                             },

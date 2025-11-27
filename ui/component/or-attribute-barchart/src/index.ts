@@ -19,7 +19,7 @@
  */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {
     Asset, AssetDatapointIntervalQuery,
     AssetDatapointIntervalQueryFormula,
@@ -48,6 +48,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
+import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
 
@@ -88,6 +89,7 @@ export enum BarChartInterval {
     NONE = "none",
     ONE_MINUTE = "1Minute",
     FIVE_MINUTES = "5Minutes",
+    FIFTEEN_MINUTES = "15Minutes",
     THIRTY_MINUTES = "30Minutes",
     ONE_HOUR = "hour",
     ONE_DAY = "day",
@@ -1234,7 +1236,7 @@ export class OrAttributeBarChart extends LitElement {
                 minInterval: this._intervalConfig!.millis,
                 min: this._startOfPeriod,
                 max: this._endOfPeriod,
-                boundaryGap: false,
+                boundaryGap: false as any,
                 splitArea: {
                     show: true,
                     areaStyle: {
@@ -1346,6 +1348,7 @@ export class OrAttributeBarChart extends LitElement {
             [BarChartInterval.AUTO, {displayName:"auto", steps: 1, orFormat: DatapointInterval.MINUTE, momentFormat: "minutes", millis: 60000}],
             [BarChartInterval.ONE_MINUTE, {displayName:"1Minute", steps:1, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 60000}],
             [BarChartInterval.FIVE_MINUTES, {displayName:"5Minutes", steps:5, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 300000}],
+            [BarChartInterval.FIFTEEN_MINUTES, {displayName:"15Minutes", steps:15, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 900000}],
             [BarChartInterval.THIRTY_MINUTES, {displayName:"30Minutes", steps:30, orFormat:DatapointInterval.MINUTE,momentFormat:"minutes", millis: 1800000}],
             [BarChartInterval.ONE_HOUR, {displayName:"hour", steps:1, orFormat:DatapointInterval.HOUR,momentFormat:"hours", millis: 3600000}],
             [BarChartInterval.ONE_DAY, {displayName:"day", steps:1, orFormat:DatapointInterval.DAY,momentFormat:"days", millis: 86400000}],

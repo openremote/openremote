@@ -71,7 +71,7 @@ import static java.util.logging.Level.FINEST;
 import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**

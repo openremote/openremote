@@ -7,7 +7,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";

@@ -26,8 +26,7 @@ import manager, {Util} from "@openremote/core";
 import "./or-rule-when";
 import "./or-rule-then-otherwise";
 import "@openremote/or-components/or-panel";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 
 export class OrRulesJsonRuleChangedEvent extends CustomEvent<void> {
 

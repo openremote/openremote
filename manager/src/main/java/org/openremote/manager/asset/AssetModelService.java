@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
@@ -52,14 +51,12 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -275,7 +272,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
 
     @Override
     public void start(Container container) throws Exception {
-
+        ValueUtil.cacheCommonValueDescriptorSchemas();
     }
 
     @Override

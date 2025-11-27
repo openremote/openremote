@@ -37,7 +37,7 @@ import java.util.Optional;
  * own concrete implementation of this class or use {@link DefaultAgentLink} with fields describing each configuration
  * item and standard JSR-380 annotations should be used to provide validation logic.
  */
-@JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)
+@JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, defaultImpl = DefaultAgentLink.class)
 @JsonSchemaDefault("{\"id\":\"\",\"type\":\"DefaultAgentLink\"}")
 @TsIgnoreTypeParams
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {

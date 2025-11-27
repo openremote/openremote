@@ -47,6 +47,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 public class JSONSchemaUtil {
 
     public static class SchemaNodeMapper {
@@ -314,10 +316,32 @@ public class JSONSchemaUtil {
                     }
 
                     ObjectNode definition = context.getGeneratorConfig().createObjectNode();
+                    definition.put(context.getKeyword(SchemaKeyword.TAG_TYPE), context.getKeyword(SchemaKeyword.TAG_TYPE_OBJECT));
                     ArrayNode oneOfArray = definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF));
 
                     for (ResolvedType subType : subTypes) {
                         oneOfArray.add(context.createDefinitionReference(subType));
+                    }
+
+                    Class<?> rawType = resolvedType.getErasedType();
+
+                    // Custom subtype handling mimicking createSubtypeDefinition referencing subtypes as enum type value
+                    // for polymorphic types
+                    if (rawType.isAnnotationPresent(JsonTypeInfo.class) && rawType.getAnnotation(JsonTypeInfo.class).include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        ArrayNode enumTypeArray = definition
+                                .withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
+                                .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                                .withArray(context.getKeyword(SchemaKeyword.TAG_ENUM));
+
+                        // Removing and adding the `oneOf` property on the schema ensures the definitions are referenced
+                        definition.remove(context.getKeyword(SchemaKeyword.TAG_ONEOF));
+                        for (ResolvedType subType : subTypes) {
+                            // Add subtype to the enum type array of the abstract class
+                            enumTypeArray.add(subType.getErasedType().getSimpleName());
+                            // Add back subtype definitions to `oneOf` property
+                            definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF)).add(context.createDefinitionReference(subType));
+                        }
+                        return new CustomDefinition(definition); // Setting ALWAYS_REF here doesn't affect referencing
                     }
 
                     // Always inline the super class schema to avoid allOf wrapping, which cannot be cleaned up as
@@ -333,13 +357,27 @@ public class JSONSchemaUtil {
                 if (erasedType.getSuperclass() == Object.class) {
                     return;
                 }
-                String key = null;
+
                 Class<?> current = erasedType;
-                while(current != null && current.getSuperclass() != Object.class && key == null) {
+                JsonTypeInfo annotation = null;
+                String key = null;
+                do {
                     current = current.getSuperclass();
-                    key = Optional.ofNullable(current)
-                        .map(c -> c.getAnnotation(JsonTypeInfo.class))
-                        .map(JsonTypeInfo::property).orElse(null);
+                    if (current != null) {
+                        annotation = current.getAnnotation(JsonTypeInfo.class);
+                        if (annotation != null) key = annotation.property();
+                    }
+                } while (current != null && current.getSuperclass() != Object.class && key == null);
+
+                // If EXTERNAL_PROPERTY specified, manually add 'const', 'default' and 'required' properties
+                if (annotation != null && annotation.include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    attrs.withArray(context.getKeyword(SchemaKeyword.TAG_REQUIRED))
+                            .add(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                    attrs.withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
+                            .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                            .put(context.getKeyword(SchemaKeyword.TAG_CONST), erasedType.getSimpleName())
+                            .put(context.getKeyword(SchemaKeyword.TAG_DEFAULT), erasedType.getSimpleName());
+                    return;
                 }
                 addDefaultToDiscriminator(attrs, context, key);
             });
@@ -505,7 +543,8 @@ public class JSONSchemaUtil {
                     (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
                     && !scope.getType().isInstanceOf(Map.class)
                     && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
-                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals("object"))
+                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).isTextual()
+                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals(context.getKeyword(SchemaKeyword.TAG_TYPE_OBJECT)))
                 ) {
                     // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
                     String title = scope.getType().getErasedType().getSimpleName().replaceAll(

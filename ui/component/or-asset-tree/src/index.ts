@@ -621,7 +621,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (!this._nodes) {
-            this._loadAssets().catch(console.warn);
+            this._loadAssets().catch(ex => console.log(ex.message));
             return true;
         }
 
@@ -731,7 +731,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 } else {
                     const cache: Asset[] = [];
                     OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
-                    await this._loadAssets(node.asset?.id, 0, cache).catch(e => console.warn(e));
+                    await this._loadAssets(node.asset?.id, 0, cache).catch(ex => console.log(ex.message));
                 }
 
             } else {
@@ -1827,7 +1827,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public onEventsConnect() {
         this._connected = true;
-        this._loadAssets().catch(console.warn);
+        this._loadAssets().catch(ex => console.log(ex.message));
     }
 
     public onEventsDisconnect() {

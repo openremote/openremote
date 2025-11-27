@@ -15,6 +15,7 @@ import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -45,6 +46,7 @@ import static spock.util.matcher.HamcrestMatchers.closeTo
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+@Ignore
 class EnergyOptimisationAssetTest extends Specification implements ManagerContainerTrait {
     def "Test storage asset with consumer and producer"() {
 

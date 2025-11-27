@@ -2,12 +2,11 @@ import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-chart";
 import "@openremote/or-translate";
-import {translate} from "@openremote/or-translate";
 import "@openremote/or-components/or-panel";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {Asset, Attribute} from "@openremote/model";
 import {style} from "./style";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {styleMap} from "lit/directives/style-map.js";
 import {classMap} from "lit/directives/class-map.js";
 import "@openremote/or-attribute-card";

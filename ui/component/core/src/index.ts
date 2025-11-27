@@ -1017,7 +1017,9 @@ export class Manager implements EventProviderFactory {
 
     /** Function that clears the `WebView` history of a console. It will not delete the history on regular browsers. */
     protected _clearWebHistory(): void {
-        this.console?._doSendGenericMessage("CLEAR_WEB_HISTORY", undefined);
+        if(this.isMobile()) {
+            this.console?._doSendGenericMessage("CLEAR_WEB_HISTORY", undefined);
+        }
     }
 
     /**

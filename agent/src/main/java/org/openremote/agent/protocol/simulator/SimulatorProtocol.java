@@ -199,7 +199,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         OptionalLong nextRun = getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
-        if (nextRun.isEmpty()) {
+        if (nextRun.isEmpty() || nextRun.getAsLong() < 0) {
             LOG.warning("Replay schedule has ended for: " + attributeRef);
             return null;
         }
