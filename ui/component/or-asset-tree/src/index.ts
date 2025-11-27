@@ -499,7 +499,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                 this._filterSettingOpen = true;
                                 // Avoid to build again the types
                                 if (this._assetTypes.length === 0) {
-                                    let usedTypes: string[] = [];
                                     const types = this._getAllowedChildTypes(this._selectedNodes[0]);
                                     this._assetTypes = types.filter((t) => t.descriptorType === "asset");
                                 }
