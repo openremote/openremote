@@ -7,6 +7,7 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "assets": "Assets",
+  "allAssets": "All assets",
   "allAssetsofType": "All assets of this type",
   "attribute": "Attribute",
   "attributes": "Attributes",
@@ -918,6 +919,9 @@
   "MEDIAN": "Median",
   "MODE": "Mode",
   "SUM": "Sum",
+  "mapPage": {
+    "legendTitle": "Legend"
+  },
   "alarm": {
     "": "Alarm",
     "alarm_plural": "Alarms",
