@@ -17,13 +17,13 @@
   },
   "devDependencies": {
     "@rsbuild/core": "~1.5.17",
-    "@storybook/addon-a11y": "~9.1.10",
-    "@storybook/addon-docs": "~9.1.10",
-    "@storybook/web-components": "~9.1.10",
+    "@storybook/addon-a11y": "~10.0.8",
+    "@storybook/addon-docs": "~10.0.8",
+    "@storybook/web-components": "~10.0.8",
     "@types/react": "^18.3.12",
-    "@wc-toolkit/storybook-helpers": "^9.0.1",
-    "storybook": "~9.1.10",
-    "storybook-web-components-rsbuild": "~2.1.2",
+    "@wc-toolkit/storybook-helpers": "^10.0.0",
+    "storybook": "~10.0.8",
+    "storybook-web-components-rsbuild": "~3.0.0",
     "typescript": "~5.9.3"
   }
 }
