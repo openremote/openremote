@@ -1,3 +1,4 @@
+import java.security.MessageDigest
 import javax.annotation.processing.Processor
 import javax.tools.ToolProvider
 
@@ -72,10 +73,93 @@ signing {
     }
 }
 
+def cacheDir = layout.projectDirectory.dir("cache").asFile
+def openMapTilesFontsVersion = "v2.0"
+def openMapTilesFontsZip = new File(cacheDir, "openmaptiles-fonts-${openMapTilesFontsVersion}.zip")
+def openMapTilesFontsZipSha256 = "3a7a6c2dcd940a840aa6ffac8f39758252a667a0b329945b071fb44bf00e7f47"
+
+tasks.register('downloadOpenMapTilesFontsZip') {
+    // Mark the downloaded file as the output (for Gradle caching)
+    outputs.file openMapTilesFontsZip
+
+    // Mark version and package name as inputs (if they change, redownload)
+    inputs.property("openMapTilesFontsVersion", openMapTilesFontsVersion)
+    inputs.property("openMapTilesFontsZipSha256", openMapTilesFontsZipSha256)
+
+    doLast {
+        def verifyChecksum = { file, expectedSha256 ->
+            if (!file.exists()) {
+                return false
+            }
+            def digest = MessageDigest.getInstance("SHA-256")
+            file.withInputStream { is ->
+                byte[] buffer = new byte[8192]
+                int read = 0
+                while ((read = is.read(buffer)) > 0) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+            def actual = digest.digest().collect { String.format("%02x", it) }.join()
+            return actual.equalsIgnoreCase(expectedSha256)
+        }
+
+        def needDownload = !verifyChecksum(openMapTilesFontsZip, openMapTilesFontsZipSha256)
+        def url = "https://github.com/openmaptiles/fonts/releases/download/${openMapTilesFontsVersion}/${openMapTilesFontsVersion}.zip"
+        if (needDownload) {
+            cacheDir.mkdirs()
+            logger.lifecycle("Downloading OpenMapTiles Fonts ${openMapTilesFontsVersion} ...")
+            try {
+                new URI(url).toURL().openStream().withCloseable { is ->
+                    openMapTilesFontsZip.withOutputStream { os ->
+                        is.transferTo(os)
+                    }
+                }
+            } catch (Exception e) {
+                throw new GradleException("Failed to download OpenMapTiles Fonts from ${url}", e)
+            }
+        } else {
+            logger.lifecycle("Using cached ${openMapTilesFontsZip.name}")
+        }
+    }
+}
+
+tasks.register('extractOpenMapTilesFontsZip', Copy) {
+    dependsOn downloadOpenMapTilesFontsZip
+
+    def fontNames = [ "Open Sans Bold", "Open Sans Italic", "Open Sans Regular", "Open Sans Semibold" ]
+    from(zipTree(openMapTilesFontsZip)) {
+        include fontNames.collect(({ "${it}/**" } as Closure<String>))
+    }
+
+    def outputDir = layout.projectDirectory.dir("fonts").asFile
+    into outputDir
+
+    doLast {
+        def missingFonts = fontNames.findAll { fontDir -> !new File(outputDir, fontDir).exists() }
+        if (!missingFonts.isEmpty()) {
+            throw new GradleException("Font extraction failed: missing font directories: ${missingFonts.join(', ')}")
+        } else {
+            logger.lifecycle("All expected font directories extracted: ${fontNames.join(', ')}")
+        }
+
+        // Gzip PBF font files
+        outputDir.eachFileRecurse { file ->
+            if (file.isFile()) {
+                def tempGz = new File(file.parentFile, file.name + ".gz")
+                ant.gzip(src: file, destfile: tempGz)
+                file.delete()
+                tempGz.renameTo(file)
+            }
+        }
+    }
+}
+
 tasks.register('generateSources', Copy) {
+    dependsOn extractOpenMapTilesFontsZip
     from fileTree(projectDir) {
         exclude 'build.gradle'
         exclude 'build/**'
+        exclude 'cache/**'
     }
     into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
 }
