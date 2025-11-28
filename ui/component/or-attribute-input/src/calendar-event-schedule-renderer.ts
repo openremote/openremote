@@ -6,6 +6,7 @@ import {
     mapDispatchToControlProps,
     scopeEndsWith
 } from "@jsonforms/core";
+import moment from "moment";
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
@@ -26,7 +27,6 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     };
 
     const onCalendarEventChanged = (event: OrCalendarEventChangedEvent | undefined) => {
-        console.log(event, props.data)
         props.handleChange("schedule", event?.detail.value);
     };
 
@@ -40,6 +40,11 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     return getTemplateWrapper(html`
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
+            .default="${{
+                start: moment(Date.now()).startOf("day").toDate().getTime(),
+                end: moment(Date.now()).startOf("day").add("day").toDate().getTime(),
+                recurrence: "FREQ=DAILY"
+            }}"
             .header="${i18next.t("simulatorSchedule")}"
             .eventTypes="${{
                 default: i18next.t("defaultSimulatorSchedule"),
