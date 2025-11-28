@@ -30,6 +30,13 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
         props.handleChange("schedule", event?.detail.value);
     };
 
+    let deleteHandler: undefined | (() => void);
+    if (!props.required && props.path) {
+        deleteHandler = () => {
+            props.handleChange(props.path, undefined);
+        }
+    }
+
     return getTemplateWrapper(html`
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
@@ -57,7 +64,7 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
             @or-calendar-event-changed="${onCalendarEventChanged}"
         >
         </or-calendar-event>
-    `, undefined);
+    `, deleteHandler);
 };
 
 export const calendarEventRendererRegistryEntry: JsonFormsRendererRegistryEntry = {
