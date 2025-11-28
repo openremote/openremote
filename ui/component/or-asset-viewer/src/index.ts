@@ -940,6 +940,7 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
+            types: [childAssetType],
             parents: [
                 {
                     id: parentId

@@ -1267,9 +1267,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         try {
             console.debug(`Querying assets using filter '${this._filterInput.nativeValue}'...`);
-            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q));
+            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssetTree(q));
             const responses = await Promise.all(promises);
-            foundAssets = responses.flatMap(r => r.data);
+            foundAssets = responses.flatMap(r => r.data.assets ?? []);
             foundAssetIds = foundAssets.map(a => a.id!);
             console.debug(`The filter query found ${foundAssets.length} assets!`);
 
