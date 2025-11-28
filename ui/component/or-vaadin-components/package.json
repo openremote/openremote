@@ -1,0 +1,39 @@
+{
+  "name": "@openremote/or-vaadin-components",
+  "version": "1.10.0-snapshot",
+  "description": "Vaadin Components packaged as components aligned with the OpenRemote design system",
+  "customElements": "custom-elements.json",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "lib/*"
+      ]
+    }
+  },
+  "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
+    "build": "npx tsc -b",
+    "test": "npx tsc -b && npx playwright test",
+    "prepack": "npx tsc -b"
+  },
+  "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "workspace:*",
+    "@vaadin/text-field": "~25.0.0-beta5",
+    "lit": "^3.3.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
