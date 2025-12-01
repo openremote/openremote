@@ -369,7 +369,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 recur = new Recur<>(recurrence);
             } catch (Exception ignored) {}
 
-            this.start = Optional.ofNullable(start).orElse(LocalDate.now().atStartOfDay());
+            this.start = start;
             this.end = end;
             this.recurrence = recur;
             this.upcoming = this.start;

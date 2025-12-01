@@ -10,7 +10,7 @@ import moment from "moment";
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { Frequencies, RulePartKey, LabeledEventTypes, OrCalendarEventChangedEvent } from "@openremote/or-calendar-event";
+import { Frequencies, RulePartKey, LabeledEventTypes, OrCalendarEventChangedEvent, EventTypes } from "@openremote/or-calendar-event";
 import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-calendar-event";
 
@@ -41,8 +41,8 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
         <or-calendar-event
             .calendarEvent="${props.data as CalendarEvent}"
             .default="${{
-                start: moment(Date.now()).startOf("day").toDate().getTime(),
-                end: moment(Date.now()).startOf("day").add("day").toDate().getTime(),
+                start: moment().startOf("day").add(moment().utcOffset(), "m").toDate().getTime(),
+                end: moment().startOf("day").add("day").add(moment().utcOffset(), "m").toDate().getTime(),
                 recurrence: "FREQ=DAILY"
             }}"
             .header="${i18next.t("simulatorSchedule")}"
