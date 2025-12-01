@@ -24,7 +24,7 @@ import {
     Asset,
     AssetEvent,
     AssetModelUtil,
-    Attribute,
+    Attribute, AttributeDescriptor,
     AttributeEvent,
     ClientRole,
     FileInfo,
@@ -690,7 +690,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         if (availableAttributes.length === 0) {
             const descriptor = AssetModelUtil.getAssetTypeInfo(childAssetType);
             if (descriptor && descriptor.attributeDescriptors) {
-                availableAttributes = descriptor.attributeDescriptors.map((desc) => desc.name!);
+                availableAttributes = descriptor.attributeDescriptors.map((desc: AttributeDescriptor) => desc.name!);
             }
         }
         if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {

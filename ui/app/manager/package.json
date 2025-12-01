@@ -21,8 +21,11 @@
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
+    "build:experimental": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild build",
     "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "serve:experimental": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "serveNoModelBuild:experimental": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rsbuild dev",
     "test": "npx playwright test",
     "prepack": "npx tsc -b"
   },
@@ -37,7 +40,6 @@
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-dashboard-builder": "workspace:*",
-    "@openremote/or-data-viewer": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-log-viewer": "workspace:*",
@@ -56,7 +58,8 @@
   },
   "devDependencies": {
     "@openremote/rest": "workspace:*",
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@rsbuild/core": "~1.6.8"
   },
   "publishConfig": {
     "access": "public"

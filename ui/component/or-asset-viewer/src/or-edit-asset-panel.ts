@@ -3,7 +3,7 @@ import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate"
-import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
+import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems, MetaItemDescriptor} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
@@ -540,15 +540,15 @@ export class OrEditAssetPanel extends LitElement {
 
         const meta = attribute.meta || {};
 
-        const metaItemList: (ListItem | null)[] = assetTypeInfo.metaItemDescriptors.map((metaName) => AssetModelUtil.getMetaItemDescriptor(metaName)!)
-            .filter((descriptor) => !meta.hasOwnProperty(descriptor.name!))
-            .map((descriptor) => {
+        const metaItemList: (ListItem | null)[] = assetTypeInfo.metaItemDescriptors.map((metaName: string) => AssetModelUtil.getMetaItemDescriptor(metaName)!)
+            .filter((descriptor: MetaItemDescriptor) => !meta.hasOwnProperty(descriptor.name!))
+            .map((descriptor: MetaItemDescriptor) => {
                 return {
                     text: Util.getMetaLabel(undefined, descriptor, this.asset!.type!, true),
                     value: descriptor.name!,
                     translate: false
-                };
-            }).sort(Util.sortByString((item) => item.text));
+                } as ListItem;
+            }).sort(Util.sortByString((item: ListItem) => item.text!));
 
         const dialog = showDialog(new OrMwcDialog()
             .setContent(html`
@@ -589,7 +589,7 @@ export class OrEditAssetPanel extends LitElement {
                                 attribute.meta = {};
                             }
                             selectedItems.forEach((item) => {
-                                const descriptor = AssetModelUtil.getMetaItemDescriptors().find((descriptor) => descriptor.name === item.value);
+                                const descriptor = AssetModelUtil.getMetaItemDescriptors().find((descriptor: MetaItemDescriptor) => descriptor.name === item.value);
                                 if (descriptor) {
                                     attribute.meta![descriptor.name!] = (descriptor.type === 'boolean') ? true : null;
                                     this._onModified();

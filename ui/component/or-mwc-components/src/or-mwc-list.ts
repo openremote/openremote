@@ -16,8 +16,6 @@ import { i18next } from "@openremote/or-translate";
 const listStyle = require("@material/list/dist/mdc.list.css");
 const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
 
-export {MDCListActionEvent};
-
 export interface ListItem {
     icon?: string;
     trailingIcon?: string;

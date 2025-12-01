@@ -255,8 +255,8 @@ export class OrAddAssetDialog extends LitElement {
         }
         
         const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
-            attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
-            optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
+            attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter((e: AttributeDescriptor) => !e.optional),
+            optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter((e: AttributeDescriptor) => !!e.optional);
 
         return html`
             <div id="type-title">

@@ -113,7 +113,7 @@ export class AssettypesPanel extends LitElement {
     protected _attributeSelectList: string[][] = [];
 
     @state()
-    protected _loadedAssetTypes: AssetDescriptor[] = AssetModelUtil.getAssetDescriptors().filter((t) => t.descriptorType === "asset");
+    protected _loadedAssetTypes: AssetDescriptor[] = AssetModelUtil.getAssetDescriptors().filter((t: AssetDescriptor) => t.descriptorType === "asset");
 
 
     static get styles() {

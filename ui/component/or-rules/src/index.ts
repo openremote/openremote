@@ -415,7 +415,7 @@ export function getAssetIdsFromQuery(query?: AssetQuery) {
 export const getAssetTypes: () => Promise<string[]> = async () => {
     // RT: Change to just get all asset types for now as if an instance of a particular asset doesn't exist you
     // won't be able to create a rule for it (e.g. if no ConsoleAsset in a realm then cannot create a console rule)
-    return AssetModelUtil.getAssetTypeInfos().map(ati => ati.assetDescriptor!.name!);
+    return AssetModelUtil.getAssetTypeInfos().map((ati: AssetTypeInfo) => ati.assetDescriptor!.name!);
     // const response = await manager.rest.api.AssetResource.queryAssets({
     //     select: {
     //         attributes: []

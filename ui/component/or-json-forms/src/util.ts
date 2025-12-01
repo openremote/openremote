@@ -31,7 +31,6 @@ import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {ErrorObject} from "./index";
 import {unknownTemplate} from "./standard-renderers";
 import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AdditionalProps} from "./base-element";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {

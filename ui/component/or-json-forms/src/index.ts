@@ -39,9 +39,7 @@ declare global {
 export {
     ErrorObject,
     StandardRenderers,
-    getTemplateWrapper,
-    JsonFormsRendererRegistryEntry,
-    UISchemaElement
+    getTemplateWrapper
 };
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {

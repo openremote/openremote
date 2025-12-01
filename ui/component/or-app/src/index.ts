@@ -22,7 +22,6 @@ export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
 export const DefaultFavIcon = require("../images/favicon.ico");
 
-export {AnyAction};
 export * from "./app";
 export * from "./or-header";
 export * from "./types";

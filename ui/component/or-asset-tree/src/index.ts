@@ -1696,8 +1696,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         return AssetModelUtil.getAssetDescriptors()
-            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
-                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
+            .filter((descriptor: AssetDescriptor) => (!includedAssetTypes || includedAssetTypes.some((inc: string) => Util.stringMatch(inc, descriptor.name!)))
+                && (!excludedAssetTypes || !excludedAssetTypes.some((exc: string) => Util.stringMatch(exc, descriptor.name!))));
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {

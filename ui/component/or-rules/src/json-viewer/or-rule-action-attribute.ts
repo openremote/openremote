@@ -7,7 +7,7 @@ import {
     RuleActionUpdateAttribute,
     RuleActionWriteAttribute,
     WellknownValueTypes,
-    AssetModelUtil
+    AssetModelUtil, AttributeDescriptor
 } from "@openremote/model";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
@@ -163,7 +163,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                     attributes =
                             !assetTypeInfo || !assetTypeInfo.attributeDescriptors
                                     ? []
-                                    : assetTypeInfo.attributeDescriptors.map((ad) => {
+                                    : assetTypeInfo.attributeDescriptors.map((ad: AttributeDescriptor) => {
                                         const label = Util.getAttributeLabel(ad, descriptors[0], assetType, false);
                                         return [ad.name!, label];
                                     });
