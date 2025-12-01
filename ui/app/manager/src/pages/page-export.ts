@@ -290,7 +290,7 @@ export class PageExport extends Page<AppStateKeyed> {
                             <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this._exportFormats[this.selectedFormat]}" style="width: 100%;" .options="${Object.values(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = (Object.keys(this._exportFormats) as DatapointExportFormat[]).find(k => this._exportFormats[k] === ev.detail.value)}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this.selectedFormat}" style="width: 100%;" .options="${Object.entries(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
                         </div>
                     </div>
                     <div class="export-btn-wrapper">
