@@ -20,7 +20,7 @@
 package org.openremote.manager.syslog;
 
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.MapAccess;
+import org.openremote.model.util.MapAccess;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;

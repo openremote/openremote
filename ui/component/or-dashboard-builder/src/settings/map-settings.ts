@@ -4,10 +4,9 @@ import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
-import {AttributeMarkerColours, LngLatLike, MapMarkerColours} from "@openremote/or-map";
+import {AttributeMarkerColours, LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
-import {LngLat} from "maplibre-gl"; // TODO: Replace this import
 import {when} from "lit/directives/when.js";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 import manager from "@openremote/core";
@@ -103,7 +102,7 @@ export class MapSettings extends AssetWidgetSettings {
                 </settings-panel>
 
                 <!-- List of customizable thresholds -->
-                ${when(this.widgetConfig.assetIds.length > 0, () => html`
+                ${when(this.widgetConfig.assetIds.length > 0 || this.widgetConfig.allOfType, () => html`
                     <settings-panel displayName="thresholds" expanded="${true}">
                         <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" 
                                         .boolColors="${this.widgetConfig.boolColors}" 
@@ -176,19 +175,21 @@ export class MapSettings extends AssetWidgetSettings {
                     realm: { name: manager.displayRealm },
                     select: { attributes: [attrName, 'location'] },
                     types: [this.widgetConfig.assetType!],
-                    ids: ids
+                    ids: ids,
+                    limit: ids?.length ?? 1
                 });
-                this.widgetConfig.assetIds = response.data.map((a) => a.id!);
+                this.widgetConfig.assetIds = ids?.length ? response.data.map((a) => a.id!) : [];
                 this.widgetConfig.valueType = response.data.length ? response.data[0].attributes![attrName].type : "text";
                 if (!response.data[0].attributes![attrName].type) {
-                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")}
+                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")
+                }
             } catch (reason) {
                 console.error(reason);
                 if (reason instanceof TypeError) {
                     showSnackbar(undefined, "noAttributesToShow");
                 } else {
                     showSnackbar(undefined, "errorOccurred");
-                    }
+                }
             }
         };
 

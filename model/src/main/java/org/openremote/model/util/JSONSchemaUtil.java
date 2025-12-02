@@ -47,6 +47,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 public class JSONSchemaUtil {
 
     public static class SchemaNodeMapper {
@@ -132,8 +134,10 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaTitle {
         String keyword() default "title";
         String value();
-        /* Whether to put the title on the root of the schema even when the class is wrapped in an array. */
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
+        boolean i18n() default true;
+        String i18nSuffix() default "label";
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -141,7 +145,9 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaDescription {
         String keyword() default "description";
         String value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
+        boolean i18n() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -149,6 +155,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaFormat {
         String keyword() default "format";
         String value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
     }
 
@@ -157,6 +164,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaDefault {
         String keyword() default "default";
         String value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
     }
 
@@ -165,6 +173,7 @@ public class JSONSchemaUtil {
     public @interface JsonSchemaExamples {
         String keyword() default "examples";
         String[] value();
+        /** Whether to put the title on the root of the schema even when the class is wrapped in an array. */
         boolean container() default true;
     }
 
@@ -270,11 +279,16 @@ public class JSONSchemaUtil {
                     // Avoids annotation also being applied to the `items` in an array. See https://victools.github.io/jsonschema-generator/#generator-individual-configurations
                     if (!fieldScope.isFakeContainerItemScope()) {
                         applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
-                        applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs);
-                        applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs);
-                        applyFieldAnnotation(fieldScope, JsonSchemaFormat.class, attrs);
                         applyFieldAnnotation(fieldScope, JsonSchemaDefault.class, attrs);
                         applyFieldAnnotation(fieldScope, JsonSchemaExamples.class, attrs);
+
+                        String key = getCanonicalMemberKey(fieldScope);
+                        if (!applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaTitle.class), key, attrs)) {
+                            applyFieldAnnotation(fieldScope, JsonSchemaTitle.class, attrs);
+                        }
+                        if (!applyI18nAnnotation(fieldScope.getAnnotation(JsonSchemaDescription.class), key, attrs)) {
+                            applyFieldAnnotation(fieldScope, JsonSchemaDescription.class, attrs);
+                        }
                     }
                     String description = jacksonResolvers.resolveDescription(fieldScope);
                     if (description != null) {
@@ -302,10 +316,32 @@ public class JSONSchemaUtil {
                     }
 
                     ObjectNode definition = context.getGeneratorConfig().createObjectNode();
+                    definition.put(context.getKeyword(SchemaKeyword.TAG_TYPE), context.getKeyword(SchemaKeyword.TAG_TYPE_OBJECT));
                     ArrayNode oneOfArray = definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF));
 
                     for (ResolvedType subType : subTypes) {
                         oneOfArray.add(context.createDefinitionReference(subType));
+                    }
+
+                    Class<?> rawType = resolvedType.getErasedType();
+
+                    // Custom subtype handling mimicking createSubtypeDefinition referencing subtypes as enum type value
+                    // for polymorphic types
+                    if (rawType.isAnnotationPresent(JsonTypeInfo.class) && rawType.getAnnotation(JsonTypeInfo.class).include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                        ArrayNode enumTypeArray = definition
+                                .withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
+                                .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                                .withArray(context.getKeyword(SchemaKeyword.TAG_ENUM));
+
+                        // Removing and adding the `oneOf` property on the schema ensures the definitions are referenced
+                        definition.remove(context.getKeyword(SchemaKeyword.TAG_ONEOF));
+                        for (ResolvedType subType : subTypes) {
+                            // Add subtype to the enum type array of the abstract class
+                            enumTypeArray.add(subType.getErasedType().getSimpleName());
+                            // Add back subtype definitions to `oneOf` property
+                            definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF)).add(context.createDefinitionReference(subType));
+                        }
+                        return new CustomDefinition(definition); // Setting ALWAYS_REF here doesn't affect referencing
                     }
 
                     // Always inline the super class schema to avoid allOf wrapping, which cannot be cleaned up as
@@ -321,13 +357,27 @@ public class JSONSchemaUtil {
                 if (erasedType.getSuperclass() == Object.class) {
                     return;
                 }
-                String key = null;
+
                 Class<?> current = erasedType;
-                while(current != null && current.getSuperclass() != Object.class && key == null) {
+                JsonTypeInfo annotation = null;
+                String key = null;
+                do {
                     current = current.getSuperclass();
-                    key = Optional.ofNullable(current)
-                        .map(c -> c.getAnnotation(JsonTypeInfo.class))
-                        .map(JsonTypeInfo::property).orElse(null);
+                    if (current != null) {
+                        annotation = current.getAnnotation(JsonTypeInfo.class);
+                        if (annotation != null) key = annotation.property();
+                    }
+                } while (current != null && current.getSuperclass() != Object.class && key == null);
+
+                // If EXTERNAL_PROPERTY specified, manually add 'const', 'default' and 'required' properties
+                if (annotation != null && annotation.include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                    attrs.withArray(context.getKeyword(SchemaKeyword.TAG_REQUIRED))
+                            .add(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                    attrs.withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
+                            .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                            .put(context.getKeyword(SchemaKeyword.TAG_CONST), erasedType.getSimpleName())
+                            .put(context.getKeyword(SchemaKeyword.TAG_DEFAULT), erasedType.getSimpleName());
+                    return;
                 }
                 addDefaultToDiscriminator(attrs, context, key);
             });
@@ -350,11 +400,18 @@ public class JSONSchemaUtil {
 
                 // These will be overwritten by member scope when colliding
                 if (!erasedType.isArray()) {
-                    applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode);
-                    applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaFormat.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaDefault.class, targetNode);
                     applyTypeAnnotation(erasedType, JsonSchemaExamples.class, targetNode);
+
+                    // TODO: Is it possible to avoid object merging here?
+                    String key = erasedType.getCanonicalName();
+                    if (!(attrs.has("type") && applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaTitle.class), key, attrs))) {
+                        applyTypeAnnotation(erasedType, JsonSchemaTitle.class, targetNode);
+                    }
+                    if (!(attrs.has("type") && applyI18nAnnotation(erasedType.getAnnotation(JsonSchemaDescription.class), key, attrs))) {
+                        applyTypeAnnotation(erasedType, JsonSchemaDescription.class, targetNode);
+                    }
                 }
             });
 
@@ -431,6 +488,10 @@ public class JSONSchemaUtil {
             });
         }
 
+        private String getCanonicalMemberKey(FieldScope fieldScope) {
+            return fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
+        }
+
         private static void setFormat(ObjectNode node, String format) {
             node.put("format", format);
         }
@@ -482,7 +543,8 @@ public class JSONSchemaUtil {
                     (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
                     && !scope.getType().isInstanceOf(Map.class)
                     && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
-                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals("object"))
+                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).isTextual()
+                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals(context.getKeyword(SchemaKeyword.TAG_TYPE_OBJECT)))
                 ) {
                     // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
                     String title = scope.getType().getErasedType().getSimpleName().replaceAll(
@@ -622,6 +684,21 @@ public class JSONSchemaUtil {
             } catch (Exception e) {
                 return new TextNode(input);
             }
+        }
+
+        // TODO: handle other annotations from Jackson (or replace existing annotations)
+        private static <A extends Annotation> boolean applyI18nAnnotation(A annotation, String key, ObjectNode schema) {
+            if (annotation == null) return false;
+            Class<?> annotationClass = annotation.getClass();
+            try {
+                if ((boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
+                    schema.set("i18n", new TextNode(key));
+                    return true;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to apply i18n annotation " + annotationClass.getSimpleName(), e);
+            }
+            return false;
         }
 
         private static List<ResolvedType> findSubtypes(ResolvedType resolvedType, SchemaGenerationContext context) {

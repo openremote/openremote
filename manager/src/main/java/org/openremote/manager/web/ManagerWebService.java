@@ -32,17 +32,14 @@ import io.swagger.v3.oas.models.security.*;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.oas.models.servers.ServerVariables;
-import io.undertow.server.handlers.resource.PathResourceManager;
-import io.undertow.server.handlers.resource.ResourceManager;
-import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.server.handlers.RedirectHandler;
 import jakarta.ws.rs.core.Application;
-import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.web.CompositeResourceManager;
-import org.openremote.container.web.WebApplication;
-import org.openremote.container.web.WebService;
+import org.openremote.container.web.*;
 import org.openremote.model.Container;
+import org.openremote.model.util.Config;
+import org.openremote.model.util.TextUtil;
 
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,7 +50,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
@@ -95,50 +92,57 @@ public class ManagerWebService extends WebService {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-
+        Set<ResourceSource> resourceSources = new HashSet<>();
         builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
         customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
 
-        addOpenApiResource();
+        // Add a handler to redirect requests for the exact root path "/" to the configured default path
+        if (!TextUtil.isNullOrEmpty(rootRedirectPath)) {
+           LOG.info("Adding root redirect to: " + rootRedirectPath);
+           pathHandler.addExactPath("/", new RedirectHandler(rootRedirectPath));
+        }
+
+        // Include Open API resource
+        addApiSingleton(getOpenApiResource());
 
         initialised = true;
 
-        // Serve REST API
-       Collection<Object> deploymentSingletons = Stream.of(
-          devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
-             getCORSAllowedOrigins(container),
-             getString(container.getConfig(), OR_WEBSERVER_ALLOWED_METHODS, DEFAULT_CORS_ALLOW_ALL),
-             getString(container.getConfig(), OR_WEBSERVER_EXPOSED_HEADERS, DEFAULT_CORS_ALLOW_ALL),
-             DEFAULT_CORS_MAX_AGE,
-             DEFAULT_CORS_ALLOW_CREDENTIALS),
-          apiSingletons).flatMap(Collection::stream).toList();
+        // Configure the JAX-RS Manager API including resources added at startup
+        List<Object> singletons = Stream.of(getStandardProviders(devMode, 0), apiSingletons)
+                .flatMap(Collection::stream)
+                .toList();
+        Application application = new WebApplication(container, apiClasses, singletons);
 
-        Application APIApplication = new WebApplication(
-                container,
-               apiClasses,
-               deploymentSingletons);
+        deployJaxRsApplication(application, API_PATH, "Manager HTTP API", 0, true, null);
 
-       ResteasyDeployment deployment = createResteasyDeployment(APIApplication, container.getService(IdentityService.class), true);
-       DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, API_PATH, "Manager HTTP API", devMode);
-       deploy(deploymentInfo, true, false);
+        if (Files.isDirectory(builtInAppDocRoot)) {
+           resourceSources.add(new FileResource(builtInAppDocRoot));
+        } else {
+           LOG.info("Built in app doc root does not exist: " + builtInAppDocRoot.toAbsolutePath());
+        }
 
-       // Deploy static app files unsecured
-       ResourceManager filesResourceManager = new PathResourceManager(builtInAppDocRoot);
+        // Serve manager app from classpath if we are in dev mode (outside of docker) and it can be found
+        // this is used by custom projects so that they can serve the manager UI while running in an IDE
+        if (Config.isDevMode()) {
+           URL url = ManagerWebService.class.getClassLoader().getResource("org/openremote/web/manager");
+           if (url != null) {
+              resourceSources.add(new ClassPathResource(getClass().getClassLoader(), "org/openremote/web"));
+           }
+        }
 
-       // If custom app docroot is a directory then make it the default file handler
+        // If custom app docroot is a directory then make it the default file handler
         if (customAppDocRoot != null && Files.isDirectory(customAppDocRoot)) {
-            ResourceManager customAppResourceManager = new PathResourceManager(customAppDocRoot);
-            filesResourceManager = new CompositeResourceManager(filesResourceManager, customAppResourceManager);
+            resourceSources.add(new FileResource(customAppDocRoot));
         } else if (customAppDocRoot != null) {
            LOG.info("Custom app doc root does not exist: " + customAppDocRoot.toAbsolutePath());
         }
 
-        deploymentInfo = createFilesDeploymentInfo(filesResourceManager, "/", "App Files", devMode, null);
-        deploy(deploymentInfo, false, true);
+        // Deploy static app files unsecured
+        deployFileServlet("/", "App Files", resourceSources.toArray(ResourceSource[]::new), null, null);
     }
 
-   private void addOpenApiResource() {
+    protected Object getOpenApiResource() {
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
         Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
@@ -179,7 +183,7 @@ public class ManagerWebService extends WebService {
                 .defaultResponseCode("200");
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
-        addApiSingleton(openApiResource);
+        return openApiResource;
     }
 
     /**

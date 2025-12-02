@@ -24,6 +24,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.util.TsIgnore;
+import org.openremote.model.value.ValueType.ObjectMap;
 
 import java.util.Date;
 
@@ -38,6 +39,12 @@ public final class MetaItemType {
      * encapsulated in the concrete protocol specific {@link org.openremote.model.asset.agent.AgentLink}.
      */
     public static final MetaItemDescriptor<AgentLink> AGENT_LINK = new MetaItemDescriptor<>("agentLink", ValueType.VALUE_AGENT_LINK);
+
+    /**
+     * Stores {@link #AGENT_LINK} configuration data. This meta item is useful for protocol implementations that require
+     * additional information at the time of asset instantiation for configuring agent links.
+     */
+    public static final MetaItemDescriptor<ObjectMap> AGENT_LINK_CONFIG = new MetaItemDescriptor<>("agentLinkConfig", ValueType.JSON_OBJECT);
 
     /**
      * Links the attribute to another attribute, so an attribute event on the attribute triggers the same attribute

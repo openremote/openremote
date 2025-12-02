@@ -30,7 +30,8 @@ Pods/
 bower_components/
 node_modules/
 manager/src/main/resources/version.properties
-manager/src/web/shared/fonts/Material Design Icons/
+ui/app/shared/cache
+ui/app/shared/fonts
 .pnp.*
 .yarn/*
 !.yarn/patches

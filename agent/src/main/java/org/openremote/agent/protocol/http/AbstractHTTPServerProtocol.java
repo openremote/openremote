@@ -19,29 +19,31 @@
  */
 package org.openremote.agent.protocol.http;
 
-import io.undertow.servlet.api.DeploymentInfo;
 import jakarta.ws.rs.core.Application;
-import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.web.CORSConfig;
+import org.openremote.container.web.RealmInjectorFilter;
 import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.logging.Level.INFO;
-import static org.openremote.container.web.WebService.*;
+import static org.openremote.container.web.WebService.getStandardProviders;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -52,7 +54,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * The deployment is deployed by creating an instance of a concrete {@link AbstractHTTPServerAgent} implementation with
  * the following {@link Attribute}s:
  * <ul>
- * <li>{@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} <b>(required)</b></li>
  * <li>{@link AbstractHTTPServerAgent#ALLOWED_ORIGINS}</li>
  * <li>{@link AbstractHTTPServerAgent#ALLOWED_HTTP_METHODS}</li>
  * </ul>
@@ -71,7 +72,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     /**
      * The regex used to validate the deployment path.
      */
-    public static final Pattern PATH_REGEX = Pattern.compile("^[\\w/_]+$", Pattern.CASE_INSENSITIVE);
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
     protected Container container;
     protected boolean devMode;
@@ -93,27 +93,16 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
 
         webService = container.getService(WebService.class);
 
-        boolean secure = agent.isRoleBasedSecurity().orElse(false);
-        String deploymentPath = getDeploymentPath();
-        String deploymentName = getDeploymentName();
-
        Application application = new WebApplication(
           container,
           null,
           Stream.of(
-             devMode ? getStandardProviders(devMode, 1) : getStandardProviders(devMode, 1,
-                agent.getAllowedOrigins().map(Set::of).orElse(null),
-                agent.getAllowedHTTPMethods().map(methods ->
-                        Arrays.stream(methods).map(Enum::name)
-                                .collect(Collectors.joining(","))).orElse(DEFAULT_CORS_ALLOW_ALL),
-                DEFAULT_CORS_ALLOW_ALL,
-                DEFAULT_CORS_MAX_AGE,
-                DEFAULT_CORS_ALLOW_CREDENTIALS),
+             List.of((Object)new RealmInjectorFilter(agent.getRealm())), // Need this as realm is in the context path of the deployment
+             getStandardProviders(devMode, 0),
              getApiSingletons()).flatMap(Collection::stream).toList());
 
-        ResteasyDeployment deployment = webService.createResteasyDeployment(application, secure);
-        DeploymentInfo deploymentInfo = webService.createDeploymentInfo(deployment, deploymentPath, deploymentName, devMode, secure);
-        deploy(deploymentInfo, secure);
+        deploy(application);
+        setConnectionStatus(ConnectionStatus.CONNECTED);
     }
 
     @Override
@@ -127,45 +116,48 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     abstract protected Set<Object> getApiSingletons();
 
     /**
-     * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}; and {@link Agent#getRealm()} then
-     * combines the prefix with the value of {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH}, for example an agent in
-     * a realm called manufacturer:
-     * <ul>
-     * <li>{@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} = "complaints"</li>
-     * </ul>
+     * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}, {@link Agent#getRealm()} and
+     * {@link Agent#getId()}, For example, an agent in a realm called manufacturer:
      * <p>
-     * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/complaints"
-     * <p>
-     * If the {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} is missing or not a String or the generated path does
-     * not match the {@link #PATH_REGEX} regex then an {@link IllegalArgumentException} will is thrown.
+     * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/6lMDrFZ5Qhd78BTmoF9Pwn"
      */
-    protected String getDeploymentPath() throws IllegalArgumentException {
-        String path = agent.getDeploymentPath()
-                .map(String::toLowerCase)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Required deployment path attribute is missing or invalid: " + agent));
-
-        String deploymentPath = DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + path;
-
-        if (!PATH_REGEX.matcher(deploymentPath).find()) {
-            throw new IllegalArgumentException(
-                    "Required deployment path attribute is missing or invalid: " + agent);
-        }
-
-        return deploymentPath;
+    protected String getDeploymentPath() {
+        return DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + agent.getId();
     }
 
     /**
      * Get a unique deployment name for this instance.
      */
     protected String getDeploymentName() {
-        return "HttpServerProtocol=" + getClass().getSimpleName() + ", Agent ID=" + agent.getId();
+        return getDeploymentName(getClass(), agent.getId());
     }
 
-    protected void deploy(DeploymentInfo deploymentInfo, boolean secure) {
-       LOG.log(INFO, "Deploying JAX-RS deployment for protocol instance: " + this);
-       webService.deploy(deploymentInfo, secure, false);
+    protected boolean isSecure() {
+        return agent.isRoleBasedSecurity().orElse(false);
+    }
+
+    protected void deploy(Application application) {
+        LOG.log(INFO, "Deploying JAX-RS application for protocol instance: " + this);
+
+        boolean secure = isSecure();
+        String deploymentPath = getDeploymentPath();
+        String deploymentName = getDeploymentName();
+
+        Set<String> allowedOrigins = agent.getAllowedOrigins().map(Set::of).orElse(null);
+        String allowedMethods = agent.getAllowedHTTPMethods().map(methods ->
+                Arrays.stream(methods).map(Enum::name)
+                        .collect(Collectors.joining(","))).orElse(null);
+
+        CORSConfig corsConfig = new CORSConfig();
+
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            allowedOrigins.forEach(corsConfig::addCorsAllowedOrigin);
+        }
+        if (!TextUtil.isNullOrEmpty(allowedMethods)) {
+            corsConfig.setCorsAllowedMethods(allowedMethods);
+        }
+
+        webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure, corsConfig);
     }
 
     protected void undeploy(String deploymentName) {
@@ -176,5 +168,9 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     @Override
     public String getProtocolInstanceUri() {
         return "httpServer://" + getDeploymentPath();
+    }
+
+    public static String getDeploymentName(Class<? extends AbstractHTTPServerProtocol> protocolClass, String agentId) {
+       return "HttpServerProtocol=" + protocolClass.getSimpleName() + ", Agent ID=" + agentId;
     }
 }

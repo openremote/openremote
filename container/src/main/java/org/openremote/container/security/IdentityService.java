@@ -19,16 +19,11 @@
  */
 package org.openremote.container.security;
 
-import io.undertow.server.HandlerWrapper;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.util.HttpString;
-import org.jboss.resteasy.spi.CorsHeaders;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 
 import java.util.logging.Logger;
 
@@ -66,8 +61,7 @@ public abstract class IdentityService implements ContainerService {
     }
 
     public void secureDeployment(DeploymentInfo deploymentInfo) {
-        LOG.info("Securing web deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + deploymentInfo.getContextPath());
-        deploymentInfo.addInitialHandlerChainWrapper(AuthOverloadHandler::new);
+        LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
         deploymentInfo.setSecurityDisabled(false);
         identityProvider.secureDeployment(deploymentInfo);
     }

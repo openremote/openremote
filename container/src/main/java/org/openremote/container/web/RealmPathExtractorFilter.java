@@ -1,3 +1,22 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.container.web;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -14,9 +33,9 @@ import java.net.URI;
 import java.util.List;
 
 /**
- * A JAX-RS filter that extracts the realm from the request path and adds it as a
- * {@link org.openremote.model.Constants#REALM_PARAM_NAME} request header, and removes it from the request path.
- * If the {@link org.openremote.model.Constants#REALM_PARAM_NAME} header is already set, this filter does nothing.
+ * A JAX-RS filter that removes the realm from the full request path at the specified path segment index and adds it as
+ * a {@link org.openremote.model.Constants#REALM_PARAM_NAME} request header. If the
+ * {@link org.openremote.model.Constants#REALM_PARAM_NAME} header is already set, this filter does nothing.
  */
 @Provider
 @PreMatching

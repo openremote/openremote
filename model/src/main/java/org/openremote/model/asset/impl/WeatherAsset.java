@@ -66,6 +66,23 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     public static final AttributeDescriptor<Integer> HUMIDITY = new AttributeDescriptor<>("humidity", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Double> ATMOSPHERIC_PRESSURE = new AttributeDescriptor<>("atmosphericPressure", ValueType.POSITIVE_NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_HECTO, UNITS_PASCAL)
+    .withOptional(true);
+    public static final AttributeDescriptor<Integer> CLOUD_COVERAGE = new AttributeDescriptor<>("cloudCoverage", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_PERCENTAGE)
+    .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))
+    .withOptional(true);
+    public static final AttributeDescriptor<Double> WIND_GUST_SPEED = new AttributeDescriptor<>("windGustSpeed", ValueType.POSITIVE_NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR)
+    .withOptional(true);
+    public static final AttributeDescriptor<Double> PROBABILITY_OF_PRECIPITATION = new AttributeDescriptor<>("probabilityOfPrecipitation", ValueType.POSITIVE_NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(1))
+    .withOptional(true);
 
     public static final AssetDescriptor<WeatherAsset> DESCRIPTOR = new AssetDescriptor<>("weather-partly-cloudy", "49B0D8", WeatherAsset.class);
 
@@ -109,5 +126,21 @@ public class WeatherAsset extends Asset<WeatherAsset> {
 
     public Optional<Integer> getHumidity() {
         return getAttributes().getValue(HUMIDITY);
+    }
+
+    public Optional<Double> getAtmosphericPressure() {
+        return getAttributes().getValue(ATMOSPHERIC_PRESSURE);
+    }
+
+    public Optional<Integer> getCloudCoverage() {
+        return getAttributes().getValue(CLOUD_COVERAGE);
+    }
+
+    public Optional<Double> getWindGustSpeed() {
+        return getAttributes().getValue(WIND_GUST_SPEED);
+    }
+
+    public Optional<Double> getProbabilityOfPrecipitation() {
+        return getAttributes().getValue(PROBABILITY_OF_PRECIPITATION);
     }
 }

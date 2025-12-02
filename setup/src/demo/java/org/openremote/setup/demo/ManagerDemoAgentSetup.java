@@ -21,7 +21,7 @@ package org.openremote.setup.demo;
 
 import org.openremote.agent.protocol.knx.KNXAgent;
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
-import org.openremote.container.util.MapAccess;
+import org.openremote.model.util.MapAccess;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.security.Realm;

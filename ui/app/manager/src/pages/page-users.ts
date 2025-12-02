@@ -476,11 +476,12 @@ export class PageUsers extends Page<AppStateKeyed> {
             {title: i18next.t('firstName')},
             {title: i18next.t('surname')},
             {title: i18next.t('email'), hideMobile: true},
-            {title: i18next.t('status')}
+            {title: i18next.t('status')},
+            {title: i18next.t('tag'), isSortable: true}
         ];
         const userTableRows: TableRow[] = users.map((user) => {
             return {
-                content: [user.username, user.firstName, user.lastName, user.email, user.enabled ? i18next.t('enabled') : i18next.t('disabled')] as string[],
+                content: [user.username, user.firstName, user.lastName, user.email, user.enabled ? i18next.t('enabled') : i18next.t('disabled'), user.attributes?.Tag?.[0]] as string[],
                 clickable: true
             }
         });
@@ -488,11 +489,12 @@ export class PageUsers extends Page<AppStateKeyed> {
         // Content of Service user Table
         const serviceUserTableColumns: TableColumn[] = [
             {title: i18next.t('username')},
-            {title: i18next.t('status')}
+            {title: i18next.t('status')},
+            {title: i18next.t('tag'), isSortable: true}
         ];
         const serviceUserTableRows: TableRow[] = serviceUsers.map((user) => {
             return {
-                content: [user.username, user.enabled ? i18next.t('enabled') : i18next.t('disabled')] as string[],
+                content: [user.username, user.enabled ? i18next.t('enabled') : i18next.t('disabled'), user.attributes?.Tag?.[0]] as string[],
                 clickable: true
             }
         })
@@ -628,7 +630,8 @@ export class PageUsers extends Page<AppStateKeyed> {
                     (u.username as string)?.toLowerCase().includes(value) ||
                     (u.firstName as string)?.toLowerCase().includes(value) ||
                     (u.lastName as string)?.toLowerCase().includes(value) ||
-                    (u.email as string)?.toLowerCase().includes(value)
+                    (u.email as string)?.toLowerCase().includes(value) ||
+                    (u.attributes?.Tag?.[0] as string)?.toLowerCase().includes(value)
                 );
             }
         }
@@ -641,7 +644,8 @@ export class PageUsers extends Page<AppStateKeyed> {
         } else {
             this._serviceUserFilter = (users) => {
                 return users.filter(u =>
-                    (u.username as string)?.includes(value)
+                    (u.username as string)?.includes(value) ||
+                    (u.attributes?.Tag?.[0] as string)?.toLowerCase().includes(value)
                 );
             }
         }
@@ -910,7 +914,22 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       user.lastName = e.detail.value;
                                       this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
-
+                    <or-mwc-input id="new-tag" ?readonly="${readonly || isGatewayServiceUser}"
+                                  class= "validate"
+                                  .label="${i18next.t("tag")}"
+                                  .type="${InputType.TEXT}" minLength="1"
+                                  .value="${user.attributes?.Tag?.[0]}" autocomplete="false"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      // Ensure 'attributes' and 'Tag' exist before assigning
+                                      if (!user.attributes) {
+                                          user.attributes = {};
+                                      }
+                                      if (!Array.isArray(user.attributes.Tag)) {
+                                          user.attributes.Tag = [];
+                                      }  
+                                      user.attributes.Tag[0] = e.detail.value;
+                                      this.onUserChanged(suffix)
+                                  }}"></or-mwc-input>
                     <!-- password -->
                     <h5>${i18next.t("password")}</h5>
                     ${isServiceUser ? html`
@@ -959,7 +978,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("settings")}</h5>
                     <!-- enabled -->
-                    <or-mwc-input ?readonly="${readonly}"
+                    <or-mwc-input ?readonly="${readonly || isGatewayServiceUser}"
                                   class="validate"
                                   .label="${i18next.t("active")}"
                                   .type="${InputType.CHECKBOX}"

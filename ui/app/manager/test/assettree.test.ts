@@ -18,31 +18,34 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { expect } from "@openremote/test";
-import {Manager, test, userStatePath} from "./fixtures/manager.js";
+import {adminStatePath, Manager, test, userStatePath} from "./fixtures/manager.js";
 import {batteryAsset, buildingAsset, electricityAsset, parentAssets} from "./fixtures/data/assettree.js";
 import {Asset} from "@openremote/model";
 import type {OrAssetTree} from "@openremote/or-asset-tree";
 
 test.use({ storageState: userStatePath });
 
-function createBatteryAssets(amount: number): Asset[] {
+function createBatteryAssets(amount: number, realm = "smartcity"): Asset[] {
     return Array.from({ length: amount }, (_, i) => ({
         ...batteryAsset,
-        name: `Battery ${i + 1}`
+        name: `Battery ${i + 1}`,
+        realm: realm
     }));
 }
 
-function createElectricityAssets(amount: number): Asset[] {
+function createElectricityAssets(amount: number, realm = "smartcity"): Asset[] {
     return Array.from({ length: amount }, (_, i) => ({
         ...electricityAsset,
-        name: `Electricity meter ${i + 1}`
+        name: `Electricity meter ${i + 1}`,
+        realm: realm
     }));
 }
 
-function createBuildingAssets(amount: number): Asset[] {
+function createBuildingAssets(amount: number, realm = "smartcity"): Asset[] {
     return Array.from({ length: amount }, (_, i) => ({
         ...buildingAsset,
-        name: `Building ${i + 1}`
+        name: `Building ${i + 1}`,
+        realm: realm
     }));
 }
 
@@ -396,6 +399,41 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await expect(assetTree.getSelectedNodes()).toHaveCount(0);
     await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
 })
+
+/**
+ * @given 4 assets are created in the "master" realm
+ * @and 2 assets are created in the "smartcity" realm
+ * @and the assets are visible in the tree (a total of 5)
+ * @when the user switches to the "smartcity" realm using the realm picker
+ * @then the asset tree should show assets from the "smartcity" realm instead, (a total of 3)
+ * @and the asset viewer becomes empty, and doesn't show the old asset from the "master" realm anymore
+ */
+test.describe(() => {
+    test.use({ storageState: adminStatePath });
+
+    test(`Selecting an asset, clears the asset viewer when switching realms`, async ({page, manager, assetsPage, assetTree, assetViewer}) => {
+        const batteryAssets = createBatteryAssets(2, "master");
+        const electricityAssets = createElectricityAssets(2, "master");
+        await manager.setup("master", { assets: [...batteryAssets, ...electricityAssets] });
+        await manager.goToRealmStartPage("master");
+        await assetsPage.goto();
+        await expect(assetTree.getAssetNodes()).toHaveCount(5); // 2 battery assets + 2 electricity assets + 1 console group
+
+        // Select asset
+        await page.click(`text=${electricityAssets[0].name}`); // Clicking "Electricity asset 1"
+        await expect(assetTree.getSelectedNodes()).toHaveCount(1);
+        await expect(assetViewer.getHeaderLocator(electricityAssets[0].name!)).toBeVisible();
+
+        // Create assets for another realm
+        const smartCityAssets = createBatteryAssets(2);
+        await manager.setup("smartcity", { assets: smartCityAssets });
+
+        // Switch realms and expect assets to be visible
+        await manager.switchToRealmByRealmPicker("smartcity");
+        await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 battery assets + 1 console group
+        await expect(assetViewer.getHeaderLocator(electricityAssets[0].name!)).not.toBeVisible();
+    });
+});
 
 // After each test, clean up all data
 test.afterEach(async ({ manager }) => {

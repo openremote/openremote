@@ -50,6 +50,7 @@ dependencies {
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    api "com.thetransactioncompany:cors-filter:$corsFilterVersion"
 }
 
 base {

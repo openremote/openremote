@@ -4,7 +4,7 @@ import manager, {Auth, Manager, OREvent, subscribe, Util} from "@openremote/core
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {IconSets} from "@openremote/or-icon";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 
 import {AttributeEvent, WellknownMetaItems, SharedEvent, Asset, WellknownAssets, WellknownAttributes, AssetModelUtil} from "@openremote/model";
 import {getBuildingAsset, getElectricityChargerAsset, getElectricityConsumerAsset} from "./util";
