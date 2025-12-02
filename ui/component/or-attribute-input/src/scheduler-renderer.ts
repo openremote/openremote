@@ -27,7 +27,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     };
 
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
-        props.handleChange("schedule", event?.detail.value);
+        props.handleChange(props.path, event?.detail.value);
     };
 
     let deleteHandler: undefined | (() => void);
