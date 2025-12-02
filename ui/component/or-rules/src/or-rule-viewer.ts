@@ -28,18 +28,19 @@ import {
     RuleView,
     RuleViewInfoMap
 } from "./index";
-import {ClientRole, RulesetStatus, RulesetUnion} from "@openremote/model";
+import {ClientRole, RulesetUnion} from "@openremote/model";
 import manager, {Util} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
-import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
+import "@openremote/or-scheduler";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
+import { LabeledEventTypes, OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
 
 // language=CSS
 export const style = css`
@@ -51,7 +52,7 @@ export const style = css`
         overflow-y: auto;
     }
 
-    or-rule-validity {
+    or-scheduler {
         margin-left: 10px;
         margin-right: 20px;
     }
@@ -236,7 +237,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         }
 
         return html`
-            <div id="main-wrapper" class="wrapper">            
+            <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
                     <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="1" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
                     <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
@@ -246,9 +247,35 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             <or-translate value="enabled"></or-translate>
                             <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
                         </span>
-                        <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
+                        <or-scheduler
+                            id="rule-header-validity"
+                            header="${i18next.t("scheduleRuleActivity")}"
+                            .eventTypes="${{
+                                default: i18next.t("validityAlways"),
+                                period: i18next.t("planPeriod"),
+                                recurrence: i18next.t("planRecurrence"),
+                            } as LabeledEventTypes}"
+                            excludeRuleParts="${[
+                                'interval',
+                                'bymonth',
+                                'byweekno',
+                                'byyearday',
+                                'bymonthday',
+                                'byhour',
+                                'byminute',
+                                'bysecond',
+                                'count',
+                            ] as RulePartKey[]}"
+                            @or-scheduler-changed="${(event: OrSchedulerChangedEvent | undefined) => {
+                                if (this.ruleset) {
+                                    this.ruleset.meta ??= {};
+                                    this.ruleset.meta.validity = event?.detail.value;
+                                    this.requestUpdate("ruleset");
+                                }
+                            }}"
+                        ></or-scheduler>
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
-                    </div>                        
+                    </div>
                 </div>
 
                 ${viewer}

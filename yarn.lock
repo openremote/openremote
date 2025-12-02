@@ -2240,6 +2240,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-map": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-scheduler": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-tree-menu": "workspace:*"
     "@openremote/rest": "workspace:*"
