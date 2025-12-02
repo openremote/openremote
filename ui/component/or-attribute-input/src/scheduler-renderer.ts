@@ -10,23 +10,23 @@ import moment from "moment";
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { Frequencies, RulePartKey, LabeledEventTypes, OrCalendarEventChangedEvent, EventTypes } from "@openremote/or-calendar-event";
+import { Frequencies, RulePartKey, LabeledEventTypes, OrSchedulerChangedEvent, EventTypes } from "@openremote/or-scheduler";
 import { CalendarEvent } from "@openremote/model";
-import "@openremote/or-calendar-event";
+import "@openremote/or-scheduler";
 
-const calendarEventTester: RankedTester = rankWith(
+const schedulerTester: RankedTester = rankWith(
     6,
     scopeEndsWith('schedule')
-    // and(uiTypeIs("Control"), formatIs("or-calendar-event"))
+    // and(uiTypeIs("Control"), formatIs("or-scheduler"))
 );
-const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
+const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     props = {
         ...props,
         ...mapStateToControlProps({jsonforms: {...state}}, props),
         ...mapDispatchToControlProps(state.dispatch)
     };
 
-    const onCalendarEventChanged = (event: OrCalendarEventChangedEvent | undefined) => {
+    const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
         props.handleChange("schedule", event?.detail.value);
     };
 
@@ -38,7 +38,7 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
     }
 
     return getTemplateWrapper(html`
-        <or-calendar-event
+        <or-scheduler
             .calendarEvent="${props.data as CalendarEvent}"
             .default="${{
                 start: moment().startOf("day").add(moment().utcOffset(), "m").toDate().getTime(),
@@ -66,13 +66,13 @@ const calendarEventRenderer = (state: JsonFormsStateContext, props: ControlProps
                 // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
                 'bysecond'
             ] as RulePartKey[]}"
-            @or-calendar-event-changed="${onCalendarEventChanged}"
+            @or-scheduler-changed="${onSchedulerChanged}"
         >
-        </or-calendar-event>
+        </or-scheduler>
     `, deleteHandler);
 };
 
-export const calendarEventRendererRegistryEntry: JsonFormsRendererRegistryEntry = {
-    tester: calendarEventTester,
-    renderer: calendarEventRenderer
+export const schedulerRendererRegistryEntry: JsonFormsRendererRegistryEntry = {
+    tester: schedulerTester,
+    renderer: schedulerRenderer
 };

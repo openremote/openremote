@@ -49,16 +49,16 @@ const byMonthDayOptions = toSpliced(range(-31, 31), 31, 1);
 const byHourOptions = range(1, 24);
 const byMinuteOrSecondsOptions = range(1, 60);
 
-export interface OrCalendarEventChangedEventDetail {
+export interface OrSchedulerChangedEventDetail {
     value?: CalendarEvent;
 }
 
-export class OrCalendarEventChangedEvent extends CustomEvent<OrCalendarEventChangedEventDetail> {
+export class OrSchedulerChangedEvent extends CustomEvent<OrSchedulerChangedEventDetail> {
 
-    public static readonly NAME = "or-calendar-event-changed";
+    public static readonly NAME = "or-scheduler-changed";
 
     constructor(value?: CalendarEvent) {
-        super(OrCalendarEventChangedEvent.NAME, {
+        super(OrSchedulerChangedEvent.NAME, {
             detail: { value },
             bubbles: true,
             composed: true
@@ -68,12 +68,12 @@ export class OrCalendarEventChangedEvent extends CustomEvent<OrCalendarEventChan
 
 declare global {
     export interface HTMLElementEventMap {
-        [OrCalendarEventChangedEvent.NAME]: OrCalendarEventChangedEvent;
+        [OrSchedulerChangedEvent.NAME]: OrSchedulerChangedEvent;
     }
 }
 
-@customElement("or-calendar-event")
-export class OrCalendarEvent extends translate(i18next)(LitElement) {
+@customElement("or-scheduler")
+export class OrScheduler extends translate(i18next)(LitElement) {
 
     @property()
     public header?: string;
@@ -350,7 +350,7 @@ export class OrCalendarEvent extends translate(i18next)(LitElement) {
                         } else if (this.eventType === EventTypes.recurrence) {
                             this.calendarEvent!.recurrence = this.getRRule();
                         }
-                        this.dispatchEvent(new OrCalendarEventChangedEvent(this.calendarEvent));
+                        this.dispatchEvent(new OrSchedulerChangedEvent(this.calendarEvent));
                         this._dialog = undefined;
                     }
                 },

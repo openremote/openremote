@@ -1,5 +1,5 @@
 {
-    "name": "@openremote/or-calendar-event",
+    "name": "@openremote/or-scheduler",
     "version": "1.8.0-snapshot",
     "description": "OpenRemote calendar event UI component",
     "customElements": "custom-elements.json",

@@ -37,7 +37,7 @@ import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
 import {agentIdRendererRegistryEntry} from "./agent-link-json-forms-renderer";
-import {calendarEventRendererRegistryEntry} from "./calendar-event-schedule-renderer";
+import {schedulerRendererRegistryEntry} from "./scheduler-renderer";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -114,7 +114,7 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
     return i18next.t("updatedWithDate", { date: new Date(timestamp) });
 }
 
-const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, calendarEventRendererRegistryEntry];
+const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry];
 
 let valueDescriptorSchemaHashes: Record<string, string>
 const schemas = new Map<string, any>()
