@@ -212,7 +212,7 @@ export class OrAlarmsTable extends OrMwcTable {
         return new Date(lastModified);
     }
 
-    protected sortTemplateRows(cellA: any, cellB: any, cIndex: number, sortDirection: 'ASC' | 'DESC'): number {
+    protected sortTemplateRows(cellA: any, cellB: any, _cIndex: number, sortDirection: 'ASC' | 'DESC'): number {
         const valueA: string | undefined = (cellA.values as any[]).filter(v => typeof v === 'string' || typeof v === 'number').map(v => v.toString())?.[0];
         const valueB: string | undefined = (cellB.values as any[]).filter(v => typeof v === 'string' || typeof v === 'number').map(v => v.toString())?.[0];
         if (valueA !== undefined && valueB !== undefined) {

@@ -7,7 +7,7 @@ import {createRef, Ref, ref} from "lit/directives/ref.js";
 import "@openremote/or-components/or-panel";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator, GatewayAssetSyncRule} from "@openremote/model";
-import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
+import manager, {DefaultColor1} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";

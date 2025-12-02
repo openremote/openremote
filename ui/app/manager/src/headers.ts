@@ -3,7 +3,7 @@ import { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import {AnyAction} from "@reduxjs/toolkit";
 import { getMapRoute } from "./routes";
 
-export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemMap<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "map",
         href: getMapRoute(),
@@ -11,7 +11,7 @@ export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orAp
     };
 }
 
-export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemAssets<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "rhombus-split",
         href: "assets",
@@ -19,7 +19,7 @@ export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
-export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemServices<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "puzzle",
         href: "services",
@@ -28,7 +28,7 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
     };
 }
 
-export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemRules<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "state-machine",
         href: "rules",
@@ -38,7 +38,7 @@ export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(or
     };
 }
 
-export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemInsights<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "chart-areaspline",
         href: "insights",
@@ -46,7 +46,7 @@ export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>
     };
 }
 
-export function headerItemGatewayConnection<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemGatewayConnection<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "cloud",
         value: "gateway",
@@ -56,17 +56,17 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
     };
 }
 
-export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemGatewayTunnel<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "lan-connect",
         value: "gateway-tunnel",
         href: "gateway-tunnel",
         text: "gatewayTunnel",
         roles: ["write:admin", "read:admin"]
-    }
+    };
 }
 
-export function headerItemLanguage<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemLanguage<S extends AppStateKeyed, _A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "web",
         value: "language",
@@ -77,7 +77,7 @@ export function headerItemLanguage<S extends AppStateKeyed, A extends AnyAction>
     };
 }
 
-export function headerItemLogout<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemLogout<S extends AppStateKeyed, _A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "logout",
         value: "logout",
@@ -88,7 +88,7 @@ export function headerItemLogout<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
-export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemLogs<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "text-box-search-outline",
         value: "logs",
@@ -98,7 +98,7 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
         roles: ["write:logs", "read:logs"]
     };
 }
-export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemAccount<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "account",
         value: "account",
@@ -107,7 +107,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
         roles: ["write:user"]
     };
 }
-export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemUsers<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "account-group",
         value: "users",
@@ -116,7 +116,7 @@ export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(or
         roles: ["read:admin", "write:admin"]
     };
 }
-export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemRoles<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "account-box-multiple",
         value: "roles",
@@ -125,7 +125,7 @@ export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(or
         roles: ["read:admin", "write:admin"]
     };
 }
-export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemRealms<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "domain",
         value: "realms",
@@ -135,7 +135,7 @@ export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
-export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemExport<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "database-export",
         value: "export",
@@ -144,7 +144,7 @@ export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
-export function headerItemProvisioning<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemProvisioning<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "cellphone-cog",
         value: "provisioning",
@@ -154,7 +154,7 @@ export function headerItemProvisioning<S extends AppStateKeyed, A extends AnyAct
     };
 }
 
-export function headerItemConfiguration<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+export function headerItemConfiguration<S extends AppStateKeyed, _A extends AnyAction>(_orApp: OrApp<S>): HeaderItem {
     return {
         icon: "palette-outline",
         value: "configuration",

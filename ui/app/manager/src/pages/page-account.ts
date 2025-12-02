@@ -11,7 +11,7 @@ import {map} from 'lit/directives/map.js';
 import {guard} from "lit/directives/guard.js";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
+import {ClientRole, Credential, Role, User, UserAssetLink} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -410,7 +410,7 @@ export class PageAccount extends Page<AppStateKeyed> {
 
             manager.rest.api.UserResource.requestPasswordResetCurrent()
                 .then(() => showSnackbar(undefined, i18next.t("resetPasswordConfirmation")))
-                .catch((reason) => showSnackbar(undefined, i18next.t("errorOccurred")));
+                .catch(() => showSnackbar(undefined, i18next.t("errorOccurred")));
         }
     }
 
@@ -499,7 +499,7 @@ export class PageAccount extends Page<AppStateKeyed> {
     /**
      * Function that formats the password policy into a displayable html format.
      */
-    protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+    protected async _getPasswordPolicyTemplate(_user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
         const policyMap = new Map(passwordPolicy.map(policyStr => {
             const name = policyStr.split("(")[0];
             const value = policyStr.split("(")[1]?.split(")")[0];

@@ -687,6 +687,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@jsep-plugin/assignment@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "@jsep-plugin/assignment@npm:1.3.0"
+  peerDependencies:
+    jsep: ^0.4.0||^1.0.0
+  checksum: 10c0/d749554dc691798116eb068eebe2d9bcb0b0d89ef6c7cc7c2a9f37d03da15fdbf8053407e97008090cd1bd6f256ea6c26abbada7399cf79f0b6b502e164b084b
+  languageName: node
+  linkType: hard
+
+"@jsep-plugin/regex@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "@jsep-plugin/regex@npm:1.0.4"
+  peerDependencies:
+    jsep: ^0.4.0||^1.0.0
+  checksum: 10c0/bec7eb7ea6ab453a2672edc808644c5be3dc06b2a9d77182e18cd595b37deba6dcdb3760849d8684afc5779a86b7d2604dd525cb612a548f9ed9f31a8032ec24
+  languageName: node
+  linkType: hard
+
 "@jsonforms/core@npm:^3.5.1":
   version: 3.5.1
   resolution: "@jsonforms/core@npm:3.5.1"
@@ -1743,6 +1761,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@types/node": "npm:^24.10.1"
     "@types/qs": "npm:^6.9.7"
     axios: "npm:0.24.0"
     i18next: "npm:^21.5.3"
@@ -1870,10 +1889,13 @@ __metadata:
     "@openremote/or-rules": "workspace:*"
     "@openremote/or-services": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
     "@rsbuild/core": "npm:~1.6.8"
+    "@vaadin/text-field": "npm:~25.0.0-beta5"
+    "@vaadin/vaadin-lumo-styles": "npm:~25.0.0-beta5"
     iso-639-1: "npm:^3.1.3"
     lit: "npm:^3.3.1"
     maplibre-gl: "npm:^5.12.0"
@@ -1993,7 +2015,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     echarts: "npm:~6.0.0"
-    jsonpath-plus: "npm:^6.0.1"
+    jsonpath-plus: "npm:^10.3.0"
     lit: "npm:^3.3.1"
     lodash: "npm:^4.17.21"
     moment: "npm:^2.29.4"
@@ -2352,21 +2374,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-vaadin-components@workspace:ui/component/or-vaadin-components":
+"@openremote/or-vaadin-components@workspace:*, @openremote/or-vaadin-components@workspace:ui/component/or-vaadin-components":
   version: 0.0.0-use.local
   resolution: "@openremote/or-vaadin-components@workspace:ui/component/or-vaadin-components"
   dependencies:
     "@openremote/core": "workspace:*"
     "@vaadin/text-field": "npm:~25.0.0-beta5"
-    lit: "npm:^3.3.1"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-vaadin-input@workspace:ui/component/or-vaadin-input":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-vaadin-input@workspace:ui/component/or-vaadin-input"
-  dependencies:
-    "@openremote/core": "workspace:*"
+    "@vaadin/vaadin-lumo-styles": "npm:~25.0.0-beta5"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -3512,6 +3526,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^24.10.1":
+  version: 24.10.1
+  resolution: "@types/node@npm:24.10.1"
+  dependencies:
+    undici-types: "npm:~7.16.0"
+  checksum: 10c0/d6bca7a78f550fbb376f236f92b405d676003a8a09a1b411f55920ef34286ee3ee51f566203920e835478784df52662b5b2af89159d9d319352e9ea21801c002
+  languageName: node
+  linkType: hard
+
 "@types/offscreencanvas@npm:^2019.6.4":
   version: 2019.7.3
   resolution: "@types/offscreencanvas@npm:2019.7.3"
@@ -3810,6 +3833,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vaadin/icon@npm:25.0.0-beta5":
+  version: 25.0.0-beta5
+  resolution: "@vaadin/icon@npm:25.0.0-beta5"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/component-base": "npm:25.0.0-beta5"
+    "@vaadin/vaadin-themable-mixin": "npm:25.0.0-beta5"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/9163ed97f867bebf51888ab1f35f5ba2999b130d0bda77128d2f41baf0a910f4cf045913b8969383e16a0a217f4f78e5e77cc6b67413fb30dcea8b72b223d05b
+  languageName: node
+  linkType: hard
+
 "@vaadin/input-container@npm:25.0.0-beta5":
   version: 25.0.0-beta5
   resolution: "@vaadin/input-container@npm:25.0.0-beta5"
@@ -3840,6 +3875,17 @@ __metadata:
   version: 2.0.7
   resolution: "@vaadin/vaadin-development-mode-detector@npm:2.0.7"
   checksum: 10c0/b62f65a60a734932939ee523d854fefb4a568c10787ca82b5d9377b1536249886f5b07eebf56e6e31e1e3da0d6bc32b03b2eba791be12b2420747cf178231032
+  languageName: node
+  linkType: hard
+
+"@vaadin/vaadin-lumo-styles@npm:~25.0.0-beta5":
+  version: 25.0.0-beta5
+  resolution: "@vaadin/vaadin-lumo-styles@npm:25.0.0-beta5"
+  dependencies:
+    "@vaadin/component-base": "npm:25.0.0-beta5"
+    "@vaadin/icon": "npm:25.0.0-beta5"
+    "@vaadin/vaadin-themable-mixin": "npm:25.0.0-beta5"
+  checksum: 10c0/50975d1fc5ea829b9ae30075034eaf2cfbb6b848538df3e87b0e28c57643bed62174e0da448ba54fb8fc931bb23a7fadbf46f43c7977bfbdc8163177edf77b7c
   languageName: node
   linkType: hard
 
@@ -7702,6 +7748,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsep@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "jsep@npm:1.4.0"
+  checksum: 10c0/fe60adf47e050e22eadced42514a51a15a3cf0e2d147896584486acd8ee670fc16641101b9aeb81f4aaba382043d29744b7aac41171e8106515b14f27e0c7116
+  languageName: node
+  linkType: hard
+
 "json-buffer@npm:3.0.1":
   version: 3.0.1
   resolution: "json-buffer@npm:3.0.1"
@@ -7777,10 +7830,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsonpath-plus@npm:^6.0.1":
-  version: 6.0.1
-  resolution: "jsonpath-plus@npm:6.0.1"
-  checksum: 10c0/ecbe5caad723a42e1cc4a28058ca837eba00d36075766a7f3cf828491648e3b64d9fa0d5a64dd868e7c3180b1f9fcec565c32a1c05b34bef9f88c3c0c7acd1a2
+"jsonpath-plus@npm:^10.3.0":
+  version: 10.3.0
+  resolution: "jsonpath-plus@npm:10.3.0"
+  dependencies:
+    "@jsep-plugin/assignment": "npm:^1.3.0"
+    "@jsep-plugin/regex": "npm:^1.0.4"
+    jsep: "npm:^1.4.0"
+  bin:
+    jsonpath: bin/jsonpath-cli.js
+    jsonpath-plus: bin/jsonpath-cli.js
+  checksum: 10c0/f5ff53078ecab98e8afd1dcdb4488e528653fa5a03a32d671f52db1ae9c3236e6e072d75e1949a80929fd21b07603924a586f829b40ad35993fa0247fa4f7506
   languageName: node
   linkType: hard
 
@@ -10938,6 +10998,13 @@ __metadata:
   version: 5.26.5
   resolution: "undici-types@npm:5.26.5"
   checksum: 10c0/bb673d7876c2d411b6eb6c560e0c571eef4a01c1c19925175d16e3a30c4c428181fb8d7ae802a261f283e4166a0ac435e2f505743aa9e45d893f9a3df017b501
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~7.16.0":
+  version: 7.16.0
+  resolution: "undici-types@npm:7.16.0"
+  checksum: 10c0/3033e2f2b5c9f1504bdc5934646cb54e37ecaca0f9249c983f7b1fc2e87c6d18399ebb05dc7fd5419e02b2e915f734d872a65da2e3eeed1813951c427d33cc9a
   languageName: node
   linkType: hard
 

@@ -228,7 +228,7 @@ export class PageRealms extends Page<AppStateKeyed> {
 
     protected getRealmState = createSelector(
         [this._realmSelector],
-        async (realm) => {
+        async () => {
             this.requestUpdate();
         }
     )
@@ -387,11 +387,10 @@ export class PageRealms extends Page<AppStateKeyed> {
       let confirmedName = "";
       let okBtnRef: Ref<OrMwcInput> = createRef();
 
-      const doDelete = async (dialog: OrMwcDialog) => {
+      const doDelete = async (_dialog: OrMwcDialog) => {
         if (okBtnRef.value.disabled) return;
         try {
-            await manager.rest.api.RealmResource.delete(realm.name);
-            this._realms = this._realms.filter(r => r !== realm);
+            await this._doDelete(realm);
         } catch (e) {
             showSnackbar(undefined, "realmDeleteFailed", "dismiss");
         }
@@ -422,7 +421,7 @@ export class PageRealms extends Page<AppStateKeyed> {
           }
       ];
 
-      const dialog = showDialog(new OrMwcDialog()
+      showDialog(new OrMwcDialog()
           .setContent(dialogContent)
           .setActions(dialogActions)
           .setStyles(html`
@@ -449,12 +448,12 @@ export class PageRealms extends Page<AppStateKeyed> {
           .setDismissAction(null));
     }
 
-    private async _doDelete(realm) {
-        await manager.rest.api.RealmResource.delete(realm.realm);
+    private async _doDelete(realm: Realm) {
+        await manager.rest.api.RealmResource.delete(realm.name);
         this._realms = [...this._realms.filter(u => u.id != realm.id)];
     }
 
-    private expanderToggle(ev: MouseEvent, index:number) {
+    private expanderToggle(_ev: MouseEvent, index:number) {
         const metaRow = this.shadowRoot.getElementById('realm-row-'+index)
         const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
         if (metaRow.classList.contains('expanded')) {

@@ -102,14 +102,14 @@ export class OrConfMapCard extends LitElement {
     }
 
     protected setCenter(cor: LngLat|string) {
-        let centerCoordinate: LngLat
+        let centerCoordinate: LngLat;
         if (typeof cor === "string"){
             centerCoordinate = {
                 lat: parseFloat(cor.split(',')[1]),
                 lng: parseFloat(cor.split(',')[0])
             } as never;
         } else {
-            centerCoordinate = cor
+            centerCoordinate = cor;
         }
         const BetweenNorthSouth = this.map.bounds[3] > centerCoordinate.lat && this.map.bounds[1] < centerCoordinate.lat;
         const BetweenWestEast = this.map.bounds[0] < centerCoordinate.lng && this.map.bounds[2] > centerCoordinate.lng;
@@ -257,7 +257,7 @@ export class OrConfMapCard extends LitElement {
                                             }}"
                                             .step="${1}"></or-mwc-input>
                             <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(map.zoom)}"
+                                            @or-mwc-input-changed="${() => this.setZoom(map.zoom)}"
                                             .step="${1}"></or-mwc-input>
                         </div>
                         <div class="input">
@@ -271,7 +271,7 @@ export class OrConfMapCard extends LitElement {
                                             }}"
                                             .step="${1}"></or-mwc-input>
                             <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(map.minZoom)}"
+                                            @or-mwc-input-changed="${() => this.setZoom(map.minZoom)}"
                                             .step="${1}"></or-mwc-input>
                         </div>
                         <div class="input">
@@ -285,7 +285,7 @@ export class OrConfMapCard extends LitElement {
                                             }}"
                                             .step="${1}"></or-mwc-input>
                             <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(map.maxZoom)}"
+                                            @or-mwc-input-changed="${() => this.setZoom(map.maxZoom)}"
                                             .step="${1}"></or-mwc-input>
                         </div>
 
@@ -306,7 +306,7 @@ export class OrConfMapCard extends LitElement {
                                     @or-mwc-input-changed="${() => { this._showRemoveMapDialog(); }}"
                     ></or-mwc-input>
                 `)}
-        </div>`
+        </div>`;
     }
 
     render() {

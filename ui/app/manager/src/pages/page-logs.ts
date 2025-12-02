@@ -52,7 +52,7 @@ export class PageLogs extends Page<AppStateKeyed> {
         super(store);
     }
 
-    public stateChanged(state: AppStateKeyed) {
+    public stateChanged(_state: AppStateKeyed) {
     }
 
     protected render() {

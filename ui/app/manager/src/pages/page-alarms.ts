@@ -36,7 +36,7 @@ export interface PageAlarmsConfig {
     assignOnly?: boolean;
 }
 
-export function pageAlarmsProvider(store: Store<AppStateKeyed>, config?: PageAlarmsConfig): PageProvider<AppStateKeyed> {
+export function pageAlarmsProvider(store: Store<AppStateKeyed>, _config?: PageAlarmsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "alarms",
         routes: ["alarms", "alarms/:id"],
@@ -601,15 +601,15 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     private doDelete(alarmId: any) {
-        manager.rest.api.AlarmResource.removeAlarm(alarmId).then(response => {
+        manager.rest.api.AlarmResource.removeAlarm(alarmId).then(() => {
             this.reset();
-        })
+        });
     }
 
     private doMultipleDelete(alarmIds: any[]) {
-        manager.rest.api.AlarmResource.removeAlarms(alarmIds).then(response => {
+        manager.rest.api.AlarmResource.removeAlarms(alarmIds).then(() => {
             this.reset();
-        })
+        });
     }
 
     protected getSingleAlarmView(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
@@ -767,19 +767,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                               raised class="alarm-input" disabled
                                               .label="${i18next.t(alarm.id ? "save" : "create")}"
                                               .type="${InputType.BUTTON}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  let error: { status?: number; text: string };
+                                              @or-mwc-input-changed="${() => {
                                                   this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
                                                           .then(() => {
                                                               showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
                                                               this.reset();
                                                           }).catch((ex) => {
-                                                              if (isAxiosError(ex)) {
-                                                                  error = {
-                                                                      status: ex.response.status,
-                                                                      text: ex.response.status === 403 ? i18next.t("alarm.alarmAlreadyExists") : i18next.t("errorOccurred"),
-                                                                  };
-                                                              }
+                                                              console.error(ex);
                                                           }).finally(() => {
                                                               this._saveAlarmPromise = undefined;
                                                           });
@@ -941,7 +935,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             })
         };
 
-        const dialog = showDialog(
+        showDialog(
             new OrMwcDialog()
                 .setHeading(i18next.t("linkedAssets"))
                 .setContent(

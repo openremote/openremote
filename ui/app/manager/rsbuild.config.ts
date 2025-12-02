@@ -3,8 +3,7 @@ import { defineConfig } from "@rsbuild/core";
 export default defineConfig({
     dev: {
         hmr: false, // HMR does not work for our Web Components atm
-        liveReload: true,
-        assetPrefix: "/manager/"
+        liveReload: true
     },
     server: {
         port: 9000 // TODO: Leave default in production
@@ -44,9 +43,7 @@ export default defineConfig({
             "@openremote/or-translate": "../../component/or-translate/src",
             "@openremote/or-tree-menu": "../../component/or-tree-menu/src",
             "@openremote/util": "../../util"
-        },
-        // Enable symlinks resolution for workspace packages
-        symlinks: true
+        }
     },
     plugins: [],
     tools: {

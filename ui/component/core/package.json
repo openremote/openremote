@@ -35,6 +35,7 @@
     "url-search-params-polyfill": "^8.1.0"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "@types/qs": "^6.9.7"
   },
   "publishConfig": {

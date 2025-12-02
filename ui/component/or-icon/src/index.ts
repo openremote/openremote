@@ -6,7 +6,8 @@ import {AssetDescriptor, AssetModelUtil, WellknownAssets} from "@openremote/mode
 import OrIconSet from "./or-icon-set";
 export {OrIconSet};
 
-const mdiFontStyle = require("@mdi/font/css/materialdesignicons.min.css");
+// @ts-ignore
+const mdiFontStyle = import("@mdi/font/css/materialdesignicons.min.css");
 
 export class IconSetAddedEvent extends CustomEvent<void> {
 

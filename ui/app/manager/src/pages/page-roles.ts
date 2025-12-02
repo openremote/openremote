@@ -5,8 +5,8 @@ import {
   TemplateResult,
   unsafeCSS,
 } from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import manager, {OREvent, DefaultColor3, OPENREMOTE_CLIENT_ID} from "@openremote/core";
+import {customElement, state} from "lit/decorators.js";
+import manager, { DefaultColor3, OPENREMOTE_CLIENT_ID} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import { Store } from "@reduxjs/toolkit";

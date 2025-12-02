@@ -428,7 +428,7 @@ export class PageMap extends Page<MapStateKeyed> {
         router.navigate(getMapRoute(asset.id));
     }
 
-    protected _onMapClick(e: OrMapClickedEvent) {
+    protected _onMapClick(_e: OrMapClickedEvent) {
         router.navigate(getMapRoute());
     }
 

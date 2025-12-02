@@ -20,6 +20,7 @@
     }
   },
   "scripts": {
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
@@ -31,6 +32,7 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@vaadin/text-field": "~25.0.0-beta5",
+    "@vaadin/vaadin-lumo-styles": "~25.0.0-beta5",
     "lit": "^3.3.1"
   },
   "publishConfig": {

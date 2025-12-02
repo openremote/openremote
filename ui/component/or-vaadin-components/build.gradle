@@ -4,6 +4,7 @@ tasks.register('clean') {
     doLast {
         delete "dist"
         delete "lib"
+        delete "tsconfig.tsbuildinfo"
     }
 }
 

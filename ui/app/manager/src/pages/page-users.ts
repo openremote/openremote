@@ -445,7 +445,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     private doDelete(user) {
-        manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => {
+        manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(() => {
             if (user.serviceAccount) {
                 this._serviceUsers = [...this._serviceUsers.filter(u => u.id !== user.id)];
                 this.reset();
@@ -616,7 +616,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
     }
 
-    protected getDefaultUserFilter(serviceUser: boolean): (users: UserModel[]) => UserModel[] {
+    protected getDefaultUserFilter(_serviceUser: boolean): (users: UserModel[]) => UserModel[] {
         return (users) => users;
     }
 
@@ -702,25 +702,24 @@ export class PageUsers extends Page<AppStateKeyed> {
                     }
                 };
                 return userAssetLink;
-            })
+            });
         };
-
-        const dialog = showDialog(new OrMwcDialog()
+        showDialog(new OrMwcDialog()
             .setHeading(i18next.t("linkedAssets"))
             .setContent(html`
                 <or-asset-tree
                         id="chart-asset-tree" readonly .selectedIds="${user.userAssetLinks.map(ual => ual.id.assetId)}"
                         .showSortBtn="${false}" expandNodes checkboxes
                         @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
-                            if (readonly) {
-                                e.detail.allow = false;
-                            }
-                        }}"
+                if (readonly) {
+                    e.detail.allow = false;
+                }
+            }}"
                         @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => {
-                            if (!readonly) {
-                                onAssetSelectionChanged(e);
-                            }
-                        }}"></or-asset-tree>
+                if (!readonly) {
+                    onAssetSelectionChanged(e);
+                }
+            }}"></or-asset-tree>
             `)
             .setActions([
                 {
@@ -956,7 +955,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       class = "validate"
                                       .label="${i18next.t("password")}"
                                       .type="${InputType.PASSWORD}" min="1" autocomplete="false"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      @or-mwc-input-changed="${() => {
                                           this._onPasswordChanged(user, suffix);
                                           this.onUserChanged(suffix);
                                       }}"
@@ -966,7 +965,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       .label="${i18next.t("repeatPassword")}"
                                       .type="${InputType.PASSWORD}" min="1" autocomplete="false"
                                       style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      @or-mwc-input-changed="${() => {
                                           this._onPasswordChanged(user, suffix);
                                           this.onUserChanged(suffix);
                                       }}"
@@ -1071,7 +1070,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised disabled
                                       .label="${i18next.t(user.id ? "save" : "create")}"
                                       .type="${InputType.BUTTON}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      @or-mwc-input-changed="${() => {
                                           let error: { status?: number, text: string };
                                           this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
                                               // Return to the users page on successful user create/update
@@ -1109,7 +1108,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         `;
     }
 
-    protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+    protected async _getPasswordPolicyTemplate(_user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
         const policyMap = new Map(passwordPolicy.map(policyStr => {
             const name = policyStr.split("(")[0];
             const value = policyStr.split("(")[1].split(")")[0];

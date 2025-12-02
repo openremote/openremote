@@ -211,7 +211,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
         this._loadConfigs();
     }
 
-    stateChanged(state: AppStateKeyed): void {
+    stateChanged(_state: AppStateKeyed): void {
     }
 
     protected render(): TemplateResult | void {
@@ -252,7 +252,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                             </tr>
                             </thead>
                             <tbody class="mdc-data-table__content">
-                            ${this._configs.map((config, index) => this._getConfigTemplate(() => {
+                            ${this._configs.map((config) => this._getConfigTemplate(() => {
                                 this._configs.pop(); this._configs = [...this._configs];
                             }, config))}
                             ${(this._configs.length === 0 || (this._configs.length > 0 && !!this._configs[this._configs.length - 1].id)) ? html`
@@ -320,7 +320,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
 
     protected async _createUpdateConfig(config: ProvisioningConfig<any, any>) {
         if (config.id) {
-            const response = await manager.rest.api.ProvisioningResource.updateProvisioningConfig(config.id, config);
+            await manager.rest.api.ProvisioningResource.updateProvisioningConfig(config.id, config);
         } else {
             const response = await manager.rest.api.ProvisioningResource.createProvisioningConfig(config);
             config.id = response.data;
@@ -338,7 +338,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
     }
 
     protected _doDelete(config: ProvisioningConfig<any, any>) {
-        manager.rest.api.ProvisioningResource.deleteProvisioningConfig(config.id).then(response => {
+        manager.rest.api.ProvisioningResource.deleteProvisioningConfig(config.id).then(() => {
             this._configs = [...this._configs.filter(c => c.id !== config.id)];
         });
     }
