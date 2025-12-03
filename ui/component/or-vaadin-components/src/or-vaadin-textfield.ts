@@ -17,20 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {html, LitElement} from "lit";
 import {customElement} from "lit/decorators.js";
-import componentStyles from "./styles";
-import "@vaadin/text-field";
+import {TextField} from "@vaadin/text-field";
 
 @customElement("or-vaadin-textfield")
-export class OrVaadinTextfield extends LitElement {
-
-    /*static get styles() {
-        return [...componentStyles];
-    }*/
-
-    render() {
-        return html`<vaadin-text-field label="Test"></vaadin-text-field>`;
-    }
+export class OrVaadinTextfield extends TextField {
 
 }

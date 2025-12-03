@@ -32,8 +32,10 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@vaadin/text-field": "~25.0.0-beta5",
-    "@vaadin/vaadin-lumo-styles": "~25.0.0-beta5",
     "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

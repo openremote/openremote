@@ -50,6 +50,9 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
+// @ts-ignore
+import themeCss from "@openremote/theme";
+
 declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
@@ -263,12 +266,19 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
                     }
                 }).catch(reason => {
                     console.error("Failed to initialise app: " + reason);
-                })
+                });
             }
-        })
+        });
 
         return orAppConfig;
     };
 
+    // Apply theme to the Manager app
+    const style = document.createElement("style");
+    style.id = "orDefaultTheme";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    // Load app
     document.body.appendChild(orApp);
 });

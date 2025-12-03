@@ -1,0 +1,5 @@
+@import "@vaadin/vaadin-lumo-styles/lumo.css";
+
+span {
+    color: purple;
+}
