@@ -27,7 +27,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {Frequency as FrequencyValue, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
-import { BY_RULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RULE_PARTS, recurrenceEnds } from "./data";
+import { BY_RRULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, recurrenceEnds } from "./data";
 import type { RulePartKey, RuleParts, LabeledEventTypes, Frequency } from "./types";
 import { when } from "lit/directives/when.js";
 export { RuleParts, RulePartKey, Frequency, LabeledEventTypes };
@@ -113,8 +113,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         super.updated(changedProps);
 
         if (changedProps.has("_rrule") && this._rrule) {
-            this._parts = BY_RULE_PARTS
-                .filter(p => !NOT_APPLICABLE_BY_RULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
+            this._parts = BY_RRULE_PARTS
+                .filter(p => !NOT_APPLICABLE_BY_RRULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
                 .filter(p => !this.disabledRRuleParts.includes(p));
         }
 
@@ -348,7 +348,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         } else if (this.eventType === EventTypes.recurrence) {
                             this.calendarEvent!.recurrence = this.getRRule();
                         }
-                        this.dispatchEvent(new OrSchedulerChangedEvent(this.calendarEvent));
+                        this.dispatchEvent(new OrSchedulerChangedEvent(this.calendarEvent ?? this.default));
                         this._dialog = undefined;
                     }
                 },

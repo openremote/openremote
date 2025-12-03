@@ -4,7 +4,7 @@ import { Frequency } from "rrule";
  * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
  * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
  */
-export const BY_RULE_PARTS = [
+export const BY_RRULE_PARTS = [
     "bymonth",
     "byweekno",
     "byyearday",
@@ -19,7 +19,7 @@ export const BY_RULE_PARTS = [
  * Dependency of by rule parts table
  * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
  */
-export const NOT_APPLICABLE_BY_RULE_PARTS = {
+export const NOT_APPLICABLE_BY_RRULE_PARTS = {
     SECONDLY: ["BYWEEKNO"],
     MINUTELY: ["BYWEEKNO"],
     HOURLY: ["BYWEEKNO"],
