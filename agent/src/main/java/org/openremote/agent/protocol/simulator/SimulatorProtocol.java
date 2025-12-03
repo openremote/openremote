@@ -275,7 +275,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 }
                 if (now + delay.getAsLong() > now) { // Delay can be negative
                     long timestamp = (now + delay.getAsLong()) * 1000;
-                    if (schedule.map(s -> Optional.ofNullable(s.getUpcoming()).map(u -> timestamp > u.toInstant(ZoneOffset.UTC).toEpochMilli()).orElse(false)).orElse(false)) {
+                    if (schedule.map(s -> Optional.ofNullable(s.getUpcoming()).map(u -> timestamp > u.toInstant(ZoneOffset.UTC).toEpochMilli() && !s.getIsSingleOccurrence()).orElse(false)).orElse(false)) {
                         continue;
                     }
                     predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
@@ -461,13 +461,11 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param timeSinceOccurrenceStarted Seconds since the current occurrence started
          * @return Seconds until the next occurrence starts.
          * <p>
-         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         * If the recurrence rule has ended returns {@code null} instead.
          */
         public OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) {
-            Recur<LocalDateTime> recurrence = getRecurrence();
-
             // Single event schedule has ended.
-            if (recurrence == null || current == null || upcoming == null) {
+            if (current == null || upcoming == null) {
                 return OptionalLong.empty();
             }
 
@@ -494,10 +492,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          */
         public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStarted, Schedule schedule) {
             if (offset <= timeSinceOccurrenceStarted) {
-                return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
-                        .stream()
-                        .map(n -> offset + n)
-                        .findFirst();
+                if (schedule != null && schedule.recurrence != null) {
+                    return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
+                            .stream()
+                            .map(n -> offset + n)
+                            .findFirst();
+                }
             }
             return OptionalLong.of(offset - timeSinceOccurrenceStarted);
         }
