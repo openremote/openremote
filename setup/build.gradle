@@ -23,7 +23,7 @@ configurations {
 
 dependencies {
     implementation project(":manager")
-    implementation project(":energy")
+    implementation project(":extensions:energy")
 }
 
 

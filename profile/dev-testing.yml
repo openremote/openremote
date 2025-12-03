@@ -36,4 +36,4 @@ services:
       - postgresql-data:/var/lib/postgresql/data
     # Access directly if needed on localhost
     ports:
-      - "55555:5432"
+      - "5432:5432"

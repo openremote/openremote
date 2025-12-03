@@ -6,7 +6,7 @@ configurations {
 
 dependencies {
     api project(":setup")
-    api resolveProject(":energy")
+    api resolveProject(":extensions:energy")
     managerRuntime project(':manager')
 }
 

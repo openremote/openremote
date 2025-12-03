@@ -23,8 +23,13 @@ import org.openremote.agent.protocol.http.HTTPAgent;
 import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.energy.asset.*;
-import org.openremote.energy.setup.EnergyManagerSetup;
+import org.openremote.extension.energy.asset.ElectricityBatteryAsset;
+import org.openremote.extension.energy.asset.ElectricityChargerAsset;
+import org.openremote.extension.energy.asset.ElectricityConsumerAsset;
+import org.openremote.extension.energy.asset.ElectricityProducerAsset;
+import org.openremote.extension.energy.asset.ElectricityProducerSolarAsset;
+import org.openremote.extension.energy.asset.ElectricityStorageAsset;
+import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.model.Constants;
@@ -59,7 +64,7 @@ import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.MultivaluedStringMap;
 
-public class ManagerDemoSetup extends EnergyManagerSetup {
+public class ManagerDemoSetup extends ManagerSetup {
 
     public static GeoJSONPoint STATIONSPLEIN_LOCATION = new GeoJSONPoint(4.470175, 51.923464);
     public String realmMasterName;
@@ -2298,5 +2303,41 @@ public class ManagerDemoSetup extends EnergyManagerSetup {
                         new JsonPathFilter("$." + jsonParentName + "." + jsonName, true, false),
                 }
         );
+    }
+
+    protected ElectricityStorageAsset createDemoElectricityStorageAsset(String name, Asset<?> area,
+                                                                        GeoJSONPoint location) {
+        ElectricityStorageAsset electricityStorageAsset = new ElectricityBatteryAsset(name);
+        electricityStorageAsset.setParent(area);
+        electricityStorageAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+
+        return electricityStorageAsset;
+    }
+
+    protected ElectricityProducerSolarAsset createDemoElectricitySolarProducerAsset(String name, Asset<?> area,
+                                                                                    GeoJSONPoint location) {
+        ElectricityProducerSolarAsset electricityProducerAsset = new ElectricityProducerSolarAsset(name);
+        electricityProducerAsset.setParent(area);
+        electricityProducerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+
+        return electricityProducerAsset;
+    }
+
+    protected ElectricityConsumerAsset createDemoElectricityConsumerAsset(String name, Asset<?> area,
+                                                                          GeoJSONPoint location) {
+        ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset(name);
+        electricityConsumerAsset.setParent(area);
+        electricityConsumerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+
+        return electricityConsumerAsset;
+    }
+
+    protected ElectricityChargerAsset createDemoElectricityChargerAsset(String name, Asset<?> area,
+                                                                        GeoJSONPoint location) {
+        ElectricityChargerAsset electricityChargerAsset = new ElectricityChargerAsset(name);
+        electricityChargerAsset.setParent(area);
+        electricityChargerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+
+        return electricityChargerAsset;
     }
 }
