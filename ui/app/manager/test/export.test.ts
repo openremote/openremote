@@ -107,6 +107,6 @@ test("Export datapoints successfully triggers download", async ({ page, manager 
   await page.getByRole("button", { name: "Export", exact: true }).click();
 
   const response = await exportResponsePromise;
-  expect(response.ok()).toBe(true);
+  expect(response.status).toBe(200);
   await expect(page.locator("or-mwc-snackbar .mdc-snackbar--open")).not.toBeAttached({ timeout: 2000 });
 });
