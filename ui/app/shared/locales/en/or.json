@@ -626,7 +626,7 @@
   "from": "from",
   "never": "Never",
   "simulatorSchedule": "Simulator Replay Schedule",
-  "defaultSimulatorSchedule": "Every 24hrs at 00:00 UTC",
+  "defaultSimulatorSchedule": "Every day from 00:00",
   "typeOfSchedule": "Type of schedule",
   "repeatSchedule": "Repeat schedule",
   "recurrenceEnds": "Recurrence ends",
