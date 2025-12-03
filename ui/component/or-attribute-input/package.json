@@ -30,8 +30,7 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-scheduler": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "lit": "^3.3.1",
-    "moment": "^2.29.4"
+    "lit": "^3.3.1"
   },
   "publishConfig": {
     "access": "public"

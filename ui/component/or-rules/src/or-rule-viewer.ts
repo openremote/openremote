@@ -42,6 +42,18 @@ import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
 import { LabeledEventTypes, OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
 
+const DISABLED_RRULE_PARTS = [
+    'interval',
+    'bymonth',
+    'byweekno',
+    'byyearday',
+    'bymonthday',
+    'byhour',
+    'byminute',
+    'bysecond',
+    'count',
+] as RulePartKey[]
+
 // language=CSS
 export const style = css`
 
@@ -255,17 +267,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                                 period: i18next.t("planPeriod"),
                                 recurrence: i18next.t("planRecurrence"),
                             } as LabeledEventTypes}"
-                            excludeRuleParts="${[
-                                'interval',
-                                'bymonth',
-                                'byweekno',
-                                'byyearday',
-                                'bymonthday',
-                                'byhour',
-                                'byminute',
-                                'bysecond',
-                                'count',
-                            ] as RulePartKey[]}"
+                            disabledRRuleParts="${DISABLED_RRULE_PARTS}"
                             @or-scheduler-changed="${(event: OrSchedulerChangedEvent | undefined) => {
                                 if (this.ruleset) {
                                     this.ruleset.meta ??= {};

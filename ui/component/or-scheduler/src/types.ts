@@ -1,4 +1,4 @@
-import { Frequency, Options } from "rrule";
+import { Frequency as FrequencyValue, Options } from "rrule";
 import { EventTypes } from "./data";
 
 /**
@@ -45,4 +45,4 @@ export type RuleParts = Pick<
 
 export type LabeledEventTypes = Record<EventTypes, string>;
 export type RulePartKey = keyof RuleParts;
-export type Frequencies = (keyof typeof Frequency)
+export type Frequency = (keyof typeof FrequencyValue);

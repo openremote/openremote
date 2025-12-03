@@ -6,11 +6,10 @@ import {
     mapDispatchToControlProps,
     scopeEndsWith
 } from "@jsonforms/core";
-import moment from "moment";
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { Frequencies, RulePartKey, LabeledEventTypes, OrSchedulerChangedEvent, EventTypes } from "@openremote/or-scheduler";
+import { Frequency, RulePartKey, LabeledEventTypes, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-scheduler";
 
@@ -60,11 +59,11 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
                 period: i18next.t("planPeriod"),
                 recurrence: i18next.t("planRecurrence"),
             } as LabeledEventTypes}"
-            .excludeFrequencies="${[
+            disabledFrequencies="${[
                 // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
                 'SECONDLY'
-            ] as Frequencies[]}"
-            .excludeRuleParts="${[
+            ] as Frequency[]}"
+            disabledRRuleParts="${[
                 // Disabled for now, to reduce complexity
                 'bymonth',
                 'byweekno',

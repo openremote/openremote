@@ -24,13 +24,13 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {translate,i18next} from "@openremote/or-translate";
 
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {Frequency, RRule, Weekday, WeekdayStr} from 'rrule'
+import {Frequency as FrequencyValue, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
 import { BY_RULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RULE_PARTS, recurrenceEnds } from "./data";
-import type { RulePartKey, RuleParts, LabeledEventTypes, Frequencies } from "./types";
+import type { RulePartKey, RuleParts, LabeledEventTypes, Frequency } from "./types";
 import { when } from "lit/directives/when.js";
-export { RuleParts, RulePartKey, Frequencies, LabeledEventTypes };
+export { RuleParts, RulePartKey, Frequency, LabeledEventTypes };
 
 export * from "./data";
 
@@ -77,25 +77,25 @@ declare global {
 export class OrScheduler extends translate(i18next)(LitElement) {
 
     @property()
-    public header?: string;
-
-    @property()
-    public excludeFrequencies: Frequencies[] = [];
-
-    @property()
-    public excludeRuleParts: RulePartKey[] = [];
-
-    @property()
     public calendarEvent?: CalendarEvent = this.default;
 
     @property()
     public default?: CalendarEvent;
 
     @property()
+    public disabledFrequencies: Frequency[] = [];
+
+    @property()
+    public disabledRRuleParts: RulePartKey[] = [];
+
+    @property()
     public eventType: EventTypes = EventTypes.default;
 
     @property()
     public eventTypes: LabeledEventTypes = EventTypes;
+
+    @property()
+    public header?: string;
 
     @property()
     public isAllDay = true;
@@ -111,12 +111,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected updated(changedProps: PropertyValues) {
         super.updated(changedProps);
-        console.log("BEFORE", this.calendarEvent, this._rrule)
 
         if (changedProps.has("_rrule") && this._rrule) {
             this._parts = BY_RULE_PARTS
-                .filter(p => !NOT_APPLICABLE_BY_RULE_PARTS[Frequency[this._rrule!.options.freq] as keyof typeof Frequency]?.includes(p.toUpperCase()))
-                .filter(p => !this.excludeRuleParts.includes(p))
+                .filter(p => !NOT_APPLICABLE_BY_RULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
+                .filter(p => !this.disabledRRuleParts.includes(p));
         }
 
         if (changedProps.has("calendarEvent")) {
@@ -128,7 +127,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 this._rrule = undefined;
             }
         }
-        console.log("AFTER", this.calendarEvent, this._rrule)
     }
 
     protected getRRule(): string | undefined {
@@ -169,8 +167,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 }
                 break;
             case "recurrence-ends":
-                if (origOptions.until) delete origOptions.until
-                if (origOptions.count) delete origOptions.count
+                if (origOptions.until) delete origOptions.until;
+                if (origOptions.count) delete origOptions.count;
                 if (value === "until") {
                     origOptions.until = moment().add(1, 'year').toDate();
                 } else if (value === "count") {
@@ -179,13 +177,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
               if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
               break;
             case "until":
-                if (origOptions.count) delete origOptions.count
+                if (origOptions.count) delete origOptions.count;
                 const newDate = moment(value);
                 origOptions.until = new Date(moment(origOptions.until).set({ year: newDate.year(), month: newDate.month(), date: newDate.date() }).format());
                 if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "count":
-                if (origOptions.until) delete origOptions.until
+                if (origOptions.until) delete origOptions.until;
                 origOptions.count = value;
                 if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
@@ -195,7 +193,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     origOptions.dtstart = moment(origOptions.dtstart).set({ hour: timeParts[0], minute: timeParts[1], second: 0, millisecond: 0 }).toDate();
                 } else {
                     origOptions = new RRule({
-                      dtstart: moment(calendarEvent.start).set({ hour: timeParts[0], minute: timeParts[1], second: 0, millisecond: 0 }).toDate()
+                        dtstart: moment(calendarEvent.start).set({ hour: timeParts[0], minute: timeParts[1], second: 0, millisecond: 0 }).toDate()
                     }).origOptions;
                 }
                 calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
@@ -208,7 +206,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         origOptions.until = moment(origOptions.until).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate();
                     } else {
                         origOptions = new RRule({
-                          until: moment(calendarEvent.end).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate()
+                            until: moment(calendarEvent.end).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate()
                         }).origOptions;
                     }
                 }
@@ -234,14 +232,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 if(diff > 0) diffString = " "+i18next.t('forDays', {days: diff});
                 return this._rrule.toText() + diffString;
             } else {
-                if(diff > 0) diffString = i18next.t("fromToDays", {start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm"), days: diff })
-                if(diff === 0) diffString = i18next.t("fromTo", {start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") })
+                if (diff > 0) diffString = i18next.t("fromToDays", { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm"), days: diff });
+                if (diff === 0) diffString = i18next.t("fromTo", { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") });
                 return this._rrule.toText() + " " + diffString;
             }
         } else if (this.calendarEvent) {
             let format = "DD-MM-YYYY";
             if(!this.isAllDay) format = "DD-MM-YYYY HH:mm";
-            return i18next.t("activeFromTo", {start: moment(this.calendarEvent.start).format(format), end: moment(this.calendarEvent.end).format(format) })
+            return i18next.t("activeFromTo", { start: moment(this.calendarEvent.start).format(format), end: moment(this.calendarEvent.end).format(format) });
         }
     }
 
@@ -263,7 +261,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     start: this.calendarEvent?.start ?? moment().startOf("day").toDate().getTime(),
                     end: this.calendarEvent?.end ?? moment().endOf("day").toDate().getTime(),
                     recurrence: "FREQ=DAILY"
-                }
+                };
                 break;
         }
         this.eventType = value;
@@ -399,13 +397,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      */
     protected getRepeat(): TemplateResult {
         const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
-        const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? Frequency.DAILY;
+        const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? FrequencyValue.DAILY;
 
         return html`
             <div id="recurrence" class="section">
                 <label class="title"><or-translate value="repeatEvery"></or-translate></label>
                 <div class="layout horizontal" style="display: flex; gap: 8px;">
-                    ${when(!this.excludeRuleParts?.includes("interval"), () => html`
+                    ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
                         <or-mwc-input style="width: 60px;"
                                     min="1"
                                     max="9"
@@ -416,7 +414,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     <or-mwc-input style="flex: 1;"
                                 .value="${frequency.toString()}"
                                 .type="${InputType.SELECT}"
-                                .options="${Object.entries(Frequency).filter(([_, v]) => typeof v !== "number" && !this.excludeFrequencies.includes(v as Frequencies))}"
+                                .options="${Object.entries(FrequencyValue).filter(([_, v]) => typeof v !== "number" && !this.disabledFrequencies.includes(v as Frequency))}"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
                 </div>
                 <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
@@ -496,7 +494,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                   .label="${i18next.t(when)}"
                                   .value="${this._rrule?.options?.until ?? this._rrule?.options?.count ?? "never"}"
                                   .type="${InputType.SELECT}"
-                                  .options="${Object.entries(recurrenceEnds).filter(([k]) => !this.excludeRuleParts?.includes(k as RulePartKey))}"
+                                  .options="${Object.entries(recurrenceEnds).filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
                     </or-mwc-input>
                     ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${moment(this._rrule.options.until).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
