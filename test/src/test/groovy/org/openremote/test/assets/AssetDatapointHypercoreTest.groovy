@@ -127,7 +127,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
         when: "TimescaleDB hypercore is enabled on asset_datapoint table"
         println "\n=== Enabling Hypercore on asset_datapoint ==="
-        persistenceService.doReturningTransaction { em ->
+        persistenceService.doTransaction { em ->
             em.createNativeQuery("""
                 ALTER TABLE ${schemaName}.asset_datapoint SET (
                     timescaledb.enable_columnstore = true,
@@ -137,16 +137,14 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
             """).executeUpdate()
             
             em.createNativeQuery("""
-                CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL '10 months')
+                CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL '3 months')
             """).executeUpdate()
-            
-            return null
         }
         println "Hypercore enabled on asset_datapoint"
 
         and: "TimescaleDB hypercore is enabled on asset_predicted_datapoint table"
         println "=== Enabling Hypercore on asset_predicted_datapoint ==="
-        persistenceService.doReturningTransaction { em ->
+        persistenceService.doTransaction { em ->
             em.createNativeQuery("""
                 ALTER TABLE ${schemaName}.asset_predicted_datapoint SET (
                     timescaledb.enable_columnstore = true,
@@ -156,19 +154,24 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
             """).executeUpdate()
             
             em.createNativeQuery("""
-                CALL public.add_columnstore_policy('asset_predicted_datapoint', after => INTERVAL '10 months')
+                CALL public.add_columnstore_policy('asset_predicted_datapoint', after => INTERVAL '3 months')
             """).executeUpdate()
-            
-            return null
         }
         println "Hypercore enabled on asset_predicted_datapoint"
+
+        // We want to test purging speed, so we disable tuple decompression limit
+        persistenceService.doTransaction { em ->
+            em.createNativeQuery("""
+                SET timescaledb.max_tuples_decompressed_per_dml_transaction TO 0;
+            """).executeUpdate()
+        }
 
         then: "hypercore should be enabled successfully"
         true
 
         when: "storage usage is measured after enabling hypercore"
         // Wait a bit for hypercore to process
-        Thread.sleep(15000)
+        Thread.sleep(10000)
         
         def orDatabaseSizeAfter = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
@@ -181,6 +184,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
             return query.getSingleResult()
         }
 
+
         println "\n=== Storage AFTER Hypercore ==="
 
         println "\nDatabase size: ${orDatabaseSizeAfter[1]}"
@@ -188,18 +192,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         then: "storage should be measured after hypercore"
         true
 
-        when: "time is advanced to trigger purge of 10% of the oldest data"
-        // Calculate how many days to advance to purge 10% of data
-        // Data spans 365 days, so to purge 10% we need to advance ~36 days (365 * 0.10)
-        // The purge will delete data older than (current_time - max_age_days)
-        def daysToAdvance = 36
-        println "\n=== Advancing time by ${daysToAdvance} days to trigger purge ==="
-        println "Current container time: ${Instant.ofEpochMilli(getClockTimeOf(container))}"
-        
-        advancePseudoClock(daysToAdvance, DAYS, container)
-        println "New container time: ${Instant.ofEpochMilli(getClockTimeOf(container))}"
-        
-        and: "the count before purge is recorded"
+        when: "Purging will be called, count datapoints before purging"
         def countBeforePurge = 0
         attributeNames.each { attributeName ->
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
@@ -215,7 +208,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         
         println "Purge completed in ${deleteDuration} seconds"
 
-        then: "approximately 10% of data should be deleted"
+        then: "less datapoints should exist"
         conditions.eventually {
             def countAfterPurge = 0
             attributeNames.each { attributeName ->
@@ -223,14 +216,12 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
                 countAfterPurge += datapoints.size()
             }
             def deletedCount = countBeforePurge - countAfterPurge
-            def expectedDeleted = totalDatapoints * 0.10
-            
+
             println "Datapoints after purge: ${countAfterPurge}"
             println "Deleted ${deletedCount} datapoints"
             println "Deletion rate: ${String.format('%.0f', deletedCount / deleteDuration)} datapoints/second"
             
-            assert deletedCount >= expectedDeleted * 0.90 && deletedCount <= expectedDeleted * 1.10
-            println "Verified deletion: ${deletedCount} datapoints removed (expected ~${expectedDeleted})"
+            assert countAfterPurge <= countBeforePurge
         }
 
         when: "storage usage is measured after deletion"

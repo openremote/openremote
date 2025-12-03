@@ -1,5 +1,6 @@
 package org.openremote.manager.datapoint;
 
+import org.hibernate.exception.GenericJDBCException;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
@@ -198,6 +199,12 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen", e);
                     }
                 });
+            }
+        } catch (GenericJDBCException e) {
+            if (e.getSQLException().getSQLState().equals("53400") && e.getSQLException().getMessage().contains("tuple decompression limit exceeded by operation")) {
+                LOG.log(Level.SEVERE, "Failed to run data points purge", e);
+            } else {
+                LOG.log(Level.WARNING, "Failed to run data points purge", e);
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to run data points purge", e);
