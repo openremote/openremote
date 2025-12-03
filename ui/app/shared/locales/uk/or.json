@@ -488,7 +488,7 @@
   },
   "validityType": "Тип розкладу",
   "validityAlways": "Завжди активний",
-  "validityPeriod": "Планувати випадок",
+  "planPeriod": "Планувати випадок",
   "validityRecurrence": "Планувати повторюваний випадок",
   "activeFromTo": "Активний від {{start}} до {{end}}",
   "fromTo": "Від {{start}} до {{end}}",

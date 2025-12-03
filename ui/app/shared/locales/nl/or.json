@@ -612,7 +612,7 @@
   },
   "validityType": "Planning van de regel",
   "validityAlways": "Altijd actief",
-  "validityPeriod": "Eén periode plannen",
+  "planPeriod": "Eén periode plannen",
   "validityRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",

@@ -427,7 +427,7 @@
   },
   "validityType": "Zeitplantyp",
   "validityAlways": "Immer aktiv",
-  "validityPeriod": "Planen Sie einen Zeitraum",
+  "planPeriod": "Planen Sie einen Zeitraum",
   "validityRecurrence": "Planen Sie eine Wiederholung",
   "activeFromTo": "Activ von {{start}} bis {{end}}",
   "fromTo": "Von {{start}} bis {{end}}",

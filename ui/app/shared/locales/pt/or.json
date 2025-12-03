@@ -401,7 +401,7 @@
   },
   "validityType": "Tipo de programação",
   "validityAlways": "Sempre ativo",
-  "validityPeriod": "Planeje uma ocorrência",
+  "planPeriod": "Planeje uma ocorrência",
   "validityRecurrence": "Planeje uma ocorrência repetida",
   "activeFromTo": "Ativo de {{start}} a {{end}}",
   "fromTo": "De {{start}} a {{end}}",
