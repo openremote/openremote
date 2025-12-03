@@ -45,7 +45,7 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
