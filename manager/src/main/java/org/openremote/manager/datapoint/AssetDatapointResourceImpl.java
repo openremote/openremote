@@ -39,6 +39,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointExportFormat;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
@@ -174,8 +175,12 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, DatapointExportFormat format) {
         try {
+            if (format == null) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
             for (AttributeRef attributeRef : attributeRefs) {
@@ -199,9 +204,9 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 );
             }
 
-            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
+            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp + " in format " + format);
 
-            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
 
             asyncResponse.register((ConnectionCallback) disconnected -> exportFuture.cancel(true));
 
@@ -210,14 +215,14 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             try {
                 exportFile = exportFuture.get();
 
-                ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream());
-                FileInputStream fin = new FileInputStream(exportFile);
-                ZipEntry zipEntry = new ZipEntry(exportFile.getName());
-                zipOut.putNextEntry(zipEntry);
-                IOUtils.copy(fin, zipOut);
-                zipOut.closeEntry();
-                zipOut.close();
-                fin.close();
+                try (FileInputStream fin = new FileInputStream(exportFile);
+                     ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
+
+                    ZipEntry zipEntry = new ZipEntry(exportFile.getName());
+                    zipOut.putNextEntry(zipEntry);
+                    IOUtils.copy(fin, zipOut);
+                    zipOut.closeEntry();
+                }
 
                 response.setContentType("application/zip");
                 response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
