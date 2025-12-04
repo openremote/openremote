@@ -33,15 +33,17 @@ tasks.register('load1Jar', Jar) {
 }
 
 tasks.register('load2Jar', Jar) {
-    base {
-        archivesName = "openremote-load2-${project.name}"
-    }
+    archiveBaseName.set("openremote-load2-${project.name}")
     from sourceSets.load2.output
 }
 
 tasks.register('demoJar', Jar) {
     archiveBaseName.set("openremote-demo-${project.name}")
     from sourceSets.demo.output
+}
+
+tasks.named("compileJava") {
+    dependsOn("load1Jar", "load2Jar", "demoJar")
 }
 
 // Use demo setup sourceset by default for jar
@@ -51,5 +53,5 @@ tasks.register('installDist', Copy) {
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
     from setupTask.archiveFile
-    into "${project(":manager").buildDir}/install/manager/deployment/manager/extensions"
+    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
 }
