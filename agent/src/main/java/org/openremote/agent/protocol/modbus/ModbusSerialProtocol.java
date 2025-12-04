@@ -19,41 +19,137 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.PlcDriverManager;
-import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.syslog.SyslogCategory;
+import java.util.Optional;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent>{
+public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent> {
+
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
+    private ModbusSerialIOClient client = null;
+    private volatile CompletableFuture<ModbusSerialFrame> pendingRequest = null;
+    private long lastRequestTime = 0;
+    private static final long MIN_REQUEST_INTERVAL_MS = 10; // Gap between requests per modbus.org (conservative number)
+    private final Object sendLock = new Object();
+
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
     }
 
-    private String connectionString;
+    @Override
+    protected void doStartProtocol(Container container) throws Exception {
+        String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
+        int baudRate = agent.getBaudRate();
+        int dataBits = agent.getDataBits();
+        var stopBits = agent.getStopBits();
+        var parity = agent.getParity();
+
+        connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
+
+        try {
+            client = new ModbusSerialIOClient(portName, baudRate, dataBits, stopBits, parity);
+            client.addMessageConsumer(this::handleIncomingFrame);
+            client.addConnectionStatusConsumer(this::setConnectionStatus);
+            client.connect();
+            LOG.info("Modbus Serial client created and connection initiated for " + connectionString);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to create Modbus Serial client: " + agent, e);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            throw e;
+        }
+    }
 
     @Override
-    protected PlcConnection createIoClient(ModbusSerialAgent agent) throws RuntimeException {
-
-        connectionString = "modbus-rtu://"+agent.getSerialPort() +
-                "?serial.baud-rate=" + agent.getBaudRate() +
-                "&unit-identifier=" + agent.getUnitId() +
-                "&serial.num-data-bits=" + agent.getDataBits() +
-                "&serial.num-stop-bits=" + agent.getStopBits();
-        PlcConnection plcConnection;
-        try {
-            plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionString);
-        } catch (PlcConnectionException e) {
-            throw new RuntimeException(e);
+    protected void doStopProtocol(Container container) throws Exception {
+        if (client != null) {
+            client.disconnect();
+            client = null;
         }
-        return plcConnection;
+        synchronized (requestLock) {
+            if (pendingRequest != null) {
+                pendingRequest.cancel(true);
+                pendingRequest = null;
+            }
+        }
+    }
+
+    @Override
+    protected Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
+        return agent.getDeviceConfig();
+    }
+
+    @Override
+    protected ModbusResponse sendModbusRequest(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+        return sendRequestAndWaitForResponse(unitId, pdu, timeoutMs);
     }
 
     @Override
     public String getProtocolName() {
-        return "Modbus Serial Protocol";
+        return "Serial";
     }
 
-    @Override
-    public String getProtocolInstanceUri() {
-        return connectionString;
+    private ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+        // sendLock ensures only one request-response cycle can be active at a time
+        synchronized (sendLock) {
+            if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
+                throw new IllegalStateException("Client not connected");
+            }
+
+            // Wait for minimum interval between requests (Modbus RTU requires gaps)
+            long timeSinceLastRequest = System.currentTimeMillis() - lastRequestTime;
+            if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
+                try {
+                    Thread.sleep(MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting for request interval", e);
+                }
+            }
+
+            // Create frame and future for response
+            ModbusSerialFrame request = new ModbusSerialFrame(unitId, pdu);
+            CompletableFuture<ModbusSerialFrame> responseFuture = new CompletableFuture<>();
+
+            // Register pending request (use requestLock for thread-safe access)
+            synchronized (requestLock) {
+                pendingRequest = responseFuture;
+            }
+
+            try {
+                // Send request
+                client.sendMessage(request);
+                lastRequestTime = System.currentTimeMillis();
+                LOG.finest("Sent Modbus Serial request - UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+
+                // Wait for response (NOT holding requestLock so handler can complete the future)
+                ModbusSerialFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+                LOG.finest("Received Modbus Serial response - UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
+                return response;
+            } catch (TimeoutException e) {
+                LOG.warning("Modbus Serial request timeout - UnitID: " + unitId);
+                throw e;
+            } finally {
+                // Clear pending request
+                synchronized (requestLock) {
+                    pendingRequest = null;
+                }
+            }
+        }
+    }
+
+    private void handleIncomingFrame(ModbusSerialFrame frame) {
+        LOG.finest("Received frame - UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
+
+        synchronized (requestLock) {
+            if (pendingRequest != null) {
+                pendingRequest.complete(frame);
+            } else {
+                LOG.warning("Received response with no pending request - UnitID: " + frame.getUnitId());
+            }
+        }
     }
 }
