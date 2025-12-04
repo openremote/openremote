@@ -80,3 +80,9 @@ signing {
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.maven
 }
+
+tasks.register('installDist', Copy) {
+    dependsOn resolveTask(":manager:installDist")
+    from jar.archiveFile
+    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+}
