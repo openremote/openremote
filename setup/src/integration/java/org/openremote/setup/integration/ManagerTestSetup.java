@@ -87,7 +87,6 @@ public class ManagerTestSetup extends ManagerSetup {
     public String realmMasterName;
     public String realmBuildingName;
     public String realmCityName;
-    public String realmEnergyName;
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
@@ -113,7 +112,6 @@ public class ManagerTestSetup extends ManagerSetup {
         realmMasterName = realmMaster.getName();
         realmBuildingName = realmBuilding.getName();
         realmCityName = realmCity.getName();
-        realmEnergyName = keycloakTestSetup.realmEnergy.getName();
 
         // ################################ Assets for 'master' realm ###################################
 
