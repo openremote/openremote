@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset} from "@openremote/model";
+import {JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset, AssetQuery} from "@openremote/model";
 import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
@@ -115,7 +115,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
     public readonly?: boolean;
 
     @property({type: Object})
-    public assetProvider?: (type: string) => Promise<Asset[]>
+    public assetProvider?: (type: string, query?: AssetQuery) => Promise<Asset[]>
 
     public config?: RulesConfig;
 
