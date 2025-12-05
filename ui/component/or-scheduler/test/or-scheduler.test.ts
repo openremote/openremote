@@ -6,6 +6,22 @@ import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS } from "../src/da
 import type { MwcInput } from "../../or-mwc-components/test/fixtures";
 
 const months = new RegExp(Object.values(MONTHS).join("|"));
+const HOUR_IN_MILLIS = 3600 * 1000;
+const DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
+function getDateInLocalMillis(): number {
+    const now = Date.now();
+    return now - (now % DAY_IN_MILLIS) + new Date().getTimezoneOffset() * 60000;
+}
+
+function getPeriodValues(time?: { start: number; end: number }) {
+    const startOfDay = getDateInLocalMillis();
+    const end = time?.end ? startOfDay + time.end : startOfDay + DAY_IN_MILLIS - 1; // Defaults to end of day for all-day event
+    const start = startOfDay + (time?.start ?? 0);
+    const options: Intl.DateTimeFormatOptions = time ? { dateStyle: "short", timeStyle: "short" } : { dateStyle: "short" };
+    const startDate = new Date(start).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll("," , "");
+    const endDate = new Date(end).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll("," , "");
+    return { start, end, timeLabel: `Active from ${startDate} to ${endDate}` };
+}
 
 async function selectEventType(type: string, dialog: Locator, mwcInput: MwcInput) {
     await dialog.getByRole("button", { name: "default", exact: true }).click();
@@ -93,8 +109,10 @@ ct.describe("Period event type should", () => {
         await dialog.getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
-        expect(actual).toStrictEqual({ end: 1764889199999, start: 1764802800000 });
-        await expect(component.getByRole("button")).toContainText("Active from 04-12-2025 to 04-12-2025");
+        const { start, end, timeLabel } = getPeriodValues();
+
+        expect(actual).toStrictEqual({ end, start });
+        await expect(component.getByRole("button")).toContainText(timeLabel);
     });
 
     ct("return period with time component", async ({ mount, shared, mwcDialog, mwcInput }) => {
@@ -117,8 +135,10 @@ ct.describe("Period event type should", () => {
         await dialog.getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
-        expect(actual).toStrictEqual({ end: 1764867600000, start: 1764835200000, recurrence: undefined });
-        await expect(component.getByRole("button")).toContainText("Active from 04-12-2025 09:00 to 04-12-2025 18:00");
+        const { start, end, timeLabel } = getPeriodValues({ start: 9 * HOUR_IN_MILLIS, end: 18 * HOUR_IN_MILLIS });
+
+        expect(actual).toStrictEqual({ end, start, recurrence: undefined });
+        await expect(component.getByRole("button")).toContainText(timeLabel);
     });
 });
 
@@ -192,7 +212,9 @@ ct.describe("Recurrence event type should", () => {
         await dialog.getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
-        expect(actual).toStrictEqual({ end: 1764889199999, start: 1764802800000, recurrence: "FREQ=DAILY" });
+        const { start, end } = getPeriodValues();
+
+        expect(actual).toStrictEqual({ end, start, recurrence: "FREQ=DAILY" });
         await expect(component.getByRole("button")).toContainText("every day");
     });
 });

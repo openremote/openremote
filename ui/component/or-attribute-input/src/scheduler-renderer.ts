@@ -25,12 +25,8 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         ...mapDispatchToControlProps(state.dispatch)
     };
 
-    const now = Date.now()
-    const dayInMillis = 86400_000
-    const offset = now % dayInMillis
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
     const defaultEvent = {
-        start: now - offset,
-        end: now - offset + dayInMillis - 1,
         recurrence: "FREQ=DAILY"
     }
 
@@ -39,7 +35,15 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     }
 
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
-        props.handleChange(props.path, event?.detail.value);
+        const calEvent = event?.detail.value;
+        if (calEvent?.start && calEvent?.end) {
+            console.log(calEvent)
+            props.handleChange(props.path, {
+                ...calEvent,
+                start: calEvent.start - tzOffset,
+                end: calEvent.end - tzOffset,
+            });
+        }
     };
 
     let deleteHandler: undefined | (() => void);
@@ -49,9 +53,14 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         }
     }
 
+    const { start, end, recurrence } = props.data as CalendarEvent;
     return getTemplateWrapper(html`
         <or-scheduler
-            .calendarEvent="${props.data as CalendarEvent}"
+            .calendarEvent="${{
+                start: start ? start + tzOffset : start,
+                end: end ? end + tzOffset : end,
+                recurrence,
+            }}"
             .default="${defaultEvent}"
             .header="${i18next.t("simulatorSchedule")}"
             .eventTypes="${{
