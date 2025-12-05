@@ -19,7 +19,6 @@
  */
 package org.openremote.setup.load2;
 
-
 import org.openremote.manager.provisioning.ProvisioningService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
