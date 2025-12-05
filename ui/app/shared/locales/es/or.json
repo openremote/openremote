@@ -403,7 +403,7 @@
   },
   "validityType": "Tipo de horario",
   "validityAlways": "Siempre activo",
-  "validityPeriod": "Planear una ocurrencia",
+  "planPeriod": "Planear una ocurrencia",
   "validityRecurrence": "Planear una ocurrencia repetida",
   "activeFromTo": "Activo desde {{start}} a {{end}}",
   "fromTo": "Desde {{start}} a {{end}}",

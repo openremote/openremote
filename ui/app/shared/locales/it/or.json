@@ -400,7 +400,7 @@
   },
   "validityType": "Tipo di programma",
   "validityAlways": "Sempre attivo",
-  "validityPeriod": "Pianifica un'occorrenza",
+  "planPeriod": "Pianifica un'occorrenza",
   "validityRecurrence": "Pianifica un'occorrenza che si ripete",
   "activeFromTo": "Attivo da {{start}} a {{end}}",
   "fromTo": "Da {{start}} a {{end}}",

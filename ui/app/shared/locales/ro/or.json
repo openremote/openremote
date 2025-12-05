@@ -475,7 +475,7 @@
   },
   "validityType": "Tip de program",
   "validityAlways": "Activ permanent",
-  "validityPeriod": "Planifică un eveniment",
+  "planPeriod": "Planifică un eveniment",
   "validityRecurrence": "Planifică un eveniment repetitiv",
   "activeFromTo": "Activ de la {{start}} până la {{end}}",
   "fromTo": "De la {{start}} până la {{end}}",
