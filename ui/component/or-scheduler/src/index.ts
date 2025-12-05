@@ -191,8 +191,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
               break;
             case "until":
                 if (origOptions.count) delete origOptions.count;
-                const newDate = moment(value);
-                origOptions.until = new Date(moment(origOptions.until).set({ year: newDate.year(), month: newDate.month(), date: newDate.date() }).format());
+                origOptions.until = value;
                 if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "count":
@@ -527,8 +526,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                   .options="${Object.entries(recurrenceEnds).filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
                     </or-mwc-input>
-                    ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${moment(this._rrule.options.until).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
-                    ${this._rrule?.options.count ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule.options.count}" min="1" .type="${InputType.NUMBER}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}"></or-mwc-input>`: undefined}
+                    ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${moment(this._rrule.origOptions.until).format("YYYY-MM-DD HH:mm")}" .type="${InputType.DATETIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
+                    ${this._rrule?.options.count ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule.origOptions.count}" min="1" .type="${InputType.NUMBER}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}"></or-mwc-input>`: undefined}
                 </div>
             </div>`;
     }

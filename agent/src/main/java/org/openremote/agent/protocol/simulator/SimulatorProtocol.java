@@ -256,6 +256,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }, nextRun.getAsLong(), TimeUnit.SECONDS);
     }
 
+    public boolean pastUpcoming(Optional<Schedule> schedule, long millis) {
+        return schedule.map(s -> Optional.ofNullable(s.getUpcoming()).map(u -> millis > u.toInstant(ZoneOffset.UTC).toEpochMilli() && !s.getIsSingleOccurrence()).orElse(false)).orElse(false);
+    }
+
     public List<ValueDatapoint<?>> calculatePredictedDatapoints(
             SimulatorReplayDatapoint[] simulatorReplayDatapoints,
             Optional<Schedule> schedule,
@@ -275,7 +279,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 }
                 if (now + delay.getAsLong() > now) { // Delay can be negative
                     long timestamp = (now + delay.getAsLong()) * 1000;
-                    if (schedule.map(s -> Optional.ofNullable(s.getUpcoming()).map(u -> timestamp > u.toInstant(ZoneOffset.UTC).toEpochMilli() && !s.getIsSingleOccurrence()).orElse(false)).orElse(false)) {
+                    if (pastUpcoming(schedule, timestamp)) {
                         continue;
                     }
                     predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
@@ -464,7 +468,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * If the recurrence rule has ended returns {@code null} instead.
          */
         public OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) {
-            // Single event schedule has ended.
             if (current == null || upcoming == null) {
                 return OptionalLong.empty();
             }
@@ -492,12 +495,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          */
         public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStarted, Schedule schedule) {
             if (offset <= timeSinceOccurrenceStarted) {
-                if (schedule != null && schedule.recurrence != null) {
-                    return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
-                            .stream()
-                            .map(n -> offset + n)
-                            .findFirst();
-                }
+                return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
+                        .stream()
+                        .map(n -> offset + n)
+                        .findFirst();
             }
             return OptionalLong.of(offset - timeSinceOccurrenceStarted);
         }
@@ -514,7 +515,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          */
         public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted, Schedule schedule) {
             if (schedule != null) {
-                return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
+                if (schedule.recurrence != null) {
+                    return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
+                }
+                return OptionalLong.of(-timeSinceOccurrenceStarted);
             }
             return OptionalLong.of(86400L - timeSinceOccurrenceStarted);
         }

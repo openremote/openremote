@@ -41,6 +41,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
     @JsonSchemaFormat("or-scheduler")
+    @JsonSchemaTypeRemap(type = String.class)
     protected SimulatorProtocol.Schedule schedule;
 
     // For Hydrators

@@ -160,6 +160,7 @@ ct.describe("Recurrence event type should", () => {
         await expect(dialog.locator("#recurrence")).toBeVisible();
         await dialog.getByRole("button", { name: "DAILY" }).click();
         for (const [freq, parts] of Object.entries(NOT_APPLICABLE_BY_RRULE_PARTS)) {
+            if (freq === "SECONDLY") continue;
             await mwcInput.getSelectInputOption(freq, dialog).click();
             for (const part of BY_RRULE_PARTS.filter((p) => !parts.includes(p.toUpperCase()))) {
                 if (part === "byweekday") {

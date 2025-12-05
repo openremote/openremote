@@ -4,7 +4,9 @@ import {
     ControlProps,
     mapStateToControlProps,
     mapDispatchToControlProps,
-    scopeEndsWith
+    and,
+    uiTypeIs,
+    formatIs
 } from "@jsonforms/core";
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
@@ -15,8 +17,7 @@ import "@openremote/or-scheduler";
 
 const schedulerTester: RankedTester = rankWith(
     6,
-    scopeEndsWith('schedule')
-    // and(uiTypeIs("Control"), formatIs("or-scheduler"))
+    and(uiTypeIs("Control"), formatIs("or-scheduler"))
 );
 const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     props = {
@@ -26,10 +27,16 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     };
 
     const tzOffset = new Date().getTimezoneOffset() * 60000;
+    const now = Date.now()
+    const dayInMillis = 86400_000
+    const offset = now % dayInMillis
     const defaultEvent = {
+        start: now - offset,
+        end: now - offset + dayInMillis - 1,
         recurrence: "FREQ=DAILY"
     }
 
+    // Init the schedule field with the default value
     if (!Object.keys(props.data).length) {
         props.handleChange(props.path, defaultEvent);
     }
