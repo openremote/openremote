@@ -1,17 +1,14 @@
-apply plugin: "groovy"
 apply plugin: "java-library"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
 base {
-    archivesName = "openremote-${project.name}-extension"
+    archivesName = "openremote-${project.name}"
 }
 
 dependencies {
-    api resolveProject(":manager")
-    api resolveProject(":model")
-
-    testImplementation resolveProject(":test")
+    implementation project(":manager")
+    implementation project(":extensions:energy")
 }
 
 jar {
@@ -31,11 +28,11 @@ publishing {
     publications {
         maven(MavenPublication) {
             group = "io.openremote.extension"
-            artifactId = "openremote-${project.name}-extension"
+            artifactId = "openremote-${project.name}"
             from components.java
             pom {
-                name = 'OpenRemote energy extension'
-                description = 'Adds the energy domain extension'
+                name = 'OpenRemote Demo setup'
+                description = 'Adds the OpenRemote Demo setup'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
@@ -85,6 +82,7 @@ signing {
 
 tasks.register('installDist', Copy) {
     dependsOn resolveTask(":manager:installDist")
+    onlyIf { !project.hasProperty("SETUP_JAR") || project.getProperties().get("SETUP_JAR") == "demo" }
     from jar.archiveFile
     into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
 }
