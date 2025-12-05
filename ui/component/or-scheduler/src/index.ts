@@ -388,6 +388,17 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     /**
+     * Check if this frequency is allowed
+     * @param freq The frequency to check
+     * @returns Whether the frequency is allowed
+     */
+    protected isAllowedFrequency(freq: Frequency) {
+        // Secondly is disabled because it's not possible to configure the period on a seconds basis
+        // with the current period fields
+        return freq !== "SECONDLY" && !this.disabledFrequencies.includes(freq);
+    }
+
+    /**
      * Displays the interval, frequency and BY_XXX RRule part fields
      * 
      * Applicable rule parts
@@ -425,7 +436,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     <or-mwc-input style="flex: 1;"
                                 .value="${frequency.toString()}"
                                 .type="${InputType.SELECT}"
-                                .options="${Object.entries(FrequencyValue).filter(([_, v]) => typeof v !== "number" && !this.disabledFrequencies.includes(v as Frequency))}"
+                                .options="${Object.entries(FrequencyValue).filter(([_, v]) => typeof v !== "number" && this.isAllowedFrequency(v as Frequency))}"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
                 </div>
                 <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
