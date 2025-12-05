@@ -8,19 +8,22 @@ import type { MwcInput } from "../../or-mwc-components/test/fixtures";
 const months = new RegExp(Object.values(MONTHS).join("|"));
 const HOUR_IN_MILLIS = 3600 * 1000;
 const DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
+
 function getDateInLocalMillis(): number {
     const now = Date.now();
     return now - (now % DAY_IN_MILLIS) + new Date().getTimezoneOffset() * 60000;
 }
 
-function getPeriodValues(time?: { start: number; end: number }) {
+function getPeriodValues(time?: { start: number; end: number; date?: boolean; }) {
     const startOfDay = getDateInLocalMillis();
     const end = time?.end ? startOfDay + time.end : startOfDay + DAY_IN_MILLIS - 1; // Defaults to end of day for all-day event
     const start = startOfDay + (time?.start ?? 0);
-    const options: Intl.DateTimeFormatOptions = time ? { dateStyle: "short", timeStyle: "short" } : { dateStyle: "short" };
+    const options: Intl.DateTimeFormatOptions = time 
+      ? time.date ? { dateStyle: "short", timeStyle: "short" } : { timeStyle: "short" }
+      : { dateStyle: "short" };
     const startDate = new Date(start).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll("," , "");
     const endDate = new Date(end).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll("," , "");
-    return { start, end, timeLabel: `Active from ${startDate} to ${endDate}` };
+    return { start, end, timeLabel: `from ${startDate} to ${endDate}` };
 }
 
 async function selectEventType(type: string, dialog: Locator, mwcInput: MwcInput) {
@@ -112,7 +115,7 @@ ct.describe("Period event type should", () => {
         const { start, end, timeLabel } = getPeriodValues();
 
         expect(actual).toStrictEqual({ end, start });
-        await expect(component.getByRole("button")).toContainText(timeLabel);
+        await expect(component.getByRole("button")).toContainText("Active " + timeLabel);
     });
 
     ct("return period with time component", async ({ mount, shared, mwcDialog, mwcInput }) => {
@@ -135,10 +138,10 @@ ct.describe("Period event type should", () => {
         await dialog.getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
-        const { start, end, timeLabel } = getPeriodValues({ start: 9 * HOUR_IN_MILLIS, end: 18 * HOUR_IN_MILLIS });
+        const { start, end, timeLabel } = getPeriodValues({ start: 9 * HOUR_IN_MILLIS, end: 18 * HOUR_IN_MILLIS, date: true });
 
         expect(actual).toStrictEqual({ end, start, recurrence: undefined });
-        await expect(component.getByRole("button")).toContainText(timeLabel);
+        await expect(component.getByRole("button")).toContainText("Active " + timeLabel);
     });
 });
 
@@ -184,8 +187,7 @@ ct.describe("Recurrence event type should", () => {
                     await expect(dialog.getByRole("button", { name: part })).not.toBeVisible();
                 }
             }
-            await dialog.getByRole("button", { name: freq }).click();
-            await page.waitForTimeout(100);
+            await dialog.getByRole("button", { name: freq }).click({ delay: 100 });
         }
 
         await expect(dialog.locator("#period")).toBeVisible();
@@ -216,5 +218,31 @@ ct.describe("Recurrence event type should", () => {
 
         expect(actual).toStrictEqual({ end, start, recurrence: "FREQ=DAILY" });
         await expect(component.getByRole("button")).toContainText("every day");
+    });
+
+    ct("return recurrence with time components", async ({ mount, shared, mwcDialog, mwcInput }) => {
+        const [promise, handler] = shared.promiseEventDispatch<OrSchedulerChangedEvent>();
+        const component = await mount(OrScheduler, {
+            props: { header: "Test Calendar Event Component" },
+            on: { "or-scheduler-changed": handler },
+        });
+
+        await component.click();
+        const dialog = mwcDialog.getDialog();
+        await selectEventType("recurrence", dialog, mwcInput);
+
+        await dialog.getByRole("checkbox", { name: "All day" }).uncheck();
+        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeEnabled();
+        await dialog.locator("label", { hasText: "from" }).last().fill("09:00");
+        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeEnabled();
+        await dialog.locator("label", { hasText: "to" }).last().fill("18:00");
+
+        await dialog.getByRole("button", { name: "apply" }).click();
+
+        const actual = await promise;
+        const { start, end, timeLabel } = getPeriodValues({ start: 9 * HOUR_IN_MILLIS, end: 18 * HOUR_IN_MILLIS });
+
+        expect(actual).toStrictEqual({ end, start, recurrence: "FREQ=DAILY" });
+        await expect(component.getByRole("button")).toContainText("every day " + timeLabel, { ignoreCase: true });
     });
 });

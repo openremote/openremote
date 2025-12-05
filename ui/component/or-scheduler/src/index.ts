@@ -292,13 +292,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             .setHeading(this.header)
             .setStyles(html`
                 <style>
-                    .mdc-dialog__surface {
-                        overflow-x: visible !important;
-                        overflow-y: visible !important;
-                    }
-
                     #dialog-content {
-                        overflow: visible;
+                        max-height: 100vh;
+                        overflow: auto;
                         background-color: #f5f5f5;
                     }
 
@@ -376,7 +372,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
                 <div id="event-type" class="section">
-                    <label class="title"><or-translate value="typeOfSchedule"></or-translate></label>
+                    <label class="title"><or-translate value="scheduleType"></or-translate></label>
                     <div class="layout horizontal">
                         <or-mwc-input style="min-width: 280px;"
                                     .value="${this.eventType}"
