@@ -450,7 +450,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol adds predicted datapoints for the current and next occurrence"() {
-        when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours every day"
+        when: "replayData is configured to add a datapoint in 1 and 2 hours every day"
         asset.addOrReplaceAttributes(new Attribute<>("test6", ValueType.TEXT).addMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
@@ -535,7 +535,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol adds predicted datapoints for one-time occurrence"() {
-        when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours"
+        when: "replayData is configured to add a datapoint in 1 and 2 hours"
         asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
@@ -580,7 +580,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def "Check Simulator Agent protocol adds predicted datapoints recurringly until"() {
-        when: "replayData is configured for both attributes to add a datapoint in 1 and 2 hours until"
+        when: "replayData is configured to add a datapoint in 1, 2, and 3 hours and cutoff at 4 hours"
         asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR, "test"),
@@ -590,7 +590,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 ).setSchedule(new SimulatorProtocol.Schedule(
                         LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC),
                         null,
-                        "FREQ=DAILY;UNTIL=19700102T000300Z"
+                        "FREQ=DAILY;UNTIL=19700101T000300Z"
                 ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
@@ -604,29 +604,18 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
-        and: "the delay is 1 day and 1 hour"
+        and: "the delay is 1 hour"
         conditions.eventually {
-            delay == DAY + HOUR
+            delay == HOUR
         }
 
         and: "the predicted datapoints are present"
         conditions.eventually {
             def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.size() == 2
-            datapoints.get(1).getTimestamp()/1000 == HOUR * 1
-            datapoints.get(0).getTimestamp()/1000 == HOUR * 2
-        }
-
-        when: "fast forward 1 hour"
-        advancePseudoClock(1, HOURS, container)
-        future.get() // resolve future manually, because we surpassed the delay
-
-        then: "the predicted datapoints are present"
-        conditions.eventually {
-            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
-            datapoints.size() == 2
-            datapoints.get(1).getTimestamp()/1000 == HOUR * 1
-            datapoints.get(0).getTimestamp()/1000 == HOUR * 2
+            datapoints.size() == 3
+            datapoints.get(2).getTimestamp()/1000 == HOUR * 1
+            datapoints.get(1).getTimestamp()/1000 == HOUR * 2
+            datapoints.get(0).getTimestamp()/1000 == HOUR * 3
         }
     }
 }

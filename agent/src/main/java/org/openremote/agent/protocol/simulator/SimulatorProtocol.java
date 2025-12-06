@@ -256,8 +256,15 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }, nextRun.getAsLong(), TimeUnit.SECONDS);
     }
 
-    public boolean pastUpcoming(Optional<Schedule> schedule, long millis) {
-        return schedule.map(s -> Optional.ofNullable(s.getUpcoming()).map(u -> millis > u.toInstant(ZoneOffset.UTC).toEpochMilli() && !s.getIsSingleOccurrence()).orElse(false)).orElse(false);
+    public boolean pastUpcoming(Schedule schedule, long timestamp) {
+        LocalDateTime upcoming = schedule.getUpcoming();
+        if (schedule.getIsSingleOccurrence()) {
+            return false;
+        }
+        if (upcoming != null) {
+            return timestamp > upcoming.toInstant(ZoneOffset.UTC).toEpochMilli();
+        }
+        return false;
     }
 
     public List<ValueDatapoint<?>> calculatePredictedDatapoints(
@@ -279,7 +286,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 }
                 if (now + delay.getAsLong() > now) { // Delay can be negative
                     long timestamp = (now + delay.getAsLong()) * 1000;
-                    if (pastUpcoming(schedule, timestamp)) {
+                    if (schedule.isPresent() && pastUpcoming(schedule.get(), timestamp) && timeSinceOccurrenceStarted >= 0) {
                         continue;
                     }
                     predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
@@ -422,8 +429,31 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 return OptionalLong.of(startInSeconds);
             }
 
-            // Preemptively get next to determine whether to advance the occurrence or to end the recurrence
             LocalDateTime now = LocalDateTime.ofEpochSecond(secondsSinceEpoch, 0, ZoneOffset.UTC);
+
+            // Check if this is the first time
+            if (current == null) {
+                // Get the previous (active) occ to catch up with the current occurrence for the first time this method is called
+                List<LocalDateTime> dates = recurrence.getDates(start, start, now); // TODO: consider limiting number of occurrences
+                if (!dates.isEmpty()) {
+                    current = dates.getLast();
+                    upcoming = recurrence.getNextDate(start, current);
+                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+                }
+                LocalDateTime epoch = LocalDateTime.ofEpochSecond(0,0, ZoneOffset.UTC);
+                LocalDateTime firstOccurrence = recurrence.getNextDate(start, epoch);
+                // If the first occurrence does not equal 'start' when using a BYxxx rule part
+                if (firstOccurrence != null && startInSeconds != firstOccurrence.toEpochSecond(ZoneOffset.UTC)) {
+                    current = firstOccurrence;
+                    upcoming = recurrence.getNextDate(start, current);
+                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+                }
+                // The first occurrence hasn't started
+                current = start;
+                return OptionalLong.of(startInSeconds);
+            }
+
+            // Preemptively get next to determine whether to advance the occurrence or to end the recurrence
             LocalDateTime next = recurrence.getNextDate(start, now);
 
             // Recurrence has ended
@@ -432,29 +462,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             }
 
             // Track active and upcoming occurrence
-            if (upcoming.isBefore(next) && current != null) {
+            if (upcoming.isBefore(next)) {
                 current = upcoming;
             }
             upcoming = next;
-
-            // Check if this is the first time
-            if (current == null) {
-                LocalDateTime epoch = LocalDateTime.ofEpochSecond(0,0, ZoneOffset.UTC);
-                LocalDateTime firstOccurrence = recurrence.getNextDate(start, epoch);
-                // If the first occurrence does not equal 'start' when using a BYxxx rule part
-                if (startInSeconds != firstOccurrence.toEpochSecond(ZoneOffset.UTC)) {
-                    current = next;
-                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
-                }
-                // Get the previous (active) occ to catch up with the current occurrence for the first time this method is called
-                List<LocalDateTime> dates = recurrence.getDates(start, start, now); // TODO: consider limiting number of occurrences
-                if (!dates.isEmpty()) {
-                    current = dates.getLast();
-                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
-                }
-                current = start;
-                return OptionalLong.of(startInSeconds);
-            }
 
             return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
         }

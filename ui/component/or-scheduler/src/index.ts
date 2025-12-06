@@ -142,8 +142,16 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
     }
 
+    /**
+     * Converts the recurrence rule to string and normalizes it.
+     * 
+     * The UTC timezone offset 'Z' for the UNTIL rule part is removed,
+     * because the backend uses a `LocalDateTime` object to compare.
+     * 
+     * @returns String representation of the defined Recurrence Rule
+     */
     protected getRRule(): string | undefined {
-        return this._rrule?.toString()?.split("RRULE:")?.[1];
+        return this._rrule?.toString()?.split("RRULE:")?.[1]?.replace(/(UNTIL=\d+T\d+)Z/, "$1");
     }
 
     protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "recurrence-ends" | "dtstart-time" | "until-time") {
@@ -183,7 +191,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 if (origOptions.until) delete origOptions.until;
                 if (origOptions.count) delete origOptions.count;
                 if (value === "until") {
-                    origOptions.until = moment().add(1, 'year').toDate();
+                    origOptions.until = moment().toDate();
                 } else if (value === "count") {
                     origOptions.count = 1;
                 }
