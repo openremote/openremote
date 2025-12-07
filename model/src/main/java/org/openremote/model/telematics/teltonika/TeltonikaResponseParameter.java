@@ -18,4 +18,9 @@ public class TeltonikaResponseParameter implements DeviceParameter {
     public Function<Object, Object> getValue() {
         return value -> value;
     }
+
+    @Override
+    public String getKey() {
+        return "RSP";
+    }
 }

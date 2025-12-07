@@ -3,18 +3,8 @@ package org.openremote.model.telematics;
 import java.util.HashMap;
 import java.util.Map;
 
-public interface Payload {
-
-    Object get(DeviceParameter parameter);
-
-    <T> T get(DeviceParameter parameter, Class<T> type);
+public interface Payload extends Map<DeviceParameter, Object> {
 
     Long getTimestamp();
-
-    String getImei();
-
-    boolean contains(DeviceParameter parameter);
-
-    Map<DeviceParameter, Object> asMap(); // if you really need raw access
 
 }

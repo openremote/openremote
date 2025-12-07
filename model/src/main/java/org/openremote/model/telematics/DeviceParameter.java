@@ -8,4 +8,5 @@ import java.util.function.Function;
 public interface DeviceParameter {
     AttributeDescriptor<?> getDescriptor();
     Function<Object, Object> getValue();
+    String getKey();
 }

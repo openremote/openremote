@@ -23,4 +23,13 @@ public class TeltonikaDataParameter implements DeviceParameter {
     public Function<Object, Object> getValue() {
         return value -> value;
     }
+
+    public String getKey() {
+        return name;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this.name.equals(((TeltonikaDataParameter)obj).name);
+    }
 }

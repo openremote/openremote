@@ -1,31 +1,31 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.activemq.artemis.core.config.Configuration;
+import io.netty.buffer.Unpooled;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.setup.SetupService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.telematics.Message;
+import org.openremote.model.telematics.ParsingValueDescriptor;
 import org.openremote.model.telematics.Payload;
 import org.openremote.model.telematics.TrackerAsset;
-import org.openremote.model.telematics.teltonika.TeltonikaMessage;
 import org.openremote.model.telematics.teltonika.TeltonikaMqttMessage;
+import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.logging.Logger;
@@ -78,9 +78,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             getLogger().warning(MessageFormat.format("Topic {0} is not a valid Topic. Please use a valid Topic.", topic.toString()));
             return false;
         }
-        long imeiValue;
         try{
-            imeiValue = Long.parseLong(topic.getTokens()[3]);
+            Long.parseLong(topic.getTokens()[3]);
         }catch (NumberFormatException e){
             getLogger().warning(MessageFormat.format("IMEI {0} is not a valid IMEI value. Please use a valid IMEI value.", topic.getTokens()[3]));
             return false;
@@ -120,14 +119,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         );
     }
     @Override
+    @SuppressWarnings("unchecked")
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         try {
-            Message message = null;
-
             Asset<? extends TrackerAsset> tracker = getCreateAssetFromTopic(topic);
 
             byte[] bytes = new byte[body.readableBytes()];
             body.readBytes(bytes);
+            Message message;
             try {
                 message = new TeltonikaMqttMessage(ValueUtil.JSON.readTree(bytes), null);
             } catch (IOException e) {
@@ -137,9 +136,80 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             Payload payload = message.getPayloadByIndex(0);
             Long timestamp = payload.getTimestamp();
 
+            getLogger().fine(String.format("Processing payload with timestamp: %d (%s)",
+                timestamp, new java.util.Date(timestamp)));
+
             AttributeMap map = new AttributeMap();
-            map.addAll(message.getPayloadByIndex(0).asMap().entrySet().stream().map(kvp ->
-                    new Attribute(kvp.getKey().getDescriptor(), kvp.getKey().getValue().apply(kvp.getValue()), timestamp)).toArray(Attribute[]::new));
+            map.addAll(message.getPayloadByIndex(0).entrySet().stream().map(kvp -> {
+                Object value = kvp.getValue();
+
+                // Try to find a matching ParsingValueDescriptor to get the correct name/type
+                ParsingValueDescriptor<?> valueDescriptor = TeltonikaValueDescriptors.getByName("teltonika_"+kvp.getKey().getKey()).orElse(null);
+                if(valueDescriptor == null){
+                    getLogger().warning("No Teltonika Value Descriptor found for key "+kvp.getKey().getKey());
+                    valueDescriptor = new ParsingValueDescriptor<>(kvp.getKey().getKey(), String.class, buf -> {
+                        return value.toString();
+                    });
+                }
+
+                // Try to find matching AttributeDescriptor in TrackerAsset
+                AttributeDescriptor<?> attributeDescriptor = TeltonikaValueDescriptors.findMatchingAttributeDescriptor(TrackerAsset.class, valueDescriptor).orElse(null);
+                if(attributeDescriptor == null){
+                    getLogger().warning("No Attribute Descriptor found for key "+kvp.getKey().getKey());
+                    attributeDescriptor = new AttributeDescriptor<>(kvp.getKey().getKey(), (ValueDescriptor<String>) valueDescriptor);
+                }
+
+                // Convert JSON value to binary format to test the binary parsing implementation
+                Object parsedValue;
+                try {
+                    ByteBuf binaryBuffer = convertJsonValueToBinary(value, valueDescriptor);
+                    // Convert ByteBuf to ByteBuffer for ParsingValueDescriptor
+                    // IMPORTANT: Ensure we start reading from position 0
+                    java.nio.ByteBuffer nioBuffer = binaryBuffer.nioBuffer();
+                    nioBuffer.position(0); // Explicitly set position to 0
+                    nioBuffer.order(java.nio.ByteOrder.BIG_ENDIAN); // Ensure big-endian byte order
+
+                    // Debug logging at FINE level
+                    if (getLogger().isLoggable(java.util.logging.Level.FINE)) {
+                        byte[] debugBytes = new byte[nioBuffer.remaining()];
+                        nioBuffer.mark();
+                        nioBuffer.get(debugBytes);
+                        nioBuffer.reset();
+                        getLogger().fine(String.format("Converting Key=%s, InputValue=%s, ExpectedLength=%d, ActualBytes=%s",
+                            kvp.getKey().getKey(), value, valueDescriptor.getLength(),
+                            java.util.HexFormat.of().formatHex(debugBytes)));
+                    }
+
+                    parsedValue = valueDescriptor.parse(binaryBuffer);
+
+                    getLogger().fine(String.format("Parsed Key=%s: InputValue=%s → ParsedValue=%s (type=%s)",
+                        kvp.getKey().getKey(), value, parsedValue, parsedValue != null ? parsedValue.getClass().getSimpleName() : "null"));
+
+                    binaryBuffer.release(); // Clean up
+                } catch (Exception e) {
+                    getLogger().severe("Failed to parse value for key " + kvp.getKey().getKey() + ": " + e.getMessage());
+                    getLogger().severe("Stack trace: " + ExceptionUtils.getStackTrace(e));
+                    // Fallback to direct value usage
+                    parsedValue = value;
+                    if (value != null && attributeDescriptor.getType() != null) {
+                        Class<?> expectedType = attributeDescriptor.getType().getType();
+                        if (expectedType == Integer.class && value instanceof Number) {
+                            parsedValue = ((Number) value).intValue();
+                        } else if (expectedType == Long.class && value instanceof Number) {
+                            parsedValue = ((Number) value).longValue();
+                        } else if (expectedType == Double.class && value instanceof Number) {
+                            parsedValue = ((Number) value).doubleValue();
+                        } else if (expectedType == Boolean.class && value instanceof Number) {
+                            parsedValue = ((Number) value).intValue() == 1;
+                        } else if (expectedType == String.class && !(value instanceof String)) {
+                            parsedValue = value.toString();
+                        }
+                    }
+                }
+
+                // Create attribute using the name-based constructor to avoid type inference issues
+                return new Attribute<>((AttributeDescriptor<Object>) attributeDescriptor, parsedValue, timestamp);
+            }).toArray(Attribute[]::new));
 
             sendAttributeEvents(tracker, map.stream().toArray(Attribute[]::new));
 
@@ -162,7 +232,9 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         assetStorageService.merge(asset.addAttributes(newAttributes.toArray(Attribute[]::new)));
 
-        oldAttributes.stream().map(attr -> new AttributeEvent(asset.getId(), attr.getName(), attr.getValue().get()))
+        oldAttributes.stream()
+                .filter(attr -> attr.getValue().isPresent())
+                .map(attr -> new AttributeEvent(asset.getId(), attr.getName(), attr.getValue().get()))
                 .forEach(assetProcessingService::sendAttributeEvent);
 
     }
@@ -194,5 +266,104 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     String getImeiFromTopic(Topic topic){
         return topic.getTokens()[3];
+    }
+
+    /**
+     * Converts a JSON value to binary ByteBuf format based on the expected length from ParsingValueDescriptor.
+     * This allows testing the binary parsing implementation with JSON MQTT data.
+     * <p>
+     * IMPORTANT: The JSON values from Teltonika MQTT are RAW values (before multiplier is applied by the parser).
+     * The parser will apply the multiplier when reading from the binary buffer.
+     */
+    private ByteBuf convertJsonValueToBinary(Object value, ParsingValueDescriptor<?> valueDescriptor) {
+        if (value == null) {
+            return Unpooled.buffer(0);
+        }
+
+        int length = valueDescriptor.getLength();
+        if (length <= 0) {
+            // Variable length or unknown - convert to string bytes
+            byte[] bytes = value.toString().getBytes(StandardCharsets.UTF_8);
+            return Unpooled.wrappedBuffer(bytes);
+        }
+
+        Class<?> expectedType = valueDescriptor.getType();
+        ByteBuf buffer = Unpooled.buffer(length);
+
+        try {
+            switch (length) {
+                case 1 -> {
+                    // 1-byte value
+                    if (expectedType == Boolean.class) {
+                        boolean boolVal = (value instanceof Boolean) ? (Boolean) value
+                                : (value instanceof Number && ((Number) value).intValue() == 1)
+                                || "true".equalsIgnoreCase(value.toString()) || "1".equals(value.toString());
+                        buffer.writeByte(boolVal ? 1 : 0);
+                    } else if (value instanceof Number) {
+                        // Write as signed or unsigned byte
+                        buffer.writeByte(((Number) value).intValue());
+                    } else {
+                        buffer.writeByte(Integer.parseInt(value.toString()));
+                    }
+                }
+                case 2 -> {
+                    // 2-byte value - write the raw value (multiplier will be applied by parser)
+                    if (value instanceof Number) {
+                        buffer.writeShort(((Number) value).shortValue());
+                    } else {
+                        buffer.writeShort(Integer.parseInt(value.toString()));
+                    }
+                }
+                case 4 -> {
+                    // 4-byte value - write the raw value (multiplier will be applied by parser)
+                    if (value instanceof Number) {
+                        buffer.writeInt(((Number) value).intValue());
+                    } else {
+                        buffer.writeInt(Integer.parseInt(value.toString()));
+                    }
+                }
+                case 8 -> {
+                    // 8-byte value
+                    if (value instanceof Number) {
+                        buffer.writeLong(((Number) value).longValue());
+                    } else if (expectedType == String.class && value instanceof String) {
+                        // For hex string IDs, the JSON value is already the raw number
+                        try {
+                            long longVal = Long.parseLong(value.toString());
+                            buffer.writeLong(longVal);
+                        } catch (NumberFormatException e) {
+                            // Try as hex if decimal fails
+                            try {
+                                long longVal = Long.parseLong(value.toString(), 16);
+                                buffer.writeLong(longVal);
+                            } catch (NumberFormatException e2) {
+                                getLogger().warning("Could not parse 8-byte value: " + value);
+                                buffer.writeLong(0);
+                            }
+                        }
+                    } else {
+                        buffer.writeLong(Long.parseLong(value.toString()));
+                    }
+                }
+                default -> {
+                    // Fixed length string
+                    byte[] bytes = value.toString().getBytes(StandardCharsets.UTF_8);
+                    int bytesToWrite = Math.min(bytes.length, length);
+                    buffer.writeBytes(bytes, 0, bytesToWrite);
+                    // Pad with zeros if needed
+                    for (int i = bytesToWrite; i < length; i++) {
+                        buffer.writeByte(0);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            getLogger().warning("Failed to convert value to binary: " + e.getMessage());
+            buffer.release();
+            // Fallback to string bytes
+            byte[] bytes = value.toString().getBytes(StandardCharsets.UTF_8);
+            return Unpooled.wrappedBuffer(bytes);
+        }
+
+        return buffer;
     }
 }
