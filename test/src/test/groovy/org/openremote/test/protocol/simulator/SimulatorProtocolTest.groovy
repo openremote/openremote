@@ -108,8 +108,8 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
     }
 
     def setup() {
-        resetPseudoClockAt()
-        stopPseudoClockAt(Instant.parse("1970-01-01T00:00:00.000Z").toEpochMilli())
+        stopPseudoClock()
+        setPseudoClock("1970-01-01T00:00:00.000Z")
 
         future = Mock(ScheduledFuture)
         executor = Mock(ScheduledExecutorService)
