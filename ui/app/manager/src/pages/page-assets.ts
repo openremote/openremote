@@ -29,8 +29,7 @@ import {Asset, AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-// import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-vaadin-components/or-vaadin-textfield";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -201,7 +200,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected render(): TemplateResult | void {
 
-        /*let viewerHTML: TemplateResult;
+        let viewerHTML: TemplateResult;
         const multiSelection = this._assetIds && this._assetIds.length > 1;
 
         if (multiSelection) {
@@ -222,16 +221,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                                  .editMode="${this._editMode}"
                 ></or-asset-viewer>
             `;
-        }*/
+        }
 
         return html`
             <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
                            class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
                            .selectedIds="${this._assetIds}"
             ></or-asset-tree>
-            <div>
-                <or-vaadin-textfield label="Test"></or-vaadin-textfield>
-            </div>
+            ${viewerHTML}
         `;
     }
 

@@ -17,6 +17,7 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import {DefaultColor4, DefaultColor5, DefaultColor8, Util} from "@openremote/core";
+import "@openremote/or-vaadin-components/or-vaadin-input";
 import "@openremote/or-icon";
 import {OrIcon} from "@openremote/or-icon";
 import {
@@ -50,6 +51,7 @@ import {
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
 import { styleMap } from "lit/directives/style-map.js";
+import {OrVaadinInput} from "@openremote/or-vaadin-components/or-vaadin-input";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -406,18 +408,26 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
+        const inputStyle = styles ? styleMap(styles) : undefined;
 
-        return html`<or-mwc-input ${ref(inputRef)} id="input" style="${styleMap(styles)}" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
-            .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
-            .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
-            .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
-            .rounded="${options.rounded}"
-            .outlined="${options.outlined}"
-            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                e.stopPropagation();
-                e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
-                valueChangeNotifier(e.detail);
-            }}"></or-mwc-input>`
+        return html`
+            <or-vaadin-input ${ref(inputRef)} id="input" style="${ifDefined(inputStyle)}" type=${ifDefined(inputType)}
+                             label=${ifDefined(label)} value=${ifDefined(value)} pattern=${ifDefined(pattern)}
+                             min=${ifDefined(min)} max=${ifDefined(max)} format=${ifDefined(format)}
+                             ?autofocus=${focused} ?required=${required} ?multiple=${multiple}
+                             ?comfortable=${comfortable} ?readonly=${readonly} ?disabled=${disabled}
+                             options=${ifDefined(selectOptions)} step=${ifDefined(step)}
+                             helper-text="${ifDefined(helperText)}" ?resizeVertical="${resizeVertical}"
+                             ?rounded="${options.rounded}" ?outlined="${options.outlined}"
+                             @change="${(e: CustomEvent) => {
+                                 e.stopPropagation();
+                                 if((e.currentTarget as OrVaadinInput).checkValidity()) {
+                                     e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
+                                     valueChangeNotifier(e.detail);
+                                 }
+                             }}"
+            ></or-vaadin-input>
+        `;
     };
 
     return {
