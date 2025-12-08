@@ -35,6 +35,8 @@ import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +50,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends AgentLink<?>> implements Protocol<T> {
 
     private static final System.Logger LOG = System.getLogger(AbstractProtocol.class.getName() + "." + PROTOCOL.name());
+    private static final Logger log = LoggerFactory.getLogger(AbstractProtocol.class);
     protected final Map<AttributeRef, Attribute<?>> linkedAttributes = new ConcurrentHashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = Collections.synchronizedSet(new HashSet<>());
     protected DefaultCamelContext messageBrokerContext;
@@ -117,6 +120,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         try {
             doLinkAttribute(assetId, attribute, agent.getAgentLink(attribute));
         } catch (Exception e) {
+            log.error("e: ", e);
             linkedAttributes.remove(attributeRef);
             throw new RuntimeException(e);
         }
