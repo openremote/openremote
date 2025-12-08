@@ -26,6 +26,7 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.LoginConfig;
+import jakarta.servlet.ServletContext;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -249,11 +250,11 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     @Override
-    public void secureDeployment(DeploymentInfo deploymentInfo) {
-        deploymentInfo.addFilter(new FilterInfo(JWTAuthenticationFilter.NAME, JWTAuthenticationFilter.class));
+    public void secureDeployment(ServletContext servletContext) {
+        servletContext.addFilter(new FilterInfo(JWTAuthenticationFilter.NAME, JWTAuthenticationFilter.class));
         LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
-        deploymentInfo.setLoginConfig(loginConfig);
-        deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
+        servletContext.setLoginConfig(loginConfig);
+        servletContext.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
     }
 
     public KeycloakResource getKeycloak() {

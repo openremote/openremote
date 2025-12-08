@@ -20,6 +20,7 @@
 package org.openremote.container.security;
 
 import io.undertow.servlet.api.DeploymentInfo;
+import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.Container;
@@ -60,10 +61,9 @@ public abstract class IdentityService implements ContainerService {
         identityProvider.stop(container);
     }
 
-    public void secureDeployment(DeploymentInfo deploymentInfo) {
-        LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
-        deploymentInfo.setSecurityDisabled(false);
-        identityProvider.secureDeployment(deploymentInfo);
+    public void secureDeployment(ServletContext servletContext) {
+        LOG.info("Securing servlet context: " + servletContext.getContextPath());
+        identityProvider.secureDeployment(servletContext);
     }
 
     /**

@@ -421,58 +421,72 @@ public abstract class WebService implements ContainerService {
             corsOverride = new CORSConfig();
         }
 
-        // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
-        if (realmIndex != null) {
-            deploymentInfo.addInitialHandlerChainWrapper(handler -> {
-
-                return exchange -> {
-                    // Do nothing if the realm header is already set
-                    if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
-                        handler.handleRequest(exchange);
-                        return;
-                    }
-
-                    String relativePath = exchange.getRelativePath();
-                    StringBuilder newRelativePathBuilder = new StringBuilder();
-                    String realm = null;
-                    int segmentIndex = 0;
-                    int start = 1; // Path starts with '/'
-
-                    for (int i = 1; i <= relativePath.length(); i++) {
-                        if (i == relativePath.length() || relativePath.charAt(i) == '/') {
-                            if (i > start) { // Found a segment
-                                if (segmentIndex == realmIndex) {
-                                    realm = relativePath.substring(start, i);
-                                } else {
-                                    newRelativePathBuilder.append('/').append(relativePath, start, i);
-                                }
-                                segmentIndex++;
-                            }
-                            start = i + 1;
-                        }
-                    }
-
-                    if (realm != null) {
-                        exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
-
-                        String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
-                        String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
-                        exchange.setRequestURI(newRequestPath);
-                        exchange.setRelativePath(newRelativePath);
-                        exchange.setRequestPath(newRequestPath);
-                    }
-
-                    handler.handleRequest(exchange);
-                };
-            });
-        }
+//        // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
+//        if (realmIndex != null) {
+//            deploymentInfo.addInitialHandlerChainWrapper(handler -> {
+//
+//                return exchange -> {
+//                    // Do nothing if the realm header is already set
+//                    if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
+//                        handler.handleRequest(exchange);
+//                        return;
+//                    }
+//
+//                    String relativePath = exchange.getRelativePath();
+//                    StringBuilder newRelativePathBuilder = new StringBuilder();
+//                    String realm = null;
+//                    int segmentIndex = 0;
+//                    int start = 1; // Path starts with '/'
+//
+//                    for (int i = 1; i <= relativePath.length(); i++) {
+//                        if (i == relativePath.length() || relativePath.charAt(i) == '/') {
+//                            if (i > start) { // Found a segment
+//                                if (segmentIndex == realmIndex) {
+//                                    realm = relativePath.substring(start, i);
+//                                } else {
+//                                    newRelativePathBuilder.append('/').append(relativePath, start, i);
+//                                }
+//                                segmentIndex++;
+//                            }
+//                            start = i + 1;
+//                        }
+//                    }
+//
+//                    if (realm != null) {
+//                        exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
+//
+//                        String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
+//                        String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
+//                        exchange.setRequestURI(newRequestPath);
+//                        exchange.setRelativePath(newRelativePath);
+//                        exchange.setRequestPath(newRequestPath);
+//                    }
+//
+//                    handler.handleRequest(exchange);
+//                };
+//            });
+//        }
 
         if (secure) {
             if (identityService == null)
                 throw new IllegalStateException(
                         "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
                 );
-            identityService.secureDeployment(deploymentInfo);
+
+            ServletContainerInitializer containerInitializer = new ServletContainerInitializer() {
+
+               @Override
+               public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
+
+               }
+            };
+            Class<? extends EventListener> listenerClass = containerInitializer.getClass();
+           InstanceFactory<? extends EventListener> factory = new ImmediateInstanceFactory<>(containerInitializer);
+
+           deploymentInfo.addListeners(Servlets.listener(listenerClass, factory))
+
+           deploymentInfo.addServletContainerInitializer()
+           identityService.secureDeployment(servletContext);
         }
 
         // Cannot set config on constructor as init method will overwrite it

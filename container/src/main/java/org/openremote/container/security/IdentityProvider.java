@@ -20,6 +20,7 @@
 package org.openremote.container.security;
 
 import io.undertow.servlet.api.DeploymentInfo;
+import jakarta.servlet.ServletContext;
 import org.openremote.model.Container;
 
 /**
@@ -36,5 +37,5 @@ public interface IdentityProvider {
 
     void stop(Container container) throws Exception;
 
-    void secureDeployment(DeploymentInfo deploymentInfo);
+    void secureDeployment(ServletContext servletContext);
 }
