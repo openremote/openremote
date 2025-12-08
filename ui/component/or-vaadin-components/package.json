@@ -31,6 +31,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
+    "@vaadin/checkbox": "~25.0.0-beta6",
     "@vaadin/number-field": "~25.0.0-beta6",
     "@vaadin/text-area": "~25.0.0-beta6",
     "@vaadin/text-field": "~25.0.0-beta6",

@@ -2398,6 +2398,7 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/util": "workspace:*"
+    "@vaadin/checkbox": "npm:~25.0.0-beta6"
     "@vaadin/number-field": "npm:~25.0.0-beta6"
     "@vaadin/text-area": "npm:~25.0.0-beta6"
     "@vaadin/text-field": "npm:~25.0.0-beta6"
@@ -3993,6 +3994,20 @@ __metadata:
     "@vaadin/component-base": "npm:25.0.0-beta6"
     lit: "npm:^3.0.0"
   checksum: 10c0/e93afba5eba9105b5cbf9ad6f535b8dcdcce6278a04c2169c0d6497f72dbd1c74c0085a63a76d8f769960ef6e2d24d940cda3461256c68de31a9fa5ebfd260d9
+  languageName: node
+  linkType: hard
+
+"@vaadin/checkbox@npm:~25.0.0-beta6":
+  version: 25.0.0-beta6
+  resolution: "@vaadin/checkbox@npm:25.0.0-beta6"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/a11y-base": "npm:25.0.0-beta6"
+    "@vaadin/component-base": "npm:25.0.0-beta6"
+    "@vaadin/field-base": "npm:25.0.0-beta6"
+    "@vaadin/vaadin-themable-mixin": "npm:25.0.0-beta6"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/6fac50d7d2c00b034cffeff7ec1b7dd68a6d249908162d6dbf6de954fd153973020f142bb6d65b4a0408f89ccb0d8626ac404e745ab17fb44bdb8a7a60bcceda
   languageName: node
   linkType: hard
 

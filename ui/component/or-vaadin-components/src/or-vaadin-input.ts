@@ -22,6 +22,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import "./or-vaadin-numberfield";
 import "./or-vaadin-textfield";
 import "./or-vaadin-textarea";
+import "./or-vaadin-checkbox";
 
 export enum InputType {
     BUTTON = "button",
@@ -119,6 +120,9 @@ export class OrVaadinInput extends LitElement {
      */
     protected _getInputTemplate(type: InputType): TemplateResult {
         switch (type) {
+            case InputType.CHECKBOX: {
+                return html`<or-vaadin-checkbox id="elem" @change=${this._onValueChange}></or-vaadin-checkbox>`
+            }
             case InputType.RADIO: {
                 return html`Not supported yet.`;
             }
