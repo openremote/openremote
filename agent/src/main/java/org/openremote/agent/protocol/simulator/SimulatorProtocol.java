@@ -212,7 +212,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
-        if (nextRun.isEmpty() || nextRun.getAsLong() < 0) {
+        if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || (schedule.isPresent() && pastUntil(schedule.get(), now*1000))) {
             LOG.warning("Replay schedule has ended for: " + attributeRef);
             return null;
         }
@@ -256,13 +256,22 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }, nextRun.getAsLong(), TimeUnit.SECONDS);
     }
 
-    public boolean pastUpcoming(Schedule schedule, long timestamp) {
+    public boolean pastUntil(Schedule schedule, long millis) {
+        Recur<LocalDateTime> recurrence = schedule.getRecurrence();
+        if (recurrence != null && recurrence.getUntil() != null) {
+            System.out.println(recurrence.getUntil());
+            return millis > recurrence.getUntil().toInstant(ZoneOffset.UTC).toEpochMilli();
+        }
+        return false;
+    }
+
+    public boolean pastUpcoming(Schedule schedule, long millis) {
         LocalDateTime upcoming = schedule.getUpcoming();
         if (schedule.getIsSingleOccurrence()) {
             return false;
         }
         if (upcoming != null) {
-            return timestamp > upcoming.toInstant(ZoneOffset.UTC).toEpochMilli();
+            return millis > upcoming.toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         return false;
     }
@@ -286,6 +295,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 }
                 if (now + delay.getAsLong() > now) { // Delay can be negative
                     long timestamp = (now + delay.getAsLong()) * 1000;
+                    if (schedule.isPresent() && pastUntil(schedule.get(), timestamp)) {
+                        return predictedDatapoints;
+                    }
                     if (schedule.isPresent() && pastUpcoming(schedule.get(), timestamp) && timeSinceOccurrenceStarted >= 0) {
                         continue;
                     }

@@ -375,7 +375,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         LocalDateTime.ofInstant(Instant.parse("1970-01-05T00:00:00.000Z"), ZoneOffset.UTC),
                         null,
                         // Recur every Monday until 1970-01-31
-                        "FREQ=WEEKLY;UNTIL=19700131T000000Z;BYDAY=MO"
+                        "FREQ=WEEKLY;UNTIL=19700131T000000;BYDAY=MO"
                 ))
         )))
         asset = assetStorageService.merge(asset)
@@ -590,7 +590,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 ).setSchedule(new SimulatorProtocol.Schedule(
                         LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC),
                         null,
-                        "FREQ=DAILY;UNTIL=19700101T000300Z"
+                        "FREQ=DAILY;UNTIL=19700101T030000"
                 ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
