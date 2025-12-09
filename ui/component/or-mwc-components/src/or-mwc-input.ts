@@ -514,6 +514,9 @@ const style = css`
         display: flex;
         flex-direction: column;
     }
+    .mdc-form-field:has(> .mdc-radio) {
+        height: 56px !important;
+    }
     .mdc-text-field.mdc-text-field--invalid:not(.mdc-text-field--disabled) + .mdc-text-field-helper-line .mdc-text-field-helper-text {
         color: var(--mdc-theme-error, #b00020)
     }
