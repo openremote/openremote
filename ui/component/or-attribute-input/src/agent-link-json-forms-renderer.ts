@@ -9,8 +9,8 @@ import {
     formatIs
 } from "@jsonforms/core";
 import manager, { OREvent } from "@openremote/core";
-import {Agent, AgentDescriptor, AssetEvent, AssetModelUtil} from "@openremote/model";
-import { JsonFormsStateContext, getTemplateWrapper } from "@openremote/or-json-forms";
+import { Agent, AgentDescriptor, AssetModelUtil } from "@openremote/model";
+import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -46,7 +46,7 @@ function loadAgents(): PromiseLike<Agent[]> {
             }
         });
         
-        manager.events!.subscribeAssetEvents(undefined, false, (assetEvent: AssetEvent) => {
+        manager.events!.subscribeAssetEvents(undefined, false, (assetEvent) => {
             if (assetEvent.asset && assetEvent.asset.type!.endsWith("Agent")) {
                 agents = undefined;
                 loadingPromise = undefined;
@@ -126,7 +126,7 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     return getTemplateWrapper(template, undefined);
 };
 
-export const agentIdRendererRegistryEntry = {
+export const agentIdRendererRegistryEntry: JsonFormsRendererRegistryEntry = {
     tester: agentIdTester,
     renderer: agentIdRenderer
 };
