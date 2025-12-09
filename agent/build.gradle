@@ -56,7 +56,7 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
-    implementation files("libs/chirpstack-api-4.14.1.jar")
+    api files("libs/chirpstack-api-4.14.1.jar")
 }
 
 base {
