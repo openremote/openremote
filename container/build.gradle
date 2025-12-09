@@ -50,6 +50,14 @@ dependencies {
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    api "com.thetransactioncompany:cors-filter:$corsFilterVersion"
+}
+
+dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 base {

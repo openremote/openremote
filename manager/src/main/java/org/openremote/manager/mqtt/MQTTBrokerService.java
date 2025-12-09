@@ -92,8 +92,9 @@ import java.util.stream.Collectors;
 import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.container.util.MapAccess.*;
- import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.Container.OR_DEV_MODE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -527,6 +528,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return server.getActiveMQServer().getRemotingService().getConnections().stream().filter(connection -> {
+            if (!connection.getTransportConnection().isOpen()) {
+                return false;
+            }
             Subject subject = connection.getSubject();
             String subjectID = KeycloakIdentityProvider.getSubjectId(subject);
             return userID.equals(subjectID);

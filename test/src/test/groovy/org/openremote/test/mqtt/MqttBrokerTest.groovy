@@ -50,8 +50,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 import java.util.stream.Stream
 
-import static org.openremote.container.util.MapAccess.getInteger
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getInteger
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.mqtt.MQTTBrokerService.*
 import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ
 import static org.openremote.model.value.ValueType.TEXT
