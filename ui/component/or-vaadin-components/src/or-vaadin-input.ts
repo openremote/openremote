@@ -20,10 +20,11 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
+import "./or-vaadin-checkbox";
 import "./or-vaadin-numberfield";
+import "./or-vaadin-passwordfield";
 import "./or-vaadin-textfield";
 import "./or-vaadin-textarea";
-import "./or-vaadin-checkbox";
 
 @customElement("or-vaadin-input")
 export class OrVaadinInput extends LitElement {
@@ -35,12 +36,12 @@ export class OrVaadinInput extends LitElement {
      */
     public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
         [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
+        [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
         [InputType.RANGE, OrVaadinInput.getNumberFieldTemplate],
-        [InputType.JSON, OrVaadinInput.getTextAreaTemplate],
-        [InputType.JSON_OBJECT, OrVaadinInput.getTextAreaTemplate],
         [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
-        [InputType.TEXT, OrVaadinInput.getTextFieldTemplate]
+        [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
+        [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate]
     ]);
 
     /**
@@ -144,7 +145,7 @@ export class OrVaadinInput extends LitElement {
     protected _onValueChange(ev: Event) {
         ev.stopPropagation();
         if (ev.defaultPrevented) return;
-        this.dispatchEvent(new Event("change", { bubbles: true }));
+        this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
     }
 
     /**
@@ -187,6 +188,10 @@ export class OrVaadinInput extends LitElement {
 
     public static getTextFieldTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-textfield id="elem" @change=${onChange}></or-vaadin-textfield>`;
+    }
+
+    public static getPasswordFieldTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-passwordfield id="elem" @change=${onChange}></or-vaadin-passwordfield>`;
     }
 
 }

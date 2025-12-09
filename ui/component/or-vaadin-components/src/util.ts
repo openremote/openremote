@@ -110,18 +110,14 @@ export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | st
                                            , valueChangeNotifier: (value: any) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
-    return inputType === InputType.NUMBER
-        || inputType === InputType.BIG_INT
+    return OrVaadinInput.TEMPLATES.has(inputType)
         || inputType === InputType.TELEPHONE
-        || inputType === InputType.TEXT
-        || inputType === InputType.PASSWORD
         || inputType === InputType.DATE
         || inputType === InputType.DATETIME
         || inputType === InputType.EMAIL
         || inputType === InputType.JSON
         || inputType === InputType.JSON_OBJECT
         || inputType === InputType.MONTH
-        || inputType === InputType.TEXTAREA
         || inputType === InputType.TIME
         || inputType === InputType.URL
         || inputType === InputType.WEEK;
@@ -373,10 +369,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                                  ?rounded="${options.rounded}" ?outlined="${options.outlined}"
                                  @change="${(e: Event) => {
                                      e.stopPropagation();
-                                     const elem = e.currentTarget as HTMLInputElement | undefined;
+                                     const elem = e.currentTarget as OrVaadinInput | undefined;
                                      if (elem?.checkValidity()) {
-                                         const elemValue = JSON.parse(elem.value);
-                                         valueChangeNotifier(valueConverter ? valueConverter(elemValue) : elemValue);
+                                         valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue);
                                      }
                                  }}"
                 ></or-vaadin-input>

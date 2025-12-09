@@ -1988,6 +1988,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/or-vaadin-components": "workspace:*"
     axios: "npm:0.24.0"
     i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
@@ -2408,9 +2409,10 @@ __metadata:
   resolution: "@openremote/or-vaadin-components@workspace:ui/component/or-vaadin-components"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/util": "workspace:*"
+    "@openremote/model": "workspace:*"
     "@vaadin/checkbox": "npm:~25.0.0-beta6"
     "@vaadin/number-field": "npm:~25.0.0-beta6"
+    "@vaadin/password-field": "npm:~25.0.0-beta6"
     "@vaadin/text-area": "npm:~25.0.0-beta6"
     "@vaadin/text-field": "npm:~25.0.0-beta6"
     lit: "npm:^3.3.1"
@@ -2469,7 +2471,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/theme@workspace:ui/component/theme"
   dependencies:
-    "@rspack/core": "npm:^1.4.4"
     "@vaadin/vaadin-lumo-styles": "npm:~25.0.0-beta5"
   languageName: unknown
   linkType: soft
@@ -4024,6 +4025,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vaadin/button@npm:25.0.0-beta6":
+  version: 25.0.0-beta6
+  resolution: "@vaadin/button@npm:25.0.0-beta6"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/a11y-base": "npm:25.0.0-beta6"
+    "@vaadin/component-base": "npm:25.0.0-beta6"
+    "@vaadin/vaadin-themable-mixin": "npm:25.0.0-beta6"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/4581b456cbfa741097e365afc24ec52c6d325deb7307eb11f8075ec42b91915d529491f3db3cab889888884161b3c2827f7bdb2caff8684262827a72580cc808
+  languageName: node
+  linkType: hard
+
 "@vaadin/checkbox@npm:~25.0.0-beta6":
   version: 25.0.0-beta6
   resolution: "@vaadin/checkbox@npm:25.0.0-beta6"
@@ -4114,6 +4128,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vaadin/password-field@npm:~25.0.0-beta6":
+  version: 25.0.0-beta6
+  resolution: "@vaadin/password-field@npm:25.0.0-beta6"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/a11y-base": "npm:25.0.0-beta6"
+    "@vaadin/button": "npm:25.0.0-beta6"
+    "@vaadin/component-base": "npm:25.0.0-beta6"
+    "@vaadin/field-base": "npm:25.0.0-beta6"
+    "@vaadin/text-field": "npm:25.0.0-beta6"
+    "@vaadin/vaadin-themable-mixin": "npm:25.0.0-beta6"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/4dac2d007f592d4a195dba1dcc4819718444f7f63e7d102621af38792b8d309b2a45ef27ec88b714199a854bfd7d56dea189846344013f061100911c6f65bcef
+  languageName: node
+  linkType: hard
+
 "@vaadin/text-area@npm:~25.0.0-beta6":
   version: 25.0.0-beta6
   resolution: "@vaadin/text-area@npm:25.0.0-beta6"
@@ -4129,7 +4159,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vaadin/text-field@npm:~25.0.0-beta6":
+"@vaadin/text-field@npm:25.0.0-beta6, @vaadin/text-field@npm:~25.0.0-beta6":
   version: 25.0.0-beta6
   resolution: "@vaadin/text-field@npm:25.0.0-beta6"
   dependencies:

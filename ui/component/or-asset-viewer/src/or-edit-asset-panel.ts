@@ -1,7 +1,7 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until.js";
 import {customElement, property} from "lit/decorators.js";
-import {InputType, OrInputChangedEvent, OrInputChangedEventDetail, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/util";
 import type {ValueInputProviderOptions} from "@openremote/or-vaadin-components/util";
 import {i18next} from "@openremote/or-translate"
@@ -98,7 +98,7 @@ const style = css`
     .attribute-meta-row.expanded  .meta-item-container {
         transition: max-height 0.5s ease-in-out;
     }
-    .meta-item-container or-mwc-input {
+    .meta-item-container or-mwc-input, .meta-item-container or-vaadin-input {
         width: 100%;
     }
     .meta-item-wrapper {
@@ -413,8 +413,8 @@ export class OrEditAssetPanel extends LitElement {
         this._onModified();
     }
 
-    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail | undefined) {
-        metaItem.value = detail ? detail.value : undefined;
+    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, value: any) {
+        metaItem.value = value ?? undefined;
         attribute.meta![metaItem.name!] = metaItem.value;
         this._onModified();
     }
@@ -432,14 +432,14 @@ export class OrEditAssetPanel extends LitElement {
 
         if (!valueDescriptor) {
             console.log("Couldn't find value descriptor for meta item so falling back to simple JSON input: " + metaItem.name);
-            content = html`<or-mwc-input @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onMetaItemModified(attribute, metaItem, ev.detail)}" .type="${InputType.JSON}" .value="${metaItem.value}"></or-mwc-input>`;
+            content = html`<or-mwc-input @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onMetaItemModified(attribute, metaItem, ev.detail.value)}" .type="${InputType.JSON}" .value="${metaItem.value}"></or-mwc-input>`;
         } else {
             const options: ValueInputProviderOptions = {
                 label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
                 resizeVertical: true
             };
-            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
-            let provider = jsonFormsInputTemplateProvider(standardInputProvider)(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (value: any) => this._onMetaItemModified(attribute, metaItem, value), options);
+            let provider = jsonFormsInputTemplateProvider(standardInputProvider)(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail?.value), options);
 
             if (!provider) {
                 provider = standardInputProvider;
