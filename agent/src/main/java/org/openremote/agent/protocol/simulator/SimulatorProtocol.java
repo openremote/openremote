@@ -368,10 +368,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         @JsonSerialize(using = EpochLocalDateTimeSerializer.class)
         @JsonDeserialize(using = EpochLocalDateTimeDeserializer.class)
+        @JsonSchemaTypeRemap(type = Long.class)
         protected LocalDateTime start;
 
         @JsonSerialize(using = EpochLocalDateTimeSerializer.class)
         @JsonDeserialize(using = EpochLocalDateTimeDeserializer.class)
+        @JsonSchemaTypeRemap(type = Long.class)
         protected LocalDateTime end;
 
         @JsonSchemaDescription("The recurrence schedule follows the RFC 5545 RRULE format.")

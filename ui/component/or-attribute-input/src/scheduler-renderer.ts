@@ -5,19 +5,19 @@ import {
     mapStateToControlProps,
     mapDispatchToControlProps,
     and,
-    uiTypeIs,
-    formatIs
+    isObjectControl,
+    schemaMatches,
 } from "@jsonforms/core";
 import { html } from "lit";
 import { i18next } from "@openremote/or-translate";
+import { CalendarEvent } from "@openremote/model";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { Frequency, RulePartKey, LabeledEventTypes, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
-import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-scheduler";
 
 const schedulerTester: RankedTester = rankWith(
     6,
-    and(uiTypeIs("Control"), formatIs("or-scheduler"))
+    and(isObjectControl, schemaMatches((schema) => schema.format === "or-scheduler"))
 );
 const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     props = {
@@ -26,15 +26,16 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         ...mapDispatchToControlProps(state.dispatch)
     };
 
-    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    // Match default replay schedule (when schedule isn't defined)
     const now = Date.now()
     const dayInMillis = 86400_000
-    const offset = now % dayInMillis
+    const millisSinceStartOfDay = now % dayInMillis
     const defaultEvent = {
-        start: now - offset,
-        end: now - offset + dayInMillis - 1,
+        start: now - millisSinceStartOfDay,
+        end: now - millisSinceStartOfDay + dayInMillis - 1,
         recurrence: "FREQ=DAILY"
     }
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
 
     // Init the schedule field with the default value
     if (!Object.keys(props.data).length) {
