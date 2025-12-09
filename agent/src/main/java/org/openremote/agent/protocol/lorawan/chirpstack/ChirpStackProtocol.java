@@ -93,16 +93,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         boolean isOk = super.checkAutoDiscoveryPrerequisites();
 
         List<AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>>> list = new ArrayList<>(3);
-        if (getAgent().getHost().isEmpty()) {
-            list.add(new AbstractMap.SimpleEntry<>(HOST, getAgent().getHost()));
-        }
-        //list.add(new AbstractMap.SimpleEntry<>(PORT, getAgent().getPort().map(p -> p.toString())));
+        list.add(new AbstractMap.SimpleEntry<>(HOST, getAgent().getHost()));
         list.add(new AbstractMap.SimpleEntry<>(API_KEY, getAgent().getApiKey()));
 
         for (AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>> item : list) {
             if (!item.getValue().map(attrValue -> !attrValue.trim().isEmpty()).orElse(false)) {
                 isOk = false;
-                LOG.log(Level.WARNING, "Auto discovery failed because agent attribute '" + item.getKey().getName() + "'  is missing");
+                LOG.log(Level.WARNING, "Auto discovery failed because agent attribute '" + item.getKey().getName() + "' is missing");
             }
         }
 
@@ -260,7 +257,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
                 .useTransportSecurity()
                 .build();
         } else {
-            channel =ManagedChannelBuilder.forAddress(host, port)
+            channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()
                 .build();
         }
@@ -288,7 +285,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     private Optional<Class<? extends Asset<?>>> resolveAssetClass(String simpleClassName, DeviceListItem deviceListItem, DeviceProfile deviceProfile) {
         if (isNullOrEmpty(simpleClassName) || deviceListItem == null || deviceProfile == null ) {
-            return null;
+            return Optional.empty();
         }
 
         return ValueUtil.getAssetClass(simpleClassName)

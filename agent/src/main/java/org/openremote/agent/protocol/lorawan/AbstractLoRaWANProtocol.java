@@ -252,7 +252,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         Optional<String> applicationId = getAgent().getApplicationId();
         boolean isOk = applicationId.map(id -> !id.trim().isEmpty()).orElse(false);
         if (!isOk) {
-            LOG.log(Level.WARNING, "Device auto discovery failed because agent attribute '" + APPLICATION_ID.getName() + "'  is missing");
+            LOG.log(Level.WARNING, "Device auto discovery failed because agent attribute '" + APPLICATION_ID.getName() + "' is missing");
         }
         return isOk;
     }
