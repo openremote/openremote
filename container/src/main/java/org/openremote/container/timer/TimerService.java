@@ -23,7 +23,13 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.rules.RulesClock;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,12 +65,17 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public void stop() {
-                // NOOP
+            public long setTime(LocalDate date, LocalTime time, ZoneId zoneId) {
+                throw new UnsupportedOperationException("Wall clock can not be set manually");
             }
 
             @Override
-            public void stopAtTime(long time) {
+            public long setTime(String iso8601Timestamp) {
+                throw new UnsupportedOperationException("Wall clock can not be set manually");
+            }
+
+            @Override
+            public void stop() {
                 // NOOP
             }
 
@@ -102,17 +113,27 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
+            public long setTime(LocalDate date, LocalTime time, ZoneId zoneId) {
+                ZonedDateTime current = Instant.ofEpochMilli(getCurrentTimeMillis()).atZone(zoneId);
+                ZonedDateTime target = date.atTime(time).atZone(zoneId);
+                return advanceTime(Duration.between(current, target).toMillis(), TimeUnit.MILLISECONDS);
+                // Above will log current time, no need to log again here
+            }
+
+            @Override
+            public long setTime(String iso8601Timestamp) {
+                Temporal current = Instant.ofEpochMilli(getCurrentTimeMillis());
+                Temporal target = Instant.parse(iso8601Timestamp);
+                return advanceTime(Duration.between(current, target).toMillis() , TimeUnit.MILLISECONDS);
+                // Above will log current time, no need to log again here
+            }
+
+            @Override
             public synchronized void stop() {
                 if (stopTime == null) {
                     stopTime = System.currentTimeMillis();
                     LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
                 }
-            }
-
-            @Override
-            public synchronized void stopAtTime(long time) {
-                stopTime = time;
-                LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
             }
 
             @Override
@@ -131,10 +152,11 @@ public class TimerService implements ContainerService, RulesClock {
         public abstract void init();
         public abstract long getCurrentTimeMillis();
         public abstract void stop();
-        public abstract void stopAtTime(long time);
         public abstract void start();
         public abstract void reset();
         public abstract long advanceTime(long amount, TimeUnit unit);
+        public abstract long setTime(LocalDate date, LocalTime time, ZoneId zoneId);
+        public abstract long setTime(String iso8601Timestamp);
     }
 
     protected Clock clock;
