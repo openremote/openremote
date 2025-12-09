@@ -26,10 +26,7 @@ import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
 import {getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/util";
 import type {
     InputType,
-    OrInputChangedEvent,
-    OrInputChangedEventDetail,
     ValueInputProvider,
-    ValueInputProviderGenerator,
     ValueInputProviderOptions,
     ValueInputTemplateFunction
 } from "@openremote/or-vaadin-components/util";
@@ -38,6 +35,7 @@ import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
 import {agentIdRendererRegistryEntry} from "./agent-link-json-forms-renderer";
+import {OrInputChangedEvent, type ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -547,25 +545,24 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
 
         // Use json forms with fallback to simple input provider
-        const valueChangeHandler = (detail: OrInputChangedEventDetail | undefined) => {
-            const value = detail ? detail.value : undefined;
-            const updateImmediately = (detail && detail.enterPressed) || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
+        const valueChangeHandler = (value: any) => {
+            const updateImmediately = !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
             this._onInputValueChanged(value, updateImmediately);
         };
 
         if (this.customProvider) {
-            this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options) : undefined;
+            this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail?.value), options) : undefined;
             return;
         }
 
         // Handle special value types
         if (valueDescriptor.name === WellknownValueTypes.GEOJSONPOINT) {
-            this._templateProvider = geoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+            this._templateProvider = geoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail?.value), options);
             return;
         }
 
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
-        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value) => valueChangeHandler(value), options);
+        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail?.value), options);
 
         if (!this._templateProvider) {
             this._templateProvider = standardInputProvider;

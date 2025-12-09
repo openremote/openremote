@@ -144,8 +144,7 @@ export class OrVaadinInput extends LitElement {
     protected _onValueChange(ev: Event) {
         ev.stopPropagation();
         if (ev.defaultPrevented) return;
-        const value = (ev.currentTarget as HTMLInputElement)?.value ?? this.nativeValue;
-        this.dispatchEvent(new CustomEvent("change", { detail: { value: value }, bubbles: true, composed: true }));
+        this.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
     /**

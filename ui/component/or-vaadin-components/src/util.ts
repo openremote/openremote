@@ -83,27 +83,6 @@ export enum InputType {
     DURATION_PERIOD = "duration-period"
 }
 
-export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
-
-    public static readonly NAME = "change";
-
-    constructor(value?: any) {
-        super(OrInputChangedEvent.NAME, {
-            detail: {
-                value: value
-            },
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
-export interface OrInputChangedEventDetail {
-    value?: any;
-    previousValue?: any;
-    enterPressed?: boolean;
-}
-
 export interface ValueInputProviderOptions {
     label?: string;
     required?: boolean;
@@ -128,7 +107,7 @@ export interface ValueInputProvider {
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
 export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor
-                                           , valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+                                           , valueChangeNotifier: (value: any) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -392,13 +371,14 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                                  options=${ifDefined(selectOptions)} step=${ifDefined(step)}
                                  helper-text="${ifDefined(helperText)}" ?resizeVertical="${resizeVertical}"
                                  ?rounded="${options.rounded}" ?outlined="${options.outlined}"
-                                 @change="${(e: CustomEvent) => {
-                    e.stopPropagation();
-                    if ((e.currentTarget as HTMLInputElement).checkValidity()) {
-                        e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
-                        valueChangeNotifier(e.detail);
-                    }
-                }}"
+                                 @change="${(e: Event) => {
+                                     e.stopPropagation();
+                                     const elem = e.currentTarget as HTMLInputElement | undefined;
+                                     if (elem?.checkValidity()) {
+                                         const elemValue = JSON.parse(elem.value);
+                                         valueChangeNotifier(valueConverter ? valueConverter(elemValue) : elemValue);
+                                     }
+                                 }}"
                 ></or-vaadin-input>
             `;
         } else {
@@ -410,10 +390,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                               .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
                               .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
                               .rounded="${options.rounded}" .outlined="${options.outlined}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                              @or-mwc-input-changed="${(e: CustomEvent) => {
                                   e.stopPropagation();
-                                  e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
-                                  valueChangeNotifier(e.detail);
+                                  valueChangeNotifier(valueConverter ? valueConverter(e.detail.value) : e.detail.value);
                               }}"
                 ></or-mwc-input>
             `;
