@@ -93,10 +93,10 @@ import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.Container.OR_DEV_MODE;
 import static org.openremote.model.syslog.SyslogCategory.API;
+import static org.openremote.model.util.Config.OR_DEV_MODE;
+import static org.openremote.model.util.MapAccess.*;
 
 // TODO: Add queue size limiting in canPublish of MQTTHandlers (needs to be done at auth time to allow pub to be rejected)
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
