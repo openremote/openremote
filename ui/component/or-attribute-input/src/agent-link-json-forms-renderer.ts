@@ -81,7 +81,6 @@ const agentIdTester: RankedTester = rankWith(
     and(uiTypeIs("Control"), formatIs("or-agent-id"))
 );
 const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
-    console.log(state, props)
     props = {
         ...props,
         ...mapStateToControlProps({jsonforms: {...state}}, props),

@@ -27,7 +27,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {Frequency as FrequencyValue, RRule, Weekday, WeekdayStr} from 'rrule'
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
-import { BY_RRULE_PARTS, EventTypes, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, recurrenceEnds } from "./data";
+import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds } from "./data";
 import type { RulePartKey, RuleParts, LabeledEventTypes, Frequency } from "./types";
 import { when } from "lit/directives/when.js";
 export { RuleParts, RulePartKey, Frequency, LabeledEventTypes };
@@ -199,7 +199,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
               break;
             case "until":
                 if (origOptions.count) delete origOptions.count;
-                origOptions.until = value;
+                origOptions.until = new Date(value);
                 if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "count":
@@ -379,7 +379,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
                 <div id="event-type" class="section">
-                    <label class="title"><or-translate value="scheduleType"></or-translate></label>
+                    <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div class="layout horizontal">
                         <or-mwc-input style="min-width: 280px;"
                                     .value="${this.eventType}"
@@ -388,9 +388,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
                     </div>
                 </div>
-                ${this.eventType === EventTypes.recurrence ? this.getRecurrenceTemplate() : ``}
+                ${this.eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
                 ${calendar && (this.eventType === EventTypes.period || this.eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
-                ${this.eventType === EventTypes.recurrence ? this.getRecurrenceEndsTemplate() : ``}
+                ${this.eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
             </div>`;
     }
 
@@ -424,27 +424,23 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      *
      * @returns Inputs for the applicable rule parts
      */
-    protected getRecurrenceTemplate(): TemplateResult {
+    protected getRepeatTemplate(): TemplateResult {
         const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
         const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? FrequencyValue.DAILY;
+        const frequencies = Object.entries(FREQUENCIES)
+            .map(([k,v]) => [String(FrequencyValue[k as Frequency]), i18next.t(v, { count: interval })])
+            .filter(([k]) => this.isAllowedFrequency(FrequencyValue[k as Frequency] as any))
 
         return html`
             <div id="recurrence" class="section">
-                <label class="title"><or-translate value="repeatEvery"></or-translate></label>
+                <label class="title"><or-translate value="schedule.repeat"></or-translate></label>
                 <div class="layout horizontal" style="display: flex; gap: 8px;">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
-                        <or-mwc-input style="width: 60px;"
-                                    min="1"
-                                    max="9"
-                                    .value="${interval}"
-                                    .type="${InputType.NUMBER}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
+                        <or-mwc-input style="width: 60px;" min="1" max="9" .value="${interval}" .type="${InputType.NUMBER}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
                     `)}
-                    <or-mwc-input style="flex: 1;"
-                                .value="${frequency.toString()}"
-                                .type="${InputType.SELECT}"
-                                .options="${Object.entries(FrequencyValue).filter(([_, v]) => typeof v !== "number" && this.isAllowedFrequency(v as Frequency))}"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
+                    <or-mwc-input style="flex: 1;" .value="${frequency.toString()}" .type="${InputType.SELECT}" .options="${frequencies}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
                 </div>
                 <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
                 <div>
@@ -521,21 +517,27 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * - `count`
      * @returns The recurrence ends fields
      */
-    protected getRecurrenceEndsTemplate(): TemplateResult {
-        const when = (this._rrule?.options?.until && "until") || (this._rrule?.options?.count && "count") || "never";
+    protected getEndsTemplate(): TemplateResult {
         return html`
             <div id="recurrence-ends" class="section">
-                <label class="title"><or-translate value="recurrenceEnds"></or-translate></label>
+                <label class="title"><or-translate value="schedule._ends"></or-translate></label>
                 <div style="display: flex; gap: 8px;" class="layout horizontal">
-                    <or-mwc-input style="flex: 1"
-                                  .label="${i18next.t(when)}"
-                                  .value="${this._rrule?.options?.until ?? this._rrule?.options?.count ?? "never"}"
-                                  .type="${InputType.SELECT}"
-                                  .options="${Object.entries(recurrenceEnds).filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
+                    <or-mwc-input style="flex: 1" .type="${InputType.RADIO}"
+                        .value="${(this._rrule?.options?.until && "until") || (this._rrule?.options?.count && "count") || "never"}"
+                        .options="${Object.entries(rruleEnds).filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
                     </or-mwc-input>
-                    ${this._rrule?.options.until ? html`<or-mwc-input style="min-width: 50%" .value="${moment(this._rrule.origOptions.until).format("YYYY-MM-DD HH:mm")}" .type="${InputType.DATETIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}"></or-mwc-input>`: undefined}
-                    ${this._rrule?.options.count ? html`<or-mwc-input style="min-width: 50%" .value="${this._rrule.origOptions.count}" min="1" .type="${InputType.NUMBER}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}"></or-mwc-input>`: undefined}
+                    <div style="display: flex; flex-direction: column; justify-content: flex-end; min-width: 50%">
+                        <or-mwc-input comfortable ?disabled="${!this._rrule?.options.until}" .type="${InputType.DATETIME}"
+                            .value="${moment(this._rrule?.origOptions.until).format("YYYY-MM-DD HH:mm")}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}">
+                        </or-mwc-input>
+                        <or-mwc-input comfortable ?disabled="${!this._rrule?.options.count}" min="1" .type="${InputType.NUMBER}"
+                            .value="${this._rrule?.origOptions.count}"
+                            .label="${i18next.t("schedule.count", { count: this._rrule?.options.count ?? 0 })}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}">
+                        </or-mwc-input>
+                    </div>
                 </div>
             </div>`;
     }

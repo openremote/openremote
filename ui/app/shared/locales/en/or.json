@@ -620,6 +620,35 @@
   "fromToDays": "from {{start}} to {{days}} days later {{end}}",
   "forDays": "for {{days}} days",
   "scheduleRuleActivity": "Schedule Rule Activity",
+  "schedule": {
+    "count_one": "occurrence",
+    "count_other": "occurrences",
+    "_ends": "Ends",
+    "ends": {
+      "until": "On",
+      "count": "After"
+    },
+    "repeat": "Repeat every",
+    "type": "Schedule type"
+  },
+  "rrule": {
+    "frequency": {
+      "YEARLY_one": "Year",
+      "YEARLY_other": "Years",
+      "MONTHLY_one": "Month",
+      "MONTHLY_other": "Months",
+      "WEEKLY_one": "Week",
+      "WEEKLY_other": "Weeks",
+      "DAILY_one": "Day",
+      "DAILY_other": "Days",
+      "HOURLY_one": "Hour",
+      "HOURLY_other": "Hours",
+      "MINUTELY_one": "Minute",
+      "MINUTELY_other": "Minutes",
+      "SECONDLY_one": "Second",
+      "SECONDLY_other": "Seconds"
+    }
+  },
   "allDay": "All day",
   "apply": "apply",
   "to": "to",
@@ -627,10 +656,7 @@
   "never": "Never",
   "simulatorSchedule": "Simulator Replay Schedule",
   "defaultSimulatorSchedule": "Every day from 00:00",
-  "scheduleType": "Schedule type",
   "repeatSchedule": "Repeat schedule",
-  "recurrenceEnds": "Recurrence ends",
-  "repeatEvery": "Repeat every",
   "daysOfTheWeek": "days of the week",
   "dismiss": "dismiss",
   "createAssetFailed": "Failed to create asset",

@@ -1,5 +1,15 @@
 import { Frequency } from "rrule";
 
+export const FREQUENCIES = {
+    YEARLY: "rrule.frequency.YEARLY",
+    MONTHLY: "rrule.frequency.MONTHLY",
+    WEEKLY: "rrule.frequency.WEEKLY",
+    DAILY: "rrule.frequency.DAILY",
+    HOURLY: "rrule.frequency.HOURLY",
+    MINUTELY: "rrule.frequency.MINUTELY",
+    SECONDLY: "rrule.frequency.SECONDLY",
+} as Record<keyof typeof Frequency, string>;
+
 /**
  * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
  * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
@@ -49,8 +59,8 @@ export enum EventTypes {
     recurrence = "recurrence",
 }
 
-export const recurrenceEnds = {
+export const rruleEnds = {
     never: "never",
-    until: "at",
-    count: "count",
+    until: "schedule.ends.until",
+    count: "schedule.ends.count",
 }

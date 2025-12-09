@@ -8,7 +8,7 @@ export class MwcInput {
      * Returns the locator for the specified {@link InputType.SELECT|select input} option
      */
     getSelectInputOption(option: string, locator?: Locator): Locator {
-        return (locator ?? this.page).locator("or-mwc-input li[role=option]", { hasText: option });
+        return (locator ?? this.page).locator("or-mwc-input li[role=option]").getByText(option, { exact: true });
     }
 
     // getSelect

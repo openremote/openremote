@@ -917,35 +917,29 @@ export class OrMwcInput extends LitElement {
             switch (this.type) {
                 case InputType.RADIO:
                     const optsRadio = this.resolveOptions(this.options);
-                    this._selectedIndex = -1;
                     return html`
                             <div class="mdc-radio-container">
-                                ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
-                                    if (this.value === optValue) {
-                                        this._selectedIndex = index;
-                                    }
+                                ${optsRadio ? optsRadio.map(([optValue, optDisplay]) => {
                                     return html`
                                     <div id="field" class="mdc-form-field">
                                         <div class="mdc-radio">
-                                            <input type="radio" 
+                                            <input type="radio"
                                                 id="elem-${optValue}"
                                                 name="${ifDefined(this.name)}"
                                                 value="${optValue}"
-                                                ?checked="${this.value && this.value.includes(optValue)}"
+                                                .checked="${this.value === optValue}"
                                                 ?required="${this.required}"
-                                                ?disabled="${this.disabled || this.readonly}"                            
+                                                ?disabled="${this.disabled || this.readonly}"
                                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), optValue)}"
                                                 class="mdc-radio__native-control"/>
-                                            <div class="mdc-radio__background">
-                                            <div class="mdc-radio__outer-circle"></div>
-                                            <div class="mdc-radio__inner-circle"></div>
-                                            </div>
+                                                <div class="mdc-radio__background">
+                                                    <div class="mdc-radio__outer-circle"></div>
+                                                    <div class="mdc-radio__inner-circle"></div>
+                                                </div>
                                             <div class="mdc-radio__ripple"></div>
                                         </div>
                                         <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
-                                    </div>
-
-                                    `;
+                                    </div>`;
                                 }) : ``}
                             </div>
                     `;

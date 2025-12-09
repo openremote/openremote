@@ -44,7 +44,6 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
         const calEvent = event?.detail.value;
         if (calEvent?.start && calEvent?.end) {
-            console.log(calEvent)
             props.handleChange(props.path, {
                 ...calEvent,
                 start: calEvent.start - tzOffset,

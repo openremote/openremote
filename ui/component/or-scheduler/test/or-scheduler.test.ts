@@ -9,20 +9,32 @@ const months = new RegExp(Object.values(MONTHS).join("|"));
 const HOUR_IN_MILLIS = 3600 * 1000;
 const DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
+const FREQUENCIES = {
+    YEARLY: "Year",
+    MONTHLY: "Month",
+    WEEKLY: "Week",
+    DAILY: "Day",
+    HOURLY: "Hour",
+    MINUTELY: "Minute",
+    SECONDLY: "Second",
+};
+
 function getDateInLocalMillis(): number {
     const now = Date.now();
     return now - (now % DAY_IN_MILLIS) + new Date().getTimezoneOffset() * 60000;
 }
 
-function getPeriodValues(time?: { start: number; end: number; date?: boolean; }) {
+function getPeriodValues(time?: { start: number; end: number; date?: boolean }) {
     const startOfDay = getDateInLocalMillis();
     const end = time?.end ? startOfDay + time.end : startOfDay + DAY_IN_MILLIS - 1; // Defaults to end of day for all-day event
     const start = startOfDay + (time?.start ?? 0);
-    const options: Intl.DateTimeFormatOptions = time 
-      ? time.date ? { dateStyle: "short", timeStyle: "short" } : { timeStyle: "short" }
-      : { dateStyle: "short" };
-    const startDate = new Date(start).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll("," , "");
-    const endDate = new Date(end).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll("," , "");
+    const options: Intl.DateTimeFormatOptions = time
+        ? time.date
+            ? { dateStyle: "short", timeStyle: "short" }
+            : { timeStyle: "short" }
+        : { dateStyle: "short" };
+    const startDate = new Date(start).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll(",", "");
+    const endDate = new Date(end).toLocaleString("en-GB", options).replaceAll("/", "-").replaceAll(",", "");
     return { start, end, timeLabel: `from ${startDate} to ${endDate}` };
 }
 
@@ -138,7 +150,11 @@ ct.describe("Period event type should", () => {
         await dialog.getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
-        const { start, end, timeLabel } = getPeriodValues({ start: 9 * HOUR_IN_MILLIS, end: 18 * HOUR_IN_MILLIS, date: true });
+        const { start, end, timeLabel } = getPeriodValues({
+            start: 9 * HOUR_IN_MILLIS,
+            end: 18 * HOUR_IN_MILLIS,
+            date: true,
+        });
 
         expect(actual).toStrictEqual({ end, start, recurrence: undefined });
         await expect(component.getByRole("button")).toContainText("Active " + timeLabel);
@@ -146,7 +162,7 @@ ct.describe("Period event type should", () => {
 });
 
 ct.describe("Recurrence event type should", () => {
-    ct("show recurrence inputs", async ({ page, mount, mwcDialog, mwcInput }) => {
+    ct("show recurrence inputs", async ({ mount, mwcDialog, mwcInput }) => {
         const component = await mount(OrScheduler, {
             props: { header: "Test Calendar Event Component" },
         });
@@ -158,10 +174,10 @@ ct.describe("Recurrence event type should", () => {
         await expect(dialog.getByRole("button", { name: "recurrence", exact: true })).toBeVisible();
 
         await expect(dialog.locator("#recurrence")).toBeVisible();
-        await dialog.getByRole("button", { name: "DAILY" }).click();
+        await dialog.getByRole("button", { name: "Day" }).click();
         for (const [freq, parts] of Object.entries(NOT_APPLICABLE_BY_RRULE_PARTS)) {
-            if (freq === "SECONDLY") continue;
-            await mwcInput.getSelectInputOption(freq, dialog).click();
+            if (freq === "SECONDLY") continue; // Intentionally skipped as its partially broken and unused
+            await mwcInput.getSelectInputOption(FREQUENCIES[freq], dialog).click();
             for (const part of BY_RRULE_PARTS.filter((p) => !parts.includes(p.toUpperCase()))) {
                 if (part === "byweekday") {
                     await expect(
@@ -188,7 +204,7 @@ ct.describe("Recurrence event type should", () => {
                     await expect(dialog.getByRole("button", { name: part })).not.toBeVisible();
                 }
             }
-            await dialog.getByRole("button", { name: freq }).click({ delay: 100 });
+            await dialog.getByRole("button", { name: FREQUENCIES[freq], exact: true }).click({ delay: 100 });
         }
 
         await expect(dialog.locator("#period")).toBeVisible();
@@ -198,7 +214,13 @@ ct.describe("Recurrence event type should", () => {
         await expect(dialog.locator("label", { hasText: "to" }).last()).toBeDisabled();
         await expect(dialog.getByRole("checkbox", { checked: true, name: "All day" })).toBeVisible();
 
-        await expect(dialog.locator("#recurrence-ends")).toBeVisible();
+        const ends = dialog.locator("#recurrence-ends");
+        await expect(ends).toBeVisible();
+        await expect(ends.getByRole("radio", { name: "Never" })).toBeChecked();
+        await expect(ends.getByRole("radio", { name: "On" })).not.toBeChecked();
+        await expect(ends.getByRole("radio", { name: "After" })).not.toBeChecked();
+        await expect(ends.locator("input[type=datetime-local]")).toBeDisabled();
+        await expect(ends.locator("input[type=number]")).toBeDisabled();
     });
 
     ct("return the default value", async ({ mount, shared, mwcDialog, mwcInput }) => {
