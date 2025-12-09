@@ -940,6 +940,7 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
+            types: [childAssetType],
             parents: [
                 {
                     id: parentId
@@ -955,7 +956,7 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
         return [];
     }
 
-    return response.data.filter((asset) => asset.type === childAssetType);
+    return response.data;
 }
 
 async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {
