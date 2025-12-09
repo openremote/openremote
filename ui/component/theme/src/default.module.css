@@ -19,6 +19,6 @@
  */
 @import "@vaadin/vaadin-lumo-styles/lumo.css";
 
-span {
+label {
     color: purple;
 }

@@ -42,6 +42,8 @@ export default defineConfig({
             "@openremote/or-services": "../../component/or-services/src",
             "@openremote/or-translate": "../../component/or-translate/src",
             "@openremote/or-tree-menu": "../../component/or-tree-menu/src",
+            "@openremote/or-vaadin-components": "../../component/or-vaadin-components/src",
+            "@openremote/theme": "../../component/theme",
             "@openremote/util": "../../util"
         }
     },

@@ -24,6 +24,8 @@
     { "path": "../../component/or-rules" },
     { "path": "../../component/or-services" },
     { "path": "../../component/or-dashboard-builder" },
-    { "path": "../../component/or-gauge" }
+    { "path": "../../component/or-gauge" },
+    { "path": "../../component/or-vaadin-components" },
+    { "path": "../../component/theme" }
   ]
 }
