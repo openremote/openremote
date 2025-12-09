@@ -190,7 +190,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     /* ------------------------------------------ */
 
-    public stateChanged(_state: AppStateKeyed) {
+    public stateChanged(state: AppStateKeyed) {
     }
 
     public async firstUpdated() {
@@ -200,7 +200,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     // On every update..
-    willUpdate(_changedProps: PropertyValues<this>) {
+    willUpdate(changedProps: PropertyValues<this>) {
 
         if(!this.loading) {
             let managerConfigPromise;
@@ -233,7 +233,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.loading = true;
                 Promise.all([managerConfigPromise, mapConfigPromise, realmsPromise]).finally(() => {
                     this.loading = false;
-                });
+                })
             }
         }
     }
@@ -327,7 +327,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             OpenRemote Manager v${APP_VERSION}
                         </div>
                     </div>
-                `;
+                `
             })}
         `;
     }
@@ -364,13 +364,14 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     protected saveAllConfigs(config: ManagerAppConfig, mapConfig: MapConfig) {
         this.loading = true;
+        let managerPromise;
 
         // Save the images to the server that have been uploaded by the user.
         // TODO: Optimize code so it only saves images that have been changed.
         const filePromises = [];
         if(this.realmConfigPanel !== undefined) {
             const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
-            elems.forEach((elem) => {
+            elems.forEach((elem, index) => {
                 const files = elem?.getFiles();
                 Object.entries(files).forEach(async ([x, y]) => {
                     filePromises.push(
@@ -414,7 +415,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         // We first wait for the filePromises to finish, so that
         // we can use the path returned from the backend to store to the
         // manager_config.
-        Promise.all(filePromises).then((_arr: string[]) => {
+        Promise.all(filePromises).then((arr:string[]) => {
             // Wait for all requests to complete, then finish loading.
             const promises = [
                 this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,

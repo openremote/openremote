@@ -29,7 +29,7 @@ import {Asset, AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -168,7 +168,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected getRealmState = createSelector(
         [this._realmSelector],
-        async (_realm: string) => {
+        async (realm: string) => {
             // Prevent execution on initial load
             if (this.isUpdatePending) {
                 return;
@@ -181,7 +181,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             }
             this._updateRoute(true);
         }
-    );
+    )
 
     constructor(store: Store<AssetsStateKeyed>) {
         super(store);

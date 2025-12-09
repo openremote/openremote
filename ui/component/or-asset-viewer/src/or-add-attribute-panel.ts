@@ -2,7 +2,7 @@ import {html, LitElement, css, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate"
-import {Asset, Attribute, AssetModelUtil, AttributeDescriptor} from "@openremote/model";
+import {Asset, Attribute, AssetModelUtil} from "@openremote/model";
 import {Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 
@@ -66,9 +66,9 @@ export class OrAddAttributePanel extends LitElement {
 
 
             this.attributeTypes = (AssetModelUtil.getAssetTypeInfo(this.asset.type!)?.attributeDescriptors || [])
-                .filter((descriptor: AttributeDescriptor) => !this.asset.attributes![descriptor.name!])
-                .sort(Util.sortByString((descriptor: AttributeDescriptor) => descriptor.name!))
-                .map((descriptor: AttributeDescriptor) => {
+                .filter((descriptor) => !this.asset.attributes![descriptor.name!])
+                .sort(Util.sortByString((descriptor) => descriptor.name!))
+                .map((descriptor) => {
                     return [
                         descriptor.name!,
                         Util.getAttributeLabel(undefined, descriptor, this.asset.type, false)
@@ -77,12 +77,12 @@ export class OrAddAttributePanel extends LitElement {
             this.attributeTypes = [["@custom", i18next.t("custom")], ...this.attributeTypes];
 
             this.attributeValueTypes = (AssetModelUtil.getAssetTypeInfo(this.asset.type!)?.valueDescriptors || [])
-                .sort(Util.sortByString((descriptor: string) => descriptor[0]))
+                .sort(Util.sortByString((descriptor) => descriptor[0]))
                 .filter(descriptorName => {
                     const valueDescriptor = AssetModelUtil.getValueDescriptor(descriptorName);
                     return !valueDescriptor || !valueDescriptor.metaUseOnly;
                 })
-                .map((descriptor: string) => {
+                .map((descriptor) => {
                     return [
                         descriptor,
                         Util.getValueDescriptorLabel(descriptor)

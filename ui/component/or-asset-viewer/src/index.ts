@@ -24,7 +24,7 @@ import {
     Asset,
     AssetEvent,
     AssetModelUtil,
-    Attribute, AttributeDescriptor,
+    Attribute,
     AttributeEvent,
     ClientRole,
     FileInfo,
@@ -690,7 +690,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         if (availableAttributes.length === 0) {
             const descriptor = AssetModelUtil.getAssetTypeInfo(childAssetType);
             if (descriptor && descriptor.attributeDescriptors) {
-                availableAttributes = descriptor.attributeDescriptors.map((desc: AttributeDescriptor) => desc.name!);
+                availableAttributes = descriptor.attributeDescriptors.map((desc) => desc.name!);
             }
         }
         if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {
@@ -940,7 +940,6 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
-            types: [childAssetType],
             parents: [
                 {
                     id: parentId
@@ -956,7 +955,7 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
         return [];
     }
 
-    return response.data;
+    return response.data.filter((asset) => asset.type === childAssetType);
 }
 
 async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {

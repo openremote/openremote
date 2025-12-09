@@ -249,15 +249,15 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event for the 'copy address' button in the tunnels table,
      * meant for TCP addresses to be copied to the browsers' clipboard.
      */
-    protected _onCopyTunnelAddressClick(_ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
+    protected _onCopyTunnelAddressClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
         const address = this._getTunnelAddress(tunnel);
         if(address) {
             navigator.clipboard.writeText(address).finally(() => {
-                showSnackbar(undefined, i18next.t("gatewayTunnels.copySuccess"));
+                showSnackbar(undefined, i18next.t('gatewayTunnels.copySuccess'));
             });
         } else {
             console.warn("Could not copy tunnel address as it could not be found.");
-            showSnackbar(undefined, i18next.t("errorOccurred"));
+            showSnackbar(undefined, i18next.t('errorOccurred'));
         }
     }
 
@@ -265,7 +265,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event of the 'open' button in the tunnels table,
      * meant to start tunneling towards that instance
      */
-    protected _onOpenTunnelClick(_ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
+    protected _onOpenTunnelClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
         this._navigateToTunnel(tunnel);
     }
 
@@ -273,7 +273,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event of the 'add' button above the tunnels table,
      * meant to start a tunnel towards that instance.
      */
-    protected _onAddTunnelClick(_ev: OrInputChangedEvent) {
+    protected _onAddTunnelClick(ev: OrInputChangedEvent) {
         const tunnel = this._getDefaultTunnelToAdd();
         let dialog: OrMwcDialog | undefined;
 
@@ -284,41 +284,41 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             dialog.setActions([
                 {actionName: "cancel", content: "cancel"},
                 {actionName: "add", disabled: (!tunnel.gatewayId || !tunnel.target || !tunnel.targetPort), content: "add", action: () => onAddClick()},
-            ]);
-        };
+            ])
+        }
         const gatewayListTemplate = async (): Promise<TemplateResult> => {
             const gatewayAssets = await this._fetchGatewayAssets();
             const items = gatewayAssets.map((g) => [g.id, g.name]);
             return html`
                 <div style="display: flex; flex-direction: column; gap: 20px; width: 360px;">
-                    <or-mwc-input .type="${InputType.SELECT}" .options="${items}" .value="${tunnel.gatewayId}" label="${i18next.t("gatewayTunnels.selectAsset")}" style="width: 100%;"
+                    <or-mwc-input .type="${InputType.SELECT}" .options="${items}" .value="${tunnel.gatewayId}" label="${i18next.t('gatewayTunnels.selectAsset')}" style="width: 100%;"
                                   @or-mwc-input-changed="${(ev) => {
                                       tunnel.gatewayId = ev.detail.value;
                                       updateActions();
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("gatewayTunnels.protocol")}" .value="${tunnel.type}" .options="${this.GATEWAY_TUNNEL_PROTOCOL_TYPES}"
+                    <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('gatewayTunnels.protocol')}" .value="${tunnel.type}" .options="${this.GATEWAY_TUNNEL_PROTOCOL_TYPES}"
                                   style="width: 100%"
                                   @or-mwc-input-changed="${(ev) => {
                                       tunnel.type = ev.detail.value;
                                       updateActions();
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t("host")}" .value="${tunnel.target}" style="width: 100%;"
+                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('host')}" .value="${tunnel.target}" style="width: 100%;"
                                   @or-mwc-input-changed="${(ev) => {
                                       tunnel.target = ev.detail.value;
                                       updateActions();
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t("port")}" .value="${tunnel.targetPort}" style="width: 100%"
+                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('port')}" .value="${tunnel.targetPort}" style="width: 100%"
                                   @or-mwc-input-changed="${(ev) => {
                                       tunnel.targetPort = ev.detail.value;
                                       updateActions();
                                   }}"
                     ></or-mwc-input>
                 </div>
-            `;
-        };
+            `
+        }
         dialog = new OrMwcDialog()
             .setHeading(`${i18next.t("add")} ${i18next.t("tunnel")}`)
             .setContent(html`
@@ -335,7 +335,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected _tryStartTunnel(tunnel: GatewayTunnelInfo) {
         if (!tunnel) {
-            console.warn("Tried to add tunnel, but failed.");
+            console.warn("Tried to add tunnel, but failed.")
             return;
         }
         if (!tunnel.gatewayId || !tunnel.target || !tunnel.targetPort) {
@@ -347,7 +347,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         }
         this._startTunnel(tunnel)
             .catch(e => {
-                console.error(e);
+                console.error(e)
                 showSnackbar(undefined, i18next.t("errorOccurred"));
             })
             .finally(() => {
@@ -404,7 +404,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected _fetchTunnelsTask = new Task(this, {
         task: async ([realm], {signal}) => {
-            return this._fetchTunnels(realm, signal);
+            return await this._fetchTunnels(realm, signal);
         },
         args: () => [this._realm]
     });
@@ -422,7 +422,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             this._updateRefreshTimer(response.data);
             return response.data;
         } else {
-            console.warn("No tunnels were received from the manager.");
+            console.warn("No tunnels were received from the manager.")
         }
     }
 

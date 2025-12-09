@@ -46,7 +46,9 @@ export default defineConfig({
             "@openremote/or-translate": "../../component/or-translate/src",
             "@openremote/or-tree-menu": "../../component/or-tree-menu/src",
             "@openremote/util": "../../util"
-        }
+        },
+        // Enable symlinks resolution for workspace packages
+        symlinks: true
     },
     tools: {
         bundlerChain: (chain, { CHAIN_ID }) => {

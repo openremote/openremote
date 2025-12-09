@@ -264,7 +264,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public readonly rootAssetIds?: string[];
 
     @property({type: Object})
-    public readonly dataProvider?: (offset: number, limit: number, parentId?: string) => Promise<Asset[]>;
+    public readonly dataProvider?: () => Promise<Asset[]>;
 
     @property({type: Boolean})
     public readonly readonly: boolean = false;
@@ -286,9 +286,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     @property({type: Boolean})
     public showFilter: boolean = true;
-
-    @property({type: Boolean})
-    public showFilterIcon: boolean = true;
 
     @property({type: String})
     public sortBy?: string = "name";
@@ -491,35 +488,34 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._onFilterInput(this._filterInput.nativeValue);
                                   }, 200)}">
                     </or-mwc-input>
-                    ${when(this.showFilterIcon, () => html`
-                        <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
-                            if (this._filterSettingOpen) {
-                                this._filterSettingOpen = false;
-                            } else {
-                                this._filterSettingOpen = true;
-                                // Avoid to build again the types
-                                if (this._assetTypes.length === 0) {
-                                    const types = this._getAllowedChildTypes(this._selectedNodes[0]);
-                                    this._assetTypes = types.filter((t) => t.descriptorType === "asset");
-                                }
-
-                                if (this._filter.attribute.length > 0) {
-                                    this._attributeNameFilter.value = this._filter.attribute[0];
-                                }
-
-                                if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
-                                    this._attributeValueFilter.disabled = false;
-                                    this._attributeValueFilter.value = this._filter.attributeValue[0];
-                                }
-
-                                if (this._filter.assetType.length > 0) {
-                                    this._assetTypeFilter = this._filter.assetType[0];
-                                } else {
-                                    this._assetTypeFilter = '';
-                                }
+                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
+                        if (this._filterSettingOpen) {
+                            this._filterSettingOpen = false;
+                        } else {
+                            this._filterSettingOpen = true;
+                            // Avoid to build again the types
+                            if (this._assetTypes.length === 0) {
+                                let usedTypes: string[] = [];
+                                const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+                                this._assetTypes = types.filter((t) => t.descriptorType === "asset");
                             }
-                        }}"></or-icon>
-                    `)}
+
+                            if (this._filter.attribute.length > 0) {
+                                this._attributeNameFilter.value = this._filter.attribute[0];
+                            }
+
+                            if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
+                                this._attributeValueFilter.disabled = false;
+                                this._attributeValueFilter.value = this._filter.attributeValue[0];
+                            }
+
+                            if (this._filter.assetType.length > 0) {
+                                this._assetTypeFilter = this._filter.assetType[0];
+                            } else {
+                                this._assetTypeFilter = '';
+                            }
+                        }
+                    }}"></or-icon>
                 </div>
                 <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                     <div class="advanced-filter">
@@ -1271,9 +1267,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         try {
             console.debug(`Querying assets using filter '${this._filterInput.nativeValue}'...`);
-            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssetTree(q));
+            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q));
             const responses = await Promise.all(promises);
-            foundAssets = responses.flatMap(r => r.data.assets ?? []);
+            foundAssets = responses.flatMap(r => r.data);
             foundAssetIds = foundAssets.map(a => a.id!);
             console.debug(`The filter query found ${foundAssets.length} assets!`);
 
@@ -1700,8 +1696,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         return AssetModelUtil.getAssetDescriptors()
-            .filter((descriptor: AssetDescriptor) => (!includedAssetTypes || includedAssetTypes.some((inc: string) => Util.stringMatch(inc, descriptor.name!)))
-                && (!excludedAssetTypes || !excludedAssetTypes.some((exc: string) => Util.stringMatch(exc, descriptor.name!))));
+            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
+                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {
@@ -1754,7 +1750,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._loading = true;
 
         if(this.dataProvider) {
-            this.dataProvider(offset, this.queryLimit, parentId).then(assets => {
+            this.dataProvider().then(assets => {
                 this._loading = false;
                 this._buildTreeNodes(assets);
                 if(this._filterInput?.value) {

@@ -253,6 +253,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #wrapper {
                 display: flex;
                 position: relative;
+                align-items: center;
             }
             
             #wrapper.right-padding {
@@ -305,7 +306,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #send-btn { 
                 flex: 0;
                 margin-left: 4px;
-                margin-top: 4px;
+                margin-top: 10px;
             }
         `];
     }

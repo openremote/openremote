@@ -87,12 +87,12 @@ export class PageRules extends Page<AppStateKeyed>  {
 
     protected getRealmState = createSelector(
         [this._realmSelector],
-        async () => {
+        async (realm) => {
             if (this._orRules) {
                 this._orRules.refresh();
             }
         }
-    );
+    )
 
     get name(): string {
         return "rules";

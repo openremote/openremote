@@ -9,14 +9,13 @@ import {
 import {customElement, property, query} from "lit/decorators.js";
 import {classMap} from 'lit/directives/class-map.js';
 import {MDCMenu} from "@material/menu";
-import {MDCList, MDCListActionEvent} from "@material/list";
 import {DefaultColor4, DefaultColor8} from "@openremote/core";
 
 // @ts-ignore
 import listStyle from "@material/list/dist/mdc.list.css";
 // @ts-ignore
 import menuSurfaceStyle from "@material/menu-surface/dist/mdc.menu-surface.css";
-import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
+import {getItemTemplate, getListTemplate, ListItem, ListType, MDCListActionEvent} from "./or-mwc-list";
 import { ref } from 'lit/directives/ref.js';
 // @ts-ignore
 const menuStyle = require("@material/menu/dist/mdc.menu.css");
