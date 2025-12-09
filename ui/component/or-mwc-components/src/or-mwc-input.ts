@@ -51,7 +51,6 @@ import {
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
 import { styleMap } from "lit/directives/style-map.js";
-import {OrVaadinInput} from "@openremote/or-vaadin-components/or-vaadin-input";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -421,7 +420,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                              ?rounded="${options.rounded}" ?outlined="${options.outlined}"
                              @change="${(e: CustomEvent) => {
                                  e.stopPropagation();
-                                 if((e.currentTarget as OrVaadinInput).checkValidity()) {
+                                 if((e.currentTarget as HTMLInputElement).checkValidity()) {
                                      e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
                                      valueChangeNotifier(e.detail);
                                  }

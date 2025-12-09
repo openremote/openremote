@@ -238,7 +238,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 /*padding-right: 52px;*/
             }   
             
-            #wrapper or-mwc-input, #wrapper or-map {
+            #wrapper or-mwc-input, #wrapper or-vaadin-input, #wrapper or-map {
                 width: 100%;
             }
             

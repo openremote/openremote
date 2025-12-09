@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import "./or-vaadin-numberfield";
 import "./or-vaadin-textfield";
@@ -70,6 +70,17 @@ export class OrVaadinInput extends LitElement {
 
     protected _observer = new MutationObserver((mutations, observer) => this._onAttributeChange(mutations, observer));
 
+    static get styles() {
+        return css`
+            #elem {
+                width: 100%;
+            }
+            or-vaadin-textarea {
+                max-height: 200px;
+            }
+        `;
+    }
+
     connectedCallback() {
         this._observer.observe(this, { attributes: true });
         return super.connectedCallback();
@@ -121,7 +132,7 @@ export class OrVaadinInput extends LitElement {
     protected _getInputTemplate(type: InputType): TemplateResult {
         switch (type) {
             case InputType.CHECKBOX: {
-                return html`<or-vaadin-checkbox id="elem" @change=${this._onValueChange}></or-vaadin-checkbox>`
+                return html`<or-vaadin-checkbox id="elem" @change=${this._onValueChange}></or-vaadin-checkbox>`;
             }
             case InputType.RADIO: {
                 return html`Not supported yet.`;
@@ -133,6 +144,8 @@ export class OrVaadinInput extends LitElement {
             case InputType.RANGE: {
                 return html`<or-vaadin-numberfield id="elem" @change=${this._onValueChange}></or-vaadin-numberfield>`;
             }
+            case InputType.JSON:
+            case InputType.JSON_OBJECT:
             case InputType.TEXTAREA: {
                 return html`<or-vaadin-textarea id="elem" @change=${this._onValueChange}></or-vaadin-textarea>`;
             }
