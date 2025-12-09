@@ -1,23 +1,23 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until.js";
-import {customElement, property, state} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
+import {customElement, property} from "lit/decorators.js";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/util";
+import type {OrInputChangedEvent, OrInputChangedEventDetail, ValueInputProviderOptions} from "@openremote/or-vaadin-components/util";
 import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
-import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
+import {DefaultColor5, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
 import "./or-add-attribute-panel";
 import {getField, getPanel, getPropertyTemplate} from "./index";
-import {
-    OrAddAttributePanelAttributeChangedEvent,
-} from "./or-add-attribute-panel";
+import {OrAddAttributePanelAttributeChangedEvent} from "./or-add-attribute-panel";
 import {panelStyles} from "./style";
-import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
-import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
-import {createRef, ref, Ref } from "lit/directives/ref.js";
+import {OrAssetTree, UiAssetTreeNode} from "@openremote/or-asset-tree";
+import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
+import {createRef, ref, Ref} from "lit/directives/ref.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");

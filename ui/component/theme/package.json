@@ -16,8 +16,5 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@vaadin/vaadin-lumo-styles": "~25.0.0-beta5"
-  },
-  "devDependencies": {
-    "@rspack/core": "^1.4.4"
   }
 }
