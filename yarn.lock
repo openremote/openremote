@@ -3294,6 +3294,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@socket.io/component-emitter@npm:~3.1.0":
+  version: 3.1.2
+  resolution: "@socket.io/component-emitter@npm:3.1.2"
+  checksum: 10c0/c4242bad66f67e6f7b712733d25b43cbb9e19a595c8701c3ad99cbeb5901555f78b095e24852f862fffb43e96f1d8552e62def885ca82ae1bb05da3668fd87d7
+  languageName: node
+  linkType: hard
+
 "@storybook/addon-a11y@npm:~10.1.2":
   version: 10.1.2
   resolution: "@storybook/addon-a11y@npm:10.1.2"
@@ -6216,6 +6223,18 @@ __metadata:
     is-date-object: "npm:^1.0.1"
     is-symbol: "npm:^1.0.2"
   checksum: 10c0/0886572b8dc075cb10e50c0af62a03d03a68e1e69c388bd4f10c0649ee41b1fbb24840a1b7e590b393011b5cdbe0144b776da316762653685432df37d6de60f1
+  languageName: node
+  linkType: hard
+
+"es-toolkit@npm:^1.41.0":
+  version: 1.42.0
+  resolution: "es-toolkit@npm:1.42.0"
+  dependenciesMeta:
+    "@trivago/prettier-plugin-sort-imports@4.3.0":
+      unplugged: true
+    prettier-plugin-sort-re-exports@0.0.1:
+      unplugged: true
+  checksum: 10c0/ee577b23336296116be423a5d01a6af827c80a10971507ae26cdb146b60ce0a930bf7bdb719ac0dc4f962ec74542a2423b934e24eb47efe1bc911862b12da109
   languageName: node
   linkType: hard
 
