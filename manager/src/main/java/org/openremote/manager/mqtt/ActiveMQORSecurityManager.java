@@ -34,6 +34,7 @@ import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
+import org.openremote.model.provisioning.ProvisioningUtil;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.StringPredicate;
@@ -41,9 +42,6 @@ import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
@@ -113,26 +111,31 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader thisLoader = this.getClass().getClassLoader();
         X509Certificate[] certs = getCertsFromConnection(remotingConnection);
+        final String originalUsername = user;
         if (user != null) {
             String[] realmAndUsername = user.split(":");
             if (realmAndUsername.length == 2) {
                 realm = realmAndUsername[0];
                 user = realmAndUsername[1];
             }
-        } else if (certs != null && certs.length > 0) {
+        } if (certs != null && certs.length > 0) {
             List<X509Certificate> clientAuthCerts = Arrays.stream(certs).filter(e -> {
                 try {
+                    List<String> EKUs = e.getExtendedKeyUsage();
+                    if (EKUs == null) { return false; }
+
                     return e.getExtendedKeyUsage().contains(CLIENT_AUTH_EKU_OID);
                 } catch (CertificateParsingException ex) {
-                    throw new RuntimeException(ex);
-                } catch (NullPointerException ignored){return false;}
+                    LOG.log(Level.FINE, "Failed to parse extended key usage from provided certificates", ex);
+                    return false;
+                }
             }).toList();
 
             if (clientAuthCerts.size() != 1) {
                 String errMsg = "Presented certificate chain contains " + clientAuthCerts.size() +
                         " certificates with Client Authentication Extended Key Usage. " +
-                        "Expected exactly 1 certificate. Please provide a valid certificate chain. "+ connectionToString(remotingConnection);
-                LOG.log(Level.SEVERE, errMsg);
+                        "Expected exactly 1 certificate. Please provide a valid certificate chain. " + connectionToString(remotingConnection);
+                LOG.log(Level.WARNING, errMsg);
                 throw new LoginException(errMsg);
             }
 
@@ -140,33 +143,27 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
             String dn = leaf.getSubjectX500Principal().getName();
             try {
-                LdapName ldapName = new LdapName(dn);
-                for (Rdn rdn : ldapName.getRdns()) {
-                    String type = rdn.getType();
-                    String value = rdn.getValue().toString();
-                    if (realm == null && "OU".equalsIgnoreCase(type)) {
-                        realm = value;
-                    } else if (TextUtil.isNullOrEmpty(user) && "CN".equalsIgnoreCase(type)) {
-                        user = value;
-                    }
-                }
-            } catch (InvalidNameException e) {
-                LOG.log(Level.FINE, "Failed to parse subject DN from client certificate: " + dn, e);
+                user = ProvisioningUtil.getSubjectCN(leaf.getSubjectX500Principal());
+                realm = ProvisioningUtil.getSubjectOU(leaf.getSubjectX500Principal());
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Failed to process given client certificate");
             }
 
-            if(realm == null){
-                LOG.log(Level.INFO, "Client certificate was provided, but no realm found in certificate subject. " +
-                        "Falling back to the username as a realm name. Subject DN=" + dn);
+            /*
+             * The below logic supports using the Username field from the authentication attempt as a realm override.
+             * This is to support clients that are logging in using client certificates. They cannot change the realm they connect to
+             *  in the certificate DN, so we allow them to specify the realm in the username instead, as an override.
+             */
+            if (identityProvider.realmExists(originalUsername)) {
+                realm = originalUsername;
+            }
 
-                if (identityProvider.getRealm(user) != null) {
-                    realm = user;
-                }else{
-                    LOG.log(Level.WARNING, "No realm found matching the username. " +
-                            "Failing login attempt. Subject DN=" + dn);
-                    throw new LoginException("No realm found matching the username from client certificate.");
-                }
+
+            if(realm == null){
+                LOG.log(Level.INFO, "Client certificate was provided, but no realm found in certificate subject," +
+                        "or in the Username field. " +
+                        "Falling back to the username as a realm name. Subject DN=" + dn);
+                throw new LoginException("No realm found matching the OU of the client certificate, or the Username field.");
             }
 
             if(!TextUtil.isNullOrEmpty(user)) {
@@ -174,7 +171,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 User[] users = identityProvider.queryUsers(new UserQuery().usernames(new StringPredicate(SERVICE_ACCOUNT_PREFIX + user).match(AssetQuery.Match.EXACT)));
                 if (users != null && users.length == 1) {
                     dbUser = users[0];
-                }else if(users != null && users.length > 1) {
+                } else if (users != null && users.length > 1) {
                     String errMsg = "Multiple service users found with the same username. " +
                             "Disallowing connect. username=" + user + ", " + connectionToString(remotingConnection);
                     LOG.log(Level.WARNING, errMsg);

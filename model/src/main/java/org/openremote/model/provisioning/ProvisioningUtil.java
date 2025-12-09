@@ -74,4 +74,14 @@ public class ProvisioningUtil {
             return null;
         }
     }
+    public static String getSubjectOU(X500Principal principal) {
+        // Use LDAP RFC 2253 which is same spec as X500 principal to get OU
+        try {
+            LdapName ldapName = new LdapName(principal.getName());
+            return ldapName.getRdns().stream().filter(rdn -> "OU".equals(rdn.getType())).map(rdn -> rdn.getValue().toString()).findFirst().orElse(null);
+        } catch (InvalidNameException e) {
+            LOG.log(Level.WARNING, "Failed to extract subject OU from X500 principal", e);
+            return null;
+        }
+    }
 }

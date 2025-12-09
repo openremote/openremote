@@ -56,6 +56,7 @@ import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.ShipAsset
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -859,7 +860,6 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.1)
-        MQTT_IOClient device1Client
 
         and: "temporary directories are created"
         def tempDir = new File(System.getProperty("java.io.tmpdir"), "openremote-mtls-test-keystores-" + System.currentTimeMillis())
@@ -911,8 +911,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def container = startContainer(config, defaultServices())
         def keystoreService = container.getService(KeyStoreServiceImpl.class)
         def mqttBrokerService = container.getService(MQTTBrokerService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def provisioningService = container.getService(ProvisioningService.class)
+        def testSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def mqttHost = "localhost"
         def mqttPort = 8884
         when: "A new keypair, properly signed, is created, but the service user for it is not created"
@@ -933,10 +936,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             unprovisionedCert
         )
 
-        and: "a client with unprovisioned certificate connects"
-        String unprovisionedClientId = "unprovisionedDevice"
-        MQTT_IOClient unprovisionedClient = new MQTT_IOClient(
-                unprovisionedClientId,
+        and: "a client with unprovisioned certificate connects, for testing mTLS autoprovisioning"
+        String autoprovisioningClientId = "unprovisionedDevice"
+        MQTT_IOClient autoprovisioningClient = new MQTT_IOClient(
+                autoprovisioningClientId,
                 mqttHost,
                 mqttPort,
                 true,
@@ -949,11 +952,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         )
 
         and: "the client connects"
-        unprovisionedClient.connect();
+        autoprovisioningClient.connect();
 
         then: "The client connects with 3 principals"
         conditions.eventually {
-            Subject subject = mqttBrokerService.getConnectionFromClientID(unprovisionedClientId).getSubject();
+            Subject subject = mqttBrokerService.getConnectionFromClientID(autoprovisioningClientId).getSubject();
             assert subject.getPrincipals().size() == 3
             assert subject.getPrivateCredentials(X509CertificateCredential.class).size() == 1
         }
@@ -965,7 +968,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
                         .setCACertPEM(MTLSCertificateHelper.getPemString(mtlsHelper.getRootCACertificate()))
         ).setAssetTemplate(
                 ValueUtil.asJSON(
-                        new WeatherAsset("Weather Asset")
+                        new ShipAsset("Ship Asset")
                                 .addAttributes(
                                         new Attribute<>("customAttribute", NUMBER).addMeta(
                                                 new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ),
@@ -995,8 +998,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         Consumer<MQTTMessage<String>> autoProvisioningMessageConsumer = { MQTTMessage<String> msg ->
             autoProvisioningResponses.add(ValueUtil.parse(msg.payload, ProvisioningMessage.class).orElse(null))
         }
-        unprovisionedClient.addMessageConsumer(autoProvisioningResponseTopic, autoProvisioningMessageConsumer);
-        unprovisionedClient.sendMessage(
+        autoprovisioningClient.addMessageConsumer(autoProvisioningResponseTopic, autoProvisioningMessageConsumer);
+        autoprovisioningClient.sendMessage(
             new MQTTMessage<String>(autoProvisioningRequestTopic, ValueUtil.JSON.writeValueAsString(new MTLSProvisioningMessage()))
         )
 
@@ -1006,21 +1009,33 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert autoProvisioningResponses.get(0) instanceof SuccessResponseMessage
         }
 
+        then: "the broker should have published to the response topic a success message containing the provisioned asset"
+        ShipAsset provisionedAsset;
+        conditions.eventually {
+            assert autoProvisioningResponses.size() == 1
+            assert autoProvisioningResponses.get(0) instanceof SuccessResponseMessage
+            assert ((SuccessResponseMessage)autoProvisioningResponses.get(0)).realm == Constants.MASTER_REALM
+            provisionedAsset = (ShipAsset)((SuccessResponseMessage)autoProvisioningResponses.get(0)).asset
+            assert provisionedAsset != null
+            assert provisionedAsset instanceof ShipAsset
+            assert provisionedAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == unprovisionedUsername
+        }
+
         when: "the device disconnects"
-        unprovisionedClient.disconnect()
+        autoprovisioningClient.disconnect()
 
         and: "reconnects again"
         autoProvisioningResponses.clear()
-        unprovisionedClient.connect()
+        autoprovisioningClient.connect()
 
         then: "the connection should be created with the provisioned user and roles"
         conditions.eventually {
-            assert unprovisionedClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert autoprovisioningClient.getConnectionStatus() == ConnectionStatus.CONNECTED
         }
 
         and: "the authenticated client should have the correct subject with roles"
         conditions.eventually {
-            Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(unprovisionedClientId).getSubject()
+            Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(autoprovisioningClientId).getSubject()
             assert unprovisionedJaasSubject != null
             // Should have role principals since service user should now exist
             assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class).size() == 3
@@ -1041,8 +1056,88 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert provisioningPrincipal.getCertificate().getSubjectX500Principal().getName().contains("CN=$unprovisionedUsername")
         }
 
+        when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"
+        def assetSubscriptionTopic = "$provisioningConfig.realm/$autoprovisioningClientId/$DefaultMQTTHandler.ASSET_TOPIC/#".toString()
+        def attributeSubscriptionTopic = "$provisioningConfig.realm/$autoprovisioningClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/+/${provisionedAsset.id}".toString()
+        List<AssetEvent> assetEvents = new CopyOnWriteArrayList<>()
+        List<AttributeEvent> attributeEvents = new CopyOnWriteArrayList<>()
+        Consumer<MQTTMessage<String>> eventConsumer = { MQTTMessage<String> msg ->
+            def event = ValueUtil.parse(msg.payload, SharedEvent.class).orElse(null)
+            if (event instanceof AssetEvent) {
+                assetEvents.add(event as AssetEvent)
+            } else {
+                attributeEvents.add(event as AttributeEvent)
+            }
+        }
+        autoprovisioningClient.addMessageConsumer(assetSubscriptionTopic, eventConsumer)
+        autoprovisioningClient.addMessageConsumer(attributeSubscriptionTopic, eventConsumer)
+
+        then: "the subscriptions should be in place"
+        conditions.eventually {
+            assert autoprovisioningClient.topicConsumerMap.get(assetSubscriptionTopic) != null
+            assert autoprovisioningClient.topicConsumerMap.get(attributeSubscriptionTopic) != null
+            assert autoprovisioningClient.topicConsumerMap.get(assetSubscriptionTopic).consumers.size() == 1
+            assert autoprovisioningClient.topicConsumerMap.get(attributeSubscriptionTopic).consumers.size() == 1
+            def connection = mqttBrokerService.getConnectionFromClientID(autoprovisioningClientId)
+            assert connection != null
+        }
+
+        when: "the client updates one of the provisioned asset's attributes"
+        autoprovisioningClient.sendMessage(
+            new MQTTMessage<String>(
+                "$provisioningConfig.realm/$autoprovisioningClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/customAttribute/${provisionedAsset.id}",
+                "123"
+            )
+        )
+
+        then: "the attribute should have been updated"
+        conditions.eventually {
+            def asset = assetStorageService.find(provisionedAsset.id)
+            assert asset.getAttribute("customAttribute").flatMap{it.getValue()}.orElse(0d) == 123d
+        }
+
+        and: "the client should have been notified about the attribute change"
+        conditions.eventually {
+            assert attributeEvents.size() == 1
+            assert attributeEvents.get(0).id == provisionedAsset.id
+            assert attributeEvents.get(0).name == "customAttribute"
+            assert attributeEvents.get(0).value.orElse(0d) == 123d
+        }
+
+
+        and: "an attribute update is sent for the onOff attribute with a value of true"
+
+
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(
+                testSetup.light1Id,
+            "onOff",
+            false,
+            System.currentTimeMillis()
+        ))
+
+        when: "the client tries to send an attribute event to that unlinked asset"
+        autoprovisioningClient.sendMessage(
+            new MQTTMessage<String>(
+                "$provisioningConfig.realm/$autoprovisioningClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/onOff/${testSetup.light1Id}",
+                "true"
+            )
+        )
+
+        then: "the attribute should not have been updated"
+        conditions.eventually {
+            LOG.info("Waiting for the system to settle down")
+            def j=0
+            while (j < 10 && !noEventProcessedIn(assetProcessingService, 100)) {
+                Thread.sleep(100)
+                j++
+            }
+
+            def asset = assetStorageService.find(testSetup.light1Id)
+            assert asset.getAttribute("onOff").flatMap{it.getValue()}.orElse(true) == false
+        }
+
         cleanup: "disconnect the client and cleanup temporary files"
-        unprovisionedClient.disconnect()
+        autoprovisioningClient.disconnect()
 
         and: "delete the created temporary directories"
         tempDir.deleteDir()
@@ -1345,4 +1440,3 @@ class MTLSCertificateHelper {
         return sw.toString();
     }
 }
-

@@ -339,7 +339,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String uniqueId;
         boolean isMTLS = provisioningMessage instanceof MTLSProvisioningMessage;
 
-        if (provisioningMessage instanceof X509ProvisioningMessage) {
+        if (!isMTLS) {
             try {
                 clientCertificate = ProvisioningUtil.getX509Certificate(((X509ProvisioningMessage) provisioningMessage).getCert());
             } catch (CertificateException e) {
@@ -349,8 +349,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             }
 
             certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
-            uniqueId = topicTokenIndexToString(topic, 1);
-        } else if (provisioningMessage instanceof MTLSProvisioningMessage) {
+            uniqueId = topicClientID(topic);
+        } else {
             clientCertificate = connection.getSubject().getPrivateCredentials(X509CertificateCredential.class).stream()
                 .findFirst()
                 .map(X509CertificateCredential::getCertificate)
@@ -362,17 +362,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             }
 
             certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
-            uniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
+            uniqueId = topicClientID(topic);
 
-            if(!topicClientID(topic).equals(certUniqueId)) {
+            if(!uniqueId.equals(certUniqueId)) {
                 LOG.info("Client ID does not match certificate CN: " + MQTTBrokerService.connectionToString(connection));
                 publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
                 return;
             }
-        } else {
-            LOG.info("Unsupported provisioning message type: " + provisioningMessage.getClass().getName() + " " + MQTTBrokerService.connectionToString(connection));
-            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
-            return;
         }
 
         X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);
@@ -408,16 +404,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             X500Principal principal = clientCertificate.getSubjectX500Principal();
 
             // Extract OU from the certificate DN and compare to configured realm
-            String dn = principal.getName(X500Principal.RFC2253);
             String ou = null;
             try {
-                javax.naming.ldap.LdapName ldapName = new javax.naming.ldap.LdapName(dn);
-                for (javax.naming.ldap.Rdn rdn : ldapName.getRdns()) {
-                    if ("OU".equalsIgnoreCase(rdn.getType())) {
-                        ou = String.valueOf(rdn.getValue());
-                        break;
-                    }
-                }
+                ou = ProvisioningUtil.getSubjectOU(clientCertificate.getSubjectX500Principal());
             } catch (Exception e) {
                 // Couldn't parse subject to then parse out the realm and service user name
                 LOG.log(Level.INFO, "Failed to parse DN for client certificate subject: " + MQTTBrokerService.connectionToString(connection), e);
