@@ -20,7 +20,7 @@ import {
     RuleRecurrence,
     WellknownAssets
 } from "@openremote/model";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
@@ -29,7 +29,6 @@ import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import "./or-rule-action-webhook";
 import "./or-rule-action-alarm";
-import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";

@@ -19,12 +19,15 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.system.StatusResource;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import org.jboss.resteasy.annotations.cache.Cache;
 import jakarta.ws.rs.*;
 
 import java.util.Map;
@@ -99,4 +102,16 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    /**
+     * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
+     * once per client. Either when a new {@code hash} or {@code name} are requested. The HTTP client should cache the response based on the
+     * {@code Cache-Control} header. The {@code hash} for actively cached descriptors can be found by requesting the {@link StatusResource#getInfo()} endpoint.
+     */
+    @GET
+    @Path("getValueDescriptorSchema")
+    @Produces(APPLICATION_JSON)
+    @Cache(maxAge = 31536000) // A 1-year cache, the supplied hash parameter serves as cache key on the client
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the valueDescriptor JSON Schema.")
+    JsonNode getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("name") String name, @QueryParam("hash") String hash);
 }

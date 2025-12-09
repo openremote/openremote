@@ -85,9 +85,9 @@ export class BarChartSettings extends WidgetSettings {
         const isMultiAxis = !!attrSettings.rightAxisAttributes?.length;
 
         const attributeIconCallback = (asset: Asset, attribute: Attribute<any>, descriptor?: AssetDescriptor) => {
-            let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute?.name)?.[1]?.replace("#", "");
+            let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace("#", "");
             if(!color) {
-                const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute?.name);
+                const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
                 if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace("#", "");
             }
             return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;

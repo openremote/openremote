@@ -1,20 +1,14 @@
 import {html, PropertyValues, TemplateResult} from "lit";
-import {customElement} from "lit/decorators.js";
+import {customElement, query, state} from "lit/decorators.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
 import {MapSettings} from "../settings/map-settings";
 import {AssetWidgetConfig} from "../util/widget-config";
-import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, WellknownAttributes, WellknownMetaItems} from "@openremote/model";
-import {
-    LngLatLike,
-    AttributeMarkerColours,
-    RangeAttributeMarkerColours,
-    AttributeMarkerColoursRange,
-    MapMarkerColours, MapMarkerAssetConfig,
-} from "@openremote/or-map";
-import {when} from "lit/directives/when.js";
-import manager, {Util} from "@openremote/core";
+import {Asset, AssetDescriptor} from "@openremote/model";
+import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig} from "@openremote/or-map";
+import {map} from "lit/directives/map.js";
+import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import "@openremote/or-map";
 
@@ -64,7 +58,13 @@ function getDefaultWidgetConfig(): MapWidgetConfig {
 @customElement("map-widget")
 export class MapWidget extends OrAssetWidget {
 
-    protected widgetConfig!: MapWidgetConfig
+    protected widgetConfig!: MapWidgetConfig;
+
+    @state()
+    protected _assetsOnScreen: AssetWithLocation[] = [];
+
+    @query("or-map")
+    protected _map?: OrMap;
 
     private markers: MapMarkerAssetConfig = {};
 
@@ -83,131 +83,128 @@ export class MapWidget extends OrAssetWidget {
             getDefaultConfig(): MapWidgetConfig {
                 return getDefaultWidgetConfig();
             }
-        }
+        };
+    }
+
+    connectedCallback() {
+        this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
+        return super.connectedCallback();
+    }
+
+    disconnectedCallback() {
+        this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
+        return super.disconnectedCallback();
     }
 
     refreshContent(force: boolean): void {
-        this.loadAssets();
+        this._loadAssets();
     }
 
     protected updated(changedProps: PropertyValues) {
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
-            this.loadAssets();
+            this._loadAssets();
+        }
+        if(changedProps.has("loadedAssets") && this.loadedAssets) {
+            this._loadMarkers();
         }
     }
 
-    protected async loadAssets() {
-         if(this.widgetConfig.assetType && this.widgetConfig.attributeName && this.widgetConfig.allOfType) {
-            this.fetchAssetsByType([this.widgetConfig.assetType], this.widgetConfig.attributeName).then((assets) => {
-                this.loadedAssets = assets;
-            });
-        } else if(this.widgetConfig.assetType && this.widgetConfig.attributeName && !this.widgetConfig.allOfType) {
-            this.fetchAssetsById([this.widgetConfig.assetType], this.widgetConfig.attributeName, this.widgetConfig.assetIds).then((assets) => {
-                            this.loadedAssets = assets;
-                    });
-          }
+    protected _loadAssets() {
+        if(!this.widgetConfig.assetType || !this.widgetConfig.attributeName) {
+            console.debug("Could not load assets for Map widget, as the configuration is not complete! (no asset type, or no attribute)");
+            return;
+        }
+        this._fetchAssets([this.widgetConfig.assetType], this.widgetConfig.attributeName, this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetIds).then(assets => {
+            this.loadedAssets = assets;
+        });
     }
 
-    protected async fetchAssetsById(assetTypes: string[], attributeName: string, assetIds: string[]) {
+    protected async _fetchAssets(assetTypes: string[], attributeName: string, assetIds?: string[]): Promise<Asset[]> {
         let assets: Asset[] = [];
-        await manager.rest.api.AssetResource.queryAssets({
-            realm: {
-                name:manager.displayRealm
-            },
-            select: {
-                attributes: [attributeName, 'location']
-            },
-            types: assetTypes,
-            ids: assetIds,
-
-            }).then(response => {
-                assets = response.data;
-                this.markers = {};
-            }).catch((reason) => {
-                console.error(reason);
-                showSnackbar(undefined, "errorOccurred");
+        try {
+            const response = await manager.rest.api.AssetResource.queryAssets({
+                realm: {
+                    name: manager.displayRealm
+                },
+                select: {
+                    attributes: [attributeName, "location"]
+                },
+                types: assetTypes,
+                ids: assetIds?.length ? assetIds : undefined
             });
-            return assets;
-        }
-
-    protected async fetchAssetsByType(assetTypes: string[], attributeName: string) {
-        let assets: Asset[] = [];
-        await manager.rest.api.AssetResource.queryAssets({
-            realm: {
-                name: manager.displayRealm
-            },
-            select: {
-                attributes: [attributeName, 'location']
-            },
-            types: assetTypes,
-
-        }).then(response => {
             assets = response.data;
-            this.markers = {};
-        }).catch((reason) => {
+
+        } catch (reason) {
             console.error(reason);
             showSnackbar(undefined, "errorOccurred");
-        });
+        }
         return assets;
     }
-
 
     protected render(): TemplateResult {
         return html`
             <div style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
                 <or-map id="miniMap" class="or-map" .zoom="${this.widgetConfig.zoom}" .center="${this.widgetConfig.center}" .showGeoJson="${this.widgetConfig.showGeoJson}" style="flex: 1;">
-                    ${when(this.loadedAssets, () => {
-                        return this.getMarkerTemplates();
-                    })}
+                    ${map(this._assetsOnScreen, (asset) => html`
+                        <or-map-marker-asset .asset="${asset}" .config="${this.markers}"></or-map-marker-asset>
+                    `)}
                 </or-map>
             </div>
         `;
     }
 
-    protected getMarkerTemplates(): TemplateResult[] {
-        return this.loadedAssets.filter((asset: Asset) => {
-            if (!asset.attributes) {
-                return false;
-            }
-            const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-            return !attr || !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-        }).map(asset => {
-            if (this.markers) {
-                // Configure map marker asset settings
-                this.markers[asset.type!] = {attributeName: this.widgetConfig.attributeName!};
-                this.markers[asset.type!].showUnits = this.widgetConfig.showUnits;
-                this.markers[asset.type!].showLabel = this.widgetConfig.showLabels;
-                if (this.widgetConfig.valueType == 'boolean') {
-                    (this.widgetConfig.boolColors as any).true = (this.widgetConfig.boolColors as any).true.replace("#", "");
-                    (this.widgetConfig.boolColors as any).false = (this.widgetConfig.boolColors as any).false.replace("#", "");
-                    this.markers[asset.type!].colours = this.widgetConfig.boolColors;
-                } else if (this.widgetConfig.valueType == 'text') {
-                    var colors: AttributeMarkerColours = {type: 'string',};
-                    (this.widgetConfig.textColors as [string, string][]).map((threshold) => {
-                        colors[threshold[0] as string] = (threshold[1] as string).replace('#', '');
-                    })
-                    this.markers[asset.type!].colours = colors;
-                } else {
-                    var ranges: AttributeMarkerColoursRange[] = [];
-                    (this.widgetConfig.thresholds as [number, string][]).sort((x, y) => (x[0] > y[0]) ? -1 : 1).map((threshold, index) => {
-                        var range: AttributeMarkerColoursRange = {
-                            min: threshold[0],
-                            colour: threshold[1].replace('#', '')
-                        }
-                        ranges.push(range);
-                    })
-                    var colorsNum: RangeAttributeMarkerColours = {
-                        type: 'range',
-                        ranges: ranges
-                    };
-                    this.markers[asset.type!].colours = colorsNum;
-                }
-            }
-            return html`
-                <or-map-marker-asset .asset="${asset}" .config="${this.markers}"></or-map-marker-asset>
-            `
-        })
+    protected _onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
+        this._assetsOnScreen = e.detail;
     }
 
+    protected _loadMarkers(): void {
+        this.markers = {};
 
+        // Loop through each asset type, and configure the marker
+        for (const assetType of new Set(this.loadedAssets.map(a => a.type).filter(Boolean))) {
+            const marker: MapMarkerConfig = {
+                attributeName: this.widgetConfig.attributeName!,
+                showUnits: this.widgetConfig.showUnits,
+                showLabel: this.widgetConfig.showLabels
+            };
+            switch (this.widgetConfig.valueType) {
+                case "boolean": {
+                    const boolColors = this.widgetConfig.boolColors as any;
+                    marker.colours = {
+                        type: "boolean",
+                        true: boolColors.true.replace("#", ""),
+                        false: boolColors.false.replace("#", "")
+                    };
+                    break;
+                }
+                case "text": {
+                    marker.colours = this.widgetConfig.textColors.reduce((colors: any, [key, val]) => {
+                        colors[key] = val.replace("#", "");
+                        return colors;
+                    }, { type: "string" });
+                    break;
+                }
+                default: {
+                    marker.colours = {
+                        type: "range",
+                        ranges: this.widgetConfig.thresholds
+                            .sort((a, b) => b[0] - a[0])
+                            .map(([min, colour]) => ({min, colour: colour.replace('#', '')}))
+                    };
+                    break;
+                }
+            }
+            this.markers[assetType!] = marker;
+        }
+        // Load the markers onto the map
+        if (this._map) {
+            this._map.cleanUpAssetMarkers();
+            const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
+            this.loadedAssets
+                .filter(asset => MapUtil.isAssetWithLocation(asset) && (!assetType || asset.type === assetType))
+                .forEach((asset: Asset) => this._map!.addAssetMarker(asset as AssetWithLocation));
+
+            this._map?.reload();
+        }
+    }
 }

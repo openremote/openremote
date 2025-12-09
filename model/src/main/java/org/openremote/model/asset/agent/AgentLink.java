@@ -37,7 +37,8 @@ import java.util.Optional;
  * own concrete implementation of this class or use {@link DefaultAgentLink} with fields describing each configuration
  * item and standard JSR-380 annotations should be used to provide validation logic.
  */
-@JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)
+@JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, defaultImpl = DefaultAgentLink.class)
+@JsonSchemaDefault("{\"id\":\"\",\"type\":\"DefaultAgentLink\"}")
 @TsIgnoreTypeParams
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
 
@@ -56,7 +57,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @JsonSchemaDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     @JsonSchemaSupplier(supplier = SchemaNodeMapper.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected Map<String, Object> writeValueConverter;
-    @JsonSchemaDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dyanmic" +
+    @JsonSchemaDescription("String to be used for attribute writes and can contain dynamic placeholders to allow dynamic" +
             " value and/or time injection with formatting (see documentation for details) into the string or alternatively" +
             " write the string through to the protocol as is (static string)")
     @JsonSchemaFormat("or-multiline")

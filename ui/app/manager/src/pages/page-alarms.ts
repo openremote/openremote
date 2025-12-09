@@ -13,7 +13,7 @@ import {
     UserQuery
 } from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {getAlarmsRoute} from "../routes";

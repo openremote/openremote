@@ -452,15 +452,6 @@ export class ChartSettings extends WidgetSettings {
     protected openColorPickDialog(attributeRef: AttributeRef) {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
-            let oldColor = this.widgetConfig.attributeColors?.find(x => x[0] === attributeRef)?.[1];
-            if(!oldColor) {
-                const index = this.widgetConfig.attributeRefs?.indexOf(attributeRef);
-                if(index >= 0) {
-                    oldColor = OrChart.DEFAULT_COLORS?.[index];
-                }
-            }
-            // Update value
-            inputElem.value = oldColor ?? "";
 
             // Listen for changes
             inputElem.addEventListener("input", debounce(() => {

@@ -253,6 +253,14 @@ jobs:
             profile
           sparse-checkout-cone-mode: false
 
+      - name: Install node_modules
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: yarn --immutable
+
+      - name: Check UI dependencies
+        if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
+        run: npx knip -c ui/knip.jsonc
+
       - name: Check deployment build.gradle
         id: check_deployment_gradle
         uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3
@@ -270,6 +278,14 @@ jobs:
         uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3
         with:
           files: ".ci_cd/ci_cd.json"
+
+      - name: Set up JDK 21 and gradle cache
+        id: java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
 
       - name: Get version details
         id: get-version-details
@@ -578,15 +594,6 @@ jobs:
           version: latest
           install: true
 
-      - name: Set up JDK 21 and gradle cache
-        id: java
-        if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
-
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
@@ -670,6 +677,24 @@ jobs:
         env:
           VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
 
+      - name: Check for outdated translations
+        if: steps.is_main_repo.outputs.value == 'true'
+        run: |
+          set -e
+
+          # Run the tests
+          ./gradlew -p ui/app/shared processTranslations --no-parallel
+
+          out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
+          if [[ -z "$out" ]]; then
+              echo "✅ No pipeline changes detected."
+          else
+              echo "❌ Pipeline files have changed. Please run './gradlew -p ui/app/shared processTranslations --no-parallel'"
+              echo "$out"
+              exit 1
+          fi
+        timeout-minutes: 20
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -747,7 +772,7 @@ jobs:
         timeout-minutes: 20
 
       - name: Run UI component tests
-        if: steps.test-ui-components-command.outputs.value != ''
+        if: steps.test-ui-components-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true

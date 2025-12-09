@@ -264,7 +264,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public readonly rootAssetIds?: string[];
 
     @property({type: Object})
-    public readonly dataProvider?: () => Promise<Asset[]>;
+    public readonly dataProvider?: (offset: number, limit: number, parentId?: string) => Promise<Asset[]>;
 
     @property({type: Boolean})
     public readonly readonly: boolean = false;
@@ -287,14 +287,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public showFilter: boolean = true;
 
+    @property({type: Boolean})
+    public showFilterIcon: boolean = true;
+
     @property({type: String})
     public sortBy?: string = "name";
 
     @property({type: Boolean})
     public expandAllNodes?: boolean = false;
-
-    @property({type: Array})
-    public expandedIds?: string[] = [];
 
     @property({type: Boolean})
     public checkboxes?: boolean = false;
@@ -491,34 +491,35 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._onFilterInput(this._filterInput.nativeValue);
                                   }, 200)}">
                     </or-mwc-input>
-                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
-                        if (this._filterSettingOpen) {
-                            this._filterSettingOpen = false;
-                        } else {
-                            this._filterSettingOpen = true;
-                            // Avoid to build again the types
-                            if (this._assetTypes.length === 0) {
-                                let usedTypes: string[] = [];
-                                const types = this._getAllowedChildTypes(this._selectedNodes[0]);
-                                this._assetTypes = types.filter((t) => t.descriptorType === "asset");
-                            }
-
-                            if (this._filter.attribute.length > 0) {
-                                this._attributeNameFilter.value = this._filter.attribute[0];
-                            }
-
-                            if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
-                                this._attributeValueFilter.disabled = false;
-                                this._attributeValueFilter.value = this._filter.attributeValue[0];
-                            }
-
-                            if (this._filter.assetType.length > 0) {
-                                this._assetTypeFilter = this._filter.assetType[0];
+                    ${when(this.showFilterIcon, () => html`
+                        <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
+                            if (this._filterSettingOpen) {
+                                this._filterSettingOpen = false;
                             } else {
-                                this._assetTypeFilter = '';
+                                this._filterSettingOpen = true;
+                                // Avoid to build again the types
+                                if (this._assetTypes.length === 0) {
+                                    const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+                                    this._assetTypes = types.filter((t) => t.descriptorType === "asset");
+                                }
+
+                                if (this._filter.attribute.length > 0) {
+                                    this._attributeNameFilter.value = this._filter.attribute[0];
+                                }
+
+                                if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
+                                    this._attributeValueFilter.disabled = false;
+                                    this._attributeValueFilter.value = this._filter.attributeValue[0];
+                                }
+
+                                if (this._filter.assetType.length > 0) {
+                                    this._assetTypeFilter = this._filter.assetType[0];
+                                } else {
+                                    this._assetTypeFilter = '';
+                                }
                             }
-                        }
-                    }}"></or-icon>
+                        }}"></or-icon>
+                    `)}
                 </div>
                 <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                     <div class="advanced-filter">
@@ -624,7 +625,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (!this._nodes) {
-            this._loadAssets().catch(console.warn);
+            this._loadAssets().catch(ex => console.log(ex.message));
             return true;
         }
 
@@ -734,7 +735,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 } else {
                     const cache: Asset[] = [];
                     OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
-                    await this._loadAssets(node.asset?.id, 0, cache).catch(e => console.warn(e));
+                    await this._loadAssets(node.asset?.id, 0, cache).catch(ex => console.log(ex.message));
                 }
 
             } else {
@@ -1270,9 +1271,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         try {
             console.debug(`Querying assets using filter '${this._filterInput.nativeValue}'...`);
-            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssets(q));
+            const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssetTree(q));
             const responses = await Promise.all(promises);
-            foundAssets = responses.flatMap(r => r.data);
+            foundAssets = responses.flatMap(r => r.data.assets ?? []);
             foundAssetIds = foundAssets.map(a => a.id!);
             console.debug(`The filter query found ${foundAssets.length} assets!`);
 
@@ -1753,7 +1754,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._loading = true;
 
         if(this.dataProvider) {
-            this.dataProvider().then(assets => {
+            this.dataProvider(offset, this.queryLimit, parentId).then(assets => {
                 this._loading = false;
                 this._buildTreeNodes(assets);
                 if(this._filterInput?.value) {
@@ -1830,7 +1831,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public onEventsConnect() {
         this._connected = true;
-        this._loadAssets().catch(console.warn);
+        this._loadAssets().catch(ex => console.log(ex.message));
     }
 
     public onEventsDisconnect() {
@@ -2145,10 +2146,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (treeNode.expanded && treeNode.children.length === 0) {
             console.debug("Tree node has no children, collapsing it...");
             treeNode.expanded = false;
-        }
-
-        if (this.expandedIds && this.expandedIds.findIndex((expandId: string) => { return expandId === treeNode.asset!.id!; }) !== -1) {
-            treeNode.expanded = true;
         }
 
         return html`
