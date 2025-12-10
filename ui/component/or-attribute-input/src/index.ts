@@ -179,7 +179,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
         };
 
-        const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+        const templateFunction: ValueInputTemplateFunction = (value, _focused, _loading, _sending, _error, _helperText) => {
             // Schedule loading
             window.setTimeout(() => doLoad(value), 0);
 

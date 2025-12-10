@@ -49,7 +49,6 @@
     "@openremote/or-rules": "workspace:*",
     "@openremote/or-services": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
     "@openremote/theme": "workspace:*",
     "@reduxjs/toolkit": "^1.8.1",
