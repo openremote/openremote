@@ -173,8 +173,8 @@ EBS_OLD_ROOT_DEVICE_NAME="/dev/sdb"
 
 STATUS=$(aws ec2 attach-volume --volume-id $ROOT_VOLUME_ID --instance-id $INSTANCE_ID --device $EBS_OLD_ROOT_DEVICE_NAME --query "State" --output text)
 while [[ "$STATUS" == 'attaching' ]]; do
-    echo "Old root volume attaching in progress .. Sleeping 30 seconds"
-    sleep 30
+    echo "Old root volume attaching in progress .. Sleeping 60 seconds"
+    sleep 60
     STATUS=$(aws ec2 describe-volumes --volume-id $ROOT_VOLUME_ID --query "Volumes[].Attachments[].State" --output text)
 done
 
