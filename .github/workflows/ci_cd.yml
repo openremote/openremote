@@ -823,7 +823,7 @@ jobs:
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: anchore/scan-action@2c901ab7378897c01b8efaa2d0c9bf519cc64b9e # v6.2.0
+        uses: anchore/scan-action@3c9a191a0fbab285ca6b8530b5de5a642cba332f # v7.2.2
         id: manager-anchore-scan
         with:
           image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
@@ -834,7 +834,7 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
+        uses: github/codeql-action/upload-sarif@c8e3174949dcd2ceb71718aeaa53fee4dc9052f2 # v4.31.7
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 
