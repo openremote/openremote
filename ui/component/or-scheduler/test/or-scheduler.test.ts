@@ -23,6 +23,7 @@ import { ct, expect } from "./fixtures";
 import { OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS } from "../src/util";
 import type { MwcInput } from "../../or-mwc-components/test/fixtures";
+import { Frequency } from "../src";
 
 const months = new RegExp(Object.values(MONTHS).join("|"));
 const HOUR_IN_MILLIS = 3600 * 1000;
@@ -196,7 +197,7 @@ ct.describe("Recurrence event type should", () => {
         await dialog.getByRole("button", { name: "Day" }).click();
         for (const [freq, parts] of Object.entries(NOT_APPLICABLE_BY_RRULE_PARTS)) {
             if (freq === "SECONDLY") continue; // Intentionally skipped as its partially broken and unused
-            await mwcInput.getSelectInputOption(FREQUENCIES[freq], dialog).click();
+            await mwcInput.getSelectInputOption(FREQUENCIES[freq as Frequency], dialog).click();
             for (const part of BY_RRULE_PARTS.filter((p) => !parts.includes(p.toUpperCase()))) {
                 if (part === "byweekday") {
                     await expect(
@@ -223,7 +224,7 @@ ct.describe("Recurrence event type should", () => {
                     await expect(dialog.getByRole("button", { name: part })).not.toBeVisible();
                 }
             }
-            await dialog.getByRole("button", { name: FREQUENCIES[freq], exact: true }).click({ delay: 100 });
+            await dialog.getByRole("button", { name: FREQUENCIES[freq as Frequency], exact: true }).click({ delay: 100 });
         }
 
         await expect(dialog.locator("#period")).toBeVisible();
