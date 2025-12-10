@@ -47,4 +47,8 @@ tasks.register('installDist', Copy) {
         // Don't include any ui packaged JARs (used for dev purposes only)
         exclude { (it.file.path.contains(".gradle")  || it.file.path.contains(".m2")) && it.file.path.contains("io.openremote.ui") }
     }
+
+    into("image/manager/extensions") {
+        from project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+    }
 }
