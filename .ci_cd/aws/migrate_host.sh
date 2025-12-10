@@ -7,6 +7,8 @@ if [ -z "$HOST" ]; then
   exit 1
 fi
 
+echo "Start migration process"
+
 # Retrieve Instance from host
 INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" "Name=instance-state-name,Values='running'" --query 'Reservations[].Instances[].InstanceId' --output text)
 
@@ -40,7 +42,7 @@ while [[ "$STATUS" == 'pending' ]]; do
 done
 
 if [ "$STATUS" != 'completed' ]; then
-    echo "Snapshot creation has failed with status '$STATUS'"
+    echo "Snapshot creation has failed with status $STATUS"
     exit 1
 else
     echo "Snapshot creation completed"
@@ -53,6 +55,8 @@ if [ "$DELETE_ON_TERMINATION" != false ]; then
     echo "Root volume $ROOT_VOLUME_ID is configured to be deleted, change to false"
     DELETE_ON_TERMINATION=$(aws ec2 modify-instance-attribute --instance-id $INSTANCE_ID --block-device-mappings "[{\"DeviceName\": \"$ROOT_DEVICE_NAME\",\"Ebs\":{\"DeleteOnTermination\":false}}]")
 fi
+
+echo "Root volume configured to be preserved"
 
 if [ -f "${awsDir}cloudformation-create-ec2.yml" ]; then
   TEMPLATE_PATH="${awsDir}cloudformation-create-ec2.yml"
@@ -117,7 +121,7 @@ while [ "$STATUS" == 'UPDATE_IN_PROGRESS' ] || [ "$STATUS" == 'UPDATE_COMPLETE_C
 done
 
 if [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
-  echo "Updating CloudFormation stack has failed with status '$STATUS'"
+  echo "Updating CloudFormation stack has failed with status $STATUS"
   exit 1
 else
   echo "CloudFormation stack updated successfully"
@@ -156,10 +160,10 @@ while [[ "$STATUS" == 'InProgress' ]]; do
 done
 
 if [ "$STATUS" != 'Success' ]; then
-  echo "Attaching EBS data volume has failed with status '$STATUS'"
+  echo "Attaching EBS data volume has failed with status $STATUS"
   exit 1
 else
-  echo "EBS data volume successfully attached to instance '$INSTANCE_ID'"
+  echo "EBS data volume successfully attached to instance $INSTANCE_ID"
 fi
 
 # Attach old root volume to instance
@@ -175,37 +179,14 @@ while [[ "$STATUS" == 'attaching' ]]; do
 done
 
 if [ "$STATUS" != 'attached' ]; then
-  echo "Attaching old root volume has failed with status '$STATUS'"
+  echo "Attaching old root volume has failed with status $STATUS"
   exit 1
 else
-  echo "Old root volume successfully attached to instance '$INSTANCE_ID'"
+  echo "Old root volume successfully attached to instance $INSTANCE_ID"
 fi
 
-# Copying Docker volumes to EBS data volume using SSM Session Manager
-echo "Connecting to instance $INSTANCE_ID using SSM Session Manager"
-echo "Copying Docker volumes to EBS data volume"
-aws ssm start-session \
-  --target $INSTANCE_ID \
-  --document-name AWS-StartInteractiveCommand \
-  --parameters 'command=["sudo sh -c '\''mkdir -p /old-volume && \
-mount -o nouuid /dev/nvme2n1p1 /old-volume && \
-rsync -av /old-volume/var/lib/docker/volumes/or_postgresql-data /var/lib/docker/volumes && \
-rsync -av /old-volume/var/lib/docker/volumes/or_deployment-data /var/lib/docker/volumes && \
-umount /dev/nvme2n1p1'\''"]'
+# Reboot instance
 
-echo "Docker volumes successfully copied to EBS data volume"
+$(aws ec2 reboot-instances --instance-ids $INSTANCE_ID) # This ensures the (new) IPv4 will be updated in Route53
 
-# Detach old root volume from instance
-STATUS=$(aws ec2 detach-volume --volume-id $ROOT_VOLUME_ID --query "State" --output text)
-while [[ "$STATUS" == 'detaching' ]]; do
-    echo "Old root volume detaching in progress .. Sleeping 30 seconds"
-    sleep 30
-    STATUS=$(aws ec2 describe-volumes --volume-id $ROOT_VOLUME_ID --query "Volumes[].State" --output text)
-done
-
-if [ "$STATUS" != 'available' ]; then
-  echo "Detaching old root volume has failed with status '$STATUS'"
-  exit 1
-else
-  echo "Old root volume successfully detached from instance $INSTANCE_ID"
-fi
+echo "Migration process finished ... Deploy OpenRemote Stack and move data folders"
