@@ -267,7 +267,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                                 period: i18next.t("planPeriod"),
                                 recurrence: i18next.t("planRecurrence"),
                             } as LabeledEventTypes}"
-                            disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+                            .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
                             @or-scheduler-changed="${this._onSchedulerChanged}"
                         ></or-scheduler>
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>

@@ -34,6 +34,23 @@ import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEnt
 import { Frequency, RulePartKey, LabeledEventTypes, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
 
+const DISABLED_FREQUENCIES = [
+    // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
+    'SECONDLY'
+] as Frequency[]
+
+const DISABLED_RRULE_PARTS = [
+    // Disabled for now, to reduce complexity
+    'bymonth',
+    'byweekno',
+    'byyearday',
+    'bymonthday',
+    'byhour',
+    'byminute',
+    // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
+    'bysecond'
+] as RulePartKey[]
+
 const schedulerTester: RankedTester = rankWith(
     6,
     and(isObjectControl, schemaMatches((schema) => schema.format === "or-scheduler"))
@@ -94,21 +111,8 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
                 period: i18next.t("planPeriod"),
                 recurrence: i18next.t("planRecurrence"),
             } as LabeledEventTypes}"
-            disabledFrequencies="${[
-                // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
-                'SECONDLY'
-            ] as Frequency[]}"
-            disabledRRuleParts="${[
-                // Disabled for now, to reduce complexity
-                'bymonth',
-                'byweekno',
-                'byyearday',
-                'bymonthday',
-                'byhour',
-                'byminute',
-                // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
-                'bysecond'
-            ] as RulePartKey[]}"
+            .disabledFrequencies="${DISABLED_FREQUENCIES}"
+            .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
             @or-scheduler-changed="${onSchedulerChanged}"
         >
         </or-scheduler>
