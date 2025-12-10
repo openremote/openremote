@@ -1,5 +1,5 @@
 import { Frequency as FrequencyValue, Options } from "rrule";
-import { EventTypes } from "./data";
+import { EventTypes } from "./util";
 
 /**
  * Supported recurrence rule parts in evaluation order:
