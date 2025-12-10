@@ -105,10 +105,15 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
                 predictedDatapointWindowMap.put(attributeRef, PredictedDatapointWindow.BOTH);
 
+                Long duration = this.agent.getAgentLink(attribute).getSchedule()
+                        .flatMap(Schedule::calculateDuration).orElse(null);
+
                 // Sorting so we can assume positioning
                 SimulatorReplayDatapoint[] sorted = Arrays.stream(simulatorReplayDatapoints)
+                        .filter(d -> duration == null || d.timestamp <= duration)
                         .sorted(Comparator.comparingLong(SimulatorReplayDatapoint::getTimestamp))
                         .toArray(SimulatorReplayDatapoint[]::new);
+
                 ScheduledFuture<?> updateValueFuture = scheduleReplay(attributeRef, sorted);
                 if (updateValueFuture != null) {
                     replayMap.put(attributeRef, updateValueFuture);
@@ -418,6 +423,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         protected LocalDateTime getUpcoming() {
             return upcoming;
+        }
+
+        public Optional<Long> calculateDuration() {
+            if (start == null || end == null) {
+                return Optional.empty();
+            }
+            return Optional.of(end.toEpochSecond(ZoneOffset.UTC) - start.toEpochSecond(ZoneOffset.UTC));
         }
 
         /**
