@@ -217,7 +217,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
-        if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || (schedule.isPresent() && pastUntil(schedule.get(), now*1000))) {
+        if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || (schedule.isPresent() && schedule.get().isAfterScheduleEnd(now * 1000))) {
             LOG.warning("Replay schedule has ended for: " + attributeRef);
             return null;
         }
@@ -261,26 +261,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }, nextRun.getAsLong(), TimeUnit.SECONDS);
     }
 
-    public boolean pastUntil(Schedule schedule, long millis) {
-        Recur<LocalDateTime> recurrence = schedule.getRecurrence();
-        if (recurrence != null && recurrence.getUntil() != null) {
-            System.out.println(recurrence.getUntil());
-            return millis > recurrence.getUntil().toInstant(ZoneOffset.UTC).toEpochMilli();
-        }
-        return false;
-    }
-
-    public boolean pastUpcoming(Schedule schedule, long millis) {
-        LocalDateTime upcoming = schedule.getUpcoming();
-        if (schedule.getIsSingleOccurrence()) {
-            return false;
-        }
-        if (upcoming != null) {
-            return millis > upcoming.toInstant(ZoneOffset.UTC).toEpochMilli();
-        }
-        return false;
-    }
-
     public List<ValueDatapoint<?>> calculatePredictedDatapoints(
             SimulatorReplayDatapoint[] simulatorReplayDatapoints,
             Optional<Schedule> schedule,
@@ -289,45 +269,61 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             long now
     ) {
         List<ValueDatapoint<?>> predictedDatapoints = new ArrayList<>();
-        if (status.equals(PredictedDatapointWindow.NONE)) return predictedDatapoints;
+
+        if (status.equals(PredictedDatapointWindow.NONE)) {
+            return predictedDatapoints;
+        }
+
+        if (!schedule.map(Schedule::hasCurrent).orElse(true)) {
+            return predictedDatapoints;
+        }
 
         if (status.equals(PredictedDatapointWindow.BOTH)) {
-            if (schedule.map(s -> s.getCurrent() == null).orElse(false)) return predictedDatapoints;
-            for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
-                OptionalLong delay = Schedule.getDelay(d.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+            for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
+                OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
                 if (delay.isEmpty()) {
                     return predictedDatapoints;
                 }
                 if (now + delay.getAsLong() > now) { // Delay can be negative
                     long timestamp = (now + delay.getAsLong()) * 1000;
-                    if (schedule.isPresent() && pastUntil(schedule.get(), timestamp)) {
+                    // Return remaining predictions if single occurrence or recurrence end has been surpassed
+                    if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
                         return predictedDatapoints;
                     }
-                    if (schedule.isPresent() && pastUpcoming(schedule.get(), timestamp) && timeSinceOccurrenceStarted >= 0) {
+                    // If the predicted datapoint rolls past the current occurrence skip it
+                    // This happens when the offset is less than the time since the occurrence started
+                    if (timeSinceOccurrenceStarted >= 0 && schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
                         continue;
                     }
-                    predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
+                    predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
                 }
             }
         }
 
-        if (!schedule.map(Schedule::getIsSingleOccurrence).orElse(false)) {
-            if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
-                if (schedule.map(s -> s.getUpcoming() == null).orElse(false)) return predictedDatapoints;
-                for (SimulatorReplayDatapoint d : simulatorReplayDatapoints) {
-                    long timeSinceUpcoming = schedule
-                            .map(s -> now - s.getUpcoming().toEpochSecond(ZoneOffset.UTC))
-                            .orElse(timeSinceOccurrenceStarted - 86400L);
-                    OptionalLong delay = Schedule.getDelay(d.timestamp, timeSinceUpcoming, schedule.orElse(null));
-                    if (delay.isEmpty()) {
-                        return predictedDatapoints;
-                    }
-                    long timestamp = (now + delay.getAsLong()) * 1000;
-                    if (schedule.map(s -> s.getHasRecurrenceEnded(timestamp-1)).orElse(false)) {
-                        return predictedDatapoints;
-                    }
-                    predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, d.value).toValueDatapoint());
+        // Single occurrence schedule can't have a next window
+        if (schedule.map(Schedule::isSingleOccurrence).orElse(false)) {
+            return predictedDatapoints;
+        }
+        // If a recurrence is already ongoing and is meant to end immediately
+        if (!schedule.map(Schedule::hasUpcoming).orElse(true)) {
+            return predictedDatapoints;
+        }
+
+        if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
+            for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
+                long timeSinceUpcoming = schedule
+                        .map(s -> now - s.getUpcoming().toEpochSecond(ZoneOffset.UTC))
+                        .orElse(timeSinceOccurrenceStarted - 86400L);
+
+                OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceUpcoming, schedule.orElse(null));
+                if (delay.isEmpty()) {
+                    return predictedDatapoints;
                 }
+                long timestamp = (now + delay.getAsLong()) * 1000;
+                if (schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
+                    return predictedDatapoints;
+                }
+                predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
             }
         }
 
@@ -513,14 +509,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return OptionalLong.of(duration - timeSinceOccurrenceStarted);
         }
 
-        public boolean getIsSingleOccurrence() {
-            return Optional.ofNullable(start).map(s -> recurrence == null).orElse(false);
-        }
-
-        public boolean getHasRecurrenceEnded(long timestamp) {
-            return recurrence.getNextDate(current, LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC)) == null;
-        }
-
         /**
          * Calculates the remaining occurrence delay in seconds relative to the current time.
          *
@@ -558,6 +546,38 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 return OptionalLong.of(-timeSinceOccurrenceStarted);
             }
             return OptionalLong.of(86400L - timeSinceOccurrenceStarted);
+        }
+
+        public boolean hasCurrent() {
+            return current != null;
+        }
+
+        public boolean hasUpcoming() {
+            return upcoming != null;
+        }
+
+        public boolean isSingleOccurrence() {
+            return recurrence == null;
+        }
+
+        public boolean isAfterScheduleEnd(long millis) {
+            if (recurrence != null) {
+                if (recurrence.getUntil() != null) {
+                    return millis > recurrence.getUntil().toInstant(ZoneOffset.UTC).toEpochMilli();
+                }
+                return false;
+            }
+            if (end != null) {
+                return millis > end.toInstant(ZoneOffset.UTC).toEpochMilli();
+            }
+            return false;
+        }
+
+        public boolean isAfterUpcoming(long millis) {
+            if (!isSingleOccurrence() && upcoming != null) {
+                return millis > upcoming.toInstant(ZoneOffset.UTC).toEpochMilli();
+            }
+            return false;
         }
     }
 }
