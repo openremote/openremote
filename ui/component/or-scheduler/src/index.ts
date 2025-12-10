@@ -94,7 +94,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     public eventTypes: LabeledEventTypes = EventTypes;
 
     @property({ type: String })
-    public header?: string;
+    public header = "scheduleActivity";
 
     @property({ type: Boolean })
     public isAllDay = true;
@@ -314,7 +314,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected showDialog() {
         this._dialog = showDialog(new OrMwcDialog()
-            .setHeading(this.header)
+            .setHeading(i18next.t(this.header))
             .setStyles(html`
                 <style>
                     #dialog-content {

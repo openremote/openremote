@@ -88,7 +88,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
                 recurrence,
             }}"
             .default="${defaultEvent}"
-            .header="${i18next.t("simulatorSchedule")}"
+            .header="scheduleSimulatorActivity"
             .eventTypes="${{
                 default: i18next.t("defaultSimulatorSchedule"),
                 period: i18next.t("planPeriod"),

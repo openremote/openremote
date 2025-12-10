@@ -261,7 +261,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                         </span>
                         <or-scheduler
                             id="rule-header-validity"
-                            header="${i18next.t("scheduleRuleActivity")}"
+                            header="scheduleRuleActivity"
                             .eventTypes="${{
                                 default: i18next.t("validityAlways"),
                                 period: i18next.t("planPeriod"),
