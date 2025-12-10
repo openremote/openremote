@@ -126,6 +126,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 && moment(this.calendarEvent.start).isSame(moment(this.calendarEvent.start).clone().startOf("day"))
                 && moment(this.calendarEvent.end).isSame(moment(this.calendarEvent.end).clone().endOf("day"));
         }
+        if (this.calendarEvent?.recurrence) {
+            const origOptions = RRule.fromString(this.calendarEvent.recurrence).origOptions;
+            if (origOptions.until) {
+                this._until = moment(origOptions.until).toDate();
+            } else if (origOptions.count) {
+                this._count = origOptions.count;
+            }
+        }
     }
 
     protected updated(changedProps: PropertyValues) {
@@ -139,7 +147,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
 
         if (changedProps.has("calendarEvent")) {
-            if (this.calendarEvent && this.calendarEvent.recurrence) {
+            if (this.calendarEvent?.recurrence) {
                 this._rrule = RRule.fromString(this.calendarEvent.recurrence);
             } else if (this.eventType === EventTypes.default && this.default?.recurrence) {
                 this._rrule = RRule.fromString(this.default.recurrence);
