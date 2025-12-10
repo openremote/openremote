@@ -57,6 +57,7 @@ dependencies {
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
     implementation files("libs/chirpstack-api-4.14.1.jar")
+    implementation files("libs/tts-api-3.34.3.jar")
 }
 
 base {

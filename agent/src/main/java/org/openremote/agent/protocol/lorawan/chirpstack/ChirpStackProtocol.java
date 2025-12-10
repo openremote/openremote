@@ -35,12 +35,18 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
 import org.openremote.agent.protocol.lorawan.AbstractLoRaWANProtocol;
 import org.openremote.agent.protocol.lorawan.CsvRecord;
+import org.openremote.agent.protocol.lorawan.LoRaWANMQTTProtocol;
+import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
+import org.openremote.agent.protocol.mqtt.MQTTProtocol;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.query.filter.NumberPredicate;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.JsonPathFilter;
@@ -53,25 +59,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.API_KEY;
+import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.ASSET_TYPE_TAG;
+import static org.openremote.agent.protocol.lorawan.chirpstack.ChirpStackAgent.SECURE_GRPC;
 import static org.openremote.model.asset.agent.Agent.HOST;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
-public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtocol, ChirpStackAgent> {
+public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtocol, ChirpStackAgent> implements ProtocolAssetDiscovery {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ChirpStackProtocol.class);
 
     public static final String PROTOCOL_DISPLAY_NAME = "ChirpStack";
     public static final String CHIRPSTACK_ASSET_TYPE_TAG = ASSET_TYPE_TAG;
     public static final int GRPC_LIST_DEVICE_LIMIT = 10000;
-    public static final int GRPC_TIMEOUT = 10;
+    public static final long GRPC_TIMEOUT_MILLIS = 10000L;
 
     public ChirpStackProtocol(ChirpStackAgent agent) {
         super(agent);
@@ -84,22 +94,61 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     @Override
     public String getProtocolInstanceUri() {
-        return "chirpstack://" + getAgent().getHost().orElse("-") + ":"
-                               + getAgent().getPort().map(p -> p.toString()).orElse("-");
+        return "chirpstack-mqtt://" + getAgent().getMqttHost().orElse("-") + ":" + getAgent().getMqttPort().map(p -> p.toString()).orElse("-")
+                                    + "/?clientId=" + getAgent().getClientId().orElse("-");
     }
 
     @Override
-    protected boolean checkAutoDiscoveryPrerequisites() {
-        boolean isOk = super.checkAutoDiscoveryPrerequisites();
+    public boolean onAgentAttributeChanged(AttributeEvent event) {
+        if (API_KEY.getName().equals(event.getName()) ||
+            SECURE_GRPC.getName().equals(event.getName()))
+        {
+            return true;
+        }
 
-        List<AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>>> list = new ArrayList<>(3);
+        return super.onAgentAttributeChanged(event);
+    }
+
+    @Override
+    protected MQTTProtocol createMqttClientProtocol(MQTTAgent agent) {
+        return new LoRaWANMQTTProtocol(agent) {
+            @Override
+            public String getProtocolName() {
+                return "ChirpStack MQTT Client";
+            }
+        };
+    }
+
+    @Override
+    public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
+        return executorService.submit(() -> {
+            if (!checkAutoDiscoveryPrerequisites()) {
+                assetConsumer.accept(new AssetTreeNode[0]);
+                return;
+            }
+
+            try {
+                AssetTreeNode[] assetTreeNodes = discoverDevices();
+                assetConsumer.accept(assetTreeNodes);
+                LOG.info("Auto-discovery added '" + assetTreeNodes.length + "' assets for: " + getGRPCClientUri());
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Auto-discovery failed for: " + getGRPCClientUri(), e);
+            }
+        },  null);
+    }
+
+    protected boolean checkAutoDiscoveryPrerequisites() {
+        List<AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>>> list = new ArrayList<>(2);
         list.add(new AbstractMap.SimpleEntry<>(HOST, getAgent().getHost()));
+        list.add(new AbstractMap.SimpleEntry<>(APPLICATION_ID, getAgent().getApplicationId()));
         list.add(new AbstractMap.SimpleEntry<>(API_KEY, getAgent().getApiKey()));
+
+        boolean isOk = true;
 
         for (AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>> item : list) {
             if (!item.getValue().map(attrValue -> !attrValue.trim().isEmpty()).orElse(false)) {
                 isOk = false;
-                LOG.log(Level.WARNING, "Auto discovery failed because agent attribute '" + item.getKey().getName() + "' is missing");
+                LOG.warning("Auto-discovery failed because agent attribute '" + item.getKey().getName() + "' is missing for: " + getGRPCClientUri());
             }
         }
 
@@ -108,17 +157,17 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     @Override
     protected AssetTreeNode[]  discoverDevices() {
-        Optional<String> host = getAgent().getHost().map(h -> h.trim());
-        Optional<Integer> port = getAgent().getPort();
-        Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
-        Optional<String> applicationId = getAgent().getApplicationId().map(key -> key.trim());
-        Boolean isSecureGRPC = getAgent().getSecureGRPC().orElse(false);
+        Optional<String> host = getAgent().getHost().map(String::trim);
+        int port = getPort();
+        boolean isSecureGRPC = isSecureGRPC();
+        Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
 
         if (host.isEmpty() || apiKey.isEmpty() || applicationId.isEmpty()) {
             return new AssetTreeNode[0];
         }
 
-        ManagedChannel channel = createChannel(host.get(), port.orElse(80), isSecureGRPC);
+        ManagedChannel channel = createChannel(host.get(), port, isSecureGRPC);
 
         Metadata headers = new Metadata();
         Metadata.Key<String> AUTHORIZATION_HEADER = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -157,7 +206,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
             return assetTreeNodes;
         } catch (StatusRuntimeException e) {
-            LOG.log(Level.WARNING, "Auto discovery failed because of a gRPC connection error: {code=" + e.getStatus().getCode() + ", description=" + e.getStatus().getDescription() + "}", e);
+            LOG.log(Level.WARNING, "Auto-discovery failed because of a gRPC connection error {code=" + e.getStatus().getCode() + ", description=" + e.getStatus().getDescription() + "} for: " + getGRPCClientUri(), e);
             return new AssetTreeNode[0];
         } finally {
             if (channel != null) {
@@ -249,6 +298,24 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         return true;
     }
 
+    @Override
+    protected String generateAssetId(String devEui) {
+        return UniqueIdentifierGenerator.generateId("ChirpStack_" + getAgent().getId() + devEui);
+    }
+
+    private int getPort() {
+        return getAgent().getPort().orElse(isSecureGRPC() ? 443 : 80);
+    }
+
+    private boolean isSecureGRPC() {
+        return getAgent().getSecureGRPC().orElse(false);
+    }
+
+    private String getGRPCClientUri() {
+        return "chirpstack-grpc://" + getAgent().getHost().orElse("-") + ":" + getPort()
+                                    + "/?clientId=" + getAgent().getClientId().orElse("-");
+    }
+
     private ManagedChannel createChannel(String host, int port, boolean isSecure) {
         ManagedChannel channel = null;
 
@@ -290,7 +357,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
         return ValueUtil.getAssetClass(simpleClassName)
             .or(() -> {
-                LOG.log(Level.WARNING, "Device auto discovery skipped device because of unknown asset type: '" + simpleClassName + "', " + chirpStackDeviceToString(deviceListItem, deviceProfile));
+                LOG.warning("Auto-discovery skipped device because of unknown asset type '" + simpleClassName + "', " + chirpStackDeviceToString(deviceListItem, deviceProfile) + " for: " + getGRPCClientUri());
                 return Optional.empty();
             });
     }
@@ -315,7 +382,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
             Constructor<?> constructor = clazz.getConstructor(String.class);
             asset = (Asset<?>) constructor.newInstance(createDeviceName(deviceListItem));
         } catch (ReflectiveOperationException e) {
-            LOG.log(Level.INFO, "Auto discovery failed to create asset: " + chirpStackDeviceToString(deviceListItem, deviceProfile), e);
+            LOG.log(Level.INFO, "Auto-discovery failed to create asset " + chirpStackDeviceToString(deviceListItem, deviceProfile) + "for: " + getGRPCClientUri(), e);
         }
         return asset;
     }
@@ -338,7 +405,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
                 .setOffset(offset)
                 .build();
             ListDevicesResponse response = deviceStub
-                .withDeadlineAfter(GRPC_TIMEOUT, TimeUnit.SECONDS)
+                .withDeadlineAfter(GRPC_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .list(request);
 
             allDevices.addAll(response.getResultList());
@@ -368,7 +435,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         DeviceProfile deviceProfile = null;
         try {
             GetDeviceProfileResponse response = profileStub
-                .withDeadlineAfter(GRPC_TIMEOUT, TimeUnit.SECONDS)
+                .withDeadlineAfter(GRPC_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .get(request);
             deviceProfile = response.getDeviceProfile();
         } catch (io.grpc.StatusRuntimeException e) {

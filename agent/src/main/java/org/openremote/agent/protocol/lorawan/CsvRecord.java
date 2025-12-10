@@ -68,7 +68,7 @@ public class CsvRecord {
 
     @Override
     public String toString() {
-        return "CsvRecord{" +
+        return "DeviceRecord{" +
             "devEUI='" + (devEUI != null ? devEUI : "") + '\'' +
             ", name='" + (name != null ? name : "") + '\'' +
             ", vendorId='" + (vendorId != null ? vendorId : "") + '\'' +

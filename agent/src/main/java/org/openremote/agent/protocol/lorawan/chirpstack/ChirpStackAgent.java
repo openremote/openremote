@@ -34,7 +34,7 @@ public class ChirpStackAgent extends LoRaWANAgent<ChirpStackAgent, ChirpStackPro
 
     public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
-    public static final AttributeDescriptor<Boolean> SECURE_GRPC = new AttributeDescriptor<>("secureGRPC", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> SECURE_GRPC = new AttributeDescriptor<>("secureGRPC", ValueType.BOOLEAN).withOptional(false);
 
     public static final AgentDescriptor<ChirpStackAgent, ChirpStackProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         ChirpStackAgent.class, ChirpStackProtocol.class, MQTTAgentLink.class

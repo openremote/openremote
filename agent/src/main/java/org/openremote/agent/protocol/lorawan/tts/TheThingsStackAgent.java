@@ -24,6 +24,7 @@ import org.openremote.agent.protocol.lorawan.LoRaWANAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
+import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -34,7 +35,9 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
 
     public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
-    public static final AttributeDescriptor<String> TENANT_ID = new AttributeDescriptor<>("tenantId", ValueType.TEXT);
+    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = Agent.USERNAME_AND_PASSWORD.withOptional(false);
+    public static final AttributeDescriptor<String> TENANT_ID = new AttributeDescriptor<>("tenantId", ValueType.TEXT).withOptional(false);
+    public static final AttributeDescriptor<Boolean> SECURE_GRPC = new AttributeDescriptor<>("secureGRPC", ValueType.BOOLEAN).withOptional(false);
 
     public static final AgentDescriptor<TheThingsStackAgent, TheThingsStackProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         TheThingsStackAgent.class, TheThingsStackProtocol.class, MQTTAgentLink.class
@@ -61,6 +64,15 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
 
     public TheThingsStackAgent setTenantId(String tenantId) {
         getAttributes().getOrCreate(TENANT_ID).setValue(tenantId);
+        return this;
+    }
+
+    public Optional<Boolean> getSecureGRPC() {
+        return getAttributes().getValue(SECURE_GRPC);
+    }
+
+    public TheThingsStackAgent setSecureGRPC(Boolean secureGRPC) {
+        getAttributes().getOrCreate(SECURE_GRPC).setValue(secureGRPC);
         return this;
     }
 }

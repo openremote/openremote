@@ -19,14 +19,14 @@
  */
 package org.openremote.test.protocol.lorawan.tts
 
+import com.google.protobuf.ByteString
 import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
-import com.sun.net.httpserver.HttpServer
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import io.grpc.ServerBuilder
+import io.grpc.stub.StreamObserver
 import io.moquette.broker.Server
 import io.moquette.broker.config.MemoryConfig
 import org.openremote.agent.protocol.lorawan.tts.TheThingsStackAgent
@@ -40,16 +40,19 @@ import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.file.FileInfo
+import org.openremote.model.query.AssetQuery
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import ttn.lorawan.v3.EndDeviceOuterClass
+import ttn.lorawan.v3.EndDeviceRegistryGrpc
+import ttn.lorawan.v3.Identifiers
 
-import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.ATTRIBUTE_NAME_DEV_EUI
 import static org.openremote.agent.protocol.lorawan.tts.TheThingsStackProtocol.THE_THINGS_STACK_TEST
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -79,33 +82,32 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
     static final Double HUMIDITY_VALUE = 56.4
 
     @Shared
-    int ttsServerPort
-
-    @Shared
-    HttpServer ttsServer
-
-    @Shared
     int mqttBrokerPort
 
     @Shared
     Server mqttBroker
 
     @Shared
-    Path tempDataDir
+    int grpcPort
+
+    @Shared
+    TheThingsStackGrpcServer grpcServer
 
     @Shared
     Mqtt3AsyncClient mqttClient
 
     def setupSpec() {
-        tempDataDir = File.createTempDir('moquette_data', '').toPath()
         mqttBrokerPort = findEphemeralPort()
         def props = new Properties()
         props.setProperty('port', mqttBrokerPort.toString())
-        // Moquette assumes linux paths so need to convert windows paths
-        props.setProperty('persistent_store', tempDataDir.resolve('moquette_store.mapdb').toString().replace('\\', '/'))
+        props.setProperty('persistence_enabled', 'false')
         def config = new MemoryConfig(props)
         mqttBroker = new Server()
         mqttBroker.startServer(config)
+
+        grpcPort = findEphemeralPort()
+        grpcServer = new TheThingsStackGrpcServer(grpcPort)
+        grpcServer.start()
 
         mqttClient = MqttClient.builder()
             .useMqttVersion3()
@@ -114,47 +116,12 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
             .serverPort(mqttBrokerPort)
             .buildAsync()
         mqttClient.connect().get(2, TimeUnit.SECONDS)
-
-        ttsServerPort = findEphemeralPort()
-        ttsServer = HttpServer.create(new InetSocketAddress(ttsServerPort), 0)
-        ttsServer.createContext("/api/v3/applications/${APPLICATION_ID}/devices", new HttpHandler() {
-            @Override
-            void handle(HttpExchange exchange) throws IOException {
-                String responseJson = """
-                {
-                    "end_devices": [
-                        {
-                            "ids": {
-                                "dev_eui": "${DEV_EUI_1}",
-                                "device_id": "${DEVICE_ID_1}"
-                            }
-                        },
-                        {
-                            "ids": {
-                                "dev_eui": "${DEV_EUI_2}",
-                                "device_id": "${DEVICE_ID_2}"
-                            }
-                        }
-                    ]
-                }
-                """
-                exchange.responseHeaders.add("Content-Type", "application/json")
-                exchange.sendResponseHeaders(200, responseJson.getBytes().length)
-                exchange.responseBody.withCloseable {
-                    it.write(responseJson.getBytes())
-                }
-            }
-        })
-
-        ttsServer.setExecutor(Executors.newSingleThreadExecutor())
-        ttsServer.start()
     }
 
     def cleanupSpec() {
-        ttsServer?.stop(0)
         mqttClient?.disconnect()
         mqttBroker?.stopServer()
-        tempDataDir?.deleteDir()
+        grpcServer?.stop()
     }
 
     def "TheThingsStack Integration Test"() {
@@ -172,7 +139,8 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
         def agent = new TheThingsStackAgent("TheThingsStackAgent")
         agent.setRealm(MASTER_REALM)
         agent.setHost(HOST)
-        agent.setPort(ttsServerPort)
+        agent.setPort(grpcPort)
+        agent.setSecureGRPC(false)
         agent.setMqttHost(HOST)
         agent.setMqttPort(mqttBrokerPort)
         agent.setClientId(CLIENT_ID)
@@ -214,15 +182,20 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
         AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), null, fileInfo)
 
         then: "new assets should have been imported"
-        assert assets != null
-        assert assets.length == 2
-        def node1 = assets.find {it.asset.getAttribute(DEV_EUI).map {DEV_EUI_1.equalsIgnoreCase(it.value.get())}.orElse(false)}
-        def node2 = assets.find {it.asset.getAttribute(DEV_EUI).map {DEV_EUI_2.equalsIgnoreCase(it.value.get())}.orElse(false)}
-        assert node1 != null
-        assert node2 != null
+        conditions.eventually {
+            assert assets != null
+            assert assets.length == 2
+            def node1 = assets.find { it.asset.getAttribute(DEV_EUI).map { DEV_EUI_1.equalsIgnoreCase(it.value.get()) }.orElse(false) }
+            def node2 = assets.find { it.asset.getAttribute(DEV_EUI).map { DEV_EUI_2.equalsIgnoreCase(it.value.get()) }.orElse(false) }
+            assert node1 != null
+            assert node2 != null
+            def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
+            def asset2 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_2.toUpperCase()))
+            assert asset1 != null
+            assert asset2 != null
+        }
 
         when: "the device sends a LoRaWAN uplink message"
-        def asset1 = node1.asset
         def json = [
             uplink_message: [
                 f_port: UPLINK_PORT,
@@ -239,12 +212,13 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
 
         then: "asset attribute values should be updated"
         conditions.eventually {
-            def asset = assetStorageService.find(asset1.id)
+            def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
             assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
             assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
         }
 
         when: "an asset attribute value is written"
+        def asset1 = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
         def downlinkMessages = new CopyOnWriteArrayList<String>()
         mqttClient.subscribeWith()
             .topicFilter("v3/${APPLICATION_ID}@${TENANT_ID}/devices/${DEVICE_ID_1}/down/push")
@@ -260,6 +234,64 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
             assert downlinkMessage != null
             assert downlinkMessage.downlinks[0].f_port == DOWNLINK_PORT
             assert downlinkMessage.downlinks[0].frm_payload == "DAE="
+        }
+    }
+
+    static class TheThingsStackGrpcServer {
+        private final int port
+        private io.grpc.Server server
+
+        TheThingsStackGrpcServer(int port) {
+            this.port = port
+        }
+
+        void start() {
+            server = ServerBuilder.forPort(port)
+                .addService(new DeviceService())
+                .build()
+                .start()
+        }
+
+        void stop() {
+            if (server != null) {
+                server.shutdownNow()
+            }
+        }
+
+        private static class DeviceService extends EndDeviceRegistryGrpc.EndDeviceRegistryImplBase {
+
+            @Override
+            void list(EndDeviceOuterClass.ListEndDevicesRequest request, StreamObserver<EndDeviceOuterClass.EndDevices> responseObserver) {
+                Identifiers.EndDeviceIdentifiers identifiers1 = Identifiers.EndDeviceIdentifiers.newBuilder()
+                    .setApplicationIds(Identifiers.ApplicationIdentifiers.newBuilder().setApplicationId(APPLICATION_ID))
+                    .setDeviceId(DEVICE_ID_1)
+                    .setDevEui(ByteString.copyFrom(DEV_EUI_1.decodeHex()))
+                    .build()
+
+                EndDeviceOuterClass.EndDevice device1 = EndDeviceOuterClass.EndDevice.newBuilder()
+                    .setIds(identifiers1)
+                    .setName("Device 1")
+                    .build()
+
+                Identifiers.EndDeviceIdentifiers identifiers2 = Identifiers.EndDeviceIdentifiers.newBuilder()
+                    .setApplicationIds(Identifiers.ApplicationIdentifiers.newBuilder().setApplicationId(APPLICATION_ID))
+                    .setDeviceId(DEVICE_ID_2)
+                    .setDevEui(ByteString.copyFrom(DEV_EUI_2.decodeHex()))
+                    .build()
+
+                EndDeviceOuterClass.EndDevice device2 = EndDeviceOuterClass.EndDevice.newBuilder()
+                    .setIds(identifiers2)
+                    .setName("Device 2")
+                    .build()
+
+                EndDeviceOuterClass.EndDevices response = EndDeviceOuterClass.EndDevices.newBuilder()
+                    .addEndDevices(device1)
+                    .addEndDevices(device2)
+                    .build()
+
+                responseObserver.onNext(response)
+                responseObserver.onCompleted()
+            }
         }
     }
 }
