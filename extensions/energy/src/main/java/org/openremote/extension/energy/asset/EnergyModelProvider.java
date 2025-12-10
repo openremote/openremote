@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,45 +19,15 @@
  */
 package org.openremote.extension.energy.asset;
 
-import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.logging.Logger;
-
 import org.openremote.model.AssetModelProvider;
-import org.openremote.model.ModelDescriptor;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TsIgnore;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueConstraint;
-import org.openremote.model.value.ValueType;
 
 /**
- * Built in model provider that scans the model classes for asset classes and also includes {@link MetaItemType} and
- * {@link ValueType} classes.
+ * Provides the energy asset classes.
  */
-@TsIgnore
-@ModelDescriptor(assetType = Asset.class, provider = MetaItemType.class)
-@ModelDescriptor(assetType = Asset.class, provider = ValueType.class)
 public class EnergyModelProvider implements AssetModelProvider {
-
-    protected static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, EnergyModelProvider.class);
 
     @Override
     public boolean useAutoScan() {
         return true;
-    }
-
-    @Override
-    public void onAssetModelFinished() {
-        // Inject allowed asset types into GroupAsset
-        List<ValueConstraint> constraints = ValueType.ASSET_TYPE.getConstraints() != null ? new ArrayList<>(Arrays.asList(ValueType.ASSET_TYPE.getConstraints())) : new ArrayList<>();
-        constraints.removeIf(vc -> vc instanceof ValueConstraint.AllowedValues);
-        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(ValueUtil.getAssetInfos(null)).map(ati -> ati.getAssetDescriptor().getName()).toArray()));
-        ValueType.ASSET_TYPE.updateConstraints(constraints.toArray(new ValueConstraint[0]));
     }
 }
