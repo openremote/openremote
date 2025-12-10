@@ -42,7 +42,7 @@ dependencies {
         testImplementation 'org.skyscreamer:jsonassert:1.5.3'
         testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
         testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
