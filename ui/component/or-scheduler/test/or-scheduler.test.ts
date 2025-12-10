@@ -2,7 +2,7 @@ import { Locator } from "@openremote/test";
 import { ct, expect } from "./fixtures";
 
 import { OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
-import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS } from "../src/data";
+import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS } from "../src/util";
 import type { MwcInput } from "../../or-mwc-components/test/fixtures";
 
 const months = new RegExp(Object.values(MONTHS).join("|"));
