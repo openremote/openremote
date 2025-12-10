@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
-import {CalendarEvent} from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {translate,i18next} from "@openremote/or-translate";
-
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {Frequency as FrequencyValue, RRule, Weekday, WeekdayStr} from 'rrule'
+import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { CalendarEvent } from "@openremote/model";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { translate, i18next } from "@openremote/or-translate";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
 import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds } from "./util";
