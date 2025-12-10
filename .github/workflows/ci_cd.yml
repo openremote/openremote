@@ -834,7 +834,7 @@ jobs:
         if: |
           !cancelled() &&
           steps.manager-docker-command.outputs.pushToDockerHub == 'true'
-        uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
+        uses: github/codeql-action/upload-sarif@466af0e674b5934a422135de9b2b4c6521080560 # v3.31.7
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 
