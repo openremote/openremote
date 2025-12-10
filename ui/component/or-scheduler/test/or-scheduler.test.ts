@@ -59,7 +59,7 @@ function getPeriodValues(time?: { start: number; end: number; date?: boolean }) 
 }
 
 async function selectEventType(type: string, dialog: Locator, mwcInput: MwcInput) {
-    await dialog.getByRole("button", { name: "default", exact: true }).click();
+    await dialog.getByRole("button", { name: "Default", exact: true }).click();
     const option = mwcInput.getSelectInputOption(type, dialog);
     await expect(option).toBeVisible();
     await option.click();
@@ -79,7 +79,7 @@ ct.describe("Default event type should", () => {
         const dialog = mwcDialog.getDialog();
 
         await expect(dialog.locator("#event-type")).toBeVisible();
-        await expect(dialog.getByRole("button", { name: "default", exact: true })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: "Default", exact: true })).toBeVisible();
 
         await expect(dialog.locator("#recurrence")).not.toBeVisible();
 
@@ -114,10 +114,10 @@ ct.describe("Period event type should", () => {
         });
         await component.click();
         const dialog = mwcDialog.getDialog();
-        await selectEventType("period", dialog, mwcInput);
+        await selectEventType("Plan an occurrence", dialog, mwcInput);
 
         await expect(dialog.locator("#event-type")).toBeVisible();
-        await expect(dialog.getByRole("button", { name: "period", exact: true })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: "Plan an occurrence", exact: true })).toBeVisible();
 
         await expect(dialog.locator("#recurrence")).not.toBeVisible();
 
@@ -140,7 +140,7 @@ ct.describe("Period event type should", () => {
 
         await component.click();
         const dialog = mwcDialog.getDialog();
-        await selectEventType("period", dialog, mwcInput);
+        await selectEventType("Plan an occurrence", dialog, mwcInput);
         await dialog.getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
@@ -159,7 +159,7 @@ ct.describe("Period event type should", () => {
 
         await component.click();
         const dialog = mwcDialog.getDialog();
-        await selectEventType("period", dialog, mwcInput);
+        await selectEventType("Plan an occurrence", dialog, mwcInput);
 
         await dialog.getByRole("checkbox", { name: "All day" }).uncheck();
         await expect(dialog.locator("label", { hasText: "from" }).last()).toBeEnabled();
@@ -188,10 +188,10 @@ ct.describe("Recurrence event type should", () => {
         });
         await component.click();
         const dialog = mwcDialog.getDialog();
-        await selectEventType("recurrence", dialog, mwcInput);
+        await selectEventType("Plan a repeating occurrence", dialog, mwcInput);
 
         await expect(dialog.locator("#event-type")).toBeVisible();
-        await expect(dialog.getByRole("button", { name: "recurrence", exact: true })).toBeVisible();
+        await expect(dialog.getByRole("button", { name: "Plan a repeating occurrence", exact: true })).toBeVisible();
 
         await expect(dialog.locator("#recurrence")).toBeVisible();
         await dialog.getByRole("button", { name: "Day" }).click();
@@ -252,7 +252,7 @@ ct.describe("Recurrence event type should", () => {
 
         await component.click();
         const dialog = mwcDialog.getDialog();
-        await selectEventType("recurrence", dialog, mwcInput);
+        await selectEventType("Plan a repeating occurrence", dialog, mwcInput);
 
         await dialog.getByRole("button", { name: "apply" }).click();
 
@@ -272,7 +272,7 @@ ct.describe("Recurrence event type should", () => {
 
         await component.click();
         const dialog = mwcDialog.getDialog();
-        await selectEventType("recurrence", dialog, mwcInput);
+        await selectEventType("Plan a repeating occurrence", dialog, mwcInput);
 
         await dialog.getByRole("checkbox", { name: "All day" }).uncheck();
         await expect(dialog.locator("label", { hasText: "from" }).last()).toBeEnabled();

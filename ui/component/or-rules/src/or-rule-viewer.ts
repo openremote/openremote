@@ -40,7 +40,7 @@ import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
-import { LabeledEventTypes, OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
+import { OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
 
 const DISABLED_RRULE_PARTS = [
     'interval',
@@ -262,11 +262,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                         <or-scheduler
                             id="rule-header-validity"
                             header="scheduleRuleActivity"
-                            .eventTypes="${{
-                                default: i18next.t("validityAlways"),
-                                period: i18next.t("planPeriod"),
-                                recurrence: i18next.t("planRecurrence"),
-                            } as LabeledEventTypes}"
+                            defaultEventTypeLabel="validityAlways"
                             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
                             @or-scheduler-changed="${this._onSchedulerChanged}"
                         ></or-scheduler>

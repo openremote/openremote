@@ -28,10 +28,9 @@ import {
     schemaMatches,
 } from "@jsonforms/core";
 import { html } from "lit";
-import { i18next } from "@openremote/or-translate";
 import { CalendarEvent } from "@openremote/model";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
-import { Frequency, RulePartKey, LabeledEventTypes, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
+import { Frequency, RulePartKey, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
 
 const DISABLED_FREQUENCIES = [
@@ -99,18 +98,14 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     const { start, end, recurrence } = props.data as CalendarEvent;
     return getTemplateWrapper(html`
         <or-scheduler
+            header="scheduleSimulatorActivity"
+            defaultEventTypeLabel="defaultSimulatorSchedule"
             .calendarEvent="${{
                 start: start ? start + tzOffset : start,
                 end: end ? end + tzOffset : end,
                 recurrence,
             }}"
             .default="${defaultEvent}"
-            .header="scheduleSimulatorActivity"
-            .eventTypes="${{
-                default: i18next.t("defaultSimulatorSchedule"),
-                period: i18next.t("planPeriod"),
-                recurrence: i18next.t("planRecurrence"),
-            } as LabeledEventTypes}"
             .disabledFrequencies="${DISABLED_FREQUENCIES}"
             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
             @or-scheduler-changed="${onSchedulerChanged}"

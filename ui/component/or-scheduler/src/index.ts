@@ -81,17 +81,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: Object })
     public default?: CalendarEvent;
 
+    @property({ type: String })
+    public defaultEventTypeLabel = "default";
+
     @property({ type: Array })
     public disabledFrequencies: Frequency[] = [];
 
     @property({ type: Array })
     public disabledRRuleParts: RulePartKey[] = [];
-
-    @property({ type: String })
-    public eventType: EventTypes = EventTypes.default;
-
-    @property({ type: Object })
-    public eventTypes: LabeledEventTypes = EventTypes;
 
     @property({ type: String })
     public header = "scheduleActivity";
@@ -105,21 +102,27 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @state()
     protected _ends: keyof typeof rruleEnds = "never";
 
-    protected _until = moment().toDate();
-    protected _count = 1;
-
     @query("#radial-modal")
     protected dialog?: OrMwcDialog;
 
-    protected _dialog?: OrMwcDialog;
     protected _byRRuleParts?: RulePartKey[];
+    protected _count = 1;
+    protected _dialog?: OrMwcDialog;
+    protected _eventType: EventTypes = EventTypes.default;
+    protected _eventTypes: LabeledEventTypes = EventTypes;
+    protected _until = moment().toDate();
 
     protected firstUpdated(_changedProps: PropertyValues) {
+        this._eventTypes = {
+            default: i18next.t(this.defaultEventTypeLabel),
+            period: i18next.t("planPeriod"),
+            recurrence: i18next.t("planRecurrence")
+        };
         if (this.calendarEvent?.start && this.calendarEvent?.end) {
             if (this.calendarEvent.recurrence) {
-                this.eventType = EventTypes.recurrence;
+                this._eventType = EventTypes.recurrence;
             } else {
-                this.eventType = EventTypes.period;
+                this._eventType = EventTypes.period;
             }
             this.isAllDay = this.calendarEvent
                 && moment(this.calendarEvent.start).isSame(moment(this.calendarEvent.start).clone().startOf("day"))
@@ -148,7 +151,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         if (changedProps.has("calendarEvent")) {
             if (this.calendarEvent?.recurrence) {
                 this._rrule = RRule.fromString(this.calendarEvent.recurrence);
-            } else if (this.eventType === EventTypes.default && this.default?.recurrence) {
+            } else if (this._eventType === EventTypes.default && this.default?.recurrence) {
                 this._rrule = RRule.fromString(this.default.recurrence);
             } else {
                 this._rrule = undefined;
@@ -175,10 +178,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
                 origOptions.byweekday = (value as WeekdayStr[]).map(d => RRule[d]);
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
             } else {
                 origOptions[key as keyof RuleParts] = value;
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
             }
         } else {
           switch (key) {
@@ -189,7 +192,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 const newStartDate = moment(value);
                 if (newStartDate.isValid()) {
                     calendarEvent.start = newStartDate.set({ hour: 0, minute: 0, second: 0, millisecond: 0 }).toDate().getTime();
-                    if (this.eventType === EventTypes.recurrence) {
+                    if (this._eventType === EventTypes.recurrence) {
                         origOptions.dtstart = newStartDate.toDate();
                         this._rrule = new RRule(origOptions);
                     }
@@ -213,17 +216,17 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     delete origOptions.until;
                 }
                 this._ends = value;
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "until":
                 this._until = new Date(value);
                 origOptions.until = this._until;
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "count":
                 this._count = value;
                 origOptions.count = this._count;
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "dtstart-time":
                 const timeParts = value.split(':');
@@ -235,7 +238,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }).origOptions;
                 }
                 calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "until-time":
                 const untilParts = value.split(':');
@@ -249,7 +252,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }
                 }
                 calendarEvent.end = moment(calendarEvent.end).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate().getTime();
-                if (this.eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
           }
         }
@@ -260,8 +263,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected timeLabel(): string | undefined {
-        if (this.eventType === EventTypes.default) {
-            return this.eventTypes.default;
+        if (this._eventType === EventTypes.default) {
+            return i18next.t(this.defaultEventTypeLabel);
         } if (this.calendarEvent && this._rrule) {
             const calendarEvent = this.calendarEvent;
             const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
@@ -302,7 +305,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 };
                 break;
         }
-        this.eventType = value;
+        this._eventType = value;
         this._dialog!.requestUpdate();
     }
 
@@ -377,9 +380,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                             this.calendarEvent.start = moment(this.calendarEvent.start).startOf("day").toDate().getTime();
                             this.calendarEvent.end = moment(this.calendarEvent.end).startOf("day").endOf("day").toDate().getTime();
                         }
-                        if (this.eventType === EventTypes.default) {
+                        if (this._eventType === EventTypes.default) {
                             delete this.calendarEvent;
-                        } else if (this.eventType === EventTypes.recurrence) {
+                        } else if (this._eventType === EventTypes.recurrence) {
                             this.calendarEvent!.recurrence = this.getRRule();
                         }
                         this.dispatchEvent(new OrSchedulerChangedEvent(this.calendarEvent ?? this.default));
@@ -400,15 +403,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div class="layout horizontal">
                         <or-mwc-input style="width: 100%"
-                                    .value="${this.eventType}"
+                                    .value="${this._eventType}"
                                     .type="${InputType.SELECT}"
-                                    .options="${Object.entries(this.eventTypes)}"
+                                    .options="${Object.entries(this._eventTypes)}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
                     </div>
                 </div>
-                ${this.eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
-                ${calendar && (this.eventType === EventTypes.period || this.eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
-                ${this.eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
+                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
+                ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
+                ${this._eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
             </div>`;
     }
 
