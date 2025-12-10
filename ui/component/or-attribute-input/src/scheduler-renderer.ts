@@ -72,7 +72,6 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         end: now - millisSinceStartOfDay + dayInMillis - 1,
         recurrence: "FREQ=DAILY"
     }
-    const tzOffset = new Date().getTimezoneOffset() * 60000;
 
     // Init the schedule field with the default value
     if (!Object.keys(props.data).length) {
@@ -82,11 +81,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
         const calEvent = event?.detail.value;
         if (calEvent?.start && calEvent?.end) {
-            props.handleChange(props.path, {
-                ...calEvent,
-                start: calEvent.start - tzOffset,
-                end: calEvent.end - tzOffset,
-            });
+            props.handleChange(props.path, calEvent);
         }
     };
 
@@ -97,19 +92,15 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         }
     }
 
-    const { start, end, recurrence } = props.data as CalendarEvent;
     return getTemplateWrapper(html`
         <or-scheduler
             header="scheduleSimulatorActivity"
             defaultEventTypeLabel="defaultSimulatorSchedule"
-            .calendarEvent="${{
-                start: start ? start + tzOffset : start,
-                end: end ? end + tzOffset : end,
-                recurrence,
-            }}"
-            .default="${defaultEvent}"
+            .defaultSchedule="${defaultEvent}"
             .disabledFrequencies="${DISABLED_FREQUENCIES}"
             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+            .schedule="${props.data}"
+            .timezoneOffset="${new Date().getTimezoneOffset() * 60000}"
             @or-scheduler-changed="${onSchedulerChanged}"
         >
         </or-scheduler>

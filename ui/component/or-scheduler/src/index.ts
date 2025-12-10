@@ -76,10 +76,7 @@ declare global {
 export class OrScheduler extends translate(i18next)(LitElement) {
 
     @property({ type: Object })
-    public calendarEvent?: CalendarEvent = this.default;
-
-    @property({ type: Object })
-    public default?: CalendarEvent;
+    public defaultSchedule?: CalendarEvent;
 
     @property({ type: String })
     public defaultEventTypeLabel = "default";
@@ -96,11 +93,20 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: Boolean })
     public isAllDay = true;
 
-    @state()
-    protected _rrule?: RRule;
+    @property({ type: Object })
+    public schedule?: CalendarEvent = this.defaultSchedule;
+
+    @property()
+    public timezoneOffset = 0;
 
     @state()
     protected _ends: keyof typeof rruleEnds = "never";
+
+    @state()
+    protected _normalizedSchedule = this.applyTimezoneOffset(this.schedule);
+
+    @state()
+    protected _rrule?: RRule;
 
     @query("#radial-modal")
     protected dialog?: OrMwcDialog;
@@ -118,23 +124,29 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             period: i18next.t("planPeriod"),
             recurrence: i18next.t("planRecurrence")
         };
-        if (this.calendarEvent?.start && this.calendarEvent?.end) {
-            if (this.calendarEvent.recurrence) {
+        if (this._normalizedSchedule?.start && this._normalizedSchedule?.end) {
+            if (this._normalizedSchedule.recurrence) {
                 this._eventType = EventTypes.recurrence;
             } else {
                 this._eventType = EventTypes.period;
             }
-            this.isAllDay = this.calendarEvent
-                && moment(this.calendarEvent.start).isSame(moment(this.calendarEvent.start).clone().startOf("day"))
-                && moment(this.calendarEvent.end).isSame(moment(this.calendarEvent.end).clone().endOf("day"));
+            this.isAllDay = this._normalizedSchedule
+                && moment(this._normalizedSchedule.start).isSame(moment(this._normalizedSchedule.start).clone().startOf("day"))
+                && moment(this._normalizedSchedule.end).isSame(moment(this._normalizedSchedule.end).clone().endOf("day"));
         }
-        if (this.calendarEvent?.recurrence) {
-            const origOptions = RRule.fromString(this.calendarEvent.recurrence).origOptions;
+        if (this._normalizedSchedule?.recurrence) {
+            const origOptions = RRule.fromString(this._normalizedSchedule.recurrence).origOptions;
             if (origOptions.until) {
                 this._until = moment(origOptions.until).toDate();
             } else if (origOptions.count) {
                 this._count = origOptions.count;
             }
+        }
+    }
+
+    protected willUpdate(changedProps: PropertyValues) {
+        if (changedProps.has("schedule")) {
+            this._normalizedSchedule = this.applyTimezoneOffset(this.schedule);
         }
     }
 
@@ -148,11 +160,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             this._ends = (this._rrule?.origOptions?.until && "until") || (this._rrule?.origOptions?.count && "count") || "never";
         }
 
-        if (changedProps.has("calendarEvent")) {
-            if (this.calendarEvent?.recurrence) {
-                this._rrule = RRule.fromString(this.calendarEvent.recurrence);
-            } else if (this._eventType === EventTypes.default && this.default?.recurrence) {
-                this._rrule = RRule.fromString(this.default.recurrence);
+        if (changedProps.has("_normalizedSchedule")) {
+            if (this._normalizedSchedule?.recurrence) {
+                this._rrule = RRule.fromString(this._normalizedSchedule.recurrence);
+            } else if (this._eventType === EventTypes.default && this.defaultSchedule?.recurrence) {
+                this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
             } else {
                 this._rrule = undefined;
             }
@@ -164,16 +176,16 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * 
      * The UTC timezone offset 'Z' for the UNTIL rule part is removed,
      * because the backend uses a `LocalDateTime` object to compare.
-     * 
+     * @param rrule The recurrence rule to normalize.
      * @returns String representation of the defined Recurrence Rule
      */
-    protected getRRule(): string | undefined {
-        return this._rrule?.toString()?.split("RRULE:")?.[1]?.replace(/(UNTIL=\d+T\d+)Z/, "$1");
+    protected getRRule(rrule = this._rrule): string | undefined {
+        return rrule?.toString()?.split("RRULE:")?.[1]?.replace(/(UNTIL=\d+T\d+)Z/, "$1");
     }
 
-    protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "recurrence-ends" | "dtstart-time" | "until-time") {
+    protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "recurrence-ends" | "dtstart-time" | "end-time") {
         let origOptions = this._rrule?.origOptions!;
-        const calendarEvent = this.calendarEvent!;
+        const calendarEvent = this._normalizedSchedule!;
 
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
@@ -240,33 +252,24 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
                 if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
-            case "until-time":
+            case "end-time":
                 const untilParts = value.split(':');
-                if (this._rrule && this._rrule.options.until) {
-                    if (origOptions) {
-                        origOptions.until = moment(origOptions.until).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate();
-                    } else {
-                        origOptions = new RRule({
-                            until: moment(calendarEvent.end).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate()
-                        }).origOptions;
-                    }
-                }
                 calendarEvent.end = moment(calendarEvent.end).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate().getTime();
                 if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
           }
         }
 
-        this.calendarEvent = { ...calendarEvent };
+        this._normalizedSchedule = { ...calendarEvent };
         this._dialog!.requestUpdate();
-        this.calendarEvent.recurrence = this.getRRule();
+        this._normalizedSchedule.recurrence = this.getRRule();
     }
 
     protected timeLabel(): string | undefined {
         if (this._eventType === EventTypes.default) {
             return i18next.t(this.defaultEventTypeLabel);
-        } if (this.calendarEvent && this._rrule) {
-            const calendarEvent = this.calendarEvent;
+        } if (this._normalizedSchedule && this._rrule) {
+            const calendarEvent = this._normalizedSchedule;
             const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
             let diffString = "";
             if (this.isAllDay) {
@@ -277,36 +280,57 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 if (diff === 0) diffString = i18next.t("fromTo", { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") });
                 return this._rrule.toText() + " " + diffString;
             }
-        } else if (this.calendarEvent) {
+        } else if (this._normalizedSchedule) {
             let format = "DD-MM-YYYY";
             if(!this.isAllDay) format = "DD-MM-YYYY HH:mm";
-            return i18next.t("activeFromTo", { start: moment(this.calendarEvent.start).format(format), end: moment(this.calendarEvent.end).format(format) });
+            return i18next.t("activeFromTo", { start: moment(this._normalizedSchedule.start).format(format), end: moment(this._normalizedSchedule.end).format(format) });
         }
     }
 
     protected setCalendarEventType(value: any) {
         switch (value) {
             case EventTypes.default:
-                this.calendarEvent = this.default;
-                this._rrule = RRule.fromString(this.default?.recurrence ?? "") || undefined;
+                this._normalizedSchedule = this.defaultSchedule;
+                this._rrule = RRule.fromString(this.defaultSchedule?.recurrence ?? "") || undefined;
                 break;
             case EventTypes.period:
-                this.calendarEvent = {
-                    start: this.calendarEvent?.start ?? moment().startOf("day").toDate().getTime(),
-                    end: this.calendarEvent?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
+                this._normalizedSchedule = {
+                    start: this._normalizedSchedule?.start ?? moment().startOf("day").toDate().getTime(),
+                    end: this._normalizedSchedule?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
                 };
                 this._rrule = undefined;
                 break;
             case EventTypes.recurrence:
-                this.calendarEvent = {
-                    start: this.calendarEvent?.start ?? moment().startOf("day").toDate().getTime(),
-                    end: this.calendarEvent?.end ?? moment().startOf("day").endOf("day").toDate().getTime(),
+                this._normalizedSchedule = {
+                    start: this._normalizedSchedule?.start ?? moment().startOf("day").toDate().getTime(),
+                    end: this._normalizedSchedule?.end ?? moment().startOf("day").endOf("day").toDate().getTime(),
                     recurrence: "FREQ=DAILY"
                 };
                 break;
         }
         this._eventType = value;
         this._dialog!.requestUpdate();
+    }
+
+    /**
+     * Apply the timezone offset to the calendarEvent
+     * @param schedule The schedule for which to add/substract the offset
+     * @param substract Whether to substract the offset
+     * @returns The transformed calendar event
+     */
+    protected applyTimezoneOffset(schedule?: CalendarEvent, substract = false): CalendarEvent | undefined {
+        if (schedule) {
+            const offset = (substract ? -this.timezoneOffset : this.timezoneOffset);
+            let { start, end, recurrence } = { ...schedule };
+            if (start) start += offset;
+            if (end) end += offset;
+            if (recurrence && RRule.fromString(recurrence).origOptions.until) {
+                const origOptions = RRule.fromString(recurrence).origOptions;
+                origOptions.until = new Date(Number(origOptions.until) + offset)
+                recurrence = this.getRRule(new RRule(origOptions))
+            }
+            return { start, end, recurrence }
+        }
     }
 
     protected render() {
@@ -376,16 +400,17 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     default: true,
                     content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
                     action: () => {
-                        if (this.calendarEvent && this.isAllDay) {
-                            this.calendarEvent.start = moment(this.calendarEvent.start).startOf("day").toDate().getTime();
-                            this.calendarEvent.end = moment(this.calendarEvent.end).startOf("day").endOf("day").toDate().getTime();
+                        if (this._normalizedSchedule && this.isAllDay) {
+                            this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
+                            this._normalizedSchedule.end = moment(this._normalizedSchedule.end).startOf("day").endOf("day").toDate().getTime();
                         }
                         if (this._eventType === EventTypes.default) {
-                            delete this.calendarEvent;
+                            delete this._normalizedSchedule;
                         } else if (this._eventType === EventTypes.recurrence) {
-                            this.calendarEvent!.recurrence = this.getRRule();
+                            this._normalizedSchedule!.recurrence = this.getRRule();
                         }
-                        this.dispatchEvent(new OrSchedulerChangedEvent(this.calendarEvent ?? this.default));
+                        const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
+                        this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
                         this._dialog = undefined;
                     }
                 },
@@ -395,7 +420,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected getDialogContent(): TemplateResult {
-        const calendar = this.calendarEvent;
+        const calendar = this._normalizedSchedule;
 
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
@@ -446,8 +471,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * @returns Inputs for the applicable rule parts
      */
     protected getRepeatTemplate(): TemplateResult {
-        const interval = (this._rrule && this._rrule.options && this._rrule.options.interval) ?? 1;
-        const frequency = (this._rrule && this._rrule.options && this._rrule.options.freq) ?? FrequencyValue.DAILY;
+        const interval = this._rrule?.origOptions.interval ?? 1;
+        const frequency = this._rrule?.origOptions.freq ?? FrequencyValue.DAILY;
         const frequencies = Object.entries(FREQUENCIES)
             .map(([k,v]) => [String(FrequencyValue[k as Frequency]), i18next.t(v, { count: interval })])
             .filter(([k]) => this.isAllowedFrequency(FrequencyValue[k as Frequency] as any))
@@ -520,7 +545,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     </div>
                     <div>
                         <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
-                        <or-mwc-input .disabled=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
+                        <or-mwc-input .disabled=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end-time")}" .label="${i18next.t("to")}"></or-mwc-input>
                     </div>
                 </div>
 

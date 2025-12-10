@@ -94,7 +94,7 @@ ct.describe("Default event type should", () => {
         const component = await mount(OrScheduler, {
             props: {
                 header: "Test Calendar Event Component",
-                default: expected,
+                defaultSchedule: expected,
             },
             on: { "or-scheduler-changed": handler },
         });
@@ -102,7 +102,7 @@ ct.describe("Default event type should", () => {
         await mwcDialog.getDialog().getByRole("button", { name: "apply" }).click();
 
         const actual = await promise;
-        expect(actual).toStrictEqual(expected);
+        expect(actual).toStrictEqual({ ...expected, recurrence: undefined });
         await expect(component.getByRole("button")).toContainText("Default");
     });
 });
@@ -146,7 +146,7 @@ ct.describe("Period event type should", () => {
         const actual = await promise;
         const { start, end, timeLabel } = getPeriodValues();
 
-        expect(actual).toStrictEqual({ end, start });
+        expect(actual).toStrictEqual({ end, start, recurrence: undefined });
         await expect(component.getByRole("button")).toContainText("Active " + timeLabel);
     });
 
