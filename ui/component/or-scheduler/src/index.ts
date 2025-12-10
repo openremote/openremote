@@ -76,28 +76,28 @@ declare global {
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
 
-    @property()
+    @property({ type: Object })
     public calendarEvent?: CalendarEvent = this.default;
 
-    @property()
+    @property({ type: Object })
     public default?: CalendarEvent;
 
-    @property()
+    @property({ type: Array })
     public disabledFrequencies: Frequency[] = [];
 
-    @property()
+    @property({ type: Array })
     public disabledRRuleParts: RulePartKey[] = [];
 
-    @property()
+    @property({ type: String })
     public eventType: EventTypes = EventTypes.default;
 
-    @property()
+    @property({ type: Object })
     public eventTypes: LabeledEventTypes = EventTypes;
 
-    @property()
+    @property({ type: String })
     public header?: string;
 
-    @property()
+    @property({ type: Boolean })
     public isAllDay = true;
 
     @state()
