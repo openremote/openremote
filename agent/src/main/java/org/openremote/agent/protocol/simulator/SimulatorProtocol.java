@@ -286,14 +286,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 }
                 if (now + delay.getAsLong() > now) { // Delay can be negative
                     long timestamp = (now + delay.getAsLong()) * 1000;
-                    // Return remaining predictions if single occurrence or recurrence end has been surpassed
-                    if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
-                        return predictedDatapoints;
-                    }
                     // If the predicted datapoint rolls past the current occurrence skip it
                     // This happens when the offset is less than the time since the occurrence started
                     if (timeSinceOccurrenceStarted >= 0 && schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
                         continue;
+                    }
+                    // Return remaining predictions if single occurrence or recurrence end has been surpassed
+                    if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
+                        return predictedDatapoints;
                     }
                     predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
                 }
@@ -320,7 +320,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                     return predictedDatapoints;
                 }
                 long timestamp = (now + delay.getAsLong()) * 1000;
-                if (schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
+                if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
                     return predictedDatapoints;
                 }
                 predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
