@@ -546,15 +546,19 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
                     </or-mwc-input>
                     <div style="display: flex; flex-direction: column-reverse; flex: 1">
-                        <or-mwc-input ?disabled="${this._ends !== "count"}" min="1" .type="${InputType.NUMBER}"
-                            .value="${this._count}"
-                            .label="${i18next.t("schedule.count", { count: this._count })}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}">
-                        </or-mwc-input>
-                        <or-mwc-input ?disabled="${this._ends !== "until"}" .type="${InputType.DATETIME}"
-                            .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}">
-                        </or-mwc-input>
+                        ${when(!this.disabledRRuleParts.includes("count"), () => html`
+                            <or-mwc-input ?disabled="${this._ends !== "count"}" min="1" .type="${InputType.NUMBER}"
+                                .value="${this._count}"
+                                .label="${i18next.t("schedule.count", { count: this._count })}"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}">
+                            </or-mwc-input>`
+                        )}
+                        ${when(!this.disabledRRuleParts.includes("until"), () => html`
+                            <or-mwc-input ?disabled="${this._ends !== "until"}" .type="${InputType.DATETIME}"
+                                .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}">
+                            </or-mwc-input>`
+                        )}
                     </div>
                 </div>
             </div>`;
