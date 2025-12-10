@@ -20,6 +20,7 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
+import type {OrVaadinCheckbox} from "./or-vaadin-checkbox";
 import "./or-vaadin-checkbox";
 import "./or-vaadin-numberfield";
 import "./or-vaadin-passwordfield";
@@ -38,7 +39,6 @@ export class OrVaadinInput extends LitElement {
         [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
         [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
-        [InputType.RANGE, OrVaadinInput.getNumberFieldTemplate],
         [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate]
@@ -105,7 +105,14 @@ export class OrVaadinInput extends LitElement {
      * Returns the value of the native Vaadin input element.
      */
     public get nativeValue(): any {
-        return this._elem?.value;
+        switch (this.type) {
+            case InputType.CHECKBOX: {
+                return (this._elem as OrVaadinCheckbox | undefined)?.checked;
+            }
+            default: {
+                return this._elem?.value;
+            }
+        }
     }
 
     /**

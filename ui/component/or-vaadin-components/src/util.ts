@@ -357,7 +357,11 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const label = supportsLabel ? options.label : undefined;
         const inputStyle = styles ? styleMap(styles) : undefined;
 
-        if(inputType && OrVaadinInput.TEMPLATES.has(inputType)) {
+        const useVaadinInput = (OrVaadinInput.TEMPLATES.has(inputType)
+            && !format?.asSlider && !format?.asOnOff
+        );
+
+        if(useVaadinInput) {
             return html`
                 <or-vaadin-input ${ref(inputRef)} id="input" style="${ifDefined(inputStyle)}" type=${ifDefined(inputType)}
                                  label=${ifDefined(label)} value=${ifDefined(value)} pattern=${ifDefined(pattern)}
