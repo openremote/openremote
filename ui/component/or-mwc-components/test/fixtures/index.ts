@@ -10,8 +10,6 @@ export class MwcInput {
     getSelectInputOption(option: string, locator?: Locator): Locator {
         return (locator ?? this.page).locator("or-mwc-input li[role=option]").getByText(option, { exact: true });
     }
-
-    // getSelect
 }
 
 export class MwcDialog {
