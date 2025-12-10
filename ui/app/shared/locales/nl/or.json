@@ -614,7 +614,7 @@
   "validityAlways": "Altijd actief",
   "planPeriod": "Eén periode plannen",
   "planRecurrence": "Eén herhalende periode inplannen",
-  "validityRecurrence": "Herhaling plannen",
+  "planRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",

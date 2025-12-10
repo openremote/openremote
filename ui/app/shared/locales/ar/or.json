@@ -385,13 +385,15 @@
   "fromToDays": "من {{start}} إلى {{days}} يوم لاحق {{end}}",
   "forDays": "من أجل {{days}} days",
   "scheduleRuleActivity": "جدولة نشاط الإجراء",
+  "schedule": {
+    "_ends": "إنتهاء التكرار",
+    "repeat": "تكرار الحدث كل"
+  },
   "allDay": "كل اليوم",
   "apply": "تطبيق",
   "to": "إلى",
   "from": "من",
   "never": "أبدا",
-  "repetitionEnds": "إنتهاء التكرار",
-  "repeatOccurrenceEvery": "تكرار الحدث كل",
   "daysOfTheWeek": "أيام الأسبوع",
   "dismiss": "رفض",
   "createAssetFailed": "  فشل في إنشاء المكون  ",
