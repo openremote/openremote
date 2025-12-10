@@ -165,7 +165,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     step = 1;
                     min = 0;
                     max = 1;
-                    valueConverter = (v) => !!v;
+                    valueConverter = v => !!v;
                     break;
                 }
                 if (format && (format.asOnOff || format.asOpenClosed)) {
@@ -174,7 +174,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     inputType = InputType.CHECKBOX;
                 }
 
-                if (format && format.asMomentary || (Util.getMetaValue(WellknownMetaItems.MOMENTARY, valueHolder, valueHolderDescriptor) === true) ) {
+                if ((format && format.asMomentary) || (Util.getMetaValue(WellknownMetaItems.MOMENTARY, valueHolder, valueHolderDescriptor) === true) ) {
                     inputType = InputType.BUTTON_MOMENTARY;
                 }
                 break;
@@ -199,7 +199,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     inputType = InputType.DATETIME;
                 } else if (format && format.asBoolean) {
                     inputType = InputType.CHECKBOX;
-                    valueConverter = (v) => v ? 1 : 0;
+                    valueConverter = v => v ? 1 : 0;
                 } else if (format && format.asSlider) {
                     inputType = InputType.RANGE;
                 } else {
@@ -280,10 +280,6 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         min = sizeConstraint.min;
         max = sizeConstraint.max;
     }
-    if (sizeConstraint) {
-        min = sizeConstraint.min;
-        max = sizeConstraint.max;
-    }
     if (minConstraint) {
         min = minConstraint.min;
     }
@@ -339,7 +335,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     }
 
     if (inputType === InputType.COLOUR) {
-        styles.marginLeft = "24px"
+        styles.marginLeft = "24px";
     }
 
     const supportsHelperText = inputTypeSupportsHelperText(inputType);
@@ -351,7 +347,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const resizeVertical = options.resizeVertical;
     const inputRef: Ref<OrVaadinInput> = createRef();
 
-    const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+    const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, _error, helperText) => {
 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
@@ -410,4 +406,4 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             return inputRef.value.checkValidity();
         }
     };
-}
+};

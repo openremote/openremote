@@ -50,6 +50,7 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
+// Importing CSS as a module; no type declarations are available for '@openremote/theme'.
 // @ts-ignore
 import themeCss from "@openremote/theme";
 

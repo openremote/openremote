@@ -2,7 +2,7 @@ buildDir = "dist"
 
 tasks.register('clean') {
     doLast {
-        /*delete "dist"*/ // TODO: Resolve that dist deletion doesn't break the build for @openremote/theme
+        delete "dist"
         delete "lib"
     }
 }
