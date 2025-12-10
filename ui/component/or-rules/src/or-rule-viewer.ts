@@ -268,13 +268,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                                 recurrence: i18next.t("planRecurrence"),
                             } as LabeledEventTypes}"
                             disabledRRuleParts="${DISABLED_RRULE_PARTS}"
-                            @or-scheduler-changed="${(event: OrSchedulerChangedEvent | undefined) => {
-                                if (this.ruleset) {
-                                    this.ruleset.meta ??= {};
-                                    this.ruleset.meta.validity = event?.detail.value;
-                                    this.requestUpdate("ruleset");
-                                }
-                            }}"
+                            @or-scheduler-changed="${this._onSchedulerChanged}"
                         ></or-scheduler>
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
                     </div>
@@ -306,6 +300,14 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             this.ruleset.name = name;
             this.modified = true;
             this.requestUpdate();
+        }
+    }
+
+    protected _onSchedulerChanged(e?: OrSchedulerChangedEvent) {
+        if (this.ruleset) {
+            this.ruleset.meta ??= {};
+            this.ruleset.meta.validity = e?.detail.value;
+            this.requestUpdate("ruleset");
         }
     }
 
