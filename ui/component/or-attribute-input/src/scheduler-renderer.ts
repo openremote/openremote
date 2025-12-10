@@ -17,7 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {
+import { html } from "lit";
+import { CalendarEvent } from "@openremote/model";
+import { 
+    JsonFormsStateContext,
+    getTemplateWrapper,
+    JsonFormsRendererRegistryEntry,
     RankedTester,
     rankWith,
     ControlProps,
@@ -26,10 +31,7 @@ import {
     and,
     isObjectControl,
     schemaMatches,
-} from "@jsonforms/core";
-import { html } from "lit";
-import { CalendarEvent } from "@openremote/model";
-import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
+} from "@openremote/or-json-forms";
 import { Frequency, RulePartKey, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
 

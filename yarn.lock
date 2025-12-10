@@ -1997,7 +1997,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-attribute-input@workspace:ui/component/or-attribute-input"
   dependencies:
-    "@jsonforms/core": "npm:^3.5.1"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@openremote/or-components": "workspace:*"
