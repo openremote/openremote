@@ -52,6 +52,8 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
+import static java.util.concurrent.TimeUnit.MINUTES
+import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
@@ -443,8 +445,20 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         when: "fast forward past the end date"
         future.get() // resolve future manually, because we surpassed the delay
 
+        then: "the attributeRef should be present"
+        conditions.eventually {
+            Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-26T01:00:00Z") // Last monday
+            protocol.replayMap.get(attributeRef) != null
+        }
+
+        when: "fast forward 5 days and -1 hour"
+        advancePseudoClock(5, DAYS, container)
+        advancePseudoClock(-1, HOURS, container)
+        future.get() // resolve future manually
+
         then: "the attributeRef is removed from the replayMap"
         conditions.eventually {
+            Instant.ofEpochMilli(getClockTimeOf(container)) == Instant.parse("1970-01-31T00:00:00Z") // Ends here
             protocol.replayMap.get(attributeRef) == null
         }
     }

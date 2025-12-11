@@ -193,17 +193,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         long defaultReplayLoopDuration = 86400; // 1 day in seconds
         long now = timerService.getNow().getEpochSecond(); // UTC
 
-        long timeSinceOccurrenceStarted;
-        if (schedule.isEmpty()) {
-            timeSinceOccurrenceStarted = now % defaultReplayLoopDuration; // Remainder since 00:00
-        } else {
-            OptionalLong active = schedule.get().tryAdvanceActive(now);
-            if (active.isEmpty()) {
-                LOG.warning("Replay schedule has ended for: " + attributeRef);
-                return null;
-            }
-            timeSinceOccurrenceStarted = now - active.getAsLong();
-        }
+        long timeSinceOccurrenceStarted = schedule.map(s -> now - s.tryAdvanceActive(now))
+                .orElse(now % defaultReplayLoopDuration); // Remainder since 00:00
 
         // Find datapoint with timestamp after the current occurrence
         SimulatorReplayDatapoint nextDatapoint = Arrays.stream(simulatorReplayDatapoints)
@@ -438,17 +429,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param secondsSinceEpoch Seconds since the epoch (1970-01-01T00:00:00Z)
          * @return The start time of the active occurrence. If not started, the start of the schedule is returned.
          */
-        public OptionalLong tryAdvanceActive(long secondsSinceEpoch) {
+        public long tryAdvanceActive(long secondsSinceEpoch) {
             long startInSeconds = start.toEpochSecond(ZoneOffset.UTC);
 
             if (recurrence == null) {
                 current = start;
-                if (end == null) {
-                    return OptionalLong.of(startInSeconds);
-                } else if (secondsSinceEpoch > end.toEpochSecond(ZoneOffset.UTC)) {
-                    return OptionalLong.empty();
-                }
-                return OptionalLong.of(startInSeconds);
+                return startInSeconds;
             }
 
             LocalDateTime now = LocalDateTime.ofEpochSecond(secondsSinceEpoch, 0, ZoneOffset.UTC);
@@ -460,7 +446,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 if (!dates.isEmpty()) {
                     current = dates.getLast();
                     upcoming = recurrence.getNextDate(start, current);
-                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+                    return current.toEpochSecond(ZoneOffset.UTC);
                 }
                 LocalDateTime epoch = LocalDateTime.ofEpochSecond(0,0, ZoneOffset.UTC);
                 LocalDateTime firstOccurrence = recurrence.getNextDate(start, epoch);
@@ -468,11 +454,11 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 if (firstOccurrence != null && startInSeconds != firstOccurrence.toEpochSecond(ZoneOffset.UTC)) {
                     current = firstOccurrence;
                     upcoming = recurrence.getNextDate(start, current);
-                    return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+                    return current.toEpochSecond(ZoneOffset.UTC);
                 }
                 // The first occurrence hasn't started
                 current = start;
-                return OptionalLong.of(startInSeconds);
+                return startInSeconds;
             }
 
             // Preemptively get next to determine whether to advance the occurrence or to end the recurrence
@@ -480,7 +466,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
             // Recurrence has ended
             if (next == null) {
-                return OptionalLong.empty();
+                return current.toEpochSecond(ZoneOffset.UTC);
             }
 
             // Track active and upcoming occurrence
@@ -489,7 +475,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             }
             upcoming = next;
 
-            return OptionalLong.of(current.toEpochSecond(ZoneOffset.UTC));
+            return current.toEpochSecond(ZoneOffset.UTC);
         }
 
         /**
