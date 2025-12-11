@@ -31,10 +31,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
+import static org.openremote.model.util.MapAccess.getInteger;
 
 public class KeycloakSetup extends AbstractKeycloakSetup {
     private static final ClientRole[] CLIENT_ROLES = new ClientRole[] {

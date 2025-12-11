@@ -213,6 +213,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
             }
+            // Determine what predicted datapoint windows to be calculated next
+            // Initially calculate BOTH the current- and next occurrence window,
+            // afterward only calculate the NEXT window after switching to the next window.
             if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
                 predictedDatapointWindowMap.put(attributeRef, PredictedDatapointWindow.NONE);
             } else if (simulatorReplayDatapoints[simulatorReplayDatapoints.length - 1] == nextDatapoint) {
