@@ -19,8 +19,9 @@
  */
 import {customElement} from "lit/decorators.js";
 import {NumberField} from "@vaadin/number-field";
+import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-numberfield")
-export class OrVaadinNumberfield extends NumberField {
+export class OrVaadinNumberfield extends NumberField implements OrVaadinComponent {
 
 }

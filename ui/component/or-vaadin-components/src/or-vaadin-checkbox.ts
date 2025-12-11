@@ -19,8 +19,9 @@
  */
 import {customElement} from "lit/decorators.js";
 import {Checkbox} from "@vaadin/checkbox";
+import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-checkbox")
-export class OrVaadinCheckbox extends Checkbox {
+export class OrVaadinCheckbox extends Checkbox implements OrVaadinComponent {
 
 }

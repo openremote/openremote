@@ -19,8 +19,9 @@
  */
 import {customElement} from "lit/decorators.js";
 import {PasswordField} from "@vaadin/password-field";
+import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-passwordfield")
-export class OrVaadinPasswordField extends PasswordField {
+export class OrVaadinPasswordField extends PasswordField implements OrVaadinComponent {
 
 }

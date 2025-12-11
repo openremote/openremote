@@ -19,8 +19,9 @@
  */
 import {customElement} from "lit/decorators.js";
 import {TextField} from "@vaadin/text-field";
+import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-textfield")
-export class OrVaadinTextfield extends TextField {
+export class OrVaadinTextfield extends TextField implements OrVaadinComponent {
 
 }

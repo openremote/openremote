@@ -83,6 +83,10 @@ export enum InputType {
     DURATION_PERIOD = "duration-period"
 }
 
+export interface OrVaadinComponent {
+    // Currently, an empty interface
+}
+
 export interface ValueInputProviderOptions {
     label?: string;
     required?: boolean;
@@ -147,6 +151,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
+
+    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && !format?.asSlider && !format?.asOnOff);
 
     // Determine input type
     if (!inputType) {
@@ -353,14 +359,18 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const label = supportsLabel ? options.label : undefined;
         const inputStyle = styles ? styleMap(styles) : undefined;
 
-        const useVaadinInput = (OrVaadinInput.TEMPLATES.has(inputType)
-            && !format?.asSlider && !format?.asOnOff
-        );
+        if(supportsVaadinInput(inputType)) {
 
-        if(useVaadinInput) {
+            // or-vaadin-checkbox has multiple states (like indeterminate), so it uses the 'checked' HTML attribute instead of 'value'.
+            let checked = false;
+            if(inputType === InputType.CHECKBOX) {
+                checked = Boolean(value);
+                value = undefined;
+            }
+
             return html`
                 <or-vaadin-input ${ref(inputRef)} id="input" style="${ifDefined(inputStyle)}" type=${ifDefined(inputType)}
-                                 label=${ifDefined(label)} value=${ifDefined(value)} pattern=${ifDefined(pattern)}
+                                 label=${ifDefined(label)} value=${ifDefined(value)} ?checked="${checked}" pattern=${ifDefined(pattern)}
                                  min=${ifDefined(min)} max=${ifDefined(max)} format=${ifDefined(format)}
                                  ?autofocus=${focused} ?required=${required} ?multiple=${multiple}
                                  ?comfortable=${comfortable} ?readonly=${readonly} ?disabled=${disabled}

@@ -19,8 +19,9 @@
  */
 import {customElement} from "lit/decorators.js";
 import {TextArea} from "@vaadin/text-area";
+import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-textarea")
-export class OrVaadinTextarea extends TextArea {
+export class OrVaadinTextarea extends TextArea implements OrVaadinComponent {
 
 }
