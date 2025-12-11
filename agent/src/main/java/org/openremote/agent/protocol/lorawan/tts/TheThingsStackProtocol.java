@@ -26,6 +26,7 @@ import com.google.protobuf.FieldMask;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
 import org.openremote.agent.protocol.lorawan.AbstractLoRaWANProtocol;
@@ -716,18 +717,25 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                 )
                 .build();
 
-        EndDeviceOuterClass.EndDevice device = stub.get(request);
-        if (device != null && device.getIds() != null && !isNullOrEmpty(device.getIds().getDeviceId()) && device.getIds().getDevEui() != null) {
-            String devEui = bytesToHex(device.getIds().getDevEui().toByteArray()).toUpperCase();
-            if (!isNullOrEmpty(devEui)) {
-                ttsDeviceMap.get().put(devEui, device);
+        try {
+            EndDeviceOuterClass.EndDevice device = stub.get(request);
 
-                LOG.finest(() ->
-                    "[" + SINGLE_DEVICE_SYNC_RUNNER_NAME + "] Synced device (devEui=" + devEui +
-                    ", deviceId=" + device.getIds().getDeviceId() + ") for: " + getProtocolInstanceUri()
-                );
+            if (device != null && device.getIds() != null && !isNullOrEmpty(device.getIds().getDeviceId()) && device.getIds().getDevEui() != null) {
+                String devEui = bytesToHex(device.getIds().getDevEui().toByteArray()).toUpperCase();
+                if (!isNullOrEmpty(devEui)) {
+                    ttsDeviceMap.get().put(devEui, device);
 
-                mergeDiscoveredDevice(devEui, device);
+                    LOG.finest(() ->
+                        "[" + SINGLE_DEVICE_SYNC_RUNNER_NAME + "] Synced device (devEui=" + devEui +
+                        ", deviceId=" + device.getIds().getDeviceId() + ") for: " + getProtocolInstanceUri()
+                    );
+
+                    mergeDiscoveredDevice(devEui, device);
+                }
+            }
+        } catch (StatusRuntimeException ex) {
+            if (ex.getStatus().getCode() != Status.Code.NOT_FOUND) {
+                throw ex;
             }
         }
 
