@@ -110,6 +110,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Free up disk space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          
+          # Remove large directories
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          
+          # Remove large packages
+          sudo apt-get remove -y '^aspnetcore-.*' || true
+          sudo apt-get remove -y '^dotnet-.*' || true
+          sudo apt-get remove -y '^llvm-.*' || true
+          sudo apt-get remove -y 'php.*' || true
+          sudo apt-get remove -y '^mongodb-.*' || true
+          sudo apt-get remove -y '^mysql-.*' || true
+          sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri || true
+          sudo apt-get remove -y google-cloud-sdk google-cloud-cli || true
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          
+          # Remove Docker images
+          sudo docker image prune --all --force
+          
+          # Remove swap storage
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile || true
+          
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Get inputs and secrets
         id: inputs-and-secrets
         shell: python
