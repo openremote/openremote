@@ -11,16 +11,11 @@ dependencies {
 
 tasks.register('license') {
     doLast {
-        def toConcatenate = files("${rootDir}/LICENSE.txt")
-        def outputFileName = "${buildDir}/image/manager/app/LICENSE.txt"
-        def output = new File(outputFileName)
-        if (output.exists()) {
-            output.delete()
-        }
-        output.getParentFile().mkdirs()
-        output.createNewFile()
-        output.write('') // truncate output if needed
-        toConcatenate.each { f -> output << f.text }
+        def sourceFile = file("${rootDir}/LICENSE.txt")
+        def outputFile = layout.buildDirectory.file("image/manager/app/LICENSE.txt").get().asFile
+
+        outputFile.parentFile.mkdirs()
+        outputFile.text = sourceFile.text
     }
 }
 
@@ -30,8 +25,9 @@ tasks.register('installDist', Copy) {
         // Don't create circular dependency or depend on built in openremote submodule apps
         it.project != project && !it.project.path.startsWith(":openremote:ui:app")
     })
+    dependsOn(tasks.named('license'))
 
-    into("$buildDir")
+    into(layout.buildDirectory)
 
     from "Dockerfile"
 
