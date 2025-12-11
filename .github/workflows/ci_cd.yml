@@ -135,7 +135,7 @@ jobs:
           sudo apt-get clean
           
           # Remove Docker images
-          sudo docker image prune --all --force
+          sudo docker image prune --force
           
           # Remove swap storage
           sudo swapoff -a || true
