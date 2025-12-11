@@ -37,6 +37,11 @@ export class UsersPage implements BasePage {
    * @param perms The permissions expected to be checked
    */
   async toHavePermissions(...perms: string[]) {
+    // Wait for the first permission to be checked to ensure UI has updated after role selection
+    if (perms.length > 0) {
+      await expect(this.getPermission(perms[0])).toBeChecked({ timeout: 10000 });
+    }
+    
     for (const permisison of perms) {
       await expect(this.getPermission(permisison)).toBeChecked();
       await expect(this.getPermission(permisison)).toBeDisabled();
