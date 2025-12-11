@@ -54,7 +54,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
@@ -91,9 +90,6 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
     Server mqttBroker
 
     @Shared
-    Path tempDataDir
-
-    @Shared
     int grpcPort
 
     @Shared
@@ -103,12 +99,10 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
     Mqtt3AsyncClient mqttClient
 
     def setupSpec() {
-        tempDataDir = File.createTempDir('moquette_data', '').toPath()
         mqttBrokerPort = findEphemeralPort()
         def props = new Properties()
         props.setProperty('port', mqttBrokerPort.toString())
-        // Moquette assumes linux paths so need to convert windows paths
-        props.setProperty('persistent_store', tempDataDir.resolve('moquette_store.mapdb').toString().replace('\\', '/'))
+        props.setProperty('persistence_enabled', 'false')
         def config = new MemoryConfig(props)
         mqttBroker = new Server()
         mqttBroker.startServer(config)
@@ -130,7 +124,6 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         mqttClient?.disconnect()
         mqttBroker?.stopServer()
         grpcServer?.stop()
-        tempDataDir?.deleteDir()
     }
 
     def "ChirpStack CSV Import Test"() {
@@ -356,20 +349,17 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
                 .addService(new DeviceProfileService())
                 .build()
                 .start()
-            println "Fake gRPC server started on port $port"
         }
 
         void stop() {
             if (server != null) {
                 server.shutdownNow()
-                println "Fake gRPC server stopped"
             }
         }
 
         private static class DeviceService extends DeviceServiceGrpc.DeviceServiceImplBase {
             @Override
             void list(ListDevicesRequest request, StreamObserver<ListDevicesResponse> responseObserver) {
-                println "Fake DeviceService is called"
                 DeviceListItem device1 = DeviceListItem.newBuilder()
                     .setDevEui(DEV_EUI_1)
                     .setName(ASSET_NAME_1)
@@ -394,7 +384,6 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         private static class DeviceProfileService extends DeviceProfileServiceGrpc.DeviceProfileServiceImplBase {
             @Override
             void get(GetDeviceProfileRequest request, StreamObserver<GetDeviceProfileResponse> responseObserver) {
-                println "Fake DeviceProfileService is called"
                 if (PROFILE_ID != request.id) {
                     responseObserver.onError(
                         Status.NOT_FOUND
