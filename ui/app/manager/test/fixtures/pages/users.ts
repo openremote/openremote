@@ -45,13 +45,13 @@ export class UsersPage implements BasePage {
     
     // Check remaining permissions
     for (let i = 1; i < perms.length; i++) {
-      const permisison = perms[i];
-      await expect(this.getPermission(permisison)).toBeChecked();
-      await expect(this.getPermission(permisison)).toBeDisabled();
+      const permission = perms[i];
+      await expect(this.getPermission(permission)).toBeChecked();
+      await expect(this.getPermission(permission)).toBeDisabled();
     }
-    for (const permisison of permissions.filter((p) => !perms.includes(p))) {
-      await expect(this.getPermission(permisison)).not.toBeChecked();
-      await expect(this.getPermission(permisison)).not.toBeDisabled();
+    for (const permission of permissions.filter((p) => !perms.includes(p))) {
+      await expect(this.getPermission(permission)).not.toBeChecked();
+      await expect(this.getPermission(permission)).not.toBeDisabled();
     }
   }
 
