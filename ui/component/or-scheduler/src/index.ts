@@ -183,78 +183,66 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return rrule?.toString()?.split("RRULE:")?.[1]?.replace(/(UNTIL=\d+T\d+)Z/, "$1");
     }
 
-    protected setRRuleValue(value: any, key: keyof RuleParts | "all-day" | "start" | "end" | "recurrence-ends" | "dtstart-time" | "end-time") {
-        let origOptions = this._rrule?.origOptions!;
+    protected setRRuleValue(value: any, key: keyof RuleParts | "start" | "end" | "start-time" | "end-time" | "all-day" | "recurrence-ends") {
+        let origOptions = this._rrule?.origOptions;
         const calendarEvent = this._normalizedSchedule!;
 
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
-                origOptions.byweekday = (value as WeekdayStr[]).map(d => RRule[d]);
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                origOptions!.byweekday = (value as WeekdayStr[]).map(d => RRule[d]);
             } else {
-                origOptions[key as keyof RuleParts] = value;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+                origOptions![key as keyof RuleParts] = value;
             }
+            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+        } else if (key === "start" && origOptions) {
+            const [year, month, date] = value.split("-").map(Number);
+            origOptions.dtstart = moment(calendarEvent.start).set({ year, month: month - 1, date }).toDate();
+            calendarEvent.start = origOptions.dtstart.getTime();
+            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+        } else if (key === "end") {
+            const [year, month, date] = value.split("-").map(Number);
+            calendarEvent.end = moment(calendarEvent.end).set({ year, month: month - 1, date }).toDate().getTime();
+        } else if (key === "start-time") {
+            const [hour, minute] = value.split(':');
+            if (origOptions) {
+                origOptions.dtstart = moment(calendarEvent.start).set({ hour, minute, second: 0, millisecond: 0 }).toDate();
+            } else {
+                origOptions = new RRule({
+                    dtstart: moment(calendarEvent.start).set({ hour, minute, second: 0, millisecond: 0 }).toDate()
+                }).origOptions;
+            }
+            calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
+            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
+        } else if (key === "end-time") {
+            const [hour, minute] = value.split(':');
+            calendarEvent.end = moment(calendarEvent.end).set({ hour, minute, second: 0, millisecond: 0 }).toDate().getTime();
         } else {
           switch (key) {
             case "all-day":
                 this.isAllDay = value;
                 break;
-            case "start":
-                const newStartDate = moment(value);
-                if (newStartDate.isValid()) {
-                    calendarEvent.start = newStartDate.set({ hour: 0, minute: 0, second: 0, millisecond: 0 }).toDate().getTime();
-                    if (this._eventType === EventTypes.recurrence) {
-                        origOptions.dtstart = newStartDate.toDate();
-                        this._rrule = new RRule(origOptions);
-                    }
-                }
-                break;
-            case "end":
-                const newEndDate = moment(value);
-                if (newEndDate.isValid()) {
-                    calendarEvent.end = newEndDate.set({ hour: 23, minute: 59, second: 0, millisecond: 0 }).toDate().getTime();
-                }
-                break;
             case "recurrence-ends":
                 if (value === "until") {
-                    origOptions.until = this._until;
-                    delete origOptions.count;
+                    origOptions!.until = this._until;
+                    delete origOptions!.count;
                 } else if (value === "count") {
-                    origOptions.count = this._count;
-                    delete origOptions.until;
+                    origOptions!.count = this._count;
+                    delete origOptions!.until;
                 } else {
-                    delete origOptions.count;
-                    delete origOptions.until;
+                    delete origOptions!.count;
+                    delete origOptions!.until;
                 }
                 this._ends = value;
                 if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "until":
                 this._until = new Date(value);
-                origOptions.until = this._until;
+                origOptions!.until = this._until;
                 if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
             case "count":
                 this._count = value;
-                origOptions.count = this._count;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-            case "dtstart-time":
-                const timeParts = value.split(':');
-                if (origOptions) {
-                    origOptions.dtstart = moment(origOptions.dtstart).set({ hour: timeParts[0], minute: timeParts[1], second: 0, millisecond: 0 }).toDate();
-                } else {
-                    origOptions = new RRule({
-                        dtstart: moment(calendarEvent.start).set({ hour: timeParts[0], minute: timeParts[1], second: 0, millisecond: 0 }).toDate()
-                    }).origOptions;
-                }
-                calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-            case "end-time":
-                const untilParts = value.split(':');
-                calendarEvent.end = moment(calendarEvent.end).set({ hour: untilParts[0], minute: untilParts[1], second: 0, millisecond: 0 }).toDate().getTime();
+                origOptions!.count = this._count;
                 if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
                 break;
           }
@@ -541,7 +529,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div style="display: flex; gap: 8px;" class="layout horizontal">
                     <div>
                         <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
-                        <or-mwc-input .disabled=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
+                        <or-mwc-input .disabled=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start-time")}" .label="${i18next.t("from")}"></or-mwc-input>
                     </div>
                     <div>
                         <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
