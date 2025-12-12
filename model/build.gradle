@@ -25,6 +25,8 @@ dependencies {
     api "org.reflections:reflections:$reflectionsVersion"
     api "com.google.guava:guava:$guavaVersion"
 
+    api "org.checkerframework:checker-qual:$checkerframeworkVersion"
+
     api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
     api "com.github.victools:jsonschema-generator:$victoolsJsonSchemaGeneratorVersion"

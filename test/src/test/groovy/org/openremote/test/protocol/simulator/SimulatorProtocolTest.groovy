@@ -113,11 +113,16 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         // Create and link asset to agent
         agent = new SimulatorAgent("Test agent").setRealm(Constants.MASTER_REALM)
         agent = assetStorageService.merge(agent)
+
+        // Wait until agent is connected before resetting the clock so attribute events are processed correctly
+        conditions.eventually {
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
     }
 
     def setup() {
-        resetPseudoClockAt()
-        stopPseudoClockAt(Instant.parse("1970-01-01T00:00:00.000Z").toEpochMilli())
+        stopPseudoClock()
+        setPseudoClock("1970-01-01T00:00:00.000Z")
 
         future = Mock(ScheduledFuture)
         executor = Mock(ScheduledExecutorService)
