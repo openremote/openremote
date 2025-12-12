@@ -6,7 +6,6 @@
     "ui/util",
     "ui/test",
     "ui/app/*",
-    "ui/component/*",
-    "ui/demo/*"
+    "ui/component/*"
   ]
 }

@@ -1779,81 +1779,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/demo-core@workspace:ui/demo/demo-core":
-  version: 0.0.0-use.local
-  resolution: "@openremote/demo-core@workspace:ui/demo/demo-core"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-icon": "workspace:*"
-    "@openremote/or-translate": "workspace:*"
-    "@openremote/util": "workspace:*"
-    "@rspack/cli": "npm:^1.4.4"
-    "@rspack/core": "npm:^1.4.4"
-    lit: "npm:^3.3.1"
-    typescript: "npm:^5.3.3"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/demo-or-asset-tree@workspace:ui/demo/demo-or-asset-tree":
-  version: 0.0.0-use.local
-  resolution: "@openremote/demo-or-asset-tree@workspace:ui/demo/demo-or-asset-tree"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/or-asset-tree": "workspace:*"
-    "@openremote/util": "workspace:*"
-    "@polymer/iron-demo-helpers": "npm:^3.1.0"
-    "@rspack/cli": "npm:^1.4.4"
-    "@rspack/core": "npm:^1.4.4"
-    lit: "npm:^3.3.1"
-    typescript: "npm:^5.3.3"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/demo-or-map@workspace:ui/demo/demo-or-map":
-  version: 0.0.0-use.local
-  resolution: "@openremote/demo-or-map@workspace:ui/demo/demo-or-map"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/or-map": "workspace:*"
-    "@openremote/util": "workspace:*"
-    "@polymer/iron-demo-helpers": "npm:^3.1.0"
-    "@rspack/cli": "npm:^1.4.4"
-    "@rspack/core": "npm:^1.4.4"
-    typescript: "npm:^5.3.3"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/demo-or-thermostat@workspace:ui/demo/demo-or-thermostat":
-  version: 0.0.0-use.local
-  resolution: "@openremote/demo-or-thermostat@workspace:ui/demo/demo-or-thermostat"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-thermostat": "workspace:*"
-    "@openremote/util": "workspace:*"
-    "@polymer/iron-demo-helpers": "npm:^3.1.0"
-    "@rspack/cli": "npm:^1.4.4"
-    "@rspack/core": "npm:^1.4.4"
-    lit-html: "npm:^3.3.1"
-    typescript: "npm:^5.3.3"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/demo-rest@workspace:ui/demo/demo-rest":
-  version: 0.0.0-use.local
-  resolution: "@openremote/demo-rest@workspace:ui/demo/demo-rest"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/util": "workspace:*"
-    "@rspack/cli": "npm:^1.1.3"
-    "@rspack/core": "npm:^1.1.3"
-    lit-html: "npm:^3.3.1"
-    typescript: "npm:^5.3.3"
-  languageName: unknown
-  linkType: soft
-
 "@openremote/insights@workspace:ui/app/insights":
   version: 0.0.0-use.local
   resolution: "@openremote/insights@workspace:ui/app/insights"
@@ -2048,15 +1973,6 @@ __metadata:
     "@openremote/or-asset-tree": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    lit: "npm:^3.3.1"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-bottom-navigation@workspace:ui/component/or-bottom-navigation":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-bottom-navigation@workspace:ui/component/or-bottom-navigation"
-  dependencies:
-    "@polymer/polymer": "npm:^3.3.1"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2349,7 +2265,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-thermostat@workspace:*, @openremote/or-thermostat@workspace:ui/component/or-thermostat":
+"@openremote/or-thermostat@workspace:ui/component/or-thermostat":
   version: 0.0.0-use.local
   resolution: "@openremote/or-thermostat@workspace:ui/component/or-thermostat"
   dependencies:
@@ -2503,83 +2419,6 @@ __metadata:
   version: 1.0.0-next.29
   resolution: "@polka/url@npm:1.0.0-next.29"
   checksum: 10c0/0d58e081844095cb029d3c19a659bfefd09d5d51a2f791bc61eba7ea826f13d6ee204a8a448c2f5a855c17df07b37517373ff916dd05801063c0568ae9937684
-  languageName: node
-  linkType: hard
-
-"@polymer/font-roboto@npm:^3.0.0-pre.25":
-  version: 3.0.2
-  resolution: "@polymer/font-roboto@npm:3.0.2"
-  checksum: 10c0/e0b1e710967c2e49984f433250517600e7e7b25dbc13c7f375b1f6a2f5f6a7fecb33a66cb31337abe3a0d7f68654b517a0b62055fa7d192f14a1e74faeefafba
-  languageName: node
-  linkType: hard
-
-"@polymer/iron-demo-helpers@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "@polymer/iron-demo-helpers@npm:3.1.0"
-  dependencies:
-    "@polymer/font-roboto": "npm:^3.0.0-pre.25"
-    "@polymer/iron-flex-layout": "npm:^3.0.0-pre.25"
-    "@polymer/iron-location": "npm:^3.0.0-pre.25"
-    "@polymer/marked-element": "npm:^3.0.0-pre.25"
-    "@polymer/polymer": "npm:^3.0.0"
-    "@polymer/prism-element": "npm:^3.0.0-pre.25"
-  checksum: 10c0/640ae5bc9a9c3a37e87f7887530587ebdbba0697590e5c3e89afd327f7a88daf0ff2d553c6126f742de29d18662204cd1abb0e5b3a9414d6d04b0df55d37913b
-  languageName: node
-  linkType: hard
-
-"@polymer/iron-flex-layout@npm:^3.0.0-pre.25":
-  version: 3.0.1
-  resolution: "@polymer/iron-flex-layout@npm:3.0.1"
-  dependencies:
-    "@polymer/polymer": "npm:^3.0.0"
-  checksum: 10c0/fb38523949a640b70cc6ba037cb4bfbbdc84d9c70ccbe5b0dc05f54f7b9c4a0b1c5ec2be214edbab3ce2eb7e41c6ad8be847c9af69e658799f21e4f7b7518473
-  languageName: node
-  linkType: hard
-
-"@polymer/iron-location@npm:^3.0.0-pre.25":
-  version: 3.0.2
-  resolution: "@polymer/iron-location@npm:3.0.2"
-  dependencies:
-    "@polymer/polymer": "npm:^3.0.0"
-  checksum: 10c0/e69eca81bbbc279878809f212a66bf2d0df2d45f81e646631851c8222b2e5e02929b7423d831eb6acd69e5945f296d323dfc6b10861246aa495d23528b276bc1
-  languageName: node
-  linkType: hard
-
-"@polymer/marked-element@npm:^3.0.0-pre.25":
-  version: 3.0.1
-  resolution: "@polymer/marked-element@npm:3.0.1"
-  dependencies:
-    "@polymer/polymer": "npm:^3.0.0"
-    marked: "npm:~0.3.9"
-  checksum: 10c0/4a39fc8b2faaaf1da5f07e35e86f2215762ad6b08775ea278e5941cc5174e29323d07edad7977d2bc17f2cea382766fe958063e6f152a530a14f6a69113eff0f
-  languageName: node
-  linkType: hard
-
-"@polymer/polymer@npm:^3.0.0":
-  version: 3.5.2
-  resolution: "@polymer/polymer@npm:3.5.2"
-  dependencies:
-    "@webcomponents/shadycss": "npm:^1.9.1"
-  checksum: 10c0/03862c94dea52ac61be8875b70a3565842c4491016d6edc4a7c43050922c2170b9a4f1613587e94453030168129ef320234dba5a7a9e80ce4ba2babe82b01e74
-  languageName: node
-  linkType: hard
-
-"@polymer/polymer@npm:^3.3.1":
-  version: 3.5.1
-  resolution: "@polymer/polymer@npm:3.5.1"
-  dependencies:
-    "@webcomponents/shadycss": "npm:^1.9.1"
-  checksum: 10c0/0aed9f513688dafaa11e596ec5f2304597e41ceb3b5bf75da4c3d759450c53fe572a964b6f377f4e35076ccd9f16decfcfca924c00b27d60ba2d17a2fc501450
-  languageName: node
-  linkType: hard
-
-"@polymer/prism-element@npm:^3.0.0-pre.25":
-  version: 3.0.1
-  resolution: "@polymer/prism-element@npm:3.0.1"
-  dependencies:
-    "@polymer/polymer": "npm:^3.0.0"
-    prismjs: "npm:^1.11.0"
-  checksum: 10c0/f9400e99f5b0e46904a241423981e672241a321fe06ac3ec87c6953cc2fe444ec40cfc8b5f5a6c62735e9bdac0cf36a2734db27e26b3d0e49dfb95a4bb268554
   languageName: node
   linkType: hard
 
@@ -2997,7 +2836,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rspack/cli@npm:^1.1.3, @rspack/cli@npm:^1.4.4":
+"@rspack/cli@npm:^1.4.4":
   version: 1.4.11
   resolution: "@rspack/cli@npm:1.4.11"
   dependencies:
@@ -3033,7 +2872,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rspack/core@npm:^1.1.3, @rspack/core@npm:^1.4.4":
+"@rspack/core@npm:^1.4.4":
   version: 1.4.11
   resolution: "@rspack/core@npm:1.4.11"
   dependencies:
@@ -4027,13 +3866,6 @@ __metadata:
     "@webassemblyjs/ast": "npm:1.14.1"
     "@xtuc/long": "npm:4.2.2"
   checksum: 10c0/8d7768608996a052545251e896eac079c98e0401842af8dd4de78fba8d90bd505efb6c537e909cd6dae96e09db3fa2e765a6f26492553a675da56e2db51f9d24
-  languageName: node
-  linkType: hard
-
-"@webcomponents/shadycss@npm:^1.9.1":
-  version: 1.11.2
-  resolution: "@webcomponents/shadycss@npm:1.11.2"
-  checksum: 10c0/0f6f6545c0805e307747014e693a30e8d4128dea9ceca66884075de49bf7dee52461255b9136962fd19d6da075ad732f622c4ada9ee4d27e34c331ecb302e27b
   languageName: node
   linkType: hard
 
@@ -7932,15 +7764,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:~0.3.9":
-  version: 0.3.19
-  resolution: "marked@npm:0.3.19"
-  bin:
-    marked: ./bin/marked
-  checksum: 10c0/ee5e268716de56a7543c245268d72e5eb1a66f67022e0392cab9744b3b38768d1db289c173679ff696cdbf1bcd82ff10520cae2296f3293989e07a17f9218705
-  languageName: node
-  linkType: hard
-
 "math-intrinsics@npm:^1.1.0":
   version: 1.1.0
   resolution: "math-intrinsics@npm:1.1.0"
@@ -8961,13 +8784,6 @@ __metadata:
     lodash: "npm:^4.17.20"
     renderkid: "npm:^3.0.0"
   checksum: 10c0/dc292c087e2857b2e7592784ab31e37a40f3fa918caa11eba51f9fb2853e1d4d6e820b219917e35f5721d833cfd20fdf4f26ae931a90fd1ad0cae2125c345138
-  languageName: node
-  linkType: hard
-
-"prismjs@npm:^1.11.0":
-  version: 1.30.0
-  resolution: "prismjs@npm:1.30.0"
-  checksum: 10c0/f56205bfd58ef71ccfcbcb691fd0eb84adc96c6ff21b0b69fc6fdcf02be42d6ef972ba4aed60466310de3d67733f6a746f89f2fb79c00bf217406d465b3e8f23
   languageName: node
   linkType: hard
 
