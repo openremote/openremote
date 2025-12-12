@@ -891,7 +891,7 @@ export class OrMwcInput extends LitElement {
     }
 
     public focus() {
-        if (this.type === InputType.RANGE && this._mdcComponent2) {
+        if (this.type === InputType.RANGE && this._mdcComponent2 && typeof (this._mdcComponent2 as any).focus === "function") {
             (this._mdcComponent2 as any).focus();
         } else if (this._mdcComponent && typeof (this._mdcComponent as any).focus === "function") {
             (this._mdcComponent as any).focus();
@@ -1140,7 +1140,7 @@ export class OrMwcInput extends LitElement {
                                             <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">
                                                 <or-translate .value="${this.searchLabel}"></or-translate>
                                             </span>
-                                            <input class="mdc-text-field__input" type="text"
+                                            <input id="searchable-input" class="mdc-text-field__input" type="text"
                                                    @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
                                             />
                                         </label>
