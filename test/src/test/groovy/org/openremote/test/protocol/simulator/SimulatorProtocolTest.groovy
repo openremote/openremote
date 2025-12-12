@@ -57,15 +57,13 @@ import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
 
 class SimulatorProtocolTest extends Specification implements ManagerContainerTrait {
 
-    private final static long SECOND_IN_MILLIS = 1000;
-    private final static long MINUTE_IN_MILLIS = SECOND_IN_MILLIS * 60;
-    private final static long HOUR_IN_MILLIS = MINUTE_IN_MILLIS * 60;
-    private final static long DAY_IN_MILLIS = HOUR_IN_MILLIS * 24;
-    private final static long WEEK_IN_MILLIS = DAY_IN_MILLIS * 7;
+    private final static long SECOND_IN_MILLIS = 1000
+    private final static long MINUTE_IN_MILLIS = SECOND_IN_MILLIS * 60
+    private final static long HOUR_IN_MILLIS = MINUTE_IN_MILLIS * 60
+    private final static long DAY_IN_MILLIS = HOUR_IN_MILLIS * 24
+    private final static long WEEK_IN_MILLIS = DAY_IN_MILLIS * 7
 
-    private final static long HOUR_IN_SECONDS = 3600;
-    private final static long DAY_IN_SECONDS = HOUR_IN_SECONDS * 24;
-    private final static long WEEK_IN_SECONDS = DAY_IN_SECONDS * 7;
+    private final static long HOUR_IN_SECONDS = 3600
 
     static final PollingConditions conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
