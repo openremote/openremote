@@ -16,7 +16,7 @@
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@rsbuild/core": "~1.5.17",
+    "@rsbuild/core": "~1.6.12",
     "@storybook/addon-a11y": "~10.1.2",
     "@storybook/addon-docs": "~10.1.2",
     "@storybook/web-components": "~10.1.2",
