@@ -30,10 +30,10 @@ export class CtShared extends Shared {
      */
     promiseEventDispatch<T extends CustomEvent>(): [
         promise: Promise<T["detail"]>,
-        handler: (event: T["detail"]) => T["detail"]
+        handler: (detail: T["detail"]) => T["detail"]
     ] {
         let resolver: (value: T | PromiseLike<T>) => void;
         const promise = new Promise<T>((resolve) => (resolver = resolve));
-        return [promise, (event: T["detail"]) => resolver(event.value)];
+        return [promise, (detail: T["detail"]) => resolver(detail)];
     }
 }

@@ -101,7 +101,7 @@ ct.describe("Default event type should", () => {
         await component.click();
         await mwcDialog.getDialog().getByRole("button", { name: "apply" }).click();
 
-        const actual = await promise;
+        const actual = (await promise).value;
         expect(actual).toStrictEqual({ ...expected, recurrence: undefined });
         await expect(component.getByRole("button")).toContainText("Default");
     });
@@ -143,7 +143,7 @@ ct.describe("Period event type should", () => {
         await selectEventType("Plan an occurrence", dialog, mwcInput);
         await dialog.getByRole("button", { name: "apply" }).click();
 
-        const actual = await promise;
+        const actual = (await promise).value;
         const { start, end, timeLabel } = getPeriodValues();
 
         expect(actual).toStrictEqual({ end, start, recurrence: undefined });
@@ -169,7 +169,7 @@ ct.describe("Period event type should", () => {
 
         await dialog.getByRole("button", { name: "apply" }).click();
 
-        const actual = await promise;
+        const actual = (await promise).value;
         const { start, end, timeLabel } = getPeriodValues({
             start: 9 * HOUR_IN_MILLIS,
             end: 18 * HOUR_IN_MILLIS,
@@ -256,7 +256,7 @@ ct.describe("Recurrence event type should", () => {
 
         await dialog.getByRole("button", { name: "apply" }).click();
 
-        const actual = await promise;
+        const actual = (await promise).value;
         const { start, end } = getPeriodValues();
 
         expect(actual).toStrictEqual({ end, start, recurrence: "FREQ=DAILY" });
@@ -282,7 +282,7 @@ ct.describe("Recurrence event type should", () => {
 
         await dialog.getByRole("button", { name: "apply" }).click();
 
-        const actual = await promise;
+        const actual = (await promise).value;
         const { start, end, timeLabel } = getPeriodValues({ start: 9 * HOUR_IN_MILLIS, end: 18 * HOUR_IN_MILLIS });
 
         expect(actual).toStrictEqual({ end, start, recurrence: "FREQ=DAILY" });
