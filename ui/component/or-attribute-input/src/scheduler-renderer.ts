@@ -54,7 +54,7 @@ const DISABLED_RRULE_PARTS = [
 
 const schedulerTester: RankedTester = rankWith(
     6,
-    and(isObjectControl, schemaMatches((schema) => schema.format === "or-scheduler"))
+    and(isObjectControl, schemaMatches((schema) => schema.format === "simulator-schedule"))
 );
 const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     props = {
