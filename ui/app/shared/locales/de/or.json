@@ -633,6 +633,28 @@
             }
           }
         }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
