@@ -12,7 +12,7 @@ import {
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next, translate} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {ifDefined} from "lit/directives/if-defined.js";
@@ -58,7 +58,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>
+    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>;
 
     @state()
     protected _cache?: {query: AssetQuery, assets: Asset[]};
@@ -101,7 +101,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         }
 
         const query = this.action.target.assets ? this.action.target.assets : this.action.target.matchedAssets ? this.action.target.matchedAssets : undefined;
-        const assetDescriptor = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
+        const assetDescriptor = this.assetInfos ? this.assetInfos.find(assetTypeInfo => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetDescriptor) {
             return html``;
@@ -124,7 +124,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         // If >= 100 assets: only display if in line with search input
         const assets: Asset[] = this._cache ? this._cache.assets : [];
         const searchable = assets.length > 25;
-        if(searchable && this._selected) {
+        if (searchable && this._selected) {
             idOptions.set(this._selected.id!, this._selected.name!);
         }
 
@@ -134,7 +134,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             
             <!-- Show SELECT input with 'loading' until the assets are retrieved -->
             ${when((!this._cache || this._loading), () => html`
-                <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
+                <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t("loading")}"></or-mwc-input>
             `, () => {
                 if (!searchable) {
                     assets.forEach(a => idOptions.set(a.id!, a.name!));
@@ -261,20 +261,20 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         let promises: Promise<Asset[] | undefined>[] = [];
 
         const query: AssetQuery = { limit: 100 };
-        if(search) {
+        if (search) {
             query.names ??= [];
             query.names.push({ predicateType: "string", value: search });
         }
         // If the cache contains assets from the same query, don't send HTTP request again
         const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
-        if(!this._loading && !isQueryCached) {
+        if (!this._loading && !isQueryCached) {
             this._loading = true;
 
             // Use assetProvider from the parent component to retrieve assets using HTTP
             promises.push(this.assetProvider(type, {...query}));
 
             // When idValue is present, it should also be fetched alongside the other assets
-            if(idValue && idValue !== "*") {
+            if (idValue && idValue !== "*") {
                 promises.push(this.assetProvider(type, { ids: [idValue] }));
             }
 

@@ -539,7 +539,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 // Function for getting assets by type
 // loadedAssets is an object given as parameter that will be updated if new assets are fetched.
 export async function getAssetsByType(type: string, customQuery?: AssetQuery, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
-    if(loadedAssets?.has(type)) {
+    if (loadedAssets?.has(type)) {
         return {
             assets: loadedAssets?.get(type),
             loadedAssets: loadedAssets

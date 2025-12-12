@@ -119,9 +119,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     @property({attribute: false})
     protected _ruleset!: RulesetUnion;
 
-    @state() // to be exact: Map<AssetType name, Asset[]>
-    protected _loadedAssets: Map<string, Asset[]> = new Map<string, Asset[]>();
-
     protected _rule!: JsonRule;
     protected _unsupported = false;
     protected _activeAssetPromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
@@ -221,9 +218,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
     // loadAssets function that also tracks what promises/fetches are active.
     // If so, await for those to finish to prevent multiple API requests.
-    // Also using caching with the _loadedAssets object.
     protected async loadAssets(type: string, query?: AssetQuery): Promise<Asset[] | undefined> {
-        if(this._activeAssetPromises.has(type)) {
+        if (this._activeAssetPromises.has(type)) {
             const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
             return data.assets;
         } else {

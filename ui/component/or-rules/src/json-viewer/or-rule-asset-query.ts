@@ -23,13 +23,13 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
-import {i18next, translate} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
-import {when} from 'lit/directives/when.js';
+import {when} from "lit/directives/when.js";
 import moment from "moment";
 
 // language=CSS
@@ -122,7 +122,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>
+    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>;
 
     @state()
     protected _cache?: {query: AssetQuery, assets: Asset[]};
@@ -214,14 +214,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetDescriptor = assetTypeInfo.assetDescriptor!;
         const operator = this.getOperator(attributePredicate);
         const attributeName = this.getAttributeName(attributePredicate);
-        let attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
+        const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
         let attributes: [string, string][] = [];
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset ? asset.type : assetDescriptor.name, attribute || attributeName, attribute);
 
         if (asset && asset.attributes) {
             attributes = Object.values(asset.attributes)
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attribute.meta[WellknownMetaItems.RULESTATE] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .map((attr) => {
+                .filter(attr => attr.meta && (attr.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attr.meta[WellknownMetaItems.RULESTATE] : attr.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
+                .map(attr => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
                     const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, false);
                     return [attr.name!, label];
@@ -229,14 +229,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         } else {
             attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] :
                 assetTypeInfo.attributeDescriptors
-                    .map((ad) => {
+                    .map(ad => {
                         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetDescriptor.name, ad);
                         const label = Util.getAttributeLabel(undefined, descriptors ? descriptors[0] : undefined, assetDescriptor.name, false);
                         return [ad.name!, label];
                     });
         }  
         
-        attributes.sort(Util.sortByString((attr) => attr[1]));
+        attributes.sort(Util.sortByString(attr => attr[1]));
 
         const operators = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
 
@@ -393,13 +393,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
 
         if (!assetType) {
-            return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
+            return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
         }
 
-        const assetTypeInfo = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
+        const assetTypeInfo = this.assetInfos ? this.assetInfos.find(assetTypeInfo => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetTypeInfo) {
-            return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
+            return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
         }
 
         if (!this._cache && !this._loading) {
@@ -429,7 +429,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         // If >= 100 assets: only display if in line with search input
         const assets: Asset[] = this._cache ? this._cache.assets : [];
         const searchable = assets.length > 25;
-        if(searchable && this._selected) {
+        if (searchable && this._selected) {
             idOptions.set(this._selected.id!, this._selected.name!);
         }
 
@@ -440,9 +440,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             
                 <!-- Show SELECT input with 'loading' until the assets are retrieved -->
                 ${when((!this._cache || this._loading), () => html`
-                    <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
+                    <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t("loading")}"></or-mwc-input>
                 `, () => {
-                    if(!searchable) {
+                    if (!searchable) {
                        assets.forEach(a => idOptions.set(a.id!, a.name!));
                     } else {
                         searchProvider = async (search?: string) => {
@@ -486,7 +486,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                     ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
                                     <div class="attribute">
                                         <div>
-                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._cache!.assets.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._cache!.assets.find(asset => asset.id === idValue) : undefined, attributePredicate)}
                                             ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
                                         </div>
                                     ${showRemoveAttribute ? html`
@@ -496,7 +496,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                             }) : ``}
                             ${showAddAttribute ? html`
                                 <or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                              label="rulesEditorAddAttribute" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
+                                              label="rulesEditorAddAttribute" @or-mwc-input-changed="${(_ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
                             `: ``}
                         </div>
                     `;
@@ -506,7 +506,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected set _assetId(assetId: string | undefined) {
-        if(!assetId || assetId === "*") {
+        if (!assetId || assetId === "*") {
             this.query.ids = undefined;
         } else {
             this._selected = this._cache?.assets?.find(a => a.id === assetId);
@@ -535,7 +535,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
-    protected getOperatorMapValue(operatorMap: {[type: string]: AssetQueryOperator[]}, assetType?: string, attributeName?: string, attributeDescriptor?: AttributeDescriptor, valueDescriptor?: ValueDescriptor) {
+    protected getOperatorMapValue(operatorMap: {[type: string]: AssetQueryOperator[]}, assetType?: string, attributeName?: string, _attributeDescriptor?: AttributeDescriptor, valueDescriptor?: ValueDescriptor) {
 
         let assetAttributeMatch: AssetQueryOperator[] | undefined;
         let attributeDescriptorMatch: AssetQueryOperator[] | undefined;
@@ -559,7 +559,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
     
-    protected getOperators(assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, attribute: Attribute<any> | undefined, attributeName: string): [string, string][] {
+    protected getOperators(_assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, _attribute: Attribute<any> | undefined, attributeName: string): [string, string][] {
 
         let operators: AssetQueryOperator[] | undefined;
 
@@ -571,7 +571,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             operators = this.getOperatorMapValue(this._queryOperatorsMap, getAssetTypeFromQuery(this.query), attributeName, attributeDescriptor, valueDescriptor);
         }
 
-        return operators ? operators.map((v) => [v, i18next.t(v)]) : [];
+        return operators ? operators.map(v => [v, i18next.t(v)]) : [];
     }
 
     protected getOperator(attributePredicate: AttributePredicate): string | undefined {
@@ -717,7 +717,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                         index: value === AssetQueryOperator.INDEX_CONTAINS || value === AssetQueryOperator.NOT_INDEX_CONTAINS ? 0 : undefined,
                         lengthEquals: value === AssetQueryOperator.LENGTH_EQUALS || value === AssetQueryOperator.NOT_LENGTH_EQUALS ? 0 : undefined,
                         lengthGreaterThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
-                        lengthLessThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
+                        lengthLessThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined
                     };
                 }
                 break;
@@ -908,9 +908,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected addAttributePredicate(group: LogicGroup<AttributePredicate>) {
-        if (!group.items) {
-            group.items = [];
-        }
+        group.items ??= [];
         group.items.push({});
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
@@ -935,16 +933,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
      * @protected
      */
     protected async loadAssets(type: string, search?: string, idValue?: string): Promise<Asset[] | undefined> {
-        let promises: Promise<Asset[] | undefined>[] = [];
+        const promises: Promise<Asset[] | undefined>[] = [];
 
         const query: AssetQuery = { limit: 100 };
-        if(search) {
+        if (search) {
             query.names ??= [];
             query.names.push({ predicateType: "string", value: search });
         }
         // If the cache contains assets from the same query, don't send HTTP request again
         const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
-        if(!this._loading && !isQueryCached) {
+        if (!this._loading && !isQueryCached) {
             this._loading = true;
 
             // Use assetProvider from the parent component to retrieve assets using HTTP
