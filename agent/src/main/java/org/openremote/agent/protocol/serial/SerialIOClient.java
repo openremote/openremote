@@ -24,8 +24,8 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
-
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
@@ -45,6 +45,7 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
     protected String port;
     protected int baudRate;
     public static int DEFAULT_BAUD_RATE = 38400;
+    private static final AtomicReference<Class<? extends Channel>> testChannelClass = new AtomicReference<>(null);
 
     public SerialIOClient(String port, Integer baudRate) {
         TextUtil.requireNonNullAndNonEmpty(port);
@@ -54,6 +55,10 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
 
     @Override
     protected Class<? extends Channel> getChannelClass() {
+        Class<? extends Channel> testClass = testChannelClass.get();
+        if (testClass != null) {
+            return testClass;
+        }
         return JSerialCommChannel.class;
     }
 
@@ -83,4 +88,9 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
         bootstrap.option(STOP_BITS, STOPBITS_1);
         bootstrap.option(PARITY_BIT, NONE);
     }
+
+    public static void setTestChannelClass(Class<? extends Channel> channelClass) {
+        testChannelClass.set(channelClass);
+    }
+
 }
