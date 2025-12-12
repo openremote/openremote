@@ -258,7 +258,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
      * @protected
      */
     protected async loadAssets(type: string, search?: string, idValue?: string): Promise<Asset[] | undefined> {
-        let promises: Promise<Asset[] | undefined>[] = [];
+        const promises: Promise<Asset[] | undefined>[] = [];
 
         const query: AssetQuery = { limit: 100 };
         if (search) {

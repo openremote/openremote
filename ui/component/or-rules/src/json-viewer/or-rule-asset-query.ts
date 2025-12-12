@@ -949,7 +949,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             promises.push(this.assetProvider(type, {...query}));
 
             // When idValue is present, it should also be fetched alongside the other assets
-            if(idValue && idValue !== "*") {
+            if (idValue && idValue !== "*") {
                 promises.push(this.assetProvider(type, { ids: [idValue] }));
             }
 
