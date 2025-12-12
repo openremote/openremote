@@ -39,8 +39,9 @@ function range(start: number, end: number): number[] {
 
 // TODO: use es2023
 function toSpliced<T>(arr: T[], index: number, count: number): T[] {
-    arr.splice(index, count);
-    return arr;
+    const shallowCopy = [...arr];
+    shallowCopy.splice(index, count);
+    return shallowCopy;
 }
 
 const byWeekNoOptions = toSpliced(range(-53, 53), 53, 1);
