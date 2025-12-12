@@ -13,6 +13,7 @@
     { "path": "../or-map" },
     { "path": "../or-mwc-components" },
     { "path": "../or-components" },
-    { "path": "../or-json-forms" }
+    { "path": "../or-json-forms" },
+    { "path": "../or-scheduler" },
   ]
 }
