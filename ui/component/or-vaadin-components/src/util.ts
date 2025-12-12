@@ -84,7 +84,7 @@ export enum InputType {
 }
 
 export interface OrVaadinComponent {
-    // Currently, an empty interface
+    getAttributeNames(): string[];
 }
 
 export interface ValueInputProviderOptions {
@@ -144,7 +144,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let max: any;
     let multiple: any;
     let required: boolean | undefined;
-    let selectOptions: [string, string][] | undefined;
+    let selectOptions: { label: string, value: string }[] | undefined;
+    // let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
     const styles = {} as any;
 
@@ -308,7 +309,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         selectOptions = allowedValuesConstraint.allowedValues.map((v, i) => {
             let label = allowedLabels ? allowedLabels[i] : "" + v;
             label = Util.getAllowedValueLabel(label)!;
-            return [v, label || "" + v];
+            return {
+                value: v,
+                label: label || "" + v
+            };
         });
         inputType = InputType.SELECT;
 
@@ -371,10 +375,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             return html`
                 <or-vaadin-input ${ref(inputRef)} id="input" style="${ifDefined(inputStyle)}" type=${ifDefined(inputType)}
                                  label=${ifDefined(label)} value=${ifDefined(value)} ?checked="${checked}" pattern=${ifDefined(pattern)}
-                                 min=${ifDefined(min)} max=${ifDefined(max)} format=${ifDefined(format)}
-                                 ?autofocus=${focused} ?required=${required} ?multiple=${multiple}
-                                 ?comfortable=${comfortable} ?readonly=${readonly} ?disabled=${disabled}
-                                 options=${ifDefined(selectOptions)} step=${ifDefined(step)}
+                                 min=${ifDefined(min)} max=${ifDefined(max)} ?multiple=${multiple} .format=${ifDefined(format)}
+                                 ?autofocus=${focused} ?required=${required} ?readonly=${readonly} ?disabled=${disabled}
+                                 .items=${ifDefined(selectOptions)} step=${ifDefined(step)}
                                  helper-text="${ifDefined(helperText)}" ?resizeVertical="${resizeVertical}"
                                  ?rounded="${options.rounded}" ?outlined="${options.outlined}"
                                  @change="${(e: Event) => {

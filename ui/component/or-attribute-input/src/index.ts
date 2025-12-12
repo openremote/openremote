@@ -546,7 +546,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         // Use json forms with fallback to simple input provider
         const valueChangeHandler = (value: any, updateImmediately?: boolean) => {
-            console.debug(`Updating value of ${this.attribute?.name ?? '???'} to`, value);
             updateImmediately ??= !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
             this._onInputValueChanged(value, updateImmediately);
         };

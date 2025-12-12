@@ -20,15 +20,49 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
-import type {OrVaadinCheckbox} from "./or-vaadin-checkbox";
+import {OrVaadinCheckbox} from "./or-vaadin-checkbox";
 import "./or-vaadin-checkbox";
 import "./or-vaadin-numberfield";
 import "./or-vaadin-passwordfield";
 import "./or-vaadin-textfield";
 import "./or-vaadin-textarea";
+import "./or-vaadin-select";
 
+/**
+ * Function to register properties (get/setter) of a CustomElement list to the child Vaadin element.
+ * When the Vaadin element does not recognize the HTML attribute or class property, it is ignored.
+ * @param constructors - List of CustomElements to scan for available properties
+ */
+function registerProperties(constructors: (CustomElementConstructor | undefined)[]) {
+    constructors
+        .filter(constr => !!constr)
+        .map(contr => contr as typeof LitElement)
+        .forEach(constr => constr.observedAttributes
+            .filter(attr => !OrVaadinInput.elementProperties.has(attr))
+            .forEach(attr => OrVaadinInput.createProperty(attr, constr.getPropertyOptions(attr)))
+        );
+}
+
+/**
+ * Custom element that wraps various Vaadin input components based on the specified `type`.
+ * Provides a unified interface for interacting with different types of inputs.
+ *
+ * @customElement "or-vaadin-input"
+ */
 @customElement("or-vaadin-input")
 export class OrVaadinInput extends LitElement {
+
+    /**
+     * Static list of Vaadin component classes to scan through during attribute changes.
+     * It's important that the complete list of CustomElements is defined here.
+     */
+    public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
+        customElements.get("or-vaadin-numberfield"),
+        customElements.get("or-vaadin-passwordfield"),
+        customElements.get("or-vaadin-select"),
+        customElements.get("or-vaadin-textarea"),
+        customElements.get("or-vaadin-textfield")
+    ];
 
     /**
      * Static map of template functions that are used to render the Vaadin components.
@@ -41,7 +75,8 @@ export class OrVaadinInput extends LitElement {
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
         [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
-        [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate]
+        [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
+        [InputType.SELECT, OrVaadinInput.getSelectTemplate]
     ]);
 
     /**
@@ -85,6 +120,11 @@ export class OrVaadinInput extends LitElement {
     disconnectedCallback() {
         this._observer.disconnect();
         return super.disconnectedCallback();
+    }
+
+    updated(changedProps: PropertyValues) {
+        changedProps.forEach((_, key) => this._onPropertyChange(String(key)));
+        return super.updated(changedProps);
     }
 
     firstUpdated(_changedProps: PropertyValues) {
@@ -138,9 +178,20 @@ export class OrVaadinInput extends LitElement {
             mutations
                 .filter(mutation => mutation.type === "attributes" && mutation.attributeName)
                 .forEach(mutation => {
-                    this._applyAttribute(mutation.attributeName!, this.getAttribute(mutation.attributeName!));
+                    this._applyAttribute(mutation.attributeName!, this.getAttribute(mutation.attributeName!), this._elem);
                 });
         });
+    }
+
+    /**
+     * Internal function for handling property changes during the Lit lifecycle.
+     * @param name - Property key that was changed
+     * @param newValue - (optional) the new value to apply
+     * @protected
+     */
+    protected _onPropertyChange(name: string, newValue?: any) {
+        newValue ??= (this as Record<string, unknown>)[String(name)];
+        this._applyAttribute(name, JSON.stringify(newValue), this._elem);
     }
 
     /**
@@ -201,4 +252,10 @@ export class OrVaadinInput extends LitElement {
         return html`<or-vaadin-passwordfield id="elem" @change=${onChange}></or-vaadin-passwordfield>`;
     }
 
+    public static getSelectTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
+    }
 }
+
+// Before the class is initialized, register the property fields of the underlying Vaadin classes
+registerProperties(OrVaadinInput.VAADIN_CLASSES);
