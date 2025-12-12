@@ -128,7 +128,7 @@ export class OrVaadinInput extends LitElement {
     }
 
     firstUpdated(_changedProps: PropertyValues) {
-        for(const name of this.getAttributeNames()) {
+        for (const name of this.getAttributeNames()) {
             this._applyAttribute(name, this.getAttribute(name), this._elem);
         }
         return super.firstUpdated(_changedProps);
@@ -147,7 +147,7 @@ export class OrVaadinInput extends LitElement {
     public get nativeValue(): any {
         switch (this.type) {
             case InputType.CHECKBOX: {
-                return (this._elem as OrVaadinCheckbox | undefined)?.checked;
+                return (this._elem as HTMLInputElement | undefined)?.checked;
             }
             default: {
                 return this._elem?.value;
@@ -214,14 +214,14 @@ export class OrVaadinInput extends LitElement {
      * @protected
      */
     protected _applyAttribute(name: string, value?: any, elem = this._elem) {
-        if(elem && !OrVaadinInput.FORBIDDEN_ATTRIBUTES.includes(name)) {
+        if (elem && !OrVaadinInput.FORBIDDEN_ATTRIBUTES.includes(name)) {
             switch (typeof value) {
                 case "boolean": {
                     elem?.toggleAttribute(name, value);
                     break;
                 }
                 default: {
-                    if(value !== null) {
+                    if (value !== null) {
                         elem?.setAttribute(name, value);
                     } else {
                         elem?.removeAttribute(name);

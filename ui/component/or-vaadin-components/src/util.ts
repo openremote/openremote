@@ -145,7 +145,6 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let multiple: any;
     let required: boolean | undefined;
     let selectOptions: { label: string, value: string }[] | undefined;
-    // let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
     const styles = {} as any;
 
@@ -262,6 +261,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             case "date":
                 inputType = InputType.DATETIME;
                 break;
+            default:
+                break;
         }
     }
 
@@ -300,11 +301,11 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         required = true;
     }
     if (notBlankConstraint && !pattern) {
-        pattern = "\\S+";
+        pattern = String.raw`\S+`;
     } else if (notEmptyConstraint && !pattern) {
         pattern = ".+";
     }
-    if (allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
+    if (allowedValuesConstraint?.allowedValues) {
         const allowedLabels = allowedValuesConstraint.allowedValueNames && allowedValuesConstraint.allowedValueNames.length === allowedValuesConstraint.allowedValues.length ? allowedValuesConstraint.allowedValueNames : undefined;
         selectOptions = allowedValuesConstraint.allowedValues.map((v, i) => {
             let label = allowedLabels ? allowedLabels[i] : "" + v;
@@ -340,7 +341,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         }
     }
 
-    if (inputType === InputType.NUMBER && format && format.resolution) {
+    if (inputType === InputType.NUMBER && format?.resolution) {
         step = format.resolution;
     }
 
