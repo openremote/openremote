@@ -69,7 +69,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     const millisSinceStartOfDay = now % dayInMillis
     const defaultEvent = {
         start: now - millisSinceStartOfDay,
-        end: now - millisSinceStartOfDay + dayInMillis - 1,
+        end: now - millisSinceStartOfDay + dayInMillis,
         recurrence: "FREQ=DAILY"
     }
 
