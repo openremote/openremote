@@ -442,7 +442,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             // Check if this is the first time
             if (current == null) {
                 // Get the previous (active) occ to catch up with the current occurrence for the first time this method is called
-                List<LocalDateTime> dates = recurrence.getDates(start, start, now); // TODO: consider limiting number of occurrences
+                List<LocalDateTime> dates = recurrence.getDates(start, start, now);
                 if (!dates.isEmpty()) {
                     current = dates.getLast();
                     upcoming = recurrence.getNextDate(start, current);
