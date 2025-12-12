@@ -837,6 +837,9 @@
               },
               "replayData": {
                 "description": ""
+              },
+              "timezone": {
+                "description": ""
               }
             },
             "SimulatorProtocol": {
