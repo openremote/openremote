@@ -24,6 +24,7 @@ import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
 import java.util.Optional;
+import java.util.TimeZone;
 
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
@@ -42,6 +43,8 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
     @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
+
+    protected TimeZone timezone;
 
     // For Hydrators
     protected SimulatorAgentLink() {
@@ -67,5 +70,9 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
         this.schedule = schedule;
         return this;
+    }
+
+    public Optional<TimeZone> getTimezone() {
+        return Optional.ofNullable(timezone);
     }
 }
