@@ -1156,6 +1156,9 @@
               },
               "replayData": {
                 "description": "Used to store a dataset of values that should be replayed (i.e. written to the linked attribute) in a continuous loop based on a schedule (by default replays every 24h). Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored."
+              },
+              "timezone": {
+                "description": "The timezone the Simulator should follow to replay the dataset."
               }
             },
             "SimulatorProtocol": {

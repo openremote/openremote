@@ -44,6 +44,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
 
+    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
     protected TimeZone timezone;
 
     // For Hydrators
