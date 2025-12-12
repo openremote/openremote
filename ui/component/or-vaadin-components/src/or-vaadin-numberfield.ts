@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@openremote/theme";
+import {customElement} from "lit/decorators.js";
+import {NumberField} from "@vaadin/number-field";
+import {OrVaadinComponent} from "./util";
 
-.badge-section {
-    display: flex;
-    align-items: start;
-    gap: 4px;
+@customElement("or-vaadin-numberfield")
+export class OrVaadinNumberfield extends NumberField implements OrVaadinComponent {
+
 }

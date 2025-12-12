@@ -12,7 +12,9 @@
         "@types/react", // Required by mdx which is used in Storybook
         "@types/mapbox", // Global types under the L namespace (no direct import)
         "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
-        "@types/offscreencanvas" // Referenced in the tsconfig file
+        "@types/offscreencanvas", // Referenced in the tsconfig file
+        "@vaadin/vaadin-lumo-styles", // Only imports CSS files
+        "@rsdoctor/rspack-plugin" // References in webpack config, and imported using require()
     ],
     "ignoreUnresolved": [
         "css-loader|ts-loader", // rspack.config.js files depend on the webpack config which uses css and ts-loaders, however these can't be resolved by Knip somehow.

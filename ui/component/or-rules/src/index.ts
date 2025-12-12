@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import manager, {
     DefaultBoxShadow,
@@ -58,7 +58,7 @@ import "./or-rule-tree";
 import "./flow-viewer/flow-viewer";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
-import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
+import type {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
