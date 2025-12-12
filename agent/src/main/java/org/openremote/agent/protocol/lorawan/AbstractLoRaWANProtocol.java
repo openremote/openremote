@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -56,11 +57,12 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.MQTT_HOST;
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.MQTT_PORT;
+import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.*;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.*;
+import static org.openremote.model.asset.agent.Agent.HOST;
+import static org.openremote.model.asset.agent.Agent.PORT;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK_CONFIG;
 
@@ -69,13 +71,15 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractLoRaWANProtocol.class);
 
-    private ExecutorService executorService;
-    private ProtocolAssetService assetService;
-    private MQTTProtocol mqttProtocol;
-    private MQTTAgent mqttAgent;
-    private T agent;
-    private Set<String> devEuiSet = new CopyOnWriteArraySet<>();
-    protected Container container;
+    protected volatile ExecutorService executorService;
+    protected volatile ProtocolAssetService assetService;
+    private final MQTTProtocol mqttProtocol;
+    private final MQTTAgent mqttAgent;
+    private final T agent;
+    protected final Set<String> devEuiSet = new CopyOnWriteArraySet<>();
+    protected final Map<String, String> assetIdToDevEuiMap = new ConcurrentHashMap<>();
+    protected final Object deviceIdMappingLock = new Object();
+    protected volatile Container container;
 
     public AbstractLoRaWANProtocol(T agent) {
         this.agent = agent;
@@ -99,7 +103,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         agent.getUsernamePassword().ifPresent(usernamePassword -> mqttAgent.setUsernamePassword(usernamePassword));
         mqttAgent.setWildcardSubscriptionTopics(createWildcardSubscriptionTopicList().toArray(new String[0]));
 
-        this.mqttProtocol = new LoRaWANMQTTProtocol(mqttAgent);
+        this.mqttProtocol = createMqttClientProtocol(mqttAgent);
     }
 
     @Override
@@ -111,25 +115,32 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     public void linkAttribute(String assetId, Attribute<?> attribute) throws Exception {
         mqttProtocol.linkAttribute(assetId, attribute);
 
-        if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
-            attribute.getValue(String.class)
-                .map(String::trim)
-                .map(String::toUpperCase)
-                .filter(s -> !s.isEmpty())
-                .ifPresent(devEUI -> devEuiSet.add(devEUI));
-        }
+        Asset<?> asset = assetService.findAsset(assetId);
+
+        Optional.ofNullable(asset)
+            .flatMap(a -> a.getAttribute(ATTRIBUTE_NAME_DEV_EUI))
+            .flatMap(attr -> attr.getValue(String.class))
+            .map(String::trim)
+            .map(String::toUpperCase)
+            .filter(s -> !s.isEmpty())
+            .ifPresent(devEui -> {
+                synchronized (deviceIdMappingLock) {
+                    devEuiSet.add(devEui);
+                    assetIdToDevEuiMap.put(assetId, devEui);
+                }
+            });
     }
 
     @Override
     public void unlinkAttribute(String assetId, Attribute<?> attribute) throws Exception {
         mqttProtocol.unlinkAttribute(assetId, attribute);
 
-        if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
-            attribute.getValue(String.class)
-                .map(String::trim)
-                .map(String::toUpperCase)
-                .filter(s -> !s.isEmpty())
-                .ifPresent(devEUI -> devEuiSet.remove(devEUI));
+        synchronized (deviceIdMappingLock) {
+            String devEui = assetIdToDevEuiMap.get(assetId);
+            if (devEui != null) {
+                devEuiSet.remove(devEui);
+                assetIdToDevEuiMap.remove(assetId);
+            }
         }
     }
 
@@ -175,6 +186,8 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     public boolean onAgentAttributeChanged(AttributeEvent event) {
         if (MQTT_HOST.getName().equals(event.getName()) ||
             MQTT_PORT.getName().equals(event.getName()) ||
+            PORT.getName().equals(event.getName()) ||
+            HOST.getName().equals(event.getName()) ||
             APPLICATION_ID.getName().equals(event.getName()))
         {
             return true;
@@ -216,7 +229,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
                 assetConsumer.accept(assetTreeNodes);
             } catch (IOException e) {
-                LOG.log(Level.WARNING, "CSV import failed", e);
+                LOG.log(Level.WARNING, "CSV import failed for: " + getProtocolInstanceUri(), e);
             }
         },  null);
     }
@@ -225,16 +238,19 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         Optional<String> applicationId = getAgent().getApplicationId();
         boolean isOk = applicationId.map(id -> !id.trim().isEmpty()).orElse(false);
         if (!isOk) {
-            LOG.log(Level.WARNING, "CSV import failed because agent attribute '" + APPLICATION_ID.getName() + "'  is missing");
+            LOG.warning("CSV import failed because agent attribute '" + APPLICATION_ID.getName() + "'  is missing for: " + getProtocolInstanceUri());
         }
         return isOk;
     }
 
+    protected abstract MQTTProtocol createMqttClientProtocol(MQTTAgent agent);
+    protected abstract AssetTreeNode[] discoverDevices();
     protected abstract List<String> createWildcardSubscriptionTopicList();
     protected abstract boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
     protected abstract boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
     protected abstract boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
     protected abstract boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
+    protected abstract String generateAssetId(String devEui);
 
     protected boolean configureMQTTValueFilter(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
         if (attribute == null || agentLink == null || csvRecord == null) {
@@ -329,7 +345,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         if (record != null) {
             isValid = record.isValid();
             if (!isValid) {
-                LOG.log(Level.WARNING, "CSV import skipped an invalid CSV record: " + record);
+                LOG.warning("CSV import skipped an invalid CSV record " + record + "for: " + getProtocolInstanceUri());
             }
         }
         return isValid;
@@ -341,14 +357,14 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         }
 
         if (!duplicateAssetCheck(record.getDevEUI())) {
-            LOG.log(Level.INFO, "CSV import skipped a CSV record because an asset already existed: " + record);
+            LOG.info("CSV import skipped a CSV record " + record + " because an asset already existed for: " + getProtocolInstanceUri());
             return false;
         }
 
         return true;
     }
 
-    private boolean duplicateAssetCheck(String devEUI) {
+    protected boolean duplicateAssetCheck(String devEUI) {
         return Optional.ofNullable(devEUI)
             .map(String::trim)
             .filter(s -> !s.isEmpty())
@@ -357,7 +373,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             .orElse(false);
     }
 
-    private Optional<Asset<?>> createAsset(CsvRecord csvRecord) {
+    protected Optional<Asset<?>> createAsset(CsvRecord csvRecord) {
         if (csvRecord == null) {
             return Optional.empty();
         }
@@ -375,7 +391,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
         return ValueUtil.getAssetClass(simpleClassName)
             .or(() -> {
-                LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type name: " + csvRecord);
+                LOG.warning("CSV import skipped a CSV record " + csvRecord + " because of an invalid asset type name for: " + getProtocolInstanceUri());
                 return Optional.empty();
             });
     }
@@ -390,12 +406,12 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             Constructor<?> constructor = clazz.getConstructor(String.class);
             asset = (Asset<?>) constructor.newInstance(csvRecord.getName());
         } catch (ReflectiveOperationException e) {
-            LOG.log(Level.INFO, "CSV import failed to create asset for CSV record: " + csvRecord, e);
+            LOG.log(Level.INFO, "CSV import failed to create asset " + csvRecord + " for: " + getProtocolInstanceUri(), e);
         }
         return asset;
     }
 
-    private Optional<Asset<?>> configureAsset(Asset<?> asset, CsvRecord csvRecord) {
+    protected Optional<Asset<?>> configureAsset(Asset<?> asset, CsvRecord csvRecord) {
         if (asset == null || csvRecord == null) {
             return Optional.empty();
         }
@@ -407,6 +423,16 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
         boolean isOk = true;
 
+        asset.getAttribute(ATTRIBUTE_NAME_DEV_EUI)
+            .flatMap(attr -> attr.getValue(String.class))
+            .filter(devEui -> !isNullOrEmpty(devEui))
+            .ifPresent(devEui -> {
+                asset.setId(generateAssetId(devEui));
+                asset.setParentId(getAgent().getId());
+            });
+
+        isOk = !isNullOrEmpty(asset.getId());
+
         for (Map.Entry<String, Attribute<?>> entry : asset.getAttributes().entrySet()) {
             String name = entry.getKey();
             Attribute<?> attribute = entry.getValue();
@@ -415,7 +441,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             Optional<String> jsonPath = getAgentConfigJsonPath(attribute);
             Optional<String> regex = getAgentConfigRegex(attribute);
             if (jsonPath.isPresent() || regex.isPresent()) {
-                isOk = configureMQTTSubscriptionTopic(attribute, agentLink, csvRecord);
+                isOk = isOk && configureMQTTSubscriptionTopic(attribute, agentLink, csvRecord);
             }
             isOk = isOk && configureMQTTValueFilter(attribute, agentLink, csvRecord);
             isOk = isOk && configureMQTTMessageMatchFilterAndPredicate(attribute, agentLink, csvRecord);
@@ -427,15 +453,14 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 isOk = isOk && configureMQTTWriteValueTemplate(attribute, agentLink, csvRecord);
             }
 
-            if (getAgentConfig(attribute).isPresent() || ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+            if (getAgentConfig(attribute).isPresent()) {
                 attribute.addOrReplaceMeta(
                     new MetaItem<>(AGENT_LINK, agentLink)
                 );
+                MetaMap metaMap = attribute.getMeta();
+                metaMap.remove(AGENT_LINK_CONFIG);
+                attribute.setMeta(metaMap);
             }
-
-            MetaMap metaMap = attribute.getMeta();
-            metaMap.remove(AGENT_LINK_CONFIG);
-            attribute.setMeta(metaMap);
         }
 
         return isOk ? Optional.of(asset) : Optional.empty();
