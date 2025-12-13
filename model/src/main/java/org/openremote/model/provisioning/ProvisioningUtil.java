@@ -27,10 +27,12 @@ import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,6 +71,16 @@ public class ProvisioningUtil {
             return ldapName.getRdns().stream().filter(rdn -> "CN".equals(rdn.getType())).map(rdn -> rdn.getValue().toString()).findFirst().orElse(null);
         } catch (InvalidNameException e) {
             LOG.log(Level.WARNING, "Failed to extract subject CN from X500 principal", e);
+            return null;
+        }
+    }
+    public static String getSubjectOU(X500Principal principal) {
+        // Use LDAP RFC 2253 which is same spec as X500 principal to get OU
+        try {
+            LdapName ldapName = new LdapName(principal.getName());
+            return ldapName.getRdns().stream().filter(rdn -> "OU".equals(rdn.getType())).map(rdn -> rdn.getValue().toString()).findFirst().orElse(null);
+        } catch (InvalidNameException e) {
+            LOG.log(Level.WARNING, "Failed to extract subject OU from X500 principal", e);
             return null;
         }
     }
