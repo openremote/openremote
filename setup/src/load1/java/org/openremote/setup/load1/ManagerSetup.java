@@ -43,6 +43,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
+import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.PROVISIONING_USER_PREFIX;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
@@ -128,7 +129,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
                             Constants.MASTER_REALM,
                             ((ManagerKeycloakIdentityProvider)identityService.getIdentityProvider()),
                             uniqueId,
-                            null,
+                            PROVISIONING_USER_PREFIX,
                             finalProvisioningConfig
                         );
                         UserAssetProvisioningMQTTHandler.getCreateClientAsset(

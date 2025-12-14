@@ -202,8 +202,17 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
 
         // Add mTLS acceptor if enabled
-        if (!mtlsDisabled) {
-            addMTLSAcceptor(container);
+        if (TextUtil.isNullOrEmpty(this.keystorePath)
+                || TextUtil.isNullOrEmpty(this.truststorePath)
+                || TextUtil.isNullOrEmpty(this.keystorePassword)
+                || TextUtil.isNullOrEmpty(this.truststorePassword)) {
+            LOG.log(INFO, "MQTT mTLS acceptor not being started, as environment variables not configured");
+            return;
+        }else{
+            if(!mtlsDisabled){
+                LOG.log(INFO, "MQTT mTLS acceptor being started on port " + this.mtlsPort);
+                addMTLSAcceptor(container);
+            }
         }
 
         serverConfiguration.registerBrokerPlugin(this);
@@ -671,13 +680,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
      * Add mTLS acceptor configuration to the server
      */
     protected void addMTLSAcceptor(Container container) throws Exception {
-        if (TextUtil.isNullOrEmpty(this.keystorePath)
-           || TextUtil.isNullOrEmpty(this.truststorePath)
-           || TextUtil.isNullOrEmpty(this.keystorePassword)
-           || TextUtil.isNullOrEmpty(this.truststorePassword)) {
-            LOG.log(INFO, "MQTT mTLS acceptor not being started, as environment variables not configured");
-            return;
-        }
+
 
         try {
             URIBuilder mtlsServerURI = new URIBuilder()

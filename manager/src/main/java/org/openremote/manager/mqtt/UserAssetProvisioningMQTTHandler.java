@@ -427,7 +427,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         try {
             LOG.finest("Checking service user: " + uniqueId);
-            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, isMTLS ? "" : null, matchingConfig);
+            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, isMTLS ? "" : PROVISIONING_USER_PREFIX, matchingConfig);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create service user: " + MQTTBrokerService.connectionToString(connection), e);
             publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
@@ -516,8 +516,10 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     public static User getCreateClientServiceUser(String realm, ManagerKeycloakIdentityProvider identityProvider, String uniqueId, String userPrefix, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
-        String prefix = userPrefix != null ? userPrefix : PROVISIONING_USER_PREFIX;
-        String username = (prefix + uniqueId);
+        if (TextUtil.isNullOrEmpty(userPrefix)) {
+            userPrefix = "";
+        }
+        String username = (userPrefix + uniqueId);
         User serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
 
         if (serviceUser != null) {
