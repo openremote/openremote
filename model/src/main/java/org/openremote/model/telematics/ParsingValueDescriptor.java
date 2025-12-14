@@ -1,6 +1,5 @@
 package org.openremote.model.telematics;
 
-import com.google.common.base.Functions;
 import io.netty.buffer.ByteBuf;
 import jakarta.persistence.Transient;
 import org.openremote.model.util.TsIgnore;

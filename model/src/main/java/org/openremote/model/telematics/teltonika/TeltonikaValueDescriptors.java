@@ -1,13 +1,12 @@
 package org.openremote.model.telematics.teltonika;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.telematics.ParsingValueDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -15,8 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class TeltonikaValueDescriptors {
 

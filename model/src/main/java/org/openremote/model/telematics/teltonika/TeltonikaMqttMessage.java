@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.Map;
 
 public class TeltonikaMqttMessage extends TeltonikaMessage {

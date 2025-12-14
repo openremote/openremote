@@ -1,6 +1,7 @@
 import io.netty.buffer.ByteBuf;
-import java.nio.charset.StandardCharsets;
 import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptor;
+
+import java.nio.charset.StandardCharsets;
 
 public class TeltonikaFmc003ParameterRegistry {
 

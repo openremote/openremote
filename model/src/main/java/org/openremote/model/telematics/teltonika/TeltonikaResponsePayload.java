@@ -1,11 +1,6 @@
 package org.openremote.model.telematics.teltonika;
 
 import org.openremote.model.telematics.AbstractPayload;
-import org.openremote.model.telematics.DeviceParameter;
-import org.openremote.model.telematics.Payload;
-
-import java.util.Map;
-import java.util.Objects;
 
 public class TeltonikaResponsePayload extends AbstractPayload {
 

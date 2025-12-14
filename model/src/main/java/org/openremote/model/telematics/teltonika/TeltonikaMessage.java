@@ -5,7 +5,6 @@ import org.openremote.model.telematics.Payload;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class TeltonikaMessage implements Message {
 
