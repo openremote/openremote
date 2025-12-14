@@ -401,20 +401,22 @@
   },
   "validityType": "Tipo de programação",
   "validityAlways": "Sempre ativo",
-  "validityPeriod": "Planeje uma ocorrência",
-  "validityRecurrence": "Planeje uma ocorrência repetida",
+  "planPeriod": "Planeje uma ocorrência",
+  "planRecurrence": "Planeje uma ocorrência repetida",
   "activeFromTo": "Ativo de {{start}} a {{end}}",
   "fromTo": "De {{start}} a {{end}}",
   "fromToDays": "De {{start}} a {{days}} dias depois{{end}}",
   "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Agendar Atividade de Regra",
+  "schedule": {
+    "_ends": "Repetição termina",
+    "repeat": "Repete a ocorrência a cada"
+  },
   "allDay": "Todo o dia",
   "apply": "aplicar",
   "to": "a",
   "from": "de",
   "never": "Nunca",
-  "repetitionEnds": "Repetição termina",
-  "repeatOccurrenceEvery": "Repete a ocorrência a cada",
   "daysOfTheWeek": "Dias da semana",
   "dismiss": "dispensar",
   "createAssetFailed": "Falha ao criar ativo",
@@ -582,6 +584,28 @@
               },
               "updateOnWrite": {
                 "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }

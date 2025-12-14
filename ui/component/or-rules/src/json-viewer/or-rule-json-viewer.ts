@@ -119,9 +119,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     @property({attribute: false})
     protected _ruleset!: RulesetUnion;
 
-    @state() // to be exact: Map<AssetType name, Asset[]>
-    protected _loadedAssets: Map<string, Asset[]> = new Map<string, Asset[]>();
-
     protected _rule!: JsonRule;
     protected _unsupported = false;
     protected _activeAssetPromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
@@ -207,13 +204,13 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         return html`
             <div class="section-container">                                    
                 <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" ?readonly="${this.readonly}" 
-                              .assetProvider="${async (type: string) => this.loadAssets(type)}"
+                              .assetProvider="${(type: string, query: AssetQuery) => this.loadAssets(type, query)}"
                 ></or-rule-when>
             </div>
         
             <div class="section-container">              
                 <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" ?readonly="${this.readonly}" 
-                                        .assetProvider="${async (type: string) => this.loadAssets(type)}"
+                                        .assetProvider="${(type: string, query: AssetQuery) => this.loadAssets(type, query)}"
                 ></or-rule-then-otherwise>
             </div>
         `;
@@ -221,13 +218,18 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
     // loadAssets function that also tracks what promises/fetches are active.
     // If so, await for those to finish to prevent multiple API requests.
-    // Also using caching with the _loadedAssets object.
-    protected async loadAssets(type: string): Promise<Asset[] | undefined> {
-        if(this._activeAssetPromises.has(type)) {
+    protected async loadAssets(type: string, query?: AssetQuery): Promise<Asset[] | undefined> {
+        if (this._activeAssetPromises.has(type)) {
             const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
             return data.assets;
         } else {
-            const promise = getAssetsByType(type, (this._ruleset.type == "realm" ? this._ruleset.realm : undefined), this._loadedAssets);
+            query ??= {};
+            query.types ??= [];
+            query.types.push(type);
+            query.realm ??= {
+                name: this._ruleset.type == "realm" ? this._ruleset.realm : undefined
+            };
+            const promise = getAssetsByType(type, query);
             this._activeAssetPromises.set(type, promise);
             const data = await promise;
             this._activeAssetPromises.delete(type);
