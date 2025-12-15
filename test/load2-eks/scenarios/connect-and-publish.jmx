@@ -27,7 +27,7 @@
         </elementProp>
       </SetupThreadGroup>
       <hashTree>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Setup" enabled="true">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Setup">
           <stringProp name="scriptLanguage">groovy</stringProp>
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
@@ -161,15 +161,20 @@ return delay</stringProp>
           </ConstantTimer>
           <hashTree/>
         </hashTree>
-        <WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="While Controller" enabled="true">
+        <WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="While Controller">
           <stringProp name="WhileController.condition">${__groovy(
-    def elapsed = (System.currentTimeMillis() - vars.getObject(&quot;threadStartTime&quot;)) / 1000;
-    def duration = vars.get(&quot;testDuration&quot;).toInteger()
-    elapsed &lt; duration;
+    def startTime = vars.getObject(&quot;threadStartTime&quot;);
+    if (startTime == null) {
+        false
+    } else {
+	   def elapsed = (System.currentTimeMillis() - vars.getObject(&quot;threadStartTime&quot;)) / 1000;
+	   def duration = (vars.get(&quot;testDuration&quot;) ?: &quot;300&quot;).toInteger()
+        elapsed &lt; duration;
+    }
  )}</stringProp>
         </WhileController>
         <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler" enabled="true">
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler">
             <stringProp name="scriptLanguage">groovy</stringProp>
             <stringProp name="parameters"></stringProp>
             <stringProp name="filename"></stringProp>
@@ -182,7 +187,7 @@ return delay</stringProp>
             </ConstantTimer>
             <hashTree/>
           </hashTree>
-          <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="ForEach Controller" enabled="true">
+          <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="ForEach Controller">
             <stringProp name="ForeachController.inputVal">assetId</stringProp>
             <stringProp name="ForeachController.returnVal">currentAssetId</stringProp>
             <boolProp name="ForeachController.useSeparator">true</boolProp>
@@ -223,7 +228,7 @@ log.info(&quot;&gt;&gt;&gt;Direct vars.get currentAssetId = &quot; + vars.get(&q
             <hashTree/>
           </hashTree>
         </hashTree>
-        <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Flow Control Action" enabled="true">
+        <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Flow Control Action">
           <intProp name="ActionProcessor.action">1</intProp>
           <intProp name="ActionProcessor.target">0</intProp>
           <stringProp name="ActionProcessor.duration">${__groovy((props.get(&quot;DISCONNECT_DELAY&quot;) ?: &quot;0&quot;).toInteger() * 1000)}</stringProp>
