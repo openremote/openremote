@@ -31,7 +31,6 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.system.VersionInfo;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -65,8 +64,8 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
+import static org.openremote.model.util.MapAccess.getString;
 
 /**
  * Handles outbound connections to central managers
@@ -447,7 +446,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             } else if (event instanceof GatewayCapabilitiesRequestEvent) {
                 LOG.fine("Central manager requested specifications / capabilities of the gateway.");
                 GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(
-                    gatewayTunnelFactory != null, VersionInfo.getManagerVersion()
+                    gatewayTunnelFactory != null, true
                 );
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(

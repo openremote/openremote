@@ -259,12 +259,12 @@ public class GatewayConnector {
                     }
                 }
                 tunnellingSupported = response != null && response.isTunnelingSupported();
-                this.gatewayVersion = response != null ? response.getVersion() : "";
+                this.gatewayVersion = response != null ? response.getVersion() : null;
                 this.tunnelTimeoutManagementSupported = response != null ? response.isTunnelTimeoutManagementSupported() : false;
 
                 String currentManagerVersion = VersionInfo.getManagerVersion();
-                if (Objects.equals(this.gatewayVersion, "") || VersionInfo.isVersionLess(this.gatewayVersion, currentManagerVersion)) {
-                    LOG.warning("Gateway Version is not up to date, latest version is "+ currentManagerVersion + ", Gateway version is " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                if(!Objects.equals(getGatewayVersion(), currentManagerVersion)) {
+                    LOG.warning("Gateway Version is not up to date, latest version is "+currentManagerVersion + ", Gateway version is " + getGatewayVersion() + ". GatewayId: " + gatewayId);
                 }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));

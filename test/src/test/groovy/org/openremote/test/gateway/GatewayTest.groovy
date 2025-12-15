@@ -20,7 +20,6 @@ import org.openremote.manager.gateway.*
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.system.VersionInfo
 import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -55,12 +54,12 @@ import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId
 import static org.openremote.manager.gateway.GatewayService.getGatewayClientId
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
@@ -349,7 +348,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, VersionInfo.getManagerVersion())
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
@@ -712,7 +711,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "The Gateway also sends a Gateway Capabilities response indicating tunnelling is supported"
-        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, VersionInfo.getManagerVersion())
+        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, true)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 

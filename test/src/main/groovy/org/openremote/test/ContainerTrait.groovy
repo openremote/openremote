@@ -19,7 +19,6 @@
  */
 package org.openremote.test
 
-
 import jakarta.persistence.TypedQuery
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
@@ -65,10 +64,8 @@ import org.openremote.model.util.MapAccess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLSession
 import java.util.concurrent.TimeUnit
-import java.util.function.UnaryOperator
 import java.util.logging.Handler
 import java.util.stream.Collectors
 import java.util.stream.IntStream
