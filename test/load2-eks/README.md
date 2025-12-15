@@ -44,7 +44,7 @@ THREAD_COUNT: Number of parallel accounts that will connect and publish in paral
 ASSETS_COUNT: Number of Light assets for which to publish an attribute during each iteration. Default is 5.  
 RAMP_RATE: Number of thread to add per second during ramp-up. Default is 20.  
 DURATION: Total duration to run the test for, in seconds. Default is 300.  
-MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration Default is 1000.  
+MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 1000.  
 DISCONNECT_DELAY: Delay before closing the MQTT connection after publishing loop, in seconds. Default is 0.
 
 #### connect-settle-test
@@ -55,6 +55,6 @@ Goal is to measure the time it takes for the system to allow that many connectio
 
 The parameters are:  
 MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is localhost.  
-THREAD_COUNT: Number of parallel accounts that will connect publish in parallel. Default is 1000.  
+THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel. Default is 1000.  
 RAMP_RATE: Number of thread to add per second during ramp-up. Default is 50.  
 MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 30000.  
