@@ -264,6 +264,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             header="scheduleRuleActivity"
                             defaultEventTypeLabel="validityAlways"
                             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+                            .schedule="${this.ruleset?.meta?.validity}"
                             @or-scheduler-changed="${this._onSchedulerChanged}"
                         ></or-scheduler>
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
