@@ -5,7 +5,7 @@ settings:
     MANAGER_HOSTNAME: # Must be supplied
     THREAD_COUNT: 1000
     RAMP_RATE: 50
-    MILLIS_BETWEEN_PUBLISHES: 300000
+    MILLIS_BETWEEN_PUBLISHES: 30000
 
 reporting:
   - module: final-stats
