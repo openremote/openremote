@@ -15,5 +15,5 @@ declare module "playwright-core/lib/utils" {
     ignoreHTTPSErrors: boolean,
     onLog?: (data: string) => void,
     onStdErr?: (data: string) => void
-  ): Promise<void>;
+  ): Promise<boolean>;
 }
