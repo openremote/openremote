@@ -2,6 +2,23 @@
 
 import org.jetbrains.gradle.ext.JUnit
 
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.withType(Test) {
+    finalizedBy "jacocoTestReport"
+}
+
+tasks.withType(JacocoReport) {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFileAttributes

@@ -45,6 +45,32 @@ tasks.withType(Test) {
 
 test {}
 
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+    additionalSourceDirs.from(
+            project(':agent').sourceSets.main.allSource.srcDirs,
+            project(':container').sourceSets.main.allSource.srcDirs,
+            project(':manager').sourceSets.main.allSource.srcDirs,
+            project(':model').sourceSets.main.allSource.srcDirs,
+            project(':setup').sourceSets.main.allSource.srcDirs
+    )
+    sourceDirectories.from(
+            project(':agent').sourceSets.main.allSource.srcDirs,
+            project(':container').sourceSets.main.allSource.srcDirs,
+            project(':manager').sourceSets.main.allSource.srcDirs,
+            project(':model').sourceSets.main.allSource.srcDirs,
+            project(':setup').sourceSets.main.allSource.srcDirs
+    )
+    classDirectories.from(
+            project(':agent').sourceSets.main.output,
+            project(':container').sourceSets.main.output,
+            project(':manager').sourceSets.main.output,
+            project(':model').sourceSets.main.output,
+            project(':setup').sourceSets.main.output
+    )
+    executionData.from(fileTree(dir: '.', include: '**/build/jacoco/test.exec'))
+}
+
 javadoc {
     failOnError = false
 }
