@@ -2,7 +2,7 @@ package org.openremote.test.assets
 
 import org.locationtech.jts.geom.Coordinate
 import org.openremote.model.query.filter.GeofencePredicate
-    import org.openremote.model.query.filter.GeoJSONGeofencePredicate
+import org.openremote.model.query.filter.GeoJSONGeofencePredicate
 import org.openremote.model.query.filter.RadialGeofencePredicate
 import org.openremote.model.query.filter.RectangularGeofencePredicate
 import spock.lang.Specification

@@ -1,14 +1,7 @@
 import { html, LitElement, css } from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {
-    AssetDescriptor,
-    AttributePredicate,
-    AssetQuery,
-    GeoJSONGeofencePredicate
-} from "@openremote/model";
-import {
-    getAssetTypeFromQuery,
-} from "../../index";
+import {AssetDescriptor, AttributePredicate, AssetQuery, GeoJSONGeofencePredicate, GeoJSON} from "@openremote/model";
+import {getAssetTypeFromQuery} from "../../index";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
@@ -69,7 +62,11 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
 
     protected setValuePredicateProperty(propertyName: string, value: any) {
         if(!this.attributePredicate) return;
-        if(!this.attributePredicate.value) return;
+
+        if(!this.attributePredicate.value) {
+            console.warn('setValuePredicateProperty called but attributePredicate.value is missing.');
+            return;
+        }
 
         const valuePredicate = this.attributePredicate.value;
 
@@ -92,6 +89,8 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
 
             const validTypes = ["Feature", "FeatureCollection", "Polygon", "MultiPolygon",
                                 "Point", "LineString", "MultiPoint", "MultiLineString", "GeometryCollection"];
+
+
 
             if (!validTypes.includes(parsed.type)) {
                 this.validationError = `Invalid GeoJSON type: ${parsed.type}. Must be one of: ${validTypes.join(", ")}`;
@@ -257,7 +256,6 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
             if (dialog) {
                 dialog.dismissAction = null;
                 dialog.open();
-                this.renderDialogHTML(value);
             }
         };
 

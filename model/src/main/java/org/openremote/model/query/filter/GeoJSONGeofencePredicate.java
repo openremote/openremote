@@ -35,7 +35,8 @@ import java.util.logging.Logger;
 
 /**
  * Predicate for GEO JSON point values; will return true if the point is within the specified GeoJSON geometry
- * (Polygon or MultiPolygon) unless negated. This allows for complex geofence shapes such as country borders.
+ * (Polygon, MultiPolygon, or Feature/FeatureCollection containing such geometries) unless negated. This allows for
+ * complex geofence shapes such as country borders.
  */
 @JsonSchemaTitle("GeoJSON Geofence")
 @JsonSchemaDescription("Predicate for GeoJSON point values; will return true if the point is within the specified GeoJSON geometry (Polygon, MultiPolygon, or Feature/FeatureCollection containing such geometries) unless negated.")
@@ -258,8 +259,10 @@ public class GeoJSONGeofencePredicate extends GeofencePredicate {
             }
 
             // Clamp coordinates to valid ranges
-            coordinate.x = Math.min(180d, Math.max(-180d, coordinate.x));
-            coordinate.y = Math.min(90d, Math.max(-90d, coordinate.y));
+            coordinate = new Coordinate(
+                    Math.min(180d, Math.max(-180d, coordinate.x)),
+                    Math.min(90d, Math.max(-90d, coordinate.y))
+            );
 
             Geometry geometry = parseGeometry();
             if (geometry == null) {

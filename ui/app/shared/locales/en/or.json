@@ -75,6 +75,8 @@
   "outsideRadius": "Outside circle",
   "withinRectangle": "Inside rectangle",
   "outsideRectangle": "Outside rectangle",
+  "insideArea": "Inside area",
+  "outsideArea": "Outside area",
   "indexContains": "Array index contains",
   "notIndexContains": "Array index does not contain",
   "lengthEquals": "Array length equals",

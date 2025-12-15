@@ -102,6 +102,9 @@ public class GeoJSONMultiPolygon extends GeoJSONGeometry {
                     if (coord.length < 2) {
                         throw new IllegalArgumentException("Each coordinate must have at least 2 values (longitude, latitude)");
                     }
+                    if (coord.length > 3) {
+                        throw new IllegalArgumentException("Each coordinate can have at most 3 values (longitude, latitude, altitude)");
+                    }
                     
                     double x = Math.min(180d, Math.max(-180d, coord[0]));
                     double y = Math.min(90d, Math.max(-90d, coord[1]));
@@ -123,7 +126,9 @@ public class GeoJSONMultiPolygon extends GeoJSONGeometry {
      */
     public GeoJSONMultiPolygon(GeoJSONPolygon... polygons) {
         super(TYPE);
-        Objects.requireNonNull(polygons);
+        if(polygons == null) {
+            throw new IllegalArgumentException("polygons must not be null");
+        }
         
         if (polygons.length == 0) {
             throw new IllegalArgumentException("MultiPolygon must have at least one polygon");

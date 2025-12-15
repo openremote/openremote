@@ -279,11 +279,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         // @ts-ignore
         const value = valuePredicate ? valuePredicate.value : undefined;
 
-        // Prepare GeoJsonConfig from predicate.geoJSON when needed
-        const geoJsonConfig = valuePredicate.predicateType === "geojson" && (valuePredicate as any).geoJSON
-            ? (() => { try { return { source: JSON.parse((valuePredicate as any).geoJSON), layers: [] }; } catch { return undefined; } })()
-            : undefined;
-
         switch (valuePredicate.predicateType) {
             case "string":
                 return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("value")}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
@@ -307,15 +302,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "rect":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "geojson":
-                // return html`<or-attribute-input .inputType="${InputType.JSON}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "geoJSON", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
-            return html`
+                const geoJsonConfig = valuePredicate.predicateType === "geojson" && (valuePredicate as any).geoJSON
+                    ? (() => { try { return { source: JSON.parse((valuePredicate as any).geoJSON), layers: [] }; } catch { return undefined; } })()
+                    : undefined;
+                return html`
                     <or-conf-map-geojson .geoJson="${geoJsonConfig}" @update="${(e: CustomEvent) => {
                         const cfg = e.detail.value; // GeoJsonConfig {source, layers}
                         const src = cfg && cfg.source ? JSON.stringify(cfg.source) : "";
                         this.setValuePredicateProperty(valuePredicate, "geoJSON", src)
                     }}"></or-conf-map-geojson>
-                    `
-                // return html`<or-rule-geojson-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-geojson-modal>`;
+                    `;
             case "value-empty":
                 return ``;
             case "array":
@@ -754,7 +750,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     predicateType: "geojson",
                     negated: value === AssetQueryOperator.OUTSIDE_AREA,
                     geoJSON: ""
-                }
+                };
                 break;
 
             // boolean
