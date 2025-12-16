@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.Constants;
 import org.openremote.model.value.impl.PeriodAndDuration;
 
+import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -109,6 +110,20 @@ public class TimeUtil {
             zonedDateTime = ((LocalDate) temporalAccessor).atStartOfDay(ZoneOffset.UTC);
         }
         return zonedDateTime.toInstant();
+    }
+
+    /**
+     * Converts various datetime types to Instant.
+     */
+    public static Instant toInstant(Object value) {
+        return switch (value) {
+            case Instant instant -> instant;
+            case OffsetDateTime offsetDateTime -> offsetDateTime.toInstant();
+            case Timestamp timestamp -> timestamp.toInstant();
+            case java.util.Date date -> date.toInstant();
+            default ->
+                    throw new IllegalArgumentException("Unsupported datetime type: " + value.getClass().getName());
+        };
     }
 
     public static class ExtendedPeriodAndDuration extends PeriodAndDuration {
