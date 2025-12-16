@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
@@ -34,6 +35,11 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored.")
     protected SimulatorReplayDatapoint[] replayData;
 
+    @NotNull() //
+    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
+    @JsonSchemaFormat("timezone")
+    protected TimeZone timezone;
+
     @JsonSchemaTitle("Schedule")
     @JsonSchemaDescription("Overwrites the possible dataset length and when it is replayed." +
         " The dataset can be scheduled to stop based on the UNTIL rule part" +
@@ -43,9 +49,6 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
     @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
-
-    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
-    protected TimeZone timezone;
 
     // For Hydrators
     protected SimulatorAgentLink() {

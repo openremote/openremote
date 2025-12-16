@@ -13,7 +13,9 @@ import {
     JsonSchema
 } from "@jsonforms/core";
 import {isEnumArray} from "../standard-renderers";
-import {getSchemaConst} from "../util";
+import moment from "moment-timezone";
+
+let defaultTz: string;
 
 // language=CSS
 const style = css`
@@ -51,6 +53,9 @@ export class ControlInputElement extends ControlBaseElement {
         let options: [string, string][] | undefined;
         let multiple = false;
         let value: any = this.data ?? schema.default;
+        let searchable: boolean | undefined;
+        let searchProvider!: (search?: string) => [any, string][] | undefined;
+        let onValueChanged = (e: OrInputChangedEvent) => this.onValueChanged(e)
 
         if (Array.isArray(schema.type)) {
             this.inputType = InputType.JSON;
@@ -125,6 +130,21 @@ export class ControlInputElement extends ControlBaseElement {
                 this.inputType = InputType.TEXTAREA;
             } else if (format === "or-password" || (schema as any).writeOnly) {
                 this.inputType = InputType.PASSWORD;
+            } else if (format === "timezone") {
+                this.inputType = InputType.SELECT;
+                options = moment.tz.names().map(z => [z, z]);
+                if (!(defaultTz && value)) {
+                    defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    this.handleChange(this.path, defaultTz);
+                }
+                searchable = true;
+                onValueChanged = (e: OrInputChangedEvent) => this.handleChange(this.path, e.detail.value);
+                searchProvider = (search?: string) => {
+                    if (search) {
+                        return options?.filter(([,name]) => name.toLowerCase().includes(search.toLowerCase()));
+                    }
+                    return options?.filter(([,name]) => name.toLowerCase().includes((value ?? defaultTz).toLowerCase().split("/")[0]))
+                }
             }
         }
 
@@ -136,7 +156,9 @@ export class ControlInputElement extends ControlBaseElement {
                 .id="${this.id}"
                 .options="${options}"
                 .multiple="${multiple}"
-                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onValueChanged(e)}"
+                ?searchable="${searchable}"
+                .searchProvider="${searchProvider}"
+                @or-mwc-input-changed="${onValueChanged}"
                 .maxLength="${maxLength}"
                 .minLength="${minLength}"
                 .pattern="${pattern}"
