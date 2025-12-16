@@ -24,16 +24,6 @@ import com.hivemq.client.internal.mqtt.handler.disconnect.MqttDisconnectUtil
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
-import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.cert.X509v3CertificateBuilder
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
-import org.bouncycastle.operator.ContentSigner
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
-import org.bouncycastle.util.io.pem.PemObject
-import org.bouncycastle.util.io.pem.PemWriter
 import org.openremote.agent.protocol.mqtt.*
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
@@ -41,7 +31,6 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
-import org.openremote.manager.security.KeyStoreServiceImpl
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
@@ -61,21 +50,9 @@ import org.openremote.model.value.ValueFilter
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
-import org.opentest4j.TestAbortedException
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.nio.charset.StandardCharsets
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.PrivateKey
-import java.security.cert.Certificate
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
