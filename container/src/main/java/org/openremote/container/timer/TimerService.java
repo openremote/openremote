@@ -23,13 +23,19 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.rules.RulesClock;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 
 /**
  * Wall real clock timer or pseudo clock time (for testing).
@@ -59,6 +65,16 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
+            public long setTime(LocalDate date, LocalTime time, ZoneId zoneId) {
+                throw new UnsupportedOperationException("Wall clock can not be set manually");
+            }
+
+            @Override
+            public long setTime(String iso8601Timestamp) {
+                throw new UnsupportedOperationException("Wall clock can not be set manually");
+            }
+
+            @Override
             public void stop() {
                 // NOOP
             }
@@ -75,7 +91,7 @@ public class TimerService implements ContainerService, RulesClock {
         },
         PSEUDO {
             protected AtomicLong offset = new AtomicLong();
-            protected Long stopTime;
+            protected volatile Long stopTime;
 
             @Override
             public void init() {
@@ -84,12 +100,12 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public long getCurrentTimeMillis() {
+            public synchronized long getCurrentTimeMillis() {
                 return (stopTime != null ? stopTime : System.currentTimeMillis()) + offset.get();
             }
 
             @Override
-            public long advanceTime(long amount, TimeUnit unit) {
+            public synchronized long advanceTime(long amount, TimeUnit unit) {
                 offset.addAndGet(unit.toMillis(amount));
                 long currentMillis = getCurrentTimeMillis();
                 LOG.info("Clock advanced to: " + (currentMillis) + "/" + new Date(currentMillis));
@@ -97,7 +113,23 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public void stop() {
+            public long setTime(LocalDate date, LocalTime time, ZoneId zoneId) {
+                ZonedDateTime current = Instant.ofEpochMilli(getCurrentTimeMillis()).atZone(zoneId);
+                ZonedDateTime target = date.atTime(time).atZone(zoneId);
+                return advanceTime(Duration.between(current, target).toMillis(), TimeUnit.MILLISECONDS);
+                // Above will log current time, no need to log again here
+            }
+
+            @Override
+            public long setTime(String iso8601Timestamp) {
+                Temporal current = Instant.ofEpochMilli(getCurrentTimeMillis());
+                Temporal target = Instant.parse(iso8601Timestamp);
+                return advanceTime(Duration.between(current, target).toMillis() , TimeUnit.MILLISECONDS);
+                // Above will log current time, no need to log again here
+            }
+
+            @Override
+            public synchronized void stop() {
                 if (stopTime == null) {
                     stopTime = System.currentTimeMillis();
                     LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
@@ -105,13 +137,13 @@ public class TimerService implements ContainerService, RulesClock {
             }
 
             @Override
-            public void start() {
+            public synchronized void start() {
                 stopTime = null;
                 LOG.info("Clock started at: " + (System.currentTimeMillis()) + "/" + new Date(System.currentTimeMillis()));
             }
 
             @Override
-            public void reset() {
+            public synchronized void reset() {
                 offset.set(0L);
                 stopTime = null;
             }
@@ -123,6 +155,8 @@ public class TimerService implements ContainerService, RulesClock {
         public abstract void start();
         public abstract void reset();
         public abstract long advanceTime(long amount, TimeUnit unit);
+        public abstract long setTime(LocalDate date, LocalTime time, ZoneId zoneId);
+        public abstract long setTime(String iso8601Timestamp);
     }
 
     protected Clock clock;

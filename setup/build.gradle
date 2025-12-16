@@ -1,9 +1,16 @@
 apply plugin: "java-library"
 
+var setupJar = project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}" : "demo"
+
+base {
+    archivesName = "openremote-${setupJar}-${project.name}"
+}
+
 sourceSets {
     integration
     demo
     load1
+    load2
 }
 
 // dependencies declaration
@@ -11,34 +18,39 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     demoImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
+    load2Implementation.extendsFrom(implementation)
 }
 
 dependencies {
     implementation project(":manager")
 }
 
-task (load1Jar, type: Jar) {
-    base {
-        archivesName = "openremote-load1-${project.name}"
-    }
+
+tasks.register('load1Jar', Jar) {
+    archiveBaseName.set("openremote-load1-${project.name}")
     from sourceSets.load1.output
 }
 
-// Order of JAR tasks affects the name of the final jar but not the contents which is odd
-// So putting demo last
-task (demoJar, type: Jar) {
-    base {
-        archivesName = "openremote-demo-${project.name}"
-    }
+tasks.register('load2Jar', Jar) {
+    archiveBaseName.set("openremote-load2-${project.name}")
+    from sourceSets.load2.output
+}
+
+tasks.register('demoJar', Jar) {
+    archiveBaseName.set("openremote-demo-${project.name}")
     from sourceSets.demo.output
 }
 
+tasks.named("compileJava") {
+    dependsOn("load1Jar", "load2Jar", "demoJar")
+}
+
 // Use demo setup sourceset by default for jar
-task installDist(type: Copy) {
-    def setupTask = getTasksByName(project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}Jar" : "demoJar", false)[0] as org.gradle.jvm.tasks.Jar
+tasks.register('installDist', Copy) {
+    def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
     System.out.println(setupTask.name)
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
     from setupTask.archiveFile
-    into "${project(":manager").buildDir}/install/manager/deployment/manager/extensions"
+    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
 }

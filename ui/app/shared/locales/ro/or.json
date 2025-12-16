@@ -129,27 +129,10 @@
   "location": "Locație",
   "longPressSetLoc": "Apasă lung pentru a seta locația",
   "hour": "Oră",
-  "lastHour": "În ultima oră",
-  "last24Hours": "În ultimele 24 de ore",
-  "thisHour": "În aceasta oră",
   "day": "Zi",
-  "thisDay": "Astăzi",
-  "thisDayLastWeek": "Acum o săptămână",
-  "yesterday": "Ieri",
-  "last7Days": "Ultimele 7 zile",
-  "last30Days": "Ultimele 30 de zile",
-  "last90Days": "Ultimele 90 de zile",
   "week": "Saptamană",
-  "thisWeek": "Această săptămână",
-  "previousWeek": "Săptămâna trecută",
   "month": "Lună",
-  "thisMonth": "Această Lună",
-  "previousMonth": "Luna trecută",
-  "last6Months": "Ultimele 6 luni",
   "year": "An",
-  "lastYear": "Anul trecut",
-  "thisYear": "Anul acesta",
-  "previousYear": "Anul trecut",
   "period": "Perioadă",
   "ending": "Se termina în",
   "timeframe": "Interval de timp",
@@ -183,13 +166,13 @@
     "TEXT_SWITCH": "Comutator text",
     "ROUND_NODE": "Rotunjește",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -293,11 +276,11 @@
   "realm": "Domeniu",
   "realm_plural": "Domenii",
   "changeRealm": "Schimbă domeniu",
-  "displayName":"Nume prietenos",
+  "displayName": "Nume prietenos",
   "loginTheme": "Temă acces",
   "emailTheme": "Temă email",
   "resetPasswordAllowed": "Resetarea parolei este permisă",
-  "deleteRealmConfirm":"Ești sigur că dorești să ștergi acest Domeniu?",
+  "deleteRealmConfirm": "Ești sigur că dorești să ștergi acest Domeniu?",
   "serviceUser": "Utilizator service",
   "user_plural": "Utilizatori",
   "regularUser_plural": "Utilizatori obișnuiți",
@@ -313,14 +296,14 @@
   "role": "Rol",
   "role_plural": "Roluri",
   "description": "Descriere",
-  "passwordMismatch":"Parolele nu se potrivesc",
-  "username":"Utilizator",
-  "firstName":"Prenume",
-  "surname":"Nume de familie",
+  "passwordMismatch": "Parolele nu se potrivesc",
+  "username": "Utilizator",
+  "firstName": "Prenume",
+  "surname": "Nume de familie",
   "deleteUser": "Șterge Utilizator",
   "deleteRole": "Șterge Rol",
-  "deleteUserConfirm":"Esti sigur că vrei să ștergi acest utilizator?",
-  "deleteRoleConfirm":"Esti sigur că vrei să ștergi acest rol?",
+  "deleteUserConfirm": "Esti sigur că vrei să ștergi acest utilizator?",
+  "deleteRoleConfirm": "Esti sigur că vrei să ștergi acest rol?",
   "realmRules": "Domeniu",
   "globalRules": "Global",
   "recipients": "Destinatari",
@@ -360,16 +343,18 @@
   "sending": "Se trimite",
   "submit": "Trimite",
   "password": "Parola",
+  "resetPassword": "Resetare parolă",
+  "resetPasswordConfirmation": "Un e-mail a fost trimis pentru a vă reseta parola.",
   "repeatPassword": "Repeta parola",
   "details": "Detalii",
-  "permissions":"Permisiuni",
-  "linkedAssets":"Utilizatori interconectați",
-  "realm_role_plural":"Roluri domeniu",
-  "manager_role_plural":"Roluri manager",
+  "permissions": "Permisiuni",
+  "linkedAssets": "Utilizatori interconectați",
+  "realm_role_plural": "Roluri domeniu",
+  "manager_role_plural": "Roluri manager",
   "restrictAccess": "Restricționeaza accesul",
   "selectRestrictedAssets": "{{number}} obiecte",
   "restrictedAccessToAssets": "Acces restricționat la",
-  "fullAccessLabel":"Admin: full access; manage users and roles",
+  "fullAccessLabel": "Admin: full access; manage users and roles",
   "noChildAssets": "Nu are obiecte copil",
   "account": "Cont",
   "editAttribute": "Schimbă atribut",
@@ -488,22 +473,24 @@
       "description": "Protocol pentru conectarea la un KNX"
     }
   },
-  "validityType":"Tip de program",
-  "validityAlways":"Activ permanent",
-  "validityPeriod":"Planifică un eveniment",
-  "validityRecurrence":"Planifică un eveniment repetitiv",
+  "validityType": "Tip de program",
+  "validityAlways": "Activ permanent",
+  "planPeriod": "Planifică un eveniment",
+  "planRecurrence": "Planifică un eveniment repetitiv",
   "activeFromTo": "Activ de la {{start}} până la {{end}}",
-  "fromTo":"De la {{start}} până la {{end}}",
-  "fromToDays":"de la {{start}} până peste {{days}} zile mai târziu {{end}}",
-  "forDays":"pentru {{days}} zile",
+  "fromTo": "De la {{start}} până la {{end}}",
+  "fromToDays": "de la {{start}} până peste {{days}} zile mai târziu {{end}}",
+  "forDays": "pentru {{days}} zile",
   "scheduleRuleActivity": "Planifică Activitatea Regulii",
+  "schedule": {
+    "_ends": "Repetarea se termină",
+    "repeat": "Se repetă în fiecare"
+  },
   "allDay": "Toată ziua",
   "apply": "aplică",
   "to": "la",
   "from": "de la",
   "never": "Niciodată",
-  "repetitionEnds": "Repetarea se termină",
-  "repeatOccurrenceEvery": "Se repetă în fiecare",
   "daysOfTheWeek": "zile ale săptămânii",
   "dismiss": "închide",
   "createAssetFailed": "Crearea obiectului a eșuat",
@@ -542,7 +529,7 @@
   "autoProvisioning": "Înrolare automată",
   "provisioningConfigs": "Configurari înrolare",
   "loadFailedProvisioningConfigs": "Încărcarea configurarii de înrolare a eșuat",
-  "deleteProvisioningConfigConfirm":"Ești sigur că vrei să ștergi această configurare de înrolare?\nClienții care folosesc această configurare nu se vor mai putea conecta.",
+  "deleteProvisioningConfigConfirm": "Ești sigur că vrei să ștergi această configurare de înrolare?\nClienții care folosesc această configurare nu se vor mai putea conecta.",
   "assetTemplate": "Șablon obiect",
   "createAsRestrictedUser": "Crează utilizator restricționat",
   "ignoreExpiryDate": "Ignoră data de expirare",
@@ -598,11 +585,11 @@
   "layout": "Aspect",
   "display": "Afișare",
   "screen": "Ecran",
-  "uploadFile" : "Încarcă fișier",
+  "uploadFile": "Încarcă fișier",
   "thresholds": "Praguri",
   "threshold": "Prag",
   "noDashboardSelected": "Selectează un panou din stânga",
-  "noDashboardSelected-mobile" : "Selecteaza un panou din meniul stanga-sus",
+  "noDashboardSelected-mobile": "Selecteaza un panou din meniul stanga-sus",
   "noDashboardFound": "Niciun panou nu a fost găsit.",
   "dashboardNotFound": "Panoul nu a fost găsit.",
   "noDashboardWriteAccess": "Nu ai drepturi pentru a edita acest panou.",
@@ -645,7 +632,7 @@
     "deleteWidgetWarning": "This will remove the widget from your board, and be permanently deleted after saving.",
     "widgetTooSmall": "Widget-ul este prea mic.",
     "allowTimerangeSelect": "Permite selectarea intervalului de timp",
-	"showLegend": "Arată legenda",
+    "showLegend": "Arată legenda",
     "showGeoJson": "Arată stratul GeoJSON",
     "showValueAs": "Arată valoarea ca",
     "deleteWidget": "Șterge widget",
@@ -661,10 +648,10 @@
   "default": "Implicit",
   "appearance": "Aspect",
   "configuration": {
-    "" : "Appearance",
+    "": "Appearance",
     "main": "Principal",
     "realmStyling": "STILIZAREA DOMENIULUI",
-    "addRealmCustomization" : "Adaugă Stil Domeniu",
+    "addRealmCustomization": "Adaugă Stil Domeniu",
     "realmTitle": "Titlu aplicație manager",
     "defaultLanguage": "Limba implicită",
     "images": "Imagini",
@@ -680,13 +667,13 @@
     "--or-app-color2": "Fundal: Culoarea suprafetei din spatele panourilor",
     "--or-app-color3": "Text: titlurile paginilor si panourilor",
     "--or-app-color8": "Text primar: text pe elemente cu culoarea primara",
-    "navigation" : "Navigație",
+    "navigation": "Navigație",
     "navigationDescription": "Primary navigation is shown in the page header, secondary items can be found in the menu on the right.",
-    "primaryNavigation" : "Meniu primar",
-    "secondaryNavigation" : "Meniu secundar",
-    "reloadPage" : "Pentru a vedea modificările făcute, reîncarca pagina",
+    "primaryNavigation": "Meniu primar",
+    "secondaryNavigation": "Meniu secundar",
+    "reloadPage": "Pentru a vedea modificările făcute, reîncarca pagina",
     "deleteRealmCustomization": "Șterge Stilul",
-    "deleteRealmCustomizationConfirm":"Esti sigur că vrei sa ștergi stilul acestui domeniu?",
+    "deleteRealmCustomizationConfirm": "Esti sigur că vrei sa ștergi stilul acestui domeniu?",
     "mapBounds": "Limite",
     "mapBoundsDescription": "Definește o cutie de vizualizare pe care o vede utilizatorul",
     "mapZoom": "Magnificare",
@@ -697,8 +684,8 @@
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Personalizare GeoJSON; adaugă puncte, linii și poligoane pe hartă.",
     "deleteMapCustomization": "Șterge setările harții",
-    "deleteMapCustomizationConfirm":"Ești sigur că dorești să ștergi această personalizare a hărții?",
-    "addMapCustomization" : "Adaugă setari harta"
+    "deleteMapCustomizationConfirm": "Ești sigur că dorești să ștergi această personalizare a hărții?",
+    "addMapCustomization": "Adaugă setari harta"
   },
   "mqttSessions": "Sesiuni MQTT",
   "address": "Adresa",
@@ -711,5 +698,161 @@
   "saveRealmFailed": "Salvarea domeniului a eșuat",
   "saveRealmSucceeded": "Domeniul a fost salvat cu succes!",
   "userDisconnected": "Deconectare cu succes!",
-  "userDisconnectFailed": "Deconectare eșuată"
+  "userDisconnectFailed": "Deconectare eșuată",
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

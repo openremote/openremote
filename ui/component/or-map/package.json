@@ -1,20 +1,23 @@
 {
   "name": "@openremote/or-map",
-  "version": "1.7.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "Displays s vector or raster map",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -25,16 +28,15 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
-    "@polymer/polymer": "^3.3.1",
-    "@types/mapbox": "^1.6.42",
-    "lit": "^2.0.2",
+    "lit": "^3.3.1",
+    "lit-html": "^3.3.1",
+    "lodash": "^4.17.21",
     "mapbox.js": "^3.3.1",
-    "maplibre-gl": "^4.1.2"
+    "maplibre-gl": "^5.12.0"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
-    "@types/geojson": "^7946.0.7"
+    "@types/geojson": "^7946.0.7",
+    "@types/mapbox": "^1.6.42"
   },
   "publishConfig": {
     "access": "public"

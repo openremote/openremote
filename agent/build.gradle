@@ -30,6 +30,7 @@ dependencies {
 
     api("org.openremote:or-zwave:$zwaveVersion") {
         exclude group: "org.bidib.com.neuronrobotics"
+        exclude group: "jdom" // We don't want to bring jdom 1.x dependency from or-zwave, it contains vulnerabilities
     }
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
@@ -43,6 +44,14 @@ dependencies {
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
 
     implementation "org.jdom:jdom2:$jdomVersion"
+
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 base {

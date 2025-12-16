@@ -1,42 +1,44 @@
 {
   "name": "@openremote/or-chart",
-  "version": "1.7.0-snapshot",
+  "version": "1.10.0-snapshot",
   "description": "OpenRemote chart",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^9.0.0",
     "@material/dialog": "^9.0.0",
     "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "chart.js": "^3.6.0",
-    "chartjs-adapter-moment": "^1.0.0",
-    "chartjs-plugin-annotation": "^1.1.0",
-    "jsonpath-plus": "^6.0.1",
-    "lit": "^2.0.2",
+    "@openremote/rest": "workspace:*",
+    "echarts": "~6.0.0",
+    "lit": "^3.3.1",
+    "lodash": "^4.17.21",
     "moment": "^2.29.4"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
-    "@types/chart.js": "^2.9.34",
     "@types/offscreencanvas": "^2019.6.4"
   },
   "publishConfig": {

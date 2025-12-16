@@ -1,4 +1,9 @@
-import {
+import manager, { OREvent } from "@openremote/core";
+import { Agent, AgentDescriptor, AssetModelUtil } from "@openremote/model";
+import { 
+    JsonFormsStateContext,
+    getTemplateWrapper,
+    JsonFormsRendererRegistryEntry,
     RankedTester,
     rankWith,
     and,
@@ -7,16 +12,12 @@ import {
     mapDispatchToControlProps,
     uiTypeIs,
     formatIs
-} from "@jsonforms/core";
-import manager, { OREvent } from "@openremote/core";
-import { Agent } from "@openremote/model";
-import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
+} from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
-import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 /**
  * This function creates a short lived cache for loading the list of agents; this is useful when multiple instances
@@ -27,7 +28,7 @@ let loadingPromise: Promise<Agent[]> | undefined;
 let subscribed = false;
 const timeout = 2000;
 
-export function loadAgents(): PromiseLike<Agent[]> {
+function loadAgents(): PromiseLike<Agent[]> {
 
     if (agents) {
         return Promise.resolve(agents);
@@ -89,8 +90,19 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     };
 
     const onAgentChanged = (agent: Agent | undefined) => {
-        props.handleChange(props.path, agent ? agent.id : undefined);
-        return;
+        if (!agents) {
+            return;
+        }
+
+        if (agent) {
+            const newAgentDescriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor;
+            if (newAgentDescriptor) {
+                props.handleChange("", {
+                  id: agent.id,
+                  type: newAgentDescriptor.agentLinkType
+                });
+            }
+        }
     };
 
     const loadedTemplatePromise = loadAgents().then(agents => {

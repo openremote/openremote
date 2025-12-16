@@ -135,13 +135,13 @@
     "TEXT_SWITCH": "Text switch",
     "ROUND_NODE": "Rotondo",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -225,8 +225,8 @@
   "buttonTextConfirm": "Testo per il pulsante di azione",
   "buttonTextDecline": "Testo per il pulsante di rifiuto",
   "custom": "Attributo personalizzato",
-  "displayName":"Nome amico",
-  "deleteRealmConfirm":"Sei sicuro di voler cancellare questo Regno??",
+  "displayName": "Nome amico",
+  "deleteRealmConfirm": "Sei sicuro di voler cancellare questo Regno??",
   "user_plural": "Utenti",
   "regularUser_plural": "Utenti",
   "serviceUser_plural": "Utenti del servizio",
@@ -234,12 +234,12 @@
   "role": "Ruolo",
   "role_plural": "Ruoli",
   "description": "Descrizione",
-  "passwordMismatch":"Le password non corrispondono",
-  "username":"Nome utente",
-  "firstName":"Nome",
-  "surname":"Cognome",
-  "deleteUserConfirm":"Sei sicuro di voler cancellare questo utente?",
-  "deleteRoleConfirm":"Sei sicuro di voler cancellare questo ruolo?",
+  "passwordMismatch": "Le password non corrispondono",
+  "username": "Nome utente",
+  "firstName": "Nome",
+  "surname": "Cognome",
+  "deleteUserConfirm": "Sei sicuro di voler cancellare questo utente?",
+  "deleteRoleConfirm": "Sei sicuro di voler cancellare questo ruolo?",
   "realmRules": "Regno",
   "globalRules": "Globale",
   "recipients": "Destinatari",
@@ -280,9 +280,11 @@
   "sending": "Invio",
   "submit": "Invia",
   "password": "Password",
+  "resetPassword": "Reimposta password",
+  "resetPasswordConfirmation": "È stata inviata un'email per reimpostare la password.",
   "repeatPassword": "Ripeti password",
   "details": "Particolari",
-  "permissions":"Permessi",
+  "permissions": "Permessi",
   "fullAccessLabel": "Amministratore: accesso completo; gestire utenti e ruoli",
   "noChildAssets": "Nessun asset del figlio",
   "account": "Account",
@@ -357,42 +359,31 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "Asset solare fotovoltaica",
       "ElectricityProducerWindAsset": "Asset turbina eolica"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "Aggiungere elementi di configurazione",
   "loseChanges": "Scartare le modifiche?",
@@ -407,28 +398,29 @@
       "description": "Protocollo per la connessione a un KNX"
     }
   },
-  "validityType":"Tipo di programma",
-  "validityAlways":"Sempre attivo",
-  "validityPeriod":"Pianifica un'occorrenza",
-  "validityRecurrence":"Pianifica un'occorrenza che si ripete",
+  "validityType": "Tipo di programma",
+  "validityAlways": "Sempre attivo",
+  "planPeriod": "Pianifica un'occorrenza",
+  "planRecurrence": "Pianifica un'occorrenza che si ripete",
   "activeFromTo": "Attivo da {{start}} a {{end}}",
-  "fromTo":"Da {{start}} a {{end}}",
-  "fromToDays":"da {{start}} a {{days}} giorni dopo{{end}}",
-  "forDays":"per {{days}} giorni",
+  "fromTo": "Da {{start}} a {{end}}",
+  "fromToDays": "da {{start}} a {{days}} giorni dopo{{end}}",
+  "forDays": "per {{days}} giorni",
   "scheduleRuleActivity": "Programmare l'attività delle regole",
+  "schedule": {
+    "_ends": "Fine della ripetizione",
+    "repeat": "Ripeti ogni ricorrenza"
+  },
   "allDay": "Tutto il giorno",
   "apply": "applica",
   "to": "a",
   "from": "da",
   "never": "Mai",
-  "repetitionEnds": "Fine della ripetizione",
-  "repeatOccurrenceEvery": "Ripeti ogni ricorrenza",
   "daysOfTheWeek": "Giorni della settimana",
   "dismiss": "dismiss",
   "createAssetFailed": "Fallita la creazione del asset",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "Leggi permessi",
   "writePermissions": "Scrivi permessi",
   "valueType": "Tipo di valore",
@@ -467,5 +459,161 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

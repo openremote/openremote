@@ -44,8 +44,8 @@ const styling = css`
 @customElement("settings-panel")
 export class SettingsPanel extends LitElement {
 
-    @property()
-    protected expanded: boolean = false;
+    @property({type: Boolean})
+    public expanded = false;
 
     @property()
     protected displayName?: string;

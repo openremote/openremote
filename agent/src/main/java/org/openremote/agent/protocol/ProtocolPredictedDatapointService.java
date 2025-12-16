@@ -21,12 +21,21 @@ package org.openremote.agent.protocol;
 
 import org.openremote.model.ContainerService;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.ValueDatapoint;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ProtocolPredictedDatapointService extends ContainerService {
 
     void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);
 
     void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
+
+    void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps);
+
+    void purgeValues(String assetId, String attributeName);
+
+    void purgeValuesBefore(String assetId, String attributeName, Instant timestamp);
 }

@@ -1,0 +1,172 @@
+# Default values for proxy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: openremote/proxy
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  http:
+    # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: LoadBalancer
+    # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+    port: 80
+    annotations: {}
+  metrics:
+    enabled: true
+    # Service type, typically use ClusterIP for local deployment and LoadBalancer for cloud deployments
+    type: ClusterIP
+    port: 8404
+    annotations: { }
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /docker-health
+    port: 8080
+readinessProbe:
+  httpGet:
+    path: /docker-health
+    port: 8080
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+or:
+  # Additional environment variables passed to the container
+  env: []
+  # - name: foo
+  #   value: bar
+
+  # It is important that all services have the same timezone and are time synchronized.
+  # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
+  timeZone: "Europe/Amsterdam"
+
+  # File to which entrypoint logs are written in addition to std out
+  proxyLogfile: "/var/log/proxy.log"
+
+  # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
+  # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
+  proxyLoglevel: "notice"
+
+  # IANA TLD subdomain for which an SSL certificate should be requested (leave blank for private/externally
+  # generated certificates).
+  hostname: "localhost"
+
+  # IANA TLD comma separated subdomains for which an SSL certificates should be requested (leave blank for
+  # private/externally generated certificates); this is an alternative to DOMAINNAME for multiple domains.
+  additionalHostnames: ""
+
+  # USE A CUSTOM PROXY CONFIG - COPY FROM https://raw.githubusercontent.com/openremote/proxy/main/haproxy.cfg
+  haproxyConfig: "/etc/haproxy/haproxy.cfg"
+
+  # Email address for SSL certificate issuance and expiration notifications.
+  leEmail: ""
+
+  # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
+  # when testing (this is important, you are limited to 5 duplicate certificates per week!)
+  # e.g. '--staging'
+  leExtraArgs: ""
+
+  # Provide this value if requesting wildcard certs with Route53 DNS zone; this should be the role to assume to
+  # perform route53 operations if calling across AWS accounts
+  awsRoute53Role: ""
+
+  # FQDN of OpenRemote Manager within the cluster
+  managerHost: "manager.default.svc.cluster.local"
+  # Web server port of OpenRemote Manager (default `8080`)
+  managerWebPort: 8080
+  # MQTT broker port of OpenRemote Manager (default `1883`)
+  managerMqttPort: 1883
+  # The path prefix used for OpenRemote Manager HTTP requests (default not set, example: `/openremote`)
+#  managerPathPrefix:
+
+  # FQDN of Keycloak server
+  keycloakHost: "keycloak.default.svc.cluster.local"
+  # Web server port of Keycloak server (default `8080`)
+  keycloakPort: 8080
+  # The path prefix used for Keycloak HTTP requests (default not set, example: `/keycloak`)
+#  keycloakPathPrefix:
+
+  # The container binds to this port for handling HTTP requests, must be a non-privileged port (>= 1024) when running inside the cluster
+  httpPort: 8080
+  # The container binds to this port for handling HTTPS requests, must be a non-privileged port (>= 1024) when running inside the cluster
+  httpsPort: 8443
+  # The port set in the `X-Forwarded-Port` header of requests sent to the Manager/Keycloak
+  httpsForwardedPort: 443
+  # The nameserver hostname and port used for resolving the Manager/Keycloak hosts
+  # Use `kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}:{.spec.ports[?(@.name=="dns")].port}'` to get the IP of the cluster DNS
+  nameserver: 10.96.0.10:53

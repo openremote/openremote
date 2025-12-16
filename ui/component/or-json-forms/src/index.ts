@@ -7,6 +7,7 @@ import {
     CoreActions,
     coreReducer,
     createAjv,
+    createDefaultValue,
     Dispatch,
     generateDefaultUISchema,
     generateJsonSchema,
@@ -27,6 +28,9 @@ import {getLabel, getTemplateFromProps} from "./util";
 import {baseStyle} from "./styles";
 import {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
+import {i18next, translate} from "@openremote/or-translate";
+
+export * from "@jsonforms/core";
 
 declare global {
     interface SymbolConstructor {
@@ -58,7 +62,7 @@ const styles = css`
 `;
 
 @customElement("or-json-forms")
-export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
+export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
@@ -118,6 +122,10 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
             this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
         }
 
+        if (!this.data) {
+          this.data = createDefaultValue(this.schema, this.schema);
+        }
+
         if (!this.uischema) {
             this.uischema = generateDefaultUISchema(this.schema!);
         }
@@ -139,7 +147,15 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
             );
         }
 
-        if (!this.contextValue || _changedProperties.has("core") || _changedProperties.has("renderers") || _changedProperties.has("cells") || _changedProperties.has("config") || _changedProperties.has("readonly")) {
+
+        if (!this.contextValue
+            || _changedProperties.has("core")
+            || _changedProperties.has("renderers")
+            || _changedProperties.has("cells")
+            || _changedProperties.has("config")
+            || _changedProperties.has("readonly")
+            || _changedProperties.has("_language")
+        ) {
             this.contextValue = {
                 core: this.core,
                 renderers: this.renderers,
@@ -147,7 +163,15 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
                 config: this.config,
                 uischemas: this.uischemas,
                 readonly: this.readonly,
-                dispatch: (action: CoreActions) => this.updateCore(action)
+                dispatch: (action: CoreActions) => this.updateCore(action),
+                i18n: {
+                    locale: this._language,
+                    translate: (id, defaultMessage, { errors: [error] }) => {
+                        const defaultValue = defaultMessage || error?.message || "";
+                        return i18next.t(id, { defaultValue })
+                            || i18next.t(id, { defaultValue, lng: "en" });
+                    }
+                }
             }
         }
 

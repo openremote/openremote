@@ -45,7 +45,7 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
@@ -393,8 +393,8 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             return;
         }
 
-        ValueDatapoint<?> solarForecastDatapointMax = solarForecastDatapoints.get(0);
-        ValueDatapoint<?> solarForecastDatapointMin = solarForecastDatapoints.get(solarForecastDatapoints.size() - 1);
+        ValueDatapoint<?> solarForecastDatapointMax = solarForecastDatapoints.getFirst();
+        ValueDatapoint<?> solarForecastDatapointMin = solarForecastDatapoints.getLast();
 
         // Get current timestamp of power forecast attribute
         ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(electricityProducerSolarAsset.getId());

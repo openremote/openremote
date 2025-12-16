@@ -1,0 +1,25 @@
+export const DocsBadge = (props) => {
+    if (!props?.packageJson) {
+        return <i>Could not find package.json file</i>
+    }
+    switch (props?.type) {
+        case "NPM": {
+            return <a href={`https://npmjs.com/package/${props.packageJson.name}`}>
+                <img alt="NPM Version" src={`https://img.shields.io/npm/v/${props.packageJson.name}`} height="24"></img>
+            </a>
+        }
+        case "License": {
+            if(!props.packageJson.repository) { return (<i>GitHub repository was not specified in package.json file.</i>)}
+            return <a href={props.packageJson.repository}>
+                <img alt="License" src={`https://img.shields.io/npm/l/${props.packageJson.name}`} height="24"></img>
+            </a>
+        }
+        case "Downloads": {
+            return <a href={`https://npmjs.com/package/${props.packageJson.name}`}>
+                <img alt="NPM Downloads" src={`https://img.shields.io/npm/dm/${props.packageJson.name}`} height="24"></img>
+            </a>
+        }
+        default:
+            return null;
+    }
+}

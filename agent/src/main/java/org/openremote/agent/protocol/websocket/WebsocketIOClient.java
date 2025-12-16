@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.websocket;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.http.*;
@@ -132,7 +132,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
-        return new NioEventLoopGroup(1);
+        return new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
     }
 
     @Override
@@ -198,7 +198,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         channel.pipeline().addLast(
             new HttpClientCodec(),
             new HttpObjectAggregator(8192),
-            WebSocketClientCompressionHandler.INSTANCE,
+            new WebSocketClientCompressionHandler(0),
             handler);
 
         channel.pipeline().addLast(new io.netty.handler.codec.MessageToMessageDecoder<WebSocketFrame>() {
@@ -288,7 +288,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                     throw new RuntimeException("Returned access token is null");
                 }
-                LOG.finest("Retrieved access token via OAuth: " + getClientUri());
+                LOG.fine("Retrieved access token via OAuth: " + getClientUri());
             } catch (Exception e) {
                 throw new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage());
             }

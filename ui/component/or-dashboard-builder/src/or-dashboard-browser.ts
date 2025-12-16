@@ -65,7 +65,7 @@ export class OrDashboardBrowser extends LitElement {
 
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
-        const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8]) // TODO: make this unlimited possibilities with a formula
+        const coords: Array<[number, number]> = this.generateGridCoords(Array.from(widgetTypes).length);
         const sidebarItems: any[] = Array.from(widgetTypes)
             .sort((a, b) => a[1].displayName.localeCompare(b[1].displayName))
             .map((typeArr, index) => {
@@ -156,5 +156,27 @@ export class OrDashboardBrowser extends LitElement {
                 <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 2"></div>
             </div>
         `
+    }
+
+    protected generateGridCoords(count: number): [number, number][] {
+        const result: [number, number][] = [];
+        const step = 2;
+
+        let x = 0;
+        let y = 0;
+
+        for (let i = 0; i < count; i++) {
+            result.push([x, y]);
+
+            // Alternate between x and y stepping
+            if (x === 0) {
+                x = step;
+            } else {
+                x = 0;
+                y += step;
+            }
+        }
+
+        return result;
     }
 }
