@@ -190,9 +190,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         LOG.finest("Scheduling linked attribute replay update");
 
         Optional<Schedule> schedule = agentLink.getSchedule();
+        TimeZone timezone = agentLink.getTimezone().orElse(TimeZone.getTimeZone("UTC"));
 
-        long now = timerService.getNow().toEpochMilli(); // UTC
-        long timeSinceOccurrenceStarted = schedule.map(s -> now - s.tryAdvanceActive(now))
+        long nowUTC = timerService.getNow().toEpochMilli(); // UTC
+        long tzOffset = timezone.getOffset(nowUTC);
+        long now = nowUTC + tzOffset;
+
+        long timeSinceOccurrenceStarted = schedule.map(s -> now - s.tryAdvanceActive(now, tzOffset))
                 .orElse(now % DEFAULT_REPLAY_LOOP_DURATION); // Remainder since 00:00
 
         // Find datapoint with timestamp after the current occurrence
@@ -208,7 +212,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
         if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || (schedule.isPresent() && schedule.get().isAfterScheduleEnd(now))) {
-            LOG.warning("Replay schedule has ended for: " + attributeRef);
+            LOG.warning("Replay loop has ended for: " + attributeRef);
             predictedDatapointService.purgeValuesBefore(attributeRef.getId(), attributeRef.getName(), Instant.ofEpochMilli(now));
             return null;
         }
@@ -216,7 +220,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
             PredictedDatapointWindow status = predictedDatapointWindowMap.get(attributeRef);
             List<ValueDatapoint<?>> predictedDatapoints =
-                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStarted, now);
+                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStarted, now, tzOffset);
             try {
                 updateLinkedAttributePredictedDataPoints(attributeRef, predictedDatapoints);
             } catch (Exception e) {
@@ -237,7 +241,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
             try {
                 updateLinkedAttribute(attributeRef, nextDatapoint.value);
-                Instant before = Instant.ofEpochMilli(now + nextRun.getAsLong());
+                Instant before = Instant.ofEpochMilli(now-tzOffset + nextRun.getAsLong());
                 predictedDatapointService.purgeValuesBefore(attributeRef.getId(), attributeRef.getName(), before);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
@@ -257,7 +261,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             Optional<Schedule> schedule,
             PredictedDatapointWindow status,
             long timeSinceOccurrenceStarted,
-            long now
+            long now,
+            long tzOffset
     ) {
         List<ValueDatapoint<?>> predictedDatapoints = new ArrayList<>();
 
@@ -286,7 +291,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                     if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
                         return predictedDatapoints;
                     }
-                    predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
+                    long UTCTimestamp = timestamp - tzOffset;
+                    predictedDatapoints.add(new SimulatorReplayDatapoint(UTCTimestamp, datapoint.value).toValueDatapoint());
                 }
             }
         }
@@ -314,7 +320,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
                     return predictedDatapoints;
                 }
-                predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
+                long UTCTimestamp = timestamp - tzOffset;
+                predictedDatapoints.add(new SimulatorReplayDatapoint(UTCTimestamp, datapoint.value).toValueDatapoint());
             }
         }
 
@@ -429,8 +436,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param millisSinceEpoch Milliseconds since the epoch (1970-01-01T00:00:00Z)
          * @return The start time of the active occurrence in milliseconds. If not started, the start of the schedule is returned.
          */
-        public long tryAdvanceActive(long millisSinceEpoch) {
-            long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli();
+        public long tryAdvanceActive(long millisSinceEpoch, long tzOffset) {
+            long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli() + tzOffset;
 
             if (recurrence == null) {
                 current = start;
