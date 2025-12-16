@@ -25,19 +25,20 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
     return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-        ["60Minutes", ['minutes', 60]],
-        ["Hour", ['hours', 1]],
-        ["6Hours", ['hours', 6]],
-        ["24Hours", ['hours', 24]],
-        ["Day", ['days', 1]],
-        ["7Days", ['days', 7]],
-        ["Week", ['weeks', 1]],
-        ["30Days", ['days', 30]],
-        ["Month", ['months', 1]],
-        ["90Days", ['days', 90]],
-        ["6Months", ['months', 6]],
-        ["365Days", ['days', 365]],
-        ["Year", ['years', 1]]
+        ["15Minutes", ["minutes", 15]],
+        ["60Minutes", ["minutes", 60]],
+        ["Hour", ["hours", 1]],
+        ["6Hours", ["hours", 6]],
+        ["24Hours", ["hours", 24]],
+        ["Day", ["days", 1]],
+        ["7Days", ["days", 7]],
+        ["Week", ["weeks", 1]],
+        ["30Days", ["days", 30]],
+        ["Month", ["months", 1]],
+        ["90Days", ["days", 90]],
+        ["6Months", ["months", 6]],
+        ["365Days", ["days", 365]],
+        ["Year", ["years", 1]]
     ]);
 }
 
