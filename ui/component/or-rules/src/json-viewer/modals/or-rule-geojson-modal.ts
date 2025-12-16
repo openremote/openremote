@@ -10,7 +10,7 @@ import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 
-/*
+/**
 * This element is a modal dialog for editing GeoJSON geofence predicates within the OR Rules JSON viewer.
 * It provides a textarea for inputting GeoJSON data, along with validation to ensure the input is valid GeoJSON.
 * When the user confirms their input, the GeoJSON is stored in the associated AttributePredicate.
@@ -137,7 +137,6 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
     }
 
 
-
     renderDialogHTML(value: GeoJSONGeofencePredicate) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("geojson-modal") as OrMwcDialog;
         if (!dialog) return;
@@ -175,8 +174,15 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-        if(!this.attributePredicate) return html``;
-        if(!this.query) return html``;
+        if(!this.attributePredicate) {
+            console.warn("OrRuleGeoJSONModal rendered without an associated attributePredicate");
+            return html``;
+        }
+
+        if(!this.query) {
+            console.warn("OrRuleGeoJSONModal rendered without an associated query");
+            return html``
+        };
 
         const valuePredicate = this.attributePredicate.value;
         if (!this.assetDescriptor || !valuePredicate) {
