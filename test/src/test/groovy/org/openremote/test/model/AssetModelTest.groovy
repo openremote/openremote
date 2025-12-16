@@ -1,6 +1,6 @@
 package org.openremote.test.model
 
-import com.fasterxml.jackson.databind.JsonNode
+
 import com.fasterxml.jackson.databind.node.ObjectNode
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
@@ -47,7 +47,7 @@ import java.time.temporal.ChronoUnit
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.Constants.*
 import static org.openremote.model.value.ValueType.BIG_NUMBER
 

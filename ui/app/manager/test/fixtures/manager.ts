@@ -6,8 +6,8 @@ import type { DefaultAssets } from "./data/assets";
 const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
-import { Asset, Role } from "@openremote/model";
-import { test as base, expect, type Page, type ComponentTestFixtures, type Shared, withPage } from "@openremote/test";
+import { Asset, ManagerAppConfig, ManagerConfig, Role } from "@openremote/model";
+import { test as base, expect, type Page, type SharedComponentTestFixtures, type Shared, withPage } from "@openremote/test";
 import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
@@ -21,6 +21,7 @@ export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 export class Manager {
   private readonly clientId = "openremote";
   private readonly managerHost: String;
+  readonly api: RestApi["api"];
   readonly axios: RestApi["_axiosInstance"];
 
   public realm?: string;
@@ -32,7 +33,24 @@ export class Manager {
   constructor(readonly page: Page, readonly baseURL: string) {
     this.managerHost = process.env.managerUrl || "http://localhost:8080";
     rest.initialise(`${this.managerHost}/api/master/`);
+    this.api = rest.api;
     this.axios = rest.axiosInstance;
+  }
+
+  /**
+   * Fulfill the `manager_config.json` response with a custom app config.
+   * @param config The manager app config to merge with the default.
+   */
+  async configureAppConfig(config: ManagerAppConfig) {
+    const realms = {
+      default: {
+        appTitle: "OpenRemote Manager Test",
+        language: "en"
+      }
+    }
+    await this.page.route("/api/master/configuration/manager",
+      async (route) => await route.fulfill({ json: { realms, ...config } })
+    );
   }
 
   async goToRealmStartPage(realm: string) {
@@ -110,6 +128,40 @@ export class Manager {
       })
     ).data;
     return access_token;
+  }
+
+  /**
+   * When an application initialises a WebSocket this will assign that instance to the `window.ws` object.
+   * 
+   * Must only be used inside a `await page.addInitScript` before the WebSocket gets initialised.
+   */
+  hijackWebSocket() {
+    return () => {
+      const OriginalWS = WebSocket;
+      window.WebSocket = function (url: string | URL, protocols?: string | string[]) {
+        return (window as any).ws = new OriginalWS(url, protocols);
+      } as any;
+    }
+  }
+
+  /**
+   * Send a WebSocket event to the server using an existing WebSocket connection.
+   * 
+   * You must add `await page.addInitScript(manager.hijackWebSocket())` 
+   * 
+   * @param payload The playload to send to WebSocket server.
+   * @see {@link hijackWebSocket}
+   */
+  async sendWebSocketEvent(payload: any) {
+    await this.page.evaluate((message) => {
+      if ("ws" in window) {
+        const ws = window.ws as WebSocket;
+        if (ws && ws.readyState === ws.OPEN) {
+          return ws.send(message);
+        }
+      }
+      console.warn('No active WebSocket found.');
+    }, `EVENT:${JSON.stringify(payload)}`);
   }
 
   /**
@@ -386,7 +438,7 @@ interface PageFixtures {
   usersPage: UsersPage;
 }
 
-interface ComponentFixtures extends ComponentTestFixtures {
+interface ComponentFixtures extends SharedComponentTestFixtures {
   assetViewer: AssetViewer;
   assetTree: AssetTree;
   collapsiblePanel: CollapsiblePanel;

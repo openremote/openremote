@@ -30,6 +30,8 @@ import {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
 import {i18next, translate} from "@openremote/or-translate";
 
+export * from "@jsonforms/core";
+
 declare global {
     interface SymbolConstructor {
         readonly observable: symbol;

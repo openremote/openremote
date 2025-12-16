@@ -475,20 +475,22 @@
   },
   "validityType": "Tip de program",
   "validityAlways": "Activ permanent",
-  "validityPeriod": "Planifică un eveniment",
-  "validityRecurrence": "Planifică un eveniment repetitiv",
+  "planPeriod": "Planifică un eveniment",
+  "planRecurrence": "Planifică un eveniment repetitiv",
   "activeFromTo": "Activ de la {{start}} până la {{end}}",
   "fromTo": "De la {{start}} până la {{end}}",
   "fromToDays": "de la {{start}} până peste {{days}} zile mai târziu {{end}}",
   "forDays": "pentru {{days}} zile",
   "scheduleRuleActivity": "Planifică Activitatea Regulii",
+  "schedule": {
+    "_ends": "Repetarea se termină",
+    "repeat": "Se repetă în fiecare"
+  },
   "allDay": "Toată ziua",
   "apply": "aplică",
   "to": "la",
   "from": "de la",
   "never": "Niciodată",
-  "repetitionEnds": "Repetarea se termină",
-  "repeatOccurrenceEvery": "Se repetă în fiecare",
   "daysOfTheWeek": "zile ale săptămânii",
   "dismiss": "închide",
   "createAssetFailed": "Crearea obiectului a eșuat",
@@ -824,6 +826,28 @@
               },
               "updateOnWrite": {
                 "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }

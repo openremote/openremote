@@ -4,7 +4,7 @@ import { expect, devices } from "@playwright/experimental-ct-core";
 import { defineConfig as defineCtWebConfig } from "@sand4rt/experimental-ct-web";
 
 import { createPlugin } from "./plugin";
-import { ct as ctBase, withPage, fixtures } from "./fixtures";
+import { ct as ctBase, withPage, fixtures, ctFixtures } from "./fixtures";
 export type * from "./fixtures";
 
 function defineCtConfig(config: PlaywrightTestConfig): PlaywrightTestConfig {
@@ -30,6 +30,6 @@ function defineCtConfig(config: PlaywrightTestConfig): PlaywrightTestConfig {
 
 // Must extend in the root of the package
 const test = base.extend(fixtures as Fixtures);
-const ct = ctBase.extend(fixtures as Fixtures);
+const ct = ctBase.extend(ctFixtures as Fixtures);
 
 export { test, ct, expect, devices, defineConfig, defineCtConfig, withPage };
