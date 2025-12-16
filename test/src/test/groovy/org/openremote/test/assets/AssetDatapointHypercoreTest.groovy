@@ -144,9 +144,6 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
             connection.close()
         }
 
-        // Wait for compression to finish
-        Thread.sleep(10_000)
-
         def orDatabaseSizeAfter = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
                 SELECT 
