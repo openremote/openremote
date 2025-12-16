@@ -45,7 +45,6 @@ export default defineConfig({
             "@openremote/util": "../../util"
         }
     },
-    plugins: [],
     tools: {
         bundlerChain: (chain, { CHAIN_ID }) => {
             chain.module.rule(CHAIN_ID.RULE.CSS).exclude.add(/(@material|@mdi).*\.css$/); // Exclude the external CSS imports from default bundling.
