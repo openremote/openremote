@@ -78,7 +78,9 @@ public class GeoJSONMultiPolygon extends GeoJSONGeometry {
     @JsonCreator
     public GeoJSONMultiPolygon(@JsonProperty("coordinates") double[][][][] coordinates) {
         super(TYPE);
-        if(coordinates == null) {return;}
+        if(coordinates == null) {
+            throw new IllegalArgumentException("Coordinates for MultiPolygon cannot be null");
+        }
         
         if (coordinates.length == 0) {
             throw new IllegalArgumentException("MultiPolygon must have at least one polygon");

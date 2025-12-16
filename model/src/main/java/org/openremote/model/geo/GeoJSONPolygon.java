@@ -95,6 +95,11 @@ public class GeoJSONPolygon extends GeoJSONGeometry {
                     throw new IllegalArgumentException("Each coordinate must have at least 2 values (longitude, latitude)");
                 }
 
+                // Ensure we reject coordinates with more than 3 values (lon, lat, [alt]) for consistency
+                if (coord.length > 3) {
+                    throw new IllegalArgumentException("Each coordinate can have at most 3 values (longitude, latitude, altitude)");
+                }
+
                 double x = Math.min(180d, Math.max(-180d, coord[0]));
                 double y = Math.min(90d, Math.max(-90d, coord[1]));
 

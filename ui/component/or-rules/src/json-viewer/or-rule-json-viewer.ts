@@ -454,15 +454,38 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return false;
         }
     }
-    protected _validateGeoJSON(geoJSON: GeoJSONFeatureCollection): boolean {
+    protected _validateGeoJSON(geoJSON: any): boolean {
 
-        if (!geoJSON.features) return false;
-        // Validate each feature
-        for (const feature of geoJSON.features) {
-            const geometryType = feature.geometry?.type || "";
-            if (!["Polygon", "MultiPolygon"].includes(geometryType)) { return false; }
+        if (!geoJSON) return false;
+
+        const validGeometryTypes = ["Polygon", "MultiPolygon"];
+
+        // Bit of a recursive function to validate geometry types
+        const isValidGeometry = (geom: any): boolean => {
+            if (!geom || !geom.type) return false;
+
+            if (validGeometryTypes.includes(geom.type)) return true;
+
+            if (geom.type === "GeometryCollection") {
+                if (!Array.isArray(geom.geometries)) return false;
+                return geom.geometries.every((g: any) => isValidGeometry(g));
+            }
+
+            return false;
+        };
+
+        // FeatureCollection
+        if (geoJSON.type === "FeatureCollection") {
+            if (!Array.isArray(geoJSON.features)) return false;
+            return geoJSON.features.every((f: any) => isValidGeometry(f.geometry));
         }
 
-        return true;
+        // Feature
+        if (geoJSON.type === "Feature") {
+            return isValidGeometry(geoJSON.geometry);
+        }
+
+        // Raw geometry (Polygon, MultiPolygon, GeometryCollection)
+        return isValidGeometry(geoJSON);
     }
 }
