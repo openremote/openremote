@@ -34,7 +34,6 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
-        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def persistenceService = container.getService(PersistenceService.class)
 
         and: "the schema name is retrieved"
@@ -122,48 +121,31 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         println "\n=== Storage BEFORE Hypercore ==="
         println "\nDatabase size: ${orDatabaseSizeBefore[1]}"
 
-        then: "storage should be measured"
-        true
-
-        when: "TimescaleDB hypercore is enabled on asset_datapoint table"
-        println "\n=== Enabling Hypercore on asset_datapoint ==="
-        persistenceService.doTransaction { em ->
-            em.createNativeQuery("""
-                ALTER TABLE ${schemaName}.asset_datapoint SET (
-                    timescaledb.enable_columnstore = true,
-                    timescaledb.orderby = 'timestamp DESC',
-                    timescaledb.segmentby = 'entity_id,attribute_name'
-                )
-            """).executeUpdate()
-
-            em.createNativeQuery("""
-                CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL '3 months')
-            """).executeUpdate()
+        and: "compression job is called manually"
+        def job_id = persistenceService.doReturningTransaction { em ->
+            def query = em.createNativeQuery("""
+                SELECT job_id
+                FROM timescaledb_information.jobs 
+                WHERE proc_name = 'policy_compression' AND hypertable_name = 'asset_datapoint';
+            """)
+            return query.getSingleResult()
         }
-        println "Hypercore enabled on asset_datapoint"
 
-        and: "TimescaleDB hypercore is enabled on asset_predicted_datapoint table"
-        println "=== Enabling Hypercore on asset_predicted_datapoint ==="
-        persistenceService.doTransaction { em ->
-            em.createNativeQuery("""
-                ALTER TABLE ${schemaName}.asset_predicted_datapoint SET (
-                    timescaledb.enable_columnstore = true,
-                    timescaledb.orderby = 'timestamp DESC',
-                    timescaledb.segmentby = 'entity_id,attribute_name'
-                )
-            """).executeUpdate()
-
-            em.createNativeQuery("""
-                CALL public.add_columnstore_policy('asset_predicted_datapoint', after => INTERVAL '3 months')
-            """).executeUpdate()
+        // run_job contains internal COMMIT statements, so it must be executed outside of a Hibernate transaction
+        def dataSource = persistenceService.persistenceUnitProperties.get(AvailableSettings.DATASOURCE) as javax.sql.DataSource
+        def connection = dataSource.getConnection()
+        try {
+            connection.setAutoCommit(true)
+            def stmt = connection.prepareCall("CALL public.run_job(?)")
+            stmt.setInt(1, job_id as int)
+            stmt.execute()
+            stmt.close()
+        } finally {
+            connection.close()
         }
-        println "Hypercore enabled on asset_predicted_datapoint"
-        then: "hypercore should be enabled successfully"
-        true
 
-        when: "storage usage is measured after enabling hypercore"
-        // Wait a bit for hypercore to process
-        Thread.sleep(10000)
+        // Wait for compression to finish
+        Thread.sleep(10_000)
 
         def orDatabaseSizeAfter = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
@@ -178,11 +160,10 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
 
         println "\n=== Storage AFTER Hypercore ==="
-
         println "\nDatabase size: ${orDatabaseSizeAfter[1]}"
 
-        then: "storage should be measured after hypercore"
-        true
+        then: "storage should be smaller after hypercore"
+        assert orDatabaseSizeBefore[1] > orDatabaseSizeAfter[1]
 
         when: "Purging will be called, count datapoints before purging"
         def countBeforePurge = 0
