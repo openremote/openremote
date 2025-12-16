@@ -28,6 +28,6 @@ ALTER TABLE ${schemaName}.asset_predicted_datapoint SET (
     timescaledb.orderby = 'timestamp DESC',
     timescaledb.segmentby = 'entity_id,attribute_name');
 
-CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL '3 months');
-CALL public.add_columnstore_policy('asset_predicted_datapoint', after => INTERVAL '3 months');
+CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL ${columnStorePolicyInterval});
+CALL public.add_columnstore_policy('asset_predicted_datapoint', after => INTERVAL ${columnStorePolicyInterval});
 
