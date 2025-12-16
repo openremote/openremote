@@ -504,11 +504,11 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         /**
-         * Calculates the remaining occurrence delay in milliseconds relative to the current time.
+         * Calculates the remaining offset delay in milliseconds relative to the current time.
          *
          * @param offset The offset from the current occurrence in seconds.
          * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
-         * @return The remaining occurrence delay in milliseconds relative to the current time.
+         * @return The remaining offset delay in milliseconds relative to the current time.
          * <p>
          * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
          */
