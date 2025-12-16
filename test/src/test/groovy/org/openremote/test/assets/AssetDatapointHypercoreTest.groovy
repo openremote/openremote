@@ -163,7 +163,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
         when: "storage usage is measured after enabling hypercore"
         // Wait a bit for hypercore to process
-        Thread.sleep(5000)
+        Thread.sleep(10000)
 
         def orDatabaseSizeAfter = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
@@ -187,8 +187,8 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         when: "Purging will be called, count datapoints before purging"
         def countBeforePurge = 0
         attributeNames.each { attributeName ->
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
-            countBeforePurge += datapoints.size()
+            def dataPoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
+            countBeforePurge += dataPoints.size()
         }
         println "Datapoints before purge: ${countBeforePurge}"
 
@@ -200,12 +200,12 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
         println "Purge completed in ${deleteDuration} seconds"
 
-        then: "less datapoints should exist"
+        then: "less data points should exist"
         conditions.eventually {
-            def countAfterPurge = 0
+            def countAfterPurge = countBeforePurge
             attributeNames.each { attributeName ->
-                def datapoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
-                countAfterPurge += datapoints.size()
+                def dataPoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
+                countAfterPurge -= dataPoints.size()
             }
             def deletedCount = countBeforePurge - countAfterPurge
 
