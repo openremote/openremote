@@ -9,13 +9,18 @@ import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 
+
+/*
+* This element is a modal dialog for editing GeoJSON geofence predicates within the OR Rules JSON viewer.
+* It provides a textarea for inputting GeoJSON data, along with validation to ensure the input is valid GeoJSON.
+* When the user confirms their input, the GeoJSON is stored in the associated AttributePredicate.
+* */
 @customElement("or-rule-geojson-modal")
 export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
 
     static styles = css`
         .help-text a { color: var(--or-app-color4, #3869B1); text-decoration: none; }
         .help-text a:hover { text-decoration: underline; }
-        .example-section code { display: block; white-space: pre; font-family: 'Monaco','Menlo','Ubuntu Mono','Consolas','source-code-pro',monospace; }
         .editor-input or-mwc-input { width: 100%; }
     `;
 
@@ -34,9 +39,6 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
     @state()
     private validationError: string | null = null;
 
-    @state()
-    private showExample: boolean = false;
-
     constructor() {
         super();
         this.addEventListener(OrMwcDialogOpenedEvent.NAME, this.initGeoJSONEditor)
@@ -51,7 +53,7 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
         if (valuePredicate?.geoJSON) {
             this.geoJSONText = this.formatGeoJSON(valuePredicate.geoJSON);
         } else {
-            this.geoJSONText = this.getExampleGeoJSON();
+            this.geoJSONText = "";
         }
         this.validationError = null;
     }
@@ -134,37 +136,7 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
         }
     }
 
-    protected getExampleGeoJSON(): string {
-        return JSON.stringify({
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    4.48556382778753,
-                    51.91779377518452
-                ],
-                [
-                    4.479700876335301,
-                    51.91779377518452
-                ],
-                [
-                    4.479700876335301,
-                    51.91514625782321
-                ],
-                [
-                    4.48556382778753,
-                    51.91514625782321
-                ],
-                [
-                    4.48556382778753,
-                    51.91779377518452
-                ]
-            ]
-        }, null, 2);
-    }
 
-    private toggleExample() {
-        this.showExample = !this.showExample;
-    }
 
     renderDialogHTML(value: GeoJSONGeofencePredicate) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("geojson-modal") as OrMwcDialog;
@@ -175,21 +147,18 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
                 <div class="scroll-pane">
                     <div class="geojson-editor">
                         <div class="help-text">
-                            ${i18next.t("geojsonEditorHelp", "Enter a valid GeoJSON Polygon, MultiPolygon, Feature, or FeatureCollection to define the geofence area.")}
+                            <or-translate value="geojsonEditorHelp"></or-translate>
                             <br />
                             <a href="https://geojson.io" target="_blank" rel="noopener noreferrer">geojson.io</a>
-                            ${i18next.t("geojsonEditorDrawHelper", "can help you draw and export GeoJSON.")}
+                            <or-translate value="geojsonEditorDrawHelper"></or-translate>
                         </div>
                         <div class="editor-input">
                             <or-mwc-input
                                 .type="${InputType.JSON_OBJECT}"
-                                
-                                minrows="14"
-                                maxrows="40"
                                 class="${this.validationError ? 'error' : ''}"
                                 .value="${this.geoJSONText}"
-                                .label="${i18next.t("geoJSON", "GeoJSON")}"
-                                placeholder="${i18next.t("geojsonPlaceholder", "Paste or edit your GeoJSON Feature/FeatureCollection here...")}"
+                            <or-translate value="geoJSON"></or-translate>
+                            <or-translate value="geojsonPlaceholder"></or-translate>
                                 @or-mwc-input-changed="${(e: CustomEvent) => {
                                     this.geoJSONText = e.detail.value;
                                     if (this.validationError) this.validationError = null;
@@ -199,16 +168,6 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
 
                         <div class="dialog-footer">
                             ${this.validationError ? html`<div class="error-message">${this.validationError}</div>` : html`<div class="error-spacer"></div>`}
-                            <div class="example-toggle" @click="${() => this.toggleExample()}">
-                                <or-icon icon="${this.showExample ? 'chevron-down' : 'chevron-right'}" size="14"></or-icon>
-                                <span>${i18next.t("showExample", this.showExample ? "Hide example" : "Show example")}</span>
-                            </div>
-                            ${this.showExample ? html`
-                                <div class="example-section">
-                                    <strong>${i18next.t("example", "Example Polygon")}</strong>
-                                    <code>${this.getExampleGeoJSON()}</code>
-                                </div>
-                            `: ''}
                         </div>
                     </div>
                 </div>
@@ -224,8 +183,6 @@ export class OrRuleGeoJSONModal extends translate(i18next)(LitElement) {
             return html``;
         }
 
-        const attributeName = this.getAttributeName(this.attributePredicate);
-        const assetType = getAssetTypeFromQuery(this.query);
         const value: GeoJSONGeofencePredicate = valuePredicate as any;
 
         const geoJSONPickerModalActions: DialogAction[] = [
