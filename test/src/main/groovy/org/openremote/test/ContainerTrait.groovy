@@ -448,7 +448,7 @@ trait ContainerTrait {
         if (!container.hasService(AssetStorageService.class)) {
             return Collections.emptyList()
         }
-        container.getService(AssetStorageService.class).findAll(new AssetQuery().orderBy())
+        container.getService(AssetStorageService.class).findAll(new AssetQuery())
     }
 
     List<UserAssetLink> getUserAssets() {
