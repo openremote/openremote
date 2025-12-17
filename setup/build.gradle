@@ -45,27 +45,50 @@ tasks.named("compileJava") {
     dependsOn("load1Jar", "load2Jar", "demoJar")
 }
 
+ext.runEnvDefaults = [
+  OR_DB_HOST      : "host.docker.internal",
+  OR_KEYCLOAK_HOST: "host.docker.internal",
+]
+
+// Resolve order: -PKEY=value  -> OS env KEY  -> default
+def resolvedEnvValue(String key, String defaultValue = null) {
+  providers.gradleProperty(key)
+    .orElse(providers.environmentVariable(key))
+    .orElse(defaultValue != null ? providers.provider { defaultValue } : providers.provider { "" })
+    .get()
+}
+
+// Apply a whole env map at once (so adding/removing env is just editing maps)
+def applyRunEnv(JavaExec t, Map<String, String> extra = [:]) {
+  def keys = (runEnvDefaults.keySet() + extra.keySet()).toSet()
+  def envMap = [:]
+  keys.each { k ->
+    envMap[k] = resolvedEnvValue(k as String, extra[k] ?: runEnvDefaults[k])
+  }
+  t.environment(envMap)
+}
+
 tasks.register('runDemo', JavaExec) {
-    group = 'application'
-    description = 'Runs the Manager with Demo Setup'
-    classpath = sourceSets.demo.runtimeClasspath
-    mainClass = 'org.openremote.manager.Main'
-    standardOutput = System.out
-    errorOutput = System.err
-    environment 'OR_SETUP_TYPE', 'demo'
-    // Default env vars, can be overridden
-    environment 'OR_DB_HOST', System.getenv('OR_DB_HOST') ?: 'localhost'
-    environment 'OR_KEYCLOAK_HOST', System.getenv('OR_KEYCLOAK_HOST') ?: 'localhost'
+  group = 'application'
+  description = 'Runs the Manager with Demo Setup'
+  classpath = sourceSets.demo.runtimeClasspath
+  mainClass = 'org.openremote.manager.Main'
+
+  standardOutput = System.out
+  errorOutput = System.err
+
+  applyRunEnv(delegate as JavaExec, [
+    OR_SETUP_TYPE: "demo",
+  ])
 }
 
 tasks.register('runTest', JavaExec) {
-    group = 'application'
-    description = 'Runs the Manager with Test Setup'
-    classpath = sourceSets.integration.runtimeClasspath
-    mainClass = 'org.openremote.manager.Main'
-    // Default env vars
-    environment 'OR_DB_HOST', System.getenv('OR_DB_HOST') ?: 'localhost'
-    environment 'OR_KEYCLOAK_HOST', System.getenv('OR_KEYCLOAK_HOST') ?: 'localhost'
+  group = 'application'
+  description = 'Runs the Manager with Test Setup'
+  classpath = sourceSets.integration.runtimeClasspath
+  mainClass = 'org.openremote.manager.Main'
+
+  applyRunEnv(delegate as JavaExec)
 }
 
 // Use demo setup sourceset by default for jar
