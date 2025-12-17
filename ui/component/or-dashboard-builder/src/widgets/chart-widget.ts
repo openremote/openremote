@@ -25,7 +25,6 @@ export interface ChartWidgetConfig extends AssetWidgetConfig {
 
 function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
     return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
-        ["15Minutes", ["minutes", 15]],
         ["60Minutes", ["minutes", 60]],
         ["Hour", ["hours", 1]],
         ["6Hours", ["hours", 6]],
