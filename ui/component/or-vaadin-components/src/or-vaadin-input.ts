@@ -157,7 +157,7 @@ export class OrVaadinInput extends LitElement {
 
     /**
      * Function that returns a boolean which indicates if the element meets any constraint validation rules applied to it.
-     * Refer to https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checkValidity for more information.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checkValidity|HTMLInputElement/checkValidity}
      */
     public checkValidity(): boolean {
         return this._elem?.checkValidity() ?? false;
