@@ -505,6 +505,10 @@
             },
             "BooleanPredicate": {
               "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
