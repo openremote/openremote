@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,12 +12,14 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, TemplateResult} from "lit";
 import {customElement, query} from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
-import "../panels/attributes-chart-panel";
+import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
@@ -35,7 +34,6 @@ import {BarChartAttributeConfig, BarChartInterval, IntervalConfig, OrAttributeBa
 import {OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
-import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import {debounce} from "lodash";
 
 const styling = css`

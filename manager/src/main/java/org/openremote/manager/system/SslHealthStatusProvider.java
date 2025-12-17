@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,15 +12,16 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.system;
 
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 
-import javax.net.ssl.*;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -33,82 +31,82 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-import static org.openremote.model.util.MapAccess.getInteger;
-import static org.openremote.model.util.MapAccess.getString;
+import javax.net.ssl.*;
+
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
 
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider {
 
-    public static final String NAME = "ssl";
-    protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());
-    protected String host;
-    protected int SSLPort;
-    protected SSLContext SSLContext;
+  public static final String NAME = "ssl";
+  protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());
+  protected String host;
+  protected int SSLPort;
+  protected SSLContext SSLContext;
 
-    @Override
-    public void init(Container container) throws Exception {
-        
-        int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
+  @Override
+  public void init(Container container) throws Exception {
 
-        if (SSLPort < 0) {
-            SSLPort = 443;
-        }
-        
-        if (SSLPort > 0 && SSLPort <= 65536) {
-            this.SSLPort = SSLPort;
-            host = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
-            SSLContext = javax.net.ssl.SSLContext.getInstance("TLS");
-            SSLContext.init(null, new TrustManager[]{this}, null);
-        }
+    int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
+
+    if (SSLPort < 0) {
+      SSLPort = 443;
     }
 
-    @Override
-    public void start(Container container) throws Exception {
+    if (SSLPort > 0 && SSLPort <= 65536) {
+      this.SSLPort = SSLPort;
+      host = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
+      SSLContext = javax.net.ssl.SSLContext.getInstance("TLS");
+      SSLContext.init(null, new TrustManager[] {this}, null);
+    }
+  }
+
+  @Override
+  public void start(Container container) throws Exception {}
+
+  @Override
+  public void stop(Container container) throws Exception {}
+
+  @Override
+  public String getHealthStatusName() {
+    return NAME;
+  }
+
+  @Override
+  public Object getHealthStatus() {
+    if (SSLContext == null) {
+      return null;
     }
 
-    @Override
-    public void stop(Container container) throws Exception {
+    SSLSocketFactory ssf = SSLContext.getSocketFactory();
 
+    try (SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort)) {
+      socket.startHandshake();
+
+      X509Certificate[] peerCertificates =
+          (X509Certificate[]) socket.getSession().getPeerCertificates();
+      X509Certificate serverCert = peerCertificates[0];
+
+      Date date = serverCert.getNotAfter();
+      long validDays = DAYS.between(Instant.now(), date.toInstant());
+      return Map.<String, Object>of("validDays", validDays);
+    } catch (IOException e) {
+      LOG.log(Level.WARNING, "Failed to connect to SSL port " + SSLPort + " on host: " + host);
+      return null;
     }
+  }
 
-    @Override
-    public String getHealthStatusName() {
-        return NAME;
-    }
+  @Override
+  public void checkClientTrusted(X509Certificate[] chain, String authType)
+      throws CertificateException {}
 
-    @Override
-    public Object getHealthStatus() {
-        if (SSLContext == null) {
-            return null;
-        }
+  @Override
+  public void checkServerTrusted(X509Certificate[] chain, String authType)
+      throws CertificateException {}
 
-        SSLSocketFactory ssf = SSLContext.getSocketFactory();
-
-        try (SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort)) {
-            socket.startHandshake();
-
-            X509Certificate[] peerCertificates = (X509Certificate[]) socket.getSession().getPeerCertificates();
-            X509Certificate serverCert = peerCertificates[0];
-
-            Date date = serverCert.getNotAfter();
-            long validDays = DAYS.between(Instant.now(), date.toInstant());
-            return Map.<String, Object>of("validDays", validDays);
-        } catch (IOException e) {
-            LOG.log(Level.WARNING, "Failed to connect to SSL port " + SSLPort + " on host: " + host);
-            return null;
-        }
-    }
-
-    @Override
-    public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-    }
-
-    @Override
-    public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-    }
-
-    @Override
-    public X509Certificate[] getAcceptedIssuers() {
-        return null;
-    }
+  @Override
+  public X509Certificate[] getAcceptedIssuers() {
+    return null;
+  }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, queryAll} from "lit/decorators.js";
@@ -31,8 +30,6 @@ import {moveNodesToGroupNode} from "./util";
 import {OrTreeDragEvent, OrTreeSelectEvent, TreeMenuSelection, TreeMenuSorting, TreeNode} from "./model";
 import {i18next} from "@openremote/or-translate";
 
-import "./or-tree-group";
-import "./or-tree-node";
 
 export * from "./or-tree-group";
 export * from "./or-tree-node";
@@ -190,7 +187,7 @@ export class OrTreeMenu extends LitElement {
     }
 
     /* ------------------------------------------------------------- */
-    //region Public functions for or-tree-menu
+    // region Public functions for or-tree-menu
     /* ------------------------------------------------------------- */
 
     /**
@@ -204,10 +201,10 @@ export class OrTreeMenu extends LitElement {
         this.nodes = moveNodesToGroupNode(nodesToMove, groupNode, this.nodes);
     }
 
-    //endregion
+    // endregion
 
     /* ------------------------------------------------------------- */
-    //region HTML Templates functions
+    // region HTML Templates functions
     /* ------------------------------------------------------------- */
 
     /**
@@ -344,10 +341,10 @@ export class OrTreeMenu extends LitElement {
         return html``;
     }
 
-    //endregion
+    // endregion
 
     /* ------------------------------------------------------------- */
-    //region Event callback functions
+    // region Event callback functions
     /* ------------------------------------------------------------- */
 
     /**
@@ -402,7 +399,7 @@ export class OrTreeMenu extends LitElement {
             case TreeMenuSelection.SINGLE: {
                 this.deselectAllNodes();
                 select(group, elem);
-                return;
+                
             }
         }
     }
@@ -438,16 +435,16 @@ export class OrTreeMenu extends LitElement {
                 default: {
                     this.deselectAllNodes();
                     this._selectNode(node);
-                    return;
+                    
                 }
             }
         }
     }
 
-    //endregion
+    // endregion
 
     /* ------------------------------------------------------------- */
-    //region Drag-and-drop callback functions
+    // region Drag-and-drop callback functions
     /* ------------------------------------------------------------- */
 
     /** HTML callback event for 'dragstart' (the moment when a drag gesture is started) */
@@ -563,7 +560,7 @@ export class OrTreeMenu extends LitElement {
         });
     }
 
-    //endregion
+    // endregion
 
     /* ------------------------------------------------------------- */
 

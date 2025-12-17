@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,43 +12,46 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
-
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.openremote.model.Constants;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Roles available for our client application on Keycloak.
- */
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.openremote.model.Constants;
+
+/** Roles available for our client application on Keycloak. */
 public enum ClientRole {
+  READ_ADMIN(Constants.READ_ADMIN_ROLE, "Read system settings, realms, and users"),
+  READ_LOGS(Constants.READ_LOGS_ROLE, "Read logs and log settings"),
+  READ_USERS(Constants.READ_USERS_ROLE, "Read limited set of user details for use in rules etc."),
+  READ_MAP(Constants.READ_MAP_ROLE, "View map"),
+  READ_ASSETS(Constants.READ_ASSETS_ROLE, "Read asset data"),
+  READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
+  READ_INSIGHTS(Constants.READ_INSIGHTS_ROLE, "Read dashboards"),
+  READ_ALARMS(Constants.READ_ALARMS_ROLE, "Read alarms"),
+  READ_SERVICES(Constants.READ_SERVICES_ROLE, "View services"),
+  WRITE_SERVICES(Constants.WRITE_SERVICES_ROLE, "Write service data"),
 
-    READ_ADMIN(Constants.READ_ADMIN_ROLE, "Read system settings, realms, and users"),
-    READ_LOGS(Constants.READ_LOGS_ROLE, "Read logs and log settings"),
-    READ_USERS(Constants.READ_USERS_ROLE, "Read limited set of user details for use in rules etc."),
-    READ_MAP(Constants.READ_MAP_ROLE, "View map"),
-    READ_ASSETS(Constants.READ_ASSETS_ROLE, "Read asset data"),
-    READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
-    READ_INSIGHTS(Constants.READ_INSIGHTS_ROLE, "Read dashboards"),
-    READ_ALARMS(Constants.READ_ALARMS_ROLE, "Read alarms"),
-    READ_SERVICES(Constants.READ_SERVICES_ROLE, "View services"),
-    WRITE_SERVICES(Constants.WRITE_SERVICES_ROLE, "Write service data"),
+  WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
+  WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, realms, and users"),
+  WRITE_LOGS(Constants.WRITE_LOGS_ROLE, "Write log settings"),
+  WRITE_ASSETS(Constants.WRITE_ASSETS_ROLE, "Write asset data"),
+  WRITE_ATTRIBUTES(Constants.WRITE_ATTRIBUTES_ROLE, "Write attribute data"),
+  WRITE_RULES(Constants.WRITE_RULES_ROLE, "Write rulesets (NOTE: effectively super-user access!)"),
+  WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
+  WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
 
-    WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
-    WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, realms, and users"),
-    WRITE_LOGS(Constants.WRITE_LOGS_ROLE, "Write log settings"),
-    WRITE_ASSETS(Constants.WRITE_ASSETS_ROLE, "Write asset data"),
-    WRITE_ATTRIBUTES(Constants.WRITE_ATTRIBUTES_ROLE, "Write attribute data"),
-    WRITE_RULES(Constants.WRITE_RULES_ROLE, "Write rulesets (NOTE: effectively super-user access!)"),
-    WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
-    WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
-
-    READ("read", "Read all data", new ClientRole[]{
+  READ(
+      "read",
+      "Read all data",
+      new ClientRole[] {
         READ_ADMIN,
         READ_LOGS,
         READ_USERS,
@@ -61,9 +61,12 @@ public enum ClientRole {
         READ_INSIGHTS,
         READ_ALARMS,
         READ_SERVICES
-    }),
+      }),
 
-    WRITE("write", "Write all data", new ClientRole[]{
+  WRITE(
+      "write",
+      "Write all data",
+      new ClientRole[] {
         READ_ADMIN,
         READ_LOGS,
         READ_USERS,
@@ -82,54 +85,55 @@ public enum ClientRole {
         WRITE_INSIGHTS,
         WRITE_ALARMS,
         WRITE_SERVICES
-    });
+      });
 
-    // Only individual roles, not composites
-    public static final Set<String> ALL_ROLES = Arrays.stream(values())
-        .filter(r -> r.composites == null)
-        .map(ClientRole::getValue)
-        .collect(Collectors.toSet());
+  // Only individual roles, not composites
+  public static final Set<String> ALL_ROLES =
+      Arrays.stream(values())
+          .filter(r -> r.composites == null)
+          .map(ClientRole::getValue)
+          .collect(Collectors.toSet());
 
-    final protected String value;
-    final protected String description;
-    final protected ClientRole[] composites;
+  protected final String value;
+  protected final String description;
+  protected final ClientRole[] composites;
 
-    ClientRole(String value, String description, ClientRole[] composites) {
-        this.value = value;
-        this.description = description;
-        this.composites = composites;
+  ClientRole(String value, String description, ClientRole[] composites) {
+    this.value = value;
+    this.description = description;
+    this.composites = composites;
+  }
+
+  ClientRole(String value, String description) {
+    this.value = value;
+    this.description = description;
+    this.composites = null;
+  }
+
+  @JsonValue
+  public String getValue() {
+    return value;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public ClientRole[] getComposites() {
+    return composites;
+  }
+
+  public RoleRepresentation getRepresentation() {
+    return new RoleRepresentation(getValue(), getDescription(), false);
+  }
+
+  public static String[] valueOf(ClientRole... roles) {
+    List<String> list = new ArrayList<>();
+    if (roles != null) {
+      for (ClientRole role : roles) {
+        list.add(role.getValue());
+      }
     }
-
-    ClientRole(String value, String description) {
-        this.value = value;
-        this.description = description;
-        this.composites = null;
-    }
-
-    @JsonValue
-    public String getValue() {
-        return value;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public ClientRole[] getComposites() {
-        return composites;
-    }
-
-    public RoleRepresentation getRepresentation() {
-        return new RoleRepresentation(getValue(), getDescription(), false);
-    }
-
-    static public String[] valueOf(ClientRole... roles) {
-        List<String> list = new ArrayList<>();
-        if (roles != null) {
-            for (ClientRole role : roles) {
-                list.add(role.getValue());
-            }
-        }
-        return list.toArray(new String[list.size()]);
-    }
+    return list.toArray(new String[list.size()]);
+  }
 }

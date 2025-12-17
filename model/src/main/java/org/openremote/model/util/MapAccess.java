@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,56 +12,55 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.util;
 
 import java.math.BigDecimal;
 import java.util.Map;
 
-/**
- * Convenience functions for accessing {@link Map}.
- */
+/** Convenience functions for accessing {@link Map}. */
 public class MapAccess {
 
-    protected MapAccess() {
-    }
+  protected MapAccess() {}
 
-    static public String getString(Map<String, String> map, String key, String defaultValue) {
-        return map.containsKey(key) ? map.get(key) : defaultValue;
-    }
+  public static String getString(Map<String, String> map, String key, String defaultValue) {
+    return map.containsKey(key) ? map.get(key) : defaultValue;
+  }
 
-    static public boolean getBoolean(Map<String, String> map, String key, boolean defaultValue) {
-        if (map.containsKey(key)) {
-            try {
-                return Boolean.valueOf(map.get(key));
-            } catch (Exception ex) {
-                return defaultValue;
-            }
-        }
+  public static boolean getBoolean(Map<String, String> map, String key, boolean defaultValue) {
+    if (map.containsKey(key)) {
+      try {
+        return Boolean.valueOf(map.get(key));
+      } catch (Exception ex) {
         return defaultValue;
+      }
     }
+    return defaultValue;
+  }
 
-    static public int getInteger(Map<String, String> map, String key, int defaultValue) {
-        if (map.containsKey(key)) {
-            try {
-                return Integer.valueOf(map.get(key));
-            } catch (Exception ex) {
-                return defaultValue;
-            }
-        }
+  public static int getInteger(Map<String, String> map, String key, int defaultValue) {
+    if (map.containsKey(key)) {
+      try {
+        return Integer.valueOf(map.get(key));
+      } catch (Exception ex) {
         return defaultValue;
+      }
     }
+    return defaultValue;
+  }
 
-    static public BigDecimal getDecimal(Map<String, String> map, String key, BigDecimal defaultValue) {
-        if (map.containsKey(key)) {
-            try {
-                return new BigDecimal(map.get(key));
-            } catch (Exception ex) {
-                return defaultValue;
-            }
-        }
+  public static BigDecimal getDecimal(
+      Map<String, String> map, String key, BigDecimal defaultValue) {
+    if (map.containsKey(key)) {
+      try {
+        return new BigDecimal(map.get(key));
+      } catch (Exception ex) {
         return defaultValue;
+      }
     }
-
+    return defaultValue;
+  }
 }

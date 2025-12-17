@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,15 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.*;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -28,119 +31,129 @@ import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class WeatherAsset extends Asset<WeatherAsset> {
 
-    public static final AttributeDescriptor<Double> TEMPERATURE = new AttributeDescriptor<>("temperature", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_CELSIUS);
-    public static final AttributeDescriptor<Double> UV_INDEX = new AttributeDescriptor<>("uVIndex", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.LABEL, "UV index"),
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_IRRADIANCE = new AttributeDescriptor<>("sunIrradiance", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_AZIMUTH = new AttributeDescriptor<>("sunAzimuth", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_ZENITH = new AttributeDescriptor<>("sunZenith", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_ALTITUDE = new AttributeDescriptor<>("sunAltitude", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> WIND_SPEED = new AttributeDescriptor<>("windSpeed", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> WIND_DIRECTION = new AttributeDescriptor<>("windDirection", ValueType.DIRECTION,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> RAINFALL = new AttributeDescriptor<>("rainfall", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_MILLI, UNITS_METRE);
-    public static final AttributeDescriptor<Integer> HUMIDITY = new AttributeDescriptor<>("humidity", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
-    public static final AttributeDescriptor<Double> ATMOSPHERIC_PRESSURE = new AttributeDescriptor<>("atmosphericPressure", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_HECTO, UNITS_PASCAL)
-    .withOptional(true);
-    public static final AttributeDescriptor<Integer> CLOUD_COVERAGE = new AttributeDescriptor<>("cloudCoverage", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE)
-    .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))
-    .withOptional(true);
-    public static final AttributeDescriptor<Double> WIND_GUST_SPEED = new AttributeDescriptor<>("windGustSpeed", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR)
-    .withOptional(true);
-    public static final AttributeDescriptor<Double> PROBABILITY_OF_PRECIPITATION = new AttributeDescriptor<>("probabilityOfPrecipitation", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(1))
-    .withOptional(true);
+  public static final AttributeDescriptor<Double> TEMPERATURE =
+      new AttributeDescriptor<>(
+              "temperature", ValueType.NUMBER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_CELSIUS);
+  public static final AttributeDescriptor<Double> UV_INDEX =
+      new AttributeDescriptor<>(
+          "uVIndex",
+          ValueType.POSITIVE_NUMBER,
+          new MetaItem<>(MetaItemType.LABEL, "UV index"),
+          new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<Double> SUN_IRRADIANCE =
+      new AttributeDescriptor<>(
+          "sunIrradiance", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<Double> SUN_AZIMUTH =
+      new AttributeDescriptor<>(
+          "sunAzimuth", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<Double> SUN_ZENITH =
+      new AttributeDescriptor<>(
+          "sunZenith", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<Double> SUN_ALTITUDE =
+      new AttributeDescriptor<>(
+          "sunAltitude", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<Double> WIND_SPEED =
+      new AttributeDescriptor<>(
+              "windSpeed", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
+  public static final AttributeDescriptor<Integer> WIND_DIRECTION =
+      new AttributeDescriptor<>(
+          "windDirection", ValueType.DIRECTION, new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<Double> RAINFALL =
+      new AttributeDescriptor<>(
+              "rainfall", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_MILLI, UNITS_METRE);
+  public static final AttributeDescriptor<Integer> HUMIDITY =
+      new AttributeDescriptor<>(
+              "humidity", ValueType.POSITIVE_INTEGER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_PERCENTAGE)
+          .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+  public static final AttributeDescriptor<Double> ATMOSPHERIC_PRESSURE =
+      new AttributeDescriptor<>(
+              "atmosphericPressure",
+              ValueType.POSITIVE_NUMBER,
+              new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_HECTO, UNITS_PASCAL)
+          .withOptional(true);
+  public static final AttributeDescriptor<Integer> CLOUD_COVERAGE =
+      new AttributeDescriptor<>(
+              "cloudCoverage", ValueType.POSITIVE_INTEGER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_PERCENTAGE)
+          .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))
+          .withOptional(true);
+  public static final AttributeDescriptor<Double> WIND_GUST_SPEED =
+      new AttributeDescriptor<>(
+              "windGustSpeed", ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR)
+          .withOptional(true);
+  public static final AttributeDescriptor<Double> PROBABILITY_OF_PRECIPITATION =
+      new AttributeDescriptor<>(
+              "probabilityOfPrecipitation",
+              ValueType.POSITIVE_NUMBER,
+              new MetaItem<>(MetaItemType.READ_ONLY))
+          .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(1))
+          .withOptional(true);
 
-    public static final AssetDescriptor<WeatherAsset> DESCRIPTOR = new AssetDescriptor<>("weather-partly-cloudy", "49B0D8", WeatherAsset.class);
+  public static final AssetDescriptor<WeatherAsset> DESCRIPTOR =
+      new AssetDescriptor<>("weather-partly-cloudy", "49B0D8", WeatherAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected WeatherAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected WeatherAsset() {}
 
-    public WeatherAsset(String name) {
-        super(name);
-    }
+  public WeatherAsset(String name) {
+    super(name);
+  }
 
-    public Optional<Double> getTemperature() {
-        return getAttributes().getValue(TEMPERATURE);
-    }
+  public Optional<Double> getTemperature() {
+    return getAttributes().getValue(TEMPERATURE);
+  }
 
-    public Optional<Double> getUVIndex() {
-        return getAttributes().getValue(UV_INDEX);
-    }
+  public Optional<Double> getUVIndex() {
+    return getAttributes().getValue(UV_INDEX);
+  }
 
-    public Optional<Double> getSunIrradiance() {
-        return getAttributes().getValue(SUN_IRRADIANCE);
-    }
+  public Optional<Double> getSunIrradiance() {
+    return getAttributes().getValue(SUN_IRRADIANCE);
+  }
 
-    public Optional<Double> getSunAzimuth() {
-        return getAttributes().getValue(SUN_AZIMUTH);
-    }
+  public Optional<Double> getSunAzimuth() {
+    return getAttributes().getValue(SUN_AZIMUTH);
+  }
 
-    public Optional<Double> getSunZenith() {
-        return getAttributes().getValue(SUN_ZENITH);
-    }
+  public Optional<Double> getSunZenith() {
+    return getAttributes().getValue(SUN_ZENITH);
+  }
 
-    public Optional<Double> getSunAltitude() {
-        return getAttributes().getValue(SUN_ALTITUDE);
-    }
+  public Optional<Double> getSunAltitude() {
+    return getAttributes().getValue(SUN_ALTITUDE);
+  }
 
-    public Optional<Double> getRainfall() {
-        return getAttributes().getValue(RAINFALL);
-    }
+  public Optional<Double> getRainfall() {
+    return getAttributes().getValue(RAINFALL);
+  }
 
-    public Optional<Integer> getHumidity() {
-        return getAttributes().getValue(HUMIDITY);
-    }
+  public Optional<Integer> getHumidity() {
+    return getAttributes().getValue(HUMIDITY);
+  }
 
-    public Optional<Double> getAtmosphericPressure() {
-        return getAttributes().getValue(ATMOSPHERIC_PRESSURE);
-    }
+  public Optional<Double> getAtmosphericPressure() {
+    return getAttributes().getValue(ATMOSPHERIC_PRESSURE);
+  }
 
-    public Optional<Integer> getCloudCoverage() {
-        return getAttributes().getValue(CLOUD_COVERAGE);
-    }
+  public Optional<Integer> getCloudCoverage() {
+    return getAttributes().getValue(CLOUD_COVERAGE);
+  }
 
-    public Optional<Double> getWindGustSpeed() {
-        return getAttributes().getValue(WIND_GUST_SPEED);
-    }
+  public Optional<Double> getWindGustSpeed() {
+    return getAttributes().getValue(WIND_GUST_SPEED);
+  }
 
-    public Optional<Double> getProbabilityOfPrecipitation() {
-        return getAttributes().getValue(PROBABILITY_OF_PRECIPITATION);
-    }
+  public Optional<Double> getProbabilityOfPrecipitation() {
+    return getAttributes().getValue(PROBABILITY_OF_PRECIPITATION);
+  }
 }

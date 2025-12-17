@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.auth;
 
@@ -25,25 +24,27 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(OAuthClientCredentialsGrant.CLIENT_CREDENTIALS_GRANT_TYPE)
 public class OAuthClientCredentialsGrant extends OAuthGrant {
-    public static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
+  public static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
 
-    @JsonCreator
-    public OAuthClientCredentialsGrant(@JsonProperty(VALUE_KEY_TOKEN_ENDPOINT_URI) String tokenEndpointUri,
-                                       @JsonProperty(VALUE_KEY_CLIENT_ID) String clientId,
-                                       @JsonProperty(VALUE_KEY_CLIENT_SECRET) String clientSecret,
-                                       @JsonProperty(VALUE_KEY_SCOPE) String scope) {
-        this(tokenEndpointUri, CLIENT_CREDENTIALS_GRANT_TYPE, clientId, clientSecret, scope);
-    }
+  @JsonCreator
+  public OAuthClientCredentialsGrant(
+      @JsonProperty(VALUE_KEY_TOKEN_ENDPOINT_URI) String tokenEndpointUri,
+      @JsonProperty(VALUE_KEY_CLIENT_ID) String clientId,
+      @JsonProperty(VALUE_KEY_CLIENT_SECRET) String clientSecret,
+      @JsonProperty(VALUE_KEY_SCOPE) String scope) {
+    this(tokenEndpointUri, CLIENT_CREDENTIALS_GRANT_TYPE, clientId, clientSecret, scope);
+  }
 
-    protected OAuthClientCredentialsGrant(String tokenEndpointUri,
-                                          String grantType,
-                                          String clientId,
-                                          String clientSecret,
-                                          String scope) {
-        super(tokenEndpointUri, grantType, clientId, clientSecret, scope);
-    }
+  protected OAuthClientCredentialsGrant(
+      String tokenEndpointUri,
+      String grantType,
+      String clientId,
+      String clientSecret,
+      String scope) {
+    super(tokenEndpointUri, grantType, clientId, clientSecret, scope);
+  }
 
-    public OAuthClientCredentialsGrant setBasicAuthHeader(boolean basicAuthHeader) {
-        return (OAuthClientCredentialsGrant)super.setBasicAuthHeader(basicAuthHeader);
-    }
+  public OAuthClientCredentialsGrant setBasicAuthHeader(boolean basicAuthHeader) {
+    return (OAuthClientCredentialsGrant) super.setBasicAuthHeader(basicAuthHeader);
+  }
 }
