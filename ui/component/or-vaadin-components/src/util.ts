@@ -113,6 +113,11 @@ export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading
 export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor
                                            , valueChangeNotifier: (value: any) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
+/**
+ * Returns whether the {@link InputType} should show a "send" button within the attribute input UI.
+ * Some input types have internal mechanics for updating attributes, which is why they should return `false`.
+ * Generic input types, like a text field, "support a send button", so should return `true`
+ */
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return OrVaadinInput.TEMPLATES.has(inputType)
         || inputType === InputType.TELEPHONE
