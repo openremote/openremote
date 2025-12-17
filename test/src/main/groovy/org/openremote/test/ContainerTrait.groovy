@@ -242,6 +242,7 @@ trait ContainerTrait {
                                 assetStorageService.merge(a, true)
                             }
 
+                            counter = 0
                             def agentsDeployed = false
                             while (!agentsDeployed) {
                                 if (counter++ > 100) {
