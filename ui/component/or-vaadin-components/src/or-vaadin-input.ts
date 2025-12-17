@@ -81,7 +81,7 @@ export class OrVaadinInput extends LitElement {
 
     /**
      * List of forbidden attributes that are not processed nor "bubbled down" to the child Vaadin component.
-     * So, `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-textfield id="myId">`, but `<or-vaadin-textfield>`.
+     * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-textfield id="myId">`, but `<or-vaadin-textfield>`.
      */
     public static readonly FORBIDDEN_ATTRIBUTES = ["id"];
 
