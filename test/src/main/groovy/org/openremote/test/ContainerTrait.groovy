@@ -222,7 +222,7 @@ trait ContainerTrait {
                             // Redeploy agents first except for agents under an asset parent then merge those first
                             def agents = TestFixture.assets.stream().filter { it instanceof Agent }.toList()
                             def assets = new ArrayList<>(TestFixture.assets.stream().filter { !(it instanceof Agent) }.toList())
-                            LOG.info("Re-inserting ${agents.size()} agents(s)")
+                            LOG.info("Re-inserting ${agents.size()} agent(s)")
                             agents.forEach { a ->
                                 a.version = 0
 
