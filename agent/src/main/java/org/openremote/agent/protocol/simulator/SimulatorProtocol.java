@@ -309,7 +309,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
             for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
                 long timeSinceUpcoming = schedule
-                        .map(s -> now - s.getUpcoming().toInstant(ZoneOffset.UTC).toEpochMilli())
+                        .map(s -> now - s.upcoming.toInstant(ZoneOffset.UTC).toEpochMilli())
                         .orElse(timeSinceOccurrenceStarted - DEFAULT_REPLAY_LOOP_DURATION);
 
                 OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceUpcoming, schedule.orElse(null));
@@ -380,9 +380,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
         protected Recur<LocalDateTime> recurrence;
 
-        @JsonIgnore
         private LocalDateTime current;
-        @JsonIgnore
         private LocalDateTime upcoming;
 
         @JsonCreator
@@ -409,14 +407,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         public Recur<LocalDateTime> getRecurrence() {
             return recurrence;
-        }
-
-        protected LocalDateTime getCurrent() {
-            return current;
-        }
-
-        protected LocalDateTime getUpcoming() {
-            return upcoming;
         }
 
         public Optional<Long> calculateDuration() {
