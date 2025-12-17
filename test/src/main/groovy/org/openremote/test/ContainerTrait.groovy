@@ -231,7 +231,7 @@ trait ContainerTrait {
                                         if (assetId == a.id) {
                                             continue
                                         }
-                                        def ancestorIndex = assets.findIndexOf {it.id == assetId}
+                                        def ancestorIndex = assets.findIndexOf { it.id == assetId }
                                         def ancestor = ancestorIndex >= 0 ? assets.remove(ancestorIndex) : null
                                         if (ancestor != null) {
                                             assetStorageService.merge(ancestor, true)
