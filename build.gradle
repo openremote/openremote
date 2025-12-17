@@ -84,6 +84,11 @@ tasks.register('clean') {
     }
 }
 
+tasks.withType(Task).configureEach{testTask ->
+    logger.lifecycle("TASK: ${testTask.path}")
+    // disable("annotationProcessor")
+}
+
 
 buildscript {
     repositories {
@@ -204,4 +209,28 @@ tasks.register('npmTest') {
 }
 tasks.named('test') {
     finalizedBy tasks.named('npmTest')
+}
+
+tasks.register('startInfra', Exec) {
+    group = 'application'
+    description = 'Starts the development infrastructure (PostgreSQL, Keycloak)'
+    commandLine 'docker', 'compose', '-f', 'profile/dev-testing.yml', 'up', '-d', '--wait'
+}
+
+tasks.register('stopInfra', Exec) {
+    group = 'application'
+    description = 'Stops the development infrastructure'
+    commandLine 'docker', 'compose', '-f', 'profile/dev-testing.yml', 'down'
+}
+
+tasks.register('runManager') {
+    group = 'application'
+    description = 'Runs the Manager application (requires startInfra)'
+    dependsOn ':manager:run'
+}
+
+tasks.register('buildUI') {
+    group = 'application'
+    description = 'Builds the UI'
+    dependsOn ':ui:app:manager:npmBuild'
 }

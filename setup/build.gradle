@@ -45,6 +45,29 @@ tasks.named("compileJava") {
     dependsOn("load1Jar", "load2Jar", "demoJar")
 }
 
+tasks.register('runDemo', JavaExec) {
+    group = 'application'
+    description = 'Runs the Manager with Demo Setup'
+    classpath = sourceSets.demo.runtimeClasspath
+    mainClass = 'org.openremote.manager.Main'
+    standardOutput = System.out
+    errorOutput = System.err
+    environment 'OR_SETUP_TYPE', 'demo'
+    // Default env vars, can be overridden
+    environment 'OR_DB_HOST', System.getenv('OR_DB_HOST') ?: 'localhost'
+    environment 'OR_KEYCLOAK_HOST', System.getenv('OR_KEYCLOAK_HOST') ?: 'localhost'
+}
+
+tasks.register('runTest', JavaExec) {
+    group = 'application'
+    description = 'Runs the Manager with Test Setup'
+    classpath = sourceSets.integration.runtimeClasspath
+    mainClass = 'org.openremote.manager.Main'
+    // Default env vars
+    environment 'OR_DB_HOST', System.getenv('OR_DB_HOST') ?: 'localhost'
+    environment 'OR_KEYCLOAK_HOST', System.getenv('OR_KEYCLOAK_HOST') ?: 'localhost'
+}
+
 // Use demo setup sourceset by default for jar
 tasks.register('installDist', Copy) {
     def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar

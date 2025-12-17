@@ -1,32 +1,24 @@
 {
   "name": "OpenRemote DevContainer",
-  "image": "mcr.microsoft.com/devcontainers/java:21",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bullseye",
   "workspaceFolder": "/workspaces/openremote",
   "remoteUser": "root",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest",
-      "moby": true,
-      "dockerDashComposeVersion": "v2"
-    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/node:1": {},
     "ghcr.io/devcontainers/features/java:1": {
         "version": "21",
         "jdkDistro": "open",
         "installGradle": "true",
         "installGroovy": "true"
     },
-    "ghcr.io/devcontainers/features/node:1": {}
   },
   "runArgs": [
-    "-v", "${localEnv:HOME}/.gradle:/root/.gradle",
-    "--dns", "8.8.8.8",
-    "--dns", "8.8.4.4",
-    "--network", "bridge",
-    "--add-host", "host.docker.internal:host-gateway",
-    "--ulimit", "nofile=65536:65536"
+    "-v", "${localEnv:HOME}/.gradle:/root/.gradle"
   ],
   "onCreateCommand": "echo 'devcontainer ready'",
-  "postCreateCommand": "OR_HOSTNAME=localhost docker compose -p openremote -f /workspaces/openremote/profile/dev-testing.yml up --build -d",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
   "customizations": {
     "vscode": {
       "extensions": [

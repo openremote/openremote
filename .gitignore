@@ -17,8 +17,9 @@ deployment/manager/fcm.json
 .classpath
 .project/
 .project
-.vscode/
 .idea/
+.vscode/
+!.vscode/launch.json
 .sts4-cache/
 .local/
 .DS_*
