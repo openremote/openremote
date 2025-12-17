@@ -49,8 +49,8 @@ const meta: Meta = {
 
 export const Primary: Story = {
     args: {
-        label: "Street Address",
-        value: "Torenallee 26-22"
+        label: "Organization",
+        value: "OpenRemote"
     }
 };
 
