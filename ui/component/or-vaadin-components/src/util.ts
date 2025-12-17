@@ -271,18 +271,18 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     }
 
     // Apply any constraints
-    const sizeConstraint = constraints && constraints.find(c => c.type === "size") as ValueConstraintSize;
-    const patternConstraint = constraints && constraints.find(c => c.type === "pattern") as ValueConstraintPattern;
-    const minConstraint = constraints && constraints.find(c => c.type === "min") as ValueConstraintMin;
-    const maxConstraint = constraints && constraints.find(c => c.type === "max") as ValueConstraintMax;
-    const allowedValuesConstraint = constraints && constraints.find(c => c.type === "allowedValues") as ValueConstraintAllowedValues;
-    const pastConstraint = constraints && constraints.find(c => c.type === "past") as ValueConstraintPast;
-    const pastOrPresentConstraint = constraints && constraints.find(c => c.type === "pastOrPresent") as ValueConstraintPastOrPresent;
-    const futureConstraint = constraints && constraints.find(c => c.type === "future") as ValueConstraintFuture;
-    const futureOrPresentConstraint = constraints && constraints.find(c => c.type === "futureOrPresent") as ValueConstraintFutureOrPresent;
-    const notEmptyConstraint = constraints && constraints.find(c => c.type === "notEmpty") as ValueConstraintNotEmpty;
-    const notBlankConstraint = constraints && constraints.find(c => c.type === "notBlank") as ValueConstraintNotBlank;
-    const notNullConstraint = constraints && constraints.find(c => c.type === "notNull") as ValueConstraintNotNull;
+    const sizeConstraint = constraints?.find(c => c.type === "size") as ValueConstraintSize;
+    const patternConstraint = constraints?.find(c => c.type === "pattern") as ValueConstraintPattern;
+    const minConstraint = constraints?.find(c => c.type === "min") as ValueConstraintMin;
+    const maxConstraint = constraints?.find(c => c.type === "max") as ValueConstraintMax;
+    const allowedValuesConstraint = constraints?.find(c => c.type === "allowedValues") as ValueConstraintAllowedValues;
+    const pastConstraint = constraints?.find(c => c.type === "past") as ValueConstraintPast;
+    const pastOrPresentConstraint = constraints?.find(c => c.type === "pastOrPresent") as ValueConstraintPastOrPresent;
+    const futureConstraint = constraints?.find(c => c.type === "future") as ValueConstraintFuture;
+    const futureOrPresentConstraint = constraints?.find(c => c.type === "futureOrPresent") as ValueConstraintFutureOrPresent;
+    const notEmptyConstraint = constraints?.find(c => c.type === "notEmpty") as ValueConstraintNotEmpty;
+    const notBlankConstraint = constraints?.find(c => c.type === "notBlank") as ValueConstraintNotBlank;
+    const notNullConstraint = constraints?.find(c => c.type === "notNull") as ValueConstraintNotNull;
 
     if (sizeConstraint) {
         min = sizeConstraint.min;
