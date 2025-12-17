@@ -9,7 +9,7 @@
     "./*": "./src/*.css"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
   "repository": "https://github.com/openremote/openremote",
