@@ -51,8 +51,8 @@ import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
 // Importing CSS as a module; no type declarations are available for '@openremote/theme'.
-// @ts-ignore
-import themeCss from "@openremote/theme";
+import "@openremote/theme";
+import themeCss from "@openremote/theme/src/index.css";
 
 declare var MANAGER_URL: string | undefined;
 

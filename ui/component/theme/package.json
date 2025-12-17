@@ -4,9 +4,10 @@
   "description": "CSS themes for OpenRemote components",
   "main": "src/index.css",
   "module": "src/index.css",
+  "types": "src/index.d.ts",
   "exports": {
     ".": "./src/index.css",
-    "./*": "./src/*.css"
+    "./*": "./*"
   },
   "scripts": {
     "test": "echo \"No tests\" && exit 0"
