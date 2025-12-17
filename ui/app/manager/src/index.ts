@@ -50,9 +50,10 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-// Importing CSS as a module; no type declarations are available for '@openremote/theme'.
+// Import theme package for importing type definitions
 import "@openremote/theme";
-import themeCss from "@openremote/theme/src/index.css";
+// Import theme CSS file as string to use within Lit
+import themeCss from "@openremote/theme/default.css";
 
 declare var MANAGER_URL: string | undefined;
 
