@@ -219,8 +219,40 @@ trait ContainerTrait {
                         }
 
                         if (!TestFixture.assets.isEmpty()) {
-                            LOG.info("Re-inserting ${TestFixture.assets.size()} asset(s)")
-                            TestFixture.assets.forEach { a ->
+                            // Redeploy agents first except for agents under an asset parent then merge those first
+                            def agents = TestFixture.assets.stream().filter { it instanceof Agent }.toList()
+                            def assets = new ArrayList<>(TestFixture.assets.stream().filter { !(it instanceof Agent) }.toList())
+                            LOG.info("Re-inserting ${agents.size()} agents(s)")
+                            agents.forEach { a ->
+                                a.version = 0
+
+                                if (a.path.size() > 1) {
+                                    for (final def assetId in a.path) {
+                                        if (assetId == a.id) {
+                                            continue
+                                        }
+                                        def ancestorIndex = assets.findIndexOf {it.id == assetId}
+                                        def ancestor = ancestorIndex >= 0 ? assets.remove(ancestorIndex) : null
+                                        if (ancestor != null) {
+                                            assetStorageService.merge(ancestor, true)
+                                        }
+                                    }
+                                }
+
+                                assetStorageService.merge(a, true)
+                            }
+
+                            def agentsDeployed = false
+                            while (!agentsDeployed) {
+                                if (counter++ > 100) {
+                                    throw new IllegalStateException("Failed to deploy agents")
+                                }
+                                agentsDeployed = container.getService(AgentService.class).agents.size() == agents.size()
+                                Thread.sleep(100)
+                            }
+
+                            LOG.info("Re-inserting ${assets.size()} asset(s)")
+                            assets.forEach { a ->
                                 a.version = 0
                                 assetStorageService.merge(a, true)
                             }
@@ -416,7 +448,7 @@ trait ContainerTrait {
         if (!container.hasService(AssetStorageService.class)) {
             return Collections.emptyList()
         }
-        container.getService(AssetStorageService.class).findAll(new AssetQuery())
+        container.getService(AssetStorageService.class).findAll(new AssetQuery().orderBy())
     }
 
     List<UserAssetLink> getUserAssets() {
