@@ -118,7 +118,11 @@ public class CORSConfig {
         String allowedOriginsStr = Config.getString(OR_WEBSERVER_ALLOWED_ORIGINS, null);
 
         if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
-            allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
+            if (allowedOriginsStr.equals(DEFAULT_CORS_ALLOW_ALL)) {
+                allowedOrigins = Set.of(DEFAULT_CORS_ALLOW_ALL);
+            } else {
+                allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
+            }
         }
 
         return allowedOrigins;

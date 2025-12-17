@@ -12,7 +12,7 @@ import {
     Asset,
     AssetQuery,
     AssetQueryOperator as AQO,
-    AssetTypeInfo,
+    AssetTypeInfo, GeoJSONFeatureCollection, GeoJSONGeometry,
     JsonRule,
     JsonRulesetDefinition,
     LogicGroup,
@@ -446,6 +446,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return valuePredicate.radius !== undefined && valuePredicate.lat !== undefined && valuePredicate.lng !== undefined;
             case "rect":
                 return valuePredicate.lngMax !== undefined && valuePredicate.latMax !== undefined && valuePredicate.lngMin !== undefined && valuePredicate.latMin !== undefined;
+            case "geojson":
+                return valuePredicate.geoJSON !== undefined && this._validateGeoJSON(JSON.parse(valuePredicate.geoJSON) as GeoJSONFeatureCollection);
             case "array":
                 return (valuePredicate.index && !valuePredicate.value) || valuePredicate.value || valuePredicate.lengthEquals || valuePredicate.lengthLessThan || valuePredicate.lengthGreaterThan;
             case "value-empty":
@@ -453,5 +455,39 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             default:
                 return false;
         }
+    }
+    protected _validateGeoJSON(geoJSON: any): boolean {
+
+        if (!geoJSON) return false;
+
+        const validGeometryTypes = ["Polygon", "MultiPolygon"];
+
+        // Bit of a recursive function to validate geometry types
+        const isValidGeometry = (geom: any): boolean => {
+            if (!geom || !geom.type) return false;
+
+            if (validGeometryTypes.includes(geom.type)) return true;
+
+            if (geom.type === "GeometryCollection") {
+                if (!Array.isArray(geom.geometries)) return false;
+                return geom.geometries.every((g: any) => isValidGeometry(g));
+            }
+
+            return false;
+        };
+
+        // FeatureCollection
+        if (geoJSON.type === "FeatureCollection") {
+            if (!Array.isArray(geoJSON.features)) return false;
+            return geoJSON.features.every((f: any) => isValidGeometry(f.geometry));
+        }
+
+        // Feature
+        if (geoJSON.type === "Feature") {
+            return isValidGeometry(geoJSON.geometry);
+        }
+
+        // Raw geometry (Polygon, MultiPolygon, GeometryCollection)
+        return isValidGeometry(geoJSON);
     }
 }
