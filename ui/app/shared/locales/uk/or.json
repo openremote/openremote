@@ -488,20 +488,22 @@
   },
   "validityType": "Тип розкладу",
   "validityAlways": "Завжди активний",
-  "validityPeriod": "Планувати випадок",
-  "validityRecurrence": "Планувати повторюваний випадок",
+  "planPeriod": "Планувати випадок",
+  "planRecurrence": "Планувати повторюваний випадок",
   "activeFromTo": "Активний від {{start}} до {{end}}",
   "fromTo": "Від {{start}} до {{end}}",
   "fromToDays": "від {{start}} до {{days}} днів пізніше {{end}}",
   "forDays": "на {{days}} днів",
   "scheduleRuleActivity": "Розклад дії правила",
+  "schedule": {
+    "_ends": "Повторення закінчується",
+    "repeat": "Повторювати випадок кожні"
+  },
   "allDay": "Увесь день",
   "apply": "Застосувати",
   "to": "до",
   "from": "з",
   "never": "Ніколи",
-  "repetitionEnds": "Повторення закінчується",
-  "repeatOccurrenceEvery": "Повторювати випадок кожні",
   "daysOfTheWeek": "днів тижня",
   "dismiss": "Відхилити",
   "createAssetFailed": "Не вдалося створити актив",
@@ -778,6 +780,10 @@
             },
             "BooleanPredicate": {
               "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
@@ -862,6 +868,28 @@
               },
               "updateOnWrite": {
                 "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }

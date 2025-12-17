@@ -23,7 +23,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonSubTypes({
-    @JsonSubTypes.Type(GeoJSONPoint.class)
+    @JsonSubTypes.Type(value = GeoJSONPoint.class),
+    @JsonSubTypes.Type(value = GeoJSONPolygon.class),
+    @JsonSubTypes.Type(value = GeoJSONMultiPolygon.class)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

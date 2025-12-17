@@ -1,5 +1,4 @@
-import type {Page} from "@openremote/test";
-import type {Locator} from "@playwright/test";
+import type { Page, Locator } from "@openremote/test";
 
 export class AssetTree {
     constructor(private readonly page: Page) {}
