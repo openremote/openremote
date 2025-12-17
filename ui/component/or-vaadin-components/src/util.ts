@@ -118,7 +118,7 @@ export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | st
  * Some input types have internal mechanics for updating attributes, which is why they should return `false`.
  * Generic input types, like a text field, "support a send button", so should return `true`
  */
-function inputTypeSupportsButton(inputType: InputType): boolean {
+function inputTypeSupportsSendButton(inputType: InputType): boolean {
     return OrVaadinInput.TEMPLATES.has(inputType)
         || inputType === InputType.TELEPHONE
         || inputType === InputType.DATE
@@ -133,7 +133,7 @@ function inputTypeSupportsButton(inputType: InputType): boolean {
 }
 
 function inputTypeSupportsHelperText(inputType: InputType) {
-    return inputTypeSupportsButton(inputType) || inputType === InputType.SELECT;
+    return inputTypeSupportsSendButton(inputType) || inputType === InputType.SELECT;
 }
 
 function inputTypeSupportsLabel(inputType: InputType) {
@@ -356,7 +356,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
     const supportsHelperText = inputTypeSupportsHelperText(inputType);
     const supportsLabel = inputTypeSupportsLabel(inputType);
-    const supportsSendButton = inputTypeSupportsButton(inputType);
+    const supportsSendButton = inputTypeSupportsSendButton(inputType);
     const readonly = options.readonly;
     required = required || options.required;
     const comfortable = options.comfortable;
