@@ -55,7 +55,7 @@ export class ControlInputElement extends ControlBaseElement {
         let value: any = this.data ?? schema.default;
         let searchable: boolean | undefined;
         let searchProvider!: (search?: string) => [any, string][] | undefined;
-        let onValueChanged = (e: OrInputChangedEvent) => this.onValueChanged(e)
+        let onValueChanged = (e: OrInputChangedEvent) => this.onValueChanged(e);
 
         if (Array.isArray(schema.type)) {
             this.inputType = InputType.JSON;
@@ -143,8 +143,8 @@ export class ControlInputElement extends ControlBaseElement {
                     if (search) {
                         return options?.filter(([,name]) => name.toLowerCase().includes(search.toLowerCase()));
                     }
-                    return options?.filter(([,name]) => name.toLowerCase().includes((value ?? defaultTz).toLowerCase().split("/")[0]))
-                }
+                    return options?.filter(([,name]) => name.toLowerCase().includes((value ?? defaultTz).toLowerCase().split("/")[0]));
+                };
             }
         }
 

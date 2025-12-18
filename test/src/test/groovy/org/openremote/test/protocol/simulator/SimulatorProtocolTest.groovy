@@ -733,7 +733,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
         advancePseudoClock(11, HOURS, container)
         future.get() // resolve future manually, because we surpassed the delay
 
-        then: "the delay is 12 hours"
+        then: "the delay is 11 hours"
         conditions.eventually {
             delay == HOUR_IN_MILLIS * 11 // delay hasn't changed as the recurrence ended
         }

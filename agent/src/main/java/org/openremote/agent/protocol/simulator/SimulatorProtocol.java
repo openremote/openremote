@@ -380,7 +380,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         @JsonSerialize(converter = CalendarEvent.RecurStringConverter.class)
         protected Recur<LocalDateTime> recurrence;
 
+        @JsonIgnore
         private LocalDateTime current;
+        @JsonIgnore
         private LocalDateTime upcoming;
 
         @JsonCreator
