@@ -40,7 +40,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.datapoint.ValueDatapoint;
-import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -50,6 +49,7 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
 
 /**
  * Protocol for integrating with the OpenWeatherMap One Call 3.0 API.
