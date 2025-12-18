@@ -1,9 +1,15 @@
 # Load Tests
 
-Scripts and configuration files to setup an OpenRemote stack running in an EKS cluster appropriate for load testing.  
+Scripts and configuration files to setup an OpenRemote stack running in an EKS cluster appropriate for load testing.
 This includes configuring the cluster to use a more powerful machine
 and adapting the values files to configure the memory usage on the different pods.  
 For the manager, JVM parameters are used to make use of the extra memory available to the container.  
+There are different "profiles" available depending on the power required and the tests to be run:
+- large: minimal set-up useful to test memory leaks and pressure condition
+- xlarge: doubles memory allocation for manager compared to large profile (4Gi vs 2Gi), with room for further increases
+- 2xlarge: much bigger setup to test system limits and get a feel for performance level we can reach
+
+The profile is selected by setting the OR_PROFILE environment variable in the `eks-common.sh` script.   
 
 This folder contains a different setup than load1 and includes different test scenarios.  
 
