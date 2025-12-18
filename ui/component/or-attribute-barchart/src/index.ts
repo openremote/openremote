@@ -1330,6 +1330,7 @@ export class OrAttributeBarChart extends LitElement {
 
     public static getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
         return new Map<string, [moment.unitOfTime.DurationConstructor, number]>([
+            ["60Minutes", ["minutes", 60]],
             ["Hour", ["hours", 1]],
             ["6Hours", ["hours", 6]],
             ["24Hours", ["hours", 24]],
