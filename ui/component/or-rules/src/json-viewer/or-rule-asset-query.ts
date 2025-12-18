@@ -145,6 +145,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.OUTSIDE_RADIUS,
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
+            AssetQueryOperator.INSIDE_AREA,
+            AssetQueryOperator.OUTSIDE_AREA,
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY,
             AssetQueryOperator.NOT_UPDATED_FOR
@@ -304,6 +306,17 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-radial-modal>`;
             case "rect":
                 return html `<span>NOT IMPLEMENTED</span>`;
+            case "geojson":
+                const geoJsonConfig = valuePredicate.predicateType === "geojson" && (valuePredicate as any).geoJSON
+                    ? (() => { try { return { source: JSON.parse((valuePredicate as any).geoJSON), layers: [] }; } catch { return undefined; } })()
+                    : undefined;
+                return html`
+                    <or-conf-map-geojson .geoJson="${geoJsonConfig}" @update="${(e: CustomEvent) => {
+                        const cfg = e.detail.value; // GeoJsonConfig {source, layers}
+                        const src = cfg && cfg.source ? JSON.stringify(cfg.source) : "";
+                        this.setValuePredicateProperty(valuePredicate, "geoJSON", src)
+                    }}"></or-conf-map-geojson>
+                    `;
             case "value-empty":
                 return ``;
             case "array":
@@ -626,6 +639,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RADIUS : AssetQueryOperator.WITHIN_RADIUS;
             case "rect":
                 return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RECTANGLE : AssetQueryOperator.WITHIN_RECTANGLE;
+            case "geojson":
+                return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_AREA : AssetQueryOperator.INSIDE_AREA;
             case "array":
                 if (valuePredicate.value && valuePredicate.index) {
                     return valuePredicate.negated ? AssetQueryOperator.NOT_INDEX_CONTAINS : AssetQueryOperator.INDEX_CONTAINS;
@@ -742,6 +757,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     lngMin: -0.1,
                     latMax: 0.1,
                     lngMax: 0.1
+                };
+                break;
+            case AssetQueryOperator.INSIDE_AREA:
+            case AssetQueryOperator.OUTSIDE_AREA:
+                predicate = {
+                    predicateType: "geojson",
+                    negated: value === AssetQueryOperator.OUTSIDE_AREA,
+                    geoJSON: ""
                 };
                 break;
 
