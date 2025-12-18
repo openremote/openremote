@@ -41,15 +41,17 @@ Two scenarios are provided:
 #### connect-and-publish
 
 Runs for a given duration, publishing attribute value changes over MQTT once connected.  
-For each connection, it publishes ASSETS_COUNT values at the same time (50ms interval), then pauses for MILLIS_BETWEEN_PUBLISHES.
+For each connection, it publishes ASSETS_COUNT values at the same time (50ms interval), then pauses for MILLIS_BETWEEN_PUBLISHES.  
+At the end of publish loop, it waits for DISCONNECT_DELAY before disconnecting from MQTT.
 
 The parameters are:  
-MANAGER_HOSTNAME: Hostname of the manager to be tested  
-THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel  
-ASSETS_COUNT: Number of Light assets for which to publish an attribute during each iteration  
-RAMP_RATE: Number of thread to add per second during ramp-up  
-DURATION: Total duration to run the test for  
-MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration  
+MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is localhost.  
+THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel. Default is 500.  
+ASSETS_COUNT: Number of Light assets for which to publish an attribute during each iteration. Default is 5.  
+RAMP_RATE: Number of thread to add per second during ramp-up. Default is 20.  
+DURATION: Total duration to run the test for, in seconds. Default is 300.  
+MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 1000.  
+DISCONNECT_DELAY: Delay before closing the MQTT connection after publishing loop, in seconds. Default is 0.
 
 #### connect-settle-test
 
@@ -58,7 +60,7 @@ Once connected, it does 1 single publish every MILLIS_BETWEEN_PUBLISHES (default
 Goal is to measure the time it takes for the system to allow that many connections and stabilise.
 
 The parameters are:  
-MANAGER_HOSTNAME: Hostname of the manager to be tested  
-THREAD_COUNT: Number of parallel accounts that will connect publish in parallel  
-RAMP_RATE: Number of thread to add per second during ramp-up  
-MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration  
+MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is localhost.  
+THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel. Default is 1000.  
+RAMP_RATE: Number of thread to add per second during ramp-up. Default is 50.  
+MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 30000.  
