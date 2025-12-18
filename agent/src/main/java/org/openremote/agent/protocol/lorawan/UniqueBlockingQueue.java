@@ -19,69 +19,68 @@
  */
 package org.openremote.agent.protocol.lorawan;
 
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class UniqueBlockingQueue<T> {
 
     private final BlockingQueue<T> queue = new LinkedBlockingQueue<>();
-    private final Set<T> set = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<T> set = new HashSet<>();
+    private final ReentrantLock lock = new ReentrantLock();
 
     public boolean put(T item) throws InterruptedException {
-        if (set.add(item)) {
-            queue.put(item);
-            return true;
+        lock.lock();
+        try {
+            if (set.add(item)) {
+                queue.put(item);
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlock();
         }
-        return false;
-    }
-
-    public boolean offer(T item) {
-        if (set.add(item)) {
-            return queue.offer(item);
-        }
-        return false;
     }
 
     public T take() throws InterruptedException {
         T item = queue.take();
-        set.remove(item);
-        return item;
-    }
 
-    public T poll() {
-        T item = queue.poll();
-        if (item != null) {
+        lock.lock();
+        try {
             set.remove(item);
+            return item;
+        } finally {
+            lock.unlock();
         }
-        return item;
-    }
-
-    public T poll(long timeout, TimeUnit unit) throws InterruptedException {
-        T item = queue.poll(timeout, unit);
-        if (item != null) {
-            set.remove(item);
-        }
-        return item;
     }
 
     public T peek() {
-        return queue.peek(); // no removal, no set modification
-    }
-
-    public boolean contains(T item) {
-        return set.contains(item);
+        lock.lock();
+        try {
+            return queue.peek();
+        } finally {
+            lock.unlock();
+        }
     }
 
     public int size() {
-        return queue.size();
+        lock.lock();
+        try {
+            return queue.size();
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void clear() {
-        queue.clear();
-        set.clear();
+        lock.lock();
+        try {
+            queue.clear();
+            set.clear();
+        } finally {
+            lock.unlock();
+        }
     }
 }
