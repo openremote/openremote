@@ -477,30 +477,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         /**
-         * Gets the time until the next occurrence starts.
-         *
-         * @param timeSinceOccurrenceStarted Milliseconds since the current occurrence started
-         * @return Milliseconds until the next occurrence starts.
-         * <p>
-         * If the recurrence rule has ended returns {@code null} instead.
-         */
-        public OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) {
-            if (current == null || upcoming == null) {
-                return OptionalLong.empty();
-            }
-
-            long duration = upcoming.toEpochSecond(ZoneOffset.UTC) - current.toEpochSecond(ZoneOffset.UTC);
-            return OptionalLong.of(duration*1000 - timeSinceOccurrenceStarted);
-        }
-
-        /**
          * Calculates the remaining offset delay in milliseconds relative to the current time.
          *
          * @param offset The offset from the current occurrence in seconds.
          * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
          * @return The remaining offset delay in milliseconds relative to the current time.
          * <p>
-         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         * If the recurrence rule has ended returns {@code null} instead.
          */
         public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStarted, Schedule schedule) {
             long offsetInMillis = offset * 1000;
@@ -521,12 +504,16 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
          * @return The delay in milliseconds until the next occurrence.
          * <p>
-         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         * If the recurrence rule has ended returns {@code null} instead.
          */
         public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted, Schedule schedule) {
             if (schedule != null) {
                 if (schedule.recurrence != null) {
-                    return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
+                    if (schedule.current == null || schedule.upcoming == null) {
+                        return OptionalLong.empty();
+                    }
+                    long duration = schedule.upcoming.toEpochSecond(ZoneOffset.UTC) - schedule.current.toEpochSecond(ZoneOffset.UTC);
+                    return OptionalLong.of(duration*1000 - timeSinceOccurrenceStarted);
                 }
                 return OptionalLong.of(-timeSinceOccurrenceStarted);
             }
