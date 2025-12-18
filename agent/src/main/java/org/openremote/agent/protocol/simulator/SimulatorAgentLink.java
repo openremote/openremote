@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
@@ -27,6 +26,7 @@ import org.openremote.model.util.JSONSchemaUtil.*;
 import java.util.Optional;
 import java.util.TimeZone;
 
+@JsonSchemaDefault("{\"timezone\":\"\"}")
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     @JsonSchemaDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
@@ -35,7 +35,6 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored.")
     protected SimulatorReplayDatapoint[] replayData;
 
-    @NotNull() //
     @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
     @JsonSchemaFormat("timezone")
     protected TimeZone timezone;
