@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../../component/core" },
+    { "path": "../../component/or-translate" },
+    { "path": "../../component/or-icon" }
+  ]
+}

@@ -1779,6 +1779,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/demo-core@workspace:ui/demo/demo-core":
+  version: 0.0.0-use.local
+  resolution: "@openremote/demo-core@workspace:ui/demo/demo-core"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
+    lit: "npm:^3.3.1"
+  languageName: unknown
+  linkType: soft
+
+"@openremote/demo-rest@workspace:ui/demo/demo-rest":
+  version: 0.0.0-use.local
+  resolution: "@openremote/demo-rest@workspace:ui/demo/demo-rest"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/util": "workspace:*"
+    lit-html: "npm:^3.3.1"
+  languageName: unknown
+  linkType: soft
+
 "@openremote/insights@workspace:ui/app/insights":
   version: 0.0.0-use.local
   resolution: "@openremote/insights@workspace:ui/app/insights"
