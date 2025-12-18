@@ -33,6 +33,14 @@ aws ecr get-login-password --region eu-west-1 | docker login --username AWS --pa
 docker buildx build --push --platform linux/amd64,linux/arm64 -t $AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:load2 manager/build/install/manager/
 ```
 
+You might want to update the stack without re-creating the whole cluster, as re-creating the cluster takes time and
+requires re-generating a new certificate (on which we have some limits).  
+To do so, keep the proxy running and uninstall the other charts
+```shell
+helm uninstall manager postgresql keycloak
+```
+then use the `eks-deploy-load.sh` script to properly re-deploy those charts.
+
 Once deployed, running the load tests can be done using the same clients as for load testing a VM,
 but using the scenarios present under `scenarios` in this folder instead.  
 See `load1` folder for the tools, scripts and documentation.
