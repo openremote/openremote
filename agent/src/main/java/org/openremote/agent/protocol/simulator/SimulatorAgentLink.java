@@ -78,4 +78,9 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     public Optional<TimeZone> getTimezone() {
         return Optional.ofNullable(timezone);
     }
+
+    public SimulatorAgentLink setTimezone(TimeZone timezone) {
+        this.timezone = timezone;
+        return this;
+    }
 }
