@@ -196,12 +196,12 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         long tzOffset = timezone.getOffset(nowUTC);
         long now = nowUTC + tzOffset;
 
-        long timeSinceOccurrenceStarted = schedule.map(s -> now - s.tryAdvanceActive(now, tzOffset))
+        long timeSinceOccurrenceStart = schedule.map(s -> now - s.tryAdvanceActive(now, tzOffset))
                 .orElse(now % DEFAULT_REPLAY_LOOP_DURATION); // Remainder since 00:00
 
         // Find datapoint with timestamp after the current occurrence
         SimulatorReplayDatapoint nextDatapoint = Arrays.stream(simulatorReplayDatapoints)
-            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp*1000 > timeSinceOccurrenceStarted)
+            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp*1000 > timeSinceOccurrenceStart)
             .findFirst()
             .orElse(simulatorReplayDatapoints[0]);
 
@@ -210,7 +210,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-        OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+        OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStart, schedule.orElse(null));
         if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || (schedule.isPresent() && schedule.get().isAfterScheduleEnd(now))) {
             LOG.warning("Replay loop has ended for: " + attributeRef);
             predictedDatapointService.purgeValuesBefore(attributeRef.getId(), attributeRef.getName(), Instant.ofEpochMilli(now));
@@ -220,7 +220,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
             PredictedDatapointWindow status = predictedDatapointWindowMap.get(attributeRef);
             List<ValueDatapoint<?>> predictedDatapoints =
-                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStarted, now, tzOffset);
+                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStart, now, tzOffset);
             try {
                 updateLinkedAttributePredictedDataPoints(attributeRef, predictedDatapoints);
             } catch (Exception e) {
@@ -260,7 +260,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             SimulatorReplayDatapoint[] simulatorReplayDatapoints,
             Optional<Schedule> schedule,
             PredictedDatapointWindow status,
-            long timeSinceOccurrenceStarted,
+            long timeSinceOccurrenceStart,
             long now,
             long tzOffset
     ) {
@@ -276,7 +276,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         if (status.equals(PredictedDatapointWindow.BOTH)) {
             for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
-                OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+                OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceOccurrenceStart, schedule.orElse(null));
                 if (delay.isEmpty()) {
                     return predictedDatapoints;
                 }
@@ -284,7 +284,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 if (timestamp > now) { // Delay can be negative
                     // If the predicted datapoint rolls past the current occurrence skip it
                     // This happens when the offset is less than the time since the occurrence started
-                    if (timeSinceOccurrenceStarted >= 0 && schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
+                    if (timeSinceOccurrenceStart >= 0 && schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
                         continue;
                     }
                     // Return remaining predictions if single occurrence or recurrence end has been surpassed
@@ -310,7 +310,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
                 long timeSinceUpcoming = schedule
                         .map(s -> now - s.upcoming.toInstant(ZoneOffset.UTC).toEpochMilli())
-                        .orElse(timeSinceOccurrenceStarted - DEFAULT_REPLAY_LOOP_DURATION);
+                        .orElse(timeSinceOccurrenceStart - DEFAULT_REPLAY_LOOP_DURATION);
 
                 OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceUpcoming, schedule.orElse(null));
                 if (delay.isEmpty()) {
@@ -480,20 +480,20 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * Calculates the remaining offset delay in milliseconds relative to the current time.
          *
          * @param offset The offset from the current occurrence in seconds.
-         * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
+         * @param timeSinceOccurrenceStart The time since the occurrence started in milliseconds.
          * @return The remaining offset delay in milliseconds relative to the current time.
          * <p>
          * If the recurrence rule has ended returns {@code null} instead.
          */
-        public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStarted, Schedule schedule) {
+        public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStart, Schedule schedule) {
             long offsetInMillis = offset * 1000;
-            if (offsetInMillis <= timeSinceOccurrenceStarted) {
-                return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
+            if (offsetInMillis <= timeSinceOccurrenceStart) {
+                return getTimeUntilNextOccurrence(timeSinceOccurrenceStart, schedule)
                         .stream()
                         .map(n -> offsetInMillis + n)
                         .findFirst();
             }
-            return OptionalLong.of(offsetInMillis - timeSinceOccurrenceStarted);
+            return OptionalLong.of(offsetInMillis - timeSinceOccurrenceStart);
         }
 
         /**
@@ -501,23 +501,23 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * <p>
          * If no schedule has been defined uses the default 1-day schedule.
          *
-         * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
+         * @param timeSinceOccurrenceStart The time since the occurrence started in milliseconds.
          * @return The delay in milliseconds until the next occurrence.
          * <p>
          * If the recurrence rule has ended returns {@code null} instead.
          */
-        public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted, Schedule schedule) {
+        public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStart, Schedule schedule) {
             if (schedule != null) {
                 if (schedule.recurrence != null) {
                     if (schedule.current == null || schedule.upcoming == null) {
                         return OptionalLong.empty();
                     }
                     long duration = schedule.upcoming.toEpochSecond(ZoneOffset.UTC) - schedule.current.toEpochSecond(ZoneOffset.UTC);
-                    return OptionalLong.of(duration*1000 - timeSinceOccurrenceStarted);
+                    return OptionalLong.of(duration*1000 - timeSinceOccurrenceStart);
                 }
-                return OptionalLong.of(-timeSinceOccurrenceStarted);
+                return OptionalLong.of(-timeSinceOccurrenceStart);
             }
-            return OptionalLong.of(DEFAULT_REPLAY_LOOP_DURATION - timeSinceOccurrenceStarted);
+            return OptionalLong.of(DEFAULT_REPLAY_LOOP_DURATION - timeSinceOccurrenceStart);
         }
 
         public boolean hasCurrent() {
