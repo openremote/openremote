@@ -378,20 +378,22 @@
   },
   "validityType": "نوع الجدولة الزمنية",
   "validityAlways": "فعال بشكل دائم",
-  "validityPeriod": "تخطيط للحادث",
-  "validityRecurrence": "تخطيط لحدث متكرر",
+  "planPeriod": "تخطيط للحادث",
+  "planRecurrence": "تخطيط لحدث متكرر",
   "activeFromTo": "فعال من  {{start}} إلى {{end}}",
   "fromTo": "من {{start}} إلى {{end}}",
   "fromToDays": "من {{start}} إلى {{days}} يوم لاحق {{end}}",
   "forDays": "من أجل {{days}} days",
   "scheduleRuleActivity": "جدولة نشاط الإجراء",
+  "schedule": {
+    "_ends": "إنتهاء التكرار",
+    "repeat": "تكرار الحدث كل"
+  },
   "allDay": "كل اليوم",
   "apply": "تطبيق",
   "to": "إلى",
   "from": "من",
   "never": "أبدا",
-  "repetitionEnds": "إنتهاء التكرار",
-  "repeatOccurrenceEvery": "تكرار الحدث كل",
   "daysOfTheWeek": "أيام الأسبوع",
   "dismiss": "رفض",
   "createAssetFailed": "  فشل في إنشاء المكون  ",
@@ -447,6 +449,10 @@
               "description": ""
             },
             "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
               "description": ""
             }
           }
@@ -532,6 +538,28 @@
               },
               "updateOnWrite": {
                 "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }

@@ -612,20 +612,50 @@
   },
   "validityType": "Planning van de regel",
   "validityAlways": "Altijd actief",
-  "validityPeriod": "Eén periode plannen",
-  "validityRecurrence": "Herhaling plannen",
+  "planPeriod": "Eén periode plannen",
+  "planRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
   "forDays": "voor {{days}} dagen",
+  "scheduleActivity": "Planner",
   "scheduleRuleActivity": "Regelplanner",
+  "scheduleSimulatorActivity": "Simulator Replay Schema",
+  "defaultSimulatorSchedule": "Elke dag vanaf 00:00",
+  "schedule": {
+    "count_one": "herhaling",
+    "count_other": "herhalingen",
+    "_ends": "Eindigt",
+    "ends": {
+      "until": "Op",
+      "count": "Na"
+    },
+    "repeat": "Herhaal elke",
+    "type": "Schema type"
+  },
+  "rrule": {
+    "frequency": {
+      "YEARLY_one": "Jaar",
+      "YEARLY_other": "Jaren",
+      "MONTHLY_one": "Maand",
+      "MONTHLY_other": "Maanden",
+      "WEEKLY_one": "Week",
+      "WEEKLY_other": "Weken",
+      "DAILY_one": "Dag",
+      "DAILY_other": "Dagen",
+      "HOURLY_one": "Uur",
+      "HOURLY_other": "Uren",
+      "MINUTELY_one": "Minuut",
+      "MINUTELY_other": "Minuten",
+      "SECONDLY_one": "Seconde",
+      "SECONDLY_other": "Seconden"
+    }
+  },
   "allDay": "Hele dag",
   "apply": "toepassen",
   "to": "tot",
   "from": "van",
   "never": "Nooit",
-  "repetitionEnds": "Herhaling eindigt",
-  "repeatOccurrenceEvery": "Herhaal elke",
   "daysOfTheWeek": "dagen van de week",
   "dismiss": "sluiten",
   "createAssetFailed": "Asset aanmaken is niet gelukt",
@@ -1018,6 +1048,10 @@
             },
             "BooleanPredicate": {
               "description": "Predicaat voor boolean waarden; evalueert de waarde als een boolean en vergelijkt deze met de waarde van dit predicaat. Elke waarde die geen boolean is, komt niet overeen."
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
@@ -1102,6 +1136,28 @@
               },
               "updateOnWrite": {
                 "description": "Verwacht geen reactie van het protocol; het werkt de attribuut onmiddellijk bij tijdens schrijven."
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }

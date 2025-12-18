@@ -427,20 +427,22 @@
   },
   "validityType": "Zeitplantyp",
   "validityAlways": "Immer aktiv",
-  "validityPeriod": "Planen Sie einen Zeitraum",
-  "validityRecurrence": "Planen Sie eine Wiederholung",
+  "planPeriod": "Planen Sie einen Zeitraum",
+  "planRecurrence": "Planen Sie eine Wiederholung",
   "activeFromTo": "Activ von {{start}} bis {{end}}",
   "fromTo": "Von {{start}} bis {{end}}",
   "fromToDays": "von {{start}} bis {{days}} Tage später {{end}}",
   "forDays": "für {{days}} Tage",
   "scheduleRuleActivity": "Regelaktivität planen",
+  "schedule": {
+    "_ends": "Wiederholung endet",
+    "repeat": "Vorkommen wiederholen alle"
+  },
   "allDay": "Den ganzen Tag",
   "apply": "bewerben",
   "to": "zu",
   "from": "von",
   "never": "Niemals",
-  "repetitionEnds": "Wiederholung endet",
-  "repeatOccurrenceEvery": "Vorkommen wiederholen alle",
   "daysOfTheWeek": "Wochentage",
   "dismiss": "entlassen",
   "createAssetFailed": "Objekt konnte nicht erstellt werden",
@@ -543,6 +545,10 @@
             },
             "BooleanPredicate": {
               "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
@@ -627,6 +633,28 @@
               },
               "updateOnWrite": {
                 "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }
