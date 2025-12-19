@@ -28,12 +28,12 @@ import org.openremote.extension.demosetup.model.HarvestRobotAsset.OperationMode;
 import org.openremote.extension.demosetup.model.HarvestRobotAsset.VegetableType;
 import org.openremote.extension.demosetup.model.IrrigationAsset;
 import org.openremote.extension.demosetup.model.SoilSensorAsset;
-import org.openremote.extension.energy.asset.ElectricityBatteryAsset;
-import org.openremote.extension.energy.asset.ElectricityChargerAsset;
-import org.openremote.extension.energy.asset.ElectricityConsumerAsset;
-import org.openremote.extension.energy.asset.ElectricityProducerAsset;
-import org.openremote.extension.energy.asset.ElectricityProducerSolarAsset;
-import org.openremote.extension.energy.asset.ElectricityStorageAsset;
+import org.openremote.extension.energy.model.ElectricityBatteryAsset;
+import org.openremote.extension.energy.model.ElectricityChargerAsset;
+import org.openremote.extension.energy.model.ElectricityConsumerAsset;
+import org.openremote.extension.energy.model.ElectricityProducerAsset;
+import org.openremote.extension.energy.model.ElectricityProducerSolarAsset;
+import org.openremote.extension.energy.model.ElectricityStorageAsset;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
@@ -118,7 +118,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                 .setValue(vegetableType);
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.DIRECTION)
                 .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
-                .setValue(direction);;
+                .setValue(direction);
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.SPEED)
                 .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
                         new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));

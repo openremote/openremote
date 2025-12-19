@@ -2,13 +2,13 @@ package org.openremote.extension.energy
 
 import static org.openremote.model.value.MetaItemType.*
 
-import org.openremote.extension.energy.asset.ElectricityAsset
-import org.openremote.extension.energy.asset.ElectricityBatteryAsset
-import org.openremote.extension.energy.asset.ElectricityConsumerAsset
-import org.openremote.extension.energy.asset.ElectricityProducerSolarAsset
-import org.openremote.extension.energy.asset.ElectricityProducerWindAsset
-import org.openremote.extension.energy.asset.ElectricitySupplierAsset
-import org.openremote.extension.energy.asset.EnergyOptimisationAsset
+import org.openremote.extension.energy.model.ElectricityAsset
+import org.openremote.extension.energy.model.ElectricityBatteryAsset
+import org.openremote.extension.energy.model.ElectricityConsumerAsset
+import org.openremote.extension.energy.model.ElectricityProducerSolarAsset
+import org.openremote.extension.energy.model.ElectricityProducerWindAsset
+import org.openremote.extension.energy.model.ElectricitySupplierAsset
+import org.openremote.extension.energy.model.EnergyOptimisationAsset
 import org.openremote.manager.setup.ManagerSetup
 import org.openremote.model.Container
 import org.openremote.model.attribute.MetaItem

@@ -17,43 +17,51 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.extension.energy.asset;
+package org.openremote.extension.energy.model;
 
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.value.*;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
+import java.util.Optional;
 
 import static org.openremote.model.Constants.UNITS_KILO;
 import static org.openremote.model.Constants.UNITS_WATT;
 
 @Entity
-public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsumerAsset> {
-
-    public static final AssetDescriptor<ElectricityConsumerAsset> DESCRIPTOR = new AssetDescriptor<>("power-plug", "8A293D", ElectricityConsumerAsset.class);
+public class ElectricityProducerAsset extends ElectricityAsset<ElectricityProducerAsset> {
 
     public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = ElectricityAsset.POWER_IMPORT_MAX.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = ElectricityAsset.POWER_EXPORT_MAX.withOptional(true);
-    public static final AttributeDescriptor<Double> ENERGY_EXPORT_TOTAL = ElectricityAsset.ENERGY_EXPORT_TOTAL.withOptional(true);
+    public static final AttributeDescriptor<Double> ENERGY_IMPORT_TOTAL = ElectricityAsset.ENERGY_IMPORT_TOTAL.withOptional(true);
     public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = ElectricityAsset.EFFICIENCY_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = ElectricityAsset.EFFICIENCY_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricitySupplierAsset.TARIFF_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricitySupplierAsset.TARIFF_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricitySupplierAsset.CARBON_IMPORT.withOptional(true);
 
-    public static final AttributeDescriptor<Double> POWER_FORECAST = new AttributeDescriptor<>("powerForecast", ValueType.NUMBER
+    public static final AttributeDescriptor<Double> POWER_FORECAST = new AttributeDescriptor<>("powerForecast", ValueType.NUMBER,
+            new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
+
+    public static final AssetDescriptor<ElectricityProducerAsset> DESCRIPTOR = new AssetDescriptor<>("flash", "EABB4D", ElectricityProducerAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    protected ElectricityConsumerAsset() {
+    protected ElectricityProducerAsset() {
     }
 
-    public ElectricityConsumerAsset(String name) {
+    public ElectricityProducerAsset(String name) {
         super(name);
+    }
+
+    public Optional<Double> getPowerForecast() {
+        return getAttributes().getOrCreate(POWER_FORECAST).getValue();
     }
 }

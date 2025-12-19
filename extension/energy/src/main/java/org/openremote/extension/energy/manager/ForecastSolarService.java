@@ -7,7 +7,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.extension.energy.asset.ElectricityProducerSolarAsset;
+import org.openremote.extension.energy.model.ElectricityProducerSolarAsset;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;

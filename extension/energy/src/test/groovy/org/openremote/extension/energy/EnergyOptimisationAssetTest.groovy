@@ -2,13 +2,13 @@ package org.openremote.extension.energy
 
 import com.google.common.collect.Lists
 import org.openremote.container.timer.TimerService
-import org.openremote.extension.energy.asset.ElectricityAsset
-import org.openremote.extension.energy.asset.ElectricityBatteryAsset
-import org.openremote.extension.energy.asset.ElectricityConsumerAsset
-import org.openremote.extension.energy.asset.ElectricityProducerSolarAsset
-import org.openremote.extension.energy.asset.ElectricityStorageAsset
-import org.openremote.extension.energy.asset.ElectricitySupplierAsset
-import org.openremote.extension.energy.asset.EnergyOptimisationAsset
+import org.openremote.extension.energy.model.ElectricityAsset
+import org.openremote.extension.energy.model.ElectricityBatteryAsset
+import org.openremote.extension.energy.model.ElectricityConsumerAsset
+import org.openremote.extension.energy.model.ElectricityProducerSolarAsset
+import org.openremote.extension.energy.model.ElectricityStorageAsset
+import org.openremote.extension.energy.model.ElectricitySupplierAsset
+import org.openremote.extension.energy.model.EnergyOptimisationAsset
 import org.openremote.extension.energy.manager.EnergyOptimisationService
 import org.openremote.extension.energy.manager.EnergyOptimiser
 import org.openremote.manager.asset.AssetProcessingService

@@ -1,6 +1,6 @@
 package org.openremote.extension.energy
 
-import org.openremote.extension.energy.asset.ElectricityProducerWindAsset
+import org.openremote.extension.energy.model.ElectricityProducerWindAsset
 import org.openremote.extension.energy.manager.ForecastSolarService
 import org.openremote.extension.energy.manager.ForecastWindService
 import org.openremote.manager.asset.AssetProcessingService

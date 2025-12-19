@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.extension.energy.asset.ElectricityStorageAsset;
+import org.openremote.extension.energy.model.ElectricityStorageAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -40,7 +40,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.extension.energy.asset.ElectricityStorageAsset.*;
+import static org.openremote.extension.energy.model.ElectricityStorageAsset.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorAgent, StorageSimulatorAgentLink> {
