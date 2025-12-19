@@ -350,7 +350,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         // Starting at 2 days, because start date + first datapoint = 2 days since epoch
         (2..3).each { i ->
-            def days = i * DAY_IN_MILLIS // Starts at 0 days, increments with 1 day
+            def days = i * DAY_IN_MILLIS // Starts at 2 days, increments with 1 day
 
             and: "the delay is 24 hours"
             conditions.eventually {
@@ -637,6 +637,111 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             datapoints.get(2).getTimestamp() == HOUR_IN_MILLIS * 1
             datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 2
             datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 3
+        }
+    }
+
+    def "Check Simulator Agent protocol adds predicted datapoints recurringly for Europe/Amsterdam timezone"() {
+        when: "replayData is configured to add 3 datapoints every day until the 2nd at 1 for Europe/Amsterdam timezone"
+        asset.addOrReplaceAttributes(new Attribute<>("test7", ValueType.TEXT).addMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
+                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
+                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 12, "test"),
+                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 24, "test"),
+                ).setSchedule(new SimulatorProtocol.Schedule(
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC),
+                        null,
+                        "FREQ=DAILY;UNTIL=19700102T010000"
+                )).setTimezone(TimeZone.getTimeZone("Europe/Amsterdam"))),
+                new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+        )
+        asset = assetStorageService.merge(asset)
+        def attribute = asset.getAttribute("test7").get()
+        def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+        conditions.eventually {
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            protocol.linkedAttributes.get(attributeRef) == attribute
+        }
+
+        and: "the delay is 11 hours"
+        conditions.eventually {
+            delay == HOUR_IN_MILLIS * 11
+        }
+
+        and: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.size() == 3
+            datapoints.get(2).getTimestamp() == HOUR_IN_MILLIS * 11
+            datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 23
+            datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24
+        }
+
+        when: "fast forward 11 hours"
+        advancePseudoClock(11, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "the delay is 12 hours"
+        conditions.eventually {
+            delay == HOUR_IN_MILLIS * 12
+        }
+
+        and: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.size() == 3
+            datapoints.get(2).getTimestamp() == HOUR_IN_MILLIS * 11
+            datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 23
+            datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24
+        }
+
+        when: "fast forward 12 hours"
+        advancePseudoClock(12, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "the delay is 1 hour"
+        conditions.eventually {
+            delay == HOUR_IN_MILLIS
+        }
+
+        and: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.size() == 2
+            datapoints.get(1).getTimestamp() == HOUR_IN_MILLIS * 23
+            datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24
+        }
+
+        when: "fast forward 1 hours"
+        advancePseudoClock(1, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "the delay is 11 hours"
+        conditions.eventually {
+            delay == HOUR_IN_MILLIS * 11
+        }
+
+        and: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.size() == 1
+            datapoints.get(0).getTimestamp() == HOUR_IN_MILLIS * 24 // Last datapoint on the 2nd but -1 because CET
+        }
+
+        when: "fast forward 11 hours"
+        advancePseudoClock(11, HOURS, container)
+        future.get() // resolve future manually, because we surpassed the delay
+
+        then: "the delay is 11 hours"
+        conditions.eventually {
+            delay == HOUR_IN_MILLIS * 11 // delay hasn't changed as the recurrence ended
+        }
+
+        and: "the predicted datapoints are present"
+        conditions.eventually {
+            def datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            datapoints.size() == 0
         }
     }
 }
