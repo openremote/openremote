@@ -8,7 +8,7 @@ base {
 
 dependencies {
     implementation project(":manager")
-    implementation project(":extensions:energy")
+    implementation project(":extension:energy")
 }
 
 jar {

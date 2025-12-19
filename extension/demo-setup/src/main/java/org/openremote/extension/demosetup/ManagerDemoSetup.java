@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.setup.demo;
+package org.openremote.extension.demosetup;
 
 import org.openremote.agent.protocol.http.HTTPAgent;
 import org.openremote.agent.protocol.http.HTTPAgentLink;
@@ -46,11 +46,11 @@ import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.value.*;
-import org.openremote.setup.demo.model.HarvestRobotAsset;
-import org.openremote.setup.demo.model.HarvestRobotAsset.OperationMode;
-import org.openremote.setup.demo.model.HarvestRobotAsset.VegetableType;
-import org.openremote.setup.demo.model.IrrigationAsset;
-import org.openremote.setup.demo.model.SoilSensorAsset;
+import org.openremote.extension.demosetup.model.HarvestRobotAsset;
+import org.openremote.extension.demosetup.model.HarvestRobotAsset.OperationMode;
+import org.openremote.extension.demosetup.model.HarvestRobotAsset.VegetableType;
+import org.openremote.extension.demosetup.model.IrrigationAsset;
+import org.openremote.extension.demosetup.model.SoilSensorAsset;
 
 import java.time.Duration;
 import java.time.LocalTime;
