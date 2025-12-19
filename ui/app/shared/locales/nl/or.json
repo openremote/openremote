@@ -1151,6 +1151,9 @@
               },
               "replayData": {
                 "description": ""
+              },
+              "timezone": {
+                "description": "De tijdzone die de Simulator moet volgen bij afspelen van de dataset."
               }
             },
             "SimulatorProtocol": {

@@ -99,7 +99,8 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
             if (newAgentDescriptor) {
                 props.handleChange("", {
                   id: agent.id,
-                  type: newAgentDescriptor.agentLinkType
+                  type: newAgentDescriptor.agentLinkType,
+                  ...(props.rootSchema?.definitions?.[newAgentDescriptor.agentLinkType ?? ""].default ?? {}),
                 });
             }
         }
