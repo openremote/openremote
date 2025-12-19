@@ -12,7 +12,7 @@ import {
     Asset,
     AssetQuery,
     AssetQueryOperator as AQO,
-    AssetTypeInfo,
+    AssetTypeInfo, GeoJSONFeatureCollection, GeoJSONGeometry,
     JsonRule,
     JsonRulesetDefinition,
     LogicGroup,
@@ -119,9 +119,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     @property({attribute: false})
     protected _ruleset!: RulesetUnion;
 
-    @state() // to be exact: Map<AssetType name, Asset[]>
-    protected _loadedAssets: Map<string, Asset[]> = new Map<string, Asset[]>();
-
     protected _rule!: JsonRule;
     protected _unsupported = false;
     protected _activeAssetPromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
@@ -207,13 +204,13 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         return html`
             <div class="section-container">                                    
                 <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" ?readonly="${this.readonly}" 
-                              .assetProvider="${async (type: string) => this.loadAssets(type)}"
+                              .assetProvider="${(type: string, query: AssetQuery) => this.loadAssets(type, query)}"
                 ></or-rule-when>
             </div>
         
             <div class="section-container">              
                 <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" ?readonly="${this.readonly}" 
-                                        .assetProvider="${async (type: string) => this.loadAssets(type)}"
+                                        .assetProvider="${(type: string, query: AssetQuery) => this.loadAssets(type, query)}"
                 ></or-rule-then-otherwise>
             </div>
         `;
@@ -221,13 +218,18 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
     // loadAssets function that also tracks what promises/fetches are active.
     // If so, await for those to finish to prevent multiple API requests.
-    // Also using caching with the _loadedAssets object.
-    protected async loadAssets(type: string): Promise<Asset[] | undefined> {
-        if(this._activeAssetPromises.has(type)) {
+    protected async loadAssets(type: string, query?: AssetQuery): Promise<Asset[] | undefined> {
+        if (this._activeAssetPromises.has(type)) {
             const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
             return data.assets;
         } else {
-            const promise = getAssetsByType(type, (this._ruleset.type == "realm" ? this._ruleset.realm : undefined), this._loadedAssets);
+            query ??= {};
+            query.types ??= [];
+            query.types.push(type);
+            query.realm ??= {
+                name: this._ruleset.type == "realm" ? this._ruleset.realm : undefined
+            };
+            const promise = getAssetsByType(type, query);
             this._activeAssetPromises.set(type, promise);
             const data = await promise;
             this._activeAssetPromises.delete(type);
@@ -444,6 +446,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return valuePredicate.radius !== undefined && valuePredicate.lat !== undefined && valuePredicate.lng !== undefined;
             case "rect":
                 return valuePredicate.lngMax !== undefined && valuePredicate.latMax !== undefined && valuePredicate.lngMin !== undefined && valuePredicate.latMin !== undefined;
+            case "geojson":
+                return valuePredicate.geoJSON !== undefined && this._validateGeoJSON(JSON.parse(valuePredicate.geoJSON) as GeoJSONFeatureCollection);
             case "array":
                 return (valuePredicate.index && !valuePredicate.value) || valuePredicate.value || valuePredicate.lengthEquals || valuePredicate.lengthLessThan || valuePredicate.lengthGreaterThan;
             case "value-empty":
@@ -451,5 +455,39 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             default:
                 return false;
         }
+    }
+    protected _validateGeoJSON(geoJSON: any): boolean {
+
+        if (!geoJSON) return false;
+
+        const validGeometryTypes = ["Polygon", "MultiPolygon"];
+
+        // Bit of a recursive function to validate geometry types
+        const isValidGeometry = (geom: any): boolean => {
+            if (!geom || !geom.type) return false;
+
+            if (validGeometryTypes.includes(geom.type)) return true;
+
+            if (geom.type === "GeometryCollection") {
+                if (!Array.isArray(geom.geometries)) return false;
+                return geom.geometries.every((g: any) => isValidGeometry(g));
+            }
+
+            return false;
+        };
+
+        // FeatureCollection
+        if (geoJSON.type === "FeatureCollection") {
+            if (!Array.isArray(geoJSON.features)) return false;
+            return geoJSON.features.every((f: any) => isValidGeometry(f.geometry));
+        }
+
+        // Feature
+        if (geoJSON.type === "Feature") {
+            return isValidGeometry(geoJSON.geometry);
+        }
+
+        // Raw geometry (Polygon, MultiPolygon, GeometryCollection)
+        return isValidGeometry(geoJSON);
     }
 }

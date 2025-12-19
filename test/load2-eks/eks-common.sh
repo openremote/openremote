@@ -14,6 +14,7 @@ if [ -z "$AWS_DEVELOPERS_ACCOUNT_ID" ]; then
 fi
 
 OR_KUBERNETES_PATH=../../kubernetes
+export OR_PROFILE=large
 
 # Name of cluster, not exposed but must be unique within account
 export CLUSTER_NAME=loadtest-cluster

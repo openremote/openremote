@@ -26,13 +26,13 @@ import java.io.Serializable;
 import java.util.Optional;
 
 /**
- * Represents a value at a point in time defined as the number of seconds of the day.
+ * Represents a value at a point in time defined as the number of seconds relative to the occurrence start.
  */
 @JsonSchemaTitle("Data point")
 public class SimulatorReplayDatapoint implements Serializable {
 
     /**
-     * Seconds of the day
+     * Seconds relative to occurrence start
      */
     public long timestamp;
     public Object value;

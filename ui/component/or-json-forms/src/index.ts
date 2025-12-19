@@ -30,6 +30,8 @@ import {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
 import {i18next, translate} from "@openremote/or-translate";
 
+export * from "@jsonforms/core";
+
 declare global {
     interface SymbolConstructor {
         readonly observable: symbol;
@@ -39,9 +41,7 @@ declare global {
 export {
     ErrorObject,
     StandardRenderers,
-    getTemplateWrapper,
-    JsonFormsRendererRegistryEntry,
-    UISchemaElement
+    getTemplateWrapper
 };
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {
@@ -121,7 +121,7 @@ export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPr
         }
 
         if (!this.data) {
-          this.data = createDefaultValue(this.schema, this.schema);
+            this.data = createDefaultValue(this.schema, this.schema);
         }
 
         if (!this.uischema) {

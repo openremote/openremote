@@ -403,20 +403,22 @@
   },
   "validityType": "Type d'horaire",
   "validityAlways": "Toujours actif",
-  "validityPeriod": "Planifier une occurrence",
-  "validityRecurrence": "Planifier une occurrence répétée",
+  "planPeriod": "Planifier une occurrence",
+  "planRecurrence": "Planifier une occurrence répétée",
   "activeFromTo": "Actif du {{start}} au {{end}}",
   "fromTo": "Du {{start}} au {{end}}",
   "fromToDays": "de {{start}} à {{days}} jours plus tard {{end}}",
   "forDays": "pour {{days}} jours",
   "scheduleRuleActivity": "Planifier l'activité de la règle",
+  "schedule": {
+    "_ends": "La répétition se termine",
+    "repeat": "Répéter l'occurrence tous les"
+  },
   "allDay": "Toute la journée",
   "apply": "appliquer",
   "to": "à",
   "from": "de",
   "never": "jamais",
-  "repetitionEnds": "La répétition se termine",
-  "repeatOccurrenceEvery": "Répéter l'occurrence tous les",
   "daysOfTheWeek": "jours de la semaine",
   "dismiss": "rejeter",
   "createAssetFailed": "Impossible de créer la ressource",
@@ -503,6 +505,10 @@
             },
             "BooleanPredicate": {
               "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
@@ -587,6 +593,31 @@
               },
               "updateOnWrite": {
                 "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
               }
             }
           }

@@ -23,6 +23,9 @@ import org.openremote.agent.protocol.http.HTTPAgent;
 import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
+import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.ManagerSetup;
@@ -48,8 +51,11 @@ import org.openremote.setup.demo.model.SoilSensorAsset;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 
@@ -60,6 +66,7 @@ import static org.openremote.model.value.ValueType.MultivaluedStringMap;
 
 public class ManagerDemoSetup extends ManagerSetup {
 
+    public static final int HISTORIC_SIMULATED_DATA_DAYS = 28;
     public static GeoJSONPoint STATIONSPLEIN_LOCATION = new GeoJSONPoint(4.470175, 51.923464);
     public String realmMasterName;
     public String realmCityName;
@@ -2259,6 +2266,10 @@ public class ManagerDemoSetup extends ManagerSetup {
         soilSensor3.setId(UniqueIdentifierGenerator.generateId(soilSensor3.getName()));
         soilSensor3 = assetStorageService.merge(soilSensor3);
 
+        // ############################## Add historic simulated data ###############################
+
+        upsertSimulatedHistoricData();
+
         // ################################ Link users and assets ###################################
 
         assetStorageService.storeUserAssetLinks(Arrays.asList(
@@ -2297,5 +2308,39 @@ public class ManagerDemoSetup extends ManagerSetup {
                         new JsonPathFilter("$." + jsonParentName + "." + jsonName, true, false),
                 }
         );
+    }
+
+    /**
+     * Adds {@link #HISTORIC_SIMULATED_DATA_DAYS} days of historic datapoints based on the configured simulator data.
+     */
+    private void upsertSimulatedHistoricData() {
+        for (Asset<?> asset : assetStorageService.findAll(new AssetQuery())) {
+            AttributeMap attributes = asset.getAttributes();
+            for (Attribute<?> attribute : attributes.values()) {
+                attribute.getMeta().get(AGENT_LINK).ifPresent(agentLinkMetaItem -> {
+                    agentLinkMetaItem.getValue().ifPresent(agentLink -> {
+                        if (agentLink instanceof SimulatorAgentLink simulatorAgentLink) {
+                            simulatorAgentLink.getReplayData().ifPresent(replayData -> {
+                                List<ValueDatapoint<?>> valuesAndTimestamps = new ArrayList<>();
+                                ZonedDateTime midnight = ZonedDateTime.now().with(LocalTime.MIDNIGHT).minusDays(HISTORIC_SIMULATED_DATA_DAYS);
+
+                                while (midnight.isBefore(ZonedDateTime.now())) {
+                                    for (SimulatorReplayDatapoint datapoint : replayData) {
+                                        ZonedDateTime timestamp = midnight.plusSeconds(datapoint.getTimestamp());
+                                        if (timestamp.isBefore(ZonedDateTime.now())) {
+                                            valuesAndTimestamps.add(new ValueDatapoint<>(timestamp.toInstant().toEpochMilli(), datapoint.getValue().get()));
+                                        }
+                                    }
+
+                                    midnight = midnight.plusDays(1);
+                                }
+
+                                assetDatapointService.upsertValues(asset.getId(), attribute.getName(), valuesAndTimestamps);
+                            });
+                        }
+                    });
+                });
+            }
+        }
     }
 }

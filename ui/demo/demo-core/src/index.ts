@@ -1,12 +1,12 @@
 import {html, LitElement, TemplateResult, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import manager, {Auth, Manager, OREvent, subscribe, Util} from "@openremote/core";
+import manager, {Manager, OREvent, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
-import {IconSets} from "@openremote/or-icon";
+import {createSvgIconSet, IconSets} from "@openremote/or-icon";
 import {i18next} from "@openremote/or-translate"
 
-import {AttributeEvent, WellknownMetaItems, SharedEvent, Asset, WellknownAssets, WellknownAttributes, AssetModelUtil} from "@openremote/model";
+import {Auth, AttributeEvent, WellknownMetaItems, SharedEvent, Asset, WellknownAssets, WellknownAttributes, AssetModelUtil} from "@openremote/model";
 import {getBuildingAsset, getElectricityChargerAsset, getElectricityConsumerAsset} from "./util";
 
 @customElement("or-demo")
@@ -87,13 +87,10 @@ class OrDemo extends subscribe(manager)(LitElement) {
     }
 
     public createIconSet() {
-        let testIconSet = {
-            size: 100,
-            icons: {
+        const testIconSet = {
                 "x": "<path d=\"m0.3125,39.74088l37.33242,0l11.53601,-37.43277l11.53601,37.43277l37.33242,0l-30.20251,23.13446l11.5366,37.43277l-30.20252,-23.13509l-30.20252,23.13509l11.53661,-37.43277l-30.20252,-23.13446z\" stroke-width='5' stroke=\"#000\"/>"
-            }
-        }   ;
-        IconSets.addIconSet("test", testIconSet);
+        };
+        IconSets.addIconSet("test", createSvgIconSet(100, testIconSet));
     }
 
     public toggleLanguage() {
@@ -118,7 +115,7 @@ manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: false,
     realm: "smartcity",
-    configureTranslationsOptions: (options) => {
+    configureTranslationsOptions: (options: any) => {
         options.lng = "nl"; // Change initial language to dutch
     }
 }).then((success) => {

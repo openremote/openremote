@@ -121,6 +121,16 @@ public class CORSConfig {
             allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
         }
 
+        // TODO: Enhance the CORS filter to support partial wildcard URIs
+        // Check if any contain a wildcard and convert list to single allow all as CORSFilter doesn't support
+        // partial wildcard URIs
+        boolean containsWildcard = allowedOrigins.stream()
+                .anyMatch(origin -> origin.contains(DEFAULT_CORS_ALLOW_ALL));
+
+        if (containsWildcard) {
+            allowedOrigins = Set.of(DEFAULT_CORS_ALLOW_ALL);
+        }
+
         return allowedOrigins;
     }
 }

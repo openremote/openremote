@@ -21,13 +21,13 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@jsonforms/core": "^3.5.1",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-scheduler": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1"
   },
