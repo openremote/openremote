@@ -20,8 +20,13 @@
 import {customElement} from "lit/decorators.js";
 import {NumberField} from "@vaadin/number-field";
 import {OrVaadinComponent} from "./util";
+import {LitElement} from "lit";
 
 @customElement("or-vaadin-numberfield")
-export class OrVaadinNumberfield extends NumberField implements OrVaadinComponent {
+export class OrVaadinNumberfield extends (NumberField as new () => NumberField & LitElement) implements OrVaadinComponent {
 
+    override _onEnter(ev: KeyboardEvent) {
+        this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
+        return super._onEnter(ev);
+    }
 }

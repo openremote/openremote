@@ -119,14 +119,18 @@ export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | st
  * Generic input types, like a text field, "support a send button", so should return `true`
  */
 function inputTypeSupportsSendButton(inputType: InputType): boolean {
-    return OrVaadinInput.TEMPLATES.has(inputType)
+    return inputType === InputType.NUMBER
+        || inputType === InputType.BIG_INT
         || inputType === InputType.TELEPHONE
+        || inputType === InputType.TEXT
+        || inputType === InputType.PASSWORD
         || inputType === InputType.DATE
         || inputType === InputType.DATETIME
         || inputType === InputType.EMAIL
         || inputType === InputType.JSON
         || inputType === InputType.JSON_OBJECT
         || inputType === InputType.MONTH
+        || inputType === InputType.TEXTAREA
         || inputType === InputType.TIME
         || inputType === InputType.URL
         || inputType === InputType.WEEK;
@@ -369,6 +373,17 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const label = supportsLabel ? options.label : undefined;
         const inputStyle = styles ? styleMap(styles) : undefined;
 
+        const onValueChange = (ev: Event) => {
+            const isChangeEvent = !OrVaadinInput.CHANGE_EVENTS.get(inputType) || (OrVaadinInput.CHANGE_EVENTS.get(inputType) === ev.type);
+            if(isChangeEvent) {
+                ev.stopPropagation();
+                const elem = ev.currentTarget as OrVaadinInput | undefined;
+                if (elem?.checkValidity()) {
+                    valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue);
+                }
+            }
+        };
+
         if(supportsVaadinInput(inputType)) {
 
             // or-vaadin-checkbox has multiple states (like indeterminate), so it uses the 'checked' HTML attribute instead of 'value'.
@@ -386,13 +401,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                                  .items=${ifDefined(selectOptions)} step=${ifDefined(step)}
                                  helper-text="${ifDefined(helperText)}" ?resizeVertical="${resizeVertical}"
                                  ?rounded="${options.rounded}" ?outlined="${options.outlined}"
-                                 @change="${(e: Event) => {
-                                     e.stopPropagation();
-                                     const elem = e.currentTarget as OrVaadinInput | undefined;
-                                     if (elem?.checkValidity()) {
-                                         valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue);
-                                     }
-                                 }}"
+                                 @change="${onValueChange}"
+                                 @submit="${onValueChange}"
                 ></or-vaadin-input>
             `;
         } else {

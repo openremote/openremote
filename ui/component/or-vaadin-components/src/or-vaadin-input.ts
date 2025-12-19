@@ -20,7 +20,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
-import {OrVaadinCheckbox} from "./or-vaadin-checkbox";
 import "./or-vaadin-checkbox";
 import "./or-vaadin-numberfield";
 import "./or-vaadin-passwordfield";
@@ -77,6 +76,19 @@ export class OrVaadinInput extends LitElement {
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
         [InputType.SELECT, OrVaadinInput.getSelectTemplate]
+    ]);
+
+    /**
+     * Static map of what HTML event to listen for when a value changes.
+     * Sometimes you'd like to override this, such as a text field, where it should only be updated "on submit".
+     * By default, or when undefined, the "change" event is used.
+     */
+    public static readonly CHANGE_EVENTS = new Map<InputType, string>([
+        [InputType.BIG_INT, "submit"],
+        [InputType.NUMBER, "submit"],
+        [InputType.TEXTAREA, "submit"],
+        [InputType.TEXT, "submit"],
+        [InputType.PASSWORD, "submit"]
     ]);
 
     /**

@@ -20,8 +20,13 @@
 import {customElement} from "lit/decorators.js";
 import {TextArea} from "@vaadin/text-area";
 import {OrVaadinComponent} from "./util";
+import {LitElement} from "lit";
 
 @customElement("or-vaadin-textarea")
-export class OrVaadinTextarea extends TextArea implements OrVaadinComponent {
+export class OrVaadinTextarea extends (TextArea as new () => TextArea & LitElement) implements OrVaadinComponent {
 
+    override _onEnter(ev: KeyboardEvent) {
+        this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
+        return super._onEnter(ev);
+    }
 }
