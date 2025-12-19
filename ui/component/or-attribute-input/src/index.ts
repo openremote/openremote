@@ -545,8 +545,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
 
         // Use json forms with fallback to simple input provider
-        const valueChangeHandler = (value: any, updateImmediately?: boolean) => {
-            updateImmediately ??= !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
+        const valueChangeHandler = (value: any, updateImmediately = false) => {
+            updateImmediately = updateImmediately || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
             this._onInputValueChanged(value, updateImmediately);
         };
 
@@ -561,7 +561,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value) => valueChangeHandler(value, true), options);
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value, updateImmediately) => valueChangeHandler(value, updateImmediately), options);
         this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail?.value), options);
 
         if (!this._templateProvider) {

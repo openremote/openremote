@@ -111,7 +111,7 @@ export interface ValueInputProvider {
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
 export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor
-                                           , valueChangeNotifier: (value: any) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+                                           , valueChangeNotifier: (value: any, updateImmediately?: boolean) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 /**
  * Returns whether the {@link InputType} should show a "send" button within the attribute input UI.
@@ -374,13 +374,11 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const inputStyle = styles ? styleMap(styles) : undefined;
 
         const onValueChange = (ev: Event) => {
-            const isChangeEvent = !OrVaadinInput.CHANGE_EVENTS.get(inputType) || (OrVaadinInput.CHANGE_EVENTS.get(inputType) === ev.type);
-            if(isChangeEvent) {
-                ev.stopPropagation();
-                const elem = ev.currentTarget as OrVaadinInput | undefined;
-                if (elem?.checkValidity()) {
-                    valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue);
-                }
+            ev.stopPropagation();
+            const elem = ev.currentTarget as OrVaadinInput | undefined;
+            if (elem?.checkValidity()) {
+                const doRemoteUpdate = (!OrVaadinInput.CHANGE_EVENTS.has(inputType) || (OrVaadinInput.CHANGE_EVENTS.get(inputType) === ev.type));
+                valueChangeNotifier(valueConverter?.(elem.nativeValue) ?? elem.nativeValue, doRemoteUpdate);
             }
         };
 
