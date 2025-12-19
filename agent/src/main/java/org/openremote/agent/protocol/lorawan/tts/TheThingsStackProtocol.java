@@ -99,7 +99,6 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     public static final long GRPC_BULK_SYNC_RUNNER_KEEP_ALIVE_TIMEOUT_MILLIS = 4000L;
     public static final long GRPC_SINGLE_DEVICE_SYNC_RUNNER_INITIAL_BACKOFF_MILLIS = 100L;
     public static final long GRPC_SINGLE_DEVICE_SYNC_RUNNER_MAX_BACKOFF_MILLIS = 5*60000L;
-    public static final String THE_THINGS_STACK_TEST =  "THE_THINGS_STACK_TEST";
     public static final String BULK_SYNC_RUNNER_NAME = "Bulk Sync Runner";
     public static final String SINGLE_DEVICE_SYNC_RUNNER_NAME = "Single Device Sync Runner";
     public static final String DEVICE_EVENT_STREAMER_NAME = "Device Event Streamer";
