@@ -2,7 +2,7 @@
 
 . ./eks-common.sh
 
-envsubst < cluster.yaml | eksctl create cluster -f - --profile or
+envsubst < profiles/$OR_PROFILE/cluster.yaml | eksctl create cluster -f - --profile or
 
 # [Installation Guide - AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/)
 
@@ -27,9 +27,9 @@ CLUSTER_DNS=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.cluste
 
 helm install or-setup $OR_KUBERNETES_PATH/or-setup -f values-or-setup-eks-load.yaml --set aws.enabled=true --set aws.managerVolumeId=$MANAGER_VOLUMEID --set aws.psqlVolumeId=$PSQL_VOLUMEID
 
-helm install proxy $OR_KUBERNETES_PATH/proxy -f $OR_KUBERNETES_PATH/proxy/values-eks.yaml -f values-proxy-eks-load.yaml  --set or.nameserver=$CLUSTER_DNS --set or.hostname=$FQDN
+helm install proxy $OR_KUBERNETES_PATH/proxy -f $OR_KUBERNETES_PATH/proxy/values-eks.yaml -f profiles/$OR_PROFILE/values-proxy-eks-load.yaml  --set or.nameserver=$CLUSTER_DNS --set or.hostname=$FQDN
 
-helm install postgresql $OR_KUBERNETES_PATH/postgresql -f $OR_KUBERNETES_PATH/postgresql/values-eks.yaml -f values-postgresql-eks-load.yaml
+helm install postgresql $OR_KUBERNETES_PATH/postgresql -f $OR_KUBERNETES_PATH/postgresql/values-eks.yaml -f profiles/$OR_PROFILE/values-postgresql-eks-load.yaml
 
 # Waiting for the LB to be created
 # AWS LB Controller only creates an Network LB if there's a service
@@ -55,9 +55,9 @@ aws route53 change-resource-record-sets \
      --profile dnschg
 
 helm install keycloak $OR_KUBERNETES_PATH/keycloak -f $OR_KUBERNETES_PATH/keycloak/values-haproxy.yaml \
-  -f values-keycloak-eks-load.yaml --set-string or.hostname=$FQDN
+  -f profiles/$OR_PROFILE/values-keycloak-eks-load.yaml --set-string or.hostname=$FQDN
 helm install manager $OR_KUBERNETES_PATH/manager -f $OR_KUBERNETES_PATH/manager/values-haproxy-eks.yaml \
-  -f values-manager-eks-load.yaml --set-string or.hostname=$FQDN \
+  -f profiles/$OR_PROFILE/values-manager-eks-load.yaml --set-string or.hostname=$FQDN \
   --set-string image.repository=$AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager
 
 while ! dig +short $FQDN | grep -qE '^[0-9]'; do

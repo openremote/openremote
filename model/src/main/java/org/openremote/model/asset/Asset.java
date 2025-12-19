@@ -426,10 +426,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
     /**
-     * NOTE: This is a transient and optional property, set only in database query results.
-     * <p>
-     * The identifiers of all parents representing the path in the tree. The first element is the identifier of this
-     * instance, the last is the root asset without a parent.
+     * The identifiers of all parents representing the path in the tree. The first element is the
+     * root asset without a parent, the last is the identifier of this instance.
      */
     public String[] getPath() {
         return path;
