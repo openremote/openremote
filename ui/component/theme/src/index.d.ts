@@ -17,10 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@openremote/theme/default.css";
+// CSS modules
+type CSSModuleClasses = { readonly [key: string]: string };
 
-.badge-section {
-    display: flex;
-    align-items: start;
-    gap: 4px;
+declare module "*.module.css" {
+    const classes: CSSModuleClasses;
+    export default classes;
+}
+
+// CSS
+declare module "*.css" {
+    /**
+     * @deprecated Use `import style from './style.css?inline'` instead.
+     */
+    const css: string;
+    export default css;
 }

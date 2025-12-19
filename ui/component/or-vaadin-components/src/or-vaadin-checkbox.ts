@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@openremote/theme/default.css";
+import {customElement} from "lit/decorators.js";
+import {Checkbox} from "@vaadin/checkbox";
+import {OrVaadinComponent} from "./util";
 
-.badge-section {
-    display: flex;
-    align-items: start;
-    gap: 4px;
+@customElement("or-vaadin-checkbox")
+export class OrVaadinCheckbox extends Checkbox implements OrVaadinComponent {
+
 }

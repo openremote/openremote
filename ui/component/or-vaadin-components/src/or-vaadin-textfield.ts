@@ -17,10 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@openremote/theme/default.css";
+import {customElement} from "lit/decorators.js";
+import {TextField} from "@vaadin/text-field";
+import {LitElement} from "lit";
+import {OrVaadinComponent} from "./util";
 
-.badge-section {
-    display: flex;
-    align-items: start;
-    gap: 4px;
+@customElement("or-vaadin-textfield")
+export class OrVaadinTextfield extends (TextField as new () => TextField & LitElement) implements OrVaadinComponent {
+
+    override _onEnter(ev: KeyboardEvent) {
+        this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
+        return super._onEnter(ev);
+    }
 }
