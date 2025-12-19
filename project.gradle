@@ -5,11 +5,7 @@ import org.jetbrains.gradle.ext.JUnit
 apply plugin: 'jacoco'
 
 jacoco {
-    toolVersion = "0.8.12"
-}
-
-tasks.withType(Test) {
-    finalizedBy "jacocoTestReport"
+    toolVersion = "0.8.14"
 }
 
 tasks.withType(JacocoReport) {
