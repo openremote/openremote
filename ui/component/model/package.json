@@ -1,6 +1,6 @@
 {
   "name": "@openremote/model",
-  "version": "1.11.0-mg-feature-testing-2",
+  "version": "1.12.3-mg-feature-testing-1",
   "description": "OpenRemote 3.x Model Types",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
