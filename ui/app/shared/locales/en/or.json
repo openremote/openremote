@@ -76,6 +76,8 @@
   "outsideRadius": "Outside circle",
   "withinRectangle": "Inside rectangle",
   "outsideRectangle": "Outside rectangle",
+  "insideArea": "Inside area",
+  "outsideArea": "Outside area",
   "indexContains": "Array index contains",
   "notIndexContains": "Array index does not contain",
   "lengthEquals": "Array length equals",
@@ -1051,6 +1053,10 @@
             },
             "BooleanPredicate": {
               "description": "Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value that is not a boolean will not match"
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "GeoJSON Geofence",
+              "description": "Predicate for GeoJSON point values; will return true if the point is within the specified GeoJSON geometry (Polygon, MultiPolygon, or Feature/FeatureCollection containing such geometries) unless negated."
             }
           }
         },
@@ -1150,6 +1156,9 @@
               },
               "replayData": {
                 "description": "Used to store a dataset of values that should be replayed (i.e. written to the linked attribute) in a continuous loop based on a schedule (by default replays every 24h). Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored."
+              },
+              "timezone": {
+                "description": "The timezone the Simulator should follow to replay the dataset."
               }
             },
             "SimulatorProtocol": {
