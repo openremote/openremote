@@ -186,7 +186,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         newSolarAsset2.setIncludeForecastSolarService(false);
         newSolarAsset2 = assetStorageService.merge(newSolarAsset2)
 
-        and: "an asset updated it's includeForecastSolarService to true"
+        and: "an asset updated its includeForecastSolarService to true"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, true))
 
         then: "the asset attributes and datapoints should be updated"
