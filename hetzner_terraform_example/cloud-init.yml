@@ -1,0 +1,85 @@
+#cloud-config
+hostname: ${hostname}
+manage_etc_hosts: true
+
+# Install base packages first
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - restic
+
+# Use runcmd for all setup steps for reliability
+runcmd:
+  # --- 1. Configure Floating IP ---
+  - |
+    if [ -n "${floating_ip}" ]; then
+      echo "--- Configuring Floating IP: ${floating_ip} ---"
+      cat > /etc/netplan/60-floating-ip.yaml <<EOF
+    network:
+      version: 2
+      ethernets:
+        eth0:
+          addresses:
+            - ${floating_ip}/32
+    EOF
+      netplan apply
+    fi
+
+  # --- 2. Mount the data volume ---
+  - 'echo "--- Mounting data volume ---"'
+  - 'mkdir -p /data'
+  - 'mount /dev/disk/by-id/scsi-0HC_Volume_* /data || echo "Volume already mounted or mount failed"'
+  - 'if ! grep -q "/data" /etc/fstab; then echo "/dev/disk/by-id/scsi-0HC_Volume_* /data ext4 defaults,nofail 0 0" >> /etc/fstab; fi'
+
+  # --- 3. Install Docker Engine ---
+  - 'echo "--- Installing Docker ---"'
+  - 'install -m 0755 -d /etc/apt/keyrings'
+  - 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc'
+  - 'chmod a+r /etc/apt/keyrings/docker.asc'
+  - |
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - 'apt-get update'
+  - 'apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
+
+  # --- 4. Configure Backups ---
+  - |
+    if [ "${provision_s3_bucket}" = "true" ]; then
+      echo "--- Setting up automated backups ---"
+      cat > /etc/restic-env <<EOF
+    export RESTIC_REPOSITORY="sftp:${storage_box_user}@${storage_box_host}/openremote-backups"
+    export RESTIC_PASSWORD="${storage_box_password}"
+    export AWS_ACCESS_KEY_ID=""
+    export AWS_SECRET_ACCESS_KEY=""
+    EOF
+      cat > /usr/local/bin/backup.sh <<'EOT'
+    #!/bin/bash
+    source /etc/restic-env
+    restic backup /data
+    restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
+    EOT
+      chmod +x /usr/local/bin/backup.sh
+      source /etc/restic-env
+      restic init || echo "Restic repository already initialized."
+      (crontab -l 2>/dev/null; echo "0 3 * * * /usr/local/bin/backup.sh") | crontab -
+      echo "--- Backup configuration complete ---"
+    fi
+
+  # --- 5. Clone and Start OpenRemote ---
+  - 'echo "--- Cloning and starting OpenRemote ---"'
+  - 'cd /opt'
+  - 'git clone https://github.com/openremote/openremote.git'
+  - 'cd /opt/openremote'
+  - |
+    cat > .env <<EOF
+    OR_HOSTNAME=${hostname}
+    OR_PROFILES=dev
+    EOF
+  - 'docker compose pull'
+  - 'docker compose up -d'
+  - 'echo "--- OpenRemote setup finished ---"'
