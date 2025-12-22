@@ -173,7 +173,7 @@ if (current &gt;= vars.getObject(&quot;threadCount&quot;)) {
           </net.xmeter.samplers.PubSampler>
           <hashTree>
             <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
-              <stringProp name="ConstantTimer.delay">${__P(MILLIS_BETWEEN_PUBLISHES,10000)}</stringProp>
+              <stringProp name="ConstantTimer.delay">${__P(MILLIS_BETWEEN_PUBLISHES,30000)}</stringProp>
             </ConstantTimer>
             <hashTree/>
           </hashTree>

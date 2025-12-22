@@ -201,9 +201,20 @@ jobs:
         id: ip-address
         shell: bash
         run: |
-          set -e
-          PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
-          PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
+          OPTS="-sf -m 5"
+          
+          # Try Primary v4 -> Fallback v4 -> Default to empty
+          PUBLIC_IPV4=$(curl $OPTS v4.ident.me || curl $OPTS 4.tnedi.me || true)
+          
+          # Try Primary v6 -> Fallback v6 -> Default to empty
+          PUBLIC_IPV6=$(curl $OPTS v6.ident.me || curl $OPTS 6.tnedi.me || true)
+          
+          # Validation: Ensure at least one IP was found
+          if [[ -z "$PUBLIC_IPV4" && -z "$PUBLIC_IPV6" ]]; then
+          echo "::error::Could not determine Public IP (both v4 and v6 failed)."
+          exit 1
+          fi
+          
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
@@ -757,6 +768,12 @@ jobs:
         with:
           name: backend-test-results
           path: test/build/reports/tests
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: coverage-report
+          path: test/build/reports/jacoco/test/html
 
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}

@@ -24,7 +24,9 @@ import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
 import java.util.Optional;
+import java.util.TimeZone;
 
+@JsonSchemaDefault("{\"timezone\":\"\"}")
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     @JsonSchemaDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
@@ -32,6 +34,10 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints" +
         " immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored.")
     protected SimulatorReplayDatapoint[] replayData;
+
+    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
+    @JsonSchemaFormat("timezone")
+    protected TimeZone timezone;
 
     @JsonSchemaTitle("Schedule")
     @JsonSchemaDescription("Overwrites the possible dataset length and when it is replayed." +
@@ -66,6 +72,15 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
         this.schedule = schedule;
+        return this;
+    }
+
+    public Optional<TimeZone> getTimezone() {
+        return Optional.ofNullable(timezone);
+    }
+
+    public SimulatorAgentLink setTimezone(TimeZone timezone) {
+        this.timezone = timezone;
         return this;
     }
 }
