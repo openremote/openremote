@@ -348,7 +348,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false)
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false, null)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
@@ -711,7 +711,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "The Gateway also sends a Gateway Capabilities response indicating tunnelling is supported"
-        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, true)
+        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, true, null)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 

@@ -262,9 +262,9 @@ public class GatewayConnector {
                 this.gatewayVersion = response != null ? response.getVersion() : null;
                 this.tunnelTimeoutManagementSupported = response != null ? response.isTunnelTimeoutManagementSupported() : false;
 
-                String currentManagerVersion = VersionInfo.getManagerVersion();
-                if(!Objects.equals(getGatewayVersion(), currentManagerVersion)) {
-                    LOG.warning("Gateway Version is not up to date, latest version is "+currentManagerVersion + ", Gateway version is " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                String currentGatewayApiVersion = VersionInfo.getGatewayApiVersion();
+                if(this.getGatewayVersion() != null && VersionInfo.isVersionLess(this.getGatewayVersion(), currentGatewayApiVersion)) {
+                    LOG.warning("Gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
                 }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));

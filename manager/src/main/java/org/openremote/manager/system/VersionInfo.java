@@ -8,9 +8,14 @@ import java.util.Properties;
 public class VersionInfo {
 
     public static final String VERSION = loadVersion();
+    public static final String GATEWAY_API_VERSION = "1.0.0";
 
     public static String getManagerVersion() {
         return VERSION;
+    }
+
+    public static String getGatewayApiVersion() {
+        return GATEWAY_API_VERSION;
     }
 
     protected static String loadVersion() {
