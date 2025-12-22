@@ -266,6 +266,9 @@ public class GatewayConnector {
                 if(this.getGatewayVersion() != null && VersionInfo.isVersionLess(this.getGatewayVersion(), currentGatewayApiVersion)) {
                     LOG.warning("Gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
                 }
+                if (this.getGatewayVersion() != null && VersionInfo.isVersionGreater(this.getGatewayVersion(), currentGatewayApiVersion)){
+                    LOG.warning("Central instance's gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
                 LOG.finest("Setting connection status=" + ConnectionStatus.CONNECTED + ": " + getGatewayIdString());
