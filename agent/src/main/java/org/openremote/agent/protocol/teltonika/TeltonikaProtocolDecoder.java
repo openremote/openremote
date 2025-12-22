@@ -9,7 +9,9 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.telematics.ParsingValueDescriptor;
-import org.openremote.model.telematics.TrackerAsset;
+import org.openremote.model.telematics.teltonika.TeltonikaParameterRegistry;
+import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset;
+import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptor;
 import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
@@ -21,11 +23,11 @@ import java.util.logging.Logger;
 
 /**
  * Netty decoder for Teltonika binary protocol (Codecs 8, 8E, 16, GH3000, 12, 13).
- *
+ * <p>
  * This decoder handles the binary AVL protocol used by Teltonika GPS trackers,
  * parsing location data and IO elements into OpenRemote attributes using the
  * ParsingValueDescriptor framework.
- *
+ * <p>
  * Supported codecs:
  * - CODEC_8 (0x08): Standard AVL protocol
  * - CODEC_8_EXT (0x8E): Extended AVL protocol with 2-byte IO IDs
@@ -46,8 +48,9 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
     public static final int CODEC_13 = 0x0D;
     public static final int CODEC_16 = 0x10;
 
+    private final TeltonikaParameterRegistry parameterRegistry = TeltonikaParameterRegistry.getInstance();
+
     private final boolean connectionless; // UDP vs TCP
-    private final Map<String, String> deviceModels = new HashMap<>(); // IMEI -> Model mapping
 
     private String imei;
 
@@ -391,7 +394,7 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Parse a single IO element using TeltonikaValueDescriptors.
+     * Parse a single IO element using the parameter registry.
      */
     @SuppressWarnings("unchecked")
     private void parseIoElement(int id, ByteBuf value, AttributeMap attributes) {
@@ -399,8 +402,8 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
         String idStr = String.valueOf(id);
         int length = value.readableBytes();
 
-        // Try to find a matching ParsingValueDescriptor
-        ParsingValueDescriptor<?> descriptor = TeltonikaValueDescriptors.getDescriptorById(idStr);
+        // Try to find a matching TeltonikaValueDescriptor
+        TeltonikaValueDescriptor<?> descriptor = parameterRegistry.getById(idStr).orElse(null);
 
         if (descriptor != null) {
             int expectedLength = descriptor.getLength();
@@ -413,15 +416,11 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             value.getBytes(value.readerIndex(), copy, actualLength);
 
             try {
-//                copy = internalBuffer().retainedDuplicate();
-
                 Object parsedValue = descriptor.parse(copy);
 
-                Teltonika
-
                 Attribute attribute = new Attribute(
-                        TeltonikaValueDescriptors
-                                .findMatchingAttributeDescriptor(TrackerAsset.class, descriptor)
+                        parameterRegistry
+                                .findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, descriptor)
                                 .orElseThrow(),
                         parsedValue
                 );
@@ -464,7 +463,7 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
      * Helper to add parsed attribute to map.
      */
     private <T> void addAttribute(AttributeMap attributes, ParsingValueDescriptor<T> descriptor, T value, Long timestamp) {
-        attributes.add(new Attribute<>(TeltonikaValueDescriptors.findMatchingAttributeDescriptor(TrackerAsset.class, descriptor).orElseThrow(), value, timestamp));
+        attributes.add(new Attribute<>(parameterRegistry.findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, descriptor).orElseThrow(), value, timestamp));
     }
 
     /**

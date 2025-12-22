@@ -9,6 +9,8 @@ import java.util.function.Function;
 
 public class TeltonikaValueDescriptor<T> extends ParsingValueDescriptor<T> {
 
+    public static final String VENDOR_PREFIX = "teltonika";
+
     protected int avlId;
     protected String name;
     protected String avlType;
@@ -20,23 +22,20 @@ public class TeltonikaValueDescriptor<T> extends ParsingValueDescriptor<T> {
     protected String hwSupport;
     protected String parameterGroup;
 
-
-
-
     public TeltonikaValueDescriptor(String name, Class<T> avlType, ValueConstraint... constraints) {
-        super(name, avlType, constraints);
+        super(VENDOR_PREFIX, name, avlType, -1, avlType::cast, constraints);
     }
 
     public TeltonikaValueDescriptor(String name, Class<T> avlType, Function<ByteBuf, T> parser, ValueConstraint... constraints) {
-        super(name, avlType, parser, constraints);
+        super(VENDOR_PREFIX, name, avlType, -1, parser, constraints);
     }
 
     public TeltonikaValueDescriptor(String name, Class<T> avlType, int length, Function<ByteBuf, T> parser, ValueConstraint... constraints) {
-        super(name, avlType, length, parser, constraints);
+        super(VENDOR_PREFIX, name, avlType, length, parser, constraints);
     }
 
     public TeltonikaValueDescriptor(Class<T> type, int length, Function<ByteBuf, T> parser, int avlId, String name, String avlType, Long min, Long max, Long multiplier, String units, String description, String hwSupport, String parameterGroup, ValueConstraint... constraints) {
-        super(String.valueOf(avlId), type, length, parser, constraints);
+        super(VENDOR_PREFIX, String.valueOf(avlId), type, length, parser, constraints);
         this.avlId = avlId;
         this.name = name;
         this.avlType = avlType;
@@ -47,6 +46,10 @@ public class TeltonikaValueDescriptor<T> extends ParsingValueDescriptor<T> {
         this.description = description;
         this.hwSupport = hwSupport;
         this.parameterGroup = parameterGroup;
+    }
+
+    public int getAvlId() {
+        return avlId;
     }
 
     @Override

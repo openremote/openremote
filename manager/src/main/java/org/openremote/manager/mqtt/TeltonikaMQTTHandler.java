@@ -2,6 +2,7 @@ package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import net.fortuna.ical4j.model.parameter.Display;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.keycloak.KeycloakSecurityContext;
@@ -13,12 +14,11 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.protocol.mqtt.Topic;
-import org.openremote.model.telematics.Message;
-import org.openremote.model.telematics.ParsingValueDescriptor;
-import org.openremote.model.telematics.Payload;
-import org.openremote.model.telematics.TrackerAsset;
+import org.openremote.model.telematics.*;
 import org.openremote.model.telematics.teltonika.TeltonikaMqttMessage;
-import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors;
+import org.openremote.model.telematics.teltonika.TeltonikaParameterRegistry;
+import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset;
+import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptor;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 public class TeltonikaMQTTHandler extends MQTTHandler {
@@ -37,6 +38,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
+    protected final TeltonikaParameterRegistry parameterRegistry = TeltonikaParameterRegistry.getInstance();
 
 
     @Override
@@ -122,7 +124,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     @SuppressWarnings("unchecked")
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         try {
-            Asset<? extends TrackerAsset> tracker = getCreateAssetFromTopic(topic);
+            TeltonikaTrackerAsset tracker = getCreateAssetFromTopic(topic);
 
             byte[] bytes = new byte[body.readableBytes()];
             body.readBytes(bytes);
@@ -141,22 +143,20 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             AttributeMap map = new AttributeMap();
             map.addAll(message.getPayloadByIndex(0).entrySet().stream().map(kvp -> {
+                DeviceParameter parameter = kvp.getKey();
                 Object value = kvp.getValue();
 
-                // Try to find a matching ParsingValueDescriptor to get the correct name/type
-                ParsingValueDescriptor<?> valueDescriptor = TeltonikaValueDescriptors.getByName("teltonika_"+kvp.getKey().getKey()).orElse(null);
-                if(valueDescriptor == null){
-                    getLogger().warning("No Teltonika Value Descriptor found for key "+kvp.getKey().getKey());
-                    valueDescriptor = new ParsingValueDescriptor<>(kvp.getKey().getKey(), String.class, buf -> {
-                        return value.toString();
-                    });
-                }
+                // Try to find a matching TeltonikaValueDescriptor to get the correct name/type
+                String fullName = TeltonikaValueDescriptor.VENDOR_PREFIX + "_" + parameter.getKey();
+                ParsingValueDescriptor<?> valueDescriptor = parameterRegistry.getById(parameter.getKey())
+                        .<ParsingValueDescriptor<?>>map(d -> d)
+                        .orElseGet(() -> new TeltonikaValueDescriptor<>(parameter.getKey(), String.class, skipped -> value.toString()));
 
-                // Try to find matching AttributeDescriptor in TrackerAsset
-                AttributeDescriptor<?> attributeDescriptor = TeltonikaValueDescriptors.findMatchingAttributeDescriptor(TrackerAsset.class, valueDescriptor).orElse(null);
+                // Try to find matching AttributeDescriptor in TeltonikaTrackerAsset
+                AttributeDescriptor<?> attributeDescriptor = parameterRegistry.findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, valueDescriptor).orElse(null);
                 if(attributeDescriptor == null){
-                    getLogger().warning("No Attribute Descriptor found for key "+kvp.getKey().getKey());
-                    attributeDescriptor = new AttributeDescriptor<>(kvp.getKey().getKey(), (ValueDescriptor<String>) valueDescriptor);
+                    getLogger().warning("No Attribute Descriptor found for key "+parameter.getKey());
+                    attributeDescriptor = new AttributeDescriptor<>(parameter.getKey(), (ValueDescriptor<String>) valueDescriptor);
                 }
 
                 // Convert JSON value to binary format to test the binary parsing implementation
@@ -176,23 +176,23 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                         nioBuffer.get(debugBytes);
                         nioBuffer.reset();
                         getLogger().fine(String.format("Converting Key=%s, InputValue=%s, ExpectedLength=%d, ActualBytes=%s",
-                            kvp.getKey().getKey(), value, valueDescriptor.getLength(),
+                            parameter.getKey(), value, valueDescriptor.getLength(),
                             java.util.HexFormat.of().formatHex(debugBytes)));
                     }
 
                     parsedValue = valueDescriptor.parse(binaryBuffer);
 
                     getLogger().fine(String.format("Parsed Key=%s: InputValue=%s → ParsedValue=%s (type=%s)",
-                        kvp.getKey().getKey(), value, parsedValue, parsedValue != null ? parsedValue.getClass().getSimpleName() : "null"));
+                        parameter.getKey(), value, parsedValue, parsedValue != null ? parsedValue.getClass().getSimpleName() : "null"));
 
                     binaryBuffer.release(); // Clean up
                 } catch (Exception e) {
-                    getLogger().severe("Failed to parse value for key " + kvp.getKey().getKey() + ": " + e.getMessage());
+                    getLogger().severe("Failed to parse value for key " + parameter.getKey() + ": " + e.getMessage());
                     getLogger().severe("Stack trace: " + ExceptionUtils.getStackTrace(e));
                     // Fallback to direct value usage
                     parsedValue = value;
-                    if (value != null && attributeDescriptor.getType() != null) {
-                        Class<?> expectedType = attributeDescriptor.getType().getType();
+                    if (value != null && valueDescriptor.getType() != null) {
+                        Class<?> expectedType = valueDescriptor.getType();
                         if (expectedType == Integer.class && value instanceof Number) {
                             parsedValue = ((Number) value).intValue();
                         } else if (expectedType == Long.class && value instanceof Number) {
@@ -219,7 +219,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         }
     }
 
-    private void sendAttributeEvents(Asset<? extends TrackerAsset> asset, Attribute<?>[] attrs) {
+    private void sendAttributeEvents(TeltonikaTrackerAsset asset, Attribute<?>[] attrs) {
         List<Attribute<?>> newAttributes = new ArrayList<>();
         List<Attribute<?>> oldAttributes = new ArrayList<>();
         Arrays.stream(attrs).forEach(attr -> {
@@ -239,20 +239,20 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     }
 
-    public Asset<? extends TrackerAsset> getCreateAssetFromTopic(Topic topic){
+    public TeltonikaTrackerAsset getCreateAssetFromTopic(Topic topic){
         String imei = getImeiFromTopic(topic);
-        Asset<? extends TrackerAsset> asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(imei), TrackerAsset.class);
+        TeltonikaTrackerAsset asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(imei), TeltonikaTrackerAsset.class);
         if(asset == null){
             getLogger().warning("No asset found for IMEI: "+imei);
-            asset = new TrackerAsset()
-                    .setRealm(topicRealm(topic))
-                    .setName("Teltonika Device " + imei)
-                    .setId(UniqueIdentifierGenerator.generateId(getImeiFromTopic(topic)))
-                    .setImei(imei)
-                    .setManufacturer("Teltonika")
-                    .setModel("")
-                    .setCodec("Codec JSON")
-                    .setProtocol("MQTT");
+            asset = new TeltonikaTrackerAsset();
+            asset.setRealm(topicRealm(topic));
+            asset.setName("Teltonika Device " + imei);
+            asset.setId(UniqueIdentifierGenerator.generateId(getImeiFromTopic(topic)));
+            asset.setImei(imei);
+            asset.setManufacturer("Teltonika");
+            asset.setModel("");
+            asset.setCodec("Codec JSON");
+            asset.setProtocol("MQTT");
 
             asset.addOrReplaceAttributes(
                     new Attribute<>(Asset.LOCATION, null),
