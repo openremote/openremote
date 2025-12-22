@@ -190,14 +190,18 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         LOG.finest("Scheduling linked attribute replay update");
 
         Optional<Schedule> schedule = agentLink.getSchedule();
+        TimeZone timezone = agentLink.getTimezone().orElse(TimeZone.getTimeZone("UTC"));
 
-        long now = timerService.getNow().toEpochMilli(); // UTC
-        long timeSinceOccurrenceStarted = schedule.map(s -> now - s.tryAdvanceActive(now))
+        long nowUTC = timerService.getNow().toEpochMilli(); // UTC
+        long tzOffset = timezone.getOffset(nowUTC);
+        long now = nowUTC + tzOffset;
+
+        long timeSinceOccurrenceStart = schedule.map(s -> now - s.tryAdvanceActive(now, tzOffset))
                 .orElse(now % DEFAULT_REPLAY_LOOP_DURATION); // Remainder since 00:00
 
         // Find datapoint with timestamp after the current occurrence
         SimulatorReplayDatapoint nextDatapoint = Arrays.stream(simulatorReplayDatapoints)
-            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp*1000 > timeSinceOccurrenceStarted)
+            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp*1000 > timeSinceOccurrenceStart)
             .findFirst()
             .orElse(simulatorReplayDatapoints[0]);
 
@@ -206,9 +210,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return null;
         }
 
-        OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+        OptionalLong nextRun = Schedule.getDelay(nextDatapoint.timestamp, timeSinceOccurrenceStart, schedule.orElse(null));
         if (nextRun.isEmpty() || nextRun.getAsLong() < 0 || (schedule.isPresent() && schedule.get().isAfterScheduleEnd(now))) {
-            LOG.warning("Replay schedule has ended for: " + attributeRef);
+            LOG.warning("Replay loop has ended for: " + attributeRef);
             predictedDatapointService.purgeValuesBefore(attributeRef.getId(), attributeRef.getName(), Instant.ofEpochMilli(now));
             return null;
         }
@@ -216,7 +220,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (attribute.getMeta().get(HAS_PREDICTED_DATA_POINTS).flatMap(AbstractNameValueHolder::getValue).orElse(false)) {
             PredictedDatapointWindow status = predictedDatapointWindowMap.get(attributeRef);
             List<ValueDatapoint<?>> predictedDatapoints =
-                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStarted, now);
+                    calculatePredictedDatapoints(simulatorReplayDatapoints, schedule, status, timeSinceOccurrenceStart, now, tzOffset);
             try {
                 updateLinkedAttributePredictedDataPoints(attributeRef, predictedDatapoints);
             } catch (Exception e) {
@@ -237,7 +241,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
             try {
                 updateLinkedAttribute(attributeRef, nextDatapoint.value);
-                Instant before = Instant.ofEpochMilli(now + nextRun.getAsLong());
+                Instant before = Instant.ofEpochMilli(now-tzOffset + nextRun.getAsLong());
                 predictedDatapointService.purgeValuesBefore(attributeRef.getId(), attributeRef.getName(), before);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
@@ -256,8 +260,9 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             SimulatorReplayDatapoint[] simulatorReplayDatapoints,
             Optional<Schedule> schedule,
             PredictedDatapointWindow status,
-            long timeSinceOccurrenceStarted,
-            long now
+            long timeSinceOccurrenceStart,
+            long now,
+            long tzOffset
     ) {
         List<ValueDatapoint<?>> predictedDatapoints = new ArrayList<>();
 
@@ -271,7 +276,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         if (status.equals(PredictedDatapointWindow.BOTH)) {
             for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
-                OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceOccurrenceStarted, schedule.orElse(null));
+                OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceOccurrenceStart, schedule.orElse(null));
                 if (delay.isEmpty()) {
                     return predictedDatapoints;
                 }
@@ -279,14 +284,15 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 if (timestamp > now) { // Delay can be negative
                     // If the predicted datapoint rolls past the current occurrence skip it
                     // This happens when the offset is less than the time since the occurrence started
-                    if (timeSinceOccurrenceStarted >= 0 && schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
+                    if (timeSinceOccurrenceStart >= 0 && schedule.isPresent() && schedule.get().isAfterUpcoming(timestamp)) {
                         continue;
                     }
                     // Return remaining predictions if single occurrence or recurrence end has been surpassed
                     if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
                         return predictedDatapoints;
                     }
-                    predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
+                    long UTCTimestamp = timestamp - tzOffset;
+                    predictedDatapoints.add(new SimulatorReplayDatapoint(UTCTimestamp, datapoint.value).toValueDatapoint());
                 }
             }
         }
@@ -303,8 +309,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         if (status.equals(PredictedDatapointWindow.BOTH) || status.equals(PredictedDatapointWindow.NEXT)) {
             for (SimulatorReplayDatapoint datapoint : simulatorReplayDatapoints) {
                 long timeSinceUpcoming = schedule
-                        .map(s -> now - s.getUpcoming().toInstant(ZoneOffset.UTC).toEpochMilli())
-                        .orElse(timeSinceOccurrenceStarted - DEFAULT_REPLAY_LOOP_DURATION);
+                        .map(s -> now - s.upcoming.toInstant(ZoneOffset.UTC).toEpochMilli())
+                        .orElse(timeSinceOccurrenceStart - DEFAULT_REPLAY_LOOP_DURATION);
 
                 OptionalLong delay = Schedule.getDelay(datapoint.timestamp, timeSinceUpcoming, schedule.orElse(null));
                 if (delay.isEmpty()) {
@@ -314,7 +320,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
                 if (schedule.isPresent() && schedule.get().isAfterScheduleEnd(timestamp)) {
                     return predictedDatapoints;
                 }
-                predictedDatapoints.add(new SimulatorReplayDatapoint(timestamp, datapoint.value).toValueDatapoint());
+                long UTCTimestamp = timestamp - tzOffset;
+                predictedDatapoints.add(new SimulatorReplayDatapoint(UTCTimestamp, datapoint.value).toValueDatapoint());
             }
         }
 
@@ -404,14 +411,6 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             return recurrence;
         }
 
-        protected LocalDateTime getCurrent() {
-            return current;
-        }
-
-        protected LocalDateTime getUpcoming() {
-            return upcoming;
-        }
-
         public Optional<Long> calculateDuration() {
             if (start == null || end == null) {
                 return Optional.empty();
@@ -429,8 +428,8 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param millisSinceEpoch Milliseconds since the epoch (1970-01-01T00:00:00Z)
          * @return The start time of the active occurrence in milliseconds. If not started, the start of the schedule is returned.
          */
-        public long tryAdvanceActive(long millisSinceEpoch) {
-            long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli();
+        public long tryAdvanceActive(long millisSinceEpoch, long tzOffset) {
+            long startInMillis = start.toInstant(ZoneOffset.UTC).toEpochMilli() + tzOffset;
 
             if (recurrence == null) {
                 current = start;
@@ -480,40 +479,23 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         /**
-         * Gets the time until the next occurrence starts.
+         * Calculates the remaining offset delay in milliseconds relative to the current time.
          *
-         * @param timeSinceOccurrenceStarted Milliseconds since the current occurrence started
-         * @return Milliseconds until the next occurrence starts.
+         * @param offset The offset from the current occurrence in seconds.
+         * @param timeSinceOccurrenceStart The time since the occurrence started in milliseconds.
+         * @return The remaining offset delay in milliseconds relative to the current time.
          * <p>
          * If the recurrence rule has ended returns {@code null} instead.
          */
-        public OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted) {
-            if (current == null || upcoming == null) {
-                return OptionalLong.empty();
-            }
-
-            long duration = upcoming.toEpochSecond(ZoneOffset.UTC) - current.toEpochSecond(ZoneOffset.UTC);
-            return OptionalLong.of(duration*1000 - timeSinceOccurrenceStarted);
-        }
-
-        /**
-         * Calculates the remaining occurrence delay in milliseconds relative to the current time.
-         *
-         * @param offset The offset from the current occurrence in seconds.
-         * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
-         * @return The remaining occurrence delay in milliseconds relative to the current time.
-         * <p>
-         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
-         */
-        public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStarted, Schedule schedule) {
+        public static OptionalLong getDelay(long offset, long timeSinceOccurrenceStart, Schedule schedule) {
             long offsetInMillis = offset * 1000;
-            if (offsetInMillis <= timeSinceOccurrenceStarted) {
-                return getTimeUntilNextOccurrence(timeSinceOccurrenceStarted, schedule)
+            if (offsetInMillis <= timeSinceOccurrenceStart) {
+                return getTimeUntilNextOccurrence(timeSinceOccurrenceStart, schedule)
                         .stream()
                         .map(n -> offsetInMillis + n)
                         .findFirst();
             }
-            return OptionalLong.of(offsetInMillis - timeSinceOccurrenceStarted);
+            return OptionalLong.of(offsetInMillis - timeSinceOccurrenceStart);
         }
 
         /**
@@ -521,19 +503,23 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * <p>
          * If no schedule has been defined uses the default 1-day schedule.
          *
-         * @param timeSinceOccurrenceStarted The time since the occurrence started in milliseconds.
+         * @param timeSinceOccurrenceStart The time since the occurrence started in milliseconds.
          * @return The delay in milliseconds until the next occurrence.
          * <p>
-         * If this is a one-time event, or if the recurrence rule has ended returns {@code null} instead.
+         * If the recurrence rule has ended returns {@code null} instead.
          */
-        public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStarted, Schedule schedule) {
+        public static OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStart, Schedule schedule) {
             if (schedule != null) {
                 if (schedule.recurrence != null) {
-                    return schedule.getTimeUntilNextOccurrence(timeSinceOccurrenceStarted);
+                    if (schedule.current == null || schedule.upcoming == null) {
+                        return OptionalLong.empty();
+                    }
+                    long duration = schedule.upcoming.toEpochSecond(ZoneOffset.UTC) - schedule.current.toEpochSecond(ZoneOffset.UTC);
+                    return OptionalLong.of(duration*1000 - timeSinceOccurrenceStart);
                 }
-                return OptionalLong.of(-timeSinceOccurrenceStarted);
+                return OptionalLong.of(-timeSinceOccurrenceStart);
             }
-            return OptionalLong.of(DEFAULT_REPLAY_LOOP_DURATION - timeSinceOccurrenceStarted);
+            return OptionalLong.of(DEFAULT_REPLAY_LOOP_DURATION - timeSinceOccurrenceStart);
         }
 
         public boolean hasCurrent() {

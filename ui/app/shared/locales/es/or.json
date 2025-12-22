@@ -502,6 +502,10 @@
             },
             "BooleanPredicate": {
               "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
             }
           }
         },
@@ -600,6 +604,9 @@
                 "description": ""
               },
               "replayData": {
+                "description": ""
+              },
+              "timezone": {
                 "description": ""
               }
             },
