@@ -77,10 +77,8 @@ Parameters:
   DiskSize:
     Description: Choose the amount of storage (in GB)
     Type: String
-    Default: 8GB
+    Default: 32GB
     AllowedValues:
-      - 8GB
-      - 16GB
       - 32GB
       - 48GB
       - 64GB
@@ -301,7 +299,7 @@ Resources:
               command: |
                 usermod -a -G docker ec2-user
                 chkconfig docker on
-                curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+                curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && chmod +x /usr/bin/docker-compose
               test: docker-compose --version >/dev/null 2>&1; (( $? != 0 ))
           services:
             systemd:
@@ -336,12 +334,12 @@ Resources:
 
                 # Set environment variables and start OpenRemote with the Docker Compose file.
                 OR_HOSTNAME="$HOST" \
-                OR_ADMIN_PASSWORD="$PASSWORD" \
+                OR_ADMIN_PASSWORD="$([ -n "$PASSWORD" ] && echo "$PASSWORD" || echo "secret")" \
                 OR_EMAIL_HOST="${SMTPHost}" \
                 OR_EMAIL_USER="${SMTPUser}" \
                 OR_EMAIL_PASSWORD="$SMTP_PASSWORD" \
                 OR_EMAIL_FROM="${SMTPFrom}" \
-                docker-compose -f /openremote/docker-compose.yml -p openremote up -d
+                docker-compose -f /openremote/docker-compose.yml -p or up -d
     
     Properties:
       ImageId: !Ref ImageId
