@@ -1,0 +1,16 @@
+volumes:
+  manager-data:
+  postgresql-data:
+  deployment-data:
+
+services:
+  volume_loader:
+    image: alpine
+    command: sh -c "cp -av /old-manager-data/. /manager-data/ && cp -av /old-postgres-data/. /postgres-data/ && cp -av /old-deployment-data/. /deployment-data/"
+    volumes:
+      - manager-data:/manager-data
+      - postgresql-data:/postgres-data
+      - deployment-data:/deployment-data
+      - /old-volume/var/lib/docker/volumes/or_manager-data/_data:/old-manager-data
+      - /old-volume/var/lib/docker/volumes/or_postgresql-data/_data:/old-postgres-data
+      - /old-volume/var/lib/docker/volumes/or_deployment-data/_data:/old-deployment-data
