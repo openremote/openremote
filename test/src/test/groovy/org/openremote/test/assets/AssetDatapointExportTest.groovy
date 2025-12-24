@@ -68,17 +68,14 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         )
 
         then: "the default CSV export should return a file"
-        def csvExport1Future = assetDatapointService.exportDatapoints(
+        def inputStream1 = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
-        assert csvExport1Future != null
-        def csvExport1 = csvExport1Future.get()
-        assert csvExport1 != null
 
         and: "the CSV export should contain all 5 data points"
-        def csvExport1Lines = csvExport1.readLines()
+        def csvExport1Lines = inputStream1.readLines()
         assert csvExport1Lines.size() == 6
         assert csvExport1Lines[1].endsWith("10.0")
         assert csvExport1Lines[2].endsWith("20.0")
@@ -89,18 +86,15 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         /* ------------------------- */
 
         when: "exporting with format CSV_CROSSTAB"
-        def csvExport2Future = assetDatapointService.exportDatapoints(
+        def inputStream2 = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 DatapointExportFormat.CSV_CROSSTAB
         )
-        assert csvExport2Future != null
-        def csvExport2 = csvExport2Future.get()
-        assert csvExport2 != null
 
         then: "the crosstab CSV export should contain all 5 data points in columnar format"
-        def csvExport2Lines = csvExport2.readLines()
+        def csvExport2Lines = inputStream2.readLines()
         assert csvExport2Lines.size() == 6 // header + 5 data rows
         assert csvExport2Lines[0].contains("timestamp")
         assert csvExport2Lines[0].contains(assetName + ": " + attributeName)
@@ -108,18 +102,15 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         /* ------------------------- */
 
         when: "exporting with format CSV_CROSSTAB_MINUTE"
-        def csvExport3Future = assetDatapointService.exportDatapoints(
+        def inputStream3 = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 DatapointExportFormat.CSV_CROSSTAB_MINUTE
         )
-        assert csvExport3Future != null
-        def csvExport3 = csvExport3Future.get()
-        assert csvExport3 != null
 
         then: "the time-bucketed CSV export should contain aggregated data with correct values"
-        def csvExport3Lines = csvExport3.readLines()
+        def csvExport3Lines = inputStream3.readLines()
         assert csvExport3Lines.size() >= 2 // header + at least 1 aggregated row
         assert csvExport3Lines[0].contains("timestamp")
         assert csvExport3Lines[0].contains(assetName + ": " + attributeName)
@@ -149,7 +140,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         assetDatapointService.datapointExportLimit = 4
 
         and: "we try to export the same amount of data points"
-        def csvExport4Future = assetDatapointService.exportDatapoints(
+        def inputStream4 = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()

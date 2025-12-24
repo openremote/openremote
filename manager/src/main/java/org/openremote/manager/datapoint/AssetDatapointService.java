@@ -1,11 +1,11 @@
 package org.openremote.manager.datapoint;
 
+import org.hibernate.Session;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.model.datapoint.DatapointExportFormat;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -21,11 +21,14 @@ import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
 
-import java.io.File;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
@@ -33,7 +36,6 @@ import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,6 +46,7 @@ import java.util.HashSet;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
@@ -60,6 +63,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
+    private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
     protected static final String EXPORT_STORAGE_DIR_NAME = "datapoint";
     protected int maxDatapointAgeDays;
     protected int datapointExportLimit;
@@ -253,9 +257,9 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * container so it can be accessed by this process.
      * Backwards compatible overload with default format.
      */
-    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
+    public PipedInputStream exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
-                                                  long toTimestamp) {
+                                                  long toTimestamp) throws IOException {
         return exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, DatapointExportFormat.CSV);
     }
 
@@ -263,15 +267,15 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
      * container so it can be accessed by this process.
      */
-    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
+    public PipedInputStream exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
                                                   long toTimestamp,
-                                                  DatapointExportFormat format) {
+                                                  DatapointExportFormat format) throws IOException {
         try {
             String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
             // Verify the query is 'legal' and can be executed
-            if(canQueryDatapoints(query, null, datapointExportLimit)) {
+            if (canQueryDatapoints(query, null, datapointExportLimit)) {
                 return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
             }
             throw new RuntimeException("Could not export datapoints.");
@@ -283,76 +287,90 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
     }
 
-    protected ScheduledFuture<File> doExportDatapoints(AttributeRef[] attributeRefs,
+    protected PipedInputStream doExportDatapoints(AttributeRef[] attributeRefs,
                                                        long fromTimestamp,
                                                        long toTimestamp,
-                                                       DatapointExportFormat format) {
+                                                       DatapointExportFormat format) throws IOException {
+        // Increase buffer size (default is only 1 KB)
+        PipedInputStream in = new PipedInputStream(1024 * 1024 * 4); // 4 MB
+        PipedOutputStream out = new PipedOutputStream(in);
 
-        return scheduledExecutorService.schedule(() -> {
-            String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            if (format == DatapointExportFormat.CSV_CROSSTAB) {
-                String attributeFilter = getAttributeFilter(attributeRefs);
-                StringBuilder sb = new StringBuilder(String.format(
-                        "copy (select * from crosstab( " +
-                                "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
-                                "from asset_datapoint ad " +
-                                "join asset a on ad.entity_id = a.id " +
-                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
-                                "order by ad.timestamp, header', " +
-                                "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
-                                "from asset_datapoint ad " +
-                                "join asset a on ad.entity_id = a.id " +
-                                "where %s " +
-                                "order by header') " +
-                                "as ct(timestamp timestamp, %s) " +
-                                ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
-                        fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
-                ));
-                persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            } else if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
-                String attributeFilter = getAttributeFilter(attributeRefs);
-                StringBuilder sb = new StringBuilder(String.format(
-                        "copy (select * from crosstab( " +
-                                "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
-                                "a.name || '' \\: '' || ad.attribute_name as header, " +
-                                "CASE " +
-                                "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
-                                "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
-                                "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
-                                "END as value " +
-                                "from asset_datapoint ad " +
-                                "join asset a on ad.entity_id = a.id " +
-                                "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
-                                "group by bucket_timestamp, header " +
-                                "order by bucket_timestamp, header', " +
-                                "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
-                                "from asset_datapoint ad " +
-                                "join asset a on ad.entity_id = a.id " +
-                                "where %s " +
-                                "order by header') " +
-                                "as ct(timestamp timestamp, %s) " +
-                                ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
-                        "1 minute", fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
-                ));
+        StringBuilder sb;
 
-                persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            }
-            else {
-                StringBuilder sb = new StringBuilder("copy (")
-                        .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
-                        .append(") to '/storage/")
-                        .append(EXPORT_STORAGE_DIR_NAME)
-                        .append("/")
-                        .append(fileName)
-                        .append("' delimiter ',' CSV HEADER;");
-                persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-            }
+        final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
 
+        if (format == DatapointExportFormat.CSV_CROSSTAB) {
+            String attributeFilter = getAttributeFilter(attributeRefs);
+            sb = new StringBuilder(String.format(
+                    "copy (select * from crosstab( " +
+                            "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
+                            "from asset_datapoint ad " +
+                            "join asset a on ad.entity_id = a.id " +
+                            "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
+                            "order by ad.timestamp, header', " +
+                            "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
+                            "from asset_datapoint ad " +
+                            "join asset a on ad.entity_id = a.id " +
+                            "where %s " +
+                            "order by header') " +
+                            "as ct(timestamp timestamp, %s) " +
+                            TO_STDOUT_WITH_CSV_FORMAT,
+                    fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
+            ));
+        } else if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+            String attributeFilter = getAttributeFilter(attributeRefs);
+            sb = new StringBuilder(String.format(
+                    "copy (select * from crosstab( " +
+                            "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
+                            "a.name || '' \\: '' || ad.attribute_name as header, " +
+                            "CASE " +
+                            "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
+                            "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
+                            "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
+                            "END as value " +
+                            "from asset_datapoint ad " +
+                            "join asset a on ad.entity_id = a.id " +
+                            "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
+                            "group by bucket_timestamp, header " +
+                            "order by bucket_timestamp, header', " +
+                            "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
+                            "from asset_datapoint ad " +
+                            "join asset a on ad.entity_id = a.id " +
+                            "where %s " +
+                            "order by header') " +
+                            "as ct(timestamp timestamp, %s) " +
+                            TO_STDOUT_WITH_CSV_FORMAT,
+                    "1 minute", fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
+            ));
+        } else {
+            sb = new StringBuilder("copy (")
+                    .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
+                    .append(TO_STDOUT_WITH_CSV_FORMAT);
+        }
 
+        scheduledExecutorService.schedule(() -> persistenceService.doTransaction(em -> {
+            Session session = em.unwrap(Session.class);
+            session.doWork(connection -> {
+                PGConnection pgConnection = connection.unwrap(PGConnection.class);
+                CopyManager copyManager = pgConnection.getCopyAPI();
+                try {
+                    copyManager.copyOut(sb.toString(), out);
+                    out.flush();
+                    out.close();
+                } catch (IOException e) {
+                    // Either a database connection- or output stream failure
+                    DATA_EXPORT_LOG.log(Level.SEVERE, "Datapoint export failed", e);
+                    try {
+                        out.close();
+                        in.close();
+                    } catch (IOException ignored) {
+                        DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to close piped input stream", e);
+                    }
+                }
+            });
+        }), 0, TimeUnit.MILLISECONDS);
 
-            // The same path must resolve in both the postgresql container and the manager container
-            return exportPath.resolve(fileName).toFile();
-        }, 0, TimeUnit.MILLISECONDS);
+        return in;
     }
 
     /**
