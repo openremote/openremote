@@ -311,8 +311,8 @@ Resources:
           commands:
             01_openremote_installation:
               command: |
-                wget https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -P /openremote
-              test: ls /openremote/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
+                curl -L https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -o /home/ec2-user/docker-compose.yml
+              test: ls /home/ec2-user/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
 
         start_openremote:
           commands:
@@ -320,27 +320,37 @@ Resources:
               command: !Sub |
                 
                 # If hostname is not provided, use the IPv4 address of the EC2 instance, otherwise use the hostname.
-                [ -z "${Host}" ] && HOST=$(curl v4.ident.me 2>/dev/null) || HOST="${Host}"
-
+                export OR_HOSTNAME=$( [ -z ${Host} ] && curl -s v4.ident.me || echo ${Host} )
+                
                 # Avoid parameter expansion if the password contains `$`
-                PASSWORD=$(cat << 'EOF'
+                if [ -n "${Password}" ]; then
+                  export OR_ADMIN_PASSWORD=$(cat << 'EOF'
                 ${Password}
                 EOF
                 )
-                SMTP_PASSWORD=$(cat << 'EOF'
+                fi
+                
+                if [ -n "${SMTPPassword}" ]; then
+                  export OR_EMAIL_PASSWORD=$(cat << 'EOF'
                 ${SMTPPassword}
                 EOF
                 )
+                fi
+                
+                # Configure SMTP credentials if provided.
+                if [ -n "${SMTPHost}" ]; then
+                  export OR_EMAIL_HOST=${SMTPHost}
+                fi
+                if [ -n "${SMTPUser}" ]; then
+                  export OR_EMAIL_USER=${SMTPUser}
+                fi
+                if [ -n "${SMTPFrom}" ]; then
+                  export OR_EMAIL_FROM=${SMTPFrom}
+                fi
+              
+                # Start OpenRemote using the Docker Compose file.
+                docker-compose -f /home/ec2-user/docker-compose.yml -p or up -d
 
-                # Set environment variables and start OpenRemote with the Docker Compose file.
-                OR_HOSTNAME="$HOST" \
-                OR_ADMIN_PASSWORD="$([ -n "$PASSWORD" ] && echo "$PASSWORD" || echo "secret")" \
-                OR_EMAIL_HOST="${SMTPHost}" \
-                OR_EMAIL_USER="${SMTPUser}" \
-                OR_EMAIL_PASSWORD="$SMTP_PASSWORD" \
-                OR_EMAIL_FROM="${SMTPFrom}" \
-                docker-compose -f /openremote/docker-compose.yml -p or up -d
-    
     Properties:
       ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
@@ -352,7 +362,7 @@ Resources:
       Ipv6AddressCount: 1
       Tags:
       - Key: Name
-        Value: !Sub ${AWS::StackName}-AWS Marketplace
+        Value: OpenRemote
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
@@ -369,7 +379,7 @@ Resources:
             # Execute OpenRemote configset.
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --configsets openremote --region ${AWS::Region} --resource EC2Instance
 
-            # Wait for signal that OpenRemote is succesfully installed.
+            # Wait for signal that OpenRemote is successfully installed.
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --region ${AWS::Region} --resource EC2Instance
   
   IPAddress:
