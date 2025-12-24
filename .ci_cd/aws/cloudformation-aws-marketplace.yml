@@ -320,32 +320,32 @@ Resources:
               command: !Sub |
                 
                 # If hostname is not provided, use the IPv4 address of the EC2 instance, otherwise use the hostname.
-                export OR_HOSTNAME=$( [ -z ${Host} ] && curl -s v4.ident.me || echo ${Host} )
+                export OR_HOSTNAME=$( [ -z "${Host}" ] && curl -s v4.ident.me || echo "${Host}" )
                 
                 # Avoid parameter expansion if the password contains `$`
                 if [ -n "${Password}" ]; then
                   export OR_ADMIN_PASSWORD=$(cat << 'EOF'
-                ${Password}
+                "${Password}"
                 EOF
                 )
                 fi
                 
                 if [ -n "${SMTPPassword}" ]; then
                   export OR_EMAIL_PASSWORD=$(cat << 'EOF'
-                ${SMTPPassword}
+                "${SMTPPassword}"
                 EOF
                 )
                 fi
                 
                 # Configure SMTP credentials if provided.
                 if [ -n "${SMTPHost}" ]; then
-                  export OR_EMAIL_HOST=${SMTPHost}
+                  export OR_EMAIL_HOST="${SMTPHost}"
                 fi
                 if [ -n "${SMTPUser}" ]; then
-                  export OR_EMAIL_USER=${SMTPUser}
+                  export OR_EMAIL_USER="${SMTPUser}"
                 fi
                 if [ -n "${SMTPFrom}" ]; then
-                  export OR_EMAIL_FROM=${SMTPFrom}
+                  export OR_EMAIL_FROM="${SMTPFrom}"
                 fi
               
                 # Start OpenRemote using the Docker Compose file.
