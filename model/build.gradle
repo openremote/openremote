@@ -1,3 +1,7 @@
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+
 apply plugin: "java-library"
 apply plugin: "maven-publish"
 apply plugin: "signing"
@@ -49,6 +53,49 @@ dependencies {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     }
+}
+
+def libraryCategory = objects.named(Category, Category.LIBRARY)
+def javaApiUsage = objects.named(Usage, Usage.JAVA_API)
+def javaRuntimeUsage = objects.named(Usage, Usage.JAVA_RUNTIME)
+def jarElements = objects.named(LibraryElements, LibraryElements.JAR)
+
+configurations {
+    processTranslationsCompileClasspath {
+        description = "Classpath for ui/app/shared:processTranslations when compiling model sources"
+        canBeResolved = false
+        canBeConsumed = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, libraryCategory)
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, jarElements)
+            attribute(Usage.USAGE_ATTRIBUTE, javaApiUsage)
+        }
+    }
+
+    processTranslationsAnnotationProcessorClasspath {
+        description = "Annotation processor path for ui/app/shared:processTranslations"
+        canBeResolved = false
+        canBeConsumed = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, libraryCategory)
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, jarElements)
+            attribute(Usage.USAGE_ATTRIBUTE, javaRuntimeUsage)
+        }
+    }
+}
+
+configurations.processTranslationsCompileClasspath.extendsFrom(
+        configurations.api,
+        configurations.implementation,
+        configurations.compileOnly
+)
+configurations.processTranslationsAnnotationProcessorClasspath.extendsFrom(
+        configurations.annotationProcessor
+)
+
+artifacts {
+    processTranslationsCompileClasspath jar
+    processTranslationsAnnotationProcessorClasspath jar
 }
 
 tasks.withType(Test) {

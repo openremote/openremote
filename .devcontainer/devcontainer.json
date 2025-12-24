@@ -1,0 +1,42 @@
+{
+  "name": "OpenRemote DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bullseye",
+  "workspaceFolder": "/workspaces/openremote",
+  "remoteUser": "root",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+        "version": "21",
+        "jdkDistro": "open",
+        "installGradle": "true",
+        "installGroovy": "true"
+    },
+  },
+  "runArgs": [
+    "-v", "${localEnv:HOME}/.gradle:/root/.gradle"
+  ],
+  "onCreateCommand": "echo 'devcontainer ready'",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode-remote.remote-containers"
+      ],
+      "settings": {
+        "telemetry.enableTelemetry": false
+      }
+    }
+  },
+  "remoteEnv": {
+    "GRADLE_USER_HOME": "/root/.gradle"
+  }
+}
