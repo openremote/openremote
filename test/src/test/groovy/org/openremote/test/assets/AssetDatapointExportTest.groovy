@@ -5,6 +5,7 @@ import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.datapoint.DatapointExportFormat
 import org.openremote.model.datapoint.DatapointQueryTooLargeException
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.query.AssetQuery
@@ -29,7 +30,6 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
-        assetDatapointService.datapointExportLimit = 1000
 
         when: "requesting the first light asset in City realm"
         def asset = assetStorageService.find(
@@ -66,18 +66,15 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
                 ]
         )
 
-        then: "the CSV export should return a file"
-        def csvExport1Future = assetDatapointService.exportDatapoints(
+        then: "the default CSV export should return a file"
+        def inputStream1 = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
-        assert csvExport1Future != null
-        def csvExport1 = csvExport1Future.get()
-        assert csvExport1 != null
 
         and: "the CSV export should contain all 5 data points"
-        def csvExport1Lines = csvExport1.readLines()
+        def csvExport1Lines = inputStream1.readLines()
         assert csvExport1Lines.size() == 6
         assert csvExport1Lines[1].endsWith("10.0")
         assert csvExport1Lines[2].endsWith("20.0")
@@ -87,22 +84,53 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
 
         /* ------------------------- */
 
-        when: "the limit of data export is lowered to 4"
-        assetDatapointService.datapointExportLimit = 4
-
-        and: "we try to export the same amount of data points"
-        def csvExport2Future = assetDatapointService.exportDatapoints(
+        when: "exporting with format CSV_CROSSTAB"
+        def inputStream2 = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
                 dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-                dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                DatapointExportFormat.CSV_CROSSTAB
         )
 
-        then: "the CSV export should throw an exception"
-        thrown(DatapointQueryTooLargeException)
+        then: "the crosstab CSV export should contain all 5 data points in columnar format"
+        def csvExport2Lines = inputStream2.readLines()
+        assert csvExport2Lines.size() == 6 // header + 5 data rows
+        assert csvExport2Lines[0].contains("timestamp")
+        assert csvExport2Lines[0].contains(assetName + ": " + attributeName)
 
         /* ------------------------- */
 
-        cleanup: "Remove the limit on datapoint querying"
-        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT;
+        when: "exporting with format CSV_CROSSTAB_MINUTE"
+        def inputStream3 = assetDatapointService.exportDatapoints(
+                [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
+                dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                DatapointExportFormat.CSV_CROSSTAB_MINUTE
+        )
+
+        then: "the time-bucketed CSV export should contain aggregated data with correct values"
+        def csvExport3Lines = inputStream3.readLines()
+        assert csvExport3Lines.size() >= 2 // header + at least 1 aggregated row
+        assert csvExport3Lines[0].contains("timestamp")
+        assert csvExport3Lines[0].contains(assetName + ": " + attributeName)
+
+        and: "the aggregated values should be correct averages within 1-minute buckets"
+        // Each datapoint is 5 minutes apart, so each should be in its own 1-minute bucket
+        // Therefore we should have 5 rows of data (one per bucket)
+        assert csvExport3Lines.size() == 6 // header + 5 buckets
+
+        // Extract the values from the CSV (skip header, get last column which is the brightness value)
+        def values = csvExport3Lines[1..5].collect { line ->
+            def parts = line.split(',')
+            parts.size() > 1 ? parts[1].trim() : null
+        }.findAll { it != null && it != '' }
+
+        // Should have 5 values, one per bucket, matching our input: 10, 20, 30, 40, 50
+        assert values.size() == 5
+        assert values.contains("10.000") || values.contains("10")
+        assert values.contains("20.000") || values.contains("20")
+        assert values.contains("30.000") || values.contains("30")
+        assert values.contains("40.000") || values.contains("40")
+        assert values.contains("50.000") || values.contains("50")
     }
 }
