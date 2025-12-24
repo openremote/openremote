@@ -22,6 +22,7 @@ package org.openremote.manager.gateway;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.system.VersionInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
@@ -83,7 +84,8 @@ public class GatewayConnector {
     String expectedSyncResponseName;
     protected boolean tunnellingSupported;
     protected final Map<Class<? extends SharedEvent>, Consumer<SharedEvent>> eventConsumerMap = new HashMap<>();
-
+    protected boolean tunnelTimeoutManagementSupported;
+    protected String gatewayVersion;
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
     static {
@@ -257,6 +259,16 @@ public class GatewayConnector {
                     }
                 }
                 tunnellingSupported = response != null && response.isTunnelingSupported();
+                this.gatewayVersion = response != null ? response.getVersion() : null;
+                this.tunnelTimeoutManagementSupported = response != null ? response.isTunnelTimeoutManagementSupported() : false;
+
+                String currentGatewayApiVersion = VersionInfo.getGatewayApiVersion();
+                if(this.getGatewayVersion() != null && VersionInfo.isVersionLess(this.getGatewayVersion(), currentGatewayApiVersion)) {
+                    LOG.warning("Gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                }
+                if (this.getGatewayVersion() != null && VersionInfo.isVersionGreater(this.getGatewayVersion(), currentGatewayApiVersion)){
+                    LOG.warning("Central instance's gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
                 LOG.finest("Setting connection status=" + ConnectionStatus.CONNECTED + ": " + getGatewayIdString());
@@ -663,6 +675,14 @@ public class GatewayConnector {
         return GatewayConnector.class.getSimpleName() + "{" +
             "gatewayId='" + gatewayId + '\'' +
             '}';
+    }
+
+    public String getGatewayVersion() {
+        return gatewayVersion;
+    }
+
+    public boolean isTunnelTimeoutManagementSupported() {
+        return tunnelTimeoutManagementSupported;
     }
 
     protected String getGatewayIdString() {
