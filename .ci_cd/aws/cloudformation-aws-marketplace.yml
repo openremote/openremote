@@ -325,14 +325,14 @@ Resources:
                 # Avoid parameter expansion if the password contains `$`
                 if [ -n "${Password}" ]; then
                   export OR_ADMIN_PASSWORD=$(cat << 'EOF'
-                "${Password}"
+                ${Password}
                 EOF
                 )
                 fi
                 
                 if [ -n "${SMTPPassword}" ]; then
                   export OR_EMAIL_PASSWORD=$(cat << 'EOF'
-                "${SMTPPassword}"
+                ${SMTPPassword}
                 EOF
                 )
                 fi
