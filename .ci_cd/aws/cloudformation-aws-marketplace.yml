@@ -15,7 +15,6 @@ Metadata:
         Parameters:
           - Host
           - InstanceType
-          - ImageId
           - DiskSize
           - Keypair
           - ElasticIP
@@ -36,8 +35,6 @@ Metadata:
         default: Would you like to use your own domain name? If so, please enter it here.
       InstanceType:
         default: Which instance would you like to use?
-      ImageId:
-       default: Which AMI (Amazon Machine Image) do you want to use for this instance?
       DiskSize:
         default: How much storage would you like to allocate to the virtual machine?
       Keypair: 
@@ -71,9 +68,6 @@ Parameters:
       - t4g.xlarge
       - m6g.large
       - m6g.xlarge
-  ImageId:
-    Description: Amazon AMI ID that will be used for this instance.
-    Type: AWS::EC2::Image::Id
   DiskSize:
     Description: Choose the amount of storage (in GB)
     Type: String
@@ -299,7 +293,7 @@ Resources:
               command: |
                 usermod -a -G docker ec2-user
                 chkconfig docker on
-                curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && chmod +x /usr/bin/docker-compose
+                curl -sL https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && chmod +x /usr/bin/docker-compose
               test: docker-compose --version >/dev/null 2>&1; (( $? != 0 ))
           services:
             systemd:
@@ -311,7 +305,7 @@ Resources:
           commands:
             01_openremote_installation:
               command: |
-                curl -L https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -o /home/ec2-user/docker-compose.yml
+                curl -sL https://raw.githubusercontent.com/openremote/openremote/refs/heads/master/docker-compose.yml -o /home/ec2-user/docker-compose.yml
               test: ls /home/ec2-user/docker-compose.yml >/dev/null 2>&1; (( $? != 0 ))
 
         start_openremote:
@@ -352,7 +346,7 @@ Resources:
                 docker-compose -f /home/ec2-user/docker-compose.yml -p or up -d
 
     Properties:
-      ImageId: !Ref ImageId
+      ImageId: 'ami-00e63950076a66519'
       InstanceType: !Ref InstanceType
       KeyName: !Ref Keypair
       SubnetId: !Ref PublicSubnet
