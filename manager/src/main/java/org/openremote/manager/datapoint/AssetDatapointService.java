@@ -5,7 +5,6 @@ import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.model.datapoint.DatapointExportFormat;
-import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -29,8 +28,6 @@ import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Date;
 import java.time.*;
 import java.util.Arrays;
@@ -60,14 +57,10 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
-    public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
-    public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
     protected static final String EXPORT_STORAGE_DIR_NAME = "datapoint";
     protected int maxDatapointAgeDays;
-    protected int datapointExportLimit;
-    protected Path exportPath;
 
     @Override
     public void init(Container container) throws Exception {
@@ -88,22 +81,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
         } else {
             LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
-        }
-
-        datapointExportLimit = getInteger(container.getConfig(), OR_DATA_POINTS_EXPORT_LIMIT, OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT);
-
-        if (datapointExportLimit <= 0) {
-            LOG.warning(OR_DATA_POINTS_EXPORT_LIMIT + " value is not a valid value so the export data points won't be limited");
-        } else {
-            LOG.log(Level.INFO, "Data point export limit = " + datapointExportLimit);
-        }
-
-        Path storageDir = persistenceService.getStorageDir();
-        exportPath = storageDir.resolve(EXPORT_STORAGE_DIR_NAME);
-        // Ensure export dir exists and is writable
-        Files.createDirectories(exportPath);
-        if (!exportPath.toFile().setWritable(true, false)) {
-            LOG.log(Level.WARNING, "Failed to set export dir write flag; data export may not work");
         }
     }
 
@@ -209,34 +186,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to run data points purge", e);
         }
-
-        // Purge old exports
-        try {
-            long oneDayMillis = 24*60*60*1000;
-            File[] obsoleteExports = exportPath.toFile()
-                .listFiles(file ->
-                    file.isFile()
-                        && file.getName().endsWith("csv")
-                        && file.lastModified() < timerService.getCurrentTimeMillis() - oneDayMillis
-                );
-
-            if (obsoleteExports != null) {
-                Arrays.stream(obsoleteExports)
-                    .forEach(file -> {
-                        boolean success = false;
-                        try {
-                            success = file.delete();
-                        } catch (SecurityException e) {
-                            LOG.log(Level.WARNING, "Cannot access the export file to delete it", e);
-                        }
-                        if (!success) {
-                            LOG.log(Level.WARNING, "Failed to delete obsolete export '" + file.getName() + "'");
-                        }
-                    });
-            }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to purge old exports", e);
-        }
     }
 
     protected String buildWhereClause(List<Pair<String, Attribute<?>>> attributes, boolean negate) {
@@ -271,20 +220,13 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                                                   long fromTimestamp,
                                                   long toTimestamp,
                                                   DatapointExportFormat format) throws IOException {
-        try {
-            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
+        String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
-            // Verify the query is 'legal' and can be executed
-            if (canQueryDatapoints(query, null, datapointExportLimit)) {
-                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
-            }
-            throw new RuntimeException("Could not export datapoints.");
-
-        } catch (DatapointQueryTooLargeException dqex) {
-            String msg = "Could not export data points. It exceeds the data limit of " + datapointExportLimit + " data points.";
-            getLogger().log(Level.WARNING, msg, dqex);
-            throw dqex;
+        // Verify the query is 'legal' and can be executed
+        if (canQueryDatapoints(query, null, 0)) {
+            return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
         }
+        throw new RuntimeException("Could not export datapoints.");
     }
 
     protected PipedInputStream doExportDatapoints(AttributeRef[] attributeRefs,
