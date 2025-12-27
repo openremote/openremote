@@ -235,6 +235,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final String OR_STORAGE_DIR = "OR_STORAGE_DIR";
     public static final String OR_STORAGE_DIR_DEFAULT = "tmp";
     public static final String OR_DB_FLYWAY_OUT_OF_ORDER = "OR_DB_FLYWAY_OUT_OF_ORDER";
+    public static final String OR_DB_COLUMNSTORE_POLICY_INTERVAL = "OR_DB_COLUMNSTORE_POLICY_INTERVAL";
+    public static final String OR_DB_COLUMNSTORE_POLICY_INTERVAL_DEFAULT = "'3 months'";
     public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
@@ -247,6 +249,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     protected Set<String> defaultSchemaLocations = new HashSet<>();
     protected Set<String> schemas = new HashSet<>();
     protected Path storageDir;
+    protected String columnStorePolicyInterval;
 
     public static Predicate isPersistenceEventForEntityType(Class<?> type) {
         return exchange -> {
@@ -326,6 +329,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             LOG.log(Level.SEVERE, msg);
             throw new FileSystemNotFoundException(msg);
         }
+
+        columnStorePolicyInterval = getString(container.getConfig(), OR_DB_COLUMNSTORE_POLICY_INTERVAL, OR_DB_COLUMNSTORE_POLICY_INTERVAL_DEFAULT);
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema, dbName);
@@ -541,7 +546,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             .initSql(initSql.toString())
             .baselineOnMigrate(true)
             .outOfOrder(outOfOrder)
-            .placeholders(Map.of("schemaName", schemaName))
+            .placeholders(Map.of("schemaName", schemaName, "columnStorePolicyInterval", columnStorePolicyInterval))
             .load();
 
         MigrationInfo currentMigration;
