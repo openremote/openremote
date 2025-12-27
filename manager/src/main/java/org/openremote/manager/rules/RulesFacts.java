@@ -25,9 +25,11 @@ import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.rules.flow.NodeExecutionResult;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.rules.Assets;
@@ -38,6 +40,7 @@ import org.openremote.model.util.TimeUtil;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -71,6 +74,7 @@ public class RulesFacts extends Facts implements RuleListener {
     protected int triggerCount;
     protected boolean trackLocationRules;
     protected Map<String, Set<GeofencePredicate>> assetStateLocationPredicateMap = null;
+    protected Map<AttributeRef, AttributeInfo> attributeInfoCache = new ConcurrentHashMap<>();
 
     public RulesFacts(TimerService timerService, AssetStorageService assetStorageService, Assets assetsFacade, Object loggingContext, Logger logger) {
         this.timerService = timerService;
@@ -191,6 +195,7 @@ public class RulesFacts extends Facts implements RuleListener {
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Fact change (UPDATE): " + assetState + " - on: " + loggingContext);
         }
+        attributeInfoCache.remove(assetState.getRef());
         getAssetStates().remove(assetState);
         getAssetStates().add(assetState);
 
@@ -201,6 +206,7 @@ public class RulesFacts extends Facts implements RuleListener {
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Fact change (DELETE): " + assetState + " - on: " + loggingContext);
         }
+        attributeInfoCache.remove(assetState.getRef());
         getAssetStates().remove(assetState);
 
         return this;
@@ -400,6 +406,23 @@ public class RulesFacts extends Facts implements RuleListener {
         LOG.finest("Dispatching " + attributeEvent + " - on: " + loggingContext);
         assetsFacade.dispatch(attributeEvent);
         return this;
+    }
+
+    /**
+     * Tries getting matched asset state from temporary cache
+     */
+    public Optional<AttributeInfo> findCachedAttribute(AttributeRef attributeRef) {
+        return Optional.ofNullable(attributeInfoCache.get(attributeRef));
+    }
+
+    /**
+     * Saves matched asset state from execution result to the cache, if presents
+     */
+    public void cacheNodeExecutionResult(NodeExecutionResult result) {
+        if (result.getAttributeInfo() == null) {
+            return;
+        }
+        attributeInfoCache.put(result.getAttributeRef(), result.getAttributeInfo());
     }
 
     public void removeExpiredTemporaryFacts() {
