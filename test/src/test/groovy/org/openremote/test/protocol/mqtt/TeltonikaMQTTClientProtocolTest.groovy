@@ -38,6 +38,7 @@ import org.openremote.manager.mqtt.TeltonikaMQTTHandler
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.telematics.TrackerAsset
+import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset
 import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
@@ -186,9 +187,9 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
 
         then: "a message should be received on the receive topic"
         conditions.eventually {
-            TrackerAsset asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(imei), TrackerAsset.class);
+            TeltonikaTrackerAsset asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(imei), TeltonikaTrackerAsset.class);
 
-            assert asset.getAttributes().get(TrackerAsset.BATTERY_VOLTAGE).get().getValue().get() == 23.456
+            assert asset.getAttributes().get(TeltonikaTrackerAsset.BATTERY_VOLTAGE).get().getValue().get() == 23.456
 
         }
 
@@ -331,12 +332,12 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record.timestamp
         }
-        record.getAttributes().get(TrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
-        record.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
-        Math.abs((Double) record.getAttributes().get(TrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.079) < 0.001
-        record.getAttributes().get(TrackerAsset.ACTIVE_GSM_OPERATOR).get().getValue().get() == 24602L
-        record.getAttributes().get(TrackerAsset.IBUTTON).get().getValue().get() == "0000000000000000"
-        record.getAttributes().get(TrackerAsset.SPEED).get().getValue().get() == 0
+        record.getAttributes().get(TeltonikaTrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.079) < 0.001
+        record.getAttributes().get(TeltonikaTrackerAsset.ACTIVE_GSM_OPERATOR).get().getValue().get() == 24602L
+        record.getAttributes().get(TeltonikaTrackerAsset.IBUTTON).get().getValue().get() == "0000000000000000"
+        record.getAttributes().get(TeltonikaTrackerAsset.SPEED).get().getValue().get() == 0
 
         and: "a TCP ack is sent"
         def ack = channel.readOutbound() as ByteBuf
@@ -369,10 +370,10 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record.timestamp
         }
-        record.getAttributes().get(TrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
-        record.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
-        Math.abs((Double) record.getAttributes().get(TrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.080) < 0.001
-        record.getAttributes().get(TrackerAsset.SPEED).get().getValue().get() == 0
+        record.getAttributes().get(TeltonikaTrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.080) < 0.001
+        record.getAttributes().get(TeltonikaTrackerAsset.SPEED).get().getValue().get() == 0
 
         and: "a TCP ack is sent"
         def ack = channel.readOutbound() as ByteBuf
@@ -404,7 +405,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record1.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record1.timestamp
         }
-        record1.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record1.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
 
         and: "the second record is correct"
         def record2 = records[1]
@@ -412,7 +413,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record2.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record2.timestamp
         }
-        record2.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        record2.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
 
         and: "a TCP ack is sent for 2 records"
         def ack = channel.readOutbound() as ByteBuf
@@ -446,9 +447,9 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record.timestamp
         }
-        record.getAttributes().get(TrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
-        record.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
-        Math.abs((Double) record.getAttributes().get(TrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.0) < 0.01
+        record.getAttributes().get(TeltonikaTrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.0) < 0.01
 
         and: "a UDP ack is sent"
         def ack = channel.readOutbound() as ByteBuf
@@ -486,11 +487,11 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record.timestamp
         }
-        record.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
-        record.getAttributes().get(TrackerAsset.AXIS_X).get().getValue().get() == 29
-        record.getAttributes().get(TrackerAsset.TOTAL_ODOMETER).get().getValue().get() == 22949000
-        record.getAttributes().get(TrackerAsset.ICCID_1).get().getValue().get() == "000000003544C87A"
-        record.getAttributes().get(TrackerAsset.ICCID_2).get().getValue().get() == "000000001DD7E06A"
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        record.getAttributes().get(TeltonikaTrackerAsset.AXIS_X).get().getValue().get() == 29
+        record.getAttributes().get(TeltonikaTrackerAsset.TOTAL_ODOMETER).get().getValue().get() == 22949000
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_1).get().getValue().get() == "000000003544C87A"
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_2).get().getValue().get() == "000000001DD7E06A"
 
         and: "a TCP ack is sent"
         def ack = channel.readOutbound() as ByteBuf
@@ -524,11 +525,11 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record.timestamp
         }
-        record.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
-        record.getAttributes().get(TrackerAsset.AXIS_X).get().getValue().get() == 157
-        record.getAttributes().get(TrackerAsset.TOTAL_ODOMETER).get().getValue().get() == 22949000
-        record.getAttributes().get(TrackerAsset.ICCID_1).get().getValue().get() == "000000003544C87A"
-        record.getAttributes().get(TrackerAsset.ICCID_2).get().getValue().get() == "000000001DD7E06A"
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        record.getAttributes().get(TeltonikaTrackerAsset.AXIS_X).get().getValue().get() == 157
+        record.getAttributes().get(TeltonikaTrackerAsset.TOTAL_ODOMETER).get().getValue().get() == 22949000
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_1).get().getValue().get() == "000000003544C87A"
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_2).get().getValue().get() == "000000001DD7E06A"
 
         and: "a UDP ack is sent"
         def ack = channel.readOutbound() as ByteBuf
@@ -565,11 +566,11 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record1.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record1.timestamp
         }
-        record1.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record1.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
         record1.getAttributes().get("teltonika_3").get().getValue().get() == 0
         // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
-        !record1.getAttributes().containsKey(TrackerAsset.ICCID_1.getName())
-        Math.abs((Double) record1.getAttributes().get(TrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
+        !record1.getAttributes().containsKey(TeltonikaTrackerAsset.ICCID_1.getName())
+        Math.abs((Double) record1.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
 
         and: "the second record is correct"
         def record2 = records[1]
@@ -577,11 +578,11 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record2.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record2.timestamp
         }
-        record2.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record2.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
         record2.getAttributes().get("teltonika_3").get().getValue().get() == 0
         // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
         !record2.getAttributes().containsKey(TeltonikaValueDescriptors.iccid1)
-        Math.abs((Double) record2.getAttributes().get(TrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
+        Math.abs((Double) record2.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
 
         and: "a TCP ack is sent for 2 records"
         def ack = channel.readOutbound() as ByteBuf
@@ -616,11 +617,11 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         record.attributes.values().each { attr ->
             assert attr.getTimestamp().get() == record.timestamp
         }
-        record.getAttributes().get(TrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
         record.getAttributes().get("teltonika_3").get().getValue().get() == 0
         record.getAttributes().get("teltonika_180").get().getValue().get() == 0
-        record.getAttributes().get(TrackerAsset.IGNITION).get().getValue().get() == false
-        Math.abs((Double) record.getAttributes().get(TrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 4.378) < 0.001
+        record.getAttributes().get(TeltonikaTrackerAsset.IGNITION).get().getValue().get() == false
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 4.378) < 0.001
 
         and: "a UDP ack is sent"
         def ack = channel.readOutbound() as ByteBuf
