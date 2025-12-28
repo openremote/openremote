@@ -78,6 +78,7 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
@@ -105,7 +106,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
-
     public static final String ANONYMOUS_USERNAME = "anonymous";
     // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
     public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
@@ -201,16 +201,21 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
 
         // Add mTLS acceptor if enabled
-        if (TextUtil.isNullOrEmpty(this.keystorePath)
-                || TextUtil.isNullOrEmpty(this.truststorePath)
-                || TextUtil.isNullOrEmpty(this.keystorePassword)
-                || TextUtil.isNullOrEmpty(this.truststorePassword)) {
-            LOG.log(INFO, "MQTT mTLS acceptor not being started, as environment variables not configured");
-            return;
-        }else{
-            if(!mtlsDisabled){
-                LOG.log(INFO, "MQTT mTLS acceptor being started on port " + this.mtlsPort);
+        if (!mtlsDisabled) {
+            // Check if we have explicit keystore configuration OR certificates available in /storage/certs
+            Path certsDirPath = Paths.get("/storage/certs");
+            boolean hasExplicitKeystores = !TextUtil.isNullOrEmpty(this.keystorePath)
+                && !TextUtil.isNullOrEmpty(this.truststorePath)
+                && !TextUtil.isNullOrEmpty(this.keystorePassword)
+                && !TextUtil.isNullOrEmpty(this.truststorePassword);
+            boolean hasCertsDir = Files.exists(certsDirPath) && Files.isDirectory(certsDirPath);
+
+            if (hasExplicitKeystores || hasCertsDir) {
+                LOG.log(INFO, "MQTT mTLS acceptor being started on port " + this.mtlsPort +
+                    (hasCertsDir ? " (using certificates from /storage/certs)" : " (using configured keystore paths)"));
                 addMTLSAcceptor(container);
+            } else {
+                LOG.log(INFO, "MQTT mTLS acceptor not being started: no keystore paths configured and /storage/certs does not exist");
             }
         }
 
@@ -308,6 +313,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             }
         });
 
+        // Set container reference in OpenRemoteSSLContextFactory for mTLS
+        OpenRemoteSSLContextFactory.setContainer(container);
+
         server.setSecurityManager(securityManager);
         server.start();
         LOG.log(DEBUG, "Started MQTT broker");
@@ -341,6 +349,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Don't use producer flow control
         serverLocator = ActiveMQClient.createServerLocator("vm://0").setProducerWindowSize(-1);
         sessionFactory = serverLocator.createSessionFactory();
+
+
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {

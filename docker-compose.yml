@@ -9,6 +9,7 @@ volumes:
   proxy-data:
   manager-data:
   postgresql-data:
+  cert-data:
 
 services:
 
@@ -27,6 +28,7 @@ services:
                                              # intended to be IP of the interface of the private subnet of the EC2 VM
     volumes:
       - proxy-data:/deployment
+      - cert-data:/etc/haproxy/certs
     environment:
       LE_EMAIL: ${OR_EMAIL_ADMIN:-}
       DOMAINNAME: ${OR_HOSTNAME:-localhost}
@@ -59,7 +61,10 @@ services:
   manager:
 #    privileged: true
     restart: always
-    image: openremote/manager:${MANAGER_VERSION:-latest}
+#    image: openremote/manager:${MANAGER_VERSION:-latest}
+    image: openremote-manager
+    build:
+      context: manager/build/install/manager
     depends_on:
       keycloak:
         condition: service_healthy
@@ -90,3 +95,4 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - manager-data:/storage
+      - cert-data:/storage/certs
