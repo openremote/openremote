@@ -1,125 +1,127 @@
-//package org.openremote.model.telematics.teltonika;
-//
-//import jakarta.persistence.Entity;
-//import org.openremote.model.asset.AssetDescriptor;
-//import org.openremote.model.geo.GeoJSONPoint;
-//import org.openremote.model.telematics.TrackerAsset;
-//import org.openremote.model.value.AttributeDescriptor;
-//import org.openremote.model.value.ValueDescriptor;
-//
-///**
-// * Teltonika-specific tracker asset with AVL protocol attributes.
-// * Extends the base TrackerAsset with Teltonika-specific I/O elements.
-// */
-//@Entity
-//public class TeltonikaTrackerAsset extends TrackerAsset {
-//
-//    // Override base class descriptors with Teltonika-specific value descriptors for parsing
-//    public static final AttributeDescriptor<Integer> PRIORITY = new AttributeDescriptor<>("priority", TeltonikaValueDescriptors.priority).withOptional(true);
-//    public static final AttributeDescriptor<Integer> ALTITUDE = new AttributeDescriptor<>("altitude", TeltonikaValueDescriptors.altitude).withOptional(true);
-//    public static final AttributeDescriptor<Integer> DIRECTION = new AttributeDescriptor<>("direction", TeltonikaValueDescriptors.direction).withOptional(true);
-//    public static final AttributeDescriptor<Integer> SATELLITES = new AttributeDescriptor<>("satellites", TeltonikaValueDescriptors.satellites).withOptional(true);
-//    public static final AttributeDescriptor<Integer> SPEED_SATELLITE = new AttributeDescriptor<>("speedSatellite", TeltonikaValueDescriptors.speedSatellite).withOptional(true);
-//    public static final AttributeDescriptor<Integer> EVENT_TRIGGERED = new AttributeDescriptor<>("eventTriggered", TeltonikaValueDescriptors.eventTriggered).withOptional(true);
-//    public static final AttributeDescriptor<Long> TIMESTAMP = new AttributeDescriptor<>("timestamp", TeltonikaValueDescriptors.timestamp).withOptional(true);
-//    public static final AttributeDescriptor<GeoJSONPoint> GPS_LOCATION = new AttributeDescriptor<>("gpsLocation", TeltonikaValueDescriptors.location).withOptional(true);
-//    public static final AttributeDescriptor<Integer> SPEED = new AttributeDescriptor<>("speed", TeltonikaValueDescriptors.speed).withOptional(true);
-//
-//    // Digital I/O
-//    public static final AttributeDescriptor<Boolean> DIGITAL_INPUT_1 = new AttributeDescriptor<>("digitalInput1", TeltonikaValueDescriptors.digitalInput1).withOptional(true);
-//    public static final AttributeDescriptor<Boolean> DIGITAL_OUTPUT_1 = new AttributeDescriptor<>("digitalOutput1", TeltonikaValueDescriptors.digitalOutput1).withOptional(true);
-//    public static final AttributeDescriptor<Boolean> IGNITION = new AttributeDescriptor<>("ignition", TeltonikaValueDescriptors.ignition).withOptional(true);
-//    public static final AttributeDescriptor<Boolean> MOVEMENT = new AttributeDescriptor<>("movement", TeltonikaValueDescriptors.movement).withOptional(true);
-//    public static final AttributeDescriptor<Boolean> INSTANT_MOVEMENT = new AttributeDescriptor<>("instantMovement", TeltonikaValueDescriptors.instantMovement).withOptional(true);
-//
-//    // Analog I/O
-//    public static final AttributeDescriptor<Double> ANALOG_INPUT_1 = new AttributeDescriptor<>("analogInput1", TeltonikaValueDescriptors.analogInput1).withOptional(true);
-//    public static final AttributeDescriptor<Double> EXTERNAL_VOLTAGE = new AttributeDescriptor<>("externalVoltage", TeltonikaValueDescriptors.externalVoltage).withOptional(true);
-//    public static final AttributeDescriptor<Double> BATTERY_VOLTAGE = new AttributeDescriptor<>("batteryVoltage", TeltonikaValueDescriptors.batteryVoltage).withOptional(true);
-//    public static final AttributeDescriptor<Double> BATTERY_CURRENT = new AttributeDescriptor<>("batteryCurrent", TeltonikaValueDescriptors.batteryCurrent).withOptional(true);
-//
-//    // SIM/Network
-//    public static final AttributeDescriptor<String> ICCID_1 = new AttributeDescriptor<>("iccid1", TeltonikaValueDescriptors.iccid1).withOptional(true);
-//    public static final AttributeDescriptor<String> ICCID_2 = new AttributeDescriptor<>("iccid2", TeltonikaValueDescriptors.iccid2).withOptional(true);
-//    public static final AttributeDescriptor<Integer> GSM_SIGNAL = new AttributeDescriptor<>("gsmSignal", TeltonikaValueDescriptors.gsmSignal).withOptional(true);
-//    public static final AttributeDescriptor<Integer> GSM_AREA_CODE = new AttributeDescriptor<>("gsmAreaCode", TeltonikaValueDescriptors.gsmAreaCode).withOptional(true);
-//    public static final AttributeDescriptor<Integer> NETWORK_TYPE = new AttributeDescriptor<>("networkType", TeltonikaValueDescriptors.networkType).withOptional(true);
-//    public static final AttributeDescriptor<Long> ACTIVE_GSM_OPERATOR = new AttributeDescriptor<>("activeGsmOperator", TeltonikaValueDescriptors.activeGsmOperator).withOptional(true);
-//    public static final AttributeDescriptor<Long> UMTS_LTE_CELL_ID = new AttributeDescriptor<>("umtsLteCellId", TeltonikaValueDescriptors.umtsLteCellId).withOptional(true);
-//
-//    // Fuel/Eco
-//    public static final AttributeDescriptor<Double> FUEL_USED_GPS = new AttributeDescriptor<>("fuelUsedGps", TeltonikaValueDescriptors.fuelUsedGps).withOptional(true);
-//    public static final AttributeDescriptor<Double> FUEL_RATE_GPS = new AttributeDescriptor<>("fuelRateGps", TeltonikaValueDescriptors.fuelRateGps).withOptional(true);
-//    public static final AttributeDescriptor<Double> ECO_SCORE = new AttributeDescriptor<>("ecoScore", TeltonikaValueDescriptors.ecoScore).withOptional(true);
-//
-//    // Odometer/Trip
-//    public static final AttributeDescriptor<Integer> TOTAL_ODOMETER = new AttributeDescriptor<>("totalOdometer", TeltonikaValueDescriptors.totalOdometer).withOptional(true);
-//    public static final AttributeDescriptor<Integer> TRIP_ODOMETER = new AttributeDescriptor<>("tripOdometer", TeltonikaValueDescriptors.tripOdometer).withOptional(true);
-//    public static final AttributeDescriptor<Integer> TRIP = new AttributeDescriptor<>("trip", TeltonikaValueDescriptors.trip).withOptional(true);
-//
-//    // Accelerometer
-//    public static final AttributeDescriptor<Integer> AXIS_X = new AttributeDescriptor<>("axisX", TeltonikaValueDescriptors.axisX).withOptional(true);
-//    public static final AttributeDescriptor<Integer> AXIS_Y = new AttributeDescriptor<>("axisY", TeltonikaValueDescriptors.axisY).withOptional(true);
-//    public static final AttributeDescriptor<Integer> AXIS_Z = new AttributeDescriptor<>("axisZ", TeltonikaValueDescriptors.axisZ).withOptional(true);
-//
-//    // Device status
-//    public static final AttributeDescriptor<Integer> BATTERY_LEVEL = new AttributeDescriptor<>("batteryLevel", TeltonikaValueDescriptors.batteryLevel).withOptional(true);
-//    public static final AttributeDescriptor<Integer> SLEEP_MODE = new AttributeDescriptor<>("sleepMode", TeltonikaValueDescriptors.sleepMode).withOptional(true);
-//    public static final AttributeDescriptor<Integer> DATA_MODE = new AttributeDescriptor<>("dataMode", TeltonikaValueDescriptors.dataMode).withOptional(true);
-//    public static final AttributeDescriptor<Integer> BT_STATUS = new AttributeDescriptor<>("btStatus", TeltonikaValueDescriptors.btStatus).withOptional(true);
-//    public static final AttributeDescriptor<Integer> GNSS_STATUS = new AttributeDescriptor<>("gnssStatus", TeltonikaValueDescriptors.gnssStatus).withOptional(true);
-//    public static final AttributeDescriptor<Double> GNSS_PDOP = new AttributeDescriptor<>("gnssPdop", TeltonikaValueDescriptors.gnssPdop).withOptional(true);
-//    public static final AttributeDescriptor<Double> GNSS_HDOP = new AttributeDescriptor<>("gnssHdop", TeltonikaValueDescriptors.gnssHdop).withOptional(true);
-//
-//    // Authentication/ID
-//    public static final AttributeDescriptor<String> USER_ID = new AttributeDescriptor<>("userId", TeltonikaValueDescriptors.userId).withOptional(true);
-//    public static final AttributeDescriptor<String> IBUTTON = new AttributeDescriptor<>("iButton", TeltonikaValueDescriptors.iButton).withOptional(true);
-//
-//    // Counters
-//    public static final AttributeDescriptor<Long> IGNITION_ON_COUNTER = new AttributeDescriptor<>("ignitionOnCounter", TeltonikaValueDescriptors.ignitionOnCounter).withOptional(true);
-//
-//    // Coordinates
-//    public static final AttributeDescriptor<GeoJSONPoint> ISO6709_COORDINATES = new AttributeDescriptor<>("iso6709Coordinates", TeltonikaValueDescriptors.iso6709Coordinates).withOptional(true);
-//
-//    // Dynamic descriptors storage
-//    public static final AttributeDescriptor<ValueDescriptor[]> VALUE_DESCRIPTORS = new AttributeDescriptor<>("attributeDescriptors", org.openremote.model.value.ValueType.VALUE_DESCRIPTOR_VALUE_DESCRIPTOR.asArray()).withOptional(true);
-//
-//    public static final AssetDescriptor<TeltonikaTrackerAsset> DESCRIPTOR = new AssetDescriptor<>("crosshairs-gps", "00a0ff", TeltonikaTrackerAsset.class);
-//
-//    /**
-//     * Default constructor for JPA.
-//     */
-//    public TeltonikaTrackerAsset() {
-//        super();
-//    }
-//
-//    @Override
-//    public TeltonikaTrackerAsset setManufacturer(String manufacturer) {
-//        super.setManufacturer(manufacturer);
-//        return this;
-//    }
-//
-//    @Override
-//    public TeltonikaTrackerAsset setModel(String model) {
-//        super.setModel(model);
-//        return this;
-//    }
-//
-//    @Override
-//    public TeltonikaTrackerAsset setProtocol(String protocol) {
-//        super.setProtocol(protocol);
-//        return this;
-//    }
-//
-//    @Override
-//    public TeltonikaTrackerAsset setCodec(String codec) {
-//        super.setCodec(codec);
-//        return this;
-//    }
-//
-//    @Override
-//    public TeltonikaTrackerAsset setImei(String imei) {
-//        super.setImei(imei);
-//        return this;
-//    }
-//}
+package org.openremote.model.telematics.teltonika;
+
+import jakarta.persistence.Entity;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.telematics.TrackerAsset;
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.ValueType;
+
+/**
+ * Teltonika-specific tracker asset with AVL protocol attributes.
+ * Extends the base TrackerAsset with Teltonika-specific I/O elements.
+ */
+@Entity
+public class TeltonikaTrackerAsset extends Asset<TeltonikaTrackerAsset> {
+
+    // Override base class descriptors with Teltonika-specific value descriptors for parsing
+    public static final AttributeDescriptor<Integer> PRIORITY = new AttributeDescriptor<>("priority", TeltonikaValueDescriptors.priority).withOptional(true);
+    public static final AttributeDescriptor<Integer> ALTITUDE = new AttributeDescriptor<>("altitude", TeltonikaValueDescriptors.altitude).withOptional(true);
+    public static final AttributeDescriptor<Integer> DIRECTION = new AttributeDescriptor<>("direction", TeltonikaValueDescriptors.direction).withOptional(true);
+    public static final AttributeDescriptor<Integer> SATELLITES = new AttributeDescriptor<>("satellites", TeltonikaValueDescriptors.satellites).withOptional(true);
+    public static final AttributeDescriptor<Integer> SPEED_SATELLITE = new AttributeDescriptor<>("speedSatellite", TeltonikaValueDescriptors.speedSatellite).withOptional(true);
+    public static final AttributeDescriptor<Integer> EVENT_TRIGGERED = new AttributeDescriptor<>("eventTriggered", TeltonikaValueDescriptors.eventTriggered).withOptional(true);
+    public static final AttributeDescriptor<Long> TIMESTAMP = new AttributeDescriptor<>("timestamp", TeltonikaValueDescriptors.timestamp).withOptional(true);
+    public static final AttributeDescriptor<GeoJSONPoint> GPS_LOCATION = new AttributeDescriptor<>("gpsLocation", TeltonikaValueDescriptors.location).withOptional(true);
+    public static final AttributeDescriptor<Integer> SPEED = new AttributeDescriptor<>("speed", TeltonikaValueDescriptors.speed).withOptional(true);
+
+    // Digital I/O
+    public static final AttributeDescriptor<Boolean> DIGITAL_INPUT_1 = new AttributeDescriptor<>("digitalInput1", TeltonikaValueDescriptors.digitalInput1).withOptional(true);
+    public static final AttributeDescriptor<Boolean> DIGITAL_OUTPUT_1 = new AttributeDescriptor<>("digitalOutput1", TeltonikaValueDescriptors.digitalOutput1).withOptional(true);
+    public static final AttributeDescriptor<Boolean> IGNITION = new AttributeDescriptor<>("ignition", TeltonikaValueDescriptors.ignition).withOptional(true);
+    public static final AttributeDescriptor<Boolean> MOVEMENT = new AttributeDescriptor<>("movement", TeltonikaValueDescriptors.movement).withOptional(true);
+    public static final AttributeDescriptor<Boolean> INSTANT_MOVEMENT = new AttributeDescriptor<>("instantMovement", TeltonikaValueDescriptors.instantMovement).withOptional(true);
+
+    // Analog I/O
+    public static final AttributeDescriptor<Double> ANALOG_INPUT_1 = new AttributeDescriptor<>("analogInput1", TeltonikaValueDescriptors.analogInput1).withOptional(true);
+    public static final AttributeDescriptor<Double> EXTERNAL_VOLTAGE = new AttributeDescriptor<>("externalVoltage", TeltonikaValueDescriptors.externalVoltage).withOptional(true);
+    public static final AttributeDescriptor<Double> BATTERY_VOLTAGE = new AttributeDescriptor<>("batteryVoltage", TeltonikaValueDescriptors.batteryVoltage).withOptional(true);
+    public static final AttributeDescriptor<Double> BATTERY_CURRENT = new AttributeDescriptor<>("batteryCurrent", TeltonikaValueDescriptors.batteryCurrent).withOptional(true);
+
+    // SIM/Network
+    public static final AttributeDescriptor<String> ICCID_1 = new AttributeDescriptor<>("iccid1", TeltonikaValueDescriptors.iccid1).withOptional(true);
+    public static final AttributeDescriptor<String> ICCID_2 = new AttributeDescriptor<>("iccid2", TeltonikaValueDescriptors.iccid2).withOptional(true);
+    public static final AttributeDescriptor<Integer> GSM_SIGNAL = new AttributeDescriptor<>("gsmSignal", TeltonikaValueDescriptors.gsmSignal).withOptional(true);
+    public static final AttributeDescriptor<Integer> GSM_AREA_CODE = new AttributeDescriptor<>("gsmAreaCode", TeltonikaValueDescriptors.gsmAreaCode).withOptional(true);
+    public static final AttributeDescriptor<Integer> NETWORK_TYPE = new AttributeDescriptor<>("networkType", TeltonikaValueDescriptors.networkType).withOptional(true);
+    public static final AttributeDescriptor<Long> ACTIVE_GSM_OPERATOR = new AttributeDescriptor<>("activeGsmOperator", TeltonikaValueDescriptors.activeGsmOperator).withOptional(true);
+    public static final AttributeDescriptor<Long> UMTS_LTE_CELL_ID = new AttributeDescriptor<>("umtsLteCellId", TeltonikaValueDescriptors.umtsLteCellId).withOptional(true);
+
+    // Fuel/Eco
+    public static final AttributeDescriptor<Double> FUEL_USED_GPS = new AttributeDescriptor<>("fuelUsedGps", TeltonikaValueDescriptors.fuelUsedGps).withOptional(true);
+    public static final AttributeDescriptor<Double> FUEL_RATE_GPS = new AttributeDescriptor<>("fuelRateGps", TeltonikaValueDescriptors.fuelRateGps).withOptional(true);
+    public static final AttributeDescriptor<Double> ECO_SCORE = new AttributeDescriptor<>("ecoScore", TeltonikaValueDescriptors.ecoScore).withOptional(true);
+
+    // Odometer/Trip
+    public static final AttributeDescriptor<Integer> TOTAL_ODOMETER = new AttributeDescriptor<>("totalOdometer", TeltonikaValueDescriptors.totalOdometer).withOptional(true);
+    public static final AttributeDescriptor<Integer> TRIP_ODOMETER = new AttributeDescriptor<>("tripOdometer", TeltonikaValueDescriptors.tripOdometer).withOptional(true);
+    public static final AttributeDescriptor<Integer> TRIP = new AttributeDescriptor<>("trip", TeltonikaValueDescriptors.trip).withOptional(true);
+
+    // Accelerometer
+    public static final AttributeDescriptor<Integer> AXIS_X = new AttributeDescriptor<>("axisX", TeltonikaValueDescriptors.axisX).withOptional(true);
+    public static final AttributeDescriptor<Integer> AXIS_Y = new AttributeDescriptor<>("axisY", TeltonikaValueDescriptors.axisY).withOptional(true);
+    public static final AttributeDescriptor<Integer> AXIS_Z = new AttributeDescriptor<>("axisZ", TeltonikaValueDescriptors.axisZ).withOptional(true);
+
+    // Device status
+    public static final AttributeDescriptor<Integer> BATTERY_LEVEL = new AttributeDescriptor<>("batteryLevel", TeltonikaValueDescriptors.batteryLevel).withOptional(true);
+    public static final AttributeDescriptor<Integer> SLEEP_MODE = new AttributeDescriptor<>("sleepMode", TeltonikaValueDescriptors.sleepMode).withOptional(true);
+    public static final AttributeDescriptor<Integer> DATA_MODE = new AttributeDescriptor<>("dataMode", TeltonikaValueDescriptors.dataMode).withOptional(true);
+    public static final AttributeDescriptor<Integer> BT_STATUS = new AttributeDescriptor<>("btStatus", TeltonikaValueDescriptors.btStatus).withOptional(true);
+    public static final AttributeDescriptor<Integer> GNSS_STATUS = new AttributeDescriptor<>("gnssStatus", TeltonikaValueDescriptors.gnssStatus).withOptional(true);
+    public static final AttributeDescriptor<Double> GNSS_PDOP = new AttributeDescriptor<>("gnssPdop", TeltonikaValueDescriptors.gnssPdop).withOptional(true);
+    public static final AttributeDescriptor<Double> GNSS_HDOP = new AttributeDescriptor<>("gnssHdop", TeltonikaValueDescriptors.gnssHdop).withOptional(true);
+
+    // Authentication/ID
+    public static final AttributeDescriptor<String> USER_ID = new AttributeDescriptor<>("userId", TeltonikaValueDescriptors.userId).withOptional(true);
+    public static final AttributeDescriptor<String> IBUTTON = new AttributeDescriptor<>("iButton", TeltonikaValueDescriptors.iButton).withOptional(true);
+
+    // Counters
+    public static final AttributeDescriptor<Long> IGNITION_ON_COUNTER = new AttributeDescriptor<>("ignitionOnCounter", TeltonikaValueDescriptors.ignitionOnCounter).withOptional(true);
+
+    // Coordinates
+    public static final AttributeDescriptor<GeoJSONPoint> ISO6709_COORDINATES = new AttributeDescriptor<>("iso6709Coordinates", TeltonikaValueDescriptors.iso6709Coordinates).withOptional(true);
+
+    // Device identification
+    public static final AttributeDescriptor<String> IMEI = new AttributeDescriptor<>("imei", ValueType.TEXT);
+    public static final AttributeDescriptor<String> MANUFACTURER = Asset.MANUFACTURER.withOptional(false);
+    public static final AttributeDescriptor<String> MODEL = Asset.MODEL.withOptional(false);
+    public static final AttributeDescriptor<String> PROTOCOL = new AttributeDescriptor<>("protocol", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CODEC = new AttributeDescriptor<>("codec", ValueType.TEXT).withOptional(true);
+
+    // Dynamic descriptors storage
+    public static final AttributeDescriptor<ValueDescriptor[]> VALUE_DESCRIPTORS = new AttributeDescriptor<>("attributeDescriptors", org.openremote.model.value.ValueType.VALUE_DESCRIPTOR_VALUE_DESCRIPTOR.asArray()).withOptional(true);
+
+    public static final AssetDescriptor<TeltonikaTrackerAsset> DESCRIPTOR = new AssetDescriptor<>("crosshairs-gps", "00a0ff", TeltonikaTrackerAsset.class);
+
+    /**
+     * Default constructor for JPA.
+     */
+    public TeltonikaTrackerAsset() {
+        super();
+    }
+
+    public TeltonikaTrackerAsset setManufacturer(String manufacturer) {
+        super.setManufacturer(manufacturer);
+        return this;
+    }
+
+    public TeltonikaTrackerAsset setModel(String model) {
+        super.setModel(model);
+        return this;
+    }
+
+    public void setImei(String imei) {
+        getAttributes().getOrCreate(IMEI).setValue(imei);
+    }
+
+    public void setCodec(String codec) {
+        getAttributes().getOrCreate(CODEC).setValue(codec);
+    }
+
+    public void setProtocol(String protocol) {
+        getAttributes().getOrCreate(PROTOCOL).setValue(protocol);
+    }
+}
+

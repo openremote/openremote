@@ -22,20 +22,9 @@ public class ParsingValueDescriptor<T> extends ValueDescriptor<T> {
     @Transient
     private final transient String vendorPrefix;
 
-    public ParsingValueDescriptor(String name, Class<T> type, ValueConstraint... constraints) {
-        this(null, name, type, -1, type::cast, constraints);
-    }
-
-    public ParsingValueDescriptor(String name, Class<T> type, Function<ByteBuf, T> parser, ValueConstraint... constraints) {
-        this(null, name, type, -1, parser, constraints);
-    }
-
-    public ParsingValueDescriptor(String name, Class<T> type, int length, Function<ByteBuf, T> parser, ValueConstraint... constraints) {
-        this(null, name, type, length, parser, constraints);
-    }
-
     public ParsingValueDescriptor(String vendorPrefix, String name, Class<T> type, int length, Function<ByteBuf, T> parser, ValueConstraint... constraints) {
         super(vendorPrefix != null ? vendorPrefix + "_" + name : name, type, constraints);
+        if(vendorPrefix == null) throw new RuntimeException("vendor prefix cannot be null");
         this.vendorPrefix = vendorPrefix;
         this.parser = parser;
         this.length = length;

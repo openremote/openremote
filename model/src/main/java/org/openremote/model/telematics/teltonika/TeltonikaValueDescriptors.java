@@ -25,7 +25,7 @@ public class TeltonikaValueDescriptors {
     // Permanent I/O: 1-byte booleans
     private static final String PREFIX = TeltonikaValueDescriptor.VENDOR_PREFIX;
 
-    public static final TeltonikaValueDescriptor<Integer> IGNITION = new TeltonikaValueDescriptor<>(Integer.class, 1, buf -> (int) buf.readUnsignedByte(), 239, "Ignition", "Unsigned", 0L, 1L, null, null, "0 – Ignition Off\n\n1 – Ignition On", "FMBXXX", "Permanent I/O Elements");
+//    public static final TeltonikaValueDescriptor<Integer> IGNITION = new TeltonikaValueDescriptor<>(Integer.class, 1, buf -> (int) buf.readUnsignedByte(), 239, "Ignition", "Unsigned", 0L, 1L, null, null, "0 – Ignition Off\n\n1 – Ignition On", "FMBXXX", "Permanent I/O Elements");
     public static final TeltonikaValueDescriptor<Boolean> digitalInput1 = new TeltonikaValueDescriptor<>("1", Boolean.class, 1, ByteBuf::readBoolean);
     public static final TeltonikaValueDescriptor<Boolean> digitalOutput1 = new TeltonikaValueDescriptor<>("179", Boolean.class, 1, ByteBuf::readBoolean);
     public static final TeltonikaValueDescriptor<Boolean> ignition = new TeltonikaValueDescriptor<>("239", Boolean.class, 1, ByteBuf::readBoolean);

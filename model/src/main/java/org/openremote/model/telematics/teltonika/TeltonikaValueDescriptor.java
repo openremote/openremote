@@ -12,7 +12,6 @@ public class TeltonikaValueDescriptor<T> extends ParsingValueDescriptor<T> {
     public static final String VENDOR_PREFIX = "teltonika";
 
     protected int avlId;
-    protected String name;
     protected String avlType;
     protected Long min;
     protected Long max;
@@ -37,7 +36,6 @@ public class TeltonikaValueDescriptor<T> extends ParsingValueDescriptor<T> {
     public TeltonikaValueDescriptor(Class<T> type, int length, Function<ByteBuf, T> parser, int avlId, String name, String avlType, Long min, Long max, Long multiplier, String units, String description, String hwSupport, String parameterGroup, ValueConstraint... constraints) {
         super(VENDOR_PREFIX, String.valueOf(avlId), type, length, parser, constraints);
         this.avlId = avlId;
-        this.name = name;
         this.avlType = avlType;
         this.min = min;
         this.max = max;
@@ -50,15 +48,6 @@ public class TeltonikaValueDescriptor<T> extends ParsingValueDescriptor<T> {
 
     public int getAvlId() {
         return avlId;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getAvlType() {
