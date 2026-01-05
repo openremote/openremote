@@ -1,4 +1,4 @@
-import { withPage, ct as base, expect, Page, Locator, ComponentTestFixtures } from "@openremote/test";
+import { withPage, ct as base, expect, Page, Locator, SharedComponentTestFixtures } from "@openremote/test";
 import * as Util from "@openremote/core/lib/util";
 
 export class JsonForms {
@@ -160,7 +160,7 @@ export class JsonForms {
   }
 }
 
-interface ComponentFixtures extends ComponentTestFixtures {
+interface ComponentFixtures extends SharedComponentTestFixtures {
   jsonForms: JsonForms;
 }
 

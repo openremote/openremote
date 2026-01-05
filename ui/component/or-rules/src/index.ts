@@ -117,7 +117,9 @@ export enum AssetQueryOperator {
     OUTSIDE_RADIUS = "outsideRadius",
     WITHIN_RECTANGLE = "withinRectangle",
     OUTSIDE_RECTANGLE = "outsideRectangle",
-    NOT_UPDATED_FOR = "notUpdatedFor"
+    NOT_UPDATED_FOR = "notUpdatedFor",
+    INSIDE_AREA = "insideArea",
+    OUTSIDE_AREA = "outsideArea"
 }
 
 export interface AllowedActionTargetTypes {
@@ -538,26 +540,24 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
 // Function for getting assets by type
 // loadedAssets is an object given as parameter that will be updated if new assets are fetched.
-export async function getAssetsByType(type: string, realm?: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
-    if(loadedAssets?.has(type)) {
+export async function getAssetsByType(type: string, customQuery?: AssetQuery, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
+    if (loadedAssets?.has(type)) {
         return {
             assets: loadedAssets?.get(type),
             loadedAssets: loadedAssets
-        }
+        };
     } else {
-        if(!loadedAssets) {
-            loadedAssets = new Map<string, any[]>();
-        }
+        loadedAssets ??= new Map<string, any[]>();
         const assetQuery: AssetQuery = {
+            realm: {
+                name: manager.displayRealm
+            },
             types: [type],
             orderBy: {
                 property: AssetQueryOrderBy$Property.NAME
             }
-        }
-        if(realm != undefined) {
-            assetQuery.realm = { name: realm }
-        }
-        const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
+        };
+        const response = await manager.rest.api.AssetResource.queryAssets({...assetQuery, ...customQuery});
         loadedAssets.set(type, response.data);
         return {
             assets: response.data,

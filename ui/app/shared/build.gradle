@@ -172,13 +172,15 @@ tasks.register('installDist', Copy) {
 }
 
 tasks.register('processTranslations', JavaCompile) {
+    dependsOn(":agent:classes")
     dependsOn(":model:classes")
     outputs.upToDateWhen { false } // Always invalidate
 
+    def agentSourceSet = project(":agent").sourceSets.main
     def modelSourceSet = project(":model").sourceSets.main
 
-    source = modelSourceSet.allJava
-    classpath = modelSourceSet.compileClasspath
+    source = files(agentSourceSet.allJava, modelSourceSet.allJava)
+    classpath = files(agentSourceSet.compileClasspath, modelSourceSet.compileClasspath)
     destinationDirectory = layout.buildDirectory.dir("generated/i18n") // unused
     options.compilerArgs += [
         "-proc:only", // Only run the processor

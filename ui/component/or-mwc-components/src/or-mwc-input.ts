@@ -215,6 +215,9 @@ const style = css`
         display: flex;
         flex-direction: column;
     }
+    .mdc-form-field:has(> .mdc-radio) {
+        height: 56px !important;
+    }
     .mdc-text-field.mdc-text-field--invalid:not(.mdc-text-field--disabled) + .mdc-text-field-helper-line .mdc-text-field-helper-text {
         color: var(--mdc-theme-error, #b00020)
     }
@@ -595,7 +598,7 @@ export class OrMwcInput extends LitElement {
     }
 
     public focus() {
-        if (this.type === InputType.RANGE && this._mdcComponent2) {
+        if (this.type === InputType.RANGE && this._mdcComponent2 && typeof (this._mdcComponent2 as any).focus === "function") {
             (this._mdcComponent2 as any).focus();
         } else if (this._mdcComponent && typeof (this._mdcComponent as any).focus === "function") {
             (this._mdcComponent as any).focus();
@@ -621,35 +624,29 @@ export class OrMwcInput extends LitElement {
             switch (this.type) {
                 case InputType.RADIO:
                     const optsRadio = this.resolveOptions(this.options);
-                    this._selectedIndex = -1;
                     return html`
                             <div class="mdc-radio-container">
-                                ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
-                                    if (this.value === optValue) {
-                                        this._selectedIndex = index;
-                                    }
+                                ${optsRadio ? optsRadio.map(([optValue, optDisplay]) => {
                                     return html`
                                     <div id="field" class="mdc-form-field">
                                         <div class="mdc-radio">
-                                            <input type="radio" 
+                                            <input type="radio"
                                                 id="elem-${optValue}"
                                                 name="${ifDefined(this.name)}"
                                                 value="${optValue}"
-                                                ?checked="${this.value && this.value.includes(optValue)}"
+                                                .checked="${this.value === optValue}"
                                                 ?required="${this.required}"
-                                                ?disabled="${this.disabled || this.readonly}"                            
+                                                ?disabled="${this.disabled || this.readonly}"
                                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), optValue)}"
                                                 class="mdc-radio__native-control"/>
-                                            <div class="mdc-radio__background">
-                                            <div class="mdc-radio__outer-circle"></div>
-                                            <div class="mdc-radio__inner-circle"></div>
-                                            </div>
+                                                <div class="mdc-radio__background">
+                                                    <div class="mdc-radio__outer-circle"></div>
+                                                    <div class="mdc-radio__inner-circle"></div>
+                                                </div>
                                             <div class="mdc-radio__ripple"></div>
                                         </div>
                                         <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
-                                    </div>
-
-                                    `;
+                                    </div>`;
                                 }) : ``}
                             </div>
                     `;
@@ -844,7 +841,7 @@ export class OrMwcInput extends LitElement {
                                             <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">
                                                 <or-translate .value="${this.searchLabel}"></or-translate>
                                             </span>
-                                            <input class="mdc-text-field__input" type="text"
+                                            <input id="searchable-input" class="mdc-text-field__input" type="text"
                                                    @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
                                             />
                                         </label>
