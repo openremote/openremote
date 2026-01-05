@@ -18,3 +18,151 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 @import "@vaadin/vaadin-lumo-styles/lumo.css";
+
+:root[theme~="dark"] {
+
+    /* Dark theme - Base colors */
+    --or-color-base: hsla(120, 20%, 1%);
+    --or-color-base-5pct: hsla(120, 6%, 14%);
+
+    /* Dark theme - Grayscale colors */
+    --or-color-contrast-5pct: hsla(120, 9%, 80%, 0.06);
+    --or-color-contrast-10pct: hsla(120, 10%, 80%, 0.14);
+    --or-color-contrast-20pct: hsla(120, 10%, 80%, 0.23);
+    --or-color-contrast-30pct: hsla(120, 10%, 80%, 0.32);
+    --or-color-contrast-40pct: hsla(120, 10%, 80%, 0.41);
+    --or-color-contrast-50pct: hsla(120, 10%, 80%, 0.5);
+    --or-color-contrast-60pct: hsla(120, 10%, 80%, 0.58);
+    --or-color-contrast-70pct: hsla(120, 10%, 80%, 0.69);
+    --or-color-contrast-80pct: hsla(120, 10%, 80%, 0.8);
+    --or-color-contrast-90pct: hsla(120, 10%, 80%, 0.9);
+    --or-color-contrast: hsl(120, 10%, 90%);
+
+    /* Dark theme - Text colors */
+    --or-color-text-primary: hsl(117, 44%, 46%);
+    --or-color-text-error: hsl(3, 100%, 80%);
+    --or-color-text-warning: hsl(43, 99%, 63%);
+    --or-color-text-success: hsl(145, 85%, 46%);
+
+    --or-color-text-heading: hsl(120, 20%, 99%);
+    --or-color-text-body: hsla(120, 20%, 99%, 0.9);
+    --or-color-text-secondary: hsla(120, 20%, 99%, 0.69);
+    --or-color-text-tertiary: hsla(120, 20%, 99%, 0.5);
+    --or-color-text-disabled: hsla(120, 20%, 99%, 0.32);
+
+    /* Dark theme - Primary colors */
+    --or-color-primary: hsl(117, 44%, 46%);
+    --or-color-primary-50pct: hsla(117, 44%, 46%, 0.76);
+    --or-color-primary-10pct: hsla(117, 44%, 46%, 0.13);
+    --or-color-primary-contrast: hsl(0, 0%, 100%);
+
+    /* Dark theme - Error colors */
+    --or-color-error: hsl(3, 79%, 49%);
+    --or-color-error-50pct: hsla(3, 72%, 62%, 0.5);
+    --or-color-error-10pct: hsla(3, 75%, 62%, 0.14);
+    --or-color-error-contrast: hsl(0, 0%, 100%);
+
+    /* Dark theme - Warning colors */
+    --or-color-warning: hsl(43, 100%, 48%);
+    --or-color-warning-10pct: hsla(40, 100%, 50%, 0.2);
+    --or-color-warning-contrast: hsla(214, 33%, 13%, 0.9);
+
+    /* Dark theme - Success colors */
+    --or-color-success: hsl(145, 72%, 30%, 1);
+    --or-color-success-50pct: hsla(145, 92%, 51%, 0.5);
+    --or-color-success-10pct: hsla(145, 92%, 51%, 0.1);
+    --or-color-success-contrast: hsl(0, 0%, 100%);
+}
+
+:root {
+
+    /* Light theme - Base colors */
+    --or-color-base: hsl(0, 0%, 100%);
+    --or-color-base-5pct: hsla(118, 10%, 25%, 0.16);
+
+    /* Light theme - Grayscale colors */
+    --or-color-contrast-5pct: hsla(117, 10%, 25%, 0.05);
+    --or-color-contrast-10pct: hsla(118, 10%, 25%, 0.1);
+    --or-color-contrast-20pct: hsla(118, 10%, 25%, 0.16);
+    --or-color-contrast-30pct: hsla(118, 10%, 25%, 0.26);
+    --or-color-contrast-40pct: hsla(118, 10%, 25%, 0.38);
+    --or-color-contrast-50pct: hsla(118, 10%, 25%, 0.52);
+    --or-color-contrast-60pct: hsla(118, 10%, 25%, 0.6);
+    --or-color-contrast-70pct: hsla(120, 10%, 15%, 0.69);
+    --or-color-contrast-80pct: hsla(120, 14%, 15%, 0.83);
+    --or-color-contrast-90pct: hsla(118, 14%, 15%, 0.94);
+    --or-color-contrast: hsl(118, 11%, 13%);
+
+    /* Light theme - Text colors */
+    --or-color-text-primary: hsl(117, 44%, 46%);
+    --or-color-text-error: hsl(3, 89%, 42%);
+    --or-color-text-warning: hsl(29, 80%, 33%);
+    --or-color-text-success: hsl(145, 85%, 25%);
+
+    --or-color-text-heading: hsl(120, 20%, 1%);
+    --or-color-text-body: hsla(120, 20%, 1%, 0.94);
+    --or-color-text-secondary: hsla(120, 6%, 14%, 0.69);
+    --or-color-text-tertiary: hsla(120, 6%, 14%, 0.52);
+    --or-color-text-disabled: hsla(120, 6%, 14%, 0.26);
+
+    /* Light theme - Primary colors */
+    --or-color-primary: hsl(117, 44%, 46%);
+    --or-color-primary-50pct: hsla(117, 44%, 46%, 0.76);
+    --or-color-primary-10pct: hsla(117, 44%, 46%, 0.13);
+    --or-color-primary-contrast: hsl(0, 0%, 100%);
+
+    /* Light theme - Error colors */
+    --or-color-error: hsl(3, 85%, 48%);
+    --or-color-error-50pct: hsla(3, 85%, 49%, 0.5);
+    --or-color-error-10pct: hsla(3, 85%, 49%, 0.1);
+    --or-color-error-contrast: hsl(0, 0%, 100%);
+
+    /* Light theme - Warning colors */
+    --or-color-warning: hsl(48, 100%, 50%);
+    --or-color-warning-10pct: hsla(48, 100%, 50%, 0.25);
+    --or-color-warning-contrast: hsla(213, 40%, 16%, 0.94);
+
+    /* Light theme - Success colors */
+    --or-color-success: hsl(145, 72%, 30%);
+    --or-color-success-50pct: hsla(145, 72%, 31%, 0.5);
+    --or-color-success-10pct: hsla(145, 72%, 31%, 0.1);
+    --or-color-success-contrast: hsl(0, 0%, 100%);
+
+    /* Vaadin colors */
+    --lumo-base-color: var(--or-color-base);
+    --lumo-contrast-5pct: var(--or-color-contrast-5pct);
+    --lumo-contrast-10pct: var(--or-color-contrast-10pct);
+    --lumo-contrast-20pct: var(--or-color-contrast-20pct);
+    --lumo-contrast-30pct: var(--or-color-contrast-30pct);
+    --lumo-contrast-40pct: var(--or-color-contrast-40pct);
+    --lumo-contrast-50pct: var(--or-color-contrast-50pct);
+    --lumo-contrast-60pct: var(--or-color-contrast-60pct);
+    --lumo-contrast-70pct: var(--or-color-contrast-70pct);
+    --lumo-contrast-80pct: var(--or-color-contrast-80pct);
+    --lumo-contrast-90pct: var(--or-color-contrast-90pct);
+    --lumo-contrast: var(--or-color-contrast);
+    --lumo-primary-color-10pct: var(--or-color-primary-10pct);
+    --lumo-primary-color-50pct: var(--or-color-primary-50pct);
+    --lumo-primary-color: var(--or-color-primary);
+    --lumo-primary-text-color: var(--or-color-text-primary);
+    --lumo-primary-contrast-color: var(--or-color-primary-contrast);
+    --lumo-error-color-10pct: var(--or-color-error-10pct);
+    --lumo-error-color-50pct: var(--or-color-error-50pct);
+    --lumo-error-color: var(--or-color-error);
+    --lumo-error-text-color: var(--or-color-text-error);
+    --lumo-error-contrast-color: var(--or-color-error-contrast);
+    --lumo-warning-color-10pct: var(--or-color-warning-10pct);
+    --lumo-warning-color: var(--or-color-warning);
+    --lumo-warning-text-color: var(--or-color-text-warning);
+    --lumo-warning-contrast-color: var(--or-color-warning-contrast);
+    --lumo-success-color-10pct: var(--or-color-success-10pct);
+    --lumo-success-color-50pct: var(--or-color-success-50pct);
+    --lumo-success-color: var(--or-color-success);
+    --lumo-success-text-color: var(--or-color-text-success);
+    --lumo-success-contrast-color: var(--or-color-success-contrast);
+    --lumo-header-text-color: var(--or-color-text-heading);
+    --lumo-body-text-color: var(--or-color-text-body);
+    --lumo-secondary-text-color: var(--or-color-text-secondary);
+    --lumo-tertiary-text-color: var(--or-color-text-tertiary);
+    --lumo-disabled-text-color: var(--or-color-text-disabled);
+}
