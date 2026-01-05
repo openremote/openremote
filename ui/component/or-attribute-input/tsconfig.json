@@ -14,7 +14,7 @@
     { "path": "../or-mwc-components" },
     { "path": "../or-components" },
     { "path": "../or-json-forms" },
-    { "path": "../or-vaadin-components" }
-    { "path": "../or-scheduler" },
+    { "path": "../or-vaadin-components" },
+    { "path": "../or-scheduler" }
   ]
 }
