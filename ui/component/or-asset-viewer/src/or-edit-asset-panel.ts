@@ -392,7 +392,6 @@ export class OrEditAssetPanel extends LitElement {
 
     protected _onModified() {
         this.dispatchEvent(new OrEditAssetModifiedEvent(this.validate()));
-        this.requestUpdate();
     }
 
     public validate(): ValidatorResult[] {
