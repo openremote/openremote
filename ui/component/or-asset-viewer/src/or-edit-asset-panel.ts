@@ -592,6 +592,7 @@ export class OrEditAssetPanel extends LitElement {
                                 if (descriptor) {
                                     attribute.meta![descriptor.name!] = (descriptor.type === 'boolean') ? true : null;
                                     this._onModified();
+                                    this.requestUpdate();
                                 }
                             });
                         }
