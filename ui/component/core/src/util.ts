@@ -1,5 +1,6 @@
 import {
     Asset,
+    AssetModelUtil,
     AssetDescriptor,
     Attribute,
     AttributeDescriptor,
@@ -22,11 +23,9 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
-    Role,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
-import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
 import {transform} from "lodash";
@@ -222,11 +221,7 @@ export function isObject(object: any): boolean {
     return false;
 }
 
-export function isFunction(object: any): boolean {
-    return !!(object && object.constructor && object.call && object.apply);
-}
-
-export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): boolean {
+export function objectsEqual(obj1?: any, obj2?: any, deep = true): boolean {
     if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
         return obj1 === obj2;
     }
@@ -384,14 +379,8 @@ export function capitaliseFirstLetter(str: string | undefined) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export function enumContains(enm: object, val: string): boolean {
-    return enm && Object.values(enm).includes(val);
-}
-
-export function getEnumKeyAsString(enm: object, val: string): string {
-    // @ts-ignore
-    const key = Object.keys(enm).find((k) => enm[k] === val);
-    return key!;
+export function getEnumKeyAsString(enm: object, val: string): string | undefined {
+    return Object.keys(enm).find((k) => enm[k as keyof object] === val);
 }
 
 /* For a given date, get the ISO week number
@@ -496,7 +485,7 @@ export function dateToCronString(date: Date): string {
 * Input for example would be `0 00 11 * * ? *` for every day at 11am.
 * If the input is '*', it will be replaced by 1. (month parameter of '*' becomes January)
 */
-export function cronStringToISOString(cronString: String, isUTC: boolean): string | undefined {
+export function cronStringToISOString(cronString: string, isUTC: boolean): string | undefined {
     const splStr = cronString.split(" ");
     if(!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
         const year: string = (!Number.isNaN(Number(splStr[6])) ? splStr[6] : new Date().getFullYear()).toString();
@@ -521,8 +510,6 @@ export function cronStringToISOString(cronString: String, isUTC: boolean): strin
     }
     return undefined;
 }
-
-
 
 export function getMetaValue(name: string | NameHolder, attribute: Attribute<any> | undefined, descriptor?:  ValueDescriptorHolder | ValueDescriptor | string): any | undefined {
     const metaName = typeof name === "string" ? name : (name as NameHolder).name!;
