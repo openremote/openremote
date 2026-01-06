@@ -55,6 +55,8 @@ public class MessageBrokerService implements ContainerService {
     protected ProducerTemplate producerTemplate = context.createProducerTemplate();
     protected FluentProducerTemplate fluentProducerTemplate = context.createFluentProducerTemplate();
 
+    private boolean isStarted = false;
+
     @Override
     public int getPriority() {
         return PRIORITY;
@@ -66,7 +68,7 @@ public class MessageBrokerService implements ContainerService {
 
         // Not using InstrumentedThreadPoolFactory directly as it only uses the ThreadPoolProfile ID for naming
         ThreadPoolFactory threadPoolFactory = new DefaultThreadPoolFactory() {
-                @Override
+            @Override
             public ExecutorService newThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
 
                 ExecutorService executorService;
@@ -139,13 +141,19 @@ public class MessageBrokerService implements ContainerService {
     public void start(Container container) throws Exception {
         LOG.info("Starting Camel message broker");
         context.start();
+        isStarted = true;
     }
 
     @Override
     public void stop(Container container) throws Exception {
+        isStarted = false;
         if (context != null) {
             context.stop();
         }
+    }
+
+    public boolean isStarted() {
+        return isStarted;
     }
 
     public DefaultCamelContext getContext() {
