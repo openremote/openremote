@@ -232,6 +232,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
+        console.debug(changedProperties);
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
             this.loadData();
@@ -240,7 +241,8 @@ export class PageUsers extends Page<AppStateKeyed> {
             this._sessionLoader = undefined; // Reset the MQTT sessions view
             this._updateRoute();
         } else if (changedProperties.has('creationState')) {
-            this._updateNewUserRoute();
+
+            // this._updateNewUserRoute();
         }
         return super.shouldUpdate(changedProperties);
     }
@@ -857,6 +859,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+        console.debug("getSingleUserTemplate()");
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
@@ -1181,7 +1184,13 @@ export class PageUsers extends Page<AppStateKeyed> {
         if (state.app.page == 'users') { // it seems that the check is necessary here
             this.realm = state.app.realm;
             this.userId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
-            this.creationState = (state.app.params?.type ? {userModel: this.getNewUserModel(state.app.params.type == 'serviceuser')} : undefined);
+
+            // If the user creation parameters have changed from `/regular` to `/serviceuser` (or the other way around)
+            // we need to update the creationState to a modified user model.
+            const userType: string | undefined = state.app.params?.type;
+            if(userType && (this.creationState?.userModel.serviceAccount !== (userType === "serviceuser"))) {
+                this.creationState = {userModel: this.getNewUserModel(userType === "serviceuser")};
+            }
         }
     }
 
