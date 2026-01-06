@@ -232,7 +232,6 @@ export class PageUsers extends Page<AppStateKeyed> {
 
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
-        console.debug(changedProperties);
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
             this.loadData();
@@ -241,8 +240,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             this._sessionLoader = undefined; // Reset the MQTT sessions view
             this._updateRoute();
         } else if (changedProperties.has('creationState')) {
-
-            // this._updateNewUserRoute();
+            this._updateNewUserRoute();
         }
         return super.shouldUpdate(changedProperties);
     }
@@ -859,7 +857,6 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
-        console.debug("getSingleUserTemplate()");
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
