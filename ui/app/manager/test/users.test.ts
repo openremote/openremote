@@ -78,7 +78,7 @@ test(`Verify browser behavior while creating regular users`, async ({ page, user
     await usersPage.toHavePermissions(...permissions);
     await page.evaluate(() => {
         document.dispatchEvent(new Event('visibilitychange'));
-    })
+    });
     await expect(await page.getByRole('textbox', {name: /username/i }).inputValue()).toBe("mycustomusername");
     await expect(await page.getByRole('textbox', {name: /email/i }).inputValue()).toBe("mycustom@email.com");
     await usersPage.toHavePermissions(...permissions);
