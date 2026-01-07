@@ -69,7 +69,7 @@ test(`Create service users with tags and search by tag`, async ({ page, manager,
  * @and You switch to a different tab in your browser, and navigate back later. (simulated using the visibilitychange event)
  * @then The creation window still has the same state, so you can continue creating that user.
  */
-test(`Verify browser behavior while creating regular users`, async ({ context, page, manager, usersPage }) => {
+test(`Verify browser behavior while creating regular users`, async ({ page, usersPage }) => {
     await usersPage.gotoUserCreation("master", "regular");
     await page.locator("label").filter({ hasText: "Username" }).fill("mycustomusername");
     await page.locator("label").filter({ hasText: "Email" }).fill("mycustom@email.com");
