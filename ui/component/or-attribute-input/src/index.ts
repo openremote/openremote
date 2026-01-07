@@ -120,7 +120,7 @@ let valueDescriptorSchemaHashes: Record<string, string>
 const schemas = new Map<string, any>()
 
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
-    if (valueDescriptor.jsonType === "object" || valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
+    if (Util.isComplexMetaItem(valueDescriptor)) {
         const disabled = !!(options && options.disabled);
         const readonly = !!(options && options.readonly);
         const label = options.label;

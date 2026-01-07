@@ -537,6 +537,14 @@ export function hasMetaItem(name: string | NameHolder, attribute: Attribute<any>
     return false;
 }
 
+export function isComplexMetaItem(descriptor: ValueDescriptor | undefined): boolean {
+    return Boolean(descriptor?.jsonType === "object" || descriptor?.arrayDimensions && descriptor?.arrayDimensions > 0);
+}
+
+export function getComplexMetaItems(): MetaItemDescriptor[] {
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isComplexMetaItem(AssetModelUtil.getValueDescriptor(m.name)));
+}
+
 export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
     if (typeof type === "string") {
         type = AssetModelUtil.getAssetDescriptor(type);
