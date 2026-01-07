@@ -7,7 +7,7 @@ const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
 import { Asset, ManagerAppConfig, ManagerConfig, Role } from "@openremote/model";
-import { test as base, expect, type Page, type ComponentTestFixtures, type Shared, withPage } from "@openremote/test";
+import { test as base, expect, type Page, type SharedComponentTestFixtures, type Shared, withPage } from "@openremote/test";
 import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
@@ -438,7 +438,7 @@ interface PageFixtures {
   usersPage: UsersPage;
 }
 
-interface ComponentFixtures extends ComponentTestFixtures {
+interface ComponentFixtures extends SharedComponentTestFixtures {
   assetViewer: AssetViewer;
   assetTree: AssetTree;
   collapsiblePanel: CollapsiblePanel;
