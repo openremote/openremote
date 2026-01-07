@@ -1,193 +1,142 @@
 import { expect } from "@openremote/test";
 import { test, userStatePath } from "./fixtures/manager.js";
-import assets, { assetMap, assetPatches, thing } from "./fixtures/data/assets.js";
-import {WellknownMetaItems} from "@openremote/model";
+import assets, { assetMap, assetPatches, commonAttrs, thing } from "./fixtures/data/assets.js";
+import { AssetModelUtil, WellknownMetaItems } from "@openremote/model";
+// `@openremote/core` depends on or-icon and isn't supported in nodejs
 import * as Util from "@openremote/core/lib/util";
 
 test.use({ storageState: userStatePath });
 
 assets.forEach(({ type, name, attributes }) => {
-  const { attribute1, attribute2, attribute3, value1, value2, value3, x, y } =
-    assetPatches[name as keyof typeof assetPatches];
+    const { attribute1, attribute2, attribute3, value1, value2, value3, x, y } =
+        assetPatches[name as keyof typeof assetPatches];
 
-  /**
-   * @given Logged in to OpenRemote "smartcity" realm as "smartcity"
-   * @when Navigating to the "asset" tab
-   * @and Creating an asset of a specific type with the given name
-   * @and Opening the asset's detail page
-   * @and Switching to modify mode
-   * @and Setting values for specified attributes
-   * @and Saving the changes
-   * @then The asset with the given name should be visible in the UI
-   */
-  test(`Add new ${name} asset and configure its attributes`, async ({ page, manager, assetsPage, assetViewer }) => {
-    await manager.goToRealmStartPage("smartcity");
-    await assetsPage.goto();
-    await assetsPage.addAsset(assetMap[name!], name!);
-    await page.click(`#list-container >> text=${name}`);
-    await assetViewer.switchMode("modify");
-    await assetViewer.setAttributeValue(attribute1, value1);
-    await assetViewer.setAttributeValue(attribute2, value2);
-    const saveBtn = page.getByRole("button", { name: "Save" });
-    await saveBtn.click();
-    await expect(saveBtn).toBeDisabled();
-    await expect(page.locator(`text=${name}`)).toHaveCount(1);
-  });
+    /**
+     * @given Logged in to OpenRemote "smartcity" realm as "smartcity"
+     * @when Navigating to the "asset" tab
+     * @and Creating an asset of a specific type with the given name
+     * @and Opening the asset's detail page
+     * @and Switching to modify mode
+     * @and Setting values for specified attributes
+     * @and Saving the changes
+     * @then The asset with the given name should be visible in the UI
+     */
+    test(`Add new ${name} asset and configure its attributes`, async ({ page, manager, assetsPage, assetViewer }) => {
+        await manager.goToRealmStartPage("smartcity");
+        await assetsPage.goto();
+        await assetsPage.addAsset(assetMap[name!], name!);
+        await page.click(`#list-container >> text=${name}`);
+        await assetViewer.switchMode("modify");
+        await assetViewer.setAttributeValue(attribute1, value1);
+        await assetViewer.setAttributeValue(attribute2, value2);
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
+        await expect(page.locator(`text=${name}`)).toHaveCount(1);
+    });
 
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "asset" tab
-   * @and Selecting an asset by name
-   * @and Updating a specific attribute with a new value and type
-   * @and Switching to modify mode
-   * @and Updating the asset's location via map click
-   * @and Saving the changes
-   * @then The updated asset is saved and changes are persisted
-   */
-  test(`Update a ${name} asset's attributes and location`, async ({ page, manager, assetViewer }) => {
-    await manager.setup("smartcity", { assets });
-    await manager.goToRealmStartPage("smartcity");
-    await manager.navigateToTab("asset");
-    await page.click(`text=${name}`);
+    /**
+     * @given Assets are set up in the "smartcity" realm
+     * @when Logging in to the OpenRemote "smartcity" realm
+     * @and Navigating to the "asset" tab
+     * @and Selecting an asset by name
+     * @and Updating a specific attribute with a new value and type
+     * @and Switching to modify mode
+     * @and Updating the asset's location via map click
+     * @and Saving the changes
+     * @then The updated asset is saved and changes are persisted
+     */
+    test(`Update a ${name} asset's attributes and location`, async ({ page, manager, assetViewer }) => {
+        await manager.setup("smartcity", { assets });
+        await manager.goToRealmStartPage("smartcity");
+        await manager.navigateToTab("asset");
+        await page.click(`text=${name}`);
 
-    const type = attributes[attribute3 as keyof typeof attributes].type;
-    const item = page.locator(`#field-${attribute3} input[type="${type}"]`);
-    if (await item.isEditable()) {
-      await item.fill(value3);
-      await page.click(`#field-${attribute3} #send-btn span`);
-    }
+        const type = attributes[attribute3 as keyof typeof attributes].type;
+        const item = page.locator(`#field-${attribute3} input[type="${type}"]`);
+        if (await item.isEditable()) {
+            await item.fill(value3);
+            await page.click(`#field-${attribute3} #send-btn span`);
+        }
 
-    await assetViewer.switchMode("modify");
-    await assetViewer.getAttributeLocator("location").getByRole("button").click();
-    await page.mouse.click(x, y, { delay: 1000 });
-    await page.getByRole("button", { name: "OK" }).click();
+        await assetViewer.switchMode("modify");
+        await assetViewer.getAttributeLocator("location").getByRole("button").click();
+        await page.mouse.click(x, y, { delay: 1000 });
+        await page.getByRole("button", { name: "OK" }).click();
 
-    const saveBtn = page.getByRole("button", { name: "Save" });
-    await saveBtn.click();
-    await expect(saveBtn).toBeDisabled();
-  });
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
+    });
 
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "asset" tab
-   * @and Selecting the asset by name
-   * @and Switching to modify mode
-   * @and Toggling read-only status for two attributes
-   * @and Saving the changes
-   * @and Navigating to the asset's view panel
-   * @then The correct read-only indicators should be present for the attributes
-   */
-  test(`Toggle read-only for two attributes on a ${name} asset`, async ({ page, manager, assetViewer }) => {
-    await manager.setup("smartcity", { assets });
-    await manager.goToRealmStartPage("smartcity");
-    await manager.navigateToTab("asset");
-    await page.click(`text=${name}`);
+    /**
+     * @given Assets are set up in the "smartcity" realm
+     * @when Logging in to the OpenRemote "smartcity" realm
+     * @and Navigating to the "asset" tab
+     * @and Selecting the asset by name
+     * @and Switching to modify mode
+     * @and Toggling read-only status for two attributes
+     * @and Saving the changes
+     * @and Navigating to the asset's view panel
+     * @then The correct read-only indicators should be present for the attributes
+     */
+    test(`Toggle read-only for two attributes on a ${name} asset`, async ({ page, manager, assetViewer }) => {
+        await manager.setup("smartcity", { assets });
+        await manager.goToRealmStartPage("smartcity");
+        await manager.navigateToTab("asset");
+        await page.click(`text=${name}`);
 
-    await assetViewer.switchMode("modify");
-    await page.getByRole("button", { name: "Expand all" }).click();
+        await assetViewer.switchMode("modify");
+        await page.getByRole("button", { name: "Expand all" }).click();
 
-    await assetViewer.getAttributeLocator(attribute1).click();
-    await assetViewer.getConfigurationItemLocator(attribute1, "Read only").locator("label").click();
+        await assetViewer.getAttributeLocator(attribute1).click();
+        await assetViewer.getConfigurationItemLocator(attribute1, "Read only").locator("label").click();
 
-    await assetViewer.getAttributeLocator(attribute2).click();
-    await assetViewer.getConfigurationItemLocator(attribute2, "Read only").locator("label").click();
+        await assetViewer.getAttributeLocator(attribute2).click();
+        await assetViewer.getConfigurationItemLocator(attribute2, "Read only").locator("label").click();
 
-    const saveBtn = page.getByRole("button", { name: "Save" });
-    await saveBtn.click();
-    await expect(saveBtn).toBeDisabled();
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
 
-    await page.getByRole("button", { name: "View" }).click();
-    await expect(page.getByRole("button", { name: "Modify" })).toBeVisible();
+        await page.getByRole("button", { name: "View" }).click();
+        await expect(page.getByRole("button", { name: "Modify" })).toBeVisible();
 
-    await expect(page.locator(`#field-${attribute1} #send-btn`)).toBeVisible();
-    await expect(page.locator(`#field-${attribute2} #send-btn`)).not.toBeVisible();
-  });
+        await expect(page.locator(`#field-${attribute1} #send-btn`)).toBeVisible();
+        await expect(page.locator(`#field-${attribute2} #send-btn`)).not.toBeVisible();
+    });
 
-  /**
-   * @given Assets are set up in the "smartcity" realm
-   * @when Logging in to the OpenRemote "smartcity" realm
-   * @and Navigating to the "asset" tab
-   * @and Selecting the asset by name
-   * @and Switching to modify mode
-   * @and Selecting configuration items like "ruleState" and "storeDataPoints" for two attributes
-   * @and Saving the changes
-   * @then The configuration items are persisted correctly
-   */
-  test(`Set "ruleState" and "storeDataPoints" for ${name} asset attributes`, async ({ page, manager, assetViewer }) => {
-    await manager.setup("smartcity", { assets });
-    await manager.goToRealmStartPage("smartcity");
-    await manager.navigateToTab("asset");
-    await page.click(`text=${name}`);
+    /**
+     * @given Assets are set up in the "smartcity" realm
+     * @when Logging in to the OpenRemote "smartcity" realm
+     * @and Navigating to the "asset" tab
+     * @and Selecting the asset by name
+     * @and Switching to modify mode
+     * @and Selecting configuration items like "ruleState" and "storeDataPoints" for two attributes
+     * @and Saving the changes
+     * @then The configuration items are persisted correctly
+     */
+    test(`Set "ruleState" and "storeDataPoints" for ${name} asset attributes`, async ({
+        page,
+        manager,
+        assetViewer,
+    }) => {
+        await manager.setup("smartcity", { assets });
+        await manager.goToRealmStartPage("smartcity");
+        await manager.navigateToTab("asset");
+        await page.click(`text=${name}`);
 
-    await assetViewer.switchMode("modify");
-    await page.getByRole("button", { name: "Expand all" }).click();
+        await assetViewer.switchMode("modify");
+        await page.getByRole("button", { name: "Expand all" }).click();
 
-    await assetViewer.addConfigurationItems(attribute1, "ruleState", "storeDataPoints");
-    await assetViewer.addConfigurationItems(attribute2, "ruleState", "storeDataPoints");
+        await assetViewer.addConfigurationItems(attribute1, "ruleState", "storeDataPoints");
+        await assetViewer.addConfigurationItems(attribute2, "ruleState", "storeDataPoints");
 
-    const saveBtn = page.getByRole("button", { name: "Save" });
-    await saveBtn.click();
-    await expect(saveBtn).toBeDisabled();
-  });
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
+    });
 });
-
-/**
- * @given Assets are set up in the "smartcity" realm
- * @when Login to OpenRemote "smartcity" realm as "smartcity"
- * @and Modifying thing asset
- * @and Adding primitive configuration items
- * @then The configuration items to be visible
- */
-test("Add all primitive configuration items", async ({ page, manager, assetViewer }) => {
-  await manager.setup("smartcity", { assets: [thing] });
-  await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Assets");
-  await page.getByText("Thing").click();
-  await assetViewer.switchMode("modify");
-  await page.getByRole("button", { name: "Expand all" }).click();
-  const items: [`${WellknownMetaItems}`, any][] = [
-    ["ruleState", true],
-    ["hasPredictedDataPoints", true],
-    ["storeDataPoints", true],
-    ["label", "test"],
-    ["showOnDashboard", true],
-    ["readOnly", true],
-    ["multiline", true],
-    ["accessPublicWrite", true],
-    ["momentary", true],
-    ["accessRestrictedRead", true],
-    ["dataPointsMaxAgeDays", 7],
-    ["accessRestrictedWrite", true],
-    ["secret", true],
-    ["ruleResetImmediate", true],
-    ["userConnected", "test"],
-    ["accessPublicRead", true],
-  ];
-  await assetViewer.addConfigurationItems("notes", ...items.map(([item]) => item));
-  for (const [item, value] of items) {
-    const itemLocator = assetViewer.getConfigurationItemLocator("notes");
-    const options = { name: Util.camelCaseToSentenceCase(item) };
-    if (typeof value === "string") {
-      const input = itemLocator.getByRole("textbox", options);
-      await input.fill(value);
-      await expect(input).toHaveValue(value);
-    } else if (typeof value === "number") {
-      const input = itemLocator.getByRole("spinbutton", options);
-      await input.fill(`${value}`);
-      await expect(input).toHaveValue(`${value}`);
-    } else if (value) {
-      await expect(itemLocator.getByRole("checkbox", options)).toBeChecked();
-    } else {
-      await expect(itemLocator.getByRole("checkbox", options)).not.toBeChecked();
-    }
-  }
-});
-
-// TODO: Add test for the "Load more" button, by modifying the LIMIT variable in or-asset-tree
-
-test.fixme("Add all complex configuration items", async ({ page, manager, shared }) => {});
 
 /**
  * @given Assets are set up in the "smartcity" realm
@@ -198,16 +147,298 @@ test.fixme("Add all complex configuration items", async ({ page, manager, shared
  * @and The asset column should appear empty (showing "Console")
  */
 test("Delete specified assets and verify they are removed", async ({ page, manager, assetsPage }) => {
-  await manager.setup("smartcity", { assets });
-  await manager.goToRealmStartPage("smartcity");
-  await manager.navigateToTab("Assets");
-  await assetsPage.deleteSelectedAsset(manager, "Battery");
-  await assetsPage.deleteSelectedAsset(manager, "Solar Panel");
-  await expect(page.locator("text=Console")).toHaveCount(1);
-  await expect(page.locator("text=Solar Panel")).toHaveCount(0);
-  await expect(page.locator("text=Battery")).toHaveCount(0);
+    await manager.setup("smartcity", { assets });
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("Assets");
+    await assetsPage.deleteSelectedAsset(manager, "Battery");
+    await assetsPage.deleteSelectedAsset(manager, "Solar Panel");
+    await expect(page.locator("text=Console")).toHaveCount(1);
+    await expect(page.locator("text=Solar Panel")).toHaveCount(0);
+    await expect(page.locator("text=Battery")).toHaveCount(0);
+});
+
+test.describe("Parent asset", () => {
+    test.beforeEach(async ({ manager }) => {
+        await manager.setup("smartcity", {
+            assets: [
+                {
+                    name: "Parent",
+                    type: "ThingAsset",
+                    realm: "smartcity",
+                    attributes: { ...commonAttrs },
+                },
+            ],
+        });
+        await manager.goToRealmStartPage("smartcity");
+    });
+
+    /**
+     * @given A thing (and parent) asset is set up in the "smartcity" realm
+     * @when Login to OpenRemote "smartcity" realm as "smartcity"
+     * @and Go to the asset page
+     * @and Modify the thing asset
+     * @and Add a parent asset called "Parent"
+     * @then The parent name should be set
+     */
+    test("can be added", async ({ manager, page, assetViewer }) => {
+        await manager.createAsset(thing);
+        await manager.navigateToTab("Assets");
+        await page.getByText("Thing").click();
+        await assetViewer.switchMode("modify");
+
+        await page.getByText("Parent Edit").getByRole("button").click();
+        await page.getByLabel("Select parent asset").getByText("Parent").click();
+        await page.getByLabel("Select parent asset").getByRole("button", { name: "OK" }).click();
+        await page.getByRole("button", { name: "Save" }).click();
+
+        await expect(page.getByRole("textbox", { name: "Parent" })).toHaveValue("Parent");
+    });
+
+    /**
+     * @given A thing (with parent) asset is set up in the "smartcity" realm
+     * @when Login to OpenRemote "smartcity" realm as "smartcity"
+     * @and Go to the asset page
+     * @and Modify the thing asset
+     * @and Remove the "Parent" parent asset
+     * @then The parent name should not be set
+     */
+    test("can be removed", async ({ manager, page, assetViewer, assetTree }) => {
+        await manager.createAsset({ ...thing, parentId: manager.assets[0].id });
+        await manager.navigateToTab("Assets");
+        await assetTree.getFilterInput().fill("Thing");
+        await assetViewer.switchMode("modify");
+
+        await page.getByText("Parent Edit").getByRole("button").click();
+        await page.getByLabel("Select parent asset").getByRole("button", { name: "NONE" }).click();
+        await page.getByRole("button", { name: "Save" }).click();
+
+        await expect(page.getByRole("textbox", { name: "Parent" })).toBeEmpty();
+    });
+});
+
+test.describe("Attributes", () => {
+    /**
+     * @given A thing asset is set up in the "smartcity" realm
+     * @when Login to OpenRemote "smartcity" realm as "smartcity"
+     * @and Go to the asset page
+     * @and Modify the thing asset
+     * @and Add an attribute called "test"
+     * @then The attribute should be visible
+     * @and be of type "Integer"
+     */
+    test("can be added", async ({ page, mwcInput, assetViewer, manager }) => {
+        await manager.setup("smartcity", { assets: [thing] });
+        await manager.goToRealmStartPage("smartcity");
+        await manager.navigateToTab("Assets");
+        await page.getByText("Thing").click();
+        await assetViewer.switchMode("modify");
+
+        await page.getByRole("button", { name: "Add attribute" }).click();
+
+        const dialog = page.getByLabel("Add attribute");
+        await dialog.locator("label").filter({ hasText: "Name" }).fill("test");
+        await dialog.getByRole("button", { name: "Value type" }).click();
+        await mwcInput.getSelectInputOption("Integer", dialog).click();
+        await dialog.getByRole("button", { name: "Add" }).click();
+        await page.getByRole("button", { name: "Save" }).click();
+
+        await expect(assetViewer.getAttributeLocator("test")).toBeVisible();
+        await expect(assetViewer.getAttributeLocator("test")).toContainText(/Integer/);
+        await expect(assetViewer.getAttributeLocator("test").getByRole("spinbutton")).toBeVisible();
+    });
+
+    /**
+     * @given A thing asset is set up in the "smartcity" realm
+     * @when Login to OpenRemote "smartcity" realm as "smartcity"
+     * @and Go to the asset page
+     * @and Modify the thing asset
+     * @and Remove the attribute called "test"
+     * @then The attribute should not be visible
+     */
+    test("can be removed", async ({ page, assetViewer, manager }) => {
+        await manager.setup("smartcity");
+        await manager.createAsset({
+            name: "Thing",
+            type: "ThingAsset",
+            realm: "smartcity",
+            attributes: { ...commonAttrs, test: { name: "test", type: "integer" } },
+        });
+        await manager.goToRealmStartPage("smartcity");
+        await manager.navigateToTab("Assets");
+        await page.getByText("Thing").click();
+        await assetViewer.switchMode("modify");
+
+        const attribute = assetViewer.getAttributeLocator("test");
+        await expect(attribute).toBeVisible();
+        await attribute.getByRole("button").last().click();
+        await page.getByRole("button", { name: "Save" }).click();
+
+        await expect(attribute).not.toBeVisible();
+    });
+});
+
+test.describe("Configuration items", () => {
+    test.beforeEach(async ({ manager }) => {
+        await manager.initAssetModel();
+    });
+
+    /**
+     * @given A thing asset is set up in the "smartcity" realm
+     * @when Login to OpenRemote "smartcity" realm as "smartcity"
+     * @and Go to the asset page
+     * @and Modify the thing asset
+     * @and Adding configuration items
+     * @then The configuration items to be visible
+     */
+    test("can be added", async ({ page, assetViewer, manager }) => {
+        await manager.setup("smartcity", { assets: [thing] });
+        await manager.goToRealmStartPage("smartcity");
+        await manager.navigateToTab("Assets");
+        await page.getByText("Thing").click();
+        await assetViewer.switchMode("modify");
+
+        const configurationItems = AssetModelUtil.getMetaItemDescriptors().map(
+            ({ name }) => name as `${WellknownMetaItems}`
+        );
+        await assetViewer.addConfigurationItems("notes", ...configurationItems);
+        for (const item of configurationItems) {
+            await expect(
+                assetViewer.getConfigurationItemLocator("notes", Util.camelCaseToSentenceCase(item))
+            ).toBeVisible();
+        }
+    });
+
+    test.describe(() => {
+        let primitiveItemsWithValues: [`${WellknownMetaItems}`, unknown][];
+        // let complexItemsWithValues: [`${WellknownMetaItems}`, unknown][];
+
+        function valueForType(
+            type: unknown,
+            dimensions = 0,
+            { string, number, boolean, object } = { string: "", number: 0, boolean: false, object: {} }
+        ): unknown {
+            if (dimensions > 0) {
+                return [valueForType(type, 0, { string, number, boolean, object })];
+            }
+            switch (type) {
+                case "string":
+                    return string;
+                case "bigint":
+                case "number":
+                    return number;
+                case "boolean":
+                    return boolean;
+                case "object":
+                    return object;
+            }
+        }
+
+        /**
+         * @given A thing asset is set up in the "smartcity" realm with all meta items
+         * @when Login to OpenRemote "smartcity" realm as "smartcity"
+         * @and Go to the asset page
+         * @and Modify the thing asset
+         */
+        test.beforeEach(async ({ assetViewer, manager, page }) => {
+            // We can safely escribe defaults inline with their json type as these descriptors are primitives without format
+            primitiveItemsWithValues = Util.getPrimitiveMetaItems().map((m) => {
+                const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
+                return [m.name, valueForType(jsonType, 0, { boolean: true, number: 0, string: "", object: {} })];
+            }) as [`${WellknownMetaItems}`, any][];
+            // TODO: resolve complex meta item values through their JSON Schema
+            // complexItemsWithValues = Util.getComplexMetaItems().map((m) => {
+            //     const { jsonType, arrayDimensions } = AssetModelUtil.getValueDescriptor(m.type)!;
+            //     return [m.name, valueForType(jsonType, arrayDimensions)];
+            // }) as [`${WellknownMetaItems}`, any][];
+            await manager.setup("smartcity");
+            await manager.createAsset({
+                name: "Thing",
+                type: "ThingAsset",
+                realm: "smartcity",
+                attributes: {
+                    ...commonAttrs,
+                    notes: { meta: Object.fromEntries([...primitiveItemsWithValues /*, ...complexItemsWithValues */]) },
+                },
+            });
+            await manager.goToRealmStartPage("smartcity");
+            await manager.navigateToTab("Assets");
+            await page.getByText("Thing").click();
+            await assetViewer.switchMode("modify");
+        });
+
+        /**
+         * @when Modifying configuration items
+         * @then The configuration items to be visible
+         */
+        test("can be modified", async ({ page, assetViewer }) => {
+            const updatedPrimitivesWithValues = Util.getPrimitiveMetaItems().map((m) => {
+                const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
+                return [m.name, valueForType(jsonType, 0, { boolean: false, number: 7, string: "test", object: {} })];
+            }) as [`${WellknownMetaItems}`, any][];
+            await assetViewer.expandAttribute("notes");
+
+            // Modify primitive configuration items
+            for (const [item, value] of updatedPrimitivesWithValues) {
+                const itemLocator = assetViewer.getConfigurationItemLocator("notes");
+                const options = { name: Util.camelCaseToSentenceCase(item) };
+                if (typeof value === "string") {
+                    await itemLocator.getByRole("textbox", options).fill(value);
+                } else if (typeof value === "number") {
+                    await itemLocator.getByRole("spinbutton", options).fill(`${value}`);
+                } else if (value) {
+                    await itemLocator.getByRole("checkbox", options).uncheck();
+                } else {
+                    await itemLocator.getByRole("checkbox", options).check();
+                }
+            }
+
+            await page.getByRole("button", { name: "Save" }).click();
+
+            for (const [item, value] of updatedPrimitivesWithValues) {
+                const itemLocator = assetViewer.getConfigurationItemLocator("notes");
+                const options = { name: Util.camelCaseToSentenceCase(item) };
+                if (typeof value === "string") {
+                    await expect(itemLocator.getByRole("textbox", options)).toHaveValue(value);
+                } else if (typeof value === "number") {
+                    await expect(itemLocator.getByRole("spinbutton", options)).toHaveValue(`${value}`);
+                } else if (value) {
+                    await expect(itemLocator.getByRole("checkbox", options)).not.toBeChecked();
+                } else {
+                    await expect(itemLocator.getByRole("checkbox", options)).toBeChecked();
+                }
+            }
+            // Modify complex configuration items
+            // jsonForms.walkForm();
+        });
+
+        /**
+         * @when Removing configuration items
+         * @then The configuration items to be visible
+         */
+        test("can be removed", async ({ page, assetViewer }) => {
+            // Remove primitive configuration items
+            await assetViewer.removeConfigurationItems("notes", ...primitiveItemsWithValues.map(([item]) => item));
+            // Remove complex configuration items
+            // await assetViewer.removeConfigurationItems("notes", ...complexItemsWithValues.map(([item]) => item));
+
+            await page.getByRole("button", { name: "Save" }).click();
+
+            const configurationItems = AssetModelUtil.getMetaItemDescriptors().map(
+                ({ name }) => name as `${WellknownMetaItems}`
+            );
+            for (const item of configurationItems) {
+                await expect(
+                    assetViewer.getConfigurationItemLocator("notes", Util.camelCaseToSentenceCase(item))
+                ).not.toBeVisible();
+            }
+        });
+
+        test.afterEach(async ({ manager }) => {
+            await manager.cleanUp();
+        });
+    });
 });
 
 test.afterEach(async ({ manager }) => {
-  await manager.cleanUp();
+    await manager.cleanUp();
 });

@@ -537,12 +537,20 @@ export function hasMetaItem(name: string | NameHolder, attribute: Attribute<any>
     return false;
 }
 
+export function isPrimitiveMetaItem(descriptor: ValueDescriptor | undefined): boolean {
+    return !isComplexMetaItem(descriptor);
+}
+
 export function isComplexMetaItem(descriptor: ValueDescriptor | undefined): boolean {
     return Boolean(descriptor?.jsonType === "object" || descriptor?.arrayDimensions && descriptor?.arrayDimensions > 0);
 }
 
+export function getPrimitiveMetaItems(): MetaItemDescriptor[] {
+  return AssetModelUtil.getMetaItemDescriptors().filter(m => isPrimitiveMetaItem(AssetModelUtil.getValueDescriptor(m.type)));
+}
+
 export function getComplexMetaItems(): MetaItemDescriptor[] {
-    return AssetModelUtil.getMetaItemDescriptors().filter(m => isComplexMetaItem(AssetModelUtil.getValueDescriptor(m.name)));
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isComplexMetaItem(AssetModelUtil.getValueDescriptor(m.type)));
 }
 
 export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {

@@ -607,7 +607,6 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _getParentTemplate() {
-        const viewer = this;
         let dialog: OrMwcDialog;
 
         const setParent = () => {
