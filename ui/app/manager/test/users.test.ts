@@ -73,7 +73,7 @@ test(`Verify browser behavior while creating regular users`, async ({ context, p
     await usersPage.gotoUserCreation("master", "regular");
     await page.locator("label").filter({ hasText: "Username" }).fill("mycustomusername");
     await page.locator("label").filter({ hasText: "Email" }).fill("mycustom@email.com");
-    await usersPage.toHavePermissions()
+    await usersPage.toHavePermissions();
     await usersPage.toggleUserRoles("Read", "Write");
     await usersPage.toHavePermissions(...permissions);
     await page.evaluate(() => {
@@ -82,7 +82,7 @@ test(`Verify browser behavior while creating regular users`, async ({ context, p
     await expect(await page.getByRole('textbox', {name: /username/i }).inputValue()).toBe("mycustomusername");
     await expect(await page.getByRole('textbox', {name: /email/i }).inputValue()).toBe("mycustom@email.com");
     await usersPage.toHavePermissions(...permissions);
-})
+});
 
 /**
  * @given Logged into the "smartcity" realm as "admin"
