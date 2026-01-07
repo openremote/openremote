@@ -1426,8 +1426,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                 dataset.data = data.map(point => [point.x, point.y]);
 
-                // Turn off symbols when amount of points is above 30
-                if(dataset.data.length > 30) {
+                // Turn off symbols when the amount of points is too dense
+                const maxSymbolCount = Math.min(this._chartElem ? this._chartElem?.clientWidth / 25 : 20, 20);
+                if(dataset.data.length > maxSymbolCount) {
                     dataset.showSymbol = false;
                 }
             }

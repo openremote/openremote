@@ -887,7 +887,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             },
             series: [{
                 data: data,
-                showSymbol: data.length <= 30
+                showSymbol: data.length <= 20
             }]
         });
     }
