@@ -1425,6 +1425,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>));
 
                 dataset.data = data.map(point => [point.x, point.y]);
+
+                // Turn off symbols when amount of points is above 30
+                if(dataset.data.length > 30) {
+                    dataset.showSymbol = false;
+                }
             }
 
             if (extended) {
