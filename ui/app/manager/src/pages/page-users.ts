@@ -17,6 +17,7 @@ import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
 import {map} from 'lit/directives/map.js';
 import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -857,6 +858,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+        console.debug("Generating form for", {...user});
+        console.debug(`Username is ${user.username}`);
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const isGatewayServiceUser = isServiceUser && user.username?.startsWith("gateway-");
@@ -872,7 +875,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
                                   pattern="[A-Za-z0-9_+@\\.\\-ßçʊÇʊ]+"
-                                  .value="${user.username}" autocomplete="false"
+                                  .value="${ifDefined(user.username)}" autocomplete="false"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
@@ -1185,7 +1188,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             // If the user creation parameters have changed from `/regular` to `/serviceuser` (or the other way around)
             // we need to update the creationState to a modified user model.
             const userType: string | undefined = state.app.params?.type;
-            if(userType && (this.creationState?.userModel.serviceAccount !== (userType === "serviceuser"))) {
+            if (userType && (this.creationState?.userModel.serviceAccount !== (userType === "serviceuser"))) {
                 this.creationState = {userModel: this.getNewUserModel(userType === "serviceuser")};
             }
         }
