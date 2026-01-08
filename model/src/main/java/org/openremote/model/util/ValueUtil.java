@@ -952,7 +952,7 @@ public class ValueUtil {
         Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
         valueDescriptorSchemas.putAll(metaItems.values().stream()
                 .map(AbstractNameValueDescriptorHolder::getType)
-                .filter(v -> v.getJsonType().equals("object") && v.getArrayDimensions() > 0)
+                .filter(v -> v.getJsonType().equals("object") && v.getArrayDimensions() != null && v.getArrayDimensions() > 0)
                 .collect(Collectors.toMap(ValueDescriptor::getName, vd -> (ObjectNode) getSchema(vd.getType()))));
         valueDescriptorSchemaHashes.putAll(valueDescriptorSchemas.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
