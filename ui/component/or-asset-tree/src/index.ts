@@ -1767,7 +1767,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 realm: {
                     name: manager.displayRealm
                 },
-                // parents: parentId ? [{ id: parentId }] : [], // Filters by parent ID. If parentId is null, it will only request 'top level' assets.
+                parents: parentId ? [{ id: parentId }] : [], // Filters by parent ID. If parentId is null, it will only request 'top level' assets.
                 select: { // Just need the basic asset info
                     attributes: []
                 },
@@ -1793,6 +1793,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const countResponse = await manager.rest.api.AssetResource.queryCount({...query, limit: 1000});
             if (countResponse.data < 1000) {
                 query.parents = undefined;
+                query.limit = 1000;
             }
 
             const eventPromise = this._sendEventWithReply({
