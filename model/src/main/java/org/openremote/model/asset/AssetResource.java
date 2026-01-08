@@ -346,7 +346,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "queryCount", summary = "Counts the amount of assets using a query")
-    int queryCount(@BeanParam RequestParams requestParams, AssetQuery query);
+    Integer queryCount(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
      * Change parent for a set of asset

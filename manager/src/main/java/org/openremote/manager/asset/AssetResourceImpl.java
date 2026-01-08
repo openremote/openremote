@@ -578,7 +578,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public int queryCount(RequestParams requestParams, AssetQuery query) {
+    public Integer queryCount(RequestParams requestParams, AssetQuery query) {
         if (query == null) {
             query = new AssetQuery();
         }

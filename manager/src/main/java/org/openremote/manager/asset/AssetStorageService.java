@@ -530,7 +530,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> findAll(em, query));
     }
 
-    public int count(AssetQuery query) {
+    public Integer count(AssetQuery query) {
         return persistenceService.doReturningTransaction(em -> count(em, query));
     }
 
@@ -1367,7 +1367,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     @SuppressWarnings("unchecked")
-    protected int count(EntityManager em, AssetQuery query) {
+    protected Integer count(EntityManager em, AssetQuery query) {
         if (query.access == null)
             query.access = PRIVATE;
 
@@ -1565,7 +1565,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
-        if(count) {
+        if (count) {
             sb.append("select COUNT(*)");
         } else {
             sb.append(buildSelectString(query, 1, binders, timeProvider));
@@ -1585,7 +1585,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             containsCalendarPredicate = !containsCalendarPredicate && appendWhereClause(sb, query, 3, binders, timeProvider);
         }
 
-        if(!count) {
+        if (!count) {
             sb.append(buildOrderByString(query));
         }
         sb.append(buildLimitString(query));
