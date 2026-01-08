@@ -340,7 +340,7 @@ test.describe("Configuration items", () => {
          * @and Modify the thing asset
          */
         test.beforeEach(async ({ assetViewer, manager, page }) => {
-            // We can safely escribe defaults inline with their json type as these descriptors are primitives without format
+            // We can safely ascribe defaults inline with their json type as these descriptors are primitives without format
             primitiveItemsWithValues = Util.getPrimitiveMetaItems().map((m) => {
                 const { jsonType } = AssetModelUtil.getValueDescriptor(m.type)!;
                 return [m.name, valueForType(jsonType, 0, { boolean: true, number: 0, string: "", object: {} })];

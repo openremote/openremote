@@ -316,7 +316,7 @@ export class Manager {
     async updateAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
             const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { ...(config || {}), headers: { Authorization: `Bearer ${access_token}` } };
+            config = { headers: { Authorization: `Bearer ${access_token}` } };
         }
         await rest.api.AssetResource.update(asset.id!, asset, config)
             .then((response) => {

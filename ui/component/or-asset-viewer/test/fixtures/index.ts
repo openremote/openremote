@@ -92,7 +92,7 @@ export class AssetViewer {
 
     /**
      * Ensure that the attribute is expanded
-     * @param attribute The attibute name to ensure to expand.
+     * @param attribute The attribute name to ensure to expand.
      * @returns The config item locator that belongs to the attribute.
      */
     async expandAttribute(attribute: string): Promise<Locator> {

@@ -542,11 +542,11 @@ export function isPrimitiveMetaItem(descriptor: ValueDescriptor | undefined): bo
 }
 
 export function isComplexMetaItem(descriptor: ValueDescriptor | undefined): boolean {
-    return Boolean(descriptor?.jsonType === "object" || descriptor?.arrayDimensions && descriptor?.arrayDimensions > 0);
+    return Boolean(descriptor?.jsonType === "object" || descriptor?.arrayDimensions && descriptor.arrayDimensions > 0);
 }
 
 export function getPrimitiveMetaItems(): MetaItemDescriptor[] {
-  return AssetModelUtil.getMetaItemDescriptors().filter(m => isPrimitiveMetaItem(AssetModelUtil.getValueDescriptor(m.type)));
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isPrimitiveMetaItem(AssetModelUtil.getValueDescriptor(m.type)));
 }
 
 export function getComplexMetaItems(): MetaItemDescriptor[] {
