@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ -z "$K_CONTEXT" ]; then
+    echo "Error: K_CONTEXT environment variable is not set"
+    echo "Please set it to the kubernetes context to use with: export K_CONTEXT=context"
+    exit 1
+fi
+
 . ./eks-common.sh
 
 CLUSTER_VPC_ID=$(aws eks describe-cluster --name $CLUSTER_NAME --query 'cluster.resourcesVpcConfig.vpcId' --output text --profile or)
@@ -19,10 +25,10 @@ aws route53 change-resource-record-sets \
      '{"Changes": [ { "Action": "DELETE", "ResourceRecordSet": { "Name": "'$FQDN'", "Type": "A", "AliasTarget":{ "HostedZoneId": '$HOSTED_ZONE_ID',"DNSName": '$DNS_NAME',"EvaluateTargetHealth": false} } } ]}' \
      --profile dnschg
 
-helm uninstall manager
-helm uninstall keycloak
-helm uninstall postgresql
-helm uninstall proxy
+helm uninstall --kube-context=$K_CONTEXT manager
+helm uninstall --kube-context=$K_CONTEXT keycloak
+helm uninstall --kube-context=$K_CONTEXT postgresql
+helm uninstall --kube-context=$K_CONTEXT proxy
 
 echo "Delete VPC peerings"
 
@@ -42,15 +48,15 @@ while aws elbv2 describe-load-balancers  --profile or --query "LoadBalancers[?Vp
   echo "Waiting for load balancers to be deleted..."
   sleep 10
 done
-helm uninstall aws-load-balancer-controller -n kube-system
+helm uninstall --kube-context=$K_CONTEXT aws-load-balancer-controller -n kube-system
 
 MANAGER_VOLUMEID=$(kubectl get pv manager-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}')
 PSQL_VOLUMEID=$(kubectl get pv postgresql-data-pv -o=jsonpath='{.spec.awsElasticBlockStore.volumeID}')
-kubectl delete pv manager-data-pv
-kubectl delete pv postgresql-data-pv
+kubectl --context $K_CONTEXT delete pv manager-data-pv
+kubectl --context $K_CONTEXT delete pv postgresql-data-pv
 aws ec2 delete-volume --volume-id $MANAGER_VOLUMEID
 aws ec2 delete-volume --volume-id $PSQL_VOLUMEID
-helm uninstall or-setup
+helm uninstall --kube-context=$K_CONTEXT or-setup
 
 # Manually deleting all addons, this should not be required but otherwise the delete cluster fails
 # with "2 pods are unevictable from node ..." error messages
