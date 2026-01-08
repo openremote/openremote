@@ -368,7 +368,7 @@ test.describe("Configuration items", () => {
 
         /**
          * @when Modifying configuration items
-         * @then The configuration items to be visible
+         * @then The configuration items should be visible
          */
         test("can be modified", async ({ page, assetViewer }) => {
             const updatedPrimitivesWithValues = Util.getPrimitiveMetaItems().map((m) => {
@@ -413,7 +413,7 @@ test.describe("Configuration items", () => {
 
         /**
          * @when Removing configuration items
-         * @then The configuration items to be visible
+         * @then The configuration items should not be visible
          */
         test("can be removed", async ({ page, assetViewer }) => {
             // Remove primitive configuration items
