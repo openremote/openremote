@@ -40,6 +40,13 @@ public interface GatewayTunnelFactory {
     void stopTunnel(GatewayTunnelInfo tunnelInfo) throws Exception;
 
     /**
+     * Terminate all tunnel sessions for the given realm; should perform try/catch to prevent any exceptions bubbling
+     * and to ensure termination of each session is attempted.
+     * @param realm
+     */
+    void stopAllInRealm(String realm);
+
+    /**
      * Terminate all known tunnel sessions; should perform try/catch to prevent any exceptions bubbling and to ensure
      * termination of each session is attempted.
      */
