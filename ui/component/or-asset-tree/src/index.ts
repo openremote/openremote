@@ -1790,10 +1790,15 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
 
             // We request the number of assets through the HTTP API, and disable pagination when there are less than 1000 assets.
-            const countResponse = await manager.rest.api.AssetResource.queryCount({...query, limit: 1000});
-            if (countResponse.data < 1000) {
-                query.parents = undefined;
-                query.limit = 1000;
+            try {
+                const countResponse = await manager.rest.api.AssetResource.queryCount({...query, limit: 1000});
+                if (countResponse.data < 1000) {
+                    query.parents = undefined;
+                    query.limit = 1000;
+                }
+            } catch (error) {
+                // If the count request fails, log the error and fall back to default pagination behavior.
+                console.warn("Failed to query asset count, falling back to default pagination.", error);
             }
 
             const eventPromise = this._sendEventWithReply({
