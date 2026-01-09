@@ -1389,10 +1389,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         PreparedAssetQuery querySql = buildQuery(query, timerService::getCurrentTimeMillis, true).key;
-        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Integer.class).unwrap(org.hibernate.query.Query.class)
+        Query countQuery = em.createNativeQuery(querySql.querySql).unwrap(org.hibernate.query.Query.class)
                 .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
-        querySql.apply(em, jpql);
-        return (int)(Object)jpql.getSingleResult();
+        return ((Number) countQuery.getSingleResult()).intValue();
     }
 
     /**
