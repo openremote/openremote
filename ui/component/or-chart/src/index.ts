@@ -1265,6 +1265,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 this._dataAbortController = new AbortController();
                 promises = this.assetAttributes?.map(async ([assetIndex, attribute], index) => {
 
+                    const lineData: LineChartData[] = [];
                     const asset = this.assets[assetIndex];
                     const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const smooth = !!this.attributeConfig?.smoothAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
@@ -1281,30 +1282,32 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const options = { signal: this._dataAbortController?.signal };
 
                     // Load Historic Data
-                    const historicData = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} | ${label}`, options, unit);
-                    historicData.assetId = asset.id;
-                    historicData.attrName = attribute.name;
-                    historicData.unit = unit;
-                    historicData.yAxisIndex = shownOnRightAxis ? 1 : 0;
-                    data.push(historicData);
+                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} | ${label}`, options, unit);
+                    dataset.assetId = asset.id;
+                    dataset.attrName = attribute.name;
+                    dataset.unit = unit;
+                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
+                    lineData.push(dataset);
 
                     // Load Predicted Data
-                    const predictedData = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
-                    predictedData.yAxisIndex = shownOnRightAxis ? 1 : 0;
-                    data.push(predictedData);
-
-                    // Turn off symbols when the amount of points is too dense
-                    const datasetsWithoutFaint = [historicData, predictedData].filter(s => s.showSymbol);
-                    const showSymbols = this._canShowSymbols(datasetsWithoutFaint);
-                    datasetsWithoutFaint.forEach(d => d.showSymbol = showSymbols);
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
+                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
+                    lineData.push(dataset);
 
                     // If necessary, load Extended Data
                     if (extended) {
-                        const extendedData = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
-                        extendedData.yAxisIndex = shownOnRightAxis ? 1 : 0;
-                        data.push(extendedData);
+                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
+                        dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
+                        lineData.push(dataset);
                     }
 
+                    // Turn off symbols when the amount of points is too dense
+                    const datasetsWithoutFaint = lineData.filter(s => s.showSymbol);
+                    const showSymbols = this._canShowSymbols(datasetsWithoutFaint);
+                    datasetsWithoutFaint.forEach(d => d.showSymbol = showSymbols);
+
+                    // Add line data to the chart
+                    data.push(...lineData);
                 });
             }
 
