@@ -119,7 +119,7 @@ let valueDescriptorSchemaHashes: Record<string, string>
 const schemas = new Map<string, any>()
 
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
-    if (valueDescriptor.jsonType === "object" || valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
+    if (Util.isComplexMetaItem(valueDescriptor)) {
         const disabled = !!(options && options.disabled);
         const readonly = !!(options && options.readonly);
         const label = options.label;
@@ -134,16 +134,16 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         let prevValue: any;
 
         const onChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
-          if (!initialised) { 
-              return
-          };
-
-          if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
-              prevValue = dataAndErrors.data;
-              valueChangeNotifier({
-                  value: dataAndErrors.data
-              });
-          }
+            if (!initialised) { 
+                return
+            };
+  
+            if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
+                prevValue = dataAndErrors.data;
+                valueChangeNotifier({
+                    value: dataAndErrors.data
+                });
+            }
         };
 
         const doLoad = async (data: any) => {
@@ -153,8 +153,8 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             initialised = true;
 
             if (!valueDescriptorSchemaHashes) {
-              const response = await manager.rest.api.StatusResource.getInfo();
-              valueDescriptorSchemaHashes = response.data.valueDescriptorSchemaHashes;
+                const response = await manager.rest.api.StatusResource.getInfo();
+                valueDescriptorSchemaHashes = response.data.valueDescriptorSchemaHashes;
             }
 
             const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
