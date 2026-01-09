@@ -903,13 +903,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(chart){
             const options = chart.getOption();
             if (options.series && Array.isArray(options.series)) {
-                options.series.forEach(function (series) {
+                options.series.forEach(series => {
                     if (series.lineStyle.opacity === 0.2 || series.lineStyle.opacity === 0.99) {
                         series.lineStyle.opacity = 0.31;
                         series.showSymbol = false;
                     } else {
                         series.lineStyle.opacity = 1;
-                        series.showSymbol = true;
+                        series.showSymbol = this._canShowSymbols([series]);
                     }
                 });
             }
@@ -1281,23 +1281,28 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const options = { signal: this._dataAbortController?.signal };
 
                     // Load Historic Data
-                    let dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} | ${label}`, options, unit);
-                    dataset.assetId = asset.id;
-                    dataset.attrName = attribute.name;
-                    dataset.unit = unit;
-                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
-                    data.push(dataset);
+                    const historicData = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], false, smooth, stacked, stepped, area, faint, false, `${asset.name} | ${label}`, options, unit);
+                    historicData.assetId = asset.id;
+                    historicData.attrName = attribute.name;
+                    historicData.unit = unit;
+                    historicData.yAxisIndex = shownOnRightAxis ? 1 : 0;
+                    data.push(historicData);
 
                     // Load Predicted Data
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
-                    dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
-                    data.push(dataset);
+                    const predictedData = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], true, smooth, stacked, stepped, area, faint, false , `${asset.name} | ${label} ${i18next.t("predicted")}`, options, unit);
+                    predictedData.yAxisIndex = shownOnRightAxis ? 1 : 0;
+                    data.push(predictedData);
+
+                    // Turn off symbols when the amount of points is too dense
+                    const datasetsWithoutFaint = [historicData, predictedData].filter(s => s.showSymbol);
+                    const showSymbols = this._canShowSymbols(datasetsWithoutFaint);
+                    datasetsWithoutFaint.forEach(d => d.showSymbol = showSymbols);
 
                     // If necessary, load Extended Data
                     if (extended) {
-                        dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
-                        dataset.yAxisIndex = shownOnRightAxis ? 1 : 0;
-                        data.push(dataset);
+                        const extendedData = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
+                        extendedData.yAxisIndex = shownOnRightAxis ? 1 : 0;
+                        data.push(extendedData);
                     }
 
                 });
@@ -1425,12 +1430,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     .map(point => ({ x: point.x, y: point.y } as ValueDatapoint<any>));
 
                 dataset.data = data.map(point => [point.x, point.y]);
-
-                // Turn off symbols when the amount of points is too dense
-                const maxSymbolCount = Math.min(this._chartElem ? this._chartElem?.clientWidth / 25 : 20, 20);
-                if(dataset.data.length > maxSymbolCount) {
-                    dataset.showSymbol = false;
-                }
             }
 
             if (extended) {
@@ -1613,6 +1612,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         // Sort by value for better readability
         tooltipArray.sort((a, b) => b.value - a.value);
         return tooltipArray.map(t => t.text).join('');
+    }
+
+    protected _canShowSymbols(datasets: LineChartData[], chartElem = this._chartElem) {
+        const maxSymbolCount = Math.min(chartElem ? chartElem.clientWidth / 25 : 50, 50);
+        const totalSymbolCount = datasets.flatMap(item => item.data ?? []).length;
+        console.debug(`Points: ${totalSymbolCount}, max: ${maxSymbolCount}. Width is ${chartElem.clientWidth}`);
+        return totalSymbolCount <= maxSymbolCount;
     }
 
     /**
