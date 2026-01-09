@@ -85,3 +85,23 @@ spec:
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 {{- end }}
+---
+{{- if .Values.service.jmx.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: manager-jmx
+  {{- with .Values.service.jmx.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.jmx.type }}
+  ports:
+    - name: metrics
+      port: {{ .Values.service.jmx.port }}
+      targetPort: 8085
+      protocol: TCP
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+{{- end }}
