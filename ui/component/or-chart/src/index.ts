@@ -1617,7 +1617,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _canShowSymbols(datasets: LineChartData[], chartElem = this._chartElem) {
         const maxSymbolCount = Math.min(chartElem ? chartElem.clientWidth / 25 : 50, 50);
         const totalSymbolCount = datasets.flatMap(item => item.data ?? []).length;
-        console.debug(`Points: ${totalSymbolCount}, max: ${maxSymbolCount}. Width is ${chartElem.clientWidth}`);
         return totalSymbolCount <= maxSymbolCount;
     }
 
