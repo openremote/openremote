@@ -62,7 +62,7 @@ function hasRequiredRole(option: HeaderItem): boolean {
         return option.roles.some((r) => manager.hasRole(r));
     }
 
-    if (Util.isFunction(option.roles)) {
+    if (typeof option.roles === "function") {
         return (option.roles as () => boolean)();
     }
 
