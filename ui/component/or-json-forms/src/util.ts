@@ -234,8 +234,8 @@ export function getCombinatorIndexOfFittingSchema(
 }
 
 /**
- * Copied from eclipse source code to inject global definitions into the validating schema otherwise AJV will fail
- * to compile the schema - not perfect but works for our cases
+ * Copied from eclipse source code
+ * TODO: when updating to jsonforms/core 4.0 we could consider `mapStateToCombinatorRendererProps` from jsonform/core instead
  */
 export function mapStateToCombinatorRendererProps(
     state: JsonFormsState,
