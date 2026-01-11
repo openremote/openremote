@@ -42,7 +42,7 @@ public interface GatewayTunnelFactory {
     /**
      * Terminate all tunnel sessions for the given realm; should perform try/catch to prevent any exceptions bubbling
      * and to ensure termination of each session is attempted.
-     * @param realm
+     * @param realm the realm for which to terminate all tunnel sessions
      */
     void stopAllInRealm(String realm);
 
