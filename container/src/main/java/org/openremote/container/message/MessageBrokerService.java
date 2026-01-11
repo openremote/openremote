@@ -146,9 +146,12 @@ public class MessageBrokerService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-        isStarted = false;
-        if (context != null) {
-            context.stop();
+        try {
+            if (context != null) {
+                context.stop();
+            }
+        } finally {
+            isStarted = false;
         }
     }
 
