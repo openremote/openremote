@@ -128,7 +128,7 @@ export class TableWidget extends OrAssetWidget {
                 if(asset.attributes && asset.attributes[attrName]) {
                     const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, asset.type!);
                     const strValue = Util.getAttributeValueAsString(asset.attributes[attrName], attributeDescriptor, asset.type, false);
-                    const numValue = parseFloat(strValue);
+                    const numValue = Number(strValue);
                     return isNaN(numValue) ? strValue : numValue;
                 } else {
                     return 'N.A.'
