@@ -530,6 +530,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> findAll(em, query));
     }
 
+    public Integer count(AssetQuery query) {
+        return persistenceService.doReturningTransaction(em -> count(em, query));
+    }
+
     public List<String> findNames(String... ids) {
         if (ids == null || ids.length == 0)
             return new ArrayList<>();
@@ -1362,6 +1366,34 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return assets;
     }
 
+    @SuppressWarnings("unchecked")
+    protected Integer count(EntityManager em, AssetQuery query) {
+        if (query.access == null)
+            query.access = PRIVATE;
+
+        // Do some sanity checks on query values and return empty result set if empty query parameters
+        if (query.ids != null && query.ids.length == 0) {
+            return 0;
+        }
+        if (query.paths != null && query.paths.length == 0) {
+            return 0;
+        }
+        if (query.types != null && query.types.length == 0) {
+            return 0;
+        }
+        if (query.names != null && query.names.length == 0) {
+            return 0;
+        }
+        if (query.userIds != null && query.userIds.length == 0) {
+            return 0;
+        }
+
+        PreparedAssetQuery querySql = buildQuery(query, timerService::getCurrentTimeMillis, true).key;
+        Query countQuery = em.createNativeQuery(querySql.querySql).unwrap(org.hibernate.query.Query.class)
+                .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
+        return ((Number) countQuery.getSingleResult()).intValue();
+    }
+
     /**
      * This does a low level JDBC update so hibernate event interceptor doesn't get called and we 'manually'
      * generate the {@link AttributeEvent}
@@ -1524,11 +1556,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
 
     protected static Pair<PreparedAssetQuery, Boolean> buildQuery(AssetQuery query, Supplier<Long> timeProvider) {
+        return buildQuery(query, timeProvider, false);
+    }
+
+    protected static Pair<PreparedAssetQuery, Boolean> buildQuery(AssetQuery query, Supplier<Long> timeProvider, boolean count) {
         LOG.finest("Building: " + query);
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
-        sb.append(buildSelectString(query, 1, binders, timeProvider));
+        if (count) {
+            sb.append("select COUNT(*)");
+        } else {
+            sb.append(buildSelectString(query, 1, binders, timeProvider));
+        }
         sb.append(buildFromString(query, 1));
         boolean containsCalendarPredicate = appendWhereClause(sb, query, 1, binders, timeProvider);
 
@@ -1544,7 +1584,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             containsCalendarPredicate = !containsCalendarPredicate && appendWhereClause(sb, query, 3, binders, timeProvider);
         }
 
-        sb.append(buildOrderByString(query));
+        if (!count) {
+            sb.append(buildOrderByString(query));
+        }
         sb.append(buildLimitString(query));
         sb.append(buildOffsetString(query));
         return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);
