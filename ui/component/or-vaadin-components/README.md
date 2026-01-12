@@ -20,7 +20,7 @@ import "@openremote/or-vaadin-components/or-vaadin-textfield";
 const textField = document.createElement("or-vaadin-textfield");
 textField.setAttribute("label", "Company name");
 textField.setAttribute("value", "OpenRemote");
-document.head.appendChild(textField);
+document.body.appendChild(textField);
 ```
 
 ## License

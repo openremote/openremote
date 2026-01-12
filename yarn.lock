@@ -2405,7 +2405,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/theme@workspace:ui/component/theme"
   dependencies:
-    "@vaadin/vaadin-lumo-styles": "npm:~25.0.0-beta7"
+    "@vaadin/vaadin-lumo-styles": "npm:~25.0.1"
   languageName: unknown
   linkType: soft
 
@@ -3943,7 +3943,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vaadin/vaadin-lumo-styles@npm:~25.0.0-beta7":
+"@vaadin/vaadin-lumo-styles@npm:~25.0.1":
   version: 25.0.1
   resolution: "@vaadin/vaadin-lumo-styles@npm:25.0.1"
   dependencies:

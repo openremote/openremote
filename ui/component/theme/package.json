@@ -17,6 +17,6 @@
   "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@vaadin/vaadin-lumo-styles": "~25.0.0-beta7"
+    "@vaadin/vaadin-lumo-styles": "~25.0.1"
   }
 }

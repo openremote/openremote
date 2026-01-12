@@ -53,6 +53,7 @@ export class OrVaadinInput extends LitElement {
     /**
      * Static list of Vaadin component classes to scan through during attribute changes.
      * It's important that the complete list of CustomElements is defined here.
+     * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
      */
     public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
         customElements.get("or-vaadin-numberfield"),
