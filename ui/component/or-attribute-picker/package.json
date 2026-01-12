@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-picker",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote attribute picker dialog",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
