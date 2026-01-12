@@ -1,7 +1,7 @@
 # @openremote/or-vaadin-components
 [![NPM Version][npm-image]][npm-url]
 
-Package containing [Vaadin Web Components](https://vaadin.com/docs/latest/components), built with [Lit](https://lit.dev), with a slight adjustment to work within the OpenRemote ecosysytem.
+Package containing [Vaadin Web Components](https://vaadin.com/docs/latest/components), built with [Lit](https://lit.dev), with a slight adjustment to work within the OpenRemote ecosystem.
 For documentation you can check out their [website](https://vaadin.com/docs/latest/components).
 
 ## Install

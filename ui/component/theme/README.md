@@ -1,4 +1,4 @@
-# @openremote/or-theme
+# @openremote/theme
 [![NPM Version][npm-image]][npm-url]
 
 This is a package that contains CSS files used for styling OpenRemote components and apps.
@@ -8,8 +8,8 @@ Every theme is expected to have a light and dark counterpart.
 
 ## Install
 ```bash
-npm i @openremote/or-theme
-yarn add @openremote/or-theme
+npm i @openremote/theme
+yarn add @openremote/theme
 ```
 
 ## Usage
@@ -33,5 +33,5 @@ document.head.appendChild(style);
 ## License
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
-[npm-image]: https://img.shields.io/npm/v/@openremote/or-theme.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-theme
+[npm-image]: https://img.shields.io/npm/v/@openremote/theme.svg
+[npm-url]: https://npmjs.org/package/@openremote/theme
