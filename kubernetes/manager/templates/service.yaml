@@ -98,7 +98,7 @@ metadata:
 spec:
   type: {{ .Values.service.jmx.type }}
   ports:
-    - name: metrics
+    - name: jmx
       port: {{ .Values.service.jmx.port }}
       targetPort: 8085
       protocol: TCP
