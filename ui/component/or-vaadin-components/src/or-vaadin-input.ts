@@ -28,7 +28,7 @@ import "./or-vaadin-textarea";
 import "./or-vaadin-select";
 
 /**
- * Function to register properties (get/setter) of a CustomElement list to the child Vaadin element.
+ * Function to register properties (get/setter) of a CustomElement to the child Vaadin element.
  * When the Vaadin element does not recognize the HTML attribute or class property, it is ignored.
  * @param constructors - List of CustomElements to scan for available properties
  */
@@ -45,7 +45,6 @@ function registerProperties(constructors: (CustomElementConstructor | undefined)
 /**
  * Custom element that wraps various Vaadin input components based on the specified `type`.
  * Provides a unified interface for interacting with different types of inputs.
- *
  * @customElement "or-vaadin-input"
  */
 @customElement("or-vaadin-input")
@@ -79,9 +78,8 @@ export class OrVaadinInput extends LitElement {
     ]);
 
     /**
-     * Static map of what HTML event to listen for when a value changes.
+     * Static map of what HTML event to listen for when a value changes. By default, or when undefined, the "change" event is used.
      * Sometimes you'd like to override this, such as a text field, where it should only be updated "on submit".
-     * By default, or when undefined, the "change" event is used.
      */
     public static readonly CHANGE_EVENTS = new Map<InputType, string>([
         [InputType.BIG_INT, "submit"],
