@@ -68,7 +68,7 @@
     --or-color-warning-contrast: hsla(214, 33%, 13%, 0.9);
 
     /* Dark theme - Success colors */
-    --or-color-success: hsl(145, 72%, 30%, 1);
+    --or-color-success: hsl(145, 72%, 30%);
     --or-color-success-50pct: hsla(145, 92%, 51%, 0.5);
     --or-color-success-10pct: hsla(145, 92%, 51%, 0.1);
     --or-color-success-contrast: hsl(0, 0%, 100%);
