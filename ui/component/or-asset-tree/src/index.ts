@@ -302,6 +302,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Number})
     public readonly queryLimit = 100;
 
+    @property({type: Number})
+    public readonly paginationThreshold = 1000;
+
     protected config?: AssetTreeConfig;
 
     @state()
@@ -1788,6 +1791,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 query.ids = this.rootAssetIds;
                 query.recursive = true;
             }
+
+            // We request the number of assets through the HTTP API, and disable pagination when there are less than 1000 assets.
+            try {
+                const threshold = this.paginationThreshold ?? 1000;
+                const countResponse = await manager.rest.api.AssetResource.queryCount({...query, limit: threshold});
+                if (countResponse.data < threshold) {
+                    query.parents = undefined;
+                    query.limit = threshold;
+                }
+            } catch (error) {
+                // If the count request fails, log the error and fall back to default pagination behavior.
+                console.warn("Failed to query asset count, falling back to default pagination.", error);
+            }
+
             const eventPromise = this._sendEventWithReply({
                 eventType: "read-asset-tree",
                 assetQuery: query
