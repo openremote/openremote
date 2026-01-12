@@ -2343,6 +2343,7 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@vaadin/checkbox": "npm:~25.0.1"
+    "@vaadin/dialog": "npm:~25.0.1"
     "@vaadin/number-field": "npm:~25.0.1"
     "@vaadin/password-field": "npm:~25.0.1"
     "@vaadin/select": "npm:~25.0.1"
@@ -3753,6 +3754,20 @@ __metadata:
     "@vaadin/vaadin-usage-statistics": "npm:^2.1.0"
     lit: "npm:^3.0.0"
   checksum: 10c0/063a7f5300f9c20040471fa12df04b452cf36e3b618499a7e1008f906f81304729b8b6ce3ae630411af9f0c6addfc7edeee834568d058b06819192f21ef25674
+  languageName: node
+  linkType: hard
+
+"@vaadin/dialog@npm:~25.0.1":
+  version: 25.0.1
+  resolution: "@vaadin/dialog@npm:25.0.1"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/component-base": "npm:~25.0.1"
+    "@vaadin/lit-renderer": "npm:~25.0.1"
+    "@vaadin/overlay": "npm:~25.0.1"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.0.1"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/ad3cfcc53808bcc5dfb27733de92f8849958a8eeb99a59d9f232b647b8620b6166c492eca5bae7622b07db3125edd56c34a6156cdc7d323ed13f44e0995c1de6
   languageName: node
   linkType: hard
 
