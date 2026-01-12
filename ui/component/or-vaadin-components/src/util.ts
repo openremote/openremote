@@ -390,11 +390,11 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             }
         };
 
-        if(supportsVaadinInput(inputType)) {
+        if (supportsVaadinInput(inputType)) {
 
             // or-vaadin-checkbox has multiple states (like indeterminate), so it uses the 'checked' HTML attribute instead of 'value'.
             let checked = false;
-            if(inputType === InputType.CHECKBOX) {
+            if (inputType === InputType.CHECKBOX) {
                 checked = Boolean(value);
                 value = undefined;
             }
