@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-vaadin-components",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Vaadin Components packaged as components aligned with the OpenRemote design system",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -33,12 +33,13 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
-    "@vaadin/checkbox": "~25.0.0-rc1",
-    "@vaadin/number-field": "~25.0.0-rc1",
-    "@vaadin/password-field": "~25.0.0-rc1",
-    "@vaadin/select": "~25.0.0-rc1",
-    "@vaadin/text-area": "~25.0.0-rc1",
-    "@vaadin/text-field": "~25.0.0-rc1",
+    "@vaadin/checkbox": "~25.0.1",
+    "@vaadin/dialog": "~25.0.1",
+    "@vaadin/number-field": "~25.0.1",
+    "@vaadin/password-field": "~25.0.1",
+    "@vaadin/select": "~25.0.1",
+    "@vaadin/text-area": "~25.0.1",
+    "@vaadin/text-field": "~25.0.1",
     "lit": "^3.3.1"
   },
   "publishConfig": {

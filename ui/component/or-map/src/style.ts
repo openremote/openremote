@@ -29,13 +29,12 @@ export const style = css`
         --internal-or-map-marker-icon-active-width: var(--or-map-marker-icon-active-width, 24px);
         --internal-or-map-marker-icon-active-height: var(--or-map-marker-icon-active-height, 24px);
         --internal-or-map-marker-icon-active-transform: var(--or-map-marker-icon-active-transform, translate(-50%, -20px));
-        display: block;
+        display: flex;
         overflow: hidden;
-        
         min-height: var(--internal-or-map-min-height);
         width: var(--internal-or-map-width);
     }
-    
+
     canvas {
         outline: none !important;
     }
@@ -47,13 +46,17 @@ export const style = css`
     slot {
         display: none;
     }
-          
+
     #container {
         position: relative;
-        width: 100%;
-        height: 100%;    
+        /*
+         * Setting height/width through percentages doesn't work for WebKit browsers as the parent
+         * element's height property resolves to 0 when it's the :host element of a web components'
+         * shadow-dom.
+         */
+        flex: 1 1 auto;
     }
-    
+
     #map {
         position: absolute;
         left: 0;
