@@ -144,6 +144,14 @@ function inputTypeSupportsLabel(inputType: InputType) {
     return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.BUTTON_MOMENTARY;
 }
 
+/**
+ * Internal function to retrieve HTML template based on the Asset-, attribute-, and value descriptors
+ * It generates a template using `or-vaadin-input`, together with respective HTML attributes like min/max, pattern, and of course 'input type'.
+ * For example, a 'positive number' attribute will render a `<or-vaadin-input type="number" min="0">`.
+ * If the Vaadin input doesn't support the 'input type', it will automatically fall back to the older `or-mwc-input`.
+ *
+ * This is mostly copied over from `or-mwc-input`, so this will need optimizing once that has been deprecated.
+ */
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
     let inputType: InputType | undefined = options.inputType;
