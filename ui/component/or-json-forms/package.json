@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-json-forms",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Renders a JSON schema and provides instance editing",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
