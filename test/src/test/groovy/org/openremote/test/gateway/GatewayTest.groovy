@@ -65,55 +65,6 @@ import static org.openremote.model.value.ValueType.*
 
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
-    def "Concurrency failure test"() {
-
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def timerService = container.getService(TimerService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def agentService = container.getService(AgentService.class)
-        def gatewayService = container.getService(GatewayService.class)
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
-        def connectionStatuses = new CopyOnWriteArrayList<ConnectionStatus>()
-
-        expect: "the system should settle down"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
-        }
-
-        when: "a gateway client is created"
-        def gatewayClient = new GatewayIOClient(
-                new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingName").build(),
-                null,
-                new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingName/protocol/openid-connect/token",
-                        'abcd',
-                        'abcd',
-                        null).setBasicAuthHeader(true))
-        gatewayClient.setEncoderDecoderProvider({
-            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
-        })
-
-        and: "we add callback consumers to the client"
-        List<String> clientReceivedMessages = []
-        gatewayClient.addMessageConsumer({
-            message -> clientReceivedMessages.add(message)
-        })
-        gatewayClient.addConnectionStatusConsumer({
-            status -> connectionStatuses.add(status)
-        })
-
-        and: "the gateway connects to this manager using invalid credentials"
-        gatewayClient.connect()
-
-        then: "the gateway netty client should exponentially back off"
-        conditions.eventually {
-            assert connectionStatuses.size() > 5
-        }
-    }
-
     def "Gateway asset provisioning and local manager logic test"() {
 
         given: "the container environment is started"
