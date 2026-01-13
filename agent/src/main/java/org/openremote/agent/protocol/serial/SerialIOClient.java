@@ -24,6 +24,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
+
 import java.util.concurrent.Future;
 
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
@@ -82,5 +83,4 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
         bootstrap.option(STOP_BITS, STOPBITS_1);
         bootstrap.option(PARITY_BIT, NONE);
     }
-
 }

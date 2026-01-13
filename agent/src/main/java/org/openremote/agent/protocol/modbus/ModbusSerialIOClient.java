@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
@@ -53,6 +54,19 @@ public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
         bootstrap.option(DATA_BITS, dataBits);
         bootstrap.option(STOP_BITS, stopBits.toJSerialComm());
         bootstrap.option(PARITY_BIT, parity);
+    }
+
+    @Override
+    protected Class<? extends Channel> getChannelClass() {
+        String testChannelClassName = System.getProperty("modbus.serial.test.channel.class");
+        if (testChannelClassName != null) {
+            try {
+                return (Class<? extends Channel>) Class.forName(testChannelClassName);
+            } catch (ClassNotFoundException e) {
+                // Fall through to default
+            }
+        }
+        return super.getChannelClass();
     }
 
     @Override
