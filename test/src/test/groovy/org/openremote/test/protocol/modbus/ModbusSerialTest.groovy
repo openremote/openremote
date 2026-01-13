@@ -19,12 +19,13 @@
  */
 package org.openremote.test.protocol.modbus
 
+import io.netty.channel.Channel
 import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
+import org.openremote.agent.protocol.modbus.ModbusSerialIOClient
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit
-import org.openremote.agent.protocol.serial.SerialIOClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -55,7 +56,9 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     static ByteArrayOutputStream frameBuffer = new ByteArrayOutputStream()
 
     def setupSpec() {
-        SerialIOClient.setTestChannelClass(MockSerialChannel.class)
+        ModbusSerialIOClient.metaClass.getChannelClass = { ->
+            return MockSerialChannel.class
+        }
 
         // Set up mock serial channel to handle Modbus RTU frames
         MockSerialChannel.setDataHandler { byte[] data, MockSerialChannel.ResponseCallback responseCallback ->
@@ -86,7 +89,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
     def cleanupSpec() {
-        SerialIOClient.setTestChannelClass(null)
+        ModbusSerialIOClient.metaClass = null
         MockSerialChannel.setDataHandler(null)
     }
 
