@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-dashboard-builder",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote Dashboard Builder",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
