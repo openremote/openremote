@@ -27,9 +27,6 @@
     "@openremote/model": "workspace:*",
     "lit": "^3.3.1"
   },
-  "devDependencies": {
-    "typescript": "~5.9.3"
-  },
   "publishConfig": {
     "access": "public"
   }
