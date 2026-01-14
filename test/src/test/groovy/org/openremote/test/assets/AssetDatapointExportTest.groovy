@@ -30,6 +30,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.datapointExportLimit = 1000
 
         when: "requesting the first light asset in City realm"
         def asset = assetStorageService.find(
@@ -132,5 +133,25 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         assert values.contains("30.000") || values.contains("30")
         assert values.contains("40.000") || values.contains("40")
         assert values.contains("50.000") || values.contains("50")
+
+        /* ------------------------- */
+
+        when: "the limit of data export is lowered to 4"
+        assetDatapointService.datapointExportLimit = 4
+
+        and: "we try to export the same amount of data points"
+        def inputStream4 = assetDatapointService.exportDatapoints(
+                [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
+                dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+
+        then: "the CSV export should throw an exception"
+        thrown(DatapointQueryTooLargeException)
+
+        /* ------------------------- */
+
+        cleanup: "Remove the limit on datapoint querying"
+        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT;
     }
 }
