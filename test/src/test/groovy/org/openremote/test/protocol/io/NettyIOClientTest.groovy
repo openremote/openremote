@@ -92,7 +92,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         pauseLatch.countDown()
 
         then: "No attempt should be made to actually start the channel"
-        new PollingConditions(timeout: 5, delay: 2).eventually {
+        new PollingConditions(initialDelay: 1, timeout: 5, delay: 2).eventually {
             assert startChannelCount.get() == 0
         }
         
