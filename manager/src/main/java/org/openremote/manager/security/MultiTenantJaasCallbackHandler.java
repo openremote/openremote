@@ -33,8 +33,8 @@ import java.security.Principal;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
+import static org.apache.activemq.artemis.utils.CertificateUtil.getCertsFromConnection;
+import static org.apache.activemq.artemis.utils.CertificateUtil.getPeerPrincipalFromConnection;
 
 /**
  * A version of {@link JaasCallbackHandler} that supports multi-tenancy by introducing support for
