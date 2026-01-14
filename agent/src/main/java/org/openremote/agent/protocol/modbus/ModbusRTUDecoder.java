@@ -35,7 +35,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class ModbusRTUDecoder extends ByteToMessageDecoder {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusRTUDecoder.class);
-    private static final int MAX_FRAME_SIZE = 256; // Modbus RTU max frame size
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {

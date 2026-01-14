@@ -46,6 +46,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
     protected final Map<AttributeRef, ScheduledFuture<?>> writeIntervalMap = new HashMap<>();
     protected String connectionString;
     protected final Object requestLock = new Object();
+    protected int timeoutMs = 3000;
 
     public AbstractModbusProtocol(T agent) {super(agent);}
 
@@ -241,7 +242,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             }
 
             // Send request and wait for response
-            ModbusResponse response = sendModbusRequest(unitId, pdu, 3000);
+            ModbusResponse response = sendModbusRequest(unitId, pdu, timeoutMs);
 
             if (response.isException()) {
                 byte exceptionCode = response.getPdu()[1];
@@ -422,7 +423,7 @@ public abstract class AbstractModbusProtocol<S extends AbstractModbusProtocol<S,
             byte[] pdu = buildReadRequestPDU(functionCode, protocolAddress, batch.quantity);
 
             LOG.fine(getProtocolName() + " Read Request - MemoryArea: " + memoryArea + ", UnitId: " + effectiveUnitId + ", StartAddress: " + batch.startAddress + " (0x" + Integer.toHexString(protocolAddress) + "), Quantity: " + batch.quantity + ", AttributeCount: " + batch.attributes.size());
-            ModbusResponse response = sendModbusRequest(effectiveUnitId, pdu, 3000);
+            ModbusResponse response = sendModbusRequest(effectiveUnitId, pdu, timeoutMs);
 
             if (response.isException()) {
                 byte exceptionCode = response.getPdu()[1];

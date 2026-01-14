@@ -33,7 +33,6 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusTcpProtocol.class);
     private ModbusTcpIOClient client = null;
     private final Map<Integer, CompletableFuture<ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, Long> timedOutRequests = new ConcurrentHashMap<>(); // Track timed-out TxIDs with timestamp
 
     public ModbusTcpProtocol(ModbusTcpAgent agent) {super(agent);}
 
@@ -80,7 +79,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         return "TCP";
     }
 
-    private ModbusTcpFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+    protected ModbusTcpFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
         int transactionId;
         CompletableFuture<ModbusTcpFrame> responseFuture;
 
@@ -106,14 +105,13 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             return response;
         } catch (TimeoutException e) {
             LOG.warning("Modbus TCP request timeout - TxID: " + transactionId + ", UnitID: " + unitId);
-            timedOutRequests.put(transactionId, System.currentTimeMillis());
             throw e;
         } finally {
             pendingRequests.remove(transactionId);
         }
     }
 
-    private void handleIncomingFrame(ModbusTcpFrame frame) {
+    protected void handleIncomingFrame(ModbusTcpFrame frame) {
         LOG.finest(() -> "Received frame - TxID: " + frame.getTransactionId() + ", UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 
         int txId = frame.getTransactionId();
@@ -123,19 +121,8 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         if (future != null) {
             future.complete(frame);
         } else {
-            // Check if this was a timed-out request
-            Long timeoutTime = timedOutRequests.remove(txId);
-            if (timeoutTime != null) {
-                long latency = System.currentTimeMillis() - timeoutTime;
-                LOG.warning("Received late response for timed-out transaction ID " + txId + " (arrived " + latency + "ms after timeout)");
-            } else {
-                LOG.warning("Received response for unknown transaction ID: " + txId);
-            }
+            LOG.warning("Received Modbus TCP response for unknown or timed out transaction ID: " + txId);
         }
-
-        // Clean up old timed-out requests (older than 30 seconds)
-        long now = System.currentTimeMillis();
-        timedOutRequests.entrySet().removeIf(entry -> (now - entry.getValue()) > 30000);
     }
 
 }

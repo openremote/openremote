@@ -92,7 +92,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         return "Serial";
     }
 
-    private ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+    protected ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
         // sendLock ensures only one request-response cycle can be active at a time
         synchronized (sendLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
@@ -141,14 +141,14 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         }
     }
 
-    private void handleIncomingFrame(ModbusSerialFrame frame) {
+    protected void handleIncomingFrame(ModbusSerialFrame frame) {
         LOG.finest("Received frame - UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 
         synchronized (requestLock) {
             if (pendingRequest != null) {
                 pendingRequest.complete(frame);
             } else {
-                LOG.warning("Received response with no pending request - UnitID: " + frame.getUnitId());
+                LOG.warning("Received Modbus Serial response for unknown or timed out transaction ID: " + frame.getUnitId());
             }
         }
     }
