@@ -19,11 +19,13 @@
  */
 package org.openremote.test.protocol;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.oio.OioByteStreamChannel;
+import net.bytebuddy.asm.Advice;
 import org.openremote.agent.protocol.serial.JSerialCommDeviceAddress;
 
 import java.io.IOException;
@@ -252,6 +254,16 @@ public class MockSerialChannel extends OioByteStreamChannel {
                 safeSetFailure(promise, t);
                 closeIfClosed();
             }
+        }
+    }
+
+    /**
+     * ByteBuddy Advice to intercept SerialIOClient.getChannelClass() and return MockSerialChannel.
+     */
+    public static class GetChannelClassAdvice {
+        @Advice.OnMethodExit
+        public static void exit(@Advice.Return(readOnly = false) Class<? extends Channel> returnValue) {
+            returnValue = MockSerialChannel.class;
         }
     }
 }

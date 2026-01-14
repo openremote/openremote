@@ -19,10 +19,15 @@
  */
 package org.openremote.test.protocol.modbus
 
+import net.bytebuddy.agent.ByteBuddyAgent
+import net.bytebuddy.agent.builder.AgentBuilder
+import net.bytebuddy.asm.Advice
+import net.bytebuddy.matcher.ElementMatchers
 import org.openremote.agent.protocol.modbus.ModbusAgent
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.agent.protocol.modbus.ModbusSerialAgent
 import org.openremote.agent.protocol.modbus.ModbusSerialProtocol
+import org.openremote.agent.protocol.serial.SerialIOClient
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -54,7 +59,19 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     static ByteArrayOutputStream frameBuffer = new ByteArrayOutputStream()
 
     def setupSpec() {
-        System.setProperty("modbus.serial.test.channel.class", "org.openremote.test.protocol.MockSerialChannel")
+        // retransform SerialIOClient.getChannelClass() to return MockSerialChannel instead of JSerialCommChannel
+        def instrumentation = ByteBuddyAgent.install()
+        new AgentBuilder.Default()
+            .disableClassFormatChanges()
+            .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
+            .type(ElementMatchers.is(SerialIOClient.class))
+            .transform { builder, typeDescription, classLoader, module, protectionDomain ->
+                builder.visit(Advice.to(MockSerialChannel.GetChannelClassAdvice.class)
+                    .on(ElementMatchers.named("getChannelClass")))
+            }
+            .installOn(instrumentation)
+
+        instrumentation.retransformClasses(SerialIOClient.class)
 
         // Set up mock serial channel to handle Modbus RTU frames
         MockSerialChannel.setDataHandler { byte[] data, MockSerialChannel.ResponseCallback responseCallback ->
@@ -85,7 +102,6 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
     }
 
     def cleanupSpec() {
-        System.clearProperty("modbus.serial.test.channel.class")
         MockSerialChannel.setDataHandler(null)
     }
 
