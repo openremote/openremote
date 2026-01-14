@@ -3,7 +3,6 @@ package org.openremote.container.security;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
-import jakarta.inject.Inject;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -12,12 +11,12 @@ import java.util.concurrent.ConcurrentMap;
 
 public class KeyResolverService {
 
-    // Inject the base URL for Keycloak from a configuration file (e.g., microprofile-config.properties)
-    @Inject
-    @ConfigProperty(name = "or.keycloak.base.url")
     private String keycloakBaseUrl;
-
     private final ConcurrentMap<String, JWKSource<SecurityContext>> jwkSources = new ConcurrentHashMap<>();
+
+    public KeyResolverService(String keycloakBaseUrl) {
+        this.keycloakBaseUrl = keycloakBaseUrl;
+    }
 
     /**
      * Returns a JWKSource for the given Keycloak realm.

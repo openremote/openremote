@@ -52,6 +52,8 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    implementation "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion"
 }
 
 base {

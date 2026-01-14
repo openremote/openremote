@@ -23,9 +23,8 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.LoginConfig;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
@@ -37,6 +36,7 @@ import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.security.JWTAuthenticationFilter;
+import org.openremote.container.security.KeyResolverService;
 import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
@@ -50,10 +50,7 @@ import org.openremote.model.util.TextUtil;
 import javax.security.auth.Subject;
 import java.net.URI;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -61,7 +58,8 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 
@@ -176,23 +174,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 );
         httpClient = WebClient.registerDefaults(clientBuilder).build();
 
-        keycloakDeploymentCache = createKeycloakDeploymentCache();
-
-        keycloakConfigResolver = request -> {
-            // The realm we authenticate against must be available as a request header
-            String realm = request.getHeader(REALM_PARAM_NAME);
-            if (realm == null || realm.isEmpty()) {
-                LOG.finest("No realm in request, no authentication will be attempted: " + request.getURI());
-                return notAuthenticatedKeycloakDeployment;
-            }
-            KeycloakDeployment keycloakDeployment = getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID);
-            if (keycloakDeployment == null) {
-                LOG.fine("No Keycloak deployment available for realm, no authentication will be attempted: " + request.getURI());
-                return notAuthenticatedKeycloakDeployment;
-            }
-            return keycloakDeployment;
-        };
-
         if (container.isDevMode()) {
             authProxyHandler = ProxyHandler.builder()
                 .setProxyClient(new LoadBalancingProxyClient().addHost(keycloakServiceUri.build()))
@@ -251,10 +232,13 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void secureDeployment(ServletContext servletContext) {
-        servletContext.addFilter(new FilterInfo(JWTAuthenticationFilter.NAME, JWTAuthenticationFilter.class));
-        LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
-        servletContext.setLoginConfig(loginConfig);
-        servletContext.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
+        String keycloakUrl = "http://localhost:8080"; // Load this from your config system
+        KeyResolverService keyResolver = new KeyResolverService(keycloakUrl);
+        JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(keyResolver);
+
+        FilterRegistration.Dynamic registration = servletContext.addFilter(JWTAuthenticationFilter.NAME, jwtFilter);
+        registration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+        registration.setAsyncSupported(true);
     }
 
     public KeycloakResource getKeycloak() {

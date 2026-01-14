@@ -34,7 +34,6 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
-import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -473,7 +472,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             if (realmResource.toRepresentation().getSmtpServer().isEmpty())
                 throw new IllegalStateException("SMTP server is not configured for realm: " + realm);
             realmResource.users().get(userId).executeActionsEmail(
-                Collections.singletonList(UserModel.RequiredAction.UPDATE_PASSWORD.toString())
+                Collections.singletonList("UPDATE_PASSWORD")
             );
             return null;
         });

@@ -35,7 +35,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import jakarta.validation.constraints.NotNull;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Objects;

@@ -8,43 +8,48 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
-import jakarta.annotation.Priority;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.Provider;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 import org.openremote.model.Constants;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Provider
-@Priority(Priorities.AUTHENTICATION)
-public class JWTAuthenticationFilter implements ContainerRequestFilter {
+public class JWTAuthenticationFilter implements Filter {
 
     public static final String NAME = "JWTAuthFilter";
+    private final KeyResolverService keyResolverService;
 
-    @Inject
-    private KeyResolverService keyResolverService;
+    public JWTAuthenticationFilter(KeyResolverService keyResolverService) {
+        this.keyResolverService = keyResolverService;
+    }
 
     @Override
-    public void filter(ContainerRequestContext requestContext) {
-        String realm = requestContext.getHeaderString(Constants.REALM_PARAM_NAME);
-        if (realm == null) {
-            requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).entity(Constants.REALM_PARAM_NAME + " header is missing").build());
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse)) {
+            chain.doFilter(request, response);
             return;
         }
 
-        String authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+        String realm = httpRequest.getHeader(Constants.REALM_PARAM_NAME);
+        if (realm == null) {
+            httpResponse.sendError(HttpServletResponse.SC_BAD_REQUEST, Constants.REALM_PARAM_NAME + " header is missing");
+            return;
+        }
+
+        String authHeader = httpRequest.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            // Let the request pass. If a resource requires authentication and there's no
-            // security context, JAX-RS will correctly return a 401 Unauthorized.
+            // Anonymous - If the resource is protected, the container or application logic will handle the 401/403.
+            chain.doFilter(request, response);
             return;
         }
 
@@ -76,20 +81,32 @@ public class JWTAuthenticationFilter implements ContainerRequestFilter {
             // 5. Process the token. This verifies the signature and validates the claims.
             JWTClaimsSet claimsSet = jwtProcessor.process(token, null);
 
-            // Set preferred username as principal attribute
-            adapterConfig.setPrincipalAttribute("preferred_username");
-            Principal principal = () -> claimsSet.getSubject();
+            Principal principal = claimsSet::getSubject;
             List<String> rolesList = claimsSet.getStringListClaim("roles");
             Set<String> roles = (rolesList != null) ? new HashSet<>(rolesList) : Collections.emptySet();
 
-            jakarta.ws.rs.core.SecurityContext originalContext = requestContext.getSecurityContext();
-            TokenSecurityContext securityContext = new TokenSecurityContext(principal, roles, originalContext.isSecure(), "JWT");
-            requestContext.setSecurityContext(securityContext);
+            // Wrap the request to provide security context
+            HttpServletRequestWrapper authenticatedRequest = new HttpServletRequestWrapper(httpRequest) {
+                @Override
+                public Principal getUserPrincipal() {
+                    return principal;
+                }
+
+                @Override
+                public boolean isUserInRole(String role) {
+                    return roles.contains(role);
+                }
+
+                @Override
+                public String getAuthType() {
+                    return "JWT";
+                }
+            };
+
+            chain.doFilter(authenticatedRequest, response);
 
         } catch (Exception e) {
-            // In a real app, log the exception for debugging.
-            // e.g., LOG.warn("JWT validation failed", e);
-            requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Invalid or expired token").build());
+            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
         }
     }
 }

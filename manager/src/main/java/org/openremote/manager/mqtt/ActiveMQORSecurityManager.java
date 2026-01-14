@@ -28,7 +28,6 @@ import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
 import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;

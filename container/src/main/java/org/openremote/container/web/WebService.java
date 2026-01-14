@@ -40,7 +40,6 @@ import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.*;
 import jakarta.ws.rs.core.Application;
@@ -65,7 +64,8 @@ import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 import static org.openremote.container.web.CORSConfig.DEFAULT_CORS_ALLOW_ALL;
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
+import static org.openremote.model.Constants.OR_HOSTNAME;
 import static org.openremote.model.util.MapAccess.*;
 
 public abstract class WebService implements ContainerService {
@@ -473,20 +473,14 @@ public abstract class WebService implements ContainerService {
                         "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
                 );
 
-            ServletContainerInitializer containerInitializer = new ServletContainerInitializer() {
+            ServletContainerInitializer containerInitializer =
+                    (c, ctx) -> identityService.secureDeployment(ctx);
 
-               @Override
-               public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
+            InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
 
-               }
-            };
-            Class<? extends EventListener> listenerClass = containerInitializer.getClass();
-           InstanceFactory<? extends EventListener> factory = new ImmediateInstanceFactory<>(containerInitializer);
-
-           deploymentInfo.addListeners(Servlets.listener(listenerClass, factory))
-
-           deploymentInfo.addServletContainerInitializer()
-           identityService.secureDeployment(servletContext);
+            deploymentInfo.addServletContainerInitializer(
+                    new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+            );
         }
 
         // Cannot set config on constructor as init method will overwrite it

@@ -19,7 +19,6 @@
  */
 package org.openremote.container.security;
 
-import io.undertow.servlet.api.DeploymentInfo;
 import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
