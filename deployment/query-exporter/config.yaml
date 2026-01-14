@@ -301,7 +301,7 @@ queries:
 
   # Query 6: Datapoint query execution time for attribute with most data points
   datapoint_query_performance:
-    interval: 300  # Run every 5 minutes because it can be very expensive
+    interval: 86400  # Run once a day
     databases: [openremote]
     metrics: [pg_datapoint_query_duration_seconds, pg_datapoint_count]
     sql: |
