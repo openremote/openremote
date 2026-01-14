@@ -1389,7 +1389,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         PreparedAssetQuery querySql = buildQuery(query, timerService::getCurrentTimeMillis, true).key;
-        org.hibernate.query.Query<Object> countQuery = em.createNativeQuery(querySql.querySql).unwrap(org.hibernate.query.Query.class)
+        org.hibernate.query.Query<Object> countQuery = em.createNativeQuery(querySql.querySql, Integer.class).unwrap(org.hibernate.query.Query.class)
                 .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
 
         querySql.apply(em, countQuery);
@@ -1566,11 +1566,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
-        if (count) {
-            sb.append("select COUNT(*)");
-        } else {
-            sb.append(buildSelectString(query, 1, binders, timeProvider));
-        }
+        sb.append(buildSelectString(query, 1, binders, timeProvider));
         sb.append(buildFromString(query, 1));
         boolean containsCalendarPredicate = appendWhereClause(sb, query, 1, binders, timeProvider);
 
@@ -1586,11 +1582,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             containsCalendarPredicate = !containsCalendarPredicate && appendWhereClause(sb, query, 3, binders, timeProvider);
         }
 
-        if (!count) {
-            sb.append(buildOrderByString(query));
-        }
+        sb.append(buildOrderByString(query));
         sb.append(buildLimitString(query));
         sb.append(buildOffsetString(query));
+
+        if (count) {
+            sb.insert(0, "select COUNT(*) FROM (");
+            sb.append(")");
+        }
+
         return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);
     }
 
