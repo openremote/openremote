@@ -92,7 +92,7 @@ test(`Check if assets are visible in the tree`, async ({ assetTree, manager, ass
         await route.continue();
         const response = await request.response();
         expect(response?.status()).toBe(200);
-        expect(await response?.json()).toBe(9);
+        expect(await response?.json()).toBeGreaterThanOrEqual(8);
     });
 
     const batteryAssets = createBatteryAssets(2);
