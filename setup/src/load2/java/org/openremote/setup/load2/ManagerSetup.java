@@ -19,45 +19,28 @@
  */
 package org.openremote.setup.load2;
 
-
-import org.apache.commons.io.IOUtils;
-import org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler;
 import org.openremote.manager.provisioning.ProvisioningService;
-import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.BuildingAsset;
 import org.openremote.model.asset.impl.LightAsset;
-import org.openremote.model.asset.impl.WeatherAsset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.provisioning.X509ProvisioningConfig;
-import org.openremote.model.provisioning.X509ProvisioningData;
-import org.openremote.model.rules.RealmRuleset;
-import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
-import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
-import static org.openremote.model.value.ValueType.NUMBER;
+import static org.openremote.model.util.MapAccess.getBoolean;
+import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.setup.load2.KeycloakSetup.OR_SETUP_USERS;
 
 public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {

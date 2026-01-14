@@ -70,7 +70,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
 
     // TODO: RT - Not too sure the intention with the offset and seems to be used only in ignored tests so skip for now
 //    def setupSpec() {
-//        forecastThing2 = addForecastAsset(assetStorageService, managerTestSetup.realmEnergyName, forecastAttributeName, forecastConfig)
+//        forecastThing2 = addForecastAsset(assetStorageService, managerTestSetup.realmMasterName, forecastAttributeName, forecastConfig)
 //        Long offset = ((forecastConfig.getForecastPeriod().toMillis() * 2) / 3) * (-1)
 //        insertHistoryTestDataToDb(new AttributeRef(forecastThing2.id, forecastAttributeName), forecastHistoricalData, offset, forecastConfig)
 //
@@ -168,7 +168,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
         advancePseudoClock(now.toEpochMilli()-timerService.getCurrentTimeMillis(), MILLISECONDS, container)
 
         and: "forecast asset is added"
-        def forecastThing1 = addForecastAsset(assetStorageService, managerTestSetup.realmEnergyName, forecastAttributeName, forecastConfig)
+        def forecastThing1 = addForecastAsset(assetStorageService, managerTestSetup.realmMasterName, forecastAttributeName, forecastConfig)
         def attributeRef = new AttributeRef(forecastThing1.id, forecastAttributeName)
 
         then: "attribute should be registered at the forecast service"

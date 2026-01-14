@@ -1,6 +1,6 @@
 {
   "name": "@openremote/util",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Build Util",
   "author": "OpenRemote",
   "main": "webpack.util.js",
@@ -12,10 +12,11 @@
     "@custom-elements-manifest/analyzer": "^0.10.4",
     "@rspack/cli": "^1.4.4",
     "@rspack/core": "^1.4.4",
+    "@types/react": "^18",
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
     "@wc-toolkit/jsx-types": "^1.4.2",
-    "@wc-toolkit/storybook-helpers": "^9.0.1",
+    "@wc-toolkit/storybook-helpers": "^10.0.0",
     "@webcomponents/webcomponentsjs": "^2.6.0",
     "cross-env": "^7.0.3",
     "css-loader": "^7.1.2",
@@ -31,7 +32,7 @@
     "shx": "~0.4.0",
     "source-map-loader": "^5.0.0",
     "ts-loader": "~9.5.2",
-    "typescript": "~5.8.3",
+    "typescript": "5.8.3",
     "webpack": "^5.99.8"
   },
   "publishConfig": {
