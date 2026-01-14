@@ -88,7 +88,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].realm == managerTestSetup.realmMasterName
 
         when: "a user filtering query is executed"
-        def query = new AssetQuery().userIds(keycloakTestSetup.testuser3Id);
+        def query = new AssetQuery().userIds(keycloakTestSetup.testuser3Id)
         assets = assetStorageService.findAll(query)
 
         then: "only the users assets should be retrieved"

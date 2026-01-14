@@ -96,7 +96,7 @@ test(`Check if assets are visible in the tree`, async ({ assetTree, manager, ass
     });
 
     const batteryAssets = createBatteryAssets(2);
-    const electricityAssets = createElectricityAssets(2)
+    const electricityAssets = createElectricityAssets(2);
     await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
