@@ -23,7 +23,6 @@ import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
-import java.util.Optional;
 
 @Entity
 public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtocol>{
@@ -45,10 +44,6 @@ public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtoco
 
     public ModbusTcpAgent(String name) {
         super(name);
-    }
-
-    public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
-        return getAttributes().getValue(ModbusAgent.DEVICE_CONFIG);
     }
 
     @Override

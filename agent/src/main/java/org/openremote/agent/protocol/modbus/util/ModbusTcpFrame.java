@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.modbus;
+package org.openremote.agent.protocol.modbus.util;
 
 /**
  * Represents a Modbus TCP frame (MBAP header + PDU)
  */
-public class ModbusTcpFrame implements AbstractModbusProtocol.ModbusResponse {
+public class ModbusTcpFrame implements ModbusFrame {
     private final int transactionId;
     private final int protocolId;
     private final int length;

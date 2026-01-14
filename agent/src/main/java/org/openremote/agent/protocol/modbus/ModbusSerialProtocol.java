@@ -19,80 +19,130 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import io.netty.channel.ChannelHandler;
+import org.openremote.agent.protocol.modbus.util.ModbusProtocolCallback;
+import org.openremote.agent.protocol.modbus.util.ModbusSerialFrame;
+import org.openremote.agent.protocol.serial.AbstractSerialProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
+
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.logging.Level;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialProtocol, ModbusSerialAgent> {
+/**
+ * Modbus Serial (RTU) protocol implementation extending AbstractSerialProtocol.
+ * Uses ModbusProtocolHelper for shared Modbus logic (batching, polling, data conversion).
+ */
+public class ModbusSerialProtocol
+        extends AbstractSerialProtocol<ModbusSerialProtocol, ModbusSerialAgent, ModbusAgentLink, ModbusSerialFrame, ModbusSerialIOClient>
+        implements ModbusProtocolCallback<ModbusSerialFrame> {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusSerialProtocol.class);
-    private ModbusSerialIOClient client = null;
+
+    // Single pending request (RTU is half-duplex, no transaction IDs)
     private volatile CompletableFuture<ModbusSerialFrame> pendingRequest = null;
     private long lastRequestTime = 0;
-    private static final long MIN_REQUEST_INTERVAL_MS = 10; // Gap between requests per modbus.org (conservative number)
+    private static final long MIN_REQUEST_INTERVAL_MS = 10; // Gap between requests per modbus.org
     private final Object sendLock = new Object();
+
+    // Shared Modbus logic
+    private final ModbusProtocolHelper<ModbusSerialFrame> modbusHelper;
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
+        this.modbusHelper = new ModbusProtocolHelper<>(this);
     }
 
+    // ========== AbstractSerialProtocol methods ==========
+
     @Override
-    protected void doStartProtocol(Container container) throws Exception {
+    protected ModbusSerialIOClient doCreateIoClient() throws Exception {
         String portName = agent.getSerialPort().orElseThrow(() -> new RuntimeException("Serial port not specified"));
         int baudRate = agent.getBaudRate();
         int dataBits = agent.getDataBits();
         var stopBits = agent.getStopBits();
         var parity = agent.getParity();
 
-        connectionString = "modbus-rtu://" + portName + "?baud=" + baudRate + "&data=" + dataBits + "&stop=" + stopBits + "&parity=" + parity;
-
-        try {
-            client = new ModbusSerialIOClient(portName, baudRate, dataBits, stopBits, parity);
-            client.addMessageConsumer(this::handleIncomingFrame);
-            client.addConnectionStatusConsumer(this::setConnectionStatus);
-            client.connect();
-            LOG.info("Modbus Serial client created and connection initiated for " + connectionString);
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create Modbus Serial client: " + agent, e);
-            setConnectionStatus(ConnectionStatus.ERROR);
-            throw e;
-        }
+        return new ModbusSerialIOClient(portName, baudRate, dataBits, stopBits, parity);
     }
 
     @Override
-    protected void doStopProtocol(Container container) throws Exception {
-        if (client != null) {
-            client.disconnect();
-            client = null;
-        }
-        synchronized (requestLock) {
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
+        // ModbusSerialIOClient sets its own encoders/decoders in constructor
+        return () -> new ChannelHandler[0];
+    }
+
+    @Override
+    protected void onMessageReceived(ModbusSerialFrame frame) {
+        // Complete single pending request (RTU has no transaction IDs)
+        LOG.finest(() -> "Received frame - UnitID: " + frame.getUnitId() +
+                ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
+
+        synchronized (modbusHelper.requestLock) {
             if (pendingRequest != null) {
-                pendingRequest.cancel(true);
-                pendingRequest = null;
+                pendingRequest.complete(frame);
+            } else {
+                LOG.warning("Received Modbus Serial response with no pending request");
             }
         }
     }
 
     @Override
-    protected Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
-        return agent.getDeviceConfig();
+    protected ModbusSerialFrame createWriteMessage(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        // Not used - we override doLinkedAttributeWrite entirely
+        return null;
+    }
+
+    // ========== Lifecycle overrides ==========
+
+    @Override
+    protected void doStart(Container container) throws Exception {
+        super.doStart(container);  // Creates and connects IOClient
+        modbusHelper.onStart();    // Initialize device config
     }
 
     @Override
-    protected ModbusResponse sendModbusRequest(int unitId, byte[] pdu, long timeoutMs) throws Exception {
-        return sendRequestAndWaitForResponse(unitId, pdu, timeoutMs);
+    protected void doStop(Container container) throws Exception {
+        modbusHelper.onStop();     // Cancel scheduled tasks
+        synchronized (modbusHelper.requestLock) {
+            if (pendingRequest != null) {
+                pendingRequest.cancel(true);
+                pendingRequest = null;
+            }
+        }
+        super.doStop(container);   // Disconnect IOClient
+    }
+
+    // ========== Attribute linking - delegate to helper ==========
+
+    @Override
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
+        modbusHelper.linkAttribute(assetId, attribute, agentLink);
     }
 
     @Override
-    public String getProtocolName() {
-        return "Serial";
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
+        modbusHelper.unlinkAttribute(assetId, attribute, agentLink);
     }
 
-    protected ModbusSerialFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+    // ========== Write handling - delegate to helper ==========
+
+    @Override
+    protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        modbusHelper.handleAttributeWrite(agentLink, event, processedValue);
+    }
+
+    // ========== ModbusProtocolCallback implementation ==========
+
+    @Override
+    public ModbusSerialFrame sendModbusRequest(int unitId, byte[] pdu, long timeoutMs) throws Exception {
         // sendLock ensures only one request-response cycle can be active at a time
         synchronized (sendLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
@@ -115,7 +165,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
             CompletableFuture<ModbusSerialFrame> responseFuture = new CompletableFuture<>();
 
             // Register pending request (use requestLock for thread-safe access)
-            synchronized (requestLock) {
+            synchronized (modbusHelper.requestLock) {
                 pendingRequest = responseFuture;
             }
 
@@ -123,33 +173,63 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
                 // Send request
                 client.sendMessage(request);
                 lastRequestTime = System.currentTimeMillis();
-                LOG.finest("Sent Modbus Serial request - UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+                LOG.finest(() -> "Sent Modbus Serial request - UnitID: " + unitId +
+                        ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
 
                 // Wait for response (NOT holding requestLock so handler can complete the future)
                 ModbusSerialFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
-                LOG.finest("Received Modbus Serial response - UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
+                LOG.finest(() -> "Received Modbus Serial response - UnitID: " + response.getUnitId() +
+                        ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
                 return response;
             } catch (TimeoutException e) {
                 LOG.warning("Modbus Serial request timeout - UnitID: " + unitId);
                 throw e;
             } finally {
                 // Clear pending request
-                synchronized (requestLock) {
+                synchronized (modbusHelper.requestLock) {
                     pendingRequest = null;
                 }
             }
         }
     }
 
-    protected void handleIncomingFrame(ModbusSerialFrame frame) {
-        LOG.finest("Received frame - UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
+    @Override
+    public ConnectionStatus getConnectionStatus() {
+        return agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED);
+    }
 
-        synchronized (requestLock) {
-            if (pendingRequest != null) {
-                pendingRequest.complete(frame);
-            } else {
-                LOG.warning("Received Modbus Serial response for unknown or timed out transaction ID: " + frame.getUnitId());
-            }
-        }
+    @Override
+    public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
+        return agent.getDeviceConfig();
+    }
+
+    @Override
+    public ModbusAgent<?, ?> getModbusAgent() {
+        return agent;
+    }
+
+    @Override
+    public ScheduledExecutorService getScheduledExecutorService() {
+        return scheduledExecutorService;
+    }
+
+    @Override
+    public Map<AttributeRef, Attribute<?>> getLinkedAttributes() {
+        return linkedAttributes;
+    }
+
+    @Override
+    public void publishAttributeEvent(AttributeEvent event) {
+        sendAttributeEvent(event);
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "Modbus Serial";
+    }
+
+    @Override
+    public String getProtocolInstanceUri() {
+        return client != null ? client.getClientUri() : "";
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.modbus;
+package org.openremote.agent.protocol.modbus.util;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -27,7 +27,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class ModbusTcpEncoder extends io.netty.handler.codec.MessageToByteEncoder<ModbusTcpFrame> {
 
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusTcpIOClient.class);
+    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusTcpEncoder.class);
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ModbusTcpFrame frame, ByteBuf out) {

@@ -21,13 +21,15 @@ package org.openremote.agent.protocol.modbus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.Entity;
-import org.openremote.model.asset.agent.Agent;
+import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
+import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.util.HashMap;
+import java.util.Optional;
 
 @Entity
-public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends AbstractModbusProtocol<U, T>> extends Agent<T, U, ModbusAgentLink> {
+public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends AbstractIOClientProtocol<U, T, ?, ?, ModbusAgentLink>> extends IOAgent<T, U, ModbusAgentLink> {
 
     public enum EndianFormat {
         BIG_ENDIAN,              // ABCD - Big byte order, Big word order
@@ -89,5 +91,13 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
 
     protected ModbusAgent(String name) {
         super(name);
+    }
+
+    /**
+     * Get the device configuration map for this agent.
+     * @return Optional containing the device config map if configured
+     */
+    public Optional<DeviceConfigMap> getDeviceConfig() {
+        return getAttributes().getValue(DEVICE_CONFIG);
     }
 }

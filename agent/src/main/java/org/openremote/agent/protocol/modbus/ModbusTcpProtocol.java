@@ -19,72 +19,122 @@
  */
 package org.openremote.agent.protocol.modbus;
 
+import io.netty.channel.ChannelHandler;
+import org.openremote.agent.protocol.modbus.util.ModbusProtocolCallback;
+import org.openremote.agent.protocol.modbus.util.ModbusTcpFrame;
+import org.openremote.agent.protocol.tcp.AbstractTCPClientProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.logging.Level;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol, ModbusTcpAgent> {
+/**
+ * Modbus TCP protocol implementation extending AbstractTCPClientProtocol.
+ * Uses ModbusProtocolHelper for shared Modbus logic (batching, polling, data conversion).
+ */
+public class ModbusTcpProtocol
+        extends AbstractTCPClientProtocol<ModbusTcpProtocol, ModbusTcpAgent, ModbusAgentLink, ModbusTcpFrame, ModbusTcpIOClient>
+        implements ModbusProtocolCallback<ModbusTcpFrame> {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ModbusTcpProtocol.class);
-    private ModbusTcpIOClient client = null;
+
+    // Request/response correlation via transaction ID
     private final Map<Integer, CompletableFuture<ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();
 
-    public ModbusTcpProtocol(ModbusTcpAgent agent) {super(agent);}
+    // Shared Modbus logic
+    private final ModbusProtocolHelper<ModbusTcpFrame> modbusHelper;
+
+    public ModbusTcpProtocol(ModbusTcpAgent agent) {
+        super(agent);
+        this.modbusHelper = new ModbusProtocolHelper<>(this);
+    }
+
+    // ========== AbstractTCPClientProtocol methods ==========
 
     @Override
-    protected void doStartProtocol(Container container) throws Exception {
+    protected ModbusTcpIOClient doCreateIoClient() throws Exception {
         String host = agent.getHost().orElseThrow(() -> new IllegalStateException("Host not configured"));
         int port = agent.getPort().orElseThrow(() -> new IllegalStateException("Port not configured"));
-        connectionString = "modbus-tcp://" + host + ":" + port;
+        return new ModbusTcpIOClient(host, port);
+    }
 
-        try {
-            client = new ModbusTcpIOClient(host, port);
-            client.addMessageConsumer(this::handleIncomingFrame);
-            client.addConnectionStatusConsumer(this::setConnectionStatus);
-            client.connect();
-            LOG.info("Modbus TCP connection initiated for " + connectionString);
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create Modbus TCP client: " + agent, e);
-            setConnectionStatus(ConnectionStatus.ERROR);
-            throw e;
+    @Override
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
+        // ModbusTcpIOClient sets its own encoders/decoders in constructor
+        return () -> new ChannelHandler[0];
+    }
+
+    @Override
+    protected void onMessageReceived(ModbusTcpFrame frame) {
+        // Request/response correlation via transaction ID
+        LOG.finest(() -> "Received frame - TxID: " + frame.getTransactionId() + ", UnitID: " + frame.getUnitId() +
+                ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
+
+        int txId = frame.getTransactionId();
+        CompletableFuture<ModbusTcpFrame> future = pendingRequests.get(txId);
+        if (future != null) {
+            future.complete(frame);
+        } else {
+            LOG.warning("Received Modbus TCP response for unknown or timed out transaction ID: " + txId);
         }
     }
 
     @Override
-    protected void doStopProtocol(Container container) throws Exception {
-        if (client != null) {
-            client.disconnect();
-            client = null;
-        }
+    protected ModbusTcpFrame createWriteMessage(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        // Not used - we override doLinkedAttributeWrite entirely
+        return null;
+    }
+
+    // ========== Lifecycle overrides ==========
+
+    @Override
+    protected void doStart(Container container) throws Exception {
+        super.doStart(container);  // Creates and connects IOClient
+        modbusHelper.onStart();    // Initialize device config
+    }
+
+    @Override
+    protected void doStop(Container container) throws Exception {
+        modbusHelper.onStop();     // Cancel scheduled tasks
         pendingRequests.clear();
+        super.doStop(container);   // Disconnect IOClient
+    }
+
+    // ========== Attribute linking - delegate to helper ==========
+
+    @Override
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
+        modbusHelper.linkAttribute(assetId, attribute, agentLink);
     }
 
     @Override
-    protected Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
-        return agent.getDeviceConfig();
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
+        modbusHelper.unlinkAttribute(assetId, attribute, agentLink);
     }
+
+    // ========== Write handling - delegate to helper ==========
 
     @Override
-    protected ModbusResponse sendModbusRequest(int unitId, byte[] pdu, long timeoutMs) throws Exception {
-        return sendRequestAndWaitForResponse(unitId, pdu, timeoutMs);
+    protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        modbusHelper.handleAttributeWrite(agentLink, event, processedValue);
     }
+
+    // ========== ModbusProtocolCallback implementation ==========
 
     @Override
-    public String getProtocolName() {
-        return "TCP";
-    }
-
-    protected ModbusTcpFrame sendRequestAndWaitForResponse(int unitId, byte[] pdu, long timeoutMs) throws Exception {
+    public ModbusTcpFrame sendModbusRequest(int unitId, byte[] pdu, long timeoutMs) throws Exception {
         int transactionId;
         CompletableFuture<ModbusTcpFrame> responseFuture;
 
-        // Synchronize sending the request
-        synchronized (requestLock) {
+        synchronized (modbusHelper.requestLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
                 throw new IllegalStateException("Client not connected");
             }
@@ -95,13 +145,14 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             pendingRequests.put(transactionId, responseFuture);
 
             client.sendMessage(request);
-            LOG.finest(() -> "Sent Modbus TCP request - TxID: " + transactionId + ", UnitID: " + unitId + ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
+            LOG.finest(() -> "Sent Modbus TCP request - TxID: " + transactionId + ", UnitID: " + unitId +
+                    ", FC: 0x" + Integer.toHexString(pdu[0] & 0xFF));
         }
 
-        // Wait for response outside synchronized block to avoid blocking other threads
         try {
             ModbusTcpFrame response = responseFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
-            LOG.finest(() -> "Received Modbus TCP response - TxID: " + response.getTransactionId() + ", UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
+            LOG.finest(() -> "Received Modbus TCP response - TxID: " + response.getTransactionId() +
+                    ", UnitID: " + response.getUnitId() + ", FC: 0x" + Integer.toHexString(response.getFunctionCode() & 0xFF));
             return response;
         } catch (TimeoutException e) {
             LOG.warning("Modbus TCP request timeout - TxID: " + transactionId + ", UnitID: " + unitId);
@@ -111,18 +162,43 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
         }
     }
 
-    protected void handleIncomingFrame(ModbusTcpFrame frame) {
-        LOG.finest(() -> "Received frame - TxID: " + frame.getTransactionId() + ", UnitID: " + frame.getUnitId() + ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
-
-        int txId = frame.getTransactionId();
-
-        // Find pending request for this transaction ID
-        CompletableFuture<ModbusTcpFrame> future = pendingRequests.get(txId);
-        if (future != null) {
-            future.complete(frame);
-        } else {
-            LOG.warning("Received Modbus TCP response for unknown or timed out transaction ID: " + txId);
-        }
+    @Override
+    public ConnectionStatus getConnectionStatus() {
+        return agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED);
     }
 
+    @Override
+    public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
+        return agent.getDeviceConfig();
+    }
+
+    @Override
+    public ModbusAgent<?, ?> getModbusAgent() {
+        return agent;
+    }
+
+    @Override
+    public ScheduledExecutorService getScheduledExecutorService() {
+        return scheduledExecutorService;
+    }
+
+    @Override
+    public Map<AttributeRef, Attribute<?>> getLinkedAttributes() {
+        return linkedAttributes;
+    }
+
+    @Override
+    public void publishAttributeEvent(AttributeEvent event) {
+        sendAttributeEvent(event);
+    }
+
+    @Override
+    public String getProtocolName() {
+        return "Modbus TCP";
+    }
+
+    @Override
+    public String getProtocolInstanceUri() {
+        return client != null ? client.getClientUri() : "";
+    }
 }

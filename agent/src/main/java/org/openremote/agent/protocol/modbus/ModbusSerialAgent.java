@@ -99,10 +99,6 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
         return getAttributes().getValue(PARITY).orElse(Paritybit.EVEN);
     }
 
-    public Optional<ModbusAgent.DeviceConfigMap> getDeviceConfig() {
-        return getAttributes().getValue(ModbusAgent.DEVICE_CONFIG);
-    }
-
     @Override
     public ModbusSerialProtocol getProtocolInstance() {
         return new ModbusSerialProtocol(this);

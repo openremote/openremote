@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.modbus;
+package org.openremote.agent.protocol.modbus.util;
 
 /**
  * Represents a Modbus RTU frame (Unit ID + PDU + CRC16)
  */
-public class ModbusSerialFrame implements AbstractModbusProtocol.ModbusResponse {
+public class ModbusSerialFrame implements ModbusFrame {
     private final int unitId;
     private final byte[] pdu;
     private byte[] fullFrame; // Cached full frame with CRC

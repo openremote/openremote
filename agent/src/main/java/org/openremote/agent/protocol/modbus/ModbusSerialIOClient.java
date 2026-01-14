@@ -21,6 +21,9 @@ package org.openremote.agent.protocol.modbus;
 
 import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.modbus.util.ModbusRTUDecoder;
+import org.openremote.agent.protocol.modbus.util.ModbusRTUEncoder;
+import org.openremote.agent.protocol.modbus.util.ModbusSerialFrame;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 
