@@ -114,7 +114,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object>> {
 
         @Override
-        default void accept(EntityManager em, org.hibernate.query.Query st) {
+        default void accept(EntityManager em, org.hibernate.query.Query<Object> st) {
             try {
                 acceptStatement(em, st);
             } catch (SQLException ex) {
