@@ -85,9 +85,18 @@ async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
  * @and Tries to navigate through the assets in the system using the asset tree
  * @then The asset list should be complete and should not display any artifacts or visual errors.
  */
-test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage }) => {
+test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage, page }) => {
+
+    // Make sure the count endpoint during page load returns a correct value
+    await page.route("**/asset/count", async (route, request) => {
+        await route.continue();
+        const response = await request.response();
+        expect(response?.status()).toBe(200);
+        expect(await response?.json()).toBeGreaterThanOrEqual(8);
+    });
+
     const batteryAssets = createBatteryAssets(2);
-    const electricityAssets = createElectricityAssets(2)
+    const electricityAssets = createElectricityAssets(2);
     await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
