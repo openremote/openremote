@@ -100,7 +100,7 @@ export class Shared {
 
     /**
      * Resolves a request URL to a local filesystem path.
-     * @param url The icoming request URL to resolve
+     * @param url The incoming request URL to resolve
      */
     private urlPathToFsPath(url: string) {
         return path.resolve(__dirname, decodeURI(`../../app${new URL(url).pathname}`));
