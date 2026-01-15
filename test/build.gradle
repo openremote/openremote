@@ -30,6 +30,7 @@ dependencies {
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+    testImplementation "dev.failsafe:failsafe:$failsafeVersion"
 
     testImplementation "net.solarnetwork.common:nifty-modbus-tcp:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-rtu-jsc:$niftyModbusVersion"

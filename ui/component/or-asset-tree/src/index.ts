@@ -623,6 +623,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             || _changedProperties.has("rootAssets")
             || _changedProperties.has("rootAssetIds")
             || _changedProperties.has("queryLimit")
+            || _changedProperties.has("paginationThreshold")
         ) {
             this.refresh();
         }
@@ -1795,7 +1796,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             // We request the number of assets through the HTTP API, and disable pagination when there are less than 1000 assets.
             try {
                 const threshold = this.paginationThreshold ?? 1000;
-                const countResponse = await manager.rest.api.AssetResource.queryCount({...query, limit: threshold});
+                const countResponse = await manager.rest.api.AssetResource.queryCount({...query, limit: threshold, parents: undefined });
                 if (countResponse.data < threshold) {
                     query.parents = undefined;
                     query.limit = threshold;

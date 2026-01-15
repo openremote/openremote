@@ -235,7 +235,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
-        connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+        CompletableFuture<Void> future = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+
+            synchronized (this) {
+                if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                    execution.recordResult(null);
+                    return;
+                }
+            }
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
             // Connection future should timeout so we just wait for it but add additional timeout just in case
@@ -244,7 +251,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             execution.recordResult(null);
         });
 
-        connectRetry.whenComplete((result, ex) -> {
+        future.whenComplete((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
                 disconnect();
@@ -257,6 +264,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 }
             }
         });
+
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                future.cancel(true);
+            } else {
+                connectRetry = future;
+            }
+        }
     }
 
     protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
@@ -279,14 +294,15 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
             LOG.fine("Disconnecting IO client: " + getClientUri());
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
+
+            try {
+                if (connectRetry != null) {
+                    connectRetry.cancel(true);
+                    connectRetry = null;
+                }
+            } catch (Exception ignored) {}
         }
 
-        try {
-            if (connectRetry != null) {
-                connectRetry.cancel(true);
-                connectRetry = null;
-            }
-        } catch (Exception ignored) {}
         doDisconnect();
         try {
             if (workerGroup != null) {
