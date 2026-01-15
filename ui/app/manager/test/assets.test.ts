@@ -27,8 +27,8 @@ assets.forEach(({ type, name, attributes }) => {
         await assetsPage.addAsset(assetMap[name!], name!);
         await page.click(`#list-container >> text=${name}`);
         await assetViewer.switchMode("modify");
-        await assetViewer.setAttributeValue(attribute1, value1);
-        await assetViewer.setAttributeValue(attribute2, value2);
+        await assetViewer.getAttributeValueLocator(attribute1).fill(value1);
+        await assetViewer.getAttributeValueLocator(attribute2).fill(value2);
         const saveBtn = page.getByRole("button", { name: "Save" });
         await saveBtn.click();
         await expect(saveBtn).toBeDisabled();

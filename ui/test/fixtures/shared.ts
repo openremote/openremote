@@ -1,11 +1,13 @@
 import path from "node:path";
 
 import type { i18n, Resource } from "i18next";
+import type { Asset } from "@openremote/model";
 import type { Page } from "@playwright/test";
 
 declare global {
     interface Window {
         _i18next: i18n;
+        _assets: Asset[];
     }
 }
 
@@ -96,6 +98,27 @@ export class Shared {
                 );
             }
         }, resources);
+    }
+
+    /**
+     * @param assets
+     * @throws
+     */
+    async registerAssets(assets: Asset[]) {
+        // if (window.)
+        await this.page.evaluate(async (assets) => {
+            window._assets = assets;
+        }, assets);
+
+        // await this.page.route("**/asset/user/link/**", async (route) => {
+        //     await route.fulfill({ status: 200, body: JSON.stringify([]) });
+        // });
+        // await this.page.route("**/alarm/**", async (route) => {
+        //     await route.fulfill({ status: 200, body: JSON.stringify([]) });
+        // });
+        // await this.page.route("**/asset/query/**", async (route) => {
+        //     await route.fulfill({ status: 200, body: JSON.stringify([]) });
+        // });
     }
 
     /**
