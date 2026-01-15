@@ -260,7 +260,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
             // No batch groups should be created for incomplete read config
-            assert protocol.batchGroups.isEmpty()
+            assert protocol.modbusExecutor.batchGroups.isEmpty()
         }
 
         when: "A ShipAsset is created with an agent link"
@@ -287,7 +287,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
-            assert protocol.batchGroups.size() > 0
+            assert protocol.modbusExecutor.batchGroups.size() > 0
 
             ship = assetStorageService.find(ship.getId(), true)
             agentLink = ship.getAttribute(ShipAsset.SPEED).get().getMetaItem(AGENT_LINK).get().getValue(ModbusAgentLink.class).get()
@@ -445,7 +445,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             assert protocol != null
 
             // Check that batch groups were created (batching is enabled)
-            assert protocol.batchGroups.size() > 0
+            assert protocol.modbusExecutor.batchGroups.size() > 0
 
             device = assetStorageService.find(device.getId(), true)
 
@@ -553,7 +553,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
-            assert protocol.batchGroups.size() > 0
+            assert protocol.modbusExecutor.batchGroups.size() > 0
         }
     }
 
@@ -783,7 +783,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
-            assert protocol.writeIntervalMap.size() == 1
+            assert protocol.modbusExecutor.writeIntervalMap.size() == 1
         }
 
 
@@ -877,7 +877,7 @@ class ModbusTcpTest extends Specification implements ManagerContainerTrait {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusTcpProtocol
             assert protocol != null
             // No read polling tasks should be created for write-only attributes
-            assert protocol.batchGroups.values().flatten().isEmpty()
+            assert protocol.modbusExecutor.batchGroups.values().flatten().isEmpty()
         }
 
         when: "a write operation is performed"

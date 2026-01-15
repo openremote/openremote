@@ -50,11 +50,9 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  *
  * @param <F> the frame type (ModbusTcpFrame or ModbusSerialFrame)
  */
-public class ModbusProtocolHelper<F extends ModbusFrame> {
+public class ModbusExecutor<F extends ModbusFrame> {
 
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusProtocolHelper.class);
-
-    // State
+    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ModbusExecutor.class);
     private final ModbusProtocolCallback<F> callback;
     private final Map<String, Map<AttributeRef, ModbusAgentLink>> batchGroups = new ConcurrentHashMap<>();
     private final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
@@ -63,7 +61,7 @@ public class ModbusProtocolHelper<F extends ModbusFrame> {
     public final Object requestLock = new Object();
     protected int timeoutMs = 3000;
 
-    public ModbusProtocolHelper(ModbusProtocolCallback<F> callback) {
+    public ModbusExecutor(ModbusProtocolCallback<F> callback) {
         this.callback = callback;
     }
 
@@ -549,13 +547,6 @@ public class ModbusProtocolHelper<F extends ModbusFrame> {
         return config.getEndianFormat();
     }
 
-    public ByteOrder getJavaByteOrder(Integer unitId) {
-        ModbusAgent.EndianFormat format = getEndianFormat(unitId);
-        return (format == ModbusAgent.EndianFormat.BIG_ENDIAN || format == ModbusAgent.EndianFormat.BIG_ENDIAN_BYTE_SWAP)
-                ? ByteOrder.BIG_ENDIAN
-                : ByteOrder.LITTLE_ENDIAN;
-    }
-
     // ========== Utilities ==========
 
     public Set<RegisterRange> parseIllegalRegisters(String illegalRegistersStr) {
@@ -590,20 +581,5 @@ public class ModbusProtocolHelper<F extends ModbusFrame> {
 
     public boolean isIllegalRegister(int register, Set<RegisterRange> illegalRanges) {
         return illegalRanges.stream().anyMatch(range -> range.contains(register));
-    }
-
-    public static String getModbusExceptionDescription(byte exceptionCode) {
-        return switch (exceptionCode & 0xFF) {
-            case 0x01 -> "Illegal Function";
-            case 0x02 -> "Illegal Data Address";
-            case 0x03 -> "Illegal Data Value";
-            case 0x04 -> "Slave Device Failure";
-            case 0x05 -> "Acknowledge (request in queue)";
-            case 0x06 -> "Slave Device Busy";
-            case 0x08 -> "Memory Parity Error";
-            case 0x0A -> "Gateway Path Unavailable";
-            case 0x0B -> "Gateway Target Device Failed to Respond";
-            default -> "Unknown Exception";
-        };
     }
 }

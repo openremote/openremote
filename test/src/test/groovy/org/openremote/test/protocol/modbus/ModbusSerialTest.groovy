@@ -176,7 +176,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
             assert protocol != null
             // No batch groups should be created for incomplete read config
-            assert protocol.batchGroups.isEmpty()
+            assert protocol.modbusExecutor.batchGroups.isEmpty()
         }
 
         when: "the partial config device is removed"
@@ -254,7 +254,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             assert protocol != null
 
             // Check that batch groups were created
-            assert protocol.batchGroups.size() > 0
+            assert protocol.modbusExecutor.batchGroups.size() > 0
 
             device = assetStorageService.find(device.getId(), true)
 
@@ -356,7 +356,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
             assert protocol != null
 
-            def cachedBatches = protocol.cachedBatches
+            def cachedBatches = protocol.modbusExecutor.cachedBatches
             // Should have created multiple batches due to illegal register gaps
             def allBatches = cachedBatches.values().flatten()
             assert allBatches.size() >= 2  // At least 2 batches due to illegal register splits
@@ -658,7 +658,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
             assert protocol != null
-            assert protocol.batchGroups.size() > 0
+            assert protocol.modbusExecutor.batchGroups.size() > 0
         }
     }
 
@@ -788,7 +788,7 @@ class ModbusSerialTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def protocol = agentService.getProtocolInstance(agent.id) as ModbusSerialProtocol
             assert protocol != null
-            assert protocol.writeIntervalMap.size() == 1
+            assert protocol.modbusExecutor.writeIntervalMap.size() == 1
         }
 
         def assetDatapointService = container.getService(org.openremote.manager.datapoint.AssetDatapointService.class)

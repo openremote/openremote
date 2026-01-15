@@ -20,7 +20,10 @@
 package org.openremote.agent.protocol.modbus;
 
 import io.netty.channel.ChannelHandler;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.modbus.util.ModbusProtocolCallback;
+import org.openremote.agent.protocol.modbus.util.ModbusRTUDecoder;
+import org.openremote.agent.protocol.modbus.util.ModbusRTUEncoder;
 import org.openremote.agent.protocol.modbus.util.ModbusSerialFrame;
 import org.openremote.agent.protocol.serial.AbstractSerialProtocol;
 import org.openremote.model.Container;
@@ -38,7 +41,7 @@ import java.util.logging.Logger;
 
 /**
  * Modbus Serial (RTU) protocol implementation extending AbstractSerialProtocol.
- * Uses ModbusProtocolHelper for shared Modbus logic (batching, polling, data conversion).
+ * Uses ModbusExecutor for shared Modbus logic (batching, polling, data conversion).
  */
 public class ModbusSerialProtocol
         extends AbstractSerialProtocol<ModbusSerialProtocol, ModbusSerialAgent, ModbusAgentLink, ModbusSerialFrame, ModbusSerialIOClient>
@@ -53,11 +56,11 @@ public class ModbusSerialProtocol
     private final Object sendLock = new Object();
 
     // Shared Modbus logic
-    private final ModbusProtocolHelper<ModbusSerialFrame> modbusHelper;
+    private final ModbusExecutor<ModbusSerialFrame> modbusExecutor;
 
     public ModbusSerialProtocol(ModbusSerialAgent agent) {
         super(agent);
-        this.modbusHelper = new ModbusProtocolHelper<>(this);
+        this.modbusExecutor = new ModbusExecutor<>(this);
     }
 
     // ========== AbstractSerialProtocol methods ==========
@@ -75,8 +78,11 @@ public class ModbusSerialProtocol
 
     @Override
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
-        // ModbusSerialIOClient sets its own encoders/decoders in constructor
-        return () -> new ChannelHandler[0];
+        return () -> new ChannelHandler[] {
+            new ModbusRTUEncoder(),
+            new ModbusRTUDecoder(),
+            new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusSerialFrame.class, client)
+        };
     }
 
     @Override
@@ -85,7 +91,7 @@ public class ModbusSerialProtocol
         LOG.finest(() -> "Received frame - UnitID: " + frame.getUnitId() +
                 ", FC: 0x" + Integer.toHexString(frame.getFunctionCode() & 0xFF));
 
-        synchronized (modbusHelper.requestLock) {
+        synchronized (modbusExecutor.requestLock) {
             if (pendingRequest != null) {
                 pendingRequest.complete(frame);
             } else {
@@ -105,13 +111,13 @@ public class ModbusSerialProtocol
     @Override
     protected void doStart(Container container) throws Exception {
         super.doStart(container);  // Creates and connects IOClient
-        modbusHelper.onStart();    // Initialize device config
+        modbusExecutor.onStart();    // Initialize device config
     }
 
     @Override
     protected void doStop(Container container) throws Exception {
-        modbusHelper.onStop();     // Cancel scheduled tasks
-        synchronized (modbusHelper.requestLock) {
+        modbusExecutor.onStop();     // Cancel scheduled tasks
+        synchronized (modbusExecutor.requestLock) {
             if (pendingRequest != null) {
                 pendingRequest.cancel(true);
                 pendingRequest = null;
@@ -124,19 +130,19 @@ public class ModbusSerialProtocol
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
-        modbusHelper.linkAttribute(assetId, attribute, agentLink);
+        modbusExecutor.linkAttribute(assetId, attribute, agentLink);
     }
 
     @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
-        modbusHelper.unlinkAttribute(assetId, attribute, agentLink);
+        modbusExecutor.unlinkAttribute(assetId, attribute, agentLink);
     }
 
     // ========== Write handling - delegate to helper ==========
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        modbusHelper.handleAttributeWrite(agentLink, event, processedValue);
+        modbusExecutor.handleAttributeWrite(agentLink, event, processedValue);
     }
 
     // ========== ModbusProtocolCallback implementation ==========
@@ -165,7 +171,7 @@ public class ModbusSerialProtocol
             CompletableFuture<ModbusSerialFrame> responseFuture = new CompletableFuture<>();
 
             // Register pending request (use requestLock for thread-safe access)
-            synchronized (modbusHelper.requestLock) {
+            synchronized (modbusExecutor.requestLock) {
                 pendingRequest = responseFuture;
             }
 
@@ -186,7 +192,7 @@ public class ModbusSerialProtocol
                 throw e;
             } finally {
                 // Clear pending request
-                synchronized (modbusHelper.requestLock) {
+                synchronized (modbusExecutor.requestLock) {
                     pendingRequest = null;
                 }
             }
@@ -195,7 +201,7 @@ public class ModbusSerialProtocol
 
     @Override
     public ConnectionStatus getConnectionStatus() {
-        return agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED);
+        return client != null ? client.getConnectionStatus() : ConnectionStatus.DISCONNECTED;
     }
 
     @Override

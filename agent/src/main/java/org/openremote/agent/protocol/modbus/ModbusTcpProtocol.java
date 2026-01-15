@@ -20,7 +20,9 @@
 package org.openremote.agent.protocol.modbus;
 
 import io.netty.channel.ChannelHandler;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.modbus.util.ModbusProtocolCallback;
+import org.openremote.agent.protocol.modbus.util.ModbusTcpDecoder;
 import org.openremote.agent.protocol.modbus.util.ModbusTcpFrame;
 import org.openremote.agent.protocol.tcp.AbstractTCPClientProtocol;
 import org.openremote.model.Container;
@@ -38,7 +40,7 @@ import java.util.logging.Logger;
 
 /**
  * Modbus TCP protocol implementation extending AbstractTCPClientProtocol.
- * Uses ModbusProtocolHelper for shared Modbus logic (batching, polling, data conversion).
+ * Uses ModbusExecutor for shared Modbus logic (batching, polling, data conversion).
  */
 public class ModbusTcpProtocol
         extends AbstractTCPClientProtocol<ModbusTcpProtocol, ModbusTcpAgent, ModbusAgentLink, ModbusTcpFrame, ModbusTcpIOClient>
@@ -50,11 +52,11 @@ public class ModbusTcpProtocol
     private final Map<Integer, CompletableFuture<ModbusTcpFrame>> pendingRequests = new ConcurrentHashMap<>();
 
     // Shared Modbus logic
-    private final ModbusProtocolHelper<ModbusTcpFrame> modbusHelper;
+    private final ModbusExecutor<ModbusTcpFrame> modbusExecutor;
 
     public ModbusTcpProtocol(ModbusTcpAgent agent) {
         super(agent);
-        this.modbusHelper = new ModbusProtocolHelper<>(this);
+        this.modbusExecutor = new ModbusExecutor<>(this);
     }
 
     // ========== AbstractTCPClientProtocol methods ==========
@@ -68,8 +70,11 @@ public class ModbusTcpProtocol
 
     @Override
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
-        // ModbusTcpIOClient sets its own encoders/decoders in constructor
-        return () -> new ChannelHandler[0];
+        return () -> new ChannelHandler[] {
+            new ModbusTcpIOClient.ModbusTcpEncoder(),
+            new ModbusTcpDecoder(),
+            new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusTcpFrame.class, client)
+        };
     }
 
     @Override
@@ -98,12 +103,12 @@ public class ModbusTcpProtocol
     @Override
     protected void doStart(Container container) throws Exception {
         super.doStart(container);  // Creates and connects IOClient
-        modbusHelper.onStart();    // Initialize device config
+        modbusExecutor.onStart();    // Initialize device config
     }
 
     @Override
     protected void doStop(Container container) throws Exception {
-        modbusHelper.onStop();     // Cancel scheduled tasks
+        modbusExecutor.onStop();     // Cancel scheduled tasks
         pendingRequests.clear();
         super.doStop(container);   // Disconnect IOClient
     }
@@ -112,19 +117,19 @@ public class ModbusTcpProtocol
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
-        modbusHelper.linkAttribute(assetId, attribute, agentLink);
+        modbusExecutor.linkAttribute(assetId, attribute, agentLink);
     }
 
     @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ModbusAgentLink agentLink) {
-        modbusHelper.unlinkAttribute(assetId, attribute, agentLink);
+        modbusExecutor.unlinkAttribute(assetId, attribute, agentLink);
     }
 
     // ========== Write handling - delegate to helper ==========
 
     @Override
     protected void doLinkedAttributeWrite(ModbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        modbusHelper.handleAttributeWrite(agentLink, event, processedValue);
+        modbusExecutor.handleAttributeWrite(agentLink, event, processedValue);
     }
 
     // ========== ModbusProtocolCallback implementation ==========
@@ -134,7 +139,7 @@ public class ModbusTcpProtocol
         int transactionId;
         CompletableFuture<ModbusTcpFrame> responseFuture;
 
-        synchronized (modbusHelper.requestLock) {
+        synchronized (modbusExecutor.requestLock) {
             if (client == null || client.getConnectionStatus() != ConnectionStatus.CONNECTED) {
                 throw new IllegalStateException("Client not connected");
             }
@@ -164,7 +169,7 @@ public class ModbusTcpProtocol
 
     @Override
     public ConnectionStatus getConnectionStatus() {
-        return agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED);
+        return client != null ? client.getConnectionStatus() : ConnectionStatus.DISCONNECTED;
     }
 
     @Override

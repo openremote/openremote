@@ -41,15 +41,7 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
 
     public ModbusTcpIOClient(String host, int port) {
         super(host, port);
-
-        // Set up Modbus TCP encoder and decoder
-        setEncoderDecoderProvider(
-            () -> new ChannelHandler[] {
-                new ModbusTcpEncoder(),
-                new ModbusTcpDecoder(),
-                new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusTcpFrame.class, this)
-            }
-        );
+        // Note: encoder/decoder provider is set by the protocol's getEncoderDecoderProvider()
     }
 
     public int getNextTransactionId() {

@@ -125,16 +125,16 @@ public final class ModbusPduBuilder {
      */
     public static String getModbusExceptionDescription(byte exceptionCode) {
         return switch (exceptionCode & 0xFF) {
-            case 0x01 -> "Illegal Function";
-            case 0x02 -> "Illegal Data Address";
-            case 0x03 -> "Illegal Data Value";
-            case 0x04 -> "Slave Device Failure";
-            case 0x05 -> "Acknowledge (request in queue)";
-            case 0x06 -> "Slave Device Busy";
-            case 0x08 -> "Memory Parity Error";
-            case 0x0A -> "Gateway Path Unavailable";
-            case 0x0B -> "Gateway Target Device Failed to Respond";
-            default -> "Unknown Exception";
+            case 0x01 -> "Response code: Illegal Function";
+            case 0x02 -> "Response code: Illegal Data Address";
+            case 0x03 -> "Response code: Illegal Data Value";
+            case 0x04 -> "Response code: Slave Device Failure";
+            case 0x05 -> "Response code: Acknowledge (request in queue)";
+            case 0x06 -> "Response code: Slave Device Busy";
+            case 0x08 -> "Response code: Memory Parity Error";
+            case 0x0A -> "Response code: Gateway Path Unavailable";
+            case 0x0B -> "Response code: Gateway Target Device Failed to Respond";
+            default -> "Response code: Unknown Exception";
         };
     }
 }

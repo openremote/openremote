@@ -32,7 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 /**
  * Callback interface for Modbus protocol operations.
  * Implemented by the concrete protocol classes (ModbusTcpProtocol, ModbusSerialProtocol)
- * to provide transport-specific functionality to the shared ModbusProtocolHelper.
+ * to provide transport-specific functionality to the shared ModbusExecutor.
  *
  * @param <F> the frame type (ModbusTcpFrame or ModbusSerialFrame)
  */
