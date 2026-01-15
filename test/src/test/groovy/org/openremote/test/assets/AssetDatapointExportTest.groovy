@@ -97,7 +97,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         def csvExport2Lines = inputStream2.readLines()
         assert csvExport2Lines.size() == 6 // header + 5 data rows
         assert csvExport2Lines[0].contains("timestamp")
-        assert csvExport2Lines[0].contains(assetName + ": " + attributeName)
+        assert csvExport2Lines[0].contains(assetName + " : " + attributeName)
 
         /* ------------------------- */
 
@@ -113,7 +113,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         def csvExport3Lines = inputStream3.readLines()
         assert csvExport3Lines.size() >= 2 // header + at least 1 aggregated row
         assert csvExport3Lines[0].contains("timestamp")
-        assert csvExport3Lines[0].contains(assetName + ": " + attributeName)
+        assert csvExport3Lines[0].contains(assetName + " : " + attributeName)
 
         and: "the aggregated values should be correct averages within 1-minute buckets"
         // Each datapoint is 5 minutes apart, so each should be in its own 1-minute bucket
