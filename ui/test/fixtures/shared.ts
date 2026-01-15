@@ -64,8 +64,8 @@ export class Shared {
    * Init shared fonts to be served for material design icons.
    */
   async fonts() {
-    await this.page.route("**/shared/fonts/**", (route, request) => {
-      route.fulfill({ path: this.urlPathToFsPath(request.url()) });
+    await this.page.route("**/shared/fonts/**", async (route, request) => {
+      await route.fulfill({ path: this.urlPathToFsPath(request.url()) });
     });
   }
 
@@ -74,10 +74,10 @@ export class Shared {
    * @param resources The custom translations to add
    */
   async locales(resources?: Resource) {
-    await this.page.route("**/shared/locales/**", (route, request) => {
-      route.fulfill({ path: this.urlPathToFsPath(request.url()) });
+    await this.page.route("**/shared/locales/**", async (route, request) => {
+      await route.fulfill({ path: this.urlPathToFsPath(request.url()) });
     });
-    this.page.evaluate(async (resources) => {
+    await this.page.evaluate(async (resources) => {
       await window._i18next.init({
         lng: "en",
         fallbackLng: "en",
