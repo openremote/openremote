@@ -20,7 +20,6 @@
 package org.openremote.agent.protocol.modbus;
 
 import jakarta.persistence.Entity;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
 import org.openremote.model.asset.agent.Agent;
@@ -47,11 +46,7 @@ public class ModbusSerialAgent extends ModbusAgent<ModbusSerialAgent, ModbusSeri
     public static final AttributeDescriptor<Paritybit> PARITY = new AttributeDescriptor<>("parity", VALUE_PARITY);
 
     public enum StopBits {
-        @JsonProperty("1")
         ONE(JSerialCommChannelConfig.Stopbits.STOPBITS_1),
-        @JsonProperty("1,5")
-        ONE_HALF(JSerialCommChannelConfig.Stopbits.STOPBITS_1_5),
-        @JsonProperty("2")
         TWO(JSerialCommChannelConfig.Stopbits.STOPBITS_2);
 
         private final JSerialCommChannelConfig.Stopbits value;
