@@ -39,7 +39,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.Set;
-import java.util.HashSet;
+import java.util.TreeSet;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
@@ -233,7 +233,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                                                   long toTimestamp,
                                                   DatapointExportFormat format) throws IOException {
         try {
-            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
+            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp, null);
 
             // Verify the query is 'legal' and can be executed
             if(canQueryDatapoints(query, null, datapointExportLimit)) {
@@ -256,125 +256,135 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         PipedInputStream in = new PipedInputStream(1024 * 1024 * 4); // 4 MB
         PipedOutputStream out = new PipedOutputStream(in);
 
-        StringBuilder sb;
-
         final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
+        String query;
 
-        if (format == DatapointExportFormat.CSV_CROSSTAB) {
-            String attributeFilter = getAttributeFilter(attributeRefs);
-            sb = new StringBuilder(String.format(
-                    "copy (select * from crosstab( " +
-                            "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
-                            "from asset_datapoint ad " +
-                            "join asset a on ad.entity_id = a.id " +
-                            "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
-                            "order by ad.timestamp, header', " +
-                            "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
-                            "from asset_datapoint ad " +
-                            "join asset a on ad.entity_id = a.id " +
-                            "where %s " +
-                            "order by header') " +
-                            "as ct(timestamp timestamp, %s) " +
-                            TO_STDOUT_WITH_CSV_FORMAT,
-                    fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
-            ));
-        } else if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
-            String attributeFilter = getAttributeFilter(attributeRefs);
-            sb = new StringBuilder(String.format(
-                    "copy (select * from crosstab( " +
-                            "'select public.time_bucket(''%s'', ad.timestamp) as bucket_timestamp, " +
-                            "a.name || '' \\: '' || ad.attribute_name as header, " +
-                            "CASE " +
-                            "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
-                            "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
-                            "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
-                            "END as value " +
-                            "from asset_datapoint ad " +
-                            "join asset a on ad.entity_id = a.id " +
-                            "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
-                            "group by bucket_timestamp, header " +
-                            "order by bucket_timestamp, header', " +
-                            "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
-                            "from asset_datapoint ad " +
-                            "join asset a on ad.entity_id = a.id " +
-                            "where %s " +
-                            "order by header') " +
-                            "as ct(timestamp timestamp, %s) " +
-                            TO_STDOUT_WITH_CSV_FORMAT,
-                    "1 minute", fromTimestamp / 1000, toTimestamp / 1000, attributeFilter, attributeFilter, getAttributeColumns(attributeRefs)
-            ));
+        if (format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+            Set<String> headers = getAttributeHeaders(attributeRefs);
+
+            // Category query using VALUES clause with dollar-quoting to avoid escaping issues
+            String categoryValues = headers.stream()
+                    .map(header -> "('" + header.replace("'", "''") + "')")
+                    .collect(Collectors.joining(", "));
+            String categoryQuery = "SELECT header FROM (VALUES " + categoryValues + ") AS t(header)";
+
+            // Column definitions for crosstab result
+            String attributeColumns = headers.stream()
+                    .map(header -> "\"" + header + "\" text")
+                    .collect(Collectors.joining(", "));
+
+            query = String.format(
+                    "copy (select * from crosstab('%s', $cat$%s$cat$) as ct(timestamp timestamp, %s)%s",
+                    getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp, format),
+                    categoryQuery, attributeColumns, TO_STDOUT_WITH_CSV_FORMAT);
         } else {
-            sb = new StringBuilder("copy (")
-                    .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
-                    .append(TO_STDOUT_WITH_CSV_FORMAT);
+            query = "copy (" + getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp, format) + TO_STDOUT_WITH_CSV_FORMAT;
         }
 
-        scheduledExecutorService.schedule(() -> persistenceService.doTransaction(em -> {
-            Session session = em.unwrap(Session.class);
-            session.doWork(connection -> {
-                PGConnection pgConnection = connection.unwrap(PGConnection.class);
-                CopyManager copyManager = pgConnection.getCopyAPI();
+        // Execute query asynchronously
+        scheduledExecutorService.schedule(() -> {
+            boolean success = false;
+            try {
+                persistenceService.doTransaction(em -> {
+                    Session session = em.unwrap(Session.class);
+                    session.doWork(connection -> {
+                        try {
+                            PGConnection pgConnection = connection.unwrap(PGConnection.class);
+                            CopyManager copyManager = pgConnection.getCopyAPI();
+                            copyManager.copyOut(query, out);
+                            out.flush();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to export datapoints", e);
+                        }
+                    });
+                });
+                success = true;
+            } catch (Exception e) {
+                DATA_EXPORT_LOG.log(Level.SEVERE, "Datapoint export failed", e);
+            } finally {
                 try {
-                    copyManager.copyOut(sb.toString(), out);
-                    out.flush();
                     out.close();
                 } catch (IOException e) {
-                    // Either a database connection- or output stream failure
-                    DATA_EXPORT_LOG.log(Level.SEVERE, "Datapoint export failed", e);
+                    DATA_EXPORT_LOG.log(Level.WARNING, "Failed to close output stream", e);
+                }
+                if (!success) {
                     try {
-                        out.close();
                         in.close();
                     } catch (IOException ignored) {
                         DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to close piped input stream", e);
                     }
                 }
-            });
-        }), 0, TimeUnit.MILLISECONDS);
+            }
+        }, 0, TimeUnit.MILLISECONDS);
 
         return in;
     }
-
-    /**
-     * Function for building a WHERE clause filter for the requested attributes.
-     * Used in crosstab queries to ensure only the requested attributes are included.
-     * Note: Uses double single quotes for SQL string escaping within crosstab queries.
-     */
-    private String getAttributeFilter(AttributeRef[] attributeRefs) {
-        return Arrays.stream(attributeRefs)
-                .map(attr -> String.format("(ad.entity_id = ''%s'' and ad.attribute_name = ''%s'')",
-                        attr.getId(), attr.getName()))
-                .collect(Collectors.joining(" or "));
-    }
-
+    
     /**
      * Function for building CSV attribute headers when format will make
      * a separate column per attribute.
+     * Uses TreeSet for alphabetical ordering required by crosstab queries.
      */
-    private String getAttributeColumns(AttributeRef[] attributeRefs) {
-        // Create a set to keep track of unique headers
-        Set<String> headers = new HashSet<>();
-
-        // Build unique headers in the format "AssetName: AttributeName"
+    private Set<String> getAttributeHeaders(AttributeRef[] attributeRefs) {
+        Set<String> headers = new TreeSet<>();
         Arrays.stream(attributeRefs).forEach(attr -> {
             String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("(^\\[|\\]$)", "");
-            String attributeName = attr.getName();
-            headers.add(assetName + ": " + attributeName);
+            headers.add(assetName + " : " + attr.getName());
         });
-
-        // Return as a single string with the assembled header.
-        return headers.stream()
-                .map(header -> "\"" + header + "\" text")
-                .collect(Collectors.joining(", "));
+        return headers;
     }
 
     /**
      * Function for building an SQL query that SELECTs the content for the data export.
-     * Currently, it includes timestamp, asset name, attribute name, and the data point value.
-     * Be aware: this SQL query does NOT contain any CSV-related statements.
+     * For crosstab formats, uses escaped quotes ('') as these are embedded in a crosstab string argument.
      */
-    protected String getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
-        return new StringBuilder(String.format("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
-                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
-                .append(")").toString();
+    protected String getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp, DatapointExportFormat format) {
+        long fromSeconds = fromTimestamp / 1000;
+        long toSeconds = toTimestamp / 1000;
+
+        if (format == null) {
+            format = DatapointExportFormat.CSV;
+        }
+
+        if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+            String attributeFilter = Arrays.stream(attributeRefs)
+                    .map(attr -> String.format("(ad.entity_id = ''%s'' and ad.attribute_name = ''%s'')", attr.getId(), attr.getName()))
+                    .collect(Collectors.joining(" or "));
+            return String.format(
+                    "select public.time_bucket(''1 minute'', ad.timestamp) as bucket_timestamp, " +
+                    "a.name || '' : '' || ad.attribute_name as header, " +
+                    "CASE " +
+                    "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
+                    "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
+                    "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
+                    "END as value " +
+                    "from asset_datapoint ad " +
+                    "join asset a on ad.entity_id = a.id " +
+                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
+                    "group by bucket_timestamp, header " +
+                    "order by bucket_timestamp, header",
+                    fromSeconds, toSeconds, attributeFilter);
+        } else if (format == DatapointExportFormat.CSV_CROSSTAB) {
+            String attributeFilter = Arrays.stream(attributeRefs)
+                    .map(attr -> String.format("(ad.entity_id = ''%s'' and ad.attribute_name = ''%s'')", attr.getId(), attr.getName()))
+                    .collect(Collectors.joining(" or "));
+            return String.format(
+                    "select ad.timestamp, a.name || '' : '' || ad.attribute_name as header, ad.value " +
+                    "from asset_datapoint ad " +
+                    "join asset a on ad.entity_id = a.id " +
+                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
+                    "order by ad.timestamp, header",
+                    fromSeconds, toSeconds, attributeFilter);
+        } else {
+            // Plain CSV format - no quote escaping needed
+            String attributeFilter = Arrays.stream(attributeRefs)
+                    .map(attr -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attr.getId(), attr.getName()))
+                    .collect(Collectors.joining(" or "));
+            return String.format(
+                    "select ad.timestamp, a.name, ad.attribute_name, value " +
+                    "from asset_datapoint ad, asset a " +
+                    "where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s)",
+                    fromSeconds, toSeconds, attributeFilter);
+        }
     }
 }

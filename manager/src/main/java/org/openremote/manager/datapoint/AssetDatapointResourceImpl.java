@@ -182,6 +182,10 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
+            if (attributeRefs == null || attributeRefs.length == 0) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+
             for (AttributeRef attributeRef : attributeRefs) {
                 if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), attributeRef.getId())) {
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
