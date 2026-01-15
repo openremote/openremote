@@ -500,7 +500,7 @@ public class RulesFacts extends Facts implements RuleListener {
         boolean reverse = orderBy.descending;
 
         keyExtractor = switch (orderBy.property) {
-            case CREATED_ON -> assetState -> Long.toString(assetState.getCreatedOn().getTime());
+            case CREATED_ON -> assetState -> Long.toString(assetState.getCreatedOn().toEpochMilli());
             case ASSET_TYPE -> AttributeInfo::getAssetType;
             case PARENT_ID -> AttributeInfo::getParentId;
             case REALM -> AttributeInfo::getRealm;
