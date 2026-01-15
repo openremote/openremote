@@ -310,7 +310,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 if (!success) {
                     try {
                         in.close();
-                    } catch (IOException ignored) {
+                    } catch (IOException e) {
                         DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to close piped input stream", e);
                     }
                 }
