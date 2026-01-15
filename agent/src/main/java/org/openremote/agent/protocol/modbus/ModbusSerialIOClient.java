@@ -25,6 +25,7 @@ import org.openremote.agent.protocol.modbus.util.ModbusRTUDecoder;
 import org.openremote.agent.protocol.modbus.util.ModbusRTUEncoder;
 import org.openremote.agent.protocol.modbus.util.ModbusSerialFrame;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
+import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 
 import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
@@ -32,10 +33,10 @@ import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
 
     private final int dataBits;
-    private final ModbusSerialAgent.StopBits stopBits;
+    private final Stopbits stopBits;
     private final Paritybit parity;
 
-    public ModbusSerialIOClient(String port, int baudRate, int dataBits, ModbusSerialAgent.StopBits stopBits, Paritybit parity) {
+    public ModbusSerialIOClient(String port, int baudRate, int dataBits, Stopbits stopBits, Paritybit parity) {
         super(port, baudRate);
         this.dataBits = dataBits;
         this.stopBits = stopBits;
@@ -47,7 +48,7 @@ public class ModbusSerialIOClient extends SerialIOClient<ModbusSerialFrame> {
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(DATA_BITS, dataBits);
-        bootstrap.option(STOP_BITS, stopBits.toJSerialComm());
+        bootstrap.option(STOP_BITS, stopBits);
         bootstrap.option(PARITY_BIT, parity);
     }
 
