@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-mwc-components",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",

@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-chart",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote chart",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",

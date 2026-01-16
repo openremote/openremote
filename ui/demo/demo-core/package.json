@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-core",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Demo",
   "private": true,
   "scripts": {
