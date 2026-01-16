@@ -16,7 +16,7 @@ ct("Should not show asset invalid error", async ({ mount }) => {
     const component = await mount(OrAssetViewer, {
         props: { assetId: validId, editMode: true },
     });
-    await expect(component).not.toContainText("Invalid asset");
+    await expect(component).not.toContainText("Asset is not valid");
 });
 
 // Must not have a reference to "validAsset" in the component test to avoid this being registered under

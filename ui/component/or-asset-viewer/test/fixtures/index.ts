@@ -41,7 +41,6 @@ export class AssetViewer {
     /**
      * Get a locator to the specified attribute value input.
      * @param attribute The attribute name
-     * @param value The value to set
      */
     getAttributeValueLocator(attribute: string | Locator) {
         return (typeof attribute === "string" ? this.getAttributeLocator(attribute) : attribute).locator("input");

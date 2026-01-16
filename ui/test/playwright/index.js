@@ -13,11 +13,11 @@ IconSets.addIconSet("or", createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 window._i18next = i18next.use(HttpBackend);
 
 /**
- * Mimics subscribing to asset events without
+ * Mimics subscribing to asset events without connecting to an actual WebSocket.
  * @param {string[] | AttributeRef[] | undefined} ids - The asset ids to consider
  * @param {boolean} requestCurrentValues - Not implemented
  * @param {(event: import("@openremote/model").AssetEvent) => void} callback - Calls the `_onEvent` of a subscribed component
- * @returns{string} The subscriptionId
+ * @returns {string} The subscriptionId
  */
 function subscribeAssetEvents(ids, requestCurrentValues, callback) {
     if (window._assets && window._assets.length) {

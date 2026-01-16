@@ -101,8 +101,9 @@ export class Shared {
     }
 
     /**
-     * @param assets
-     * @throws
+     * Register assets to the window object to be resolved by components
+     * subscribed to the `manager` from `@openremote/core`.
+     * @param assets The assets to register
      */
     async registerAssets(assets: Asset[]) {
         await this.page.evaluate(async (assets) => {
