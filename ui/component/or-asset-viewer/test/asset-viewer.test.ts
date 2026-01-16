@@ -9,8 +9,11 @@ ct.beforeEach(async ({ shared }) => {
     await shared.registerAssets([validAsset, invalidAsset]);
 });
 
-// Must not have a reference to "validAsset" in the component test to avoid this being registered under
-// the playwright test app as import.
+// Due to how the component tests resolve imports, imported data with an object reference gets
+// confused for a component that is meant to be registered in the playwright component test app.
+// Which causes the data to be transformed to an intermediate object referencing the data.
+//
+// So we can use a "cloned" variable outside the test (but in the same test file) to avoid this.
 const validId = validAsset.id;
 ct("Should not show asset invalid error", async ({ mount }) => {
     const component = await mount(OrAssetViewer, {
@@ -19,8 +22,11 @@ ct("Should not show asset invalid error", async ({ mount }) => {
     await expect(component).not.toContainText("Asset is not valid");
 });
 
-// Must not have a reference to "validAsset" in the component test to avoid this being registered under
-// the playwright test app as import.
+// Due to how the component tests resolve imports, imported data with an object reference gets
+// confused for a component that is meant to be registered in the playwright component test app.
+// Which causes the data to be transformed to an intermediate object referencing the data.
+//
+// So we can use a "cloned" variable outside the test (but in the same test file) to avoid this.
 const invalidId = invalidAsset.id;
 ct("Should show asset invalid error", async ({ mount, assetViewer }) => {
     const component = await mount(OrAssetViewer, {
