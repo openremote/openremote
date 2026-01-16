@@ -105,20 +105,9 @@ export class Shared {
      * @throws
      */
     async registerAssets(assets: Asset[]) {
-        // if (window.)
         await this.page.evaluate(async (assets) => {
             window._assets = assets;
         }, assets);
-
-        // await this.page.route("**/asset/user/link/**", async (route) => {
-        //     await route.fulfill({ status: 200, body: JSON.stringify([]) });
-        // });
-        // await this.page.route("**/alarm/**", async (route) => {
-        //     await route.fulfill({ status: 200, body: JSON.stringify([]) });
-        // });
-        // await this.page.route("**/asset/query/**", async (route) => {
-        //     await route.fulfill({ status: 200, body: JSON.stringify([]) });
-        // });
     }
 
     /**

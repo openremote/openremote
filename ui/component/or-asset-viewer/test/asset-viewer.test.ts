@@ -9,7 +9,7 @@ ct.beforeEach(async ({ shared }) => {
     await shared.registerAssets([validAsset, invalidAsset]);
 });
 
-// Must destructure "validAsset" to avoid this being registered under
+// Must not have a reference to "validAsset" in the component test to avoid this being registered under
 // the playwright test app as import.
 const validId = validAsset.id;
 ct("Should not show asset invalid error", async ({ mount }) => {
@@ -19,7 +19,7 @@ ct("Should not show asset invalid error", async ({ mount }) => {
     await expect(component).not.toContainText("Invalid asset");
 });
 
-// Must destructure "validAsset" to avoid this being registered under
+// Must not have a reference to "validAsset" in the component test to avoid this being registered under
 // the playwright test app as import.
 const invalidId = invalidAsset.id;
 ct("Should show asset invalid error", async ({ mount, assetViewer }) => {

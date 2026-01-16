@@ -13,14 +13,14 @@ IconSets.addIconSet("or", createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 window._i18next = i18next.use(HttpBackend);
 
 /**
- * @param {string[] | AttributeRef[] | undefined} ids - The asset ids
+ * Mimics subscribing to asset events without
+ * @param {string[] | AttributeRef[] | undefined} ids - The asset ids to consider
  * @param {boolean} requestCurrentValues - Not implemented
- * @param {(event: import("@openremote/model").AssetEvent) => void} callback -
+ * @param {(event: import("@openremote/model").AssetEvent) => void} callback - Calls the `_onEvent` of a subscribed component
  * @returns{string} The subscriptionId
  */
 function subscribeAssetEvents(ids, requestCurrentValues, callback) {
     if (window._assets && window._assets.length) {
-        console.log("ids", ids, window._assets);
         const assetEvent = {
             eventType: "asset",
             asset: window._assets.find(({ id }) => id === ids[0]),
@@ -43,9 +43,7 @@ manager.init = async () => {
     manager._config = {
         clientId: "openremote",
         autoLogin: false,
-        realm: undefined,
         consoleAutoEnable: false,
-        loadTranslations: ["or"],
     };
     manager._events = {
         subscribeAssetEvents,
@@ -54,18 +52,10 @@ manager.init = async () => {
         unsubscribe: async () => "",
         unsubscribeStatusChange: () => null,
     };
-    console.log("init", thingAssetInfo, metaItemDescriptors, valueDescriptors);
-
+    // Similar to `manager.doDescriptorsInit`, but without requesting the API
     AssetModelUtil._assetTypeInfos = [thingAssetInfo];
     AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptors);
     AssetModelUtil._valueDescriptors = Object.values(valueDescriptors);
-    // rest._client = {
-    //     AssetResource: {},
-    //     AlarmResource: {},
-    // };
-    // rest._client._assetResource.getUserAssetLinks = async () => ({ data: [] });
-    // rest._client._alarmResource.getAlarms = async () => ({ data: [] });
-    // rest._client._assetResource.queryAssets = async () => ({ data: [] });
 
     return true;
 };

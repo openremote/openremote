@@ -3,7 +3,6 @@ import {unsafeSVG} from 'lit/directives/unsafe-svg.js';
 import {customElement, property, state} from "lit/decorators.js";
 import {AssetDescriptor, AssetModelUtil, WellknownAssets} from "@openremote/model";
 
-// @ts-expect-error ignore
 import mdiFontStyle from "@mdi/font/css/materialdesignicons.min.css";
 import OrIconSet from "./or-icon-set";
 export {OrIconSet};
