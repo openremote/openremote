@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-app",
-  "version": "1.11.0-mg-feature-testing-2",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote app template",
   "customElements": "custom-elements.json",
   "author": "OpenRemote",

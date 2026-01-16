@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-smart-notify",
-  "version": "1.11.0-mg-feature-testing-2",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote Smarty Notify element",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
