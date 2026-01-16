@@ -104,17 +104,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             this.binders = binders;
         }
 
-        protected void apply(EntityManager em, org.hibernate.query.Query<Object[]> query) {
+        protected void apply(EntityManager em, org.hibernate.query.Query<Object> query) {
             for (ParameterBinder binder : binders) {
                 binder.accept(em, query);
             }
         }
     }
 
-    public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object[]>> {
+    public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object>> {
 
         @Override
-        default void accept(EntityManager em, org.hibernate.query.Query<Object[]> st) {
+        default void accept(EntityManager em, org.hibernate.query.Query<Object> st) {
             try {
                 acceptStatement(em, st);
             } catch (SQLException ex) {
@@ -122,7 +122,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
         }
 
-        void acceptStatement(EntityManager em, org.hibernate.query.Query<Object[]> st) throws SQLException;
+        void acceptStatement(EntityManager em, org.hibernate.query.Query<Object> st) throws SQLException;
     }
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
@@ -528,6 +528,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     public List<Asset<?>> findAll(AssetQuery query) {
         return persistenceService.doReturningTransaction(em -> findAll(em, query));
+    }
+
+    public Integer count(AssetQuery query) {
+        return persistenceService.doReturningTransaction(em -> count(em, query));
     }
 
     public List<String> findNames(String... ids) {
@@ -1346,7 +1350,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 //            return asset;
 //        });
 
-        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class)
+        org.hibernate.query.Query<Object> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class)
             .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
         querySql.apply(em, jpql);
         List<Asset<?>> assets = (List<Asset<?>>)(Object)jpql.getResultList();
@@ -1360,6 +1364,36 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         return assets;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Integer count(EntityManager em, AssetQuery query) {
+        if (query.access == null)
+            query.access = PRIVATE;
+
+        // Do some sanity checks on query values and return empty result set if empty query parameters
+        if (query.ids != null && query.ids.length == 0) {
+            return 0;
+        }
+        if (query.paths != null && query.paths.length == 0) {
+            return 0;
+        }
+        if (query.types != null && query.types.length == 0) {
+            return 0;
+        }
+        if (query.names != null && query.names.length == 0) {
+            return 0;
+        }
+        if (query.userIds != null && query.userIds.length == 0) {
+            return 0;
+        }
+
+        PreparedAssetQuery querySql = buildQuery(query, timerService::getCurrentTimeMillis, true).key;
+        org.hibernate.query.Query<Object> countQuery = em.createNativeQuery(querySql.querySql, Integer.class).unwrap(org.hibernate.query.Query.class)
+                .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
+
+        querySql.apply(em, countQuery);
+        return ((Number) countQuery.getSingleResult()).intValue();
     }
 
     /**
@@ -1524,6 +1558,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
 
     protected static Pair<PreparedAssetQuery, Boolean> buildQuery(AssetQuery query, Supplier<Long> timeProvider) {
+        return buildQuery(query, timeProvider, false);
+    }
+
+    protected static Pair<PreparedAssetQuery, Boolean> buildQuery(AssetQuery query, Supplier<Long> timeProvider, boolean count) {
         LOG.finest("Building: " + query);
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
@@ -1547,6 +1585,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         sb.append(buildOrderByString(query));
         sb.append(buildLimitString(query));
         sb.append(buildOffsetString(query));
+
+        if (count) {
+            sb.insert(0, "select COUNT(*) FROM (");
+            sb.append(")");
+        }
+
         return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);
     }
 

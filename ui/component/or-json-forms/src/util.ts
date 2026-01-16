@@ -188,9 +188,54 @@ function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
     return props;
 }
 
+const COMBINATOR_IDENTIFICATION_PROPERTY = "type";
+
 /**
- * Copied from eclipse source code to inject global definitions into the validating schema otherwise AJV will fail
- * to compile the schema - not perfect but works for our cases
+ * TODO: when updating to jsonforms/core 4.0 use `getCombinatorIndexOfFittingSchema` from jsonform/core instead
+ */
+export function getCombinatorIndexOfFittingSchema(
+    data: any,
+    keyword: CombinatorKeyword,
+    schema: JsonSchema,
+    rootSchema: JsonSchema
+): number {
+    if (typeof data !== 'object' || data === null) {
+        return -1;
+    }
+
+    const resolvedCombinatorSchemas = [];
+     for (let i = 0; i < schema[keyword]!.length; i++) {
+        let resolvedSchema = schema[keyword]![i];
+        if (resolvedSchema.$ref) {
+            resolvedSchema = Resolve.schema( rootSchema, resolvedSchema.$ref, rootSchema);
+        }
+        resolvedCombinatorSchemas.push(resolvedSchema);
+    }
+
+    let indexOfFittingSchema = -1;
+
+    // Check if the data matches the identification property of one of the resolved schemas
+    for (let i = 0; i < resolvedCombinatorSchemas.length; i++) {
+        const resolvedSchema = resolvedCombinatorSchemas[i];
+
+        // Match the identification property against a constant value in resolvedSchema
+        const maybeConstIdValue = resolvedSchema.properties?.[COMBINATOR_IDENTIFICATION_PROPERTY]?.const;
+
+        if (
+          maybeConstIdValue !== undefined &&
+          data[COMBINATOR_IDENTIFICATION_PROPERTY] === maybeConstIdValue
+        ) {
+            indexOfFittingSchema = i;
+            break;
+        }
+    }
+
+    return indexOfFittingSchema;
+}
+
+/**
+ * Copied from eclipse source code
+ * TODO: when updating to jsonforms/core 4.0 we could consider `mapStateToCombinatorRendererProps` from jsonform/core instead
  */
 export function mapStateToCombinatorRendererProps(
     state: JsonFormsState,
@@ -210,47 +255,15 @@ export function mapStateToCombinatorRendererProps(
             ? isVisible(uischema!, getData(state), ownProps.path!, getAjv(state))
             : ownProps.visible;
     const id = ownProps.id!;
-
     const data = Resolve.data(getData(state), path);
-
-    const ajv = state.jsonforms.core!.ajv!;
     const schema = resolvedSchema || rootSchema;
-    const _schema = Resolve.schema(schema, keyword, rootSchema) as JsonSchema[];
 
-    const structuralKeywords = [
-        'required',
-        'additionalProperties',
-        'type',
-        'enum',
-        'const'
-    ];
-    const dataIsValid = (errors: ErrorObject[]): boolean => {
-        return (
-            !errors ||
-            errors.length === 0 ||
-            !errors.find(e => structuralKeywords.indexOf(e.keyword) !== -1)
-        );
-    };
-    let indexOfFittingSchema: number = -1;
-    // TODO instead of compiling the combinator subschemas we can compile the original schema
-    // without the combinator alternatives and then revalidate and check the errors for the
-    // element
-    for (let i = 0; i < _schema!.length; i++) {
-        try {
-            const schema = {
-                definitions: rootSchema.definitions,
-                ..._schema[i]
-            } as JsonSchema;
-            const valFn = ajv.compile(schema);
-            valFn(data);
-            if (dataIsValid(valFn.errors!)) {
-                indexOfFittingSchema = i;
-                break;
-            }
-        } catch (error) {
-            console.debug("Combinator subschema is not self contained, can't hand it over to AJV");
-        }
-    }
+    const indexOfFittingSchema = getCombinatorIndexOfFittingSchema(
+        data,
+        keyword,
+        schema,
+        rootSchema
+    );
 
     return {
         data,
@@ -259,7 +272,9 @@ export function mapStateToCombinatorRendererProps(
         rootSchema,
         visible,
         id,
-        indexOfFittingSchema,
+        // Fall back to the first schema if none fits
+        indexOfFittingSchema:
+          indexOfFittingSchema !== -1 ? indexOfFittingSchema : 0,
         uischemas: state.jsonforms.uischemas!,
         uischema: uischema!,
     };

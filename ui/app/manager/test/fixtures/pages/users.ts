@@ -10,6 +10,10 @@ export class UsersPage implements BasePage {
     this.manager.navigateToMenuItem("Users");
   }
 
+  async gotoUserCreation(realm: string, type: "serviceuser" | "regular") {
+      return this.page.goto(this.manager.getAppUrl(realm) + `#/users/new/${type}`);
+  }
+
   /**
    * Get permission locator by name.
    * @param permission The permission name

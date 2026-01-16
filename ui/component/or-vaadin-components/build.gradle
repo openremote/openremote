@@ -1,0 +1,33 @@
+buildDir = "dist"
+
+tasks.register('clean') {
+    doLast {
+        delete "dist"
+        delete "lib"
+        delete "tsconfig.tsbuildinfo"
+    }
+}
+
+tasks.register('npmAnalyze', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "analyze"
+}
+
+tasks.register('installDist') {
+    dependsOn npmAnalyze
+}
+
+tasks.register('prepareUi') {
+    dependsOn clean, npmAnalyze, npmPrepare
+}
+
+tasks.register('publishUi') {
+    dependsOn clean, npmPublish
+}
+
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
+}

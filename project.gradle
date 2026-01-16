@@ -2,6 +2,19 @@
 
 import org.jetbrains.gradle.ext.JUnit
 
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+tasks.withType(JacocoReport) {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFileAttributes
@@ -136,7 +149,7 @@ if (project == rootProject) {
                     workingDirectory = projectDir.toString()
                 }
                 "Demo Setup"(Application) {
-                    moduleName = getProject().idea.module.name + ".setup.demo"
+                    moduleName = getProject().idea.module.name + ".extension.demo-setup.main"
                     envs = [
                             OR_SETUP_TYPE: "demo"
                     ]

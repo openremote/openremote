@@ -19,6 +19,10 @@ startupProbe:
   failureThreshold: 500
   periodSeconds: 10
 
+service:
+  jmx:
+    enabled: true
+
 resources:
   limits:
     cpu: 400m

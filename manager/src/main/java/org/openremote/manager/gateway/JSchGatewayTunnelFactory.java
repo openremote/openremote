@@ -78,6 +78,20 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
         }
     }
 
+    @Override
+    public void stopAllInRealm(String realm) {
+        sessionMap.entrySet().removeIf(entry -> {
+            boolean matches = entry.getKey().getRealm().equalsIgnoreCase(realm);
+            if (matches) {
+                try {
+                    entry.getValue().disconnect();
+                } catch (Exception ignored) {
+                }
+            }
+            return matches;
+        });
+    }
+
     public void stopAll() {
         try {
             sessionMap.values()

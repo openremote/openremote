@@ -823,18 +823,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case AssetQueryOperator.LESS_THAN:
             case AssetQueryOperator.LESS_EQUALS:
             case AssetQueryOperator.BETWEEN:
-                const key = Util.getEnumKeyAsString(AssetQueryOperator, value);
-
                 if (valueDescriptor.jsonType === "number") {
                     predicate = {
                         predicateType: "number",
-                        operator: key as AQO
+                        operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO
                     };
                 } else {
                     // Assume datetime
                     predicate = {
                         predicateType: "datetime",
-                        operator: key as AQO
+                        operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO
                     };
                 }
                 break;

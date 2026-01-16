@@ -769,6 +769,12 @@ jobs:
           name: backend-test-results
           path: test/build/reports/tests
 
+      - name: Archive coverage report
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: coverage-report
+          path: test/build/reports/jacoco/test/html
+
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
