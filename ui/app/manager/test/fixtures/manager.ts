@@ -271,7 +271,7 @@ export class Manager {
 
     /**
      * Reset the user password with the smartcity users' password
-     *F
+     *
      * Expects a realm and user to be configured
      * @param config The axios request config
      */
