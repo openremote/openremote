@@ -199,13 +199,13 @@ export class OrDashboardPreview extends LitElement {
     protected activePreset?: DashboardScreenPreset;
 
     @state()
-    private rerenderActive: boolean = false;
+    protected rerenderActive: boolean = false;
 
     @state()
-    private isLoading: boolean = false;
+    public isLoading: boolean = false;
 
 
-    protected grid?: GridStack;
+    public grid?: GridStack;
     protected latestDragWidgetStart?: Date;
 
 
@@ -396,7 +396,7 @@ export class OrDashboardPreview extends LitElement {
                 },
                 staticGrid: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? true : (!this.editMode)),
                 styleInHead: false
-            }, gridElement!);
+                }, gridElement!);
 
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = "100%";

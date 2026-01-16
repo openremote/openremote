@@ -285,7 +285,7 @@ export class OrDashboardBuilder extends LitElement {
     protected hasChanged: boolean;
 
     @query('or-dashboard-preview')
-    protected dashboardPreview?: OrDashboardPreview;
+    public dashboardPreview?: OrDashboardPreview;
 
     protected refreshTimer?: ReturnType<typeof setInterval>;
     private readonly keyEmitter: DashboardKeyEmitter = new DashboardKeyEmitter();
