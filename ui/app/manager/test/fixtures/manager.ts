@@ -379,7 +379,7 @@ export class Manager {
             try {
                 const response = await rest.api.DashboardResource.delete(realm!, id, config);
                 expect(response.status).toBe(204);
-                this.dashboards.splice(i);
+                this.dashboards.splice(i, 1);
             } catch (e) {
                 console.warn("Could not delete dashboard: ", id, e);
             }
@@ -395,7 +395,7 @@ export class Manager {
             try {
                 const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
                 expect(response.status).toBe(204);
-                this.rules.splice(i);
+                this.rules.splice(i, 1);
             } catch (e) {
                 console.warn("Could not delete realm rule: ", id, e);
             }

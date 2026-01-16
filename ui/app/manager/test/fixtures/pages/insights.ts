@@ -1,8 +1,5 @@
 import {BasePage, expect, Page, Shared} from "@openremote/test";
 import {Manager} from "../manager";
-import {OrDashboardBuilder} from "@openremote/or-dashboard-builder";
-import { LitElement } from "lit";
-import {preparedAssetsForInsights as assets} from "../data/assets";
 
 export class InsightsPage implements BasePage {
     constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}

@@ -1,5 +1,5 @@
 import {test, userStatePath} from "./fixtures/manager";
-import {Asset, Dashboard} from "@openremote/model";
+import {Dashboard} from "@openremote/model";
 import {preparedAssetsForInsights as assets} from "./fixtures/data/assets.js";
 import { expect } from "@openremote/test";
 
