@@ -104,17 +104,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             this.binders = binders;
         }
 
-        protected void apply(EntityManager em, org.hibernate.query.Query<Object[]> query) {
+        protected void apply(EntityManager em, org.hibernate.query.Query<Object> query) {
             for (ParameterBinder binder : binders) {
                 binder.accept(em, query);
             }
         }
     }
 
-    public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object[]>> {
+    public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object>> {
 
         @Override
-        default void accept(EntityManager em, org.hibernate.query.Query<Object[]> st) {
+        default void accept(EntityManager em, org.hibernate.query.Query<Object> st) {
             try {
                 acceptStatement(em, st);
             } catch (SQLException ex) {
@@ -122,7 +122,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
         }
 
-        void acceptStatement(EntityManager em, org.hibernate.query.Query<Object[]> st) throws SQLException;
+        void acceptStatement(EntityManager em, org.hibernate.query.Query<Object> st) throws SQLException;
     }
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
@@ -1350,7 +1350,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 //            return asset;
 //        });
 
-        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class)
+        org.hibernate.query.Query<Object> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class)
             .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
         querySql.apply(em, jpql);
         List<Asset<?>> assets = (List<Asset<?>>)(Object)jpql.getResultList();
@@ -1389,8 +1389,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         PreparedAssetQuery querySql = buildQuery(query, timerService::getCurrentTimeMillis, true).key;
-        Query countQuery = em.createNativeQuery(querySql.querySql).unwrap(org.hibernate.query.Query.class)
+        org.hibernate.query.Query<Object> countQuery = em.createNativeQuery(querySql.querySql, Integer.class).unwrap(org.hibernate.query.Query.class)
                 .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
+
+        querySql.apply(em, countQuery);
         return ((Number) countQuery.getSingleResult()).intValue();
     }
 
@@ -1564,11 +1566,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
-        if (count) {
-            sb.append("select COUNT(*)");
-        } else {
-            sb.append(buildSelectString(query, 1, binders, timeProvider));
-        }
+        sb.append(buildSelectString(query, 1, binders, timeProvider));
         sb.append(buildFromString(query, 1));
         boolean containsCalendarPredicate = appendWhereClause(sb, query, 1, binders, timeProvider);
 
@@ -1584,11 +1582,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             containsCalendarPredicate = !containsCalendarPredicate && appendWhereClause(sb, query, 3, binders, timeProvider);
         }
 
-        if (!count) {
-            sb.append(buildOrderByString(query));
-        }
+        sb.append(buildOrderByString(query));
         sb.append(buildLimitString(query));
         sb.append(buildOffsetString(query));
+
+        if (count) {
+            sb.insert(0, "select COUNT(*) FROM (");
+            sb.append(")");
+        }
+
         return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);
     }
 
