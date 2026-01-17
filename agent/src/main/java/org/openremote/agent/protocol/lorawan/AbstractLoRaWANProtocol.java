@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -65,6 +64,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK_CONFIG;
+import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 
 public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<S,T>, T extends LoRaWANAgent<T, S>> implements Protocol<T>, ProtocolAssetImport {
@@ -77,8 +77,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     private final MQTTAgent mqttAgent;
     private final T agent;
     protected final Set<String> devEuiSet = new CopyOnWriteArraySet<>();
-    protected final Map<String, String> assetIdToDevEuiMap = new ConcurrentHashMap<>();
-    protected final Object deviceIdMappingLock = new Object();
     protected volatile Container container;
 
     public AbstractLoRaWANProtocol(T agent) {
@@ -115,32 +113,27 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     public void linkAttribute(String assetId, Attribute<?> attribute) throws Exception {
         mqttProtocol.linkAttribute(assetId, attribute);
 
-        Asset<?> asset = assetService.findAsset(assetId);
-
-        Optional.ofNullable(asset)
-            .flatMap(a -> a.getAttribute(ATTRIBUTE_NAME_DEV_EUI))
-            .flatMap(attr -> attr.getValue(String.class))
-            .map(String::trim)
-            .map(String::toUpperCase)
-            .filter(s -> !s.isEmpty())
-            .ifPresent(devEui -> {
-                synchronized (deviceIdMappingLock) {
-                    devEuiSet.add(devEui);
-                    assetIdToDevEuiMap.put(assetId, devEui);
-                }
-            });
+        if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+            attribute.getValue(String.class)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> !s.isEmpty())
+                .ifPresent(devEUI -> devEuiSet.add(devEUI));
+        }
     }
 
     @Override
     public void unlinkAttribute(String assetId, Attribute<?> attribute) throws Exception {
         mqttProtocol.unlinkAttribute(assetId, attribute);
 
-        synchronized (deviceIdMappingLock) {
-            String devEui = assetIdToDevEuiMap.get(assetId);
-            if (devEui != null) {
-                devEuiSet.remove(devEui);
-                assetIdToDevEuiMap.remove(assetId);
-            }
+        if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+            attribute.getValue(String.class)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> !s.isEmpty())
+                .ifPresent(devEUI -> {
+                    devEuiSet.remove(devEUI);
+                });
         }
     }
 
@@ -460,6 +453,11 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 MetaMap metaMap = attribute.getMeta();
                 metaMap.remove(AGENT_LINK_CONFIG);
                 attribute.setMeta(metaMap);
+            } else if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+                attribute.addOrReplaceMeta(
+                    new MetaItem<>(AGENT_LINK, agentLink),
+                    new MetaItem<>(STORE_DATA_POINTS, false)
+                );
             }
         }
 
