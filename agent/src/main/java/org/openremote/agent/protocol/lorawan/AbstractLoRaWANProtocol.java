@@ -133,6 +133,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 .filter(s -> !s.isEmpty())
                 .ifPresent(devEUI -> {
                     devEuiSet.remove(devEUI);
+                    doUnlinkDevice(devEUI);
                 });
         }
     }
@@ -225,6 +226,10 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 LOG.log(Level.WARNING, "CSV import failed for: " + getProtocolInstanceUri(), e);
             }
         },  null);
+    }
+
+    protected void doUnlinkDevice(String devEui) {
+
     }
 
     protected boolean checkCSVImportPrerequisites() {

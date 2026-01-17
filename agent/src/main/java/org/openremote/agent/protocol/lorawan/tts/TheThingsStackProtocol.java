@@ -142,6 +142,11 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
+    protected void doUnlinkDevice(String devEui) {
+        ignoreDevEuiSet.remove(devEui);
+    }
+
+    @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
         if (TENANT_ID.getName().equals(event.getName()) ||
             API_KEY.getName().equals(event.getName()) ||
