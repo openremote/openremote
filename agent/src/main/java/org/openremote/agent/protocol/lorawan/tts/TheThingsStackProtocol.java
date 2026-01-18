@@ -1005,11 +1005,19 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             ignoreDevEuiSet.clear();
             ttsDeviceMap.set(new ConcurrentHashMap<>(map));
 
-        } catch (Exception e) {
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            String errorDetail = String.format(
+                "{code=%s, description=%s}",
+                status.getCode(),
+                status.getDescription() != null ? status.getDescription() : "-"
+            );
             LOG.log(
                 Level.WARNING,
-                "CSV import failure because couldn't retrieve device list from the LoRaWAN server for: " + getProtocolInstanceUri(), e
+                String.format("CSV import failed because of a gRPC connection error %s for: %s", errorDetail, getProtocolInstanceUri()),
+                e
             );
+            throw e;
         } finally {
             if (channel != null) {
                 channel.shutdown();

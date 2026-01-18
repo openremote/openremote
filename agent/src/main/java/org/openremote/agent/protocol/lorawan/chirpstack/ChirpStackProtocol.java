@@ -206,8 +206,18 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
             return assetTreeNodes;
         } catch (StatusRuntimeException e) {
-            LOG.log(Level.WARNING, "Auto-discovery failed because of a gRPC connection error {code=" + e.getStatus().getCode() + ", description=" + e.getStatus().getDescription() + "} for: " + getGRPCClientUri(), e);
-            return new AssetTreeNode[0];
+            Status status = e.getStatus();
+            String errorDetail = String.format(
+                "{code=%s, description=%s}",
+                status.getCode(),
+                status.getDescription() != null ? status.getDescription() : "-"
+            );
+            LOG.log(
+                Level.WARNING,
+                String.format("Auto-discovery failed because of a gRPC connection error %s for: %s", errorDetail, getGRPCClientUri()),
+                e
+            );
+            throw e;
         } finally {
             if (channel != null) {
                 channel.shutdown();
