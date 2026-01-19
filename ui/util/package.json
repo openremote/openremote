@@ -10,8 +10,8 @@
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.4",
-    "@rspack/cli": "^1.4.4",
-    "@rspack/core": "^1.4.4",
+    "@rspack/cli": "~1.7.1",
+    "@rspack/core": "~1.7.1",
     "@types/react": "^18",
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
