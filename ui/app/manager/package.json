@@ -1,6 +1,6 @@
 {
   "name": "@openremote/manager",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote Manager",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -20,6 +20,7 @@
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
+    "doctor": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 RSDOCTOR=true rspack --mode production",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
     "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
@@ -56,7 +57,8 @@
   },
   "devDependencies": {
     "@openremote/rest": "workspace:*",
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@rsdoctor/rspack-plugin": "~1.4.0"
   },
   "publishConfig": {
     "access": "public"

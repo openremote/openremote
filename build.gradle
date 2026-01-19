@@ -84,12 +84,6 @@ tasks.register('clean') {
     }
 }
 
-tasks.withType(Task).configureEach{testTask ->
-    logger.lifecycle("TASK: ${testTask.path}")
-    // disable("annotationProcessor")
-}
-
-
 buildscript {
     repositories {
         mavenCentral()

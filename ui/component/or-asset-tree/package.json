@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-asset-tree",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote Asset Tree",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",

@@ -65,7 +65,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public String buildingUserId;
     public Realm realmMaster;
     public Realm realmBuilding;
-    public Realm realmEnergy;
     public Realm realmCity;
     public User testuser1;
     public User testuser2;
@@ -91,7 +90,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         realmMaster = identityProvider.getRealm(Constants.MASTER_REALM);
         realmBuilding = createRealm("building", "Building", true);
         realmCity = createRealm("smartcity", "Smart City", true);
-        realmEnergy = createRealm("energy", "Energy Test", true);
 
         // Add a test realm roles
         keycloakProvider.getRealms(realmsResource -> {

@@ -1,6 +1,6 @@
 apply plugin: "java-library"
 
-var setupJar = project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}" : "demo"
+var setupJar = project.hasProperty("SETUP_JAR") ? project.getProperties().get("SETUP_JAR") : "demo"
 
 base {
     archivesName = "openremote-${setupJar}-${project.name}"
@@ -8,7 +8,6 @@ base {
 
 sourceSets {
     integration
-    demo
     load1
     load2
 }
@@ -16,7 +15,6 @@ sourceSets {
 // dependencies declaration
 configurations {
     integrationImplementation.extendsFrom(implementation)
-    demoImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
     load2Implementation.extendsFrom(implementation)
 }
@@ -24,7 +22,6 @@ configurations {
 dependencies {
     implementation project(":manager")
 }
-
 
 tasks.register('load1Jar', Jar) {
     archiveBaseName.set("openremote-load1-${project.name}")
@@ -36,67 +33,64 @@ tasks.register('load2Jar', Jar) {
     from sourceSets.load2.output
 }
 
-tasks.register('demoJar', Jar) {
-    archiveBaseName.set("openremote-demo-${project.name}")
-    from sourceSets.demo.output
-}
-
 tasks.named("compileJava") {
-    dependsOn("load1Jar", "load2Jar", "demoJar")
+    dependsOn("load1Jar", "load2Jar")
 }
 
-ext.runEnvDefaults = [
-  OR_DB_HOST      : "host.docker.internal",
-  OR_KEYCLOAK_HOST: "host.docker.internal",
-]
-
-// Resolve order: -PKEY=value  -> OS env KEY  -> default
-def resolvedEnvValue(String key, String defaultValue = null) {
-  providers.gradleProperty(key)
-    .orElse(providers.environmentVariable(key))
-    .orElse(defaultValue != null ? providers.provider { defaultValue } : providers.provider { "" })
-    .get()
-}
-
-// Apply a whole env map at once (so adding/removing env is just editing maps)
-def applyRunEnv(JavaExec t, Map<String, String> extra = [:]) {
-  def keys = (runEnvDefaults.keySet() + extra.keySet()).toSet()
-  def envMap = [:]
-  keys.each { k ->
-    envMap[k] = resolvedEnvValue(k as String, extra[k] ?: runEnvDefaults[k])
-  }
-  t.environment(envMap)
-}
-
-tasks.register('runDemo', JavaExec) {
-  group = 'application'
-  description = 'Runs the Manager with Demo Setup'
-  classpath = sourceSets.demo.runtimeClasspath
-  mainClass = 'org.openremote.manager.Main'
-
-  standardOutput = System.out
-  errorOutput = System.err
-
-  applyRunEnv(delegate as JavaExec, [
-    OR_SETUP_TYPE: "demo",
-  ])
-}
-
-tasks.register('runTest', JavaExec) {
-  group = 'application'
-  description = 'Runs the Manager with Test Setup'
-  classpath = sourceSets.integration.runtimeClasspath
-  mainClass = 'org.openremote.manager.Main'
-
-  applyRunEnv(delegate as JavaExec)
-}
-
-// Use demo setup sourceset by default for jar
-tasks.register('installDist', Copy) {
-    def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
-    System.out.println(setupTask.name)
-    dependsOn setupTask
-    dependsOn resolveTask(":manager:installDist")
-    from setupTask.archiveFile
-    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
-}
+//ext.runEnvDefaults = [
+//  OR_DB_HOST      : "host.docker.internal",
+//  OR_KEYCLOAK_HOST: "host.docker.internal",
+//]
+//
+//// Resolve order: -PKEY=value  -> OS env KEY  -> default
+//def resolvedEnvValue(String key, String defaultValue = null) {
+//  providers.gradleProperty(key)
+//    .orElse(providers.environmentVariable(key))
+//    .orElse(defaultValue != null ? providers.provider { defaultValue } : providers.provider { "" })
+//    .get()
+//}
+//
+//// Apply a whole env map at once (so adding/removing env is just editing maps)
+//def applyRunEnv(JavaExec t, Map<String, String> extra = [:]) {
+//  def keys = (runEnvDefaults.keySet() + extra.keySet()).toSet()
+//  def envMap = [:]
+//  keys.each { k ->
+//    envMap[k] = resolvedEnvValue(k as String, extra[k] ?: runEnvDefaults[k])
+//  }
+//  t.environment(envMap)
+//}
+//
+//tasks.register('runDemo', JavaExec) {
+//  group = 'application'
+//  description = 'Runs the Manager with Demo Setup'
+//  classpath = sourceSets.demo.runtimeClasspath
+//  mainClass = 'org.openremote.manager.Main'
+//
+//  standardOutput = System.out
+//  errorOutput = System.err
+//
+//  applyRunEnv(delegate as JavaExec, [
+//    OR_SETUP_TYPE: "demo",
+//  ])
+//}
+//
+//tasks.register('runTest', JavaExec) {
+//  group = 'application'
+//  description = 'Runs the Manager with Test Setup'
+//  classpath = sourceSets.integration.runtimeClasspath
+//  mainClass = 'org.openremote.manager.Main'
+//
+//  applyRunEnv(delegate as JavaExec)
+//}
+//
+//// Use demo setup sourceset by default for jar
+//tasks.register('installDist', Copy) {
+//    def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
+//    if (setupTask != null) {
+//        System.out.println(setupTask.name)
+//        dependsOn setupTask
+//        dependsOn resolveTask(":manager:installDist")
+//        from setupTask.archiveFile
+//        into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+//    }
+//}
