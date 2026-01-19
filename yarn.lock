@@ -2143,7 +2143,6 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     ajv: "npm:^8.8.2"
     lit: "npm:^3.3.1"
-    moment-timezone: "npm:0.6.0"
   languageName: unknown
   linkType: soft
 
@@ -8818,15 +8817,6 @@ __metadata:
     moment: ^2.8.0
     webpack: ^1 || ^2 || ^3 || ^4 || ^5
   checksum: 10c0/610c41c77d09e2d1bd8dd412493a3396c3e151080117939357a13b91a71e7782c44ee6405739a11d6ad7dfaf41179ca5eb770d79e3fbf2bf091f10088f0557a7
-  languageName: node
-  linkType: hard
-
-"moment-timezone@npm:0.6.0":
-  version: 0.6.0
-  resolution: "moment-timezone@npm:0.6.0"
-  dependencies:
-    moment: "npm:^2.29.4"
-  checksum: 10c0/16164cf321d8be0bf7d43855286b426c94c8200e0634f2e42cf469f591c6a230ac43f37d3826d76b05ac221f69a571400323fb8625e3d4e8669f4d9ab00fe779
   languageName: node
   linkType: hard
 
