@@ -56,7 +56,6 @@ public class GrpcRetryingRunner {
 
             return code == Status.Code.NOT_FOUND ||
                 code == Status.Code.INVALID_ARGUMENT ||
-                code == Status.Code.PERMISSION_DENIED ||
                 code == Status.Code.UNAUTHENTICATED ||
                 code == Status.Code.FAILED_PRECONDITION ||
                 code == Status.Code.CANCELLED;
