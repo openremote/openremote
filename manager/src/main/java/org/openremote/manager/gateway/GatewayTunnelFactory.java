@@ -20,6 +20,7 @@
 
 package org.openremote.manager.gateway;
 
+import org.openremote.model.ContainerService;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 
@@ -27,6 +28,11 @@ import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
  * This interface is an abstraction for starting/stopping gateway tunnels and is used by edge gateway instances.
  */
 public interface GatewayTunnelFactory {
+
+    /**
+     * Initialize the tunnel factory
+     */
+    void start();
 
     /**
      * Start a tunnel for the requested {@link GatewayTunnelInfo}
@@ -51,4 +57,9 @@ public interface GatewayTunnelFactory {
      * termination of each session is attempted.
      */
     void stopAll();
+
+    /**
+     * Destroy the tunnel factory
+     */
+    void stop();
 }
