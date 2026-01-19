@@ -3,7 +3,7 @@ import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
 import "./or-dashboard-widgetcontainer";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 import {DashboardGridItem, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
 import {getActivePreset} from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
