@@ -107,7 +107,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 if (!TextUtil.isNullOrEmpty(localhostRewrite)) {
                     LOG.info("Gateway tunnelling localhostRewrite set to: " + localhostRewrite);
                 }
-                gatewayTunnelFactory = new JSchGatewayTunnelFactory(f, localhostRewrite);
+                gatewayTunnelFactory = new MINAGatewayTunnelFactory(f, localhostRewrite);
             } else {
                 LOG.warning("Gateway tunnelling SSH key file does not exist, tunnelling support disabled: " + f.getAbsolutePath());
             }
@@ -155,6 +155,10 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 clientAttributeTimestamps.put(connection.getLocalRealm(), new ConcurrentHashMap<>());
             }
         });
+
+        if (gatewayTunnelFactory != null) {
+            gatewayTunnelFactory.start();
+        }
     }
 
     @Override
@@ -167,6 +171,10 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         clientRealmMap.clear();
         connectionRealmMap.clear();
         clientAttributeTimestamps.clear();
+
+        if (gatewayTunnelFactory != null) {
+            gatewayTunnelFactory.stop();
+        }
     }
 
     @Override
