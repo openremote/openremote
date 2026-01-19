@@ -1181,7 +1181,13 @@ export class PageUsers extends Page<AppStateKeyed> {
         if (state.app.page == 'users') { // it seems that the check is necessary here
             this.realm = state.app.realm;
             this.userId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
-            this.creationState = (state.app.params?.type ? {userModel: this.getNewUserModel(state.app.params.type == 'serviceuser')} : undefined);
+
+            // If the user creation parameters have changed from `/regular` to `/serviceuser` (or the other way around)
+            // we need to update the creationState to a modified user model.
+            const userType: string | undefined = state.app.params?.type;
+            if (userType && (this.creationState?.userModel.serviceAccount !== (userType === "serviceuser"))) {
+                this.creationState = {userModel: this.getNewUserModel(userType === "serviceuser")};
+            }
         }
     }
 

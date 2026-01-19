@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-components",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote basic UI components",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",

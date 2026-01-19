@@ -118,10 +118,6 @@ Parameters:
 
 Mappings:
   DiskSize:
-    8GB:
-      DiskSize: 8
-    16GB:
-      DiskSize: 16
     32GB:
       DiskSize: 32
     48GB:
@@ -229,45 +225,46 @@ Resources:
       GroupName: !Sub ${AWS::StackName}-or-securitygroup
       VpcId: !Ref VPC
       SecurityGroupIngress:
-        - IpProtocol: tcp
+        - Description: HTTP Access IPv4
+          IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-          Description: HTTP Access IPv4
-        - IpProtocol: tcp
+        - Description: HTTP Access IPv6
+          IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIpv6: ::/0
-          Description: HTTP Access IPv6
-        - IpProtocol: tcp
+        - Description: HTTPS Access IPv4
+          IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-          Description: HTTPS Access IPv4
-        - IpProtocol: tcp
+        - Description: HTTPS Access IPv6
+          IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIpv6: ::/0
-          Description: HTTPS Access IPv6
-        - IpProtocol: tcp
+        - Description: MQTT Access IPv4
+          IpProtocol: tcp
           FromPort: 8883
           ToPort: 8883
           CidrIp: 0.0.0.0/0
-          Description: MQTT Access IPv4
-        - IpProtocol: tcp
+        - Description: MQTT Access IPv6
+          IpProtocol: tcp
           FromPort: 8883
           ToPort: 8883
           CidrIpv6: ::/0
-          Description: MQTT Access IPv6
-        - IpProtocol: udp
+        - Description: SNMP Access IPv4
+          IpProtocol: udp
           FromPort: 161
           ToPort: 162
-          Description: SNMP Access IPv4
-        - IpProtocol: udp
+          CidrIp: 0.0.0.0/0
+        - Description: SNMP Access IPv6
+          IpProtocol: udp
           FromPort: 161
           ToPort: 162
           CidrIpv6: ::/0
-          Description: SNMP Access IPv6
   
   SSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
