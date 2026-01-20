@@ -21,7 +21,6 @@ import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
-const extracss = require('gridstack/dist/gridstack-extra.css');
 
 //language=css
 const editorStyling = css`
@@ -94,6 +93,9 @@ const editorStyling = css`
     .grid-stack-item-content__active {
         border: 2px solid var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
         margin: -1px !important; /* to compromise with the extra pixel of border. */
+    }
+    .grid-stack-item > .ui-resizable-handle {
+        opacity: 0.4;
     }
     
     /* Grid lines on the background of the grid */
@@ -232,7 +234,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
+        return [unsafeCSS(gridcss), editorStyling, style];
     }
 
     /* ------------------------------ */
@@ -370,13 +372,6 @@ export class OrDashboardPreview extends LitElement {
             }
             this.activePreset = newPreset;
 
-
-            // If grid got reset, setup the ResizeObserver again.
-            if(this.grid == null) {
-                const gridHTML = this.shadowRoot?.querySelector(".maingrid");
-                this.setupResizeObserver(gridHTML!);
-            }
-
             gridElement!.style.maxWidth = this.template.maxScreenWidth + "px";
 
             this.grid = GridStack.init({
@@ -384,8 +379,7 @@ export class OrDashboardPreview extends LitElement {
                 animate: true,
                 cellHeight: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
                 column: this.template?.columns,
-                disableOneColumnMode: (this.activePreset?.scalingPreset !== DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN),
-                oneColumnModeDomSort: true,
+                columnOpts: (this.activePreset?.scalingPreset !== DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) ? { breakpoints: [{w:768, c:1}] } : undefined,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                 },
@@ -619,45 +613,6 @@ export class OrDashboardPreview extends LitElement {
             this.cachedGridstackCSS.set(columns, htmls);
             return html`${htmls.map((x) => x)}`;
         }
-    }
-
-
-
-    /* ---------------------------------------------- */
-
-    protected resizeObserver?: ResizeObserver;
-    protected previousObserverEntry?: ResizeObserverEntry;
-
-    disconnectedCallback() {
-        super.disconnectedCallback()
-        this.resizeObserver?.disconnect();
-    }
-
-    // Triggering a Grid rerender on every time the element resizes.
-    // In fullscreen, debounce (only trigger after 550ms of no changes) to limit amount of rerenders.
-    protected setupResizeObserver(element: Element): ResizeObserver {
-        this.resizeObserver?.disconnect();
-        if(this.fullscreen) {
-            this.resizeObserver = new ResizeObserver(debounce(this.resizeObserverCallback, 200));
-        } else {
-            this.resizeObserver = new ResizeObserver(this.resizeObserverCallback);
-        }
-        this.resizeObserver.observe(element);
-        return this.resizeObserver;
-    }
-
-    protected resizeObserverCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
-        requestAnimationFrame(() => {
-            if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
-                this._onGridResize();
-            }
-            this.previousObserverEntry = entries[0];
-        });
-    }
-
-    protected _onGridResize() {
-        console.debug("Grid resize detected. Recreating the grid...");
-        this.setupGrid(true, false);
     }
 
     /* --------------------------------------- */

@@ -6,7 +6,6 @@ import {widgetTypes} from "./index";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
-const extracss = require('gridstack/dist/gridstack-extra.css');
 
 //language=css
 const browserStyling = css`
@@ -51,11 +50,16 @@ export class OrDashboardBrowser extends LitElement {
 
 
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), browserStyling, style];
+        return [unsafeCSS(gridcss), browserStyling, style];
     }
 
     constructor() {
         super();
+
+        GridStack.renderCB = function(el: HTMLElement, w: GridStackNode) {
+            el.innerHTML = w.content ?? "";
+        };
+
         this.updateComplete.then(() => {
             this.renderGrid();
         })
@@ -96,7 +100,6 @@ export class OrDashboardBrowser extends LitElement {
                 acceptWidgets: false,
                 column: 4,
                 cellHeight: 67,
-                disableOneColumnMode: true,
                 disableResize: true,
                 draggable: {
                     appendTo: 'parent'
@@ -140,7 +143,6 @@ export class OrDashboardBrowser extends LitElement {
                 staticGrid: true,
                 column: 4,
                 cellHeight: 67,
-                disableOneColumnMode: true,
                 margin: 8
 
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
