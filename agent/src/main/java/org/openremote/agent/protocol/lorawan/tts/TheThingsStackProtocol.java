@@ -212,30 +212,6 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
-    protected AssetTreeNode[] discoverDevices() {
-
-        AssetTreeNode[] assetTreeNodes = null;
-
-        assetTreeNodes = ttsDeviceMap.get()
-            .entrySet()
-            .stream()
-            .filter(entry -> duplicateAssetCheck(entry.getKey()))
-            .filter(entry -> entry.getValue().getAttributesMap() != null)
-            .filter(entry -> !isNullOrEmpty(entry.getValue().getAttributesMap().get(THE_THINGS_STACK_ASSET_TYPE_TAG)))
-            .filter(entry -> entry.getValue().getAttributesMap().containsKey(THE_THINGS_STACK_ASSET_TYPE_TAG))
-            .map(entry -> createAsset(
-                entry.getKey(),
-                entry.getValue().getAttributesMap().get(THE_THINGS_STACK_ASSET_TYPE_TAG),
-                entry.getValue()))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .map(AssetTreeNode::new)
-            .toArray(AssetTreeNode[]::new);
-
-        return assetTreeNodes;
-    }
-
-    @Override
     protected List<String> createWildcardSubscriptionTopicList() {
         Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());

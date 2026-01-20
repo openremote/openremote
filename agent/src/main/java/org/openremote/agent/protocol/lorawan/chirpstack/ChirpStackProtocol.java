@@ -167,7 +167,6 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         return isOk;
     }
 
-    @Override
     protected AssetTreeNode[]  discoverDevices() {
         Optional<String> host = getAgent().getHost().map(String::trim);
         int port = getPort();

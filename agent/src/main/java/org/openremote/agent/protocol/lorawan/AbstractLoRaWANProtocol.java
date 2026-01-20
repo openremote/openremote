@@ -252,7 +252,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     }
 
     protected abstract MQTTProtocol createMqttClientProtocol(MQTTAgent agent);
-    protected abstract AssetTreeNode[] discoverDevices();
     protected abstract List<String> createWildcardSubscriptionTopicList();
     protected abstract boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord);
     protected abstract boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord);
