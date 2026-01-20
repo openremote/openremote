@@ -13,7 +13,6 @@ import {
     JsonSchema
 } from "@jsonforms/core";
 import {isEnumArray} from "../standard-renderers";
-import moment from "moment-timezone";
 
 let defaultTz: string;
 
@@ -132,7 +131,7 @@ export class ControlInputElement extends ControlBaseElement {
                 this.inputType = InputType.PASSWORD;
             } else if (format === "timezone") {
                 this.inputType = InputType.SELECT;
-                options = moment.tz.names().map(z => [z, z]);
+                options = Intl.supportedValuesOf("timeZone").map(z => [z, z]);
                 if (!(defaultTz && value)) {
                     defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
                     this.handleChange(this.path, defaultTz);

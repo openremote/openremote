@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 function getStandardModuleRules() {
     return {
@@ -100,7 +101,11 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
-        })
+        }),
+        // Remove any unused locales
+        new MomentLocalesPlugin({
+          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pt', 'ro', 'uk'],
+        }),
     ];
 
     if (production) {
