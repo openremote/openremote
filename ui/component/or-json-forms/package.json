@@ -28,8 +28,7 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "ajv": "^8.8.2",
-    "lit": "^3.3.1",
-    "moment-timezone": "0.6.0"
+    "lit": "^3.3.1"
   },
   "publishConfig": {
     "access": "public"
