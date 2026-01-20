@@ -29,6 +29,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -88,6 +89,12 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         persistenceService.doTransaction(em -> em.createQuery(
             "delete from " + getDatapointClass().getSimpleName() + " dp where dp.assetId=?1 and dp.attributeName=?2"
         ).setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
+    }
+
+    public void purgeValuesBefore(String assetId, String attributeName, Instant timestamp) {
+        persistenceService.doTransaction(em -> em.createQuery(
+            "delete from " + getDatapointClass().getSimpleName() + " dp where dp.assetId=?1 and dp.attributeName=?2 and dp.timestamp<?3"
+        ).setParameter(1, assetId).setParameter(2, attributeName).setParameter(3, Timestamp.from(timestamp)).executeUpdate());
     }
 
     @Override

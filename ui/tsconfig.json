@@ -8,11 +8,13 @@
       "dom",
       "es2017",
       "es2019",
-      "es2021"
+      "es2021",
+      "es2022"
     ],
     "strict": true,
     "declaration": true,
     "sourceMap": true,
+    "declarationMap": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "composite": true,
