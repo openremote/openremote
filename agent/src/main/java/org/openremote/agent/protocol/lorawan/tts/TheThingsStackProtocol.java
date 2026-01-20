@@ -30,7 +30,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
 import org.openremote.agent.protocol.lorawan.AbstractLoRaWANProtocol;
-import org.openremote.agent.protocol.lorawan.CsvRecord;
+import org.openremote.agent.protocol.lorawan.DeviceRecord;
 import org.openremote.agent.protocol.lorawan.GrpcRetryingRunner;
 import org.openremote.agent.protocol.lorawan.GrpcRetryingRunner.StreamBreakSignalException;
 import org.openremote.agent.protocol.lorawan.LoRaWANMQTTProtocol;
@@ -246,8 +246,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
-    protected boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
 
@@ -255,7 +255,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
         Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
         Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim()).map(String::toUpperCase);
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim()).map(String::toUpperCase);
 
         if (applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
             EndDeviceOuterClass.EndDevice device = ttsDeviceMap.get().get(devEUI.get());
@@ -264,7 +264,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                 agentLink.setSubscriptionTopic("v3/" + (tenantId.isPresent() ? (applicationId.get() + "@" + tenantId.get()) : applicationId.get()) + "/devices/" + deviceId + "/up");
             } else {
                 LOG.warning(
-                    "CSV import failure because couldn't find device " + csvRecord + " on LoRaWAN network server for: " + getProtocolInstanceUri()
+                    "CSV import failure because couldn't find device " + deviceRecord + " on LoRaWAN network server for: " + getProtocolInstanceUri()
                 );
                 isOk = false;
             }
@@ -274,8 +274,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
-    protected boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
 
@@ -283,7 +283,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
         Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
         Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim()).map(String::toUpperCase);
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim()).map(String::toUpperCase);
 
         if (applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
             EndDeviceOuterClass.EndDevice device = ttsDeviceMap.get().get(devEUI.get());
@@ -292,7 +292,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                 agentLink.setPublishTopic("v3/" + (tenantId.isPresent() ? (applicationId.get() + "@" + tenantId.get()) : applicationId.get()) + "/devices/" + deviceId + "/down/push");
             } else {
                 LOG.warning(
-                    "CSV import failure because couldn't find device " + csvRecord + " on LoRaWAN network server for: " + getProtocolInstanceUri()
+                    "CSV import failure because couldn't find device " + deviceRecord + " on LoRaWAN network server for: " + getProtocolInstanceUri()
                 );
                 isOk = false;
             }
@@ -302,8 +302,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
-    protected boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
         getAgentConfigUplinkPort(attribute).ifPresent(port ->
@@ -314,8 +314,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     @Override
-    protected boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
 
@@ -338,7 +338,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                 agentLink.setWriteValue(json);
             } catch (JsonProcessingException e) {
                 isOk = false;
-                LOG.log(Level.SEVERE, "CSV import failure " + csvRecord + " for: " + getProtocolInstanceUri(), e);
+                LOG.log(Level.SEVERE, "CSV import failure " + deviceRecord + " for: " + getProtocolInstanceUri(), e);
             }
         }
         return isOk;
@@ -840,7 +840,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             return Optional.empty();
         }
 
-        CsvRecord record = new CsvRecord();
+        DeviceRecord record = new DeviceRecord();
         record.setDevEUI(devEUI);
         record.setAssetTypeName(assetTypeName);
         Optional.ofNullable(device.getName())

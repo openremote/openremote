@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Optional;
 
-public class CsvRecord {
+public class DeviceRecord {
 
     @JsonProperty("devEUI")
     private String devEUI;

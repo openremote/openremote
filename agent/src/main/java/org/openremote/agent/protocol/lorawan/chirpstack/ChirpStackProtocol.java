@@ -34,7 +34,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
 import org.openremote.agent.protocol.lorawan.AbstractLoRaWANProtocol;
-import org.openremote.agent.protocol.lorawan.CsvRecord;
+import org.openremote.agent.protocol.lorawan.DeviceRecord;
 import org.openremote.agent.protocol.lorawan.LoRaWANMQTTProtocol;
 import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
@@ -253,13 +253,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     }
 
     @Override
-    protected boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
 
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim());
 
         if (applicationId.isPresent() && devEUI.isPresent()) {
             agentLink.setSubscriptionTopic("application/" + applicationId.get() + "/device/" + devEUI.get().toLowerCase() + "/event/up");
@@ -268,13 +268,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     }
 
     @Override
-    protected boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
 
         Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim());
 
         if (applicationId.isPresent() && devEUI.isPresent()) {
             agentLink.setPublishTopic("application/" + applicationId.get() + "/device/" + devEUI.get().toLowerCase() + "/command/down");
@@ -283,8 +283,8 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     }
 
     @Override
-    protected boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
         getAgentConfigUplinkPort(attribute).ifPresent(port ->
@@ -295,13 +295,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     }
 
     @Override
-    protected boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
 
         Optional<Integer> downlinkPort = getAgentConfigDownlinkPort(attribute);
-        Optional<String> devEUI = Optional.ofNullable(csvRecord.getDevEUI()).map(eui -> eui.trim());
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim());
         Optional<String> objectTemplate = getAgentConfigWriteObjectValueTemplate(attribute);
 
         if (downlinkPort.isPresent() && devEUI.isPresent()) {
@@ -359,7 +359,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
             return Optional.empty();
         }
 
-        CsvRecord record = new CsvRecord();
+        DeviceRecord record = new DeviceRecord();
         record.setDevEUI(devEUI);
         record.setAssetTypeName(assetTypeName);
         Optional.ofNullable(deviceItem.getName())
