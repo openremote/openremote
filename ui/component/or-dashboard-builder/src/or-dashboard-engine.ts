@@ -6,12 +6,12 @@ export class OrDashboardEngine extends GridStackEngine {
     // Apparently during some rerenders, the widget moved downwards after colliding with itself.
     // Now cancelling the movement when the IDs are the same.
     public moveNode(node: GridStackNode, o: GridStackMoveOpts): boolean {
-        /*if(o.skip && o.skip.id == node.id) {
+        if(o.skip && o.skip.id == node.id) {
             o.x = o.skip.x;
             o.y = o.skip.y;
             o.w = o.skip.w;
             o.h = o.skip.h;
-        }*/
+        }
         return super.moveNode(node, o);
     }
 }
