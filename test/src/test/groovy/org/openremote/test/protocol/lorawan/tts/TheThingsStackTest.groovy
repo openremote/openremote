@@ -165,7 +165,16 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
             assert ((TheThingsStackProtocol)agentService.getProtocolInstance(agent.id)) != null
         }
 
-        and: "the connection status should be CONNECTED"
+        and: "the gRPC event stream connection should have been established"
+        conditions.eventually {
+            assert grpcServer.getEventObserverCount() == 1
+        }
+
+        when: "the initial gRPC event has been received"
+        def streamStartEvent = TheThingsStackGrpcServer.createStreamStartEvent(APPLICATION_ID)
+        grpcServer.pushEvent(streamStartEvent)
+
+        then: "the connection status should be CONNECTED"
         conditions.eventually {
             agent = assetStorageService.find(agent.id)
             agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
@@ -277,15 +286,19 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
             assert ((TheThingsStackProtocol)agentService.getProtocolInstance(agent.id)) != null
         }
 
-        and: "the connection status should be CONNECTED"
-        conditions.eventually {
-            agent = assetStorageService.find(agent.id)
-            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
-        }
-
         and: "the gRPC event stream connection should have been established"
         conditions.eventually {
             assert grpcServer.getEventObserverCount() == 1
+        }
+
+        when: "the initial gRPC event has been received"
+        def streamStartEvent = TheThingsStackGrpcServer.createStreamStartEvent(APPLICATION_ID)
+        grpcServer.pushEvent(streamStartEvent)
+
+        then: "the connection status should be CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id)
+            agent.getAttribute(Agent.STATUS).get().getValue().get() == ConnectionStatus.CONNECTED
         }
 
         when: "a sensor device sends data for the first time"
@@ -486,6 +499,24 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
                 eventObservers.each {it.onCompleted()}
                 eventObservers.clear()
             }
+        }
+
+        static Event createStreamStartEvent(String applicationId) {
+            def applicationIds = ApplicationIdentifiers.newBuilder()
+                .setApplicationId(applicationId)
+                .build()
+
+            def entityIds = EntityIdentifiers.newBuilder()
+                .setApplicationIds(applicationIds)
+                .build()
+
+            def anyPayload = Any.pack(com.google.protobuf.Empty.getDefaultInstance())
+
+            return Event.newBuilder()
+                .setName("events.stream.start")
+                .addIdentifiers(entityIds)
+                .setData(anyPayload)
+                .build()
         }
 
         static Event createUplinkEvent(String applicationId, String deviceId, String devEui, String payloadData, int fPort, int fCnt) {

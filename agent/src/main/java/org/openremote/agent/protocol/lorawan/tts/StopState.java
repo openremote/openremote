@@ -17,18 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.lorawan;
+package org.openremote.agent.protocol.lorawan.tts;
 
-import org.openremote.agent.protocol.mqtt.MQTTAgent;
-import org.openremote.agent.protocol.mqtt.MQTTProtocol;
+import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
-public class LoRaWANMQTTProtocol extends MQTTProtocol {
-    protected LoRaWANMQTTProtocol(MQTTAgent agent) {
-        super(agent);
+public class StopState implements ConnectionState{
+    private ConnectionStateManager stateManager;
+    private TheThingsStackProtocol protocol;
+
+    public StopState(ConnectionStateManager manager) {
+        this.stateManager = manager;
+        this.protocol = manager.getProtocol();
     }
 
-    public void setStatus(ConnectionStatus status) {
-        setConnectionStatus(status);
+    @Override
+    public void start(Container container) throws Exception {
+    }
+
+    @Override
+    public void stop(Container container) {
+
+    }
+
+    @Override
+    public void onMqttConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        protocol.setConnectionStatus(connectionStatus);
+    }
+
+    @Override
+    public void onGrpcConnectionStatusChanged(ConnectionStatus connectionStatus) {
+
     }
 }

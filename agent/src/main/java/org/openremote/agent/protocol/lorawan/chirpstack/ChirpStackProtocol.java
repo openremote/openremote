@@ -39,6 +39,7 @@ import org.openremote.agent.protocol.lorawan.LoRaWANMQTTProtocol;
 import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.agent.protocol.mqtt.MQTTProtocol;
+import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.attribute.Attribute;
@@ -96,6 +97,17 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     public String getProtocolInstanceUri() {
         return "chirpstack-mqtt://" + getAgent().getMqttHost().orElse("-") + ":" + getAgent().getMqttPort().map(p -> p.toString()).orElse("-")
                                     + "/?clientId=" + getAgent().getClientId().orElse("-");
+    }
+
+    @Override
+    public void start(Container container) throws Exception {
+        super.start(container);
+        startMqttProtocol(container);
+    }
+
+    @Override
+    public void stop(Container container) throws Exception {
+        stopMqttProtocol(container);
     }
 
     @Override

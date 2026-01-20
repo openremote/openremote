@@ -38,8 +38,10 @@ import org.openremote.agent.protocol.lorawan.UniqueBlockingQueue;
 import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.agent.protocol.mqtt.MQTTProtocol;
+import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeNode;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.filter.NumberPredicate;
@@ -103,6 +105,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     public static final String SINGLE_DEVICE_SYNC_RUNNER_NAME = "Single Device Sync Runner";
     public static final String DEVICE_EVENT_STREAMER_NAME = "Device Event Streamer";
 
+    private final ConnectionStateManager connectionStateManager = new ConnectionStateManager(this);
     private final AtomicReference<Map<String, EndDeviceOuterClass.EndDevice>> ttsDeviceMap = new AtomicReference<>(new ConcurrentHashMap<>());
     private final UniqueBlockingQueue<String> deviceIdQueue = new UniqueBlockingQueue<>();
     private final Set<String> ignoreDevEuiSet = new CopyOnWriteArraySet<>();
@@ -131,14 +134,13 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     public void start(org.openremote.model.Container container) throws Exception {
         super.start(container);
 
-        startSync();
+        connectionStateManager.init();
+        connectionStateManager.start(container);
     }
 
     @Override
     public void stop(org.openremote.model.Container container) throws Exception {
-        super.stop(container);
-
-        stopSync();
+        connectionStateManager.stop(container);
     }
 
     @Override
@@ -165,7 +167,27 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             public String getProtocolName() {
                 return "The Things Stack MQTT Client";
             }
+
+            @Override
+            protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+                onMqttConnectionStatusChanged(connectionStatus);
+            }
         };
+    }
+
+    protected void onMqttConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        connectionStateManager.onMqttConnectionStatusChanged(connectionStatus);
+    }
+
+    protected void onGrpcConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        connectionStateManager.onGrpcConnectionStatusChanged(connectionStatus);
+    }
+
+    protected void setConnectionStatus(ConnectionStatus connectionStatus) {
+        LoRaWANMQTTProtocol mqttProtocol = (LoRaWANMQTTProtocol)getMqttProtocol();
+        if (mqttProtocol != null) {
+            mqttProtocol.setStatus(connectionStatus);
+        }
     }
 
     @Override
@@ -327,12 +349,20 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         return UniqueIdentifierGenerator.generateId("TTS_" + getAgent().getId() + devEui);
     }
 
-    private String getGRPCClientUri() {
+    protected String getGRPCClientUri() {
         return "tts-grpc://" + getAgent().getHost().orElse("-") + ":" + getPort()
                              + "/?clientId=" + getAgent().getClientId().orElse("-");
     }
 
-    private void startSync() {
+    protected void startMqtt(Container container) throws Exception {
+        startMqttProtocol(container);
+    }
+
+    protected void stopMqtt(Container container) {
+        stopMqttProtocol(container);
+    }
+
+    protected void startSync() {
         Optional<String> host = getAgent().getHost().map(String::trim);
         int port = getPort();
         boolean isSecureGRPC = isSecureGRPC();
@@ -352,6 +382,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
         if (!missingFields.isEmpty()) {
             LOG.warning("Auto-discovery skipped due to missing agent attributes {" + String.join(", ", missingFields) + "} for: " + getProtocolInstanceUri());
+            onGrpcConnectionStatusChanged(ConnectionStatus.ERROR);
             return;
         }
 
@@ -370,11 +401,12 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             () -> createChannel(host.get(), port, isSecureGRPC, true),
             this::performDevicesUpdate,
             Duration.ofMillis(GRPC_STREAM_RUNNER_INITIAL_BACKOFF_MILLIS),
-            Duration.ofMillis(GRPC_STREAM_RUNNER_MAX_BACKOFF_MILLIS)
+            Duration.ofMillis(GRPC_STREAM_RUNNER_MAX_BACKOFF_MILLIS),
+            connectionStatus -> onGrpcConnectionStatusChanged(connectionStatus)
         );
     }
 
-    private void stopSync() {
+    protected void stopSync() {
         bulkSyncRunner.shutdown();
         deviceEventStreamer.shutdown();
 
@@ -476,6 +508,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             .build();
 
         boolean isStreamEstablished = false;
+        boolean isStatusUpdate = true;
 
         Iterator<EventsOuterClass.Event> events = stub.stream(request);
 
@@ -487,6 +520,10 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
                 EventsOuterClass.Event event = events.next();
 
+                if (isStatusUpdate) {
+                    isStatusUpdate = false;
+                    onGrpcConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                }
                 isStreamEstablished = true;
 
                 String eventName = event.getName();
@@ -739,6 +776,20 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             }
         } catch (StatusRuntimeException ex) {
             if (ex.getStatus().getCode() != Status.Code.NOT_FOUND) {
+                Status status = ex.getStatus();
+                String errorDetail = String.format(
+                    "{code=%s, description=%s}",
+                    status.getCode(),
+                    status.getDescription() != null ? status.getDescription() : "-"
+                );
+                LOG.log(
+                    Level.WARNING,
+                    String.format(
+                        "[" + SINGLE_DEVICE_SYNC_RUNNER_NAME + "] Device sync (deviceId=%s) failed because of a gRPC connection error %s for: %s",
+                         deviceId, errorDetail, getGRPCClientUri()
+                    ),
+                    ex
+                );
                 throw ex;
             }
         }

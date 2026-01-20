@@ -26,6 +26,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.openremote.container.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.IOException;
@@ -155,7 +156,11 @@ public class GrpcRetryingRunner {
     public void startStream(Supplier<ManagedChannel> channelSupplier,
                             ThrowingConsumer<ManagedChannel> task,
                             Duration initialBackoff,
-                            Duration maxBackoff) {
+                            Duration maxBackoff,
+                            ConnectionStatusObserver observer) {
+
+        Runnable notifyConnecting = () -> { if(observer != null) observer.onStatusChange(ConnectionStatus.CONNECTING); };
+        Runnable notifyError = () -> { if(observer != null) observer.onStatusChange(ConnectionStatus.ERROR); };
 
         CheckedBiPredicate<Object, Throwable> permanentAbort = (result, ex) -> {
             if (ex instanceof StatusRuntimeException) {
@@ -213,6 +218,7 @@ public class GrpcRetryingRunner {
                         ManagedChannel channel = channelSupplier.get();
                         currentChannel = channel;
                         try {
+                            notifyConnecting.run();
                             LOG.info("[" + taskName + "] Establishing gRPC stream connection for: " + getClientUri());
                             task.accept(channel);
                         } catch (InterruptedException exception) {
@@ -229,6 +235,7 @@ public class GrpcRetryingRunner {
                 LOG.info("[" + taskName + "] gRPC stream connection shutdown for: " + getClientUri());
             } else if (ex != null) {
                 LOG.warning("[" + taskName + "] gRPC stream connection unexpectedly stopped for: " + getClientUri() + ", error=" + ex.getMessage());
+                notifyError.run();
             }
         });
     }
@@ -306,6 +313,11 @@ public class GrpcRetryingRunner {
     @FunctionalInterface
     public interface RunnableContinuation {
         void run();
+    }
+
+    @FunctionalInterface
+    public interface ConnectionStatusObserver {
+        void onStatusChange(ConnectionStatus status);
     }
 
     public static class StreamBreakSignalException extends IOException {

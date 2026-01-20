@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.lorawan;
+package org.openremote.agent.protocol.lorawan.tts;
 
-import org.openremote.agent.protocol.mqtt.MQTTAgent;
-import org.openremote.agent.protocol.mqtt.MQTTProtocol;
+import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
-public class LoRaWANMQTTProtocol extends MQTTProtocol {
-    protected LoRaWANMQTTProtocol(MQTTAgent agent) {
-        super(agent);
-    }
-
-    public void setStatus(ConnectionStatus status) {
-        setConnectionStatus(status);
-    }
+public interface ConnectionState {
+    void start(Container container) throws Exception;
+    void stop(Container container);
+    void onMqttConnectionStatusChanged(ConnectionStatus connectionStatus);
+    void onGrpcConnectionStatusChanged(ConnectionStatus connectionStatus);
 }

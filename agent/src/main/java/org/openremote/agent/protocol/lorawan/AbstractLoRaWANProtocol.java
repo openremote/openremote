@@ -142,12 +142,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     public void start(Container container) throws Exception {
         this.container = container;
         executorService = container.getExecutor();
-        mqttProtocol.start(container);
-    }
-
-    @Override
-    public void stop(Container container) throws Exception {
-        mqttProtocol.stop(container);
     }
 
     @Override
@@ -226,6 +220,22 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 LOG.log(Level.WARNING, "CSV import failed for: " + getProtocolInstanceUri(), e);
             }
         },  null);
+    }
+
+    protected MQTTProtocol getMqttProtocol() {
+        return mqttProtocol;
+    }
+
+    protected void startMqttProtocol(Container container) throws Exception {
+        if (mqttProtocol != null) {
+            mqttProtocol.start(container);
+        }
+    }
+
+    protected void stopMqttProtocol(Container container) {
+        if (mqttProtocol != null) {
+            mqttProtocol.stop(container);
+        }
     }
 
     protected void doUnlinkDevice(String devEui) {
