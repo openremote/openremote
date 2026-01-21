@@ -52,9 +52,7 @@ test("Create a Line Chart widget", async ({manager, shared, page, insightsPage})
     await expect(insightsPage.getWidgetAttributes()).toHaveCount(3);
 
     // Save the dashboard
-    await page.route("**/dashboard", async (route, request) => {
-        await route.continue();
-        const response = await request.response();
+    await shared.interceptResponse<Dashboard>("**/dashboard", async (_dashboard, _request, response) => {
         expect(response?.status()).toBe(200);
         expect(await response?.json()).toBeDefined();
     });
