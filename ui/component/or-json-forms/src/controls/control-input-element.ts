@@ -60,6 +60,10 @@ export class ControlInputElement extends ControlBaseElement {
             this.inputType = InputType.JSON;
         } else if (isBooleanControl(uischema, schema, context)) {
             this.inputType = InputType.CHECKBOX;
+            if (typeof this.data !== "boolean") {
+                 this.data = Boolean(this.data);
+                 this.handleChange(this.path, this.data);
+            }
         } else if (isNumberControl(uischema, schema, context) || isIntegerControl(uischema, schema, context)) {
             step = isNumberControl(uischema, schema, context) ? 0.1 : 1;
             this.inputType = InputType.NUMBER;

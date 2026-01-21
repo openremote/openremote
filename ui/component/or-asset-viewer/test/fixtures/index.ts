@@ -1,4 +1,11 @@
-import { expect, type Locator, type Page } from "@openremote/test";
+import {
+    ct as base,
+    expect,
+    withPage,
+    type SharedComponentTestFixtures,
+    type Locator,
+    type Page,
+} from "@openremote/test";
 import type { WellknownMetaItems } from "@openremote/model";
 import * as Util from "@openremote/core/lib/util";
 
@@ -32,12 +39,11 @@ export class AssetViewer {
     }
 
     /**
-     * Set a value for a given attribute.
+     * Get a locator to the specified attribute value input.
      * @param attribute The attribute name
-     * @param value The value to set
      */
-    async setAttributeValue(attribute: string, value: string) {
-        await this.getAttributeLocator(attribute).locator("input").fill(value);
+    getAttributeValueLocator(attribute: string | Locator) {
+        return (typeof attribute === "string" ? this.getAttributeLocator(attribute) : attribute).locator("input");
     }
 
     /**
@@ -105,3 +111,11 @@ export class AssetViewer {
         return configItemLocator;
     }
 }
+
+interface ComponentFixtures extends SharedComponentTestFixtures {
+    assetViewer: AssetViewer;
+}
+
+export const ct = base.extend<ComponentFixtures>({
+    assetViewer: withPage(AssetViewer),
+});
