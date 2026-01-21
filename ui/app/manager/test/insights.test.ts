@@ -25,10 +25,15 @@ test("Create a Line Chart widget", async ({manager, shared, page, insightsPage})
 
     // Make widget larger by resizing it using the handle
     const chartWidget = insightsPage.getWidgets({ hasText: "Line Chart" }).first();
+    await expect(chartWidget).toBeVisible();
+    chartWidget.hover();
+    const handle = page.locator(".ui-resizable-handle.ui-resizable-se").first();
+    await expect(handle).toBeVisible();
+    await handle.hover();
+
     const box = await chartWidget.boundingBox();
     const startX = box!.x + box!.width - 4;
     const startY = box!.y + box!.height - 4;
-    await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX + (box!.width * 3), startY + (box!.height * 3), { steps: 10 });
     await page.mouse.up();
