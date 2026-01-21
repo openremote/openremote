@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 function getStandardModuleRules() {
     return {
@@ -27,13 +28,16 @@ function getStandardModuleRules() {
             {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
-                use: {
+                use: [{
                     // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
                     loader: "ts-loader",
                     options: {
                         projectReferences: true
                     }
-                }
+                }, {
+                    // Minifies Lit HTML and CSS templates and removes unnecessary whitespace in them
+                    loader: "minify-html-literals-loader",
+                }]
             }
         ]
     };
@@ -100,7 +104,11 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
-        })
+        }),
+        // Remove any unused locales
+        new MomentLocalesPlugin({
+          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pt', 'ro', 'uk'],
+        }),
     ];
 
     if (production) {
