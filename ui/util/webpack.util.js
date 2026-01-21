@@ -4,12 +4,13 @@ const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
+/** @returns {Record<"rules", import('@rspack/core').RuleSetRules>} */
 function getStandardModuleRules() {
     return {
         rules: [
             {
                 test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
-                type: "asset/source"
+                type: "asset/source",
             },
             {
                 test: /\.css$/, //
@@ -28,16 +29,16 @@ function getStandardModuleRules() {
             {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
-                use: [{
-                    // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
-                    loader: "ts-loader",
-                    options: {
-                        projectReferences: true
-                    }
-                }, {
-                    // Minifies Lit HTML and CSS templates and removes unnecessary whitespace in them
-                    loader: "minify-html-literals-loader",
-                }]
+                use: [
+                    {
+                        // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
+                        loader: "ts-loader",
+                        options: {
+                            projectReferences: true
+                        }
+                    }, // Minifies Lit HTML and CSS templates
+                    path.resolve(__dirname, "loaders/minify-html-literals.js")
+                ]
             }
         ]
     };

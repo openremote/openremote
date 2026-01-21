@@ -2354,7 +2354,7 @@ __metadata:
     eslint-plugin-node: "npm:^11.1.0"
     eslint-plugin-promise: "npm:^6.0.0"
     html-webpack-plugin: "npm:^5.6.3"
-    minify-html-literals-loader: "npm:1.1.1"
+    minify-html-literals: "npm:~1.3.5"
     moment-locales-webpack-plugin: "npm:^1.2.0"
     prettier: "npm:^2.5.1"
     querystring-es3: "npm:^0.2.1"
@@ -8713,16 +8713,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minify-html-literals-loader@npm:1.1.1":
-  version: 1.1.1
-  resolution: "minify-html-literals-loader@npm:1.1.1"
-  dependencies:
-    minify-html-literals: "npm:^1.3.5"
-  checksum: 10c0/fb6e9c5169d683080a63009f11e346c9c96dbcd4066f61d28f2fd0b4c145c527c8532e397392fb4a92ef0a52635dcef6aaae63d52e8d58f3882c5f31d54985d5
-  languageName: node
-  linkType: hard
-
-"minify-html-literals@npm:^1.3.5":
+"minify-html-literals@npm:~1.3.5":
   version: 1.3.5
   resolution: "minify-html-literals@npm:1.3.5"
   dependencies:
