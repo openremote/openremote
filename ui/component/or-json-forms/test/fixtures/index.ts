@@ -16,15 +16,15 @@ interface WalkFormOptions {
 
 export interface JsonSchema extends JsonSchema7 {
     /**
-     * Describes what properties should be manually selected by {@link walkForm#walkForm}
+     * Describes what properties should be manually selected by {@link JsonForms#walkForm}
      */
     "or:test:props"?: string[];
     /**
-     * Describes what properties should be manually selected by {@link walkForm#walkForm}
+     * Describes what value to set in {@link JsonForms#walkForm}
      */
     "or:test:value"?: any;
     /**
-     * Describes what properties should be manually selected by {@link JsonForms#walkForm}
+     * Describes how many items to add to an array control {@link JsonForms#walkForm}
      */
     "or:test:item:count"?: number;
     /**
@@ -80,7 +80,7 @@ export interface JsonSchema extends JsonSchema7 {
 }
 
 type Path = (string | number)[];
-type Parent = "array" | "object"; // TODO: remove first condition when or-json-forms-array-control always renders titles
+type Parent = "array" | "object"; // TODO: remove when or-json-forms-array-control always renders titles
 
 export class JsonForms {
     constructor(private readonly page: Page, private dialog: Locator) {
