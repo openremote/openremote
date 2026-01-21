@@ -137,7 +137,7 @@ export abstract class AttributePicker extends OrMwcDialog {
             ${when(multi, () => html`
                 <or-mwc-list id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}" .values="${selectedNames}"
                              @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => onSelect?.(ev.detail.map(item => item.value))}"
-                </or-mwc-list>
+                ></or-mwc-list>
             `, () => html`
                 <or-mwc-input id="attribute-selector" .type="${InputType.LIST}" .options="${listItems?.map(item => ([item, item.text]))}"
                               style="display:flex;" .label="${i18next.t("attribute")}"
