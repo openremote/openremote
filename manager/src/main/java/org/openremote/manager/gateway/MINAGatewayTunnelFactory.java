@@ -47,7 +47,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                 @Override
                 public void sessionClosed(Session session) {
                     System.out.println("Session closed. Triggering reconnection...");
-                    reconnect(); // Your custom reconnection logic
+                    reconnect(startRequestEvent);
                 }
 
                 @Override
@@ -61,6 +61,10 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                 session.close(true);
             }
         }
+    }
+
+    protected void reconnect(GatewayTunnelStartRequestEvent startRequestEvent) {
+
     }
 
     @Override
