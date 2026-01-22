@@ -386,7 +386,7 @@ export class OrDashboardPreview extends LitElement {
                 animate: true,
                 cellHeight: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
                 column: this.template?.columns,
-                columnOpts: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) ? { breakpoints: [{w:768, c:1}], columnMax: this.template?.columns } : undefined,
+                columnOpts: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) ? { breakpoints: [{w: this.activePreset?.breakpoint ?? 768, c:1}], columnMax: this.template?.columns } : undefined,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                 },
