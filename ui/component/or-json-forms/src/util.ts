@@ -191,7 +191,7 @@ function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
 const COMBINATOR_IDENTIFICATION_PROPERTY = "type";
 
 /**
- * TODO: when updating to jsonforms/core 4.0 use `getCombinatorIndexOfFittingSchema` from jsonform/core instead
+ * TODO: when updating to jsonforms/core 4.0 consider using `getCombinatorIndexOfFittingSchema` from jsonform/core instead
  */
 export function getCombinatorIndexOfFittingSchema(
     data: any,
@@ -202,12 +202,13 @@ export function getCombinatorIndexOfFittingSchema(
     if (typeof data !== 'object' || data === null) {
         return -1;
     }
+    console.log(data, keyword, schema,rootSchema)
 
     const resolvedCombinatorSchemas = [];
      for (let i = 0; i < schema[keyword]!.length; i++) {
         let resolvedSchema = schema[keyword]![i];
         if (resolvedSchema.$ref) {
-            resolvedSchema = Resolve.schema( rootSchema, resolvedSchema.$ref, rootSchema);
+            resolvedSchema = Resolve.schema(rootSchema, resolvedSchema.$ref, rootSchema);
         }
         resolvedCombinatorSchemas.push(resolvedSchema);
     }
@@ -216,14 +217,15 @@ export function getCombinatorIndexOfFittingSchema(
 
     // Check if the data matches the identification property of one of the resolved schemas
     for (let i = 0; i < resolvedCombinatorSchemas.length; i++) {
-        const resolvedSchema = resolvedCombinatorSchemas[i];
+        const resolvedSchema = resolvedCombinatorSchemas[i] as JsonSchema & { discriminator?: { propertyName?: string } };
+        const combinatorIdentificationProps = resolvedSchema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
 
         // Match the identification property against a constant value in resolvedSchema
-        const maybeConstIdValue = resolvedSchema.properties?.[COMBINATOR_IDENTIFICATION_PROPERTY]?.const;
+        const maybeConstIdValue = resolvedSchema.properties?.[combinatorIdentificationProps]?.const;
 
         if (
           maybeConstIdValue !== undefined &&
-          data[COMBINATOR_IDENTIFICATION_PROPERTY] === maybeConstIdValue
+          data[combinatorIdentificationProps] === maybeConstIdValue
         ) {
             indexOfFittingSchema = i;
             break;
