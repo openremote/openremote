@@ -21,7 +21,6 @@ package org.openremote.agent.protocol.lorawan.tts;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Any;
 import com.google.protobuf.FieldMask;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -40,13 +39,11 @@ import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.agent.protocol.mqtt.MQTTProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.filter.NumberPredicate;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
@@ -94,9 +91,14 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     public static final long GRPC_TIMEOUT_MILLIS = 10000L;
     public static final long GRPC_STREAM_RUNNER_INITIAL_BACKOFF_MILLIS = 5000L;
     public static final long GRPC_STREAM_RUNNER_MAX_BACKOFF_MILLIS = 5*60000L;
-    public static final long GRPC_BULK_SYNC_RUNNER_INITIAL_BACKOFF_MILLIS = 5000L;
-    public static final long GRPC_BULK_SYNC_RUNNER_MAX_BACKOFF_MILLIS = 5*60000L;
-    public static final long GRPC_BULK_SYNC_RUNNER_CONTINUATION_SCHEDULE_MILLIS = 12*60*60000L;
+    /*
+        The bulkSyncRunner can be activated to perform periodic full discovery
+        of LoRaWAN devices.
+
+        public static final long GRPC_BULK_SYNC_RUNNER_INITIAL_BACKOFF_MILLIS = 5000L;
+        public static final long GRPC_BULK_SYNC_RUNNER_MAX_BACKOFF_MILLIS = 5*60000L;
+        public static final long GRPC_BULK_SYNC_RUNNER_CONTINUATION_SCHEDULE_MILLIS = 12*60*60000L;
+    */
     public static final long GRPC_BULK_SYNC_RUNNER_KEEP_ALIVE_MILLIS = 10000L;
     public static final long GRPC_BULK_SYNC_RUNNER_KEEP_ALIVE_TIMEOUT_MILLIS = 4000L;
     public static final long GRPC_SINGLE_DEVICE_SYNC_RUNNER_INITIAL_BACKOFF_MILLIS = 100L;
@@ -126,7 +128,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
     @Override
     public String getProtocolInstanceUri() {
-        return "tts-mqtt://" + getAgent().getMqttHost().orElse("-") + ":" + getAgent().getMqttPort().map(p -> p.toString()).orElse("-")
+        return "tts-mqtt://" + getAgent().getMqttHost().orElse("-") + ":" + getAgent().getMqttPort().map(Object::toString).orElse("-")
                              + "/?clientId=" + getAgent().getClientId().orElse("-");
     }
 
@@ -213,8 +215,8 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
     @Override
     protected List<String> createWildcardSubscriptionTopicList() {
-        Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
-        Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
+        Optional<String> tenantId = getAgent().getTenantId().map(String::trim);
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
         return applicationId
             .map(id -> Collections.singletonList(
                 "v3/" + (tenantId.isPresent() ? (applicationId.get() + "@" + tenantId.get()) : applicationId.get()) + "/devices/+/up"))
@@ -228,10 +230,10 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         }
 
         boolean isOk = true;
-        Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
-        Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
-        Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim()).map(String::toUpperCase);
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
+        Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
+        Optional<String> tenantId = getAgent().getTenantId().map(String::trim);
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(String::trim).map(String::toUpperCase);
 
         if (applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
             EndDeviceOuterClass.EndDevice device = ttsDeviceMap.get().get(devEUI.get());
@@ -256,10 +258,10 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         }
 
         boolean isOk = true;
-        Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
-        Optional<String> apiKey = getAgent().getApiKey().map(key -> key.trim());
-        Optional<String> tenantId = getAgent().getTenantId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim()).map(String::toUpperCase);
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
+        Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
+        Optional<String> tenantId = getAgent().getTenantId().map(String::trim);
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(String::trim).map(String::toUpperCase);
 
         if (applicationId.isPresent() && devEUI.isPresent() && apiKey.isPresent()) {
             EndDeviceOuterClass.EndDevice device = ttsDeviceMap.get().get(devEUI.get());
@@ -363,14 +365,17 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         }
 
         /*
-        bulkSyncRunner.start(
-            () -> createChannel(host.get(), port, isSecureGRPC, false),
-            this::performBulkDeviceSync,
-            true,
-            Duration.ofMillis(GRPC_BULK_SYNC_RUNNER_INITIAL_BACKOFF_MILLIS),
-            Duration.ofMillis(GRPC_BULK_SYNC_RUNNER_MAX_BACKOFF_MILLIS),
-            Duration.ofMillis(GRPC_BULK_SYNC_RUNNER_CONTINUATION_SCHEDULE_MILLIS)
-        );
+            The bulkSyncRunner can be activated to perform periodic full discovery
+            of LoRaWAN devices.
+
+            bulkSyncRunner.start(
+                () -> createChannel(host.get(), port, isSecureGRPC, false),
+                this::performBulkDeviceSync,
+                true,
+                Duration.ofMillis(GRPC_BULK_SYNC_RUNNER_INITIAL_BACKOFF_MILLIS),
+                Duration.ofMillis(GRPC_BULK_SYNC_RUNNER_MAX_BACKOFF_MILLIS),
+                Duration.ofMillis(GRPC_BULK_SYNC_RUNNER_CONTINUATION_SCHEDULE_MILLIS)
+            );
          */
 
         deviceEventStreamer.startStream(
@@ -378,7 +383,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             this::performDevicesUpdate,
             Duration.ofMillis(GRPC_STREAM_RUNNER_INITIAL_BACKOFF_MILLIS),
             Duration.ofMillis(GRPC_STREAM_RUNNER_MAX_BACKOFF_MILLIS),
-            connectionStatus -> onGrpcConnectionStatusChanged(connectionStatus)
+            this::onGrpcConnectionStatusChanged
         );
     }
 
@@ -405,7 +410,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
         Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
 
-        if (host.isEmpty() || apiKey.isEmpty() || applicationId.isEmpty() || apiKey.isEmpty()) {
+        if (host.isEmpty() || apiKey.isEmpty() || applicationId.isEmpty()) {
             return;
         }
 
@@ -435,14 +440,11 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
     }
 
     private ManagedChannel createChannel(String host, int port, boolean isSecure, boolean withKeepAlive) {
-        ManagedChannelBuilder<?> builder;
-
+        ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forAddress(host, port);
         if (isSecure) {
-            builder = ManagedChannelBuilder.forAddress(host, port)
-                .useTransportSecurity();
+            builder.useTransportSecurity();
         } else {
-            builder =ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext();
+            builder.usePlaintext();
         }
 
         if (withKeepAlive) {
@@ -503,8 +505,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                 isStreamEstablished = true;
 
                 String eventName = event.getName();
-                Any data = event.getData();
-                String typeUrl = data != null ? data.getTypeUrl() : "";
+                String typeUrl = event.getData().getTypeUrl();
 
                 LOG.finest(() ->
                     "[" + DEVICE_EVENT_STREAMER_NAME + "] Received event (name=" + eventName +
@@ -526,15 +527,15 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                         }
 
                         for (Identifiers.EndDeviceIdentifiers devIds : list.getEndDeviceIdsList()) {
-                            if (TextUtil.isNullOrEmpty(devIds.getDeviceId())) {
+                            if (isNullOrEmpty(devIds.getDeviceId())) {
                                 continue;
                             }
 
                             List<String> devEuiList = new ArrayList<>();
                             ttsDeviceMap.get().entrySet().removeIf(entry -> {
                                    boolean isRemove = devIds.getDeviceId().equals(entry.getValue().getIds().getDeviceId());
-                                   String devEui = (devIds.getDevEui() != null ? bytesToHex(devIds.getDevEui().toByteArray()).toUpperCase() : null);
-                                   if (TextUtil.isNullOrEmpty(devEui)) {
+                                   String devEui = bytesToHex(devIds.getDevEui().toByteArray()).toUpperCase();
+                                   if (!isNullOrEmpty(devEui)) {
                                        devEuiList.add(devEui);
                                    }
                                    return isRemove;
@@ -562,15 +563,15 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
                 Identifiers.EndDeviceIdentifiers devIds = extractDeviceIds(event);
                 String deviceId = (devIds != null ? devIds.getDeviceId() : null);
-                String devEui = (devIds != null && devIds.getDevEui() != null ? bytesToHex(devIds.getDevEui().toByteArray()).toUpperCase() : null);
-                if (TextUtil.isNullOrEmpty(deviceId)) {
+                String devEui = (devIds != null ? bytesToHex(devIds.getDevEui().toByteArray()).toUpperCase() : null);
+                if (isNullOrEmpty(deviceId)) {
                     continue;
                 }
 
                 switch (eventName) {
                     case "as.up.data.forward":
                     case "js.join.accept": {
-                        if (!TextUtil.isNullOrEmpty(devEui)) {
+                        if (!isNullOrEmpty(devEui)) {
                             if (!ttsDeviceMap.get().containsKey(devEui) || (!devEuiSet.contains(devEui) && !ignoreDevEuiSet.contains(devEui))) {
                                 LOG.finest(() ->
                                     "[" + DEVICE_EVENT_STREAMER_NAME + "] Scheduling sync for device (eventName=" + eventName  +
@@ -669,7 +670,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             EndDeviceOuterClass.EndDevices response = stub.list(request);
 
             response.getEndDevicesList().forEach(device -> {
-                if (device.getIds() != null && !isNullOrEmpty(device.getIds().getDeviceId()) && device.getIds().getDevEui() != null) {
+                if (!isNullOrEmpty(device.getIds().getDeviceId())) {
                     String devEui = bytesToHex(device.getIds().getDevEui().toByteArray());
                     if (!isNullOrEmpty(devEui)) {
                         map.put(devEui.toUpperCase(), device);
@@ -737,7 +738,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         try {
             EndDeviceOuterClass.EndDevice device = stub.get(request);
 
-            if (device != null && device.getIds() != null && !isNullOrEmpty(device.getIds().getDeviceId()) && device.getIds().getDevEui() != null) {
+            if (device != null && !isNullOrEmpty(device.getIds().getDeviceId())) {
                 String devEui = bytesToHex(device.getIds().getDevEui().toByteArray()).toUpperCase();
                 if (!isNullOrEmpty(devEui)) {
                     ttsDeviceMap.get().put(devEui, device);
@@ -819,19 +820,19 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         DeviceRecord record = new DeviceRecord();
         record.setDevEUI(devEUI);
         record.setAssetTypeName(assetTypeName);
-        Optional.ofNullable(device.getName())
+        Optional.of(device.getName())
             .filter(name -> !name.isEmpty())
             .ifPresent(record::setName);
 
-        return Optional.ofNullable(assetTypeName)
+        return Optional.of(assetTypeName)
             .flatMap(name -> resolveAssetClass(name, device))
-            .map(clazz -> instantiateAsset(clazz, device))
+            .flatMap(clazz -> instantiateAsset(clazz, device))
             .flatMap(asset -> configureAsset(asset, record));
     }
 
     private Optional<Class<? extends Asset<?>>> resolveAssetClass(String simpleClassName, EndDeviceOuterClass.EndDevice device) {
         if (isNullOrEmpty(simpleClassName) || device == null) {
-            return null;
+            return Optional.empty();
         }
 
         return ValueUtil.getAssetClass(simpleClassName)
@@ -841,9 +842,9 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             });
     }
 
-    private Asset<?> instantiateAsset(Class<?> clazz, EndDeviceOuterClass.EndDevice device) {
+    private Optional<Asset<?>> instantiateAsset(Class<?> clazz, EndDeviceOuterClass.EndDevice device) {
         if (clazz == null || device == null) {
-            return null;
+            return Optional.empty();
         }
 
         Asset<?> asset = null;
@@ -853,7 +854,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         } catch (ReflectiveOperationException e) {
             LOG.log(Level.WARNING, "Auto-discovery failed to create asset '" + ttsDeviceToString(device) + "' for: " + getProtocolInstanceUri(), e);
         }
-        return asset;
+        return Optional.ofNullable(asset);
     }
 
     private Map<String, Asset<?>> createAssetsFromDiscoveredDevices(Map<String, EndDeviceOuterClass.EndDevice> discoveredDeviceMap) {
@@ -861,9 +862,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             .entrySet()
             .stream()
             .filter(entry -> duplicateAssetCheck(entry.getKey()))
-            .filter(entry -> entry.getValue().getAttributesMap() != null)
             .filter(entry -> !isNullOrEmpty(entry.getValue().getAttributesMap().get(THE_THINGS_STACK_ASSET_TYPE_TAG)))
-            .filter(entry -> entry.getValue().getAttributesMap().containsKey(THE_THINGS_STACK_ASSET_TYPE_TAG))
             .map(entry -> {
                 String devEui = entry.getKey();
                 Optional<Asset<?>> assetOptional = createAsset(
@@ -923,10 +922,9 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
     private String createDeviceName(EndDeviceOuterClass.EndDevice device) {
         return Optional.ofNullable(device)
-            .map(d -> Optional.ofNullable(d.getName())
+            .map(d -> Optional.of(d.getName())
                 .filter(name -> !isNullOrEmpty(name))
-                .orElseGet(() -> Optional.ofNullable(d.getIds())
-                    .filter(ids -> ids.getDevEui() != null)
+                .orElseGet(() -> Optional.of(d.getIds())
                     .map(ids -> bytesToHex(ids.getDevEui().toByteArray()))
                     .filter(devEui -> !isNullOrEmpty(devEui))
                     .orElse("")))
@@ -957,9 +955,9 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
         return Optional.ofNullable(device)
             .map(d ->
                 "TTS device{" +
-                    "devEUI='" + (d.getIds() != null && d.getIds().getDevEui() != null ? bytesToHex(d.getIds().getDevEui().toByteArray()) : "") + '\'' +
-                    ", deviceId='" + (d.getIds() != null && d.getIds().getDeviceId() != null ? d.getIds().getDeviceId() : "") + '\'' +
-                    ", name='" + (d.getName() != null ? d.getName() : "") + '\'' +
+                    "devEUI='" + bytesToHex(d.getIds().getDevEui().toByteArray()) + '\'' +
+                    ", deviceId='" + d.getIds().getDeviceId() + '\'' +
+                    ", name='" + d.getName() + '\'' +
                 "}"
             )
             .orElse("");
@@ -1017,7 +1015,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
                 EndDeviceOuterClass.EndDevices response = stub.list(request);
 
                 response.getEndDevicesList().forEach(device -> {
-                    if (device.getIds() != null && !isNullOrEmpty(device.getIds().getDeviceId()) && device.getIds().getDevEui() != null) {
+                    if (!isNullOrEmpty(device.getIds().getDeviceId())) {
                         String devEui = bytesToHex(device.getIds().getDevEui().toByteArray());
                         if (!isNullOrEmpty(devEui)) {
                             map.put(devEui.toUpperCase(), device);

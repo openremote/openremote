@@ -23,8 +23,8 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
 public class ConnectedState implements ConnectionState{
-    private ConnectionStateManager stateManager;
-    private TheThingsStackProtocol protocol;
+    private final ConnectionStateManager stateManager;
+    private final TheThingsStackProtocol protocol;
 
     public ConnectedState(ConnectionStateManager manager) {
         this.stateManager = manager;

@@ -96,14 +96,11 @@ public class GrpcRetryingRunner {
         }
 
         CheckedBiPredicate<Object, Throwable> shouldNotRetry = (result, ex) -> {
-            if (ex instanceof StatusRuntimeException) {
-                return isNonRetryableCode((StatusRuntimeException) ex);
-            } else if(ex instanceof IllegalStateException){
-                return true;
-            } else if (ex instanceof CancellationException) {
-                return true;
+            if (ex instanceof StatusRuntimeException sre) {
+                return isNonRetryableCode(sre);
             }
-            return false;
+            // Note: CancellationException is an IllegalStateException
+            return ex instanceof IllegalStateException;
         };
 
         LOG.log(isVerboseLog ? Level.INFO: Level.FINE, "[" + taskName + "] Establishing gRPC connection: " + getClientUri());
@@ -163,22 +160,15 @@ public class GrpcRetryingRunner {
         Runnable notifyError = () -> { if(observer != null) observer.onStatusChange(ConnectionStatus.ERROR); };
 
         CheckedBiPredicate<Object, Throwable> permanentAbort = (result, ex) -> {
-            if (ex instanceof StatusRuntimeException) {
-                return isNonRetryableCode((StatusRuntimeException) ex);
-            } else if(ex instanceof IllegalStateException){
-                return true;
-            } else if (ex instanceof CancellationException) {
-                return true;
+            if (ex instanceof StatusRuntimeException sre) {
+                return isNonRetryableCode(sre);
             }
-            return false;
+            // Note: CancellationException is an IllegalStateException
+            return ex instanceof IllegalStateException;
         };
 
-        CheckedBiPredicate<Object, Throwable> innerAbort = (result, ex) -> {
-            if (ex instanceof StreamBreakSignalException) {
-                return true;
-            }
-            return permanentAbort.test(result, ex);
-        };
+        CheckedBiPredicate<Object, Throwable> innerAbort = (result, ex) ->
+            ex instanceof StreamBreakSignalException || permanentAbort.test(result, ex);
 
         RetryPolicy<Object> innerPolicy = RetryPolicy.builder()
             .handle(Exception.class)
@@ -188,8 +178,7 @@ public class GrpcRetryingRunner {
             .onRetryScheduled(e -> LOG.info("[" + taskName + "] " + "Re-connection scheduled in '" + e.getDelay() + "' for: " + getClientUri()))
             .onFailedAttempt(e -> {
                 Throwable ex = e.getLastException();
-                if (ex instanceof StreamBreakSignalException) {
-                    StreamBreakSignalException streamException = (StreamBreakSignalException)ex;
+                if (ex instanceof StreamBreakSignalException streamException) {
                     Throwable cause = streamException.getCause();
                     LOG.info("[" + taskName + "] " + "gRPC stream failure for: " + getClientUri() + ", error=" + (cause != null ? cause.getMessage() : streamException.getMessage()));
                 } else if (!isCancelledException(e.getLastException())) {

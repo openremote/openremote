@@ -95,7 +95,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     @Override
     public String getProtocolInstanceUri() {
-        return "chirpstack-mqtt://" + getAgent().getMqttHost().orElse("-") + ":" + getAgent().getMqttPort().map(p -> p.toString()).orElse("-")
+        return "chirpstack-mqtt://" + getAgent().getMqttHost().orElse("-") + ":" + getAgent().getMqttPort().map(Object::toString).orElse("-")
                                     + "/?clientId=" + getAgent().getClientId().orElse("-");
     }
 
@@ -150,14 +150,14 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     }
 
     protected boolean checkAutoDiscoveryPrerequisites() {
-        List<AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>>> list = new ArrayList<>(2);
+        List<AbstractMap.SimpleEntry<AttributeDescriptor<?>, Optional<String>>> list = new ArrayList<>(2);
         list.add(new AbstractMap.SimpleEntry<>(HOST, getAgent().getHost()));
         list.add(new AbstractMap.SimpleEntry<>(APPLICATION_ID, getAgent().getApplicationId()));
         list.add(new AbstractMap.SimpleEntry<>(API_KEY, getAgent().getApiKey()));
 
         boolean isOk = true;
 
-        for (AbstractMap.SimpleEntry<AttributeDescriptor, Optional<String>> item : list) {
+        for (AbstractMap.SimpleEntry<AttributeDescriptor<?>, Optional<String>> item : list) {
             if (!item.getValue().map(attrValue -> !attrValue.trim().isEmpty()).orElse(false)) {
                 isOk = false;
                 LOG.warning("Auto-discovery failed because agent attribute '" + item.getKey().getName() + "' is missing for: " + getGRPCClientUri());
@@ -167,7 +167,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         return isOk;
     }
 
-    protected AssetTreeNode[]  discoverDevices() {
+    protected AssetTreeNode[] discoverDevices() {
         Optional<String> host = getAgent().getHost().map(String::trim);
         int port = getPort();
         boolean isSecureGRPC = isSecureGRPC();
@@ -198,12 +198,11 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
                     entry -> entry.getValue().get()
                 ));
 
-            AssetTreeNode[] assetTreeNodes = deviceList.stream()
+            return deviceList.stream()
                 .filter(deviceListItem -> !isNullOrEmpty(deviceListItem.getDevEui()))
                 .filter(deviceListItem -> duplicateAssetCheck(deviceListItem.getDevEui()))
                 .filter(deviceListItem -> !isNullOrEmpty(deviceListItem.getDeviceProfileId()))
                 .filter(deviceListItem -> profileMap.containsKey(deviceListItem.getDeviceProfileId()))
-                .filter(deviceListItem -> profileMap.get(deviceListItem.getDeviceProfileId()).getTagsMap().containsKey(CHIRPSTACK_ASSET_TYPE_TAG))
                 .filter(deviceListItem -> !isNullOrEmpty(profileMap.get(deviceListItem.getDeviceProfileId()).getTagsMap().get(CHIRPSTACK_ASSET_TYPE_TAG)))
                 .map(deviceListItem -> createAsset(
                     deviceListItem.getDevEui(),
@@ -215,7 +214,6 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
                 .map(AssetTreeNode::new)
                 .toArray(AssetTreeNode[]::new);
 
-            return assetTreeNodes;
         } catch (StatusRuntimeException e) {
             Status status = e.getStatus();
             String errorDetail = String.format(
@@ -257,8 +255,8 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
             return false;
         }
 
-        Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim());
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(String::trim);
 
         if (applicationId.isPresent() && devEUI.isPresent()) {
             agentLink.setSubscriptionTopic("application/" + applicationId.get() + "/device/" + devEUI.get().toLowerCase() + "/event/up");
@@ -272,8 +270,8 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
             return false;
         }
 
-        Optional<String> applicationId = getAgent().getApplicationId().map(id -> id.trim());
-        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim());
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(String::trim);
 
         if (applicationId.isPresent() && devEUI.isPresent()) {
             agentLink.setPublishTopic("application/" + applicationId.get() + "/device/" + devEUI.get().toLowerCase() + "/command/down");
@@ -300,7 +298,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         }
 
         Optional<Integer> downlinkPort = getAgentConfigDownlinkPort(attribute);
-        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(eui -> eui.trim());
+        Optional<String> devEUI = Optional.ofNullable(deviceRecord.getDevEUI()).map(String::trim);
         Optional<String> objectTemplate = getAgentConfigWriteObjectValueTemplate(attribute);
 
         if (downlinkPort.isPresent() && devEUI.isPresent()) {
@@ -338,19 +336,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     }
 
     private ManagedChannel createChannel(String host, int port, boolean isSecure) {
-        ManagedChannel channel = null;
-
+        ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forAddress(host, port);
         if (isSecure) {
-            channel = ManagedChannelBuilder.forAddress(host, port)
-                .useTransportSecurity()
-                .build();
+            builder.useTransportSecurity();
         } else {
-            channel = ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext()
-                .build();
+            builder.usePlaintext();
         }
-
-        return channel;
+        return builder.build();
     }
 
     private Optional<Asset<?>> createAsset(String devEUI, String assetTypeName, DeviceListItem deviceItem, DeviceProfile deviceProfile) {
@@ -361,13 +353,13 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         DeviceRecord record = new DeviceRecord();
         record.setDevEUI(devEUI);
         record.setAssetTypeName(assetTypeName);
-        Optional.ofNullable(deviceItem.getName())
+        Optional.of(deviceItem.getName())
             .filter(name -> !name.isEmpty())
             .ifPresent(record::setName);
 
-        return Optional.ofNullable(assetTypeName)
+        return Optional.of(assetTypeName)
             .flatMap(name -> resolveAssetClass(name, deviceItem, deviceProfile))
-            .map(clazz -> instantiateAsset(clazz, deviceItem, deviceProfile))
+            .flatMap(clazz -> instantiateAsset(clazz, deviceItem, deviceProfile))
             .flatMap(asset -> configureAsset(asset, record));
     }
 
@@ -385,17 +377,17 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
 
     private String createDeviceName(DeviceListItem deviceListItem) {
         return Optional.ofNullable(deviceListItem)
-            .map(d -> Optional.ofNullable(d.getName())
+            .map(d -> Optional.of(d.getName())
                 .filter(name -> !isNullOrEmpty(name))
-                .orElseGet(() -> Optional.ofNullable(d.getDevEui())
+                .orElseGet(() -> Optional.of(d.getDevEui())
                     .filter(devEui -> !isNullOrEmpty(devEui))
                     .orElse("")))
             .orElse("");
     }
 
-    private Asset<?> instantiateAsset(Class<?> clazz, DeviceListItem deviceListItem, DeviceProfile deviceProfile) {
+    private Optional<Asset<?>> instantiateAsset(Class<?> clazz, DeviceListItem deviceListItem, DeviceProfile deviceProfile) {
         if (clazz == null || deviceListItem == null || deviceProfile == null) {
-            return null;
+            return Optional.empty();
         }
 
         Asset<?> asset = null;
@@ -403,9 +395,9 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
             Constructor<?> constructor = clazz.getConstructor(String.class);
             asset = (Asset<?>) constructor.newInstance(createDeviceName(deviceListItem));
         } catch (ReflectiveOperationException e) {
-            LOG.log(Level.INFO, "Auto-discovery failed to create asset " + chirpStackDeviceToString(deviceListItem, deviceProfile) + "for: " + getGRPCClientUri(), e);
+            LOG.log(Level.INFO, "Auto-discovery failed to create asset " + chirpStackDeviceToString(deviceListItem, deviceProfile) + " for: " + getGRPCClientUri(), e);
         }
-        return asset;
+        return Optional.ofNullable(asset);
     }
 
     private List<DeviceListItem> requestDeviceList(String applicationId, ManagedChannel channel, Metadata headers) {
@@ -472,8 +464,8 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         return Optional.ofNullable(deviceListItem)
             .map(d ->
                 "ChirpStack device{" +
-                "devEUI='" + (d.getDevEui() != null ? d.getDevEui() : "") + '\'' +
-                ", name='" + (d.getName() != null ? d.getName() : "") + '\'' +
+                "devEUI='" + d.getDevEui() + '\'' +
+                ", name='" + d.getName() + '\'' +
                 ", profile=" + chirpStackProfileToString(deviceProfile) +
                 "}"
             )
@@ -484,9 +476,9 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         return Optional.ofNullable(deviceProfile)
             .map(dp ->
                 "{" +
-                "id='" + (dp.getId() != null ? dp.getId() : "") + '\'' +
-                ", name='" + (dp.getName() != null ? dp.getName() : "") + '\'' +
-                ", tag["+ CHIRPSTACK_ASSET_TYPE_TAG + "] ='" + Optional.ofNullable(deviceProfile.getTagsMap()).map(tagsMap -> tagsMap.get(CHIRPSTACK_ASSET_TYPE_TAG)).orElse("") + '\'' +
+                "id='" + dp.getId() + '\'' +
+                ", name='" + dp.getName() + '\'' +
+                ", tag["+ CHIRPSTACK_ASSET_TYPE_TAG + "] ='" + Optional.ofNullable(deviceProfile.getTagsMap().get(CHIRPSTACK_ASSET_TYPE_TAG)).orElse("") + '\'' +
                 "}"
             )
             .orElse("");

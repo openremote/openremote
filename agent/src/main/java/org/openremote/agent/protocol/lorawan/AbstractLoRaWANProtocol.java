@@ -74,31 +74,31 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     protected volatile ExecutorService executorService;
     protected volatile ProtocolAssetService assetService;
     private final MQTTProtocol mqttProtocol;
-    private final MQTTAgent mqttAgent;
     private final T agent;
     protected final Set<String> devEuiSet = new CopyOnWriteArraySet<>();
     protected volatile Container container;
 
     public AbstractLoRaWANProtocol(T agent) {
         this.agent = agent;
-        this.mqttAgent = new MQTTAgent(agent.getName());
+
+        MQTTAgent mqttAgent = new MQTTAgent(agent.getName());
 
         mqttAgent.setId(agent.getId());
-        agent.getMqttHost().ifPresent(host -> mqttAgent.setHost(host));
-        agent.getMqttPort().ifPresent(port -> mqttAgent.setPort(port));
-        agent.getClientId().ifPresent(clientId -> mqttAgent.setClientId(clientId));
-        agent.isSecureMode().ifPresent(secureMode -> mqttAgent.setSecureMode(secureMode));
-        agent.getPublishQoS().ifPresent(publishQos -> mqttAgent.setPublishQos(publishQos));
-        agent.getSubscribeQoS().ifPresent(subscribeQos -> mqttAgent.setSubscribeQos(subscribeQos));
-        agent.getCertificateAlias().ifPresent(certificateAlias -> mqttAgent.setCertificateAlias(certificateAlias));
-        agent.isResumeSession().ifPresent(resumeSession -> mqttAgent.setResumeSession(resumeSession));
-        agent.isWebsocketMode().ifPresent(websocketMode -> mqttAgent.setWebsocketMode(websocketMode));
-        agent.getWebsocketPath().ifPresent(websocketPath -> mqttAgent.setWebsocketPath(websocketPath));
-        agent.getWebsocketQuery().ifPresent(websocketQuery -> mqttAgent.setWebsocketQuery(websocketQuery));
-        agent.getLastWillTopic().ifPresent(lastWillTopic -> mqttAgent.setLastWillTopic(lastWillTopic));
-        agent.getLastWillPayload().ifPresent(lastWillPayload -> mqttAgent.setLastWillPayload(lastWillPayload));
-        agent.isLastWillRetain().ifPresent(lastWillRetain -> mqttAgent.setLastWillRetain(lastWillRetain));
-        agent.getUsernamePassword().ifPresent(usernamePassword -> mqttAgent.setUsernamePassword(usernamePassword));
+        agent.getMqttHost().ifPresent(mqttAgent::setHost);
+        agent.getMqttPort().ifPresent(mqttAgent::setPort);
+        agent.getClientId().ifPresent(mqttAgent::setClientId);
+        agent.isSecureMode().ifPresent(mqttAgent::setSecureMode);
+        agent.getPublishQoS().ifPresent(mqttAgent::setPublishQos);
+        agent.getSubscribeQoS().ifPresent(mqttAgent::setSubscribeQos);
+        agent.getCertificateAlias().ifPresent(mqttAgent::setCertificateAlias);
+        agent.isResumeSession().ifPresent(mqttAgent::setResumeSession);
+        agent.isWebsocketMode().ifPresent(mqttAgent::setWebsocketMode);
+        agent.getWebsocketPath().ifPresent(mqttAgent::setWebsocketPath);
+        agent.getWebsocketQuery().ifPresent(mqttAgent::setWebsocketQuery);
+        agent.getLastWillTopic().ifPresent(mqttAgent::setLastWillTopic);
+        agent.getLastWillPayload().ifPresent(mqttAgent::setLastWillPayload);
+        agent.isLastWillRetain().ifPresent(mqttAgent::setLastWillRetain);
+        agent.getUsernamePassword().ifPresent(mqttAgent::setUsernamePassword);
         mqttAgent.setWildcardSubscriptionTopics(createWildcardSubscriptionTopicList().toArray(new String[0]));
 
         this.mqttProtocol = createMqttClientProtocol(mqttAgent);
@@ -118,7 +118,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 .map(String::trim)
                 .map(String::toUpperCase)
                 .filter(s -> !s.isEmpty())
-                .ifPresent(devEUI -> devEuiSet.add(devEUI));
+                .ifPresent(devEuiSet::add);
         }
     }
 
@@ -207,8 +207,8 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 List<DeviceRecord> csvEntries = csvMapper.readerFor(DeviceRecord.class).with(schema).<DeviceRecord>readValues(inputStream).readAll();
 
                 AssetTreeNode[] assetTreeNodes = csvEntries.stream()
-                    .filter(record -> validateDeviceRecord(record))
-                    .filter(record -> duplicateAssetCheck(record))
+                    .filter(this::validateDeviceRecord)
+                    .filter(this::duplicateAssetCheck)
                     .map(this::createAsset)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -276,7 +276,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
-        getAgentConfigValueConverter(attribute).ifPresent(converter -> agentLink.setValueConverter(converter));
+        getAgentConfigValueConverter(attribute).ifPresent(agentLink::setValueConverter);
         return true;
     }
 
@@ -284,13 +284,13 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
-        getAgentConfigWriteValueConverter(attribute).ifPresent(converter -> agentLink.setWriteValueConverter(converter));
+        getAgentConfigWriteValueConverter(attribute).ifPresent(agentLink::setWriteValueConverter);
         return true;
     }
 
     protected Optional<ValueType.ObjectMap> getAgentConfig(Attribute<?> attribute) {
         return Optional.ofNullable(attribute)
-            .map(attr -> attr.getMeta())
+            .map(Attribute::getMeta)
             .flatMap(metaMap -> metaMap.get(AGENT_LINK_CONFIG))
             .flatMap(metItem -> metItem.getValue());
     }
@@ -352,7 +352,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         if (record != null) {
             isValid = record.isValid();
             if (!isValid) {
-                LOG.warning("CSV import skipped an invalid device record " + record + "for: " + getProtocolInstanceUri());
+                LOG.warning("CSV import skipped an invalid device record " + record + " for: " + getProtocolInstanceUri());
             }
         }
         return isValid;
@@ -387,7 +387,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
         return Optional.ofNullable(deviceRecord.getAssetTypeName())
             .flatMap(name -> resolveAssetClass(name, deviceRecord))
-            .map(clazz -> instantiateAsset(clazz, deviceRecord))
+            .flatMap(clazz -> instantiateAsset(clazz, deviceRecord))
             .flatMap(asset -> configureAsset(asset, deviceRecord));
     }
 
@@ -403,9 +403,9 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             });
     }
 
-    private Asset<?> instantiateAsset(Class<?> clazz, DeviceRecord deviceRecord) {
+    private Optional<Asset<?>> instantiateAsset(Class<?> clazz, DeviceRecord deviceRecord) {
         if (clazz == null || deviceRecord == null) {
-            return null;
+            return Optional.empty();
         }
 
         Asset<?> asset = null;
@@ -415,7 +415,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         } catch (ReflectiveOperationException e) {
             LOG.log(Level.INFO, "CSV import failed to create asset " + deviceRecord + " for: " + getProtocolInstanceUri(), e);
         }
-        return asset;
+        return Optional.ofNullable(asset);
     }
 
     protected Optional<Asset<?>> configureAsset(Asset<?> asset, DeviceRecord deviceRecord) {
@@ -428,8 +428,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         Optional.ofNullable(deviceRecord.getModelId()).ifPresent(modelId -> asset.getAttribute(ATTRIBUTE_NAME_MODEL_ID).ifPresent(attribute -> attribute.setValue(modelId)));
         Optional.ofNullable(deviceRecord.getFirmwareVersion()).ifPresent(version -> asset.getAttribute(ATTRIBUTE_NAME_FIRMWARE_VERSION).ifPresent(attribute -> attribute.setValue(version)));
 
-        boolean isOk = true;
-
         asset.getAttribute(ATTRIBUTE_NAME_DEV_EUI)
             .flatMap(attr -> attr.getValue(String.class))
             .filter(devEui -> !isNullOrEmpty(devEui))
@@ -438,11 +436,9 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 asset.setParentId(getAgent().getId());
             });
 
-        isOk = !isNullOrEmpty(asset.getId());
+        boolean isOk = !isNullOrEmpty(asset.getId());
 
-        for (Map.Entry<String, Attribute<?>> entry : asset.getAttributes().entrySet()) {
-            String name = entry.getKey();
-            Attribute<?> attribute = entry.getValue();
+        for (Attribute<?> attribute : asset.getAttributes().values()) {
             MQTTAgentLink agentLink = new MQTTAgentLink(agent.getId());
 
             Optional<String> jsonPath = getAgentConfigJsonPath(attribute);

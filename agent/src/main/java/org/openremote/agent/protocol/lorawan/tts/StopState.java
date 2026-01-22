@@ -23,11 +23,9 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
 public class StopState implements ConnectionState{
-    private ConnectionStateManager stateManager;
-    private TheThingsStackProtocol protocol;
+    private final TheThingsStackProtocol protocol;
 
     public StopState(ConnectionStateManager manager) {
-        this.stateManager = manager;
         this.protocol = manager.getProtocol();
     }
 
