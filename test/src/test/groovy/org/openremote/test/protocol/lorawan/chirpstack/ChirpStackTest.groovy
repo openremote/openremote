@@ -389,7 +389,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
                         Status.NOT_FOUND
                             .withDescription("Device profile not found: ${request.id}")
                             .asRuntimeException()
-                    );
+                    )
                     return
                 }
 
