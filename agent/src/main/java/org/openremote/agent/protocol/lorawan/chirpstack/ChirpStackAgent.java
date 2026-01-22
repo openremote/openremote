@@ -22,10 +22,19 @@ package org.openremote.agent.protocol.lorawan.chirpstack;
 import jakarta.persistence.Entity;
 import org.openremote.agent.protocol.lorawan.LoRaWANAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueType;
+
+import java.util.Optional;
 
 @Entity
 public class ChirpStackAgent extends LoRaWANAgent<ChirpStackAgent, ChirpStackProtocol> {
+
+    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
+    public static final AttributeDescriptor<Boolean> SECURE_GRPC = new AttributeDescriptor<>("secureGRPC", ValueType.BOOLEAN).withOptional(false);
 
     public static final AgentDescriptor<ChirpStackAgent, ChirpStackProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         ChirpStackAgent.class, ChirpStackProtocol.class, MQTTAgentLink.class
@@ -44,5 +53,14 @@ public class ChirpStackAgent extends LoRaWANAgent<ChirpStackAgent, ChirpStackPro
     @Override
     public ChirpStackProtocol getProtocolInstance() {
         return new ChirpStackProtocol(this);
+    }
+
+    public Optional<Boolean> getSecureGRPC() {
+        return getAttributes().getValue(SECURE_GRPC);
+    }
+
+    public ChirpStackAgent setSecureGRPC(Boolean secureGRPC) {
+        getAttributes().getOrCreate(SECURE_GRPC).setValue(secureGRPC);
+        return this;
     }
 }
