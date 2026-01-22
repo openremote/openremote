@@ -21,7 +21,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "axios": "0.24.0",
+    "axios": "~1.13.2",
     "qs": "^6.8.0"
   },
   "devDependencies": {
