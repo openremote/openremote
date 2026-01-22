@@ -202,7 +202,6 @@ export function getCombinatorIndexOfFittingSchema(
     if (typeof data !== 'object' || data === null) {
         return -1;
     }
-    console.log(data, keyword, schema,rootSchema)
 
     const resolvedCombinatorSchemas = [];
      for (let i = 0; i < schema[keyword]!.length; i++) {
