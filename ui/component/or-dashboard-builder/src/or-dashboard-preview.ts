@@ -373,6 +373,12 @@ export class OrDashboardPreview extends LitElement {
             }
             this.activePreset = newPreset;
 
+            // If grid got reset, setup the ResizeObserver again.
+            if(this.grid == null) {
+                const gridHTML = this.shadowRoot?.querySelector(".maingrid");
+                this.setupResizeObserver(gridHTML!);
+            }
+
             gridElement!.style.maxWidth = this.template.maxScreenWidth + "px";
 
             this.grid = GridStack.init({
@@ -380,7 +386,7 @@ export class OrDashboardPreview extends LitElement {
                 animate: true,
                 cellHeight: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
                 column: this.template?.columns,
-                columnOpts: (this.activePreset?.scalingPreset !== DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) ? { breakpoints: [{w:768, c:1}] } : undefined,
+                columnOpts: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) ? { breakpoints: [{w:768, c:1}], columnMax: this.template?.columns } : undefined,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                 },
@@ -571,48 +577,44 @@ export class OrDashboardPreview extends LitElement {
                     </div>
                 `}
             </div>
-            <style>
-                ${cache(when(this.isExtraLargeGrid(),
-                        () => this.applyCustomGridstackGridCSS(this.getGridstackColumns(this.grid) ? this.getGridstackColumns(this.grid)! : this.template.columns!)
-                ))}
-            </style>
         `
     }
 
-    protected getGridstackColumns(grid: GridStack | undefined): number | undefined {
-        try { return grid?.getColumn(); }
-        catch (e) { return undefined; }
+    /* ---------------------------------------------- */
+
+    protected resizeObserver?: ResizeObserver;
+    protected previousObserverEntry?: ResizeObserverEntry;
+
+    disconnectedCallback() {
+        super.disconnectedCallback()
+        this.resizeObserver?.disconnect();
     }
 
-    protected isExtraLargeGrid(): boolean {
-        return !!this.grid && (
-            (this.getGridstackColumns(this.grid) && this.getGridstackColumns(this.grid)! > 12)
-            || !!(this.template?.columns && this.template.columns > 12)
-        );
-    }
-
-
-
-    private cachedGridstackCSS: Map<number, TemplateResult[]> = new Map<number, TemplateResult[]>();
-
-    // Provides support for > 12 columns in GridStack (which requires manual css edits)
-    //language=html
-    protected applyCustomGridstackGridCSS(columns: number): TemplateResult {
-        if(this.cachedGridstackCSS.has(columns)) {
-            return html`${this.cachedGridstackCSS.get(columns)!.map((x) => x)}`;
+    // Triggering a Grid rerender on every time the element resizes.
+    // In fullscreen, debounce (only trigger after 550ms of no changes) to limit amount of rerenders.
+    protected setupResizeObserver(element: Element): ResizeObserver {
+        this.resizeObserver?.disconnect();
+        if(this.fullscreen) {
+            this.resizeObserver = new ResizeObserver(debounce(this.resizeObserverCallback, 200));
         } else {
-            const htmls: TemplateResult[] = [];
-            for(let i = 0; i < (columns + 1); i++) {
-                htmls.push(html`
-                    <style>
-                        .grid-stack > .grid-stack-item[gs-w="${i}"]:not(.ui-draggable-dragging):not(.ui-resizable-resizing) { width: ${100 - (columns - i) * (100 / columns)}% !important; }
-                        .grid-stack > .grid-stack-item[gs-x="${i}"]:not(.ui-draggable-dragging):not(.ui-resizable-resizing) { left: ${100 - (columns - i) * (100 / columns)}% !important; }                    
-                    </style>
-                `);
-            }
-            this.cachedGridstackCSS.set(columns, htmls);
-            return html`${htmls.map((x) => x)}`;
+            this.resizeObserver = new ResizeObserver(this.resizeObserverCallback);
         }
+        this.resizeObserver.observe(element);
+        return this.resizeObserver;
+    }
+
+    protected resizeObserverCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
+        requestAnimationFrame(() => {
+            if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
+                this._onGridResize();
+            }
+            this.previousObserverEntry = entries[0];
+        });
+    };
+
+    protected _onGridResize() {
+        console.debug("Grid resize detected. Recreating the grid...");
+        this.setupGrid(true, false);
     }
 
     /* --------------------------------------- */
