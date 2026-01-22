@@ -167,81 +167,6 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
         return isOk;
     }
 
-    protected AssetTreeNode[] discoverDevices() {
-        Optional<String> host = getAgent().getHost().map(String::trim);
-        int port = getPort();
-        boolean isSecureGRPC = isSecureGRPC();
-        Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
-        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
-
-        if (host.isEmpty() || apiKey.isEmpty() || applicationId.isEmpty()) {
-            return new AssetTreeNode[0];
-        }
-
-        ManagedChannel channel = createChannel(host.get(), port, isSecureGRPC);
-
-        Metadata headers = new Metadata();
-        Metadata.Key<String> AUTHORIZATION_HEADER = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);
-        headers.put(AUTHORIZATION_HEADER, "Bearer " + apiKey.get());
-
-        try {
-            List<DeviceListItem> deviceList = requestDeviceList(applicationId.get(), channel, headers);
-
-            Map<String, DeviceProfile> profileMap = deviceList.stream()
-                .map(DeviceListItem::getDeviceProfileId)
-                .filter(id -> !isNullOrEmpty(id))
-                .distinct()
-                .map(id -> Map.entry(id, requestDeviceProfile(id, channel, headers)))
-                .filter(entry -> entry.getValue().isPresent())
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry -> entry.getValue().get()
-                ));
-
-            return deviceList.stream()
-                .filter(deviceListItem -> !isNullOrEmpty(deviceListItem.getDevEui()))
-                .filter(deviceListItem -> duplicateAssetCheck(deviceListItem.getDevEui()))
-                .filter(deviceListItem -> !isNullOrEmpty(deviceListItem.getDeviceProfileId()))
-                .filter(deviceListItem -> profileMap.containsKey(deviceListItem.getDeviceProfileId()))
-                .filter(deviceListItem -> !isNullOrEmpty(profileMap.get(deviceListItem.getDeviceProfileId()).getTagsMap().get(CHIRPSTACK_ASSET_TYPE_TAG)))
-                .map(deviceListItem -> createAsset(
-                    deviceListItem.getDevEui(),
-                    profileMap.get(deviceListItem.getDeviceProfileId()).getTagsMap().get(CHIRPSTACK_ASSET_TYPE_TAG),
-                    deviceListItem,
-                    profileMap.get(deviceListItem.getDeviceProfileId())))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(AssetTreeNode::new)
-                .toArray(AssetTreeNode[]::new);
-
-        } catch (StatusRuntimeException e) {
-            Status status = e.getStatus();
-            String errorDetail = String.format(
-                "{code=%s, description=%s}",
-                status.getCode(),
-                status.getDescription() != null ? status.getDescription() : "-"
-            );
-            LOG.log(
-                Level.WARNING,
-                String.format("Auto-discovery failed because of a gRPC connection error %s for: %s", errorDetail, getGRPCClientUri()),
-                e
-            );
-            throw e;
-        } finally {
-            if (channel != null) {
-                channel.shutdown();
-                try {
-                    if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
-                        channel.shutdownNow();
-                    }
-                } catch (InterruptedException ex) {
-                    channel.shutdownNow();
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-    }
-
     @Override
     protected List<String> createWildcardSubscriptionTopicList() {
         return getAgent().getApplicationId()
@@ -320,6 +245,81 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
     @Override
     protected String generateAssetId(String devEui) {
         return UniqueIdentifierGenerator.generateId("ChirpStack_" + getAgent().getId() + devEui);
+    }
+
+    private AssetTreeNode[] discoverDevices() {
+        Optional<String> host = getAgent().getHost().map(String::trim);
+        int port = getPort();
+        boolean isSecureGRPC = isSecureGRPC();
+        Optional<String> apiKey = getAgent().getApiKey().map(String::trim);
+        Optional<String> applicationId = getAgent().getApplicationId().map(String::trim);
+
+        if (host.isEmpty() || apiKey.isEmpty() || applicationId.isEmpty()) {
+            return new AssetTreeNode[0];
+        }
+
+        ManagedChannel channel = createChannel(host.get(), port, isSecureGRPC);
+
+        Metadata headers = new Metadata();
+        Metadata.Key<String> AUTHORIZATION_HEADER = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);
+        headers.put(AUTHORIZATION_HEADER, "Bearer " + apiKey.get());
+
+        try {
+            List<DeviceListItem> deviceList = requestDeviceList(applicationId.get(), channel, headers);
+
+            Map<String, DeviceProfile> profileMap = deviceList.stream()
+                .map(DeviceListItem::getDeviceProfileId)
+                .filter(id -> !isNullOrEmpty(id))
+                .distinct()
+                .map(id -> Map.entry(id, requestDeviceProfile(id, channel, headers)))
+                .filter(entry -> entry.getValue().isPresent())
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> entry.getValue().get()
+                ));
+
+            return deviceList.stream()
+                .filter(deviceListItem -> !isNullOrEmpty(deviceListItem.getDevEui()))
+                .filter(deviceListItem -> duplicateAssetCheck(deviceListItem.getDevEui()))
+                .filter(deviceListItem -> !isNullOrEmpty(deviceListItem.getDeviceProfileId()))
+                .filter(deviceListItem -> profileMap.containsKey(deviceListItem.getDeviceProfileId()))
+                .filter(deviceListItem -> !isNullOrEmpty(profileMap.get(deviceListItem.getDeviceProfileId()).getTagsMap().get(CHIRPSTACK_ASSET_TYPE_TAG)))
+                .map(deviceListItem -> createAsset(
+                    deviceListItem.getDevEui(),
+                    profileMap.get(deviceListItem.getDeviceProfileId()).getTagsMap().get(CHIRPSTACK_ASSET_TYPE_TAG),
+                    deviceListItem,
+                    profileMap.get(deviceListItem.getDeviceProfileId())))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(AssetTreeNode::new)
+                .toArray(AssetTreeNode[]::new);
+
+        } catch (StatusRuntimeException e) {
+            Status status = e.getStatus();
+            String errorDetail = String.format(
+                "{code=%s, description=%s}",
+                status.getCode(),
+                status.getDescription() != null ? status.getDescription() : "-"
+            );
+            LOG.log(
+                Level.WARNING,
+                String.format("Auto-discovery failed because of a gRPC connection error %s for: %s", errorDetail, getGRPCClientUri()),
+                e
+            );
+            throw e;
+        } finally {
+            if (channel != null) {
+                channel.shutdown();
+                try {
+                    if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
+                        channel.shutdownNow();
+                    }
+                } catch (InterruptedException ex) {
+                    channel.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
     }
 
     private int getPort() {
