@@ -34,7 +34,7 @@ import io.chirpstack.api.ListDevicesRequest
 import io.chirpstack.api.ListDevicesResponse
 import io.grpc.ServerBuilder
 import io.grpc.stub.StreamObserver
-import io.grpc.Status;
+import io.grpc.Status
 import io.moquette.broker.Server
 import io.moquette.broker.config.MemoryConfig
 import org.openremote.agent.protocol.lorawan.chirpstack.ChirpStackAgent
@@ -390,7 +390,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
                             .withDescription("Device profile not found: ${request.id}")
                             .asRuntimeException()
                     );
-                    return;
+                    return
                 }
 
                 DeviceProfile profile = DeviceProfile.newBuilder()

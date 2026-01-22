@@ -585,7 +585,7 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
                 .build()
         }
 
-        def static Event createEndDeviceCreateEvent(String applicationId, String deviceId, String devEui) {
+        static Event createEndDeviceCreateEvent(String applicationId, String deviceId, String devEui) {
             def devEuiBytes = ByteString.copyFrom(devEui.decodeHex())
 
             def applicationIds = ApplicationIdentifiers.newBuilder()

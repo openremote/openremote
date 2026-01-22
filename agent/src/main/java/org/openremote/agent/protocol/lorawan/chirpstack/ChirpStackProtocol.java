@@ -395,7 +395,7 @@ public class ChirpStackProtocol extends AbstractLoRaWANProtocol<ChirpStackProtoc
             Constructor<?> constructor = clazz.getConstructor(String.class);
             asset = (Asset<?>) constructor.newInstance(createDeviceName(deviceListItem));
         } catch (ReflectiveOperationException e) {
-            LOG.log(Level.INFO, "Auto-discovery failed to create asset " + chirpStackDeviceToString(deviceListItem, deviceProfile) + " for: " + getGRPCClientUri(), e);
+            LOG.log(Level.WARNING, "Auto-discovery failed to create asset " + chirpStackDeviceToString(deviceListItem, deviceProfile) + " for: " + getGRPCClientUri(), e);
         }
         return Optional.ofNullable(asset);
     }
