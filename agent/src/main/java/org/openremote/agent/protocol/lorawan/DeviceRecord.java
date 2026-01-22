@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Optional;
 
-public class CsvRecord {
+public class DeviceRecord {
 
     @JsonProperty("devEUI")
     private String devEUI;
@@ -68,7 +68,7 @@ public class CsvRecord {
 
     @Override
     public String toString() {
-        return "CsvRecord{" +
+        return "DeviceRecord{" +
             "devEUI='" + (devEUI != null ? devEUI : "") + '\'' +
             ", name='" + (name != null ? name : "") + '\'' +
             ", vendorId='" + (vendorId != null ? vendorId : "") + '\'' +

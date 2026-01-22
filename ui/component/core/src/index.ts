@@ -1,7 +1,7 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
-import {AxiosRequestConfig} from "axios";
+import {InternalAxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
@@ -569,7 +569,7 @@ export class Manager implements EventProviderFactory {
 
         // Add interceptor to inject authorization header on each request
         rest.addRequestInterceptor(
-            (config: AxiosRequestConfig) => {
+            (config: InternalAxiosRequestConfig) => {
                 if (!config!.headers!.Authorization) {
                     const authHeader = this.getAuthorizationHeader();
 
