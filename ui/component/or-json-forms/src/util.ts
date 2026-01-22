@@ -191,7 +191,7 @@ function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
 const COMBINATOR_IDENTIFICATION_PROPERTY = "type";
 
 /**
- * TODO: when updating to jsonforms/core 4.0 consider using `getCombinatorIndexOfFittingSchema` from jsonform/core instead
+ * TODO: when updating to jsonforms/core 4.0 consider using `getCombinatorIndexOfFittingSchema` from jsonforms/core instead
  */
 export function getCombinatorIndexOfFittingSchema(
     data: any,
@@ -217,14 +217,14 @@ export function getCombinatorIndexOfFittingSchema(
     // Check if the data matches the identification property of one of the resolved schemas
     for (let i = 0; i < resolvedCombinatorSchemas.length; i++) {
         const resolvedSchema = resolvedCombinatorSchemas[i] as JsonSchema & { discriminator?: { propertyName?: string } };
-        const combinatorIdentificationProps = resolvedSchema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
+        const combinatorIdentificationProperty = resolvedSchema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
 
         // Match the identification property against a constant value in resolvedSchema
-        const maybeConstIdValue = resolvedSchema.properties?.[combinatorIdentificationProps]?.const;
+        const maybeConstIdValue = resolvedSchema.properties?.[combinatorIdentificationProperty]?.const;
 
         if (
           maybeConstIdValue !== undefined &&
-          data[combinatorIdentificationProps] === maybeConstIdValue
+          data[combinatorIdentificationProperty] === maybeConstIdValue
         ) {
             indexOfFittingSchema = i;
             break;
