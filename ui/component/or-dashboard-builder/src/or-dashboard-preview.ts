@@ -100,6 +100,7 @@ const editorStyling = css`
     
     /* Grid lines on the background of the grid */
     .grid-element {
+        min-height: 100%;
         background-image:
                 linear-gradient(90deg, #E0E0E0, transparent 1px),
                 linear-gradient(90deg, transparent calc(100% - 1px), #E0E0E0),
@@ -394,7 +395,6 @@ export class OrDashboardPreview extends LitElement {
 
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = "100%";
-            gridElement!.style.minHeight = "100%";
 
             // When an item gets dropped ontop of the grid. GridStack docs say:
             // "called when an item has been dropped and accepted over a grid. If the item came from another grid, the previous widget node info will also be sent (but dom item long gone)."
