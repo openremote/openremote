@@ -551,8 +551,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 String msg = "Failed to start tunnel: A timeout occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
                 LOG.log(Level.WARNING, msg);
             } else {
-                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
-                LOG.log(Level.WARNING, msg, e.getCause());
+                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId + ", error=" + e.getCause().getMessage();
+                LOG.log(Level.WARNING, msg);
             }
             throw new RuntimeException(e);
         } catch (InterruptedException e) {

@@ -282,9 +282,10 @@ public class GatewayConnector {
             eventConsumerMap.put(GatewayTunnelStartResponseEvent.class, (e) -> {
                 GatewayTunnelStartResponseEvent response = (GatewayTunnelStartResponseEvent) e;
                 if (response != null && response.getError() != null) {
-                    throw new RuntimeException("Failed to start tunnel: error=" + response.getError() + ", " + tunnelInfo);
+                    future.completeExceptionally(new RuntimeException("Failed to start tunnel: error=" + response.getError() + ", " + tunnelInfo));
+                } else {
+                    future.complete(null);
                 }
-                future.complete(null);
             });
         }
 
@@ -293,16 +294,12 @@ public class GatewayConnector {
         );
 
         return future
-                .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-                .whenComplete((result, ex) -> {
-                    synchronized (eventConsumerMap) {
-                        eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
-                    }
-                    if (ex != null && !(ex instanceof TimeoutException)) {
-                        // Re-throw unexpected exceptions
-                        throw new RuntimeException("Failed to get gateway response", ex);
-                    }
-                });
+            .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .whenComplete((result, ex) -> {
+                synchronized (eventConsumerMap) {
+                    eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
+                }
+            });
     }
 
     protected CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {
