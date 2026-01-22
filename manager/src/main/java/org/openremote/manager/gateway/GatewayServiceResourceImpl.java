@@ -116,7 +116,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
         } catch (IllegalStateException e) {
             throw new WebApplicationException(e.getMessage(), Response.Status.NOT_FOUND);
         } catch (RuntimeException e) {
-            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+            throw new WebApplicationException(e.getMessage(), Response.Status.EXPECTATION_FAILED);
         }
     }
 

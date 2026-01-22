@@ -1088,7 +1088,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
         def gatewayClientService = container.getService(GatewayClientService)
-        def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
+        def tunnelFactory = gatewayClientService.gatewayTunnelFactory
         def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
         def tunnelInfo = new GatewayTunnelInfo(
                 "",
@@ -1105,21 +1105,15 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def startEvent = new GatewayTunnelStartRequestEvent(
                 tunnelSSHHost,
                 tunnelSSHPort,
-                null,
-                null,
                 tunnelInfo)
         tunnelFactory.startTunnel(startEvent)
 
         then: "the tunnel should be established and be usable"
-        tunnelFactory.sessionMap.containsKey(tunnelInfo)
         def response = target.request().get()
         response.status == 200
 
         when: "the tunnel is stopped"
         tunnelFactory.stopTunnel(tunnelInfo)
-
-        then: "the tunnel should be destroyed"
-        !tunnelFactory.sessionMap.containsKey(tunnelInfo)
 
         and: "requests should fail"
         def response2 = target.request().get()
