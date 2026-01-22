@@ -75,13 +75,4 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
         getAttributes().getOrCreate(SECURE_GRPC).setValue(secureGRPC);
         return this;
     }
-
-    public Optional<UsernamePassword> getUsernamePassword() {
-        return getAttributes().getValue(USERNAME_AND_PASSWORD);
-    }
-
-    public TheThingsStackAgent setUsernamePassword(UsernamePassword usernamePassword) {
-        getAttributes().getOrCreate(USERNAME_AND_PASSWORD).setValue(usernamePassword);
-        return this;
-    }
 }

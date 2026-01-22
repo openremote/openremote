@@ -533,14 +533,16 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
 
                             List<String> devEuiList = new ArrayList<>();
                             ttsDeviceMap.get().entrySet().removeIf(entry -> {
-                                   boolean isRemove = devIds.getDeviceId().equals(entry.getValue().getIds().getDeviceId());
-                                   String devEui = bytesToHex(devIds.getDevEui().toByteArray()).toUpperCase();
-                                   if (!isNullOrEmpty(devEui)) {
-                                       devEuiList.add(devEui);
-                                   }
-                                   return isRemove;
-                               }
-                            );
+                                boolean isRemove = devIds.getDeviceId().equals(entry.getValue().getIds().getDeviceId());
+                                if (isRemove) {
+                                    String devEui = bytesToHex(devIds.getDevEui().toByteArray()).toUpperCase();
+                                    if (!isNullOrEmpty(devEui)) {
+                                        devEuiList.add(devEui);
+                                    }
+                                }
+                                return isRemove;
+                            });
+
                             for (String devEui : devEuiList) {
                                 ignoreDevEuiSet.remove(devEui);
                             }

@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.lorawan.tts;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
-public class StopState implements ConnectionState{
+public class StopState implements ConnectionState {
     private final TheThingsStackProtocol protocol;
 
     public StopState(ConnectionStateManager manager) {
