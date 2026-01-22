@@ -56,6 +56,7 @@ export class OrDashboardBrowser extends LitElement {
     constructor() {
         super();
 
+        // Allow the content of grid items to be HTML, which requires this function override.
         GridStack.renderCB = function(el: HTMLElement, w: GridStackNode) {
             el.innerHTML = w.content ?? "";
         };
