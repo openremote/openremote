@@ -7,8 +7,6 @@ import {
     isControl,
     JsonSchema,
     mapStateToControlProps,
-    mapStateToControlWithDetailProps,
-    mapStateToJsonFormsRendererProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Paths,
@@ -16,7 +14,7 @@ import {
     StatePropsOfControl,
     VerticalLayout
 } from "@jsonforms/core";
-import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {css, html, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {LayoutBaseElement} from "./layout-base-element";
 import {
@@ -34,7 +32,6 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {DefaultColor5} from "@openremote/core";
 import {AdditionalProps} from "../base-element";
 
 // language=CSS
@@ -314,7 +311,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 const handleChange = (selectedSchema: CombinatorInfo) => {
                     selectedOneOf = selectedSchema;
                     (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !selectedOneOf;
-                    (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).innerHTML = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
+                    (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).textContent = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
                 };
                 schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
             }

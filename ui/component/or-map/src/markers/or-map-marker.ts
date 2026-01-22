@@ -3,6 +3,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
 import {DefaultBoxShadow} from "@openremote/core";
 import { OrMap } from "..";
+import { OrDefaultMarker } from "./or-default-marker.ts";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -133,24 +134,6 @@ export class OrMapMarker extends LitElement {
           }
         `;
     }
-
-    protected static _defaultTemplate = (icon: string | undefined, options?: TemplateOptions) => `
-        ${options && options.displayValue !== undefined 
-            ? `<div class="label"><span>${options.displayValue}</span></div>` 
-            : ``
-        }
-        ${options && options.direction
-            ? `<div class="direction-icon-wrapper" style="transform: rotate(${options.direction}deg);">
-                <svg class="direction-circle">
-                 <circle/> 
-                </svg>
-                <or-icon class="direction-icon" icon="play"></or-icon>
-               </div>`
-            : ``
-        }
-        <or-icon icon="or:marker"></or-icon>
-        <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
-    `
 
     @property({type: Number, reflect: true, attribute: true})
     public lat?: number;
@@ -364,9 +347,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected _createDefaultMarkerContent(): HTMLElement {
-        const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
-        return div;
+        return new OrDefaultMarker(this.icon, {displayValue: this.displayValue, direction: this.direction});
     }
     
     protected _applyMapMarkerStyles() {
