@@ -11,7 +11,7 @@ import {when} from "lit/directives/when.js";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 import manager from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {BoolColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
+import {BoolColorsChangeEvent, TextColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
 
 const styling = css`
   .switchMwcInputContainer {
@@ -110,7 +110,8 @@ export class MapSettings extends AssetWidgetSettings {
                                           .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                           @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}"
-                                          @bool-colors-change="${(ev: BoolColorsChangeEvent) => this.onBoolColorsChange(ev)}">
+                                          @bool-colors-change="${(ev: BoolColorsChangeEvent) => this.onBoolColorsChange(ev)}"
+                                          @text-colors-change="${(ev: TextColorsChangeEvent) => this.onTextColorsChange(ev)}">
                         </thresholds-panel>
                     </settings-panel>
                 `)}
@@ -223,4 +224,8 @@ export class MapSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
+    protected onTextColorsChange(ev: TextColorsChangeEvent) {
+        this.widgetConfig.textColors = ev.detail;
+        this.notifyConfigUpdate();
+    }
 }
