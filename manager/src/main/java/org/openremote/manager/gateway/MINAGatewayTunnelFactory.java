@@ -5,15 +5,18 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.File;
+import java.security.KeyPair;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -33,12 +36,14 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
         this.localhostRewrite = localhostRewrite;
         client = SshClient.setUpDefaultClient();
 
+        // Load the key
         FileKeyPairProvider keyProvider = new FileKeyPairProvider(tunnelKeyFile.toPath());
-        client.setKeyIdentityProvider(keyProvider);
-        // This removes the default identity loader
-        client.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
+        Iterable<KeyPair> keys = keyProvider.loadKeys(null);
+        client.setKeyIdentityProvider(KeyIdentityProvider.wrapKeyPairs(keys));
+
         // Disable reading ~/.ssh/known_hosts
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
+
         // Disable reading ~/.ssh/config
         // This prevents the client from inheriting aliases or settings from the user's config
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
@@ -60,7 +65,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
         try {
             LOG.fine("Connecting to " + startRequestEvent.getSshHostname() + ":" + startRequestEvent.getSshPort());
-            ConnectFuture connectFuture = client.connect(null, startRequestEvent.getSshHostname(), startRequestEvent.getSshPort()).verify();
+            ConnectFuture connectFuture = client.connect("root", startRequestEvent.getSshHostname(), startRequestEvent.getSshPort()).verify();
             LOG.fine("Connected");
 
             session = connectFuture.getSession();
@@ -68,13 +73,13 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
             session.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionClosed(Session session) {
-                    LOG.info("Session closed. Triggering reconnection...");
-                    reconnect(startRequestEvent);
+                    // This is called in all closure situations
                 }
 
                 @Override
                 public void sessionException(Session session, Throwable t) {
                     LOG.info("Session error: " + t.getMessage());
+                    reconnect(startRequestEvent);
                 }
             });
 
