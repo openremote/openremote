@@ -76,8 +76,11 @@ export class OrDashboardBrowser extends LitElement {
     }
 
     updated(changedProps: PropertyValues) {
-        this.sidebarGrid?.getGridItems()?.filter(i => i.gridstackNode)
-            .forEach(i => (i.gridstackNode as DashboardGridNode).widgetTypeId = i.id);
+
+        // Apply widgetTypeId to identify what 'card' is linked to what widget type
+        this.sidebarGrid?.getGridItems()?.forEach(i => {
+            if(i.gridstackNode) (i.gridstackNode as DashboardGridNode).widgetTypeId = i.id;
+        });
         return super.updated(changedProps);
     }
 
@@ -106,12 +109,6 @@ export class OrDashboardBrowser extends LitElement {
             row: this.sidebarHeight
         }, this.sidebarElem);
 
-        // On any change, recreate the grid to prevent users moving Sidebar items around.
-        // @ts-ignore typechecking since we assume they are not undefined
-        this.sidebarGrid.on("change", (_event: Event, _items: GridStackNode[]) => {
-            this.renderGrid();
-        });
-
         // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
         // This is done by removing the Widget type from the list, waiting for a Lit lifecycle, and adding it back again.
         // Unfortunately, this is required due to HTML elements having to be rendered before it can "initialize the grid")
@@ -138,7 +135,6 @@ export class OrDashboardBrowser extends LitElement {
             column: this.columns,
             cellHeight: this.itemSize / (this.columns / this.size),
             margin: 8
-
         }, this.backgroundElem);
     }
 
