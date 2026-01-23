@@ -817,6 +817,11 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
 
+      - name: Run NPM publish dry run
+        if: steps.is_main_repo.outputs.value == 'true' && github.ref != 'refs/heads/master'
+        run: yarn workspaces foreach --all --no-private --topological npm publish --dry-run
+        timeout-minutes: 20
+
       - name: Run install playwright browser(s)
         if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
         run: npx playwright install --with-deps chromium

@@ -1,5 +1,4 @@
-import { type Page } from "@playwright/test";
-
+import type { Page, Request, Response } from "@playwright/test";
 
 export interface BasePage {
     goto(): Promise<void>;
@@ -40,13 +39,13 @@ export class Shared {
      * @param url The URL to intercept
      * @param cb The callback to handle the response
      */
-    async interceptResponse<T>(url: string, cb: (body?: T) => void) {
+    async interceptResponse<T>(url: string, cb: (body?: T, request?: Request, response?: Response | null) => void) {
         await this.page.route(
             url,
             async (route, request) => {
                 await route.continue();
                 const response = await request.response();
-                cb(await response?.json());
+                cb(await response?.json(), request, response);
             },
             { times: 1 }
         );
