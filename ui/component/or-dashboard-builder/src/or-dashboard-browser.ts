@@ -1,11 +1,15 @@
-import {GridStack, GridStackNode } from "gridstack";
-import {css, html, LitElement, unsafeCSS } from "lit";
-import { customElement, state} from "lit/decorators.js";
+import {GridStack, GridStackNode} from "gridstack";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {style} from "./style";
 import {widgetTypes} from "./index";
+import {WidgetManifest} from "./util/or-widget";
+import {when} from "lit/directives/when.js";
+import {repeat} from "lit/directives/repeat.js";
+import {DashboardGridNode} from "./or-dashboard-preview";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const gridcss = require('gridstack/dist/gridstack.min.css');
+const gridcss = require("gridstack/dist/gridstack.min.css");
 
 //language=css
 const browserStyling = css`
@@ -21,7 +25,6 @@ const browserStyling = css`
         cursor: grab;
     }
     .sidebarItem {
-        height: 100%;
         background: white;
         display: flex;
         align-items: center;
@@ -37,149 +40,148 @@ const browserStyling = css`
     .itemText {
         margin-top: 10px;
     }
-`
+`;
 
 @customElement("or-dashboard-browser")
 export class OrDashboardBrowser extends LitElement {
 
-    @state()
-    private sidebarGrid?: GridStack;
+    @property({type: Number})
+    public columns = 4;
+
+    @property({type: Number})
+    public size = 2;
+
+    @property({type: Number})
+    public itemSize = 134;
 
     @state()
-    private backgroundGrid?: GridStack;
+    protected sidebarGrid?: GridStack;
 
+    @state()
+    protected backgroundGrid?: GridStack;
+
+    @state()
+    protected items: Map<string, WidgetManifest> = new Map(widgetTypes);
+
+    @query("#sidebarElement")
+    protected sidebarElem?: HTMLDivElement;
+
+    @query("#sidebarBgElement")
+    protected backgroundElem?: HTMLDivElement;
+
+    protected sidebarHeight = this._getSidebarHeight(this.columns);
 
     static get styles() {
         return [unsafeCSS(gridcss), browserStyling, style];
     }
 
-    constructor() {
-        super();
+    updated(changedProps: PropertyValues) {
+        this.sidebarGrid?.getGridItems()?.filter(i => i.gridstackNode)
+            .forEach(i => (i.gridstackNode as DashboardGridNode).widgetTypeId = i.id);
+        return super.updated(changedProps);
+    }
 
-        // Allow the content of grid items to be HTML, which requires this function override.
-        GridStack.renderCB = function(el: HTMLElement, w: GridStackNode) {
-            el.innerHTML = w.content ?? "";
-        };
-
-        this.updateComplete.then(() => {
-            this.renderGrid();
-        })
+    firstUpdated(changedProps: PropertyValues) {
+        this.renderGrid();
+        return super.firstUpdated(changedProps);
     }
 
     /* --------------------------------- */
 
     protected renderGrid() {
-        const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
-        const coords: Array<[number, number]> = this.generateGridCoords(Array.from(widgetTypes).length);
-        const sidebarItems: any[] = Array.from(widgetTypes)
-            .sort((a, b) => a[1].displayName.localeCompare(b[1].displayName))
-            .map((typeArr, index) => {
-                return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>`}
-        });
-
-        // Setting Sidebar height depending on sidebarItems
-        let sidebarHeight = 0;
-        sidebarItems.forEach((item) => {
-            if((item.y + item.h) > sidebarHeight) {
-                sidebarHeight = (item.y + item.h);
-            }
-        });
-
-        let newSidebarHeight = 0;
-        if (sidebarItems.length % 2 !== 0) {
-            // If sidebarHeight is based on nr of widgets in array & is not even add 1
-            newSidebarHeight = sidebarItems.length + 1
-        } else {
-            newSidebarHeight = sidebarItems.length
-        }
-        // Creation of the sidebarGrid. Only loads items if already existing
         if(this.sidebarGrid !== undefined) {
-            this.sidebarGrid.removeAll();
-            this.sidebarGrid.load(sidebarItems);
-        } else {
-            this.sidebarGrid = GridStack.init({
-                acceptWidgets: false,
-                column: 4,
-                cellHeight: 67,
-                disableResize: true,
-                draggable: {
-                    appendTo: 'parent'
-                },
-                margin: 8,
-                row: newSidebarHeight
-
-                // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
-            }, sidebarElement);
-            
-            this.sidebarGrid.load(sidebarItems);
-
-            // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
-            // This is done by just loading the initial/original widget back in the sidebar.
-            // @ts-ignore typechecking since we assume they are not undefined
-            this.sidebarGrid.on('removed', (_event: Event, items: GridStackNode[]) => {
-                if(items.length === 1) {
-                    const filteredItems = sidebarItems.filter(widget => {
-                        return (widget.content === items[0].content);
-                    });
-                    this.sidebarGrid?.load([filteredItems[0]]);
-                }
-            });
-
-            // On any change, recreate the grid to prevent users moving Sidebar items around.
-            // @ts-ignore typechecking since we assume they are not undefined
-            this.sidebarGrid.on('change', (_event: Event, _items: GridStackNode[]) => {
-                this.renderGrid();
-            });
+            this.sidebarGrid.destroy(false);
         }
+        this.sidebarGrid = GridStack.init({
+            acceptWidgets: false,
+            animate: false,
+            column: this.columns,
+            cellHeight: this.itemSize / (this.columns / this.size),
+            disableResize: true,
+            removable: false,
+            draggable: {
+                appendTo: "parent"
+            },
+            margin: 8,
+            row: this.sidebarHeight
+        }, this.sidebarElem);
 
+        // On any change, recreate the grid to prevent users moving Sidebar items around.
+        // @ts-ignore typechecking since we assume they are not undefined
+        this.sidebarGrid.on("change", (_event: Event, _items: GridStackNode[]) => {
+            this.renderGrid();
+        });
 
-        // Seperate Static Background grid (to make it look like the items duplicate)
-        const sidebarBgElement = this.shadowRoot?.getElementById("sidebarBgElement");
-        if(this.backgroundGrid != undefined) {
-            this.backgroundGrid.removeAll();
-            this.backgroundGrid.load(sidebarItems);
+        // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
+        // This is done by removing the Widget type from the list, waiting for a Lit lifecycle, and adding it back again.
+        // Unfortunately, this is required due to HTML elements having to be rendered before it can "initialize the grid")
+        // @ts-ignore typechecking since we assume they are not undefined
+        this.sidebarGrid.on("removed", (_event: Event, items: GridStackNode[]) => {
+            const originalItems = new Map(this.items);
+            const removedTypes = items.map(i => (i as DashboardGridNode).widgetTypeId);
+            removedTypes.forEach(typeId => this.items.delete(typeId));
+            this.items = new Map(this.items);
+            this.updateComplete.then(() => {
+                this.items = originalItems;
+                this.updateComplete.then(() => this.renderGrid());
+            });
+        });
 
-        } else {
-            this.backgroundGrid = GridStack.init({
-                staticGrid: true,
-                column: 4,
-                cellHeight: 67,
-                margin: 8
-
-                // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
-            }, sidebarBgElement);
-            this.backgroundGrid.load(sidebarItems);
+        // Separate Static Background grid (to make it look like the items duplicate)
+        if(this.backgroundGrid !== undefined) {
+            this.backgroundGrid.destroy(false);
         }
+        this.backgroundGrid = GridStack.init({
+            acceptWidgets: false,
+            animate: false,
+            staticGrid: true,
+            column: this.columns,
+            cellHeight: this.itemSize / (this.columns / this.size),
+            margin: 8
+
+        }, this.backgroundElem);
     }
 
     protected render() {
         return html`
             <div id="sidebar">
-                <div id="sidebarElement" class="grid-stack" style="width: 100%; z-index: 3;"></div>
-                <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 2"></div>
+                <div id="sidebarElement" class="grid-stack" style="width: 100%; z-index: 3;">
+                    ${repeat(this.items, ([type]) => type, ([type, manifest]) => this._getSidebarItemTemplate(type, manifest))}
+                    ${when(this.items.size % 2 !== 0, () => this._getEmptyItemTemplate())}
+                </div>
+                <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 2">
+                    ${repeat(this.items, ([type]) => type, ([type, manifest]) => this._getSidebarItemTemplate(type, manifest))}
+                    ${when(this.items.size % 2 !== 0, () => this._getEmptyItemTemplate())}
+                </div>
             </div>
-        `
+        `;
     }
 
-    protected generateGridCoords(count: number): [number, number][] {
-        const result: [number, number][] = [];
-        const step = 2;
+    protected _getSidebarItemTemplate(type: string, manifest: WidgetManifest): TemplateResult {
+        return html`
+            <div class="grid-stack-item" id=${type} gs-id=${type} widgetTypeId=${type} gs-w=${this.size} gs-h=${this.size} gs-locked="true">
+                <div class="grid-stack-item-content sidebarItem">
+                    <or-icon icon="${manifest.displayIcon}"></or-icon>
+                    <span class="itemText">${manifest.displayName}</span>
+                </div>
+            </div>
+        `;
+    }
 
-        let x = 0;
-        let y = 0;
+    protected _getEmptyItemTemplate() {
+        return html`
+            <div class="grid-stack-item" gs-id="empty" gs-w=${this.size} gs-h=${this.size} gs-locked="true" gs-no-move="true" style="cursor: default;">
+                <div class="grid-stack-item-content"></div>
+            </div>
+        `;
+    }
 
-        for (let i = 0; i < count; i++) {
-            result.push([x, y]);
-
-            // Alternate between x and y stepping
-            if (x === 0) {
-                x = step;
-            } else {
-                x = 0;
-                y += step;
-            }
+    protected _getSidebarHeight(columns = this.columns, size = this.size) {
+        let sidebarHeight = Math.ceil(widgetTypes.size / (columns / size) * size);
+        if (sidebarHeight % size !== 0) {
+            // If sidebarHeight is based on nr of widgets in array & is not even add 1
+            sidebarHeight++;
         }
-
-        return result;
+        return sidebarHeight;
     }
 }
