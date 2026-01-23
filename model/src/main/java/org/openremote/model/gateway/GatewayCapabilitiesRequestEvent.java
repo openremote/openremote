@@ -18,14 +18,20 @@ public class GatewayCapabilitiesRequestEvent extends SharedEvent implements Resp
     public static final String TYPE = "gateway-capabilities-request";
     @JsonIgnore
     protected Consumer<Event> responseConsumer;
+    protected String gatewayApiVersion;
 
     @JsonCreator
-    public GatewayCapabilitiesRequestEvent(@JsonProperty("timestamp") Date timestamp) {
+    public GatewayCapabilitiesRequestEvent(@JsonProperty("timestamp") Date timestamp, String managerVersion) {
         super(timestamp != null ? timestamp.getTime() : new Date().getTime());
+        this.gatewayApiVersion = managerVersion;
     }
 
     public GatewayCapabilitiesRequestEvent() {
 
+    }
+
+    public String getGatewayApiVersion() {
+        return gatewayApiVersion;
     }
 
     @Override

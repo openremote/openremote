@@ -243,7 +243,7 @@ public class GatewayConnector {
         }
 
         LOG.finest("Requesting gateway capabilities: " + getGatewayIdString());
-        sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
+        sendMessageToGateway(new GatewayCapabilitiesRequestEvent(null, VersionInfo.getGatewayApiVersion()));
 
         future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
@@ -263,11 +263,8 @@ public class GatewayConnector {
                 this.tunnelTimeoutManagementSupported = response != null ? response.isTunnelTimeoutManagementSupported() : false;
 
                 String currentGatewayApiVersion = VersionInfo.getGatewayApiVersion();
-                if(this.getGatewayVersion() != null && VersionInfo.isVersionLess(this.getGatewayVersion(), currentGatewayApiVersion)) {
-                    LOG.warning("Gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
-                }
-                if (this.getGatewayVersion() != null && VersionInfo.isVersionGreater(this.getGatewayVersion(), currentGatewayApiVersion)){
-                    LOG.warning("Central instance's gateway API version is outdated. Current API version: " + currentGatewayApiVersion + ", Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
+                if(this.getGatewayVersion() != null && !VersionInfo.isVersionEqual(this.getGatewayVersion(), currentGatewayApiVersion)) {
+                    LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Current Central Instance API version: " + currentGatewayApiVersion + ", Remote Gateway API version: " + getGatewayVersion() + ". GatewayId: " + gatewayId);
                 }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));

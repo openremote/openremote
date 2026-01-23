@@ -444,12 +444,16 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     destroyGatewayClient(connection, clientRealmMap.get(connection.getLocalRealm()));
                     clientRealmMap.put(connection.getLocalRealm(), null);
                 }
-            } else if (event instanceof GatewayCapabilitiesRequestEvent) {
+            } else if (event instanceof GatewayCapabilitiesRequestEvent req) {
+                // Check Gateway API version compatibility
+                if(req.getGatewayApiVersion() != null && !VersionInfo.isVersionEqual(VersionInfo.getGatewayApiVersion(), req.getGatewayApiVersion())) {
+                    LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Current Central Instance API version: " + req.getGatewayApiVersion() + ", this Gateway's API version: " + VersionInfo.getGatewayApiVersion() + ".");
+                }
                 LOG.fine("Central manager requested specifications / capabilities of the gateway.");
                 GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(
                     gatewayTunnelFactory != null, true, VersionInfo.getGatewayApiVersion()
                 );
-                responseEvent.setMessageID(event.getMessageID());
+                responseEvent.setMessageID(req.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
                         messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
