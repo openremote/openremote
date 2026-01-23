@@ -28,16 +28,13 @@ function getStandardModuleRules() {
             {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
-                use: [{
+                use: {
                     // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
                     loader: "ts-loader",
                     options: {
                         projectReferences: true
                     }
-                }, {
-                    // Minifies Lit HTML and CSS templates and removes unnecessary whitespace in them
-                    loader: "minify-html-literals-loader",
-                }]
+                }
             }
         ]
     };
