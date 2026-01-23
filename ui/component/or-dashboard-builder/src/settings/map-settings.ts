@@ -104,9 +104,10 @@ export class MapSettings extends AssetWidgetSettings {
                 <!-- List of customizable thresholds -->
                 ${when(this.widgetConfig.assetIds.length > 0 || this.widgetConfig.allOfType, () => html`
                     <settings-panel displayName="thresholds" expanded="${true}">
-                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" 
-                                        .boolColors="${this.widgetConfig.boolColors}" 
-                                        .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
+                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}"
+                                          .boolColors="${this.widgetConfig.boolColors}"
+                                          .textColors="${this.widgetConfig.textColors}"
+                                          .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                           @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}"
                                           @bool-colors-change="${(ev: BoolColorsChangeEvent) => this.onBoolColorsChange(ev)}">
@@ -148,7 +149,7 @@ export class MapSettings extends AssetWidgetSettings {
             this.widgetConfig.showLabels = false;
             this.widgetConfig.showUnits = false;
             this.widgetConfig.boolColors = {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'};
-            this.widgetConfig.textColors = [['example', "#4caf50"], ['example2', "#ff9800"]];
+            this.widgetConfig.textColors = [['example1', "#4caf50"], ['example2', "#ff9800"]];
             this.widgetConfig.thresholds = [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]];
             this.widgetConfig.assetType = ev.detail;
             this.notifyConfigUpdate();
