@@ -202,10 +202,10 @@ export class OrDashboardPreview extends LitElement {
     protected activePreset?: DashboardScreenPreset;
 
     @state()
-    private rerenderActive: boolean = false;
+    protected rerenderActive: boolean = false;
 
     @state()
-    private isLoading: boolean = false;
+    protected isLoading: boolean = false;
 
 
     protected grid?: GridStack;

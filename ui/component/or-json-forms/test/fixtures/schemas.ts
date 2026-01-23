@@ -108,4 +108,45 @@ export const schemas: JsonSchema[] = [
             },
         },
     },
+    {
+        $schema: "http://json-schema.org/draft-07/schema#",
+        title: "Polymorphic",
+        type: "array",
+        definitions: {
+            SubType: {
+                title: "Sub Type",
+                properties: {
+                    type: {
+                        const: "SubType",
+                        default: "SubType"
+                    },
+                },
+                required: [
+                   "type"
+                ],
+            },
+            CustomSubType: {
+                title: "Custom Sub Type",
+                properties: {
+                    customType: {
+                        const: "CustomSubType",
+                        default: "CustomSubType"
+                    }
+                },
+                required: [
+                   "customType"
+                ],
+                discriminator: {
+                    propertyName: "customType"
+                }
+            }
+        },
+        items: {
+            type: "object",
+            oneOf: [
+                { "$ref": "#/definitions/SubType" },
+                { "$ref": "#/definitions/CustomSubType" },
+            ]
+        }
+    }
 ];
