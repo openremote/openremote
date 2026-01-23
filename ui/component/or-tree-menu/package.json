@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-tree-menu",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Web Component for displaying a tree menu of items with a predefined hierarchy",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",

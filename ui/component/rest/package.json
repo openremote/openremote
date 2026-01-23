@@ -1,6 +1,6 @@
 {
   "name": "@openremote/rest",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote 3.x REST API",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -21,7 +21,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "axios": "0.24.0",
+    "axios": "~1.13.2",
     "qs": "^6.8.0"
   },
   "devDependencies": {

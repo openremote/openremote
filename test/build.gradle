@@ -30,6 +30,7 @@ dependencies {
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+    testImplementation "dev.failsafe:failsafe:$failsafeVersion"
 
     testImplementation "net.solarnetwork.common:nifty-modbus-tcp:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-rtu-jsc:$niftyModbusVersion"
@@ -38,6 +39,13 @@ dependencies {
 
     testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
     testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+
+    testImplementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
+    testImplementation "io.grpc:grpc-stub:$grpcVersion"
+
+    testImplementation files("../agent/libs/chirpstack-api-4.14.1.jar")
+    testImplementation files("../agent/libs/tts-api-3.34.3.jar")
 }
 
 tasks.withType(Test) {
