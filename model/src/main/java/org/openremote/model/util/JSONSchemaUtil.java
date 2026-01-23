@@ -579,7 +579,6 @@ public class JSONSchemaUtil {
                 if (props instanceof ObjectNode propsObj) {
                     // Remove type property on type property for subtypes to enable definition merging
                     propsObj.remove(typeKey);
-                    propsObj.remove(customTypeKey);
                 }
                 return;
             }
@@ -590,19 +589,10 @@ public class JSONSchemaUtil {
                     continue;
                 }
 
-                // Rename custom type key with normal type key
-                if (!propsObj.has(typeKey) && propsObj.has(customTypeKey)) {
-                    propsObj.set(typeKey, propsObj.get(customTypeKey));
-                    propsObj.remove(customTypeKey);
-                }
-
-                if (customTypeKey != null && node.get(context.getKeyword(SchemaKeyword.TAG_REQUIRED)) instanceof ArrayNode arr) {
-                    for (int i = 0; i < arr.size(); i++) {
-                        if (arr.get(i).textValue().equals(customTypeKey)) {
-                            arr.remove(i);
-                            arr.add(context.getKeyword(SchemaKeyword.TAG_TYPE));
-                        };
-                    }
+                // Add property indicating the custom discriminator property name
+                if (customTypeKey != null && !customTypeKey.equals(typeKey)) {
+                    attrs.putObject("discriminator").put("propertyName", customTypeKey);
+                    typeKey = customTypeKey;
                 }
 
                 JsonNode typeNode = propsObj.get(typeKey);
