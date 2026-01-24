@@ -1,6 +1,6 @@
 {
     "name": "@openremote/or-scheduler",
-    "version": "1.10.0-snapshot",
+    "version": "1.14.0-snapshot",
     "description": "OpenRemote scheduler UI component",
     "customElements": "custom-elements.json",
     "main": "dist/umd/index.bundle.js",
