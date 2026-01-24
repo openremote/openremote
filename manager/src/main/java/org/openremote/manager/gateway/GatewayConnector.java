@@ -184,7 +184,7 @@ public class GatewayConnector {
         }
 
         requestDisconnect.run();
-        LOG.fine("Disconnected: " + getGatewayIdString());
+        LOG.info("Disconnected: " + getGatewayIdString());
         if (syncProcessorFuture != null) {
             LOG.finest("Aborting active sync process: " + getGatewayIdString());
             syncProcessorFuture.cancel(true);

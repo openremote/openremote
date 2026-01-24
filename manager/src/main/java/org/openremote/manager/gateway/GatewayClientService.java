@@ -55,6 +55,7 @@ import org.openremote.model.util.ValueUtil;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,7 +87,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected Map<String, Map<AttributeRef, Long>> clientAttributeTimestamps = new ConcurrentHashMap<>();
     protected Consumer<AssetEvent> realmAssetEventConsumer;
     protected Consumer<AttributeEvent> realmAttributeEventConsumer;
-
+    protected final ConcurrentHashMap<String, Set<GatewayTunnelSession>> activeTunnels = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -430,12 +431,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
         clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
         if (gatewayTunnelFactory != null) {
-            LOG.info("Terminating all gateway tunnel sessions for realm: " + connection.getLocalRealm());
-            gatewayTunnelFactory.stopAllInRealm(connection.getLocalRealm());
+            stopAllGatewayTunnels(connection);
         }
     }
 
-    protected void onCentralManagerMessage(GatewayConnection connection, String message) {
+   protected void onCentralManagerMessage(GatewayConnection connection, String message) {
         SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event != null) {
@@ -453,44 +453,24 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         connection.getLocalRealm(),
                         messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
-            } else if (event instanceof GatewayTunnelStartRequestEvent gatewayTunnelStartRequestEvent) {
+            } else if (event instanceof GatewayTunnelStartRequestEvent startRequestEvent) {
                 if (gatewayTunnelFactory == null) {
                     return;
                 }
-                LOG.info("Start tunnel request received: " + gatewayTunnelStartRequestEvent);
-                String error = null;
-
-                try {
-                    gatewayTunnelFactory.startTunnel(gatewayTunnelStartRequestEvent);
-                } catch (Exception e) {
-                    error = e.getMessage();
-                }
-                GatewayTunnelStartResponseEvent responseEvent = new GatewayTunnelStartResponseEvent(error);
-                responseEvent.setMessageID(event.getMessageID());
-                sendCentralManagerMessage(
-                        connection.getLocalRealm(),
-                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
-                );
-
+                startGatewayTunnel(connection, startRequestEvent);
             } else if (event instanceof GatewayTunnelStopRequestEvent stopRequestEvent) {
                 if (gatewayTunnelFactory == null) {
                     return;
                 }
-                LOG.info("Stop tunnel request received: " +  stopRequestEvent);
-                String error = null;
 
-                try {
-                    gatewayTunnelFactory.stopTunnel(stopRequestEvent.getInfo());
-                } catch (Exception e) {
-                    error = e.getMessage();
-                }
-                GatewayTunnelStopResponseEvent responseEvent = new GatewayTunnelStopResponseEvent(error);
-                responseEvent.setMessageID(event.getMessageID());
-                sendCentralManagerMessage(
-                        connection.getLocalRealm(),
-                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
-                );
+                activeTunnels.computeIfPresent(connection.getLocalRealm(), (realm, activeRealmTunnels) -> {
+                   activeRealmTunnels.stream()
+                      .filter(session -> Objects.equals(session.getTunnelInfo(), stopRequestEvent.getInfo()))
+                      .findFirst()
+                      .ifPresent(activeTunnel -> stopGatewayTunnel(connection, activeTunnel));
 
+                   return activeRealmTunnels;
+                });
             } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getSimpleName());
             } else if (event instanceof AssetEvent assetEvent) {
@@ -521,7 +501,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
     }
 
-    protected void sendCentralManagerMessage(String realm, String message) {
+
+   protected void sendCentralManagerMessage(String realm, String message) {
         GatewayIOClient client;
 
         synchronized (clientRealmMap) {
@@ -533,7 +514,59 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
     }
 
-    protected String getClientSessionKey(GatewayConnection connection) {
+    protected void startGatewayTunnel(GatewayConnection connection, GatewayTunnelStartRequestEvent startRequestEvent) {
+       LOG.info("Start tunnel request received: " + connection + ", " + startRequestEvent);
+       GatewayTunnelSession session = gatewayTunnelFactory.createSession(startRequestEvent, this::onTunnelSessionClosed);
+       session.connectFuture.orTimeout(5000, TimeUnit.MILLISECONDS).whenComplete((v, t) -> {
+          String error = t != null ? t.getMessage() : null;
+
+          if (t != null) {
+             LOG.warning("Gateway tunnel creation failed: " + t.getMessage());
+          }
+          GatewayTunnelStartResponseEvent responseEvent = new GatewayTunnelStartResponseEvent(error);
+          responseEvent.setMessageID(startRequestEvent.getMessageID());
+          sendCentralManagerMessage(
+             connection.getLocalRealm(),
+             messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
+          );
+       });
+    }
+
+    protected void stopGatewayTunnel(GatewayConnection connection, GatewayTunnelSession gatewayTunnelSession) {
+       LOG.info("Stop tunnel request received: " + connection + ", " + gatewayTunnelSession);
+       String error = null;
+
+       try {
+          gatewayTunnelFactory.stopTunnel(stopRequestEvent.getInfo());
+       } catch (Exception e) {
+          error = e.getMessage();
+       }
+       GatewayTunnelStopResponseEvent responseEvent = new GatewayTunnelStopResponseEvent(error);
+       responseEvent.setMessageID(event.getMessageID());
+       sendCentralManagerMessage(
+          connection.getLocalRealm(),
+          messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
+       );
+    }
+
+   protected void stopAllGatewayTunnels(GatewayConnection connection) {
+       if (connection == null) {
+          // Close all tunnels
+       } else {
+          // Close tunnels for this connection
+       }
+   }
+
+    protected void onTunnelSessionClosed(Throwable sessionCloseError) {
+       if (sessionCloseError == null) {
+
+       } else {
+          LOG.log(Level.WARNING, "Gateway tunnel session closed with error: " + sessionCloseError.getMessage());
+       }
+    }
+
+
+   protected String getClientSessionKey(GatewayConnection connection) {
         return CLIENT_EVENT_SESSION_PREFIX + connection.getLocalRealm();
     }
 

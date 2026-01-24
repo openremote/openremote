@@ -20,46 +20,29 @@
 
 package org.openremote.manager.gateway;
 
-import org.openremote.model.ContainerService;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 
+import java.util.function.Consumer;
+
 /**
- * This interface is an abstraction for starting/stopping gateway tunnels and is used by edge gateway instances.
+ * This interface is an abstraction for creating {@link GatewayTunnelSession}s and is used by edge gateway instances.
  */
 public interface GatewayTunnelFactory {
 
-    /**
-     * Initialize the tunnel factory
-     */
-    void start();
+   /**
+    * Initialize the tunnel factory
+    */
+   void start();
 
-    /**
-     * Start a tunnel for the requested {@link GatewayTunnelInfo}
-     *
-     * @return Tunnel instance counter (should be tracked by implementations as this will be used to stop the tunnel)
-     * @throws jakarta.ws.rs.BadRequestException If {@link GatewayTunnelInfo} is invalid
-     * @throws jakarta.ws.rs.ServerErrorException If the {@link GatewayTunnelInfo} is valid but the tunnel could not be created
-     */
-    void startTunnel(GatewayTunnelStartRequestEvent startRequestEvent) throws Exception;
+   /**
+    * Destroy the tunnel factory
+    */
+   void stop();
 
-    void stopTunnel(GatewayTunnelInfo tunnelInfo) throws Exception;
-
-    /**
-     * Terminate all tunnel sessions for the given realm; should perform try/catch to prevent any exceptions bubbling
-     * and to ensure termination of each session is attempted.
-     * @param realm the realm for which to terminate all tunnel sessions
-     */
-    void stopAllInRealm(String realm);
-
-    /**
-     * Terminate all known tunnel sessions; should perform try/catch to prevent any exceptions bubbling and to ensure
-     * termination of each session is attempted.
-     */
-    void stopAll();
-
-    /**
-     * Destroy the tunnel factory
-     */
-    void stop();
+   /**
+    * Create and start a tunnel session for the requested {@link GatewayTunnelInfo}; the closedCallback will be invoked
+    * when the session is closed, if exceptionally the throwable will be passed to the callback.
+    */
+   GatewayTunnelSession createSession(GatewayTunnelStartRequestEvent startRequestEvent, Consumer<Throwable> closedCallback);
 }

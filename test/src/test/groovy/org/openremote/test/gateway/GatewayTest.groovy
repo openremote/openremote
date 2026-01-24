@@ -1106,7 +1106,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 tunnelSSHHost,
                 tunnelSSHPort,
                 tunnelInfo)
-        tunnelFactory.startTunnel(startEvent)
+        tunnelFactory.createSession(startEvent)
 
         then: "the tunnel should be established and be usable"
         def response = target.request().get()

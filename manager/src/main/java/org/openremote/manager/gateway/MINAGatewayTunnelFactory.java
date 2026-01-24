@@ -5,20 +5,21 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.util.security.SecurityUtils;
-import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.KeyPair;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
@@ -29,7 +30,6 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     protected File tunnelKeyFile;
     protected String localhostRewrite;
     protected SshClient client;
-    protected Map<GatewayTunnelInfo, ClientSession> sessionMap = new ConcurrentHashMap<>();
 
     public MINAGatewayTunnelFactory(File tunnelKeyFile, String localhostRewrite) {
         this.tunnelKeyFile = tunnelKeyFile;
@@ -60,78 +60,113 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     }
 
     @Override
-    public void startTunnel(GatewayTunnelStartRequestEvent startRequestEvent) throws Exception {
-        ClientSession session = null;
+    public GatewayTunnelSession createSession(GatewayTunnelStartRequestEvent startRequestEvent, Consumer<Throwable> closedCallback) {
+       CompletableFuture<Void> connectionResultFuture = new CompletableFuture<>();
+       AtomicReference<ClientSession> sessionRef = new AtomicReference<>();
+       AtomicReference<Throwable> failureCause = new AtomicReference<>();
+       // Flags if the user explicitly called disconnect()
+       AtomicBoolean isManualDisconnect = new AtomicBoolean(false);
 
-        try {
-            LOG.fine("Connecting to " + startRequestEvent.getSshHostname() + ":" + startRequestEvent.getSshPort());
-            ConnectFuture connectFuture = client.connect("root", startRequestEvent.getSshHostname(), startRequestEvent.getSshPort()).verify();
-            LOG.fine("Connected");
+       LOG.fine("Creating session: " + startRequestEvent);
 
-            session = connectFuture.getSession();
+       // This allows the caller to disconnect this specific session later
+       Supplier<CompletableFuture<Void>> disconnectSupplier = () -> {
+          CompletableFuture<Void> closeResult = new CompletableFuture<>();
+          ClientSession currentSession = sessionRef.get();
+          // We are intentionally closing this session
+          isManualDisconnect.set(true);
 
-            session.addSessionListener(new SessionListener() {
-                @Override
-                public void sessionClosed(Session session) {
-                    // This is called in all closure situations
+          if (currentSession != null) {
+             currentSession.close(false).addListener(future -> {
+                if (future.isClosed()) {
+                   closeResult.complete(null);
+                } else {
+                   String msg = "Failed to close session cleanly: " + currentSession;
+                   LOG.warning(msg);
+                   closeResult.completeExceptionally(new IOException(msg));
                 }
+             });
+          } else {
+             // If session was never established, cancel the connection attempt
+             connectionResultFuture.cancel(true);
+             closeResult.complete(null);
+          }
+          return closeResult;
+       };
 
-                @Override
-                public void sessionException(Session session, Throwable t) {
-                    LOG.info("Session error: " + t.getMessage());
-                    reconnect(startRequestEvent);
-                }
-            });
+       // Initiate the Async Connection
+       try {
+          ConnectFuture connectFuture = client.connect("root", startRequestEvent.getSshHostname(), startRequestEvent.getSshPort());
 
-            session.auth().verify();
-            sessionMap.put(startRequestEvent.getInfo(), session);
-        } catch (Exception e) {
-            LOG.warning("Failed to connect to gateway: " + startRequestEvent.getSshHostname() + ":" + startRequestEvent.getSshPort() + " msg=" + e.getMessage());
-            if (session != null) {
-                session.close(true);
-            }
-            throw e;
-        }
-    }
+          connectFuture.addListener(connFuture -> {
+             if (connFuture.isConnected()) {
+                ClientSession session = connFuture.getSession();
+                sessionRef.set(session); // Store in atomic ref for the disconnect supplier to see
 
-    protected void reconnect(GatewayTunnelStartRequestEvent startRequestEvent) {
-        // Check session is still in the session map (i.e. is still wanted)
-    }
+                // Add session listeners (reconnection logic, etc.)
+                session.addSessionListener(new SessionListener() {
+                   @Override
+                   public void sessionException(Session s, Throwable t) {
+                      // Capture the error (only the first one matters usually)
+                      failureCause.compareAndSet(null, t);
 
-    @Override
-    public void stopTunnel(GatewayTunnelInfo tunnelInfo) throws Exception {
-        ClientSession session = sessionMap.remove(tunnelInfo);
-        if (session != null) {
-            session.close(true);
-        }
-    }
+                      // Optional: Log it here, but wait for sessionClosed to trigger logic
+                      LOG.warning("Session exception caught: " + t.getMessage());
+                   }
 
-    @Override
-    public void stopAllInRealm(String realm) {
-        sessionMap.entrySet().removeIf(entry -> {
-            boolean matches = entry.getKey().getRealm().equalsIgnoreCase(realm);
-            if (matches) {
+                   @Override
+                   public void sessionClosed(Session s) {
+                      // This method is ALWAYS called when session dies (error or manual)
+
+                      if (isManualDisconnect.get()) {
+                         // Case A: We asked for it -> Clean exit
+                         LOG.fine("Session closed by user: " + startRequestEvent);
+                         closedCallback.accept(null);
+                      } else {
+                         Throwable failure = failureCause.get() != null ? failureCause.get() : new IOException("Session closed unexpectedly");
+                         LOG.info("Session closed unexpectedly '" + failure.getMessage() + "' : " + startRequestEvent);
+                         closedCallback.accept(failure);
+                      }
+                   }
+                });
+
+                // Start Authentication
                 try {
-                    entry.getValue().close(true);
-                } catch (Exception ignored) {
+                   session.auth().addListener(authFuture -> {
+                      if (authFuture.isSuccess()) {
+                         LOG.fine("Session connected and authenticated: " + startRequestEvent);
+                         connectionResultFuture.complete(null);
+                      } else {
+                         Throwable failure = authFuture.getException();
+                         String msg = failure != null ? failure.getMessage() : "Unknown error";
+                         msg = "Authentication failed '" + msg + "': " + startRequestEvent;
+                         session.close(true);
+                         LOG.warning(msg);
+                         connectionResultFuture.completeExceptionally(new IOException(msg, failure));
+                      }
+                   });
+                } catch (IOException e) {
+                   session.close(true);
+                   connectionResultFuture.completeExceptionally(e);
                 }
-            }
-            return matches;
-        });
-    }
+             } else {
+                // Connection failed (Network level)
+                Throwable t = connFuture.getException();
+                String msg = t != null ? t.getMessage() : "Unknown error";
+                msg = "Connection failed '" + msg + "': " + startRequestEvent;
+                LOG.warning(msg);
+                connectionResultFuture.completeExceptionally(new IOException(msg, t));
+             }
+          });
+       } catch (Exception e) {
+          LOG.warning("Connection failed '" + e.getMessage() + "': " + startRequestEvent);
+          connectionResultFuture.completeExceptionally(e);
+       }
 
-    @Override
-    public void stopAll() {
-        try {
-            sessionMap.values()
-                    .forEach(session -> {
-                        try {
-                            session.close(true);
-                        } catch (Exception ignored) {
-                        }
-                    });
-        } finally {
-            sessionMap.clear();
-        }
+       return new GatewayTunnelSession(
+          connectionResultFuture,
+          startRequestEvent.getInfo(),
+          disconnectSupplier
+       );
     }
 }
