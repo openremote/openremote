@@ -56,11 +56,8 @@ import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.utils.CertificateUtil.getCertsFromConnection;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
 import static org.openremote.model.security.User.SERVICE_ACCOUNT_PREFIX;
 import static org.openremote.model.syslog.SyslogCategory.API;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
-
 /**
  * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a
  * dynamic {@link org.keycloak.adapters.KeycloakDeployment} resolver.
