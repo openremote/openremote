@@ -27,7 +27,6 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.model.Container;
 
@@ -35,22 +34,24 @@ import javax.net.ssl.*;
 import java.io.*;
 import java.nio.file.*;
 import java.security.*;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Custom SSLContextFactory for OpenRemote that dynamically loads certificates from /storage/certs.
- * This allows the MQTT broker to use certificates managed by HAProxy, which are shared via a Docker volume.
+ * Custom SSLContextFactory for OpenRemote that dynamically loads certificates for the MQTT broker.
+ * <p>
+ * Certificate loading follows this priority order:
+ * <ol>
+ *   <li>Storage directory ({@code /storage/certs}) - for HAProxy-managed certificates shared via Docker volume</li>
+ *   <li>Configured keystore file paths - traditional JKS/PKCS12 keystores from Artemis config</li>
+ *   <li>Classpath resource - bundled self-signed certificate for development/testing</li>
+ * </ol>
+ * <p>
  * Certificates are reloaded periodically to support certificate renewal without restarts.
  * <p>
  * Note: This factory is instantiated by ActiveMQ Artemis via ServiceLoader, so we use a static
@@ -61,24 +62,24 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
     private static final Logger LOG = Logger.getLogger(OpenRemoteSSLContextFactory.class.getName());
     private static final int HIGH_PRIORITY = 100;
     private static final long CERT_RELOAD_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+    private static final Pattern NUMBERED_CERT_PATTERN = Pattern.compile("^(\\d+)-.*");
+
+    /**
+     * Classpath resource path for the fallback self-signed certificate.
+     * Located relative to this class in the resources directory.
+     */
+    private static final String FALLBACK_CERT_RESOURCE = "01-selfsigned";
 
     // Static registry for Container instance (set by MQTTBrokerService)
     private static volatile Container container;
 
     private volatile SSLContext cachedSSLContext;
     private final Map<String, Long> fileModificationTimes = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "OpenRemote-SSLContext-Reloader");
-        t.setDaemon(true);
-        return t;
-    });
+    private ScheduledFuture<?> reloadFuture;
 
     public OpenRemoteSSLContextFactory() {
         // Schedule periodic certificate reloading
-        scheduler.scheduleWithFixedDelay(this::reloadCertificatesIfNeeded,
-                CERT_RELOAD_INTERVAL_MS,
-                CERT_RELOAD_INTERVAL_MS,
-                TimeUnit.MILLISECONDS);
+        reloadFuture = container.getScheduledExecutor().schedule(this::reloadCertificatesIfNeeded, CERT_RELOAD_INTERVAL_MS, TimeUnit.MILLISECONDS);
         LOG.log(Level.INFO, "Initialized OpenRemote SSLContextFactory with certificate auto-reload");
     }
 
@@ -92,33 +93,54 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
     }
 
     private Path getCertsDir() {
-        return container.getService(ManagerPersistenceService.class).getStorageDir().resolve("certs");
+        if (container == null) {
+            return null;
+        }
+        ManagerPersistenceService persistenceService = container.getService(ManagerPersistenceService.class);
+        if (persistenceService == null || persistenceService.getStorageDir() == null) {
+            return null;
+        }
+        return persistenceService.getStorageDir().resolve("certs");
     }
 
     @Override
     public SSLContext getSSLContext(SSLContextConfig config, Map<String, Object> additionalOpts) throws Exception {
-        // If we have a cached context and certificates haven't changed, return it
+        // Return cached context if certificates haven't changed
         if (cachedSSLContext != null && !certificatesHaveChanged()) {
             return cachedSSLContext;
         }
 
-        // Try to load from /storage/certs first
-        SSLContext sslContext = tryLoadFromStorageCerts(config);
+        // Priority 1: Try to load from /storage/certs (HAProxy)
+        SSLContext sslContext = tryLoadFromHaproxy(config);
 
-        // Fall back to default file-based loading if /storage/certs doesn't exist or fails
+        // Priority 2: Fall back to configured keystore file paths
         if (sslContext == null) {
-            sslContext = createSSLContextFromFiles(config);
+            sslContext = tryLoadFromConfiguredFiles(config);
+        }
+
+        // Priority 3: Fall back to bundled classpath resource
+        if (sslContext == null) {
+            sslContext = tryLoadFromClasspathResource(config);
+        }
+
+        if (sslContext == null) {
+            throw new SSLException("Failed to create SSLContext: no certificates found in storage, classpath, or configuration");
         }
 
         cachedSSLContext = sslContext;
         return sslContext;
     }
 
-    private SSLContext tryLoadFromStorageCerts(SSLContextConfig config) {
+    private SSLContext tryLoadFromHaproxy(SSLContextConfig config) {
+        Path certsDir = getCertsDir();
+        if (certsDir == null) {
+            LOG.log(Level.FINE, "Container not initialized, skipping storage certificate loading");
+            return null;
+        }
+
         try {
-            Path certsDir = getCertsDir();
             if (!Files.exists(certsDir) || !Files.isDirectory(certsDir)) {
-                LOG.log(Level.FINE, "Certificate directory " + certsDir + " does not exist, using fallback");
+                LOG.log(Level.FINE, "Certificate directory {0} does not exist", certsDir);
                 return null;
             }
 
@@ -126,53 +148,81 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
             // Find the first file numerically (e.g., 00-cert comes before 01-selfsigned)
             Path combinedPemFile = findFirstNumberedCertFile(certsDir);
 
-            if (combinedPemFile != null) {
-                // HAProxy combined PEM format (private key + cert in one file)
-                LOG.log(Level.INFO, "Loading combined certificate from " + certsDir + "/" + combinedPemFile.getFileName());
-                return createSSLContextFromCombinedPEM(combinedPemFile, config);
+            if (combinedPemFile == null) {
+                LOG.log(Level.FINE, "No numbered certificate files found in {0}", certsDir);
+                return null;
             }
 
-            LOG.log(Level.FINE, "Certificate or key file not found in " +  certsDir + ".");
-            return null;
+            LOG.log(Level.INFO, "Loading certificate from storage: " + combinedPemFile.getFileName());
+            SSLContext ctx;
+            try (BufferedReader reader = Files.newBufferedReader(combinedPemFile)) {
+                ctx = createSSLContextFromPEM(reader, combinedPemFile.toString(), config);
+            }
+            updateFileModificationTimes(combinedPemFile);
+            return ctx;
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to load certificates from " + getCertsDir() + ", falling back to file paths", e);
+            LOG.log(Level.WARNING, "Failed to load certificates from " + certsDir, e);
+            return null;
+        }
+    }
+
+    private SSLContext tryLoadFromClasspathResource(SSLContextConfig config) {
+        try (InputStream is = getClass().getResourceAsStream(FALLBACK_CERT_RESOURCE)) {
+            if (is == null) {
+                LOG.log(Level.FINE, "Classpath resource {0} not found", FALLBACK_CERT_RESOURCE);
+                return null;
+            }
+
+            LOG.log(Level.INFO, "Loading certificate from classpath resource: {0}", FALLBACK_CERT_RESOURCE);
+
+            SSLContext ctx;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                ctx = createSSLContextFromPEM(reader, "classpath resource", config);
+            }
+
+            LOG.log(Level.INFO, "SSLContext created successfully from classpath resource");
+            return ctx;
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to load certificate from classpath resource: " + FALLBACK_CERT_RESOURCE, e);
+            return null;
+        }
+    }
+
+    private SSLContext tryLoadFromConfiguredFiles(SSLContextConfig config) {
+        if (config.getKeystorePath() == null || config.getKeystorePath().isEmpty()) {
+            LOG.log(Level.FINE, "No keystore path configured");
+            return null;
+        }
+
+        try {
+            LOG.log(Level.INFO, "Loading certificate from configured keystore: {0}", config.getKeystorePath());
+            return createSSLContextFromFiles(config);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to load certificates from configured keystore: " + config.getKeystorePath(), e);
             return null;
         }
     }
 
     private Path findFirstNumberedCertFile(Path directory) throws IOException {
-        // Pattern matches files like "00-cert", "01-selfsigned", "02-example.com"
-        Pattern pattern = Pattern.compile("^(\\d+)-.*");
-
-        List<Path> numberedFiles;
         try (Stream<Path> stream = Files.list(directory)) {
-            numberedFiles = stream
+            return stream
                     .filter(Files::isRegularFile)
-                    .filter(path -> pattern.matcher(path.getFileName().toString()).matches())
-                    .sorted() // sorts `Path`s lexicographically (00-selfsigned, 01-test, 02-domain, etc.)
-                    .collect(Collectors.toCollection(ArrayList::new));
+                    .filter(path -> NUMBERED_CERT_PATTERN.matcher(path.getFileName().toString()).matches())
+                    .min(Comparator.comparing(Path::getFileName))
+                    .orElse(null);
         }
-
-        if (numberedFiles.isEmpty()) {
-            return null;
-        }
-
-        return numberedFiles.getFirst();
     }
 
-    private SSLContext createSSLContextFromCombinedPEM(Path pemFile, SSLContextConfig config) throws Exception {
-        // Ensure BC provider exists (optional but recommended if you call setProvider("BC"))
-        if (Security.getProvider("BC") == null) {
-            throw new SecurityException("No BC provider found");
-        }
+    private SSLContext createSSLContextFromPEM(Reader reader, String source, SSLContextConfig config) throws Exception {
+        ensureBouncyCastleProvider();
 
-        ParsedPem parsed = readPemBundle(pemFile);
+        ParsedPem parsed = parsePemContent(reader);
 
         if (parsed.privateKey == null) {
-            throw new Exception("No private key found in " + pemFile);
+            throw new SSLException("No private key found in " + source);
         }
         if (parsed.certificateChain.isEmpty()) {
-            throw new Exception("No certificate found in " + pemFile);
+            throw new SSLException("No certificate found in " + source);
         }
 
         char[] password = config.getKeystorePassword() != null
@@ -195,10 +245,13 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(kmf.getKeyManagers(), trustManagers, new SecureRandom());
-
-        updateFileModificationTimes(pemFile);
-        LOG.log(Level.INFO, "SSLContext created successfully from combined PEM file");
         return sslContext;
+    }
+
+    private void ensureBouncyCastleProvider() {
+        if (Security.getProvider("BC") == null) {
+            throw new SecurityException("BouncyCastle provider not found. Ensure BC is registered before using this factory.");
+        }
     }
 
     private static final class ParsedPem {
@@ -211,29 +264,25 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
         }
     }
 
-    private ParsedPem readPemBundle(Path pemFile) throws Exception {
+    private ParsedPem parsePemContent(Reader reader) throws Exception {
         PrivateKey privateKey = null;
         List<X509Certificate> certs = new ArrayList<>();
 
         JcaPEMKeyConverter keyConverter = new JcaPEMKeyConverter().setProvider("BC");
         JcaX509CertificateConverter certConverter = new JcaX509CertificateConverter().setProvider("BC");
 
-        try (BufferedReader reader = Files.newBufferedReader(pemFile);
-             PEMParser parser = new PEMParser(reader)) {
-
+        try (PEMParser parser = new PEMParser(reader)) {
             Object obj;
             while ((obj = parser.readObject()) != null) {
-                if (obj instanceof PrivateKeyInfo pki) {
-                    privateKey = keyConverter.getPrivateKey(pki);
-                } else if (obj instanceof PEMKeyPair kp) {
-                    privateKey = keyConverter.getPrivateKey(kp.getPrivateKeyInfo());
-                } else if (obj instanceof X509CertificateHolder holder) {
-                    certs.add(certConverter.getCertificate(holder));
+                switch (obj) {
+                    case PrivateKeyInfo pki -> privateKey = keyConverter.getPrivateKey(pki);
+                    case PEMKeyPair kp -> privateKey = keyConverter.getPrivateKey(kp.getPrivateKeyInfo());
+                    case X509CertificateHolder holder -> certs.add(certConverter.getCertificate(holder));
+                    default -> {}
                 }
             }
         }
 
-        // If the file has multiple certs, they’ll be in file order. Usually leaf first, then intermediates.
         return new ParsedPem(privateKey, certs);
     }
 
@@ -262,12 +311,6 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
     }
 
     private SSLContext createSSLContextFromFiles(SSLContextConfig config) throws Exception {
-        if (config.getKeystorePath() == null || config.getKeystorePath().isEmpty()) {
-            throw new Exception("No keystore path configured and no certificates found in " + config.getKeystorePath());
-        }
-
-        LOG.log(Level.INFO, "Creating SSLContext from configured file paths: " + config.getKeystorePath());
-
         // Initialize KeyManager
         KeyManager[] keyManagers = createKeyManagers(
             config.getKeystorePath(),
@@ -320,16 +363,6 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
         return keyStore;
     }
 
-    private Path findFile(Path directory, String... possibleNames) throws IOException {
-        for (String name : possibleNames) {
-            Path file = directory.resolve(name);
-            if (Files.exists(file) && Files.isRegularFile(file)) {
-                return file;
-            }
-        }
-        return null;
-    }
-
     private void reloadCertificatesIfNeeded() {
         try {
             if (certificatesHaveChanged()) {
@@ -342,20 +375,16 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
     }
 
     private boolean certificatesHaveChanged() {
+        Path certsDir = getCertsDir();
+        if (certsDir == null || !Files.exists(certsDir)) {
+            return false;
+        }
+
         try {
-            Path certsDir = getCertsDir();
-            if (!Files.exists(certsDir)) {
-                return false;
-            }
-
-            // Check for HAProxy numbered combined cert files first
             Path combinedPemFile = findFirstNumberedCertFile(certsDir);
-            if (combinedPemFile != null) {
-                return hasFileChanged(combinedPemFile);
-            }
-
-            throw new Exception();
-        } catch (Exception e) {
+            return combinedPemFile != null && hasFileChanged(combinedPemFile);
+        } catch (IOException e) {
+            LOG.log(Level.FINE, "Error checking certificate file changes", e);
             return false;
         }
     }
@@ -403,10 +432,28 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
     public void clearSSLContexts() {
         LOG.log(Level.INFO, "Clearing SSL context cache");
         cachedSSLContext = null;
+        fileModificationTimes.clear();
     }
 
     @Override
     public int getPriority() {
         return HIGH_PRIORITY;
+    }
+
+    /**
+     * Shuts down the certificate reload scheduler and clears all cached state.
+     * Should be called when the MQTT broker is stopping.
+     */
+    public void shutdown() {
+        LOG.log(Level.INFO, "Shutting down OpenRemoteSSLContextFactory");
+        reloadFuture.cancel(true);
+        clearSSLContexts();
+    }
+
+    /**
+     * Clears the Container reference. Should be called when the MQTT broker is stopping.
+     */
+    public static void clearContainer() {
+        container = null;
     }
 }

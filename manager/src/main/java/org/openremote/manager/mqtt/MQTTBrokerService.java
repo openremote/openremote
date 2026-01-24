@@ -76,12 +76,15 @@ import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
+import java.security.Security;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -151,6 +154,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void init(Container container) throws Exception {
+        // Register BouncyCastle provider for PEM certificate parsing in OpenRemoteSSLContextFactory
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+            LOG.log(INFO, "Registered BouncyCastle security provider");
+        }
+
         host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0");
         port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883);
         int debounceMillis = getInteger(container.getConfig(), MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS, MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT);
