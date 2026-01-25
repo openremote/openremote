@@ -9,7 +9,6 @@ volumes:
   proxy-data:
   manager-data:
   postgresql-data:
-  cert-data:
 
 services:
 
@@ -28,7 +27,6 @@ services:
                                              # intended to be IP of the interface of the private subnet of the EC2 VM
     volumes:
       - proxy-data:/deployment
-      - cert-data:/etc/haproxy/certs
     environment:
       LE_EMAIL: ${OR_EMAIL_ADMIN:-}
       DOMAINNAME: ${OR_HOSTNAME:-localhost}
@@ -82,6 +80,7 @@ services:
       OR_EMAIL_X_HEADERS:
       OR_EMAIL_FROM:
       OR_EMAIL_ADMIN:
+      OR_MQTT_MTLS_DISABLED: true
       OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES:
@@ -95,4 +94,4 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - manager-data:/storage
-      - cert-data:/storage/certs
+      - proxy-data:/storage/proxy:ro

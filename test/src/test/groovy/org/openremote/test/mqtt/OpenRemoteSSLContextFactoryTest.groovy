@@ -56,7 +56,7 @@ class OpenRemoteSSLContextFactoryTest extends Specification implements ManagerCo
         def persistenceService = container.getService(ManagerPersistenceService.class)
 
         and: "a combined PEM file in the certs directory"
-        def certsDir = persistenceService.getStorageDir().resolve("certs")
+        def certsDir = persistenceService.getStorageDir().resolve("proxy").resolve("certs")
         Files.createDirectories(certsDir)
         def pemFile = certsDir.resolve("00-test-cert")
         pemFile.text = getTestPemContent()
@@ -83,7 +83,7 @@ class OpenRemoteSSLContextFactoryTest extends Specification implements ManagerCo
         def persistenceService = container.getService(ManagerPersistenceService.class)
 
         and: "multiple numbered PEM files in the certs directory"
-        def certsDir = persistenceService.getStorageDir().resolve("certs")
+        def certsDir = persistenceService.getStorageDir().resolve("proxy").resolve("certs")
         Files.createDirectories(certsDir)
         def pemFile01 = certsDir.resolve("01-backup")
         def pemFile00 = certsDir.resolve("00-primary")
@@ -125,7 +125,7 @@ class OpenRemoteSSLContextFactoryTest extends Specification implements ManagerCo
         def persistenceService = container.getService(ManagerPersistenceService.class)
 
         and: "a malformed PEM file in the certs directory"
-        def certsDir = persistenceService.getStorageDir().resolve("certs")
+        def certsDir = persistenceService.getStorageDir().resolve("proxy").resolve("certs")
         Files.createDirectories(certsDir)
         // Remove any valid numbered files first
         if (Files.exists(certsDir)) {
@@ -159,7 +159,7 @@ class OpenRemoteSSLContextFactoryTest extends Specification implements ManagerCo
         def persistenceService = container.getService(ManagerPersistenceService.class)
 
         and: "a valid PEM file in the certs directory"
-        def certsDir = persistenceService.getStorageDir().resolve("certs")
+        def certsDir = persistenceService.getStorageDir().resolve("proxy").resolve("certs")
         Files.createDirectories(certsDir)
         def pemFile = certsDir.resolve("00-test-cert")
         pemFile.text = getTestPemContent()
@@ -184,7 +184,7 @@ class OpenRemoteSSLContextFactoryTest extends Specification implements ManagerCo
         def persistenceService = container.getService(ManagerPersistenceService.class)
 
         and: "a valid PEM file in the certs directory"
-        def certsDir = persistenceService.getStorageDir().resolve("certs")
+        def certsDir = persistenceService.getStorageDir().resolve("proxy").resolve("certs")
         Files.createDirectories(certsDir)
         def pemFile = certsDir.resolve("00-test-cert")
         pemFile.text = getTestPemContent()
@@ -215,7 +215,7 @@ class OpenRemoteSSLContextFactoryTest extends Specification implements ManagerCo
         def persistenceService = container.getService(ManagerPersistenceService.class)
 
         and: "a valid PEM file in the certs directory"
-        def certsDir = persistenceService.getStorageDir().resolve("certs")
+        def certsDir = persistenceService.getStorageDir().resolve("proxy").resolve("certs")
         Files.createDirectories(certsDir)
         def pemFile = certsDir.resolve("00-test-cert")
         pemFile.text = getTestPemContent()

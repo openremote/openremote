@@ -100,7 +100,7 @@ public class OpenRemoteSSLContextFactory implements SSLContextFactory {
         if (persistenceService == null || persistenceService.getStorageDir() == null) {
             return null;
         }
-        return persistenceService.getStorageDir().resolve("certs");
+        return persistenceService.getStorageDir().resolve("proxy").resolve("certs");
     }
 
     @Override

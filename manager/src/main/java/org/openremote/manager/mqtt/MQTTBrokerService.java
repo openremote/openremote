@@ -212,7 +212,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Add mTLS acceptor if enabled
         if (!mtlsDisabled) {
             // Check if we have explicit keystore configuration OR certificates available in /storage/certs
-            Path certsDirPath = Paths.get("/storage/certs");
+            Path certsDirPath = Paths.get("/storage/proxy/certs");
             boolean hasExplicitKeystores = !TextUtil.isNullOrEmpty(this.keystorePath)
                 && !TextUtil.isNullOrEmpty(this.truststorePath)
                 && !TextUtil.isNullOrEmpty(this.keystorePassword)
