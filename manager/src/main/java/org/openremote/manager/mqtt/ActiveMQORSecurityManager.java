@@ -117,7 +117,9 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 realm = realmAndUsername[0];
                 user = realmAndUsername[1];
             }
-        } if (certs != null && certs.length > 0) {
+        }
+
+        if (certs != null && certs.length > 0) {
             List<X509Certificate> clientAuthCerts = Arrays.stream(certs).filter(e -> {
                 try {
                     List<String> EKUs = e.getExtendedKeyUsage();
@@ -158,14 +160,14 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             }
 
 
-            if(realm == null){
+            if (realm == null) {
                 LOG.log(Level.INFO, "Client certificate was provided, but no realm found in certificate subject," +
                         "or in the Username field. " +
                         "Falling back to the username as a realm name. Subject DN=" + dn);
                 throw new LoginException("No realm found matching the OU of the client certificate, or the Username field.");
             }
 
-            if(!TextUtil.isNullOrEmpty(user)) {
+            if (!TextUtil.isNullOrEmpty(user)) {
                 User dbUser = null;
                 User[] users = identityProvider.queryUsers(new UserQuery().usernames(new StringPredicate(SERVICE_ACCOUNT_PREFIX + user).match(AssetQuery.Match.EXACT)));
                 if (users != null && users.length == 1) {

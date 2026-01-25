@@ -339,7 +339,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String uniqueId;
         boolean isMTLS = provisioningMessage instanceof MTLSProvisioningMessage;
 
-        if (!isMTLS) {
+        if (provisioningMessage instanceof X509ProvisioningMessage) {
             try {
                 clientCertificate = ProvisioningUtil.getX509Certificate(((X509ProvisioningMessage) provisioningMessage).getCert());
             } catch (CertificateException e) {
@@ -350,7 +350,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
             uniqueId = topicClientID(topic);
-        } else {
+        } else if (provisioningMessage instanceof MTLSProvisioningMessage) {
             clientCertificate = connection.getSubject().getPrivateCredentials(X509CertificateCredential.class).stream()
                 .findFirst()
                 .map(X509CertificateCredential::getCertificate)
@@ -364,11 +364,15 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
             uniqueId = topicClientID(topic);
 
-            if(!uniqueId.equals(certUniqueId)) {
+            if (!Objects.equals(uniqueId, certUniqueId)) {
                 LOG.info("Client ID does not match certificate CN: " + MQTTBrokerService.connectionToString(connection));
                 publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
                 return;
             }
+        } else {
+            LOG.warning("Unsupported provisioning message type: " + provisioningMessage.getClass().getName() + ", " + MQTTBrokerService.connectionToString(connection));
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
+            return;
         }
 
         X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);

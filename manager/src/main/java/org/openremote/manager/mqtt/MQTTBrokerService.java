@@ -360,7 +360,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         sessionFactory = serverLocator.createSessionFactory();
 
 
-
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
             try {
@@ -699,7 +698,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
      */
     protected void addMTLSAcceptor(Container container) throws Exception {
 
-
         try {
             URIBuilder mtlsServerURI = new URIBuilder()
                 .setScheme("tcp")
@@ -717,7 +715,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 .setParameter("trustStorePassword", this.truststorePassword);
 
             if (getBoolean(container.getConfig(), OR_DEV_MODE, false)) {
+                // NOTE: Enabling 'trustAll' disables certificate validation and is intended
+                // for local development and testing only. It MUST NOT be used in production.
                 mtlsServerURI.setParameter("trustAll", "true");
+                LOG.log(WARNING, "mTLS acceptor configured with 'trustAll=true' in development mode; "
+                    + "this disables certificate validation and MUST NOT be used in production.");
             }
 
             String mtlsServer = mtlsServerURI.build().toString();
