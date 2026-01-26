@@ -61,120 +61,142 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
     @Override
     public GatewayTunnelSession createSession(String hostname, int port, GatewayTunnelInfo gatewayTunnelInfo, Consumer<Throwable> closedCallback) {
-       CompletableFuture<Void> connectionResultFuture = new CompletableFuture<>();
-       AtomicReference<ClientSession> sessionRef = new AtomicReference<>();
-       AtomicReference<Throwable> failureCause = new AtomicReference<>();
-       AtomicReference<GatewayTunnelSession> tunnelSession = new AtomicReference<>();
-       // Flags if the user explicitly called disconnect()
-       AtomicBoolean isManualDisconnect = new AtomicBoolean(false);
+        AtomicReference<CompletableFuture<Void>> activeAttemptRef = new AtomicReference<>();;
+        AtomicReference<ClientSession> sessionRef = new AtomicReference<>();
+        AtomicReference<Throwable> failureCause = new AtomicReference<>();
+        AtomicReference<GatewayTunnelSession> tunnelSession = new AtomicReference<>();
+        // Flags if the user explicitly called disconnect()
+        AtomicBoolean isManualDisconnect = new AtomicBoolean(false);
 
-       LOG.fine("Creating session: hostname=" + hostname + ", port=" + port + ", tunnelInfo=" + gatewayTunnelInfo);
+        LOG.fine("Creating session: hostname=" + hostname + ", port=" + port + ", tunnelInfo=" + gatewayTunnelInfo);
 
-       // This allows the caller to disconnect this specific session later
-       Supplier<CompletableFuture<Void>> disconnectSupplier = () -> {
-          CompletableFuture<Void> closeResult = new CompletableFuture<>();
-          ClientSession currentSession = sessionRef.get();
-          // We are intentionally closing this session
-          isManualDisconnect.set(true);
+        // This allows the caller to disconnect this specific session later
+        Supplier<CompletableFuture<Void>> disconnectSupplier = () -> {
+            CompletableFuture<Void> closeResult = new CompletableFuture<>();
+            ClientSession currentSession = sessionRef.get();
 
-          if (currentSession != null) {
-             currentSession.close(false).addListener(future -> {
-                if (future.isClosed()) {
-                   closeResult.complete(null);
-                } else {
-                   String msg = "Failed to close session cleanly: " + currentSession;
-                   LOG.warning(msg);
-                   closeResult.completeExceptionally(new IOException(msg));
-                }
-             });
-          } else {
-             // If session was never established, cancel the connection attempt
-             connectionResultFuture.cancel(true);
-             closeResult.complete(null);
-          }
-          return closeResult;
-       };
+            // We are intentionally closing this session
+            isManualDisconnect.set(true);
 
-       // This allows the caller to reconnect this specific session later
-
-
-       // Initiate the Async Connection
-       try {
-          ConnectFuture connectFuture = client.connect("root", hostname, port);
-
-          connectFuture.addListener(connFuture -> {
-             if (connFuture.isConnected()) {
-                ClientSession session = connFuture.getSession();
-                sessionRef.set(session); // Store in atomic ref for the disconnect supplier to see
-
-                // Add session listeners (reconnection logic, etc.)
-                session.addSessionListener(new SessionListener() {
-                   @Override
-                   public void sessionException(Session s, Throwable t) {
-                      // Capture the error (only the first one matters usually)
-                      failureCause.compareAndSet(null, t);
-
-                      // Optional: Log it here, but wait for sessionClosed to trigger logic
-                      LOG.warning("Session exception caught: " + t.getMessage());
-                   }
-
-                   @Override
-                   public void sessionClosed(Session s) {
-                      // This method is ALWAYS called when session dies (error or manual)
-
-                      if (isManualDisconnect.get()) {
-                         // Case A: We asked for it -> Clean exit
-                         LOG.fine("Session closed by user: " + gatewayTunnelInfo);
-                         tunnelSession.get().onClose(null);
-                      } else {
-                         Throwable failure = failureCause.get() != null ? failureCause.get() : new IOException("Session closed unexpectedly");
-                         LOG.info("Session closed unexpectedly '" + failure.getMessage() + "' : " + gatewayTunnelInfo);
-                         tunnelSession.get().onClose(failure);
-                      }
-                   }
+            if (currentSession != null) {
+                currentSession.close(false).addListener(future -> {
+                    if (future.isClosed()) {
+                        closeResult.complete(null);
+                    } else {
+                        String msg = "Failed to close session cleanly: " + currentSession;
+                        LOG.warning(msg);
+                        closeResult.completeExceptionally(new IOException(msg));
+                    }
                 });
-
-                // Start Authentication
-                try {
-                   session.auth().addListener(authFuture -> {
-                      if (authFuture.isSuccess()) {
-                         LOG.fine("Session connected and authenticated: " + gatewayTunnelInfo);
-                         connectionResultFuture.complete(null);
-                      } else {
-                         Throwable failure = authFuture.getException();
-                         String msg = failure != null ? failure.getMessage() : "Unknown error";
-                         msg = "Authentication failed '" + msg + "': " + gatewayTunnelInfo;
-                         session.close(true);
-                         LOG.warning(msg);
-                         connectionResultFuture.completeExceptionally(new IOException(msg, failure));
-                      }
-                   });
-                } catch (IOException e) {
-                   session.close(true);
-                   connectionResultFuture.completeExceptionally(e);
+            } else {
+                // If session was never established, cancel the connection attempt
+                CompletableFuture<Void> activeAttempt = activeAttemptRef.get();
+                if (activeAttempt != null && !activeAttempt.isDone()) {
+                    activeAttempt.cancel(true);
                 }
-             } else {
-                // Connection failed (Network level)
-                Throwable t = connFuture.getException();
-                String msg = t != null ? t.getMessage() : "Unknown error";
-                msg = "Connection failed '" + msg + "': " + gatewayTunnelInfo;
-                LOG.warning(msg);
-                connectionResultFuture.completeExceptionally(new IOException(msg, t));
-             }
-          });
-       } catch (Exception e) {
-          LOG.warning("Connection failed '" + e.getMessage() + "': " + gatewayTunnelInfo);
-          connectionResultFuture.completeExceptionally(e);
-       }
+                closeResult.complete(null);
+            }
+            return closeResult;
+        };
 
-       tunnelSession.set(new GatewayTunnelSession(
-          connectionResultFuture,
-          gatewayTunnelInfo,
-          disconnectSupplier,
-          reconnectSupplier,
-          closedCallback
-       ));
+        // Reconnection
+        Consumer<CompletableFuture<Void>> startConnectionAttempt = (futureToComplete) -> {
+            // Reset flags for the new attempt
+            isManualDisconnect.set(false);
+            failureCause.set(null);
 
-       return tunnelSession.get();
+            try {
+                ConnectFuture connectFuture = client.connect("root", hostname, port);
+
+                connectFuture.addListener(connFuture -> {
+                    if (connFuture.isConnected()) {
+                        ClientSession session = connFuture.getSession();
+                        sessionRef.set(session); // Store in atomic ref for the disconnect supplier to see
+
+                        session.addSessionListener(new SessionListener() {
+                            @Override
+                            public void sessionException(Session s, Throwable t) {
+                                failureCause.compareAndSet(null, t);
+                                LOG.warning("Session exception caught: " + t.getMessage());
+                            }
+
+                            @Override
+                            public void sessionClosed(Session s) {
+                                if (isManualDisconnect.get()) {
+                                    LOG.fine("Session closed by user: " + gatewayTunnelInfo);
+                                    tunnelSession.get().onClose(null);
+                                } else {
+                                    Throwable failure = failureCause.get() != null ? failureCause.get() : new IOException("Session closed unexpectedly");
+                                    LOG.info("Session closed unexpectedly '" + failure.getMessage() + "' : " + gatewayTunnelInfo);
+                                    tunnelSession.get().onClose(failure);
+                                }
+                            }
+                        });
+
+                        // Start Authentication
+                        try {
+                            session.auth().addListener(authFuture -> {
+                                if (authFuture.isSuccess()) {
+                                    LOG.fine("Session connected and authenticated: " + gatewayTunnelInfo);
+                                    futureToComplete.complete(null);
+                                } else {
+                                    Throwable failure = authFuture.getException();
+                                    String msg = "Authentication failed '" + (failure != null ? failure.getMessage() : "Unknown error") + "': " + gatewayTunnelInfo;
+                                    session.close(true);
+                                    LOG.warning(msg);
+                                    futureToComplete.completeExceptionally(new IOException(msg, failure));
+                                }
+                            });
+                        } catch (IOException e) {
+                            session.close(true);
+                            futureToComplete.completeExceptionally(e);
+                        }
+                    } else {
+                        // Connection failed (Network level)
+                        Throwable t = connFuture.getException();
+                        String msg = "Connection failed '" + (t != null ? t.getMessage() : "Unknown error") + "': " + gatewayTunnelInfo;
+                        LOG.warning(msg);
+                        futureToComplete.completeExceptionally(new IOException(msg, t));
+                    }
+                });
+            } catch (Exception e) {
+                LOG.warning("Connection failed '" + e.getMessage() + "': " + gatewayTunnelInfo);
+                futureToComplete.completeExceptionally(e);
+            }
+        };
+
+        // Define reconnect
+        Supplier<CompletableFuture<Void>> reconnectSupplier = () -> {
+            CompletableFuture<Void> active = activeAttemptRef.get();
+            if (active != null && !active.isDone()) {
+                LOG.fine("Reconnect requested but connection attempt already in progress. Returning existing future: " + gatewayTunnelInfo);
+                return active;
+            }
+
+            LOG.info("Initiating reconnect for: " + gatewayTunnelInfo);
+
+            // First, ensure any existing session is closed cleanly
+            return disconnectSupplier.get().thenCompose(ignored -> {
+                // Then start a fresh connection attempt
+                CompletableFuture<Void> newAttempt = new CompletableFuture<>();
+                activeAttemptRef.set(newAttempt);
+                startConnectionAttempt.accept(newAttempt);
+                return newAttempt;
+            });
+        };
+
+        CompletableFuture<Void> initialFuture = new CompletableFuture<>();
+        activeAttemptRef.set(initialFuture);
+        startConnectionAttempt.accept(initialFuture);
+
+        tunnelSession.set(new GatewayTunnelSession(
+                initialFuture,
+                gatewayTunnelInfo,
+                disconnectSupplier,
+                reconnectSupplier,
+                closedCallback
+        ));
+
+        return tunnelSession.get();
     }
 }
