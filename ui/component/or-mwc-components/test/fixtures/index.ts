@@ -5,10 +5,10 @@ export class MwcInput {
     constructor(private readonly page: Page) {}
 
     /**
-     * Get the input element of the or-mwc-input element
+     * Get the underlying native input element of the or-mwc-input element
      * @param type The {@link InputType} to look for
      * @param locator The locator to start from
-     * @returns The locator to the or-mwc-input
+     * @returns The locator to the underlying <input> element inside the or-mwc-input
      */
     getInputByType(type: `${InputType}`, locator?: Locator) {
         return (locator ?? this.page).locator(`or-mwc-input[type=${type}] #component > input`);

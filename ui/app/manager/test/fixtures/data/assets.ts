@@ -169,11 +169,12 @@ const rotterdam: BBox = {
  * Assigns location at the specified coordinates
  *
  * @param asset The asset to assign the location attribute
- * @param coordinates The bounding box to add assets within
+ * @param coordinates The `[lng, lat]` coordinate pair to use for the asset location
  * @default `[4.483890476199264, 51.91547581791727]` (Jufferkade)
  */
 export function assignLocation(asset: Asset, coordinates = [4.483890476199264, 51.91547581791727]): Asset {
-    Object.assign(asset?.attributes ?? {}, {
+    asset.attributes ??= {};
+    Object.assign(asset.attributes, {
         location: {
             name: "location",
             type: "GEO_JSONPoint",

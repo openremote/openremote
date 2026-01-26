@@ -159,7 +159,7 @@ test.describe("Marker config", () => {
       type: "ThingAsset",
       realm: "smartcity",
       attributes: { ...commonAttrs, onOff: { name: "onOff", type: "boolean" } }
-    }, { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 })]
+    }, { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 })];
     await manager.setup("smartcity", { assets });
     await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false }, markers: { ThingAsset: markers[0] } } } });
     await manager.goToRealmStartPage("smartcity");
@@ -270,7 +270,7 @@ test.describe("Marker clustering", () => {
     const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
     const assets = getAssetsForAllTypes(assetInfos, { bbox });
     const outlierbbox = { west: 4.483812, south: 51.916359, east: 4.484017, north: 51.916495 };
-    assets.push({ ...assignRandomLocationInArea(getAssetAt(assetInfos), outlierbbox), name: "outlier", realm: "smartcity" })
+    assets.push({ ...assignRandomLocationInArea(getAssetAt(assetInfos), outlierbbox), name: "outlier", realm: "smartcity" });
 
     await manager.setup("smartcity", { assets });
     await manager.goToRealmStartPage("smartcity");
