@@ -44,5 +44,5 @@ public interface GatewayTunnelFactory {
     * Create and start a tunnel session for the requested {@link GatewayTunnelInfo}; the closedCallback will be invoked
     * when the session is closed, if exceptionally the throwable will be passed to the callback.
     */
-   GatewayTunnelSession createSession(GatewayTunnelStartRequestEvent startRequestEvent, Consumer<Throwable> closedCallback);
+   GatewayTunnelSession createSession(String hostname, int port, GatewayTunnelInfo gatewayTunnelInfo, Consumer<Throwable> closedCallback);
 }

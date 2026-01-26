@@ -25,6 +25,7 @@ package org.openremote.manager.gateway;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -34,11 +35,19 @@ public class GatewayTunnelSession {
    protected CompletableFuture<Void> connectFuture;
    protected GatewayTunnelInfo tunnelInfo;
    protected Supplier<CompletableFuture<Void>> disconnectFutureSupplier;
+   protected Supplier<CompletableFuture<Void>> reconnectFutureSupplier;
+   protected Consumer<Throwable> closedCallback;
 
-   public GatewayTunnelSession(CompletableFuture<Void> connectFuture, GatewayTunnelInfo tunnelInfo, Supplier<CompletableFuture<Void>> disconnectFutureSupplier) {
+   public GatewayTunnelSession(CompletableFuture<Void> connectFuture,
+                               GatewayTunnelInfo tunnelInfo,
+                               Supplier<CompletableFuture<Void>> disconnectFutureSupplier,
+                               Supplier<CompletableFuture<Void>> reconnectFutureSupplier,
+                               Consumer<Throwable> closedCallback) {
       this.connectFuture = connectFuture;
       this.tunnelInfo = tunnelInfo;
       this.disconnectFutureSupplier = disconnectFutureSupplier;
+      this.reconnectFutureSupplier = reconnectFutureSupplier;
+      this.closedCallback = closedCallback;
    }
 
    CompletableFuture<Void> getConnectFuture() {
@@ -51,6 +60,15 @@ public class GatewayTunnelSession {
 
    public GatewayTunnelInfo getTunnelInfo() {
       return tunnelInfo;
+   }
+
+   void onClose(Throwable e) {
+       if (e != null) {
+
+       }
+       if (closedCallback != null) {
+           closedCallback.accept(e);
+       }
    }
 
    @Override

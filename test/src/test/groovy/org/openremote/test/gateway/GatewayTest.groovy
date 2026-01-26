@@ -1088,7 +1088,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
         def gatewayClientService = container.getService(GatewayClientService)
-        def tunnelFactory = gatewayClientService.gatewayTunnelFactory
+        def tunnelFactory = gatewayClientService.tunnelFactory
         def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
         def tunnelInfo = new GatewayTunnelInfo(
                 "",

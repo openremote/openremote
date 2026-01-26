@@ -484,6 +484,12 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return this.tunnelInfos.values();
     }
 
+    public GatewayTunnelInfo[] getGatewayTunnelInfos(String gatewayID) {
+        return getTunnelInfos().stream()
+            .filter(tunnel -> tunnel.getGatewayId().equals(gatewayID))
+            .toArray(GatewayTunnelInfo[]::new);
+    }
+
     protected boolean tunnellingSupported() {
         return !TextUtil.isNullOrEmpty(tunnelSSHHostname) && tunnelSSHPort > 0;
     }

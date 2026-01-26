@@ -43,7 +43,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
     }
 
     @Override
-    public GatewayTunnelInfo[] getGatewayActiveTunnelInfos(RequestParams requestParams, String realm, String gatewayId) {
+    public GatewayTunnelInfo[] getGatewayActiveTunnelInfos(RequestParams requestParams, String realm, String gatewayID) {
         if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
@@ -52,17 +52,15 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        if (TextUtil.isNullOrEmpty(gatewayId)) {
+        if (TextUtil.isNullOrEmpty(gatewayID)) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
 
-        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), gatewayId)) {
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), gatewayID)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        return this.gatewayService.getTunnelInfos().stream()
-                .filter(tunnel -> tunnel.getRealm().equals(realm) && tunnel.getGatewayId().equals(gatewayId))
-                .toArray(GatewayTunnelInfo[]::new);
+        return gatewayService.getGatewayTunnelInfos(gatewayID);
     }
 
     @Override

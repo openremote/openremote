@@ -22,6 +22,7 @@ package org.openremote.manager.gateway;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.system.VersionInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
@@ -241,7 +242,11 @@ public class GatewayConnector {
         }
 
         LOG.finest("Requesting gateway capabilities: " + getGatewayIdString());
-        sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
+        sendMessageToGateway(new GatewayCapabilitiesRequestEvent(
+                timerService.getCurrentTimeMillis(),
+                VersionInfo.getGatewayApiVersion(),
+                gatewayService.getTunnelSSHHostname(),
+                gatewayService.getTunnelSSHPort() > 0 ? gatewayService.getTunnelSSHPort() : null));
 
         future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
@@ -289,9 +294,7 @@ public class GatewayConnector {
             });
         }
 
-        sendMessageToGateway(
-                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), tunnelInfo)
-        );
+        sendMessageToGateway(new GatewayTunnelStartRequestEvent(tunnelInfo));
 
         return future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
