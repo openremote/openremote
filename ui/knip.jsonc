@@ -1,0 +1,34 @@
+{
+    "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
+    "ignore": [
+        "**/*.stories.ts"
+    ],
+    "ignoreWorkspaces": [
+        "ui/util", // Many dev dependencies like eslint are considered unused
+        "ui/test" // Only ignoring because the index.js file in the Playwright app doesn't want to parse]
+
+    ],
+    "ignoreDependencies": [
+        "@types/react", // Required by mdx which is used in Storybook
+        "@types/mapbox", // Global types under the L namespace (no direct import)
+        "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
+        "@types/offscreencanvas", // Referenced in the tsconfig file
+        "@vaadin/vaadin-lumo-styles", // Only imports CSS files
+        "@rsdoctor/rspack-plugin" // References in webpack config, and imported using require()
+    ],
+    "ignoreUnresolved": [
+        "css-loader|ts-loader", // rspack.config.js files depend on the webpack config which uses css and ts-loaders, however these can't be resolved by Knip somehow.
+        "./restclient", // Generated file
+        "./model" // Generated file
+    ],
+    "rules": {
+        "binaries": "off",
+        "duplicates": "off",
+        "files": "off"
+    },
+    "workspaces": {
+        ".": {
+            "project": ["ui"]
+        }
+    }
+}

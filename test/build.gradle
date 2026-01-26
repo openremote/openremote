@@ -1,8 +1,6 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
 plugins {
-    id 'com.adarshr.test-logger' version '3.1.0'
+    id "jacoco"
+    id 'com.adarshr.test-logger' version '4.0.0'
 }
 
 apply plugin: "java-library"
@@ -32,13 +30,22 @@ dependencies {
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+    testImplementation "dev.failsafe:failsafe:$failsafeVersion"
 
     testImplementation "net.solarnetwork.common:nifty-modbus-tcp:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-rtu-jsc:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
     testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
 
+    testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
+    testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
+    testImplementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
+    testImplementation "io.grpc:grpc-stub:$grpcVersion"
+
+    testImplementation files("../agent/libs/chirpstack-api-4.14.1.jar")
+    testImplementation files("../agent/libs/tts-api-3.34.3.jar")
 }
 
 tasks.withType(Test) {
@@ -46,50 +53,33 @@ tasks.withType(Test) {
 }
 
 test {
-    outputs.upToDateWhen { false }
-    workingDir = findProject(":openremote") != null ? project("").projectDir : rootProject.projectDir
-    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
 
-    testLogging {
+jacocoTestReport {
+    dependsOn test
 
-        // set options for log level LIFECYCLE
-        events = [
-                TestLogEvent.FAILED,
-                TestLogEvent.PASSED,
-                TestLogEvent.SKIPPED
-        ]
-        exceptionFormat = TestExceptionFormat.FULL
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
+    sourceDirectories.from(
+            project(':agent').sourceSets.main.allSource.srcDirs,
+            project(':container').sourceSets.main.allSource.srcDirs,
+            project(':manager').sourceSets.main.allSource.srcDirs,
+            project(':model').sourceSets.main.allSource.srcDirs,
+            project(':model-util').sourceSets.main.allSource.srcDirs,
+            project(':setup').sourceSets.main.allSource.srcDirs
+    )
 
-        // set options for log level DEBUG and INFO
-        debug {
-            events = [
-                    TestLogEvent.STARTED,
-                    TestLogEvent.FAILED,
-                    TestLogEvent.PASSED,
-                    TestLogEvent.SKIPPED,
-                    TestLogEvent.STANDARD_OUT,
-                    TestLogEvent.STANDARD_ERROR
-            ]
-            exceptionFormat = TestExceptionFormat.FULL
-        }
-        info.events = debug.events
-        info.exceptionFormat = debug.exceptionFormat
+    classDirectories.from(
+            project(':agent').sourceSets.main.output,
+            project(':container').sourceSets.main.output,
+            project(':manager').sourceSets.main.output,
+            project(':model').sourceSets.main.output,
+            project(':model-util').sourceSets.main.output,
+            project(':setup').sourceSets.main.output
+    )
 
-        afterTest { desc, result ->
-            logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-        }
-
-        afterSuite { desc, result ->
-            if (!desc.parent) { // will match the outermost suite
-                def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-                def startItem = '|  ', endItem = '  |'
-                def repeatLength = startItem.length() + output.length() + endItem.length()
-                println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
-            }
-        }
+    reports {
+        xml.required = true
+        html.required = true
     }
 }
 

@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
@@ -422,8 +422,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
         clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
         if (gatewayTunnelFactory != null) {
-            LOG.finer("Terminating all gateway tunnel sessions");
-            gatewayTunnelFactory.stopAll();
+            LOG.info("Terminating all gateway tunnel sessions for realm: " + connection.getLocalRealm());
+            gatewayTunnelFactory.stopAllInRealm(connection.getLocalRealm());
         }
     }
 

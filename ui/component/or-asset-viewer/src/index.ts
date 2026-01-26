@@ -45,6 +45,7 @@ import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {progressCircular} from "@openremote/or-mwc-components/style";
+import { when } from "lit/directives/when.js";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
@@ -517,10 +518,12 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             }
         }
 
-        let content: TemplateResult = html``;
+        if (!descriptor.assetImport && !descriptor.assetDiscovery) {
+            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", "dismiss");
+        }
 
-        if (descriptor.assetImport) {
-            content = html`
+        return html`
+            ${when(descriptor.assetImport, () => html`
                 <div id="fileupload">
                     <or-mwc-input style="flex: 0 1 auto;" outlined label="selectFile" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
                         <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
@@ -529,24 +532,13 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     <or-mwc-input style="flex: 0 1 auto;" id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
                     <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
                 </div>
-            `;
-        }
-        else if (descriptor.assetDiscovery) {
-            content = html`
-                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
-                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
-            `;
-        } else {
-            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", "dismiss");
-        }
-
-        return html`
-            <style>
-                [hidden] {
-                    display: none;
-                }
-            </style>
-            ${content}
+            `)}
+            ${when(descriptor.assetDiscovery, () => html`
+                <div id="discovery">
+                    <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
+                    <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                </div>
+            `)}
         `;
 
     }
@@ -772,7 +764,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         opacity: 1;
                     }
                 </style>
-                <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @or-mwc-input-changed="${() => attributePickerModalOpen()}"></or-mwc-input>
                 <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{stickyFirstColumn: true}}"></or-mwc-table>
             `;
     }
@@ -948,6 +940,7 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
+            types: [childAssetType],
             parents: [
                 {
                     id: parentId
@@ -963,7 +956,7 @@ async function getAssetChildren(parentId: string, childAssetType: string): Promi
         return [];
     }
 
-    return response.data.filter((asset) => asset.type === childAssetType);
+    return response.data;
 }
 
 async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {
@@ -1207,6 +1200,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (changedProperties.has("assetId")) {
             this._assetInfo = undefined;
             this.asset = undefined;
+            this._validationResults = [];
 
             // Set asset ID on mixin which will go and load the asset
             if (this.assetId) {

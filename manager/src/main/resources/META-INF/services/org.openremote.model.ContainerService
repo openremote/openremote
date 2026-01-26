@@ -26,9 +26,6 @@ org.openremote.manager.gateway.GatewayService
 org.openremote.manager.gateway.GatewayClientService
 org.openremote.manager.mqtt.MQTTBrokerService
 org.openremote.manager.asset.AssetModelService
-org.openremote.manager.energy.EnergyOptimisationService
-org.openremote.manager.energy.ForecastWindService
-org.openremote.manager.energy.ForecastSolarService
 org.openremote.manager.provisioning.ProvisioningService
 org.openremote.manager.dashboard.DashboardStorageService
 org.openremote.manager.security.AuthorisationService
@@ -37,3 +34,4 @@ org.openremote.manager.asset.ForecastService
 org.openremote.manager.setup.KeycloakInitService
 org.openremote.manager.alarm.AlarmService
 org.openremote.manager.security.KeyStoreServiceImpl
+org.openremote.manager.services.ExternalServiceRegistryService

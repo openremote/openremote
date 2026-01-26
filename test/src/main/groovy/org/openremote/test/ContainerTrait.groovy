@@ -36,7 +36,6 @@ import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
-import org.openremote.container.util.MapAccess
 import org.openremote.container.web.WebClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -60,6 +59,7 @@ import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.security.User
+import org.openremote.model.util.MapAccess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -219,8 +219,41 @@ trait ContainerTrait {
                         }
 
                         if (!TestFixture.assets.isEmpty()) {
-                            LOG.info("Re-inserting ${TestFixture.assets.size()} asset(s)")
-                            TestFixture.assets.forEach { a ->
+                            // Redeploy agents first except for agents under an asset parent then merge those first
+                            def agents = TestFixture.assets.stream().filter { it instanceof Agent }.toList()
+                            def assets = new ArrayList<>(TestFixture.assets.stream().filter { !(it instanceof Agent) }.toList())
+                            LOG.info("Re-inserting ${agents.size()} agent(s)")
+                            agents.forEach { a ->
+                                a.version = 0
+
+                                if (a.path.size() > 1) {
+                                    for (final def assetId in a.path) {
+                                        if (assetId == a.id) {
+                                            continue
+                                        }
+                                        def ancestorIndex = assets.findIndexOf { it.id == assetId }
+                                        def ancestor = ancestorIndex >= 0 ? assets.remove(ancestorIndex) : null
+                                        if (ancestor != null) {
+                                            assetStorageService.merge(ancestor, true)
+                                        }
+                                    }
+                                }
+
+                                assetStorageService.merge(a, true)
+                            }
+
+                            counter = 0
+                            def agentsDeployed = false
+                            while (!agentsDeployed) {
+                                if (counter++ > 100) {
+                                    throw new IllegalStateException("Failed to deploy agents")
+                                }
+                                agentsDeployed = container.getService(AgentService.class).agents.size() == agents.size()
+                                Thread.sleep(100)
+                            }
+
+                            LOG.info("Re-inserting ${assets.size()} asset(s)")
+                            assets.forEach { a ->
                                 a.version = 0
                                 assetStorageService.merge(a, true)
                             }
@@ -264,7 +297,7 @@ trait ContainerTrait {
                     }
 
                     long endTime = System.currentTimeMillis()
-                    LOG.info("Container reuse took: " + (startTime - endTime) + "ms")
+                    LOG.info("Container reuse took: " + (endTime - startTime) + "ms")
                 } catch (IllegalStateException e) {
                     LOG.info("Failed to clean the existing container so creating a new one", e)
                     stopContainer()

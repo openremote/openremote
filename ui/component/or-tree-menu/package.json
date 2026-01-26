@@ -1,31 +1,31 @@
 {
   "name": "@openremote/or-tree-menu",
-  "version": "1.7.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Web Component for displaying a tree menu of items with a predefined hierarchy",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@mdi/js": "^5.9.55",
     "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "lit": "^3.2.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "lit": "^3.3.1"
   },
   "publishConfig": {
     "access": "public"

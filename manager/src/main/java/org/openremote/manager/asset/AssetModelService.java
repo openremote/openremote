@@ -51,6 +51,9 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -269,7 +272,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
 
     @Override
     public void start(Container container) throws Exception {
-
+        ValueUtil.cacheCommonValueDescriptorSchemas();
     }
 
     @Override
@@ -371,6 +374,10 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
 
         return ValueUtil.getMetaItemDescriptors();
+    }
+
+    public JsonNode getValueDescriptorSchema(String name) {
+        return ValueUtil.getValueDescriptorSchema(name);
     }
 
     protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {

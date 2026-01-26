@@ -1,14 +1,18 @@
 {
   "name": "@openremote/or-app",
-  "version": "1.7.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote app template",
+  "customElements": "custom-elements.json",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -16,30 +20,19 @@
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
+    "test": "echo \"No tests\" && exit 0",
     "prepack": "npx tsc -b"
   },
   "dependencies": {
-    "@lit/task": "^1.0.0",
     "@openremote/core": "workspace:*",
-    "@openremote/or-asset-tree": "workspace:*",
-    "@openremote/or-asset-viewer": "workspace:*",
-    "@openremote/or-attribute-input": "workspace:*",
-    "@openremote/or-attribute-picker": "workspace:*",
-    "@openremote/or-chart": "workspace:*",
-    "@openremote/or-dashboard-builder": "workspace:*",
-    "@openremote/or-gauge": "workspace:*",
-    "@openremote/or-map": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
-    "@openremote/or-rules": "workspace:*",
-    "@openremote/or-smart-notify": "workspace:*",
-    "@openremote/or-timeline": "workspace:*",
-    "@openremote/rest": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "@reduxjs/toolkit": "^1.8.1",
     "@webcomponents/webcomponentsjs": "^2.6.0",
-    "lit": "^2.0.2",
-    "moment": "^2.29.4",
+    "lit": "^3.3.1",
     "navigo": "^8.11.1",
     "pwa-helpers": "^0.9.0"
   },

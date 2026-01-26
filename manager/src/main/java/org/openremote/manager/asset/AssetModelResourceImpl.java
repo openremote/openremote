@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import jakarta.ws.rs.WebApplicationException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -29,7 +30,11 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Map;
+
+import static jakarta.ws.rs.core.Response.Status.*;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
@@ -63,5 +68,14 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     @Override
     public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
+    }
+
+    @Override
+    public JsonNode getValueDescriptorSchema(RequestParams requestParams, String name, String hash) {
+        JsonNode schema = assetModelService.getValueDescriptorSchema(name);
+        if (schema == null) {
+            throw new WebApplicationException(NOT_FOUND);
+        }
+        return schema;
     }
 }

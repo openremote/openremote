@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.udp;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -106,12 +106,13 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
-        return new NioEventLoopGroup(1);
+        return new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
     }
 
     @Override
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(ChannelOption.SO_BROADCAST, true);
+        bootstrap.option(ChannelOption.SO_REUSEADDR, true);
     }
 }

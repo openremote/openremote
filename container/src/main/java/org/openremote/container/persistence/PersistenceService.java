@@ -79,7 +79,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.util.MapAccess.*;
 
 public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
@@ -328,7 +328,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         }
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
-        prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema);
+        prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema, dbName);
     }
 
     protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
@@ -510,7 +510,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
     }
 
-    protected void prepareSchema(Container container, String connectionUrl, String databaseUsername, String databasePassword, String schemaName) {
+    protected void prepareSchema(Container container, String connectionUrl, String databaseUsername, String databasePassword, String schemaName, String databaseName) {
 
         boolean outOfOrder = getBoolean(container.getConfig(), OR_DB_FLYWAY_OUT_OF_ORDER, false);
 
@@ -525,10 +525,12 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         // Excluding the extension(s) in the cleanup process will not be added soon https://github.com/flyway/flyway/issues/2271
         // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
         StringBuilder initSql = new StringBuilder();
+
+        // CRITICAL: Set at DATABASE level (higher priority than role level)
+        initSql.append("ALTER DATABASE ").append(databaseName).append(" SET search_path TO ").append(schemaName).append(", public, topology;");
+
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
-//        initSql.append("ALTER EXTENSION timescaledb UPDATE;");
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
-//        initSql.append("ALTER EXTENSION timescaledb_toolkit UPDATE;");
 
         flyway = Flyway.configure()
             .cleanDisabled(false)
@@ -539,13 +541,14 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             .initSql(initSql.toString())
             .baselineOnMigrate(true)
             .outOfOrder(outOfOrder)
+            .placeholders(Map.of("schemaName", schemaName))
             .load();
 
         MigrationInfo currentMigration;
         try {
             currentMigration = flyway.info().current();
         } catch (FlywaySqlScriptException fssex) {
-            if(fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
+            if (fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
                 LOG.severe("Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.");
             }
             throw fssex;

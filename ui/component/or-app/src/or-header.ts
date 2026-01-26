@@ -21,6 +21,7 @@ import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
+import {when} from "lit/directives/when.js";
 
 
 export {DEFAULT_LANGUAGES, Languages}
@@ -61,7 +62,7 @@ function hasRequiredRole(option: HeaderItem): boolean {
         return option.roles.some((r) => manager.hasRole(r));
     }
 
-    if (Util.isFunction(option.roles)) {
+    if (typeof option.roles === "function") {
         return (option.roles as () => boolean)();
     }
 
@@ -474,12 +475,12 @@ export class OrHeader extends LitElement {
         const currentRealm = this.realms.find((t) => t.name === this.realm);
 
         let realmTemplate = html`
-            <div id="realm-picker">
-                ${this.realms.length > 1 ? html`
+            ${when(this.realms?.length > 1, () => html`
+                <div id="realm-picker">
                     <span>${currentRealm ? currentRealm.displayName : ""}</span>
                     <or-icon icon="chevron-down"></or-icon>
-                ` : ``}
-            </div>
+                </div>
+            `)}
         `;
 
         if (manager.isSuperUser()) {

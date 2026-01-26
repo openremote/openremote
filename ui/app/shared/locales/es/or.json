@@ -136,13 +136,13 @@
     "TEXT_SWITCH": "Interruptor de texto",
     "ROUND_NODE": "Redondo",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -230,8 +230,8 @@
   "custom": "Entrada manual",
   "realm": "Realm",
   "realm_plural": "Realms",
-  "displayName":"Nome amigable",
-  "deleteRealmConfirm":"¿Estás seguro de que deseas eliminar este realms?",
+  "displayName": "Nome amigable",
+  "deleteRealmConfirm": "¿Estás seguro de que deseas eliminar este realms?",
   "user_plural": "Usuarios",
   "regularUser_plural": "Usuarios",
   "serviceUser_plural": "Usuários do serviço",
@@ -241,10 +241,10 @@
   "description": "Descripción",
   "passwordMismatch": "Las contraseñas no coinciden",
   "username": "Nombre de usuario",
-  "firstName":"Primer nombre",
-  "surname":"Apellido",
-  "deleteUserConfirm":"¿Está seguro de que desea eliminar este usuario?",
-  "deleteRoleConfirm":"¿Está seguro de que desea eliminar este función?",
+  "firstName": "Primer nombre",
+  "surname": "Apellido",
+  "deleteUserConfirm": "¿Está seguro de que desea eliminar este usuario?",
+  "deleteRoleConfirm": "¿Está seguro de que desea eliminar este función?",
   "realmRules": "Realm",
   "globalRules": "Global",
   "recipients": "Destinatarios",
@@ -283,6 +283,8 @@
   "sending": "Enviando",
   "submit": "Enviar",
   "password": "Contraseña",
+  "resetPassword": "Restablecer contraseña",
+  "resetPasswordConfirmation": "Se ha enviado un correo electrónico para restablecer su contraseña.",
   "repeatPassword": "Repetir contraseña",
   "details": "Detalles",
   "permissions": "Permisos",
@@ -360,42 +362,31 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "Activo solar fotovoltaico",
       "ElectricityProducerWindAsset": "Activo de turbina eólica"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "Agregar elementos de configuración",
   "loseChanges": "¿Descartar los cambios?",
@@ -412,26 +403,27 @@
   },
   "validityType": "Tipo de horario",
   "validityAlways": "Siempre activo",
-  "validityPeriod": "Planear una ocurrencia",
-  "validityRecurrence": "Planear una ocurrencia repetida",
+  "planPeriod": "Planear una ocurrencia",
+  "planRecurrence": "Planear una ocurrencia repetida",
   "activeFromTo": "Activo desde {{start}} a {{end}}",
   "fromTo": "Desde {{start}} a {{end}}",
   "fromToDays": "De {{start}} a {{days}} días después {{end}}",
-  "forDays":"por {{days}} dias",
+  "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Programar Actividad de la regla",
+  "schedule": {
+    "_ends": "La repetición termina",
+    "repeat": "Repetir ocurrencia cada"
+  },
   "allDay": "Todo el dia",
   "apply": "aplicar",
   "to": "a",
   "from": "desde",
   "never": "Nunca",
-  "repetitionEnds": "La repetición termina",
-  "repeatOccurrenceEvery": "Repetir ocurrencia cada",
   "daysOfTheWeek": "Días de la semana",
   "dismiss": "despedir",
   "createAssetFailed": "No se pudo crear el activo",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "Leer permisos",
   "writePermissions": "Permisos de escritura",
   "valueType": "Tipo de valor",
@@ -470,5 +462,164 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

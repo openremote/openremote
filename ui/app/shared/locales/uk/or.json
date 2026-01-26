@@ -131,27 +131,10 @@
   "location": "Місце розташування",
   "longPressSetLoc": "Довге натискання, щоб встановити місце",
   "hour": "Година",
-  "lastHour": "Остання година",
-  "last24Hours": "Останні 24 години",
-  "thisHour": "Ця година",
   "day": "День",
-  "thisDay": "Сьогодні",
-  "thisDayLastWeek": "Цей день минулого тижня",
-  "yesterday": "Вчора",
-  "last7Days": "Останні 7 днів",
-  "last30Days": "Останні 30 днів",
-  "last90Days": "Останні 90 днів",
   "week": "Тиждень",
-  "thisWeek": "Цей тиждень",
-  "previousWeek": "Попередній тиждень",
   "month": "Місяць",
-  "thisMonth": "Цей місяць",
-  "previousMonth": "Попередній місяць",
-  "last6Months": "Останні 6 місяців",
   "year": "Рік",
-  "lastYear": "Минулий рік",
-  "thisYear": "Цей рік",
-  "previousYear": "Попередній рік",
   "period": "Період",
   "ending": "Закінчення",
   "timeframe": "Вімір часу",
@@ -188,13 +171,13 @@
     "TEXT_SWITCH": "Текстовий перемикач",
     "ROUND_NODE": "Коло",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -369,6 +352,8 @@
   "sending": "Надсилання",
   "submit": "Надіслати",
   "password": "Пароль",
+  "resetPassword": "Скинути пароль",
+  "resetPasswordConfirmation": "На вашу електронну пошту надіслано лист для скидання пароля.",
   "repeatPassword": "Повторіть пароль",
   "details": "Деталі",
   "permissions": "Дозволи",
@@ -503,20 +488,22 @@
   },
   "validityType": "Тип розкладу",
   "validityAlways": "Завжди активний",
-  "validityPeriod": "Планувати випадок",
-  "validityRecurrence": "Планувати повторюваний випадок",
+  "planPeriod": "Планувати випадок",
+  "planRecurrence": "Планувати повторюваний випадок",
   "activeFromTo": "Активний від {{start}} до {{end}}",
   "fromTo": "Від {{start}} до {{end}}",
   "fromToDays": "від {{start}} до {{days}} днів пізніше {{end}}",
   "forDays": "на {{days}} днів",
   "scheduleRuleActivity": "Розклад дії правила",
+  "schedule": {
+    "_ends": "Повторення закінчується",
+    "repeat": "Повторювати випадок кожні"
+  },
   "allDay": "Увесь день",
   "apply": "Застосувати",
   "to": "до",
   "from": "з",
   "never": "Ніколи",
-  "repetitionEnds": "Повторення закінчується",
-  "repeatOccurrenceEvery": "Повторювати випадок кожні",
   "daysOfTheWeek": "днів тижня",
   "dismiss": "Відхилити",
   "createAssetFailed": "Не вдалося створити актив",
@@ -555,7 +542,7 @@
   "autoProvisioning": "Автоматичне налаштування",
   "provisioningConfigs": "Конфігурації автоматичного налаштування",
   "loadFailedProvisioningConfigs": "Не вдалося завантажити конфігурації автоматичного налаштування",
-  "deleteProvisioningConfigConfirm":"Ви впевнені, що хочете видалити цю конфігурацію автоматичного налаштування?\nКлієнти, які використовують цю конфігурацію, більше не зможуть підключатися.",
+  "deleteProvisioningConfigConfirm": "Ви впевнені, що хочете видалити цю конфігурацію автоматичного налаштування?\nКлієнти, які використовують цю конфігурацію, більше не зможуть підключатися.",
   "assetTemplate": "Шаблон активу",
   "createAsRestrictedUser": "Створити обмеженого користувача",
   "ignoreExpiryDate": "Ігнорувати дату закінчення",
@@ -694,7 +681,7 @@
   "default": "За замовчуванням",
   "appearance": "Вигляд",
   "configuration": {
-    "" : "Вигляд",
+    "": "Вигляд",
     "main": "Головне",
     "realmStyling": "Стилізація області",
     "managerConfigNotFound": "Файл конфігурації менеджера не знайдено.",
@@ -753,5 +740,164 @@
   "withInterval": "З інтервалом",
   "AVG": "Середнє (середнє значення)",
   "MIN": "Мінімум",
-  "MAX": "Максимум"
+  "MAX": "Максимум",
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

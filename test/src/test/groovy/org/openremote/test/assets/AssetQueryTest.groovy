@@ -88,13 +88,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].realm == managerTestSetup.realmMasterName
 
         when: "a user filtering query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                        .userIds(keycloakTestSetup.testuser3Id)
-        )
+        def query = new AssetQuery().userIds(keycloakTestSetup.testuser3Id)
+        assets = assetStorageService.findAll(query)
 
         then: "only the users assets should be retrieved"
         assets.size() == 6
+        assetStorageService.count(query) == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
         assets.get(1).getAttributes().size() == 14
@@ -109,14 +108,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(5).id == managerTestSetup.apartment1BathroomId
 
         when: "a user filtering query is executed that limits to protected attributes"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .userIds(keycloakTestSetup.testuser3Id)
-                    .access(PROTECTED)
-        )
+        query = new AssetQuery()
+                .userIds(keycloakTestSetup.testuser3Id)
+                .access(PROTECTED)
+        assets = assetStorageService.findAll(query)
 
         then: "only the users assets should be retrieved"
         assets.size() == 6
+        assetStorageService.count(query) == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
         assets.get(1).getAttributes().size() == 8
@@ -133,14 +132,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(5).id == managerTestSetup.apartment1BathroomId
 
         when: "a query is executed that returns a protected attribute without any other meta items"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .ids(managerTestSetup.apartment2LivingroomId)
-                    .access(PROTECTED)
-        )
+        query = new AssetQuery()
+                .ids(managerTestSetup.apartment2LivingroomId)
+                .access(PROTECTED)
+        assets = assetStorageService.findAll(query)
 
         then: "only one asset should be retrieved"
         assets.size() == 1
+        assetStorageService.count(query) == 1
         assets.get(0).id == managerTestSetup.apartment2LivingroomId
         assets.get(0).getAttributes().size() == 2
         assets.get(0).getAttribute("windowOpen").isPresent()
@@ -149,16 +148,16 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).getAttribute("targetTemperature").isPresent()
 
         when: "a recursive query is executed for apartment 1 assets"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .ids(managerTestSetup.smartBuildingId)
-                    .orderBy(new OrderBy(CREATED_ON))
-                    .recursive(true)
-                    .access(PROTECTED)
-        )
+        query = new AssetQuery()
+                .ids(managerTestSetup.smartBuildingId)
+                .orderBy(new OrderBy(CREATED_ON))
+                .recursive(true)
+                .access(PROTECTED)
+        assets = assetStorageService.findAll(query)
 
         then: "result should contain only basic info and attribute names"
         assets.size() == 13
+        assetStorageService.count(query) == 13
         assets.find {it.id == managerTestSetup.smartBuildingId}.name == "Smart building"
         def apartment1 = assets.find {it.id == managerTestSetup.apartment1Id}
         apartment1.name == "Apartment 1"
@@ -258,14 +257,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         ((BuildingAsset)assets.get(0)).getStreet().orElse("") == "Torenallee 20"
 
         when: "a query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .select(new Select().excludeAttributes())
-                    .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-        )
+        query = new AssetQuery()
+                .select(new Select().excludeAttributes())
+                .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
+        assets = assetStorageService.findAll(query)
 
         then: "result should match"
         assets.size() == 3
+        assetStorageService.count(query) == 3
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(0).createdOn.time < System.currentTimeMillis()
         assets.get(0).name == "Apartment 1"
@@ -277,15 +276,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerTestSetup.apartment3Id
 
         when: "a query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .select(new Select().excludeAttributes())
-                    .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-                    .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
-        )
+        query = new AssetQuery()
+                .select(new Select().excludeAttributes())
+                .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
+                .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+        assets = assetStorageService.findAll(query)
 
         then: "result should match"
         assets.size() == 3
+        assetStorageService.count(query) == 3
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment2Id
         assets.get(2).id == managerTestSetup.apartment3Id
@@ -992,5 +991,112 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "the lobby asset should be retrieved"
         assets.size() == 1
         assets[0].id == lobby.id
+    }
+
+    def "Limit and offset queries"() {
+        when: "a non limited query is executed to get all assets"
+        // We use this query to determine whether offsets and limits are working correctly
+        def allAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+        )
+
+        then: "all assets should be returned"
+        allAssets.size() > 0
+        def allAssetsSize = allAssets.size()
+
+        when: "a query is executed with limit set to 0"
+        def zeroLimitAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(0)
+        )
+
+        then: "all assets should be returned"
+        zeroLimitAssets.size() == allAssetsSize
+        zeroLimitAssets.collect { it.id } == allAssets.collect { it.id }
+
+        when: "a query is executed with limit"
+        def limitedAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(3)
+        )
+
+        then: "only 3 assets should be returned"
+        limitedAssets.size() == 3
+        limitedAssets.collect { it.id } == allAssets.take(3).collect { it.id }
+
+        when: "a query is executed with a higher limit"
+        def higherLimitAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(5)
+        )
+
+        then: "then  5 assets should be returned"
+        higherLimitAssets.size() == 5
+
+        when: "a query is executed with a offset"
+        def offsetAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .offset(2)
+        )
+
+        then: "all assets after the offset should be returned"
+        offsetAssets.size() == allAssetsSize - 2
+        offsetAssets.collect { it.id } == allAssets.drop(2).collect { it.id }
+
+        and: "the first 2 assets from the all assets should not be present"
+        offsetAssets.collect { it.id } != allAssets.take(2).collect { it.id }
+        
+        when: "another query is executed with a offset and limit"
+        def offsetLimitAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .limit(2)
+                    .offset(3)
+        )
+
+        then: "the assets from the offset should be returned"
+        offsetLimitAssets.collect { it.id } == allAssets.drop(3).take(2).collect { it.id }
+
+        and: "the limit should be respected"
+        offsetLimitAssets.size() == 2
+
+        and: "the first 3 assets from the all assets should not be present"
+        offsetLimitAssets.collect { it.id } != allAssets.take(3).collect { it.id }
+
+        when: "a query is executed with an offset higher than the total number of assets"
+        def offsetHigherThanAssets = assetStorageService.findAll(
+                new AssetQuery()
+                    .select(new Select().excludeAttributes())
+                    .ids(managerTestSetup.smartBuildingId)
+                    .recursive(true)
+                    .orderBy(new OrderBy(NAME))
+                    .offset(allAssets.size() + 1)
+        )
+
+        then: "no assets should be returned"
+        offsetHigherThanAssets.size() == 0
     }
 }

@@ -131,13 +131,13 @@
     "TEXT_SWITCH": "تبديل النص ",
     "ROUND_NODE": " تقريب القيمة إلى",
     "LOG_OUTPUT": "Write to Logs",
-    "DERIVATIVE":  "Attribute derivative",
+    "DERIVATIVE": "Attribute derivative",
     "INTEGRAL": "Attribute integral",
     "HISTORIC_VALUE": "Attribute history",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Average",
-    "MEDIAN_PROCESSOR":  "Median",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
     "SUM_OPERATOR": "Sum",
     "max": "Max",
     "min": "Min",
@@ -212,21 +212,21 @@
   "buttonTextConfirm": "نص لزر التفعيل",
   "buttonTextDecline": "نص لزر عدم التفعيل",
   "custom": "إدخال يدوي",
-  "realm": "نطاق",
-  "realm_plural": "النطاقات",
-  "displayName":" إسم الظهور ",
-  "realm management":"إدخال النطاق",
-  "deleteRealmConfirm":"هل أنت متأكد بأنك تريد حذف هذا النطاق؟",
+  "realm": "عالم دنيا",
+  "realm_plural": "عالم دنيا",
+  "displayName": " إسم الظهور ",
+  "realm management": "إدخال النطاق",
+  "deleteRealmConfirm": "هل أنت متأكد بأنك تريد حذف هذا النطاق؟",
   "user_plural": "المستخدمين",
   "user_role": "دور المستخدم",
   "role_plural": "الأدوار",
   "description": "شرح",
-  "passwordMismatch":"كلمة المرور غير متطابقة",
-  "username":"أسم المستخدم",
-  "firstName":"الإسم الأول",
-  "surname":"الكنية",
-  "deleteUserConfirm":" هل أنت متأكد من حذف إسم المستخدم؟",
-  "deleteRoleConfirm":"هل أنت متأكد من حذف هذا الدور",
+  "passwordMismatch": "كلمة المرور غير متطابقة",
+  "username": "أسم المستخدم",
+  "firstName": "الإسم الأول",
+  "surname": "الكنية",
+  "deleteUserConfirm": " هل أنت متأكد من حذف إسم المستخدم؟",
+  "deleteRoleConfirm": "هل أنت متأكد من حذف هذا الدور",
   "realmRules": "إضافة شرط داخل هذا النطاق",
   "globalRules": "الإجرائات العامة",
   "recipients": "المستلمين",
@@ -243,8 +243,6 @@
   "secured": "محمي",
   "clientSecret": "كلمة سر المستخدم",
   "clientId": "الرقم التعريقي للمستخدم",
-  "realm": "عالم دنيا",
-  "realm_plural": "عالم دنيا",
   "port": "المنفذ",
   "host": "أسم المضيف",
   "errorOccurred": "حدث خطأ ",
@@ -262,8 +260,10 @@
   "sending": "إرسال",
   "submit": "رفع",
   "password": "كلمة السر",
+  "resetPassword": "إعادة تعيين كلمة السر",
+  "resetPasswordConfirmation": "تم إرسال بريد إلكتروني لإعادة تعيين كلمة السر الخاصة بك.",
   "repeatPassword": "إعادة كتابة كلمة السر",
-  "permissions":"الصلاحيات",
+  "permissions": "الصلاحيات",
   "noChildAssets": "لايوجد مكون فرعي",
   "account": "حساب",
   "editAttribute": "تعديل الخصائص",
@@ -337,42 +337,31 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "PV solar asset",
       "ElectricityProducerWindAsset": "Wind turbine asset"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "إضافة عنصر الإعدادات",
   "loseChanges": "تجاهل التغييرات؟",
@@ -387,28 +376,29 @@
       "description": "Protocol for connecting to a KNX"
     }
   },
-  "validityType":"نوع الجدولة الزمنية",
-  "validityAlways":"فعال بشكل دائم",
-  "validityPeriod":"تخطيط للحادث",
-  "validityRecurrence":"تخطيط لحدث متكرر",
+  "validityType": "نوع الجدولة الزمنية",
+  "validityAlways": "فعال بشكل دائم",
+  "planPeriod": "تخطيط للحادث",
+  "planRecurrence": "تخطيط لحدث متكرر",
   "activeFromTo": "فعال من  {{start}} إلى {{end}}",
-  "fromTo":"من {{start}} إلى {{end}}",
-  "fromToDays":"من {{start}} إلى {{days}} يوم لاحق {{end}}",
-  "forDays":"من أجل {{days}} days",
+  "fromTo": "من {{start}} إلى {{end}}",
+  "fromToDays": "من {{start}} إلى {{days}} يوم لاحق {{end}}",
+  "forDays": "من أجل {{days}} days",
   "scheduleRuleActivity": "جدولة نشاط الإجراء",
+  "schedule": {
+    "_ends": "إنتهاء التكرار",
+    "repeat": "تكرار الحدث كل"
+  },
   "allDay": "كل اليوم",
   "apply": "تطبيق",
   "to": "إلى",
   "from": "من",
   "never": "أبدا",
-  "repetitionEnds": "إنتهاء التكرار",
-  "repeatOccurrenceEvery": "تكرار الحدث كل",
   "daysOfTheWeek": "أيام الأسبوع",
   "dismiss": "رفض",
   "createAssetFailed": "  فشل في إنشاء المكون  ",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "صلاحيات القراءة",
   "writePermissions": "صلاحيات الكتابة",
   "valueType": "نوع القيمة",
@@ -420,5 +410,164 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

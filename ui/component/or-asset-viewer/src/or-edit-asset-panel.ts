@@ -2,7 +2,7 @@ import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "
 import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -331,6 +331,7 @@ export class OrEditAssetPanel extends LitElement {
         const deleteAttribute = () => {
             delete this.asset.attributes![attribute.name!];
             this._onModified();
+            this.requestUpdate();
         };
 
         const descriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, assetType);
@@ -366,7 +367,7 @@ export class OrEditAssetPanel extends LitElement {
                                         disableWrite disableSubscribe disableButton compact 
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${deleteAttribute}">` : ``}</td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
@@ -392,7 +393,6 @@ export class OrEditAssetPanel extends LitElement {
 
     protected _onModified() {
         this.dispatchEvent(new OrEditAssetModifiedEvent(this.validate()));
-        this.requestUpdate();
     }
 
     public validate(): ValidatorResult[] {
@@ -461,6 +461,7 @@ export class OrEditAssetPanel extends LitElement {
         const removeMetaItem = () => {
             delete attribute.meta![metaItem.name!];
             this._onModified();
+            this.requestUpdate();
         };
 
         const template = html`
@@ -520,13 +521,13 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        if (attr) {
+                        if (!isDisabled(attr)) {
                             this.asset.attributes![attr.name!] = attr;
                             this._onModified();
+                            this.requestUpdate();
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"
-                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
@@ -594,6 +595,7 @@ export class OrEditAssetPanel extends LitElement {
                                 if (descriptor) {
                                     attribute.meta![descriptor.name!] = (descriptor.type === 'boolean') ? true : null;
                                     this._onModified();
+                                    this.requestUpdate();
                                 }
                             });
                         }
@@ -605,7 +607,6 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _getParentTemplate() {
-        const viewer = this;
         let dialog: OrMwcDialog;
 
         const setParent = () => {

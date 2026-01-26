@@ -32,7 +32,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient43Engine;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
@@ -175,20 +174,7 @@ public class WebTargetBuilder {
 
     public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
 
-        //Create all of this config code in order to deal with expires cookies in responses
-        RequestConfig requestConfig = RequestConfig.custom()
-            .setCookieSpec(CookieSpecs.STANDARD)
-            .setConnectionRequestTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
-            .setConnectTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
-            .setSocketTimeout(Long.valueOf(overrideSocketTimeout).intValue())
-            .build();
-        HttpClient apacheClient = HttpClientBuilder.create()
-            .setDefaultRequestConfig(requestConfig)
-            .build();
-        ApacheHttpClient43Engine engine = new ApacheHttpClient43Engine(apacheClient);
-
         ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
-            .httpEngine(engine)
             .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)

@@ -1,7 +1,7 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
-import {AxiosRequestConfig} from "axios";
+import {InternalAxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
@@ -422,11 +422,9 @@ export class Manager implements EventProviderFactory {
 
         this.doIconInit();
 
-        // TODO: Reinstate this once websocket supports anonymous connections
-        // if (success) {
-        //     success = await this.doEventsSubscriptionInit();
-        // }
         if (success) {
+            success = await this.doEventsSubscriptionInit();
+
             if (this._readyCallback) {
                 await this._readyCallback();
             }
@@ -571,7 +569,7 @@ export class Manager implements EventProviderFactory {
 
         // Add interceptor to inject authorization header on each request
         rest.addRequestInterceptor(
-            (config: AxiosRequestConfig) => {
+            (config: InternalAxiosRequestConfig) => {
                 if (!config!.headers!.Authorization) {
                     const authHeader = this.getAuthorizationHeader();
 
@@ -920,11 +918,6 @@ export class Manager implements EventProviderFactory {
 
     protected _onAuthenticated() {
         this._authenticated = true;
-
-        // TODO: Move events init logic once websocket supports anonymous connections
-        if (!this._events) {
-            this.doEventsSubscriptionInit();
-        }
     }
 
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
@@ -1024,7 +1017,9 @@ export class Manager implements EventProviderFactory {
 
     /** Function that clears the `WebView` history of a console. It will not delete the history on regular browsers. */
     protected _clearWebHistory(): void {
-        this.console?._doSendGenericMessage("CLEAR_WEB_HISTORY", undefined);
+        if(this.isMobile()) {
+            this.console?._doSendGenericMessage("CLEAR_WEB_HISTORY", undefined);
+        }
     }
 
     /**

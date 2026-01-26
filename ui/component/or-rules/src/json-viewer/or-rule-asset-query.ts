@@ -16,21 +16,20 @@ import {
     ValuePredicateUnion,
     WellknownMetaItems,
     WellknownValueTypes,
-    AssetModelUtil
+    AssetModelUtil, AssetQuery
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
-import {when} from 'lit/directives/when.js';
+import {when} from "lit/directives/when.js";
 import moment from "moment";
 
 // language=CSS
@@ -123,10 +122,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider!: (type: string) => Promise<Asset[] | undefined>
+    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>;
 
     @state()
-    protected _assets?: Asset[];
+    protected _cache?: {query: AssetQuery, assets: Asset[]};
+
+    @state()
+    protected _selected?: Asset;
+
+    protected _loading = false;
 
     // Value predicates for specific value descriptors
     protected _queryOperatorsMap: {[type: string]: AssetQueryOperator[]} = {};
@@ -141,6 +145,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.OUTSIDE_RADIUS,
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
+            AssetQueryOperator.INSIDE_AREA,
+            AssetQueryOperator.OUTSIDE_AREA,
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY,
             AssetQueryOperator.NOT_UPDATED_FOR
@@ -202,7 +208,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     public refresh() {
         // Clear assets
-        this._assets = undefined;
+        this._cache = undefined;
     }
 
     protected attributePredicateEditorTemplate(assetTypeInfo: AssetTypeInfo, asset: Asset | undefined, attributePredicate: AttributePredicate) {
@@ -210,14 +216,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetDescriptor = assetTypeInfo.assetDescriptor!;
         const operator = this.getOperator(attributePredicate);
         const attributeName = this.getAttributeName(attributePredicate);
-        let attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
+        const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
         let attributes: [string, string][] = [];
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset ? asset.type : assetDescriptor.name, attribute || attributeName, attribute);
 
         if (asset && asset.attributes) {
             attributes = Object.values(asset.attributes)
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attribute.meta[WellknownMetaItems.RULESTATE] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                .map((attr) => {
+                .filter(attr => attr.meta && (attr.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attr.meta[WellknownMetaItems.RULESTATE] : attr.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
+                .map(attr => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
                     const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, false);
                     return [attr.name!, label];
@@ -225,14 +231,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         } else {
             attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] :
                 assetTypeInfo.attributeDescriptors
-                    .map((ad) => {
+                    .map(ad => {
                         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetDescriptor.name, ad);
                         const label = Util.getAttributeLabel(undefined, descriptors ? descriptors[0] : undefined, assetDescriptor.name, false);
                         return [ad.name!, label];
                     });
         }  
         
-        attributes.sort(Util.sortByString((attr) => attr[1]));
+        attributes.sort(Util.sortByString(attr => attr[1]));
 
         const operators = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
 
@@ -300,6 +306,17 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-radial-modal>`;
             case "rect":
                 return html `<span>NOT IMPLEMENTED</span>`;
+            case "geojson":
+                const geoJsonConfig = valuePredicate.predicateType === "geojson" && (valuePredicate as any).geoJSON
+                    ? (() => { try { return { source: JSON.parse((valuePredicate as any).geoJSON), layers: [] }; } catch { return undefined; } })()
+                    : undefined;
+                return html`
+                    <or-conf-map-geojson .geoJson="${geoJsonConfig}" @update="${(e: CustomEvent) => {
+                        const cfg = e.detail.value; // GeoJsonConfig {source, layers}
+                        const src = cfg && cfg.source ? JSON.stringify(cfg.source) : "";
+                        this.setValuePredicateProperty(valuePredicate, "geoJSON", src)
+                    }}"></or-conf-map-geojson>
+                    `;
             case "value-empty":
                 return ``;
             case "array":
@@ -349,13 +366,11 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         return style;
     }
 
-    public shouldUpdate(_changedProperties: PropertyValues): boolean {
-
-        if (_changedProperties.has("condition")) {
-            this._assets = undefined;
+    public shouldUpdate(changedProps: PropertyValues): boolean {
+        if (changedProps.has("condition")) {
+            this._cache = undefined;
         }
-
-        return super.shouldUpdate(_changedProperties);
+        return super.shouldUpdate(changedProps);
     }
 
     protected get query() {
@@ -391,16 +406,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
 
         if (!assetType) {
-            return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
+            return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
         }
 
-        const assetTypeInfo = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
+        const assetTypeInfo = this.assetInfos ? this.assetInfos.find(assetTypeInfo => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetTypeInfo) {
-            return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
+            return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
         }
 
-        if (!this._assets) {
+        if (!this._cache && !this._loading) {
             this.loadAssets(assetType);
         }
 
@@ -417,40 +432,47 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         // TODO: Add multiselect support
         const ids = getAssetIdsFromQuery(this.query);
         const idValue = ids && ids.length > 0 ? ids[0] : "*";
-        const idOptions: [string, string] [] = [
+        const idOptions: Map<string, string> = new Map([
             ["*", i18next.t("anyOfThisType")]
-        ];
+        ]);
+
+        // Set list of displayed assets, and filtering assets out if needed.
+        // If <= 25 assets: display everything
+        // If between 25 and 100 assets: display everything with search functionality
+        // If >= 100 assets: only display if in line with search input
+        const assets: Asset[] = this._cache ? this._cache.assets : [];
+        const searchable = assets.length > 25;
+        if (searchable && this._selected) {
+            idOptions.set(this._selected.id!, this._selected.name!);
+        }
+
         let searchProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             <div class="attribute-group">
             
                 <!-- Show SELECT input with 'loading' until the assets are retrieved -->
-                ${when((!this._assets), () => html`
-                    <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
+                ${when((!this._cache || this._loading), () => html`
+                    <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t("loading")}"></or-mwc-input>
                 `, () => {
-
-                    // Set list of displayed assets, and filtering assets out if needed.
-                    // If <= 25 assets: display everything
-                    // If between 25 and 100 assets: display everything with search functionality 
-                    // If > 100 assets: only display if in line with search input
-                    if(this._assets!.length <= 25) {
-                        idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                    if (!searchable) {
+                       assets.forEach(a => idOptions.set(a.id!, a.name!));
                     } else {
                         searchProvider = async (search?: string) => {
-                            if(search) {
-                                return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
-                            } else if (this._assets!.length <= 100) {
-                                idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-                                return idOptions;
+                            await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
+                            if (search) {
+                                return assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
+                            } else if (assets.length <= 100) {
+                                assets.forEach(a => idOptions.set(a.id!, a.name!));
+                                return [...idOptions];
                             } else {
-                                const asset = this._assets?.find((asset) => asset.id == idValue);
-                                if(asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
-                                    idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
+                                const asset = assets.find(a => a.id === idValue);
+                                if (asset && !Array.from(idOptions.keys()).includes(asset.id!)) {
+                                    idOptions.set(asset.id!, asset.name!); // add selected asset if there is one.
                                 }
-                                return idOptions;
+                                return [...idOptions];
                             }
-                        }
+                        };
                     }
 
                     const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
@@ -468,8 +490,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
-                                      .options="${idOptions}" .value="${idValue}" .searchProvider="${searchProvider}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
+                                      .options="${[...idOptions]}" .value="${idValue}" .searchProvider="${searchProvider}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); }}"
                         ></or-mwc-input>
                         <div class="attributes">
                             ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate, index) => {
@@ -477,7 +499,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                     ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
                                     <div class="attribute">
                                         <div>
-                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._cache!.assets.find(asset => asset.id === idValue) : undefined, attributePredicate)}
                                             ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
                                         </div>
                                     ${showRemoveAttribute ? html`
@@ -487,7 +509,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                             }) : ``}
                             ${showAddAttribute ? html`
                                 <or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                              label="rulesEditorAddAttribute" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
+                                              label="rulesEditorAddAttribute" @or-mwc-input-changed="${(_ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
                             `: ``}
                         </div>
                     `;
@@ -497,7 +519,12 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected set _assetId(assetId: string | undefined) {
-        !assetId || assetId === "*" ? this.query.ids = undefined : this.query.ids! = [assetId];
+        if (!assetId || assetId === "*") {
+            this.query.ids = undefined;
+        } else {
+            this._selected = this._cache?.assets?.find(a => a.id === assetId);
+            this.query.ids = [assetId];
+        }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
@@ -521,7 +548,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
-    protected getOperatorMapValue(operatorMap: {[type: string]: AssetQueryOperator[]}, assetType?: string, attributeName?: string, attributeDescriptor?: AttributeDescriptor, valueDescriptor?: ValueDescriptor) {
+    protected getOperatorMapValue(operatorMap: {[type: string]: AssetQueryOperator[]}, assetType?: string, attributeName?: string, _attributeDescriptor?: AttributeDescriptor, valueDescriptor?: ValueDescriptor) {
 
         let assetAttributeMatch: AssetQueryOperator[] | undefined;
         let attributeDescriptorMatch: AssetQueryOperator[] | undefined;
@@ -545,7 +572,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
     
-    protected getOperators(assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, attribute: Attribute<any> | undefined, attributeName: string): [string, string][] {
+    protected getOperators(_assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, _attribute: Attribute<any> | undefined, attributeName: string): [string, string][] {
 
         let operators: AssetQueryOperator[] | undefined;
 
@@ -557,7 +584,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             operators = this.getOperatorMapValue(this._queryOperatorsMap, getAssetTypeFromQuery(this.query), attributeName, attributeDescriptor, valueDescriptor);
         }
 
-        return operators ? operators.map((v) => [v, i18next.t(v)]) : [];
+        return operators ? operators.map(v => [v, i18next.t(v)]) : [];
     }
 
     protected getOperator(attributePredicate: AttributePredicate): string | undefined {
@@ -612,6 +639,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RADIUS : AssetQueryOperator.WITHIN_RADIUS;
             case "rect":
                 return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_RECTANGLE : AssetQueryOperator.WITHIN_RECTANGLE;
+            case "geojson":
+                return valuePredicate.negated ? AssetQueryOperator.OUTSIDE_AREA : AssetQueryOperator.INSIDE_AREA;
             case "array":
                 if (valuePredicate.value && valuePredicate.index) {
                     return valuePredicate.negated ? AssetQueryOperator.NOT_INDEX_CONTAINS : AssetQueryOperator.INDEX_CONTAINS;
@@ -703,7 +732,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                         index: value === AssetQueryOperator.INDEX_CONTAINS || value === AssetQueryOperator.NOT_INDEX_CONTAINS ? 0 : undefined,
                         lengthEquals: value === AssetQueryOperator.LENGTH_EQUALS || value === AssetQueryOperator.NOT_LENGTH_EQUALS ? 0 : undefined,
                         lengthGreaterThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
-                        lengthLessThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined,
+                        lengthLessThan: value === AssetQueryOperator.LENGTH_GREATER_THAN ? 0 : undefined
                     };
                 }
                 break;
@@ -728,6 +757,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     lngMin: -0.1,
                     latMax: 0.1,
                     lngMax: 0.1
+                };
+                break;
+            case AssetQueryOperator.INSIDE_AREA:
+            case AssetQueryOperator.OUTSIDE_AREA:
+                predicate = {
+                    predicateType: "geojson",
+                    negated: value === AssetQueryOperator.OUTSIDE_AREA,
+                    geoJSON: ""
                 };
                 break;
 
@@ -786,18 +823,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case AssetQueryOperator.LESS_THAN:
             case AssetQueryOperator.LESS_EQUALS:
             case AssetQueryOperator.BETWEEN:
-                const key = Util.getEnumKeyAsString(AssetQueryOperator, value);
-
                 if (valueDescriptor.jsonType === "number") {
                     predicate = {
                         predicateType: "number",
-                        operator: key as AQO
+                        operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO
                     };
                 } else {
                     // Assume datetime
                     predicate = {
                         predicateType: "datetime",
-                        operator: key as AQO
+                        operator: Util.getEnumKeyAsString(AssetQueryOperator, value) as AQO
                     };
                 }
                 break;
@@ -894,9 +929,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected addAttributePredicate(group: LogicGroup<AttributePredicate>) {
-        if (!group.items) {
-            group.items = [];
-        }
+        group.items ??= [];
         group.items.push({});
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
@@ -912,9 +945,48 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
-    protected loadAssets(type: string) {
-        this.assetProvider(type).then(assets => {
-            this._assets = assets;
-        })
+    /**
+     * Fetches assets using the {@link assetProvider} from the parent component.
+     * This is often linked to the OpenRemote HTTP API to request assets from using an {@link AssetQuery} object.
+     * @param type - The asset type name to filter by
+     * @param search - The asset name to filter by (acts as a search)
+     * @param idValue - Selected asset ID to query along
+     * @protected
+     */
+    protected async loadAssets(type: string, search?: string, idValue?: string): Promise<Asset[] | undefined> {
+        const promises: Promise<Asset[] | undefined>[] = [];
+
+        const query: AssetQuery = { limit: 100 };
+        if (search) {
+            query.names ??= [];
+            query.names.push({ predicateType: "string", value: search });
+        }
+        // If the cache contains assets from the same query, don't send HTTP request again
+        const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
+        if (!this._loading && !isQueryCached) {
+            this._loading = true;
+
+            // Use assetProvider from the parent component to retrieve assets using HTTP
+            promises.push(this.assetProvider(type, {...query}));
+
+            // When idValue is present, it should also be fetched alongside the other assets
+            if (idValue && idValue !== "*") {
+                promises.push(this.assetProvider(type, { ids: [idValue] }));
+            }
+
+            // Start retrieving assets through the assetProvider
+            const responses = await Promise.all(promises);
+            this._loading = false;
+
+            // Only update the state when we retrieve new assets
+            const assets = responses.filter(value => !!value).flat();
+            const cachedIds = this._cache?.assets.map(asset => asset.id) ?? [];
+            this._cache = {
+                query: query,
+                assets: [...(this._cache?.assets ?? []), ...(assets?.filter(a => !cachedIds.includes(a.id)) ?? [])]
+            };
+            return assets;
+        }
+        return this._cache?.assets;
     }
 }

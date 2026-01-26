@@ -9,7 +9,7 @@ import {
     AlarmSeverity,
     AlarmStatus,
     Asset,
-    AssetModelUtil,
+    AssetModelUtil, AssetQuery,
     AssetTypeInfo, EmailNotificationMessage,
     HTTPMethod,
     JsonRule, LocalizedNotificationMessage, PushNotificationMessage,
@@ -20,7 +20,7 @@ import {
     RuleRecurrence,
     WellknownAssets
 } from "@openremote/model";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
@@ -29,7 +29,6 @@ import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import "./or-rule-action-webhook";
 import "./or-rule-action-alarm";
-import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
@@ -258,7 +257,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider?: (type: string) => Promise<Asset[] | undefined>
+    public assetProvider?: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>
 
     protected get thenAllowAdd() {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
@@ -385,7 +384,8 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 case ActionType.EMAIL:
                 case ActionType.EMAIL_LOCALIZED:
                     const id = type + "-notification";
-                    template = html`<or-rule-action-notification id="${id}" .rule="${this.rule}" .action="${action}" .actionType="${type}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                    template = html`<or-rule-action-notification id="${id}" .rule="${this.rule}" .action="${action}" .actionType="${type}" .config="${this.config}"
+                                                                 .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 case ActionType.WEBHOOK:
                     template = html`<or-rule-action-webhook .rule="${this.rule}" .action="${action}" .actionType="${ActionType.WEBHOOK}"></or-rule-action-webhook>`;
@@ -394,7 +394,8 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<or-rule-action-alarm .rule="${this.rule}" .action="${action}" .actionType="${ActionType.ALARM}"></or-rule-action-alarm>`;
                     break;
                 default:
-                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .assetProvider="${this.assetProvider}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
+                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetProvider="${this.assetProvider}"
+                                                              .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
                     break;
             }
         }

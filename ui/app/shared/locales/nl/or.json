@@ -7,6 +7,7 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "assets": "Assets",
+  "allAssets": "Alle assets",
   "allAssetsofType": "Alle assets van dit type",
   "attribute": "Attribuut",
   "attributes": "Attributen",
@@ -141,35 +142,63 @@
   "filterInvite": "Filter met minsters 3 karakters",
   "location": "Locatie",
   "longPressSetLoc": "Druk lang op de kaart om locatie in te stellen",
+  "this": "Huidige",
+  "last": "Afgelopen",
+  "60minutes": "60 minuten",
   "hour": "Uur",
-  "lastHour": "Afgelopen uur",
-  "last24Hours": "Afgelopen 24 uur",
-  "thisHour": "Dit uur",
+  "6hours": "6 uur",
+  "24hours": "24 uur",
+  "7days": "7 dagen",
+  "30days": "30 dagen",
+  "90days": "90 dagen",
+  "6months": "6 maanden",
+  "365days": "365 dagen",
   "day": "Dag",
-  "thisDay": "Vandaag",
-  "thisDayLastWeek": "Vandaag een week geleden",
-  "yesterday": "Gisteren",
-  "last7Days": "Afgelopen 7 dagen",
-  "last30Days": "Afgelopen 30 dagen",
-  "last90Days": "Afgelopen 90 dagen",
   "week": "Week",
-  "thisWeek": "Deze week",
-  "previousWeek": "Vorige week",
   "month": "Maand",
-  "thisMonth": "Deze maand",
-  "previousMonth": "Vorige maand",
-  "last6Months": "Afgelopen 6 maanden",
   "year": "Jaar",
-  "lastYear": "Afgelopen jaar",
-  "thisYear": "Dit jaar",
-  "previousYear": "Vorig jaar",
   "period": "Periode",
   "ending": "Einde",
+  "prefix": "Prefix",
+  "prefixDefault": "Standaard prefix",
   "timeframe": "Tijdvak",
   "timeframeDefault": "Standaard tijdvak",
+  "intervalBy": "Per {{interval}}",
+  "intervalByauto": "Auto",
+  "intervalBy1minute": "Per minuut",
+  "intervalBy5minutes": "Per 5 minuten",
+  "intervalBy5minutes-auto": "Auto (5min)",
+  "intervalBy15minutes": "Per 15 minuten",
+  "intervalBy30minutes": "Per 30 minuten",
+  "intervalBy30minutes-auto": "Auto (30min)",
+  "intervalByhour": "Per uur",
+  "intervalByhour-auto": "Auto (uur)",
+  "intervalByday": "Per dag",
+  "intervalByday-auto": "Auto (dag)",
+  "intervalByweek": "Per week",
+  "intervalByweek-auto": "Auto (week)",
+  "intervalBymonth": "Per maand",
+  "intervalBymonth-auto": "Auto (maand)",
+  "intervalByyear": "Per jaar",
   "dataSampling": "Data weergave",
   "algorithm": "Algoritme",
   "algorithmMethod": "Methode per interval",
+  "methodMaxAttributes": "Maximum",
+  "methodMaxAttributes-short": "MAX",
+  "methodMinAttributes": "Minimum",
+  "methodMinAttributes-short": "MIN",
+  "methodAvgAttributes": "Gemiddeld",
+  "methodAvgAttributes-short": "GEM",
+  "methodDifferenceAttributes": "Verschil",
+  "methodDifferenceAttributes-short": "VERSCHIL",
+  "methodMedianAttributes": "Mediaan",
+  "methodMedianAttributes-short": "MEDIAAN",
+  "methodModeAttributes": "Modus",
+  "methodModeAttributes-short": "MOD",
+  "methodSumAttributes": "Som",
+  "methodSumAttributes-short": "SOM",
+  "methodCountAttributes": "Aantal",
+  "methodCountAttributes-short": "AANTAL",
   "addAttribute": "Attribuut toevoegen",
   "selectAttributes": "Kies attributen",
   "selectAttribute": "Kies attribuut",
@@ -200,7 +229,7 @@
   "fitView": "Pas beeld aan op project",
   "areYouSure": "Weet je het zeker?",
   "flowEditor": "Flow editor",
-  "flow":{
+  "flow": {
     "EQUALS_COMPARATOR": "Gelijk aan",
     "GREATER_THAN": "Groter dan",
     "LESS_THAN": "Kleiner dan",
@@ -221,13 +250,13 @@
     "TEXT_SWITCH": "Tekst schakeling",
     "ROUND_NODE": "Afronden",
     "LOG_OUTPUT": "Naar logs schrijven",
-    "DERIVATIVE":  "Attribuut afgeleide",
+    "DERIVATIVE": "Attribuut afgeleide",
     "INTEGRAL": "Attribuut integraal",
     "HISTORIC_VALUE": "Attribuut geschiedenis",
     "MAX_PROCESSOR": "Maximum",
-    "MIN_PROCESSOR":  "Minimum",
-    "AVERAGE_PROCESSOR":  "Gemiddelde",
-    "MEDIAN_PROCESSOR":  "Mediaan",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Gemiddelde",
+    "MEDIAN_PROCESSOR": "Mediaan",
     "SUM_OPERATOR": "Som",
     "max": "Max",
     "min": "Min",
@@ -320,12 +349,14 @@
   "realm": "Realm",
   "realm_plural": "Realms",
   "changeRealm": "Verander realm",
-  "displayName":"Vriendelijke naam",
+  "displayName": "Vriendelijke naam",
   "loginTheme": "Login thema",
   "emailTheme": "Email thema",
   "resetPasswordAllowed": "Wachtwoord kan hersteld worden",
+  "resetPassword": "Wachtwoord herstellen",
+  "resetPasswordConfirmation": "Er is een e-mail verzonden om je wachtwoord te herstellen.",
   "rememberMe": "Ingelogd blijven",
-  "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "deleteRealmConfirm": "Weet je zeker dat je deze realm wil verwijderen?",
   "serviceUser": "Service gebruiker",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
@@ -341,16 +372,16 @@
   "role": "Rol",
   "role_plural": "Rollen",
   "description": "Omschrijving",
-  "username":"Gebruikersnaam",
+  "username": "Gebruikersnaam",
   "deleteUser": "Gebruiker verwijderen",
   "deleteRole": "Rol verwijderen",
-  "deleteUserConfirm":"De gebruiker '{{userName}}' verwijderen?",
-  "deleteRoleConfirm":"De rol '{{roleName}}' verwijderen?",
-  "passwordMismatch":"Wachtwoorden komen niet overeen",
+  "deleteUserConfirm": "De gebruiker '{{userName}}' verwijderen?",
+  "deleteRoleConfirm": "De rol '{{roleName}}' verwijderen?",
+  "passwordMismatch": "Wachtwoorden komen niet overeen",
   "twoFactorAuth": "Tweestapsverificatie",
   "twoFactorConfigure": "Configureer",
-  "firstName":"Voornaam",
-  "surname":"Achternaam",
+  "firstName": "Voornaam",
+  "surname": "Achternaam",
   "realmRules": "Realm",
   "globalRules": "Globaal",
   "recipients": "Ontvangers",
@@ -395,7 +426,7 @@
     "selectAsset": "Selecteer gateway asset",
     "closeSuccessful": "Tunnel gesloten",
     "closesAt": "Sluit op",
-		"offline": "Offline"												
+    "offline": "Offline"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
@@ -446,14 +477,14 @@
   "password-policy-not-username": "Het wachtwoord mag niet de gebruikersnaam zijn",
   "password-policy-not-email": "Het wachtwoord mag niet het emailadres zijn",
   "details": "Details",
-  "permissions":"Rechten",
-  "linkedAssets":"Gekoppelde assets",
-  "realm_role_plural":"Realm rollen",
-  "manager_role_plural":"Manager rollen",
+  "permissions": "Rechten",
+  "linkedAssets": "Gekoppelde assets",
+  "realm_role_plural": "Realm rollen",
+  "manager_role_plural": "Manager rollen",
   "restrictAccess": "Beperkte toegang",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Beperkte toegang tot",
-  "fullAccessLabel":"Admin: volledige toegang; gebruikers en rollen beheren",
+  "fullAccessLabel": "Admin: volledige toegang; gebruikers en rollen beheren",
   "noChildAssets": "Geen onderliggende assets",
   "account": "Account",
   "editAttribute": "Attribuut kiezen",
@@ -581,24 +612,55 @@
   },
   "validityType": "Planning van de regel",
   "validityAlways": "Altijd actief",
-  "validityPeriod": "Eén periode plannen",
-  "validityRecurrence": "Herhaling plannen",
+  "planPeriod": "Eén periode plannen",
+  "planRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
-  "forDays":"voor {{days}} dagen",
+  "forDays": "voor {{days}} dagen",
+  "scheduleActivity": "Planner",
   "scheduleRuleActivity": "Regelplanner",
+  "scheduleSimulatorActivity": "Simulator Replay Schema",
+  "defaultSimulatorSchedule": "Elke dag vanaf 00:00",
+  "schedule": {
+    "count_one": "herhaling",
+    "count_other": "herhalingen",
+    "_ends": "Eindigt",
+    "ends": {
+      "until": "Op",
+      "count": "Na"
+    },
+    "repeat": "Herhaal elke",
+    "type": "Schema type"
+  },
+  "rrule": {
+    "frequency": {
+      "YEARLY_one": "Jaar",
+      "YEARLY_other": "Jaren",
+      "MONTHLY_one": "Maand",
+      "MONTHLY_other": "Maanden",
+      "WEEKLY_one": "Week",
+      "WEEKLY_other": "Weken",
+      "DAILY_one": "Dag",
+      "DAILY_other": "Dagen",
+      "HOURLY_one": "Uur",
+      "HOURLY_other": "Uren",
+      "MINUTELY_one": "Minuut",
+      "MINUTELY_other": "Minuten",
+      "SECONDLY_one": "Seconde",
+      "SECONDLY_other": "Seconden"
+    }
+  },
   "allDay": "Hele dag",
   "apply": "toepassen",
   "to": "tot",
   "from": "van",
   "never": "Nooit",
-  "repetitionEnds": "Herhaling eindigt",
-  "repeatOccurrenceEvery": "Herhaal elke",
   "daysOfTheWeek": "dagen van de week",
   "dismiss": "sluiten",
   "createAssetFailed": "Asset aanmaken is niet gelukt",
   "moveAssetFailed": "Failed to move asset",
+  "loadMore": "Meer laden",
   "logCategory": {},
   "readPermissions": "Leesrechten",
   "writePermissions": "Schrijfrechten",
@@ -634,7 +696,7 @@
   "autoProvisioning": "Auto provisioning",
   "provisioningConfigs": "Provisioning configuraties",
   "loadFailedProvisioningConfigs": "Provisioning configuraties ophalen mislukt",
-  "deleteProvisioningConfigConfirm":"Weet je zeker dat je deze provisioning configuratie wil verwijderen?\nClients die deze configuratie gebruiken kunnen niet langer verbinden.",
+  "deleteProvisioningConfigConfirm": "Weet je zeker dat je deze provisioning configuratie wil verwijderen?\nClients die deze configuratie gebruiken kunnen niet langer verbinden.",
   "assetTemplate": "Asset template",
   "createAsRestrictedUser": "Gebruiker met beperkte toegang maken",
   "ignoreExpiryDate": "Vervaldatum negeren",
@@ -664,8 +726,8 @@
   "no": "Nee",
   "linked": "Gelinkt",
   "filter": {
-		"close": "Filter sluiten",
-    "open": "Filter openen",													
+    "close": "Filter sluiten",
+    "open": "Filter openen",
     "filter": "Filter",
     "clear": "LEEGMAKEN",
     "action": "FILTER",
@@ -678,7 +740,7 @@
   },
   "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
   "realmDeleteFailed": "Realm verwijderen mislukt",
-	"addRule": "Regel toevoegen",
+  "addRule": "Regel toevoegen",
   "rulesetStatus": {
     "DEPLOYED": "Succesvol aangemaakt",
     "NOSTATUS": "Uitgeschakeld",
@@ -698,12 +760,12 @@
   "layout": "Indeling",
   "display": "Weergave",
   "screen": "Scherm",
-  "uploadFile" : "Uploaden bestand",
-  "fileSelected" : "Bestand geselecteerd",
-  "fileSaved" : "Bestand opgeslagen",
+  "uploadFile": "Uploaden bestand",
+  "fileSelected": "Bestand geselecteerd",
+  "fileSaved": "Bestand opgeslagen",
   "thresholds": "Drempelwaardes",
   "threshold": "Drempelwaarde",
-	"addInsights": "Dashboard toevoegen",
+  "addInsights": "Dashboard toevoegen",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardSelected-mobile": "Selecteer een dashboard in het menu linksboven",
   "noDashboardFound": "Geen dashboard gevonden.",
@@ -753,17 +815,19 @@
     "setToMobilePreset": "Stel mobiel preset in",
     "zoomPercent": "Zoom %",
     "presetSize": "Voorbeeld grootte",
-		"previewScreenSizes": "Preview schermformaten",
+    "previewScreenSizes": "Preview schermformaten",
     "renderingGrid": "Grid aan het renderen...",
     "deviceNotSupported": "Dit dashboard wordt niet ondersteund op dit apparaat.",
     "deletePermanentWarning": "Dit zal {{dashboard}} permanent verwijderen.",
     "deleteWidgetWarning": "De widget zal worden weggehaald van het bord, en zal permanent worden verwijderd als u opslaat.",
     "widgetTooSmall": "Widget is te klein.",
+    "toggleStackView": "Gestapelde grafiek",
     "allowTimerangeSelect": "Sta tijdselectie toe",
     "toggleAxis": "As wisselen",
     "showLegend": "Toon legenda",
     "showGeoJson": "Toon GeoJSON overlay",
     "showValueAs": "Laat waarde zien als",
+    "showZoomBar": "Toon zoom balk",
     "customLabel": "Label",
     "customTimeSpan": "Aangepast",
     "userCanEdit": "Kan waarde aanpassen",
@@ -775,7 +839,16 @@
     "zoom": "Zoom",
     "center": "Middelpunt",
     "imageUrl": "Afbeelding URL",
-    "noImageSelected": "Geen afbeelding geselecteerd"
+    "noImageSelected": "Geen afbeelding geselecteerd",
+    "noData": "No data",
+    "selectMethod": "Selecteer aggregatie methode",
+    "faint": "Vervagen",
+    "smooth": "Gladstrijken",
+    "stepped": "Treden",
+    "fill": "Vullen",
+    "extendData": "Verleng laatste datapunt",
+    "lineColor": "Lijnkleur",
+    "barColor": "Kleur van de balk"
   },
   "south": "Zuid",
   "east": "Oost",
@@ -784,13 +857,13 @@
   "default": "Standaard",
   "appearance": "Weergave",
   "configuration": {
-    "" : "Weergave",
+    "": "Weergave",
     "main": "Algemeen",
     "realmStyling": "Realm stijl",
     "managerConfigNotFound": "Kon bestand met manager configuratie niet vinden.",
     "mapSettingsNotFound": "Kon bestand met kaart configuratie niet vinden.",
     "tryAgain": "Probeer opnieuw",
-    "addRealmCustomization" : "Voeg realm stijl toe",
+    "addRealmCustomization": "Voeg realm stijl toe",
     "realmTitle": "Manager app titel",
     "realmMapSettingsTitle": "Realm Kaart Stijl",
     "defaultLanguage": "Standaard taal",
@@ -807,16 +880,16 @@
     "--or-app-color2": "Achtergrond: kleur achter panelen met oppervlakkleur",
     "--or-app-color3": "Tekst: pagina en panel titels",
     "--or-app-color8": "Tekst op primair: tekst op onderdelen met de primaire kleur",
-    "navigation" : "Navigatie",
+    "navigation": "Navigatie",
     "navigationDescription": "De primaire navigatie staat in de header, secundaire items kun je in het menu rechtsboven vinden.",
     "notificationLanguages": "Notificatie talen",
     "notificationLanguagesDesc": "Talen die hier ingesteld zijn kunnen gebruikt worden in notificaties voor gebruikers die hun taal hebben ingesteld.",
     "notificationLanguagesLabel": "Zoek naar andere talen...",
-    "primaryNavigation" : "Primair menu",
-    "secondaryNavigation" : "Secundair menu",
-    "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
+    "primaryNavigation": "Primair menu",
+    "secondaryNavigation": "Secundair menu",
+    "reloadPage": "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
     "deleteRealmCustomization": "Verwijder stijl",
-    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
+    "deleteRealmCustomizationConfirm": "Weet je zeker dat je deze realm stijl wilt verwijderen?",
     "mapBounds": "Randen",
     "mapBoundsDescription": "Overschrijf de standaard kaders van de kaart",
     "mapZoom": "Zoom",
@@ -827,8 +900,8 @@
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
-    "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een Kaartinstelling toe",
+    "deleteMapCustomizationConfirm": "Weet je zeker dat je deze kaart wilt verwijderen",
+    "addMapCustomization": "Voeg een Kaartinstelling toe",
     "global": {
       "reset": "Resetten",
       "import": "Importeren",
@@ -869,6 +942,14 @@
   "AVG": "Gemiddelde",
   "MIN": "Minimum",
   "MAX": "Maximum",
+  "DIFFERENCE": "Verschil",
+  "COUNT": "Aantal",
+  "MEDIAN": "Mediaan",
+  "MODE": "Modus",
+  "SUM": "Som",
+  "mapPage": {
+    "legendTitle": "Legenda"
+  },
   "alarm": {
     "": "Alarm",
     "alarm_plural": "Alarmen",
@@ -918,5 +999,173 @@
     "source": "Bron"
   },
   "expandAll": "Alles uitklappen",
-  "collapseAll": "Alles inklappen"
+  "collapseAll": "Alles inklappen",
+  "services": "Services",
+  "service": {
+    "noServiceSelected": "Selecteer een service aan de linkerkant",
+    "servicesLoadError": "Er is iets misgegaan bij het ophalen van de services",
+    "realmServicesLoadError": "Er is iets misgegaan bij het ophalen van de realm services",
+    "globalServicesLoadError": "Er is iets misgegaan bij het ophalen van de globale services",
+    "noServices": "Geen services gevonden, controleer de documentatie op hoe je services kunt toevoegen",
+    "iframeLoadError": "De geselecteerde service kon niet worden geladen"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "Lege waarde",
+              "description": "Predicaat dat overeenkomt met elke lege/nulwaarde; tenzij genegeerd."
+            },
+            "RadialGeofencePredicate": {
+              "label": "Radiale geofence",
+              "description": "Predicaat voor GEO JSON-puntwaarden; geeft true terug als het punt zich binnen de opgegeven straal rond de opgegeven breedte- en lengtegraad bevindt, tenzij negatief gemaakt."
+            },
+            "ValueAnyPredicate": {
+              "label": "Elke waarde",
+              "description": "Predicaat dat overeenkomt met elke waarde, inclusief null."
+            },
+            "CalendarEventPredicate": {
+              "label": "Kalender",
+              "description": "Predicaat voor kalender-evenementwaarden; komt overeen op basis van of het kalender-evenement actief is op het opgegeven tijdstip."
+            },
+            "RectangularGeofencePredicate": {
+              "label": "Rechthoekige geofence",
+              "description": "Predicaat voor GEO JSON-puntwaarden; geeft true terug als het punt zich binnen de opgegeven rechthoek bevindt, gespecificeerd als breedte- en lengtegraad van twee hoeken, tenzij negatief gemaakt."
+            },
+            "ArrayPredicate": {
+              "description": "Predicaat voor array waarden; komt overeen op basis van geconfigureerde opties."
+            },
+            "StringPredicate": {
+              "description": "Predicaat voor string waarden; komt overeen op basis van geconfigureerde opties."
+            },
+            "NumberPredicate": {
+              "description": "Predicaat voor numerieke waarden; komt overeen op basis van geconfigureerde opties."
+            },
+            "DateTimePredicate": {
+              "description": "Predicaat voor datum/tijdwaarden; opgegeven waarden moeten geldige ISO 8601-datumtijdstrings zijn (bijv. yyyy-MM-dd'T'HH:mm:ssZ of yyyy-MM-dd'T'HH:mm:ss±HH:mm). Offset en tijd zijn optioneel. Als geen offset-informatie wordt opgegeven, wordt UTC aangenomen."
+            },
+            "BooleanPredicate": {
+              "description": "Predicaat voor boolean waarden; evalueert de waarde als een boolean en vergelijkt deze met de waarde van dit predicaat. Elke waarde die geen boolean is, komt niet overeen."
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": "Datapunt"
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": "Wiskundige expressie"
+          },
+          "SubStringValueFilter": {
+            "label": "Substring"
+          },
+          "JsonPathFilter": {
+            "label": "JSON-pad"
+          },
+          "RegexValueFilter": {
+            "label": "Regex"
+          },
+          "ValueConstraint": {
+            "description": "De beperkingen moeten een JSON-compatibele lijst van objecten zijn.",
+            "Size": {
+              "description": "De attribuutwaarde moet binnen de opgegeven grenzen liggen op basis van de `min` en `max` waardes. Ondersteunde types zijn JSON-compatibele strings, arrays en objecten. Null-waarden worden als geldig beschouwd."
+            },
+            "Min": {
+              "description": "De attribuutwaarde moet een getal zijn dat groter of gelijk is aan de opgegeven `min` waarde. Null-waarden worden als geldig beschouwd."
+            },
+            "Max": {
+              "description": "De attribuutwaarde moet een getal zijn dat kleiner of gelijk is aan de opgegeven `max` waarde. Null-waarden worden als geldig beschouwd."
+            },
+            "Pattern": {
+              "description": "De attribuutwaarde moet overeenkomen met het reguliere expressiepatroon dat is beschreven in de eigenschap `regexp`. De reguliere expressie volgt de Java-reguliere expressieconventies. Vlaggen kunnen worden opgegeven met behulp van de eigenschap `flags` met waarden: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ en COMMENTS. Null-waarden worden als geldig beschouwd."
+            },
+            "AllowedValues": {
+              "description": "De attribuutwaarde moet overeenkomen met een van de opgegeven waarden in de eigenschap `allowedValues`. De bijbehorende invoer in de UI verandert in een selectievak met de opties die in `allowedValues` zijn opgegeven. De eigenschap `allowedValueNames` accepteert een lijst met namen die de labels in de selectielijst vervangen, als de lengte van `allowedValueNames` overeenkomt met die van `allowedValues`; anders worden de waarden zelf als labels gebruikt. Null-waarden worden als geldig beschouwd. Als `allowedValues` niet is opgegeven of leeg is, accepteert de beperking alleen null-waarden."
+            },
+            "Past": {
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in het verleden zijn. Null-waarden worden als geldig beschouwd."
+            },
+            "PastOrPresent": {
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in het verleden of heden zijn. Null-waarden worden als geldig beschouwd."
+            },
+            "Future": {
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in de toekomst zijn. Null-waarden worden als geldig beschouwd."
+            },
+            "FutureOrPresent": {
+              "description": "De attribuutwaarde moet een java-timeobject, java-datumobject, een string in ISO8601-formaat of een getal zijn in epoch-milliseconds; de waarde moet een tijd in de toekomst of het heden zijn. Null-waarden worden als geldig beschouwd."
+            },
+            "NotEmpty": {
+              "description": "De attribuutwaarde mag niet null of leeg zijn. Ondersteunde types zijn JSON-compatibele strings, arrays en objecten die ten minste 1 teken, item of eigenschap bevatten."
+            },
+            "NotBlank": {
+              "description": "De attribuutwaarde mag niet null zijn en moet ten minste 1 niet-witruimte-teken bevatten. Accepteert strings."
+            },
+            "NotNull": {
+              "description": "De attribuutwaarde mag niet null zijn. Accepteert elk type."
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": "Definieert ValueFilters die worden toegepast op een inkomende waarde voordat deze wordt weggeschreven naar een protocol gekoppeld attribuut; dit is vooral nuttig voor generieke protocollen. Het bericht moet de filters in arrayvolgorde doorlopen."
+              },
+              "valueConverter": {
+                "description": "Definieert een waardeconversiemap voor eenvoudige typeconversie; de inkomende waarde wordt geconverteerd naar JSON en als deze string overeenkomt met een eigenschapsnaam in de converter, wordt de waarde van die eigenschapsnaam naar het attribuut gestuurd. Een voorbeeld: een API die 'ACTIVE'/'DISABLED' strings retourneert, maar u wilt dit koppelen aan een boolean attribuutwaarde."
+              },
+              "writeValueConverter": {
+                "description": "Vergelijkbaar met valueConverter, maar wordt toegepast op uitgaande waarden voor de omgekeerde conversie."
+              },
+              "writeValue": {
+                "description": "String die wordt gebruikt voor attribuutschrijfacties en dynamische placeholders kan bevatten om dynamische waarden en/of tijd in de string in te voegen (zie documentatie voor details), of anders de string ongewijzigd naar het protocol doorsturen (statische string)."
+              },
+              "messageMatchPredicate": {
+                "description": "Het predicaat dat wordt toegepast op inkomende berichten om te bepalen of het bericht bedoeld is voor het gekoppelde attribuut; de waarde die in het predicaat wordt gebruikt, kan worden gefilterd met behulp van de message match-filters. Dit moet worden gedefinieerd om attributen door de gekoppelde agent te laten bijwerken."
+              },
+              "messageMatchFilters": {
+                "description": "ValueFilters die worden toegepast op inkomende berichten voordat deze worden vergeleken met het messageMatchPredicate."
+              },
+              "updateOnWrite": {
+                "description": "Verwacht geen reactie van het protocol; het werkt de attribuut onmiddellijk bij tijdens schrijven."
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": "De tijdzone die de Simulator moet volgen bij afspelen van de dataset."
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

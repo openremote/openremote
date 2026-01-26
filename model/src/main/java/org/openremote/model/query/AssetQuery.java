@@ -184,6 +184,7 @@ public class AssetQuery implements Serializable {
     // Ordering
     public OrderBy orderBy;
     public int limit;
+    public int offset;
 
     public AssetQuery() {
     }
@@ -385,6 +386,16 @@ public class AssetQuery implements Serializable {
         return this;
     }
 
+    public AssetQuery limit(int limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    public AssetQuery offset(int offset) {
+        this.offset = offset;
+        return this;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -398,6 +409,8 @@ public class AssetQuery implements Serializable {
                 ", type=" + Arrays.toString(types) +
                 ", attribute=" + (attributes != null ? attributes.toString() : "null") +
                 ", orderBy=" + orderBy +
+                ", limit=" + limit +
+                ", offset=" + offset +
                 ", recursive=" + recursive +
                 '}';
     }
