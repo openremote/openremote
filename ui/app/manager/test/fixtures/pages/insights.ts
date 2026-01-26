@@ -21,7 +21,7 @@ export class InsightsPage implements BasePage {
     }
 
     getBrowser(options?: any) {
-        return this.page.locator("or-dashboard-browser", options);
+        return this.page.locator("or-dashboard-browser #sidebar", options);
     }
 
     getWidgetSettings(options?: any) {
