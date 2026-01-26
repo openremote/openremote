@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { html, LitElement, PropertyValues, TemplateResult } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { CalendarEvent } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { translate, i18next } from "@openremote/or-translate";
@@ -108,9 +108,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     @state()
     protected _rrule?: RRule;
-
-    @query("#radial-modal")
-    protected dialog?: OrMwcDialog;
 
     protected _byRRuleParts?: RulePartKey[];
     protected _count = 1;
