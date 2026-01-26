@@ -75,6 +75,15 @@ export class OrDashboardBrowser extends LitElement {
         return [unsafeCSS(gridcss), browserStyling, style];
     }
 
+    updated(changedProps: PropertyValues) {
+
+        // Apply widgetTypeId to identify what 'card' is linked to what widget type
+        this.sidebarGrid?.getGridItems()?.forEach(i => {
+            if(i.gridstackNode) (i.gridstackNode as DashboardGridNode).widgetTypeId = i.getAttribute("gs-id") ?? i.id;
+        });
+        return super.updated(changedProps);
+    }
+
     firstUpdated(changedProps: PropertyValues) {
         this.renderGrid();
         return super.firstUpdated(changedProps);
@@ -146,7 +155,7 @@ export class OrDashboardBrowser extends LitElement {
 
     protected _getSidebarItemTemplate(id: string, type: string, manifest: WidgetManifest): TemplateResult {
         return html`
-            <div class="grid-stack-item" id=${id} gs-id=${type} widgetTypeId=${type} gs-w=${this.size} gs-h=${this.size} gs-locked="true">
+            <div class="grid-stack-item" id=${id} gs-id=${type} gs-w=${this.size} gs-h=${this.size} gs-locked="true">
                 <div class="grid-stack-item-content sidebarItem">
                     <or-icon icon="${manifest.displayIcon}"></or-icon>
                     <span class="itemText">${manifest.displayName}</span>

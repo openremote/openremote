@@ -62,7 +62,7 @@ export class InsightsPage implements BasePage {
 
         // Manual drag and drop
         const count = await this.getWidgets().count();
-        await this.page.locator("#sidebar .ui-draggable", {hasText: type}).first().hover();
+        await this.page.locator("#sidebar .grid-stack-item", {hasText: type}).first().hover();
         await this.page.mouse.down();
         await this.page.mouse.move(-200, 0, { steps: 5 }); // Move tiny bit left, so the hover event is triggered
         await this.page.locator(".maingrid").hover({ position: { x: coordinates[0], y: coordinates[1] }});
