@@ -1,6 +1,16 @@
 import { expect } from "@openremote/test";
 import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
-import { preparedAssetsWithLocation as assets, assignLocation, commonAttrs, getAssetTypeColour, getAssetTypes, getAssetAt, rgbToHex, getAssetsForAllTypes } from "./fixtures/data/assets.js";
+import {
+    preparedAssetsWithLocation as assets,
+    assignRandomLocationInArea,
+    commonAttrs,
+    getAssetTypeColour,
+    getAssetTypes,
+    getAssetAt,
+    rgbToHex,
+    getAssetsForAllTypes,
+    getRGBColor,
+} from "./fixtures/data/assets.js";
 import { markers } from "./fixtures/data/manager.js";
 import type { OrMap, OrClusterMarker } from "@openremote/or-map";
 import { type Asset, WellknownMetaItems } from "@openremote/model";
@@ -122,7 +132,6 @@ test.describe("Map markers", () => {
 })
 
 test.describe("Marker config", () => {
-  const getRGBColor = (el: Element): string[] => window.getComputedStyle(el).color.match(/\d+/g)!;
 
   /**
    * @given Asset with location is set up in the "smartcity" realm
@@ -145,7 +154,7 @@ test.describe("Marker config", () => {
 
     await page.addInitScript(manager.hijackWebSocket());
 
-    const assets = [assignLocation({
+    const assets = [assignRandomLocationInArea({
       name: "Light",
       type: "ThingAsset",
       realm: "smartcity",
@@ -197,7 +206,7 @@ test.describe("Marker config", () => {
 
     await page.addInitScript(manager.hijackWebSocket());
 
-    const assets = [assignLocation({
+    const assets = [assignRandomLocationInArea({
       name: "Thermometer",
       type: "ThingAsset",
       realm: "smartcity",
@@ -261,7 +270,7 @@ test.describe("Marker clustering", () => {
     const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
     const assets = getAssetsForAllTypes(assetInfos, { bbox });
     const outlierbbox = { west: 4.483812, south: 51.916359, east: 4.484017, north: 51.916495 };
-    assets.push({ ...assignLocation(getAssetAt(assetInfos), outlierbbox), name: "outlier", realm: "smartcity" })
+    assets.push({ ...assignRandomLocationInArea(getAssetAt(assetInfos), outlierbbox), name: "outlier", realm: "smartcity" })
 
     await manager.setup("smartcity", { assets });
     await manager.goToRealmStartPage("smartcity");
@@ -413,7 +422,7 @@ test.describe("Asset type legend", () => {
   test("should not not be shown with 1 asset type", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
-    const assets = [assignLocation({
+    const assets = [assignRandomLocationInArea({
       name: "Thing",
       type: "ThingAsset",
       realm: "smartcity",
