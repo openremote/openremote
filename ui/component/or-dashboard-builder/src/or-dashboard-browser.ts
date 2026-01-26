@@ -75,15 +75,6 @@ export class OrDashboardBrowser extends LitElement {
         return [unsafeCSS(gridcss), browserStyling, style];
     }
 
-    updated(changedProps: PropertyValues) {
-
-        // Apply widgetTypeId to identify what 'card' is linked to what widget type
-        this.sidebarGrid?.getGridItems()?.forEach(i => {
-            if(i.gridstackNode) (i.gridstackNode as DashboardGridNode).widgetTypeId = i.id;
-        });
-        return super.updated(changedProps);
-    }
-
     firstUpdated(changedProps: PropertyValues) {
         this.renderGrid();
         return super.firstUpdated(changedProps);
@@ -142,20 +133,20 @@ export class OrDashboardBrowser extends LitElement {
         return html`
             <div id="sidebar">
                 <div id="sidebarElement" class="grid-stack" style="width: 100%; z-index: 3;">
-                    ${repeat(this.items, ([type]) => type, ([type, manifest]) => this._getSidebarItemTemplate(type, manifest))}
+                    ${repeat(this.items, ([type]) => type, ([type, manifest]) => this._getSidebarItemTemplate(type, type, manifest))}
                     ${when(this.items.size % 2 !== 0, () => this._getEmptyItemTemplate())}
                 </div>
                 <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 2">
-                    ${repeat(this.items, ([type]) => type, ([type, manifest]) => this._getSidebarItemTemplate(type, manifest))}
+                    ${repeat(this.items, ([type]) => type, ([type, manifest]) => this._getSidebarItemTemplate(`bg-${type}`, type, manifest))}
                     ${when(this.items.size % 2 !== 0, () => this._getEmptyItemTemplate())}
                 </div>
             </div>
         `;
     }
 
-    protected _getSidebarItemTemplate(type: string, manifest: WidgetManifest): TemplateResult {
+    protected _getSidebarItemTemplate(id: string, type: string, manifest: WidgetManifest): TemplateResult {
         return html`
-            <div class="grid-stack-item" id=${type} gs-id=${type} widgetTypeId=${type} gs-w=${this.size} gs-h=${this.size} gs-locked="true">
+            <div class="grid-stack-item" id=${id} gs-id=${type} widgetTypeId=${type} gs-w=${this.size} gs-h=${this.size} gs-locked="true">
                 <div class="grid-stack-item-content sidebarItem">
                     <or-icon icon="${manifest.displayIcon}"></or-icon>
                     <span class="itemText">${manifest.displayName}</span>
