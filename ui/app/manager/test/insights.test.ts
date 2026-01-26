@@ -149,8 +149,9 @@ test("Create a Map widget", async ({ manager, shared, page, insightsPage, mwcMen
     await expect(thresholdsColors.first()).toHaveValue("#4caf50");
     await expect(thresholdsColors.last()).toHaveValue("#ff9800");
 
-    const _default = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
-    expect(rgbToHex(_default)).toBe("4c4c4c");
+    await expect
+        .poll(() => page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor).then(rgbToHex))
+        .toBe("4c4c4c");
 
     // Update attribute to match the first threshold
     await manager.sendWebSocketEvent({
@@ -161,8 +162,9 @@ test("Create a Map widget", async ({ manager, shared, page, insightsPage, mwcMen
     await page.getByTitle("Refresh", { exact: true }).click();
     await expect(page.locator(".or-map-marker")).toBeVisible();
 
-    const first = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
-    expect(rgbToHex(first)).toBe("4caf50");
+    await expect
+        .poll(() => page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor).then(rgbToHex))
+        .toBe("4caf50");
 
     await mapWidget.click();
     await thresholdsColors.last().fill("#000000");
@@ -175,9 +177,9 @@ test("Create a Map widget", async ({ manager, shared, page, insightsPage, mwcMen
     });
     await page.getByTitle("Refresh", { exact: true }).click();
     await expect(page.locator(".or-map-marker")).toBeVisible();
-
-    const black = await page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor);
-    expect(rgbToHex(black)).toBe("000000");
+    await expect
+        .poll(() => page.locator('or-icon[icon="or:marker"]').evaluate(getRGBColor).then(rgbToHex))
+        .toBe("000000");
 });
 
 test.afterEach(async ({ manager }) => {

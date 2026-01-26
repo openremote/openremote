@@ -247,7 +247,7 @@ export function getAssetTypeColour(type: string, infos: AssetTypeInfo[]) {
 export const getRGBColor = (el: Element): string[] => window.getComputedStyle(el).color.match(/\d+/g)!;
 
 export function rgbToHex(rgb: string[]) {
-    return rgb.map((i) => ("0" + parseInt(i).toString(16)).slice(-2)).join("");
+    return rgb?.map((i) => ("0" + parseInt(i).toString(16)).slice(-2)).join("");
 }
 
 function randomBetween(max: number, min: number) {
