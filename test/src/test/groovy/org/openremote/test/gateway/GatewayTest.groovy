@@ -1102,10 +1102,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         tunnelFactory != null
 
         when: "a tunnel is requested to start"
-        def startEvent = new GatewayTunnelStartRequestEvent(
-                tunnelSSHHost,
-                tunnelSSHPort,
-                tunnelInfo)
+        def startEvent = new GatewayTunnelStartRequestEvent(tunnelInfo)
         tunnelFactory.createSession(startEvent)
 
         then: "the tunnel should be established and be usable"
@@ -1115,7 +1112,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "the tunnel is stopped"
         tunnelFactory.stopTunnel(tunnelInfo)
 
-        and: "requests should fail"
+        then: "requests should fail"
         def response2 = target.request().get()
         response2.status != 200
 

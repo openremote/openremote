@@ -7,7 +7,6 @@ import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Date;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -23,7 +22,7 @@ public class GatewayCapabilitiesRequestEvent extends SharedEvent implements Resp
     // We provide active tunnels ASAP so the edge gateway can sync its current active SSH sessions (for reconnection purposes
     protected GatewayTunnelInfo[] activeTunnels;
     protected String tunnelHostname;
-    protected int tunnelPort;
+    protected Integer tunnelPort;
 
     @JsonCreator
     public GatewayCapabilitiesRequestEvent(Long timestamp, String version, String tunnelHostname, Integer tunnelPort) {
@@ -41,7 +40,7 @@ public class GatewayCapabilitiesRequestEvent extends SharedEvent implements Resp
         return tunnelHostname;
     }
 
-    public int getTunnelPort() {
+    public Integer getTunnelPort() {
         return tunnelPort;
     }
 

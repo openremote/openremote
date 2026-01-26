@@ -55,7 +55,7 @@ public class GatewayClientConnector implements AutoCloseable {
     protected Consumer<AttributeEvent> realmAttributeEventConsumer;
     protected String gatewayAPIVersion;
     protected String tunnelHostname;
-    protected int tunnelPort;
+    protected Integer tunnelPort;
 
     public GatewayClientConnector(GatewayConnection connection,
                                   GatewayTunnelFactory tunnelFactory,
@@ -216,6 +216,12 @@ public class GatewayClientConnector implements AutoCloseable {
                     LOG.finest("Gateway tunnel creation request received but gateway tunnel factory is not available: realm=" + connection.getLocalRealm());
                     return;
                 }
+                // If we don't have tunnel hostname and port already then this is a legacy manager so try and get from
+                // the start request event - it never changes in legacy manager so we can safely do this once
+                if (tunnelHostname == null || tunnelPort == 0) {
+                    tunnelHostname = startRequestEvent.getSshHostname();
+                    tunnelPort = startRequestEvent.getSshPort();
+                }
                 startGatewayTunnel(startRequestEvent.getInfo()).whenComplete((v, t) -> {
                     String error = t != null ? t.getMessage() : null;
 
@@ -353,6 +359,7 @@ public class GatewayClientConnector implements AutoCloseable {
         }
 
         LOG.info("Start tunnel request received: " + connection + ", " + tunnelInfo);
+
         GatewayTunnelSession session = tunnelFactory.createSession(tunnelHostname, tunnelPort, tunnelInfo, this::onTunnelSessionClosed);
         activeTunnelSessions.add(session);
         return session.connectFuture.orTimeout(5000, TimeUnit.MILLISECONDS);
@@ -413,7 +420,7 @@ public class GatewayClientConnector implements AutoCloseable {
             // Manually requested tunnel session close so nothing to do here
         } else {
             LOG.log(Level.WARNING, "Gateway tunnel session closed with error: " + sessionCloseError.getMessage());
-            
+
         }
     }
 

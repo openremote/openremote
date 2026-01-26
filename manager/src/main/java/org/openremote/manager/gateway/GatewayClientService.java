@@ -58,7 +58,7 @@ import static org.openremote.model.util.MapAccess.getString;
  */
 public class GatewayClientService extends RouteBuilder implements ContainerService {
 
-    public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
+    public static final int PRIORITY = ContainerService.LOW_PRIORITY;
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
     public static final String OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE = "OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE";
