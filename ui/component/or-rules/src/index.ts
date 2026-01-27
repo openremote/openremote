@@ -852,6 +852,9 @@ export class OrRules extends translate(i18next)(LitElement) {
     @state()
     protected _selectedGroup?: string;
 
+    @property({ type: Number})
+        public selectedRuleId?: number;
+
     @query("#rule-tree")
     private _rulesTree?: OrRuleTree;
 
@@ -879,6 +882,71 @@ export class OrRules extends translate(i18next)(LitElement) {
                 <or-rule-viewer id="rule-viewer" .config="${this.config}" .readonly="${this._isReadonly()}"></or-rule-viewer>
             `)}
         `;
+    }
+
+    protected updated(changedProperties: PropertyValues): void {
+        super.updated(changedProperties);
+
+        if (changedProperties.has('selectedRuleId') && this.selectedRuleId) {
+            // If the parent changes the selected rule id, the new ruleset with that id
+            // is fetched and updated in the view
+            this._fetchRuleset(this.selectedRuleId!).then((ruleset) => {
+                const rulesetNode = {type: "rule", ruleset: ruleset, selected: true} as RulesetNode;
+                this._onNodeSelectionChanged({
+                    oldNodes: [],
+                    newNodes: [rulesetNode]
+                });
+            });
+        }
+    }
+
+    /**
+     * Attempts to fetch a ruleset by its ID without prior knowledge of its type (realm or global).
+     * Tries multiple endpoints sequentially until a match is found or all options fail.
+     * Handles 404 errors gracefully to continue searching, and rethrows other errors.
+     *
+     * @param rulesetId - The numeric ID of the ruleset to fetch.
+     * @returns The found RulesetUnion object or logs an error if none found.
+     */
+    protected async _fetchRuleset(rulesetId: number) {
+
+        let ruleset = undefined;
+
+        const id = rulesetId;
+        let foundRule: RulesetUnion | undefined;
+
+        // This pattern of trying endpoints is not ideal, but is one way to resolve
+        // an ID to a ruleset without knowing its type (realm, or global) beforehand.
+        const fetchers = [
+            () => manager.rest.api.RulesResource.getRealmRuleset(id),
+            () => manager.rest.api.RulesResource.getGlobalRuleset(id)
+        ];
+
+        try {
+            for (const fetcher of fetchers) {
+                try {
+                    const response = await fetcher();
+                    if (response.data) {
+                        foundRule = response.data;
+                        break; // Rule found, exit the loop
+                    }
+                } catch (e: any) {
+                    // A 404 status means the rule wasn't of this type, so we can safely continue.
+                    // Any other error should be surfaced.
+                    if (e.response?.status !== 404) {
+                        throw e;
+                    }
+                }
+            }
+
+            if (foundRule) {
+                return foundRule;
+            } else {
+                throw new Error(`Rule with ID ${id} not found in any context.`);
+            }
+        } catch (e) {
+            console.error(`Failed to fetch ruleset with id ${id}`, e);
+        }
     }
 
     public refresh() {
