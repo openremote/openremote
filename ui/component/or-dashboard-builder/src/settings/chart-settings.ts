@@ -356,7 +356,7 @@ export class ChartSettings extends WidgetSettings {
     // we should remove the settings references for the attributes that got removed.
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
+        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ref => !ev.detail.attributeRefs.some(r => r.id === ref.id && r.name === ref.name));
 
         removedAttributeRefs.forEach(raf => {
             this.removeFromAttributeConfig(raf);
