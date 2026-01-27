@@ -45,7 +45,7 @@ function getDefaultWidgetConfig(): MapWidgetConfig {
         showUnits: false,
         showGeoJson: true,
         boolColors: {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'},
-        textColors: [['example1', '4caf50'], ['example2', 'ef5350']],
+        textColors: [['example1', '#4caf50'], ['example2', '#ef5350']],
         thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
         assetTypes: [],
         assetType: undefined,
