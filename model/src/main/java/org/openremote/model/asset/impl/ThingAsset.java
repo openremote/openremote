@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
 
@@ -24,21 +23,17 @@ import org.openremote.model.asset.AssetDescriptor;
 
 import jakarta.persistence.Entity;
 
-/**
- * Generic asset i.e. "Thing"
- */
+/** Generic asset i.e. "Thing" */
 @Entity
 public class ThingAsset extends Asset<ThingAsset> {
 
-    public static final AssetDescriptor<ThingAsset> DESCRIPTOR = new AssetDescriptor<>("cube-outline", null, ThingAsset.class);
+  public static final AssetDescriptor<ThingAsset> DESCRIPTOR =
+      new AssetDescriptor<>("cube-outline", null, ThingAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected ThingAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected ThingAsset() {}
 
-    public ThingAsset(String name) {
-        super(name);
-    }
+  public ThingAsset(String name) {
+    super(name);
+  }
 }

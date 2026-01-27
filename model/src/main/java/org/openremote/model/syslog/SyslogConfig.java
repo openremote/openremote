@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,65 +12,69 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.syslog;
 
-import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
+
+import jakarta.validation.constraints.NotNull;
 
 public class SyslogConfig {
 
-    public static final int DEFAULT_LIMIT = 50;
+  public static final int DEFAULT_LIMIT = 50;
 
-    @NotNull
-    protected SyslogLevel storedLevel;
+  @NotNull protected SyslogLevel storedLevel;
 
-    @NotNull
-    protected SyslogCategory[] storedCategories;
+  @NotNull protected SyslogCategory[] storedCategories;
 
-    @NotNull
-    protected int storedMaxAgeMinutes;
+  @NotNull protected int storedMaxAgeMinutes;
 
-    public SyslogConfig() {
-    }
+  public SyslogConfig() {}
 
-    public SyslogConfig(SyslogLevel storedLevel, SyslogCategory[] storedCategories, int storedMaxAgeMinutes) {
-        this.storedLevel = storedLevel;
-        this.storedCategories = storedCategories;
-        this.storedMaxAgeMinutes = storedMaxAgeMinutes;
-    }
+  public SyslogConfig(
+      SyslogLevel storedLevel, SyslogCategory[] storedCategories, int storedMaxAgeMinutes) {
+    this.storedLevel = storedLevel;
+    this.storedCategories = storedCategories;
+    this.storedMaxAgeMinutes = storedMaxAgeMinutes;
+  }
 
-    public SyslogLevel getStoredLevel() {
-        return storedLevel;
-    }
+  public SyslogLevel getStoredLevel() {
+    return storedLevel;
+  }
 
-    public void setStoredLevel(SyslogLevel storedLevel) {
-        this.storedLevel = storedLevel;
-    }
+  public void setStoredLevel(SyslogLevel storedLevel) {
+    this.storedLevel = storedLevel;
+  }
 
-    public SyslogCategory[] getStoredCategories() {
-        return storedCategories;
-    }
+  public SyslogCategory[] getStoredCategories() {
+    return storedCategories;
+  }
 
-    public void setStoredCategories(SyslogCategory[] storedCategories) {
-        this.storedCategories = storedCategories;
-    }
+  public void setStoredCategories(SyslogCategory[] storedCategories) {
+    this.storedCategories = storedCategories;
+  }
 
-    public int getStoredMaxAgeMinutes() {
-        return storedMaxAgeMinutes;
-    }
+  public int getStoredMaxAgeMinutes() {
+    return storedMaxAgeMinutes;
+  }
 
-    public void setStoredMaxAgeMinutes(int storedMaxAgeMinutes) {
-        this.storedMaxAgeMinutes = storedMaxAgeMinutes;
-    }
+  public void setStoredMaxAgeMinutes(int storedMaxAgeMinutes) {
+    this.storedMaxAgeMinutes = storedMaxAgeMinutes;
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "storedLevel=" + storedLevel +
-            ", storedCategories=" + Arrays.toString(storedCategories) +
-            ", storedMaxAgeMinutes=" + storedMaxAgeMinutes +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName()
+        + "{"
+        + "storedLevel="
+        + storedLevel
+        + ", storedCategories="
+        + Arrays.toString(storedCategories)
+        + ", storedMaxAgeMinutes="
+        + storedMaxAgeMinutes
+        + '}';
+  }
 }

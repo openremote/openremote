@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,173 +12,190 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class PushNotificationMessage extends AbstractNotificationMessage {
 
-    public enum TargetType {
-        DEVICE,
-        TOPIC,
-        CONDITION
-    }
+  public enum TargetType {
+    DEVICE,
+    TOPIC,
+    CONDITION
+  }
 
-    public enum MessagePriority {
-        NORMAL,
-        HIGH
-    }
+  public enum MessagePriority {
+    NORMAL,
+    HIGH
+  }
 
-    public static final String TYPE = "push";
+  public static final String TYPE = "push";
 
-    protected String title;
-    protected String body;
-    protected PushNotificationAction action;
-    protected List<PushNotificationButton> buttons;
-    protected Map<String, Object> data;
-    protected MessagePriority priority;
-    protected TargetType targetType;
-    protected String target;
-    protected Long ttlSeconds;
+  protected String title;
+  protected String body;
+  protected PushNotificationAction action;
+  protected List<PushNotificationButton> buttons;
+  protected Map<String, Object> data;
+  protected MessagePriority priority;
+  protected TargetType targetType;
+  protected String target;
+  protected Long ttlSeconds;
 
-    @JsonCreator
-    public PushNotificationMessage(@JsonProperty("title") String title,
-                                   @JsonProperty("body") String body,
-                                   @JsonProperty("action") PushNotificationAction action,
-                                   @JsonProperty("buttons") List<PushNotificationButton> buttons,
-                                   @JsonProperty("data") Map<String, Object> data,
-                                   @JsonProperty("priority") MessagePriority priority,
-                                   @JsonProperty("targetType") TargetType targetType,
-                                   @JsonProperty("target") String target,
-                                   @JsonProperty("expiration") Long ttlSeconds) {
-        super(TYPE);
-        this.title = title;
-        this.body = body;
-        this.action = action;
-        this.buttons = buttons;
-        this.priority = priority;
-        this.targetType = targetType;
-        this.target = target;
-        this.data = data;
-        this.ttlSeconds = ttlSeconds;
-    }
+  @JsonCreator
+  public PushNotificationMessage(
+      @JsonProperty("title") String title,
+      @JsonProperty("body") String body,
+      @JsonProperty("action") PushNotificationAction action,
+      @JsonProperty("buttons") List<PushNotificationButton> buttons,
+      @JsonProperty("data") Map<String, Object> data,
+      @JsonProperty("priority") MessagePriority priority,
+      @JsonProperty("targetType") TargetType targetType,
+      @JsonProperty("target") String target,
+      @JsonProperty("expiration") Long ttlSeconds) {
+    super(TYPE);
+    this.title = title;
+    this.body = body;
+    this.action = action;
+    this.buttons = buttons;
+    this.priority = priority;
+    this.targetType = targetType;
+    this.target = target;
+    this.data = data;
+    this.ttlSeconds = ttlSeconds;
+  }
 
-    public PushNotificationMessage(String title,
-                                   String body,
-                                   PushNotificationAction action,
-                                   List<PushNotificationButton> buttons,
-                                   Map<String, Object> data) {
-        super(TYPE);
-        this.title = title;
-        this.body = body;
-        this.action = action;
-        this.buttons = buttons;
-        this.data = data;
-    }
+  public PushNotificationMessage(
+      String title,
+      String body,
+      PushNotificationAction action,
+      List<PushNotificationButton> buttons,
+      Map<String, Object> data) {
+    super(TYPE);
+    this.title = title;
+    this.body = body;
+    this.action = action;
+    this.buttons = buttons;
+    this.data = data;
+  }
 
-    public PushNotificationMessage() {
-        super(TYPE);
-    }
+  public PushNotificationMessage() {
+    super(TYPE);
+  }
 
-    public String getTitle() {
-        return title;
-    }
+  public String getTitle() {
+    return title;
+  }
 
-    public PushNotificationMessage setTitle(String title) {
-        this.title = title;
-        return this;
-    }
+  public PushNotificationMessage setTitle(String title) {
+    this.title = title;
+    return this;
+  }
 
-    public String getBody() {
-        return body;
-    }
+  public String getBody() {
+    return body;
+  }
 
-    public PushNotificationMessage setBody(String body) {
-        this.body = body;
-        return this;
-    }
+  public PushNotificationMessage setBody(String body) {
+    this.body = body;
+    return this;
+  }
 
-    public PushNotificationAction getAction() {
-        return action;
-    }
+  public PushNotificationAction getAction() {
+    return action;
+  }
 
-    public PushNotificationMessage setAction(PushNotificationAction action) {
-        this.action = action;
-        return this;
-    }
+  public PushNotificationMessage setAction(PushNotificationAction action) {
+    this.action = action;
+    return this;
+  }
 
-    public List<PushNotificationButton> getButtons() {
-        return buttons;
-    }
+  public List<PushNotificationButton> getButtons() {
+    return buttons;
+  }
 
-    public PushNotificationMessage setButtons(List<PushNotificationButton> buttons) {
-        this.buttons = buttons;
-        return this;
-    }
+  public PushNotificationMessage setButtons(List<PushNotificationButton> buttons) {
+    this.buttons = buttons;
+    return this;
+  }
 
-    public Map<String, Object> getData() {
-        return data;
-    }
+  public Map<String, Object> getData() {
+    return data;
+  }
 
-    public PushNotificationMessage setData(Map<String, Object> data) {
-        this.data = data;
-        return this;
-    }
+  public PushNotificationMessage setData(Map<String, Object> data) {
+    this.data = data;
+    return this;
+  }
 
-    public MessagePriority getPriority() {
-        return priority;
-    }
+  public MessagePriority getPriority() {
+    return priority;
+  }
 
-    public PushNotificationMessage setPriority(MessagePriority priority) {
-        this.priority = priority;
-        return this;
-    }
+  public PushNotificationMessage setPriority(MessagePriority priority) {
+    this.priority = priority;
+    return this;
+  }
 
-    public TargetType getTargetType() {
-        return targetType;
-    }
+  public TargetType getTargetType() {
+    return targetType;
+  }
 
-    public PushNotificationMessage setTargetType(TargetType targetType) {
-        this.targetType = targetType;
-        return this;
-    }
+  public PushNotificationMessage setTargetType(TargetType targetType) {
+    this.targetType = targetType;
+    return this;
+  }
 
-    public String getTarget() {
-        return target;
-    }
+  public String getTarget() {
+    return target;
+  }
 
-    public PushNotificationMessage setTarget(String target) {
-        this.target = target;
-        return this;
-    }
+  public PushNotificationMessage setTarget(String target) {
+    this.target = target;
+    return this;
+  }
 
-    public Long getTtlSeconds() {
-        return ttlSeconds;
-    }
+  public Long getTtlSeconds() {
+    return ttlSeconds;
+  }
 
-    public PushNotificationMessage setTtlSeconds(Long ttlSeconds) {
-        this.ttlSeconds = ttlSeconds;
-        return this;
-    }
+  public PushNotificationMessage setTtlSeconds(Long ttlSeconds) {
+    this.ttlSeconds = ttlSeconds;
+    return this;
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "title='" + title + '\'' +
-            ", body='" + body + '\'' +
-            ", action=" + action +
-            ", buttons=" + buttons +
-            ", data=" + data +
-            ", priority=" + priority +
-            ", targetType=" + targetType +
-            ", target='" + target + '\'' +
-            ", ttlSeconds=" + ttlSeconds +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName()
+        + "{"
+        + "title='"
+        + title
+        + '\''
+        + ", body='"
+        + body
+        + '\''
+        + ", action="
+        + action
+        + ", buttons="
+        + buttons
+        + ", data="
+        + data
+        + ", priority="
+        + priority
+        + ", targetType="
+        + targetType
+        + ", target='"
+        + target
+        + '\''
+        + ", ttlSeconds="
+        + ttlSeconds
+        + '}';
+  }
 }

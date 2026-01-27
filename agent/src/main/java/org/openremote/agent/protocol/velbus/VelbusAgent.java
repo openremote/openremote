@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,28 +12,33 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.velbus;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import java.util.Optional;
+public abstract class VelbusAgent<
+        T extends VelbusAgent<T, U>, U extends AbstractVelbusProtocol<U, T>>
+    extends Agent<T, U, VelbusAgentLink> {
 
-public abstract class VelbusAgent<T extends VelbusAgent<T, U>, U extends AbstractVelbusProtocol<U, T>> extends Agent<T, U, VelbusAgentLink> {
+  public static final AttributeDescriptor<Integer> TIME_INJECTION_INTERVAL_SECONDS =
+      new AttributeDescriptor<>("timeInjectionInterval", ValueType.POSITIVE_INTEGER);
 
-    public static final AttributeDescriptor<Integer> TIME_INJECTION_INTERVAL_SECONDS = new AttributeDescriptor<>("timeInjectionInterval", ValueType.POSITIVE_INTEGER);
+  // For Hydrators
+  protected VelbusAgent() {}
 
-    // For Hydrators
-    protected VelbusAgent() {}
+  protected VelbusAgent(String name) {
+    super(name);
+  }
 
-    protected VelbusAgent(String name) {
-        super(name);
-    }
-
-    public Optional<Integer> getTimeInjectionInterval() {
-        return getAttributes().getValue(TIME_INJECTION_INTERVAL_SECONDS);
-    }
+  public Optional<Integer> getTimeInjectionInterval() {
+    return getAttributes().getValue(TIME_INJECTION_INTERVAL_SECONDS);
+  }
 }

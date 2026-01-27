@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     computeLabel,
     ControlElement,
@@ -30,10 +48,9 @@ import {
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import "@openremote/or-mwc-components/or-mwc-list";
+import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {DefaultColor5} from "@openremote/core";
 import {AdditionalProps} from "../base-element";
 
@@ -97,8 +114,10 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
     @property()
     protected minimal?: boolean;
+
     @property()
     protected type?: string;
+
     public handleChange!: (path: string, data: any) => void;
 
     public static get styles() {
@@ -308,7 +327,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         const dialogContentProvider: () => TemplateResult = () => {
 
             // Only set when !dynamic
-            let schemaPicker: TemplateResult | undefined = undefined;
+            let schemaPicker: TemplateResult | undefined;
 
             if (selectedParameter && selectedParameter.schema && selectedParameter.schema.oneOf) {
                 const handleChange = (selectedSchema: CombinatorInfo) => {

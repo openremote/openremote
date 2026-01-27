@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,40 +12,39 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.modbus;
 
-import jakarta.persistence.Entity;
-import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 
+import jakarta.persistence.Entity;
+import jakarta.validation.constraints.NotNull;
+
 @Entity
-public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtocol>{
+public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtocol> {
 
-    public static final AgentDescriptor<ModbusTcpAgent, ModbusTcpProtocol, ModbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-            ModbusTcpAgent.class, ModbusTcpProtocol.class, ModbusAgentLink.class
-    );
+  public static final AgentDescriptor<ModbusTcpAgent, ModbusTcpProtocol, ModbusAgentLink>
+      DESCRIPTOR =
+          new AgentDescriptor<>(
+              ModbusTcpAgent.class, ModbusTcpProtocol.class, ModbusAgentLink.class);
 
-    @NotNull
-    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
-    @NotNull
-    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
+  @NotNull public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+  @NotNull public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected ModbusTcpAgent() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected ModbusTcpAgent() {}
 
-    public ModbusTcpAgent(String name) {
-        super(name);
-    }
+  public ModbusTcpAgent(String name) {
+    super(name);
+  }
 
-    @Override
-    public ModbusTcpProtocol getProtocolInstance() {
-        return new ModbusTcpProtocol(this);
-    }
+  @Override
+  public ModbusTcpProtocol getProtocolInstance() {
+    return new ModbusTcpProtocol(this);
+  }
 }

@@ -1,9 +1,25 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, TemplateResult} from "lit";
 import {customElement, property, query, state } from "lit/decorators.js";
-import "@openremote/or-data-viewer";
 import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
-import {Page, PageProvider, router} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import {Page, PageProvider, router,AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";

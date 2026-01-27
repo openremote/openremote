@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
@@ -43,12 +42,10 @@ import {isAxiosError} from "@openremote/rest";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {cache} from "lit/directives/cache.js";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
-import "@openremote/or-translate";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, BarChart, CanvasRenderer, UniversalTransition]);
 
@@ -910,7 +907,7 @@ export class OrAttributeBarChart extends LitElement {
                 startDate = moment().subtract(value, unit).startOf(unit);
                 if (value === 1) { // For singulars like last hour
                     endDate = moment().startOf(unit);
-                } else { //For multiples like last 5 min
+                } else { // For multiples like last 5 min
                     endDate = moment();
                 }
                 break;
@@ -1033,7 +1030,7 @@ export class OrAttributeBarChart extends LitElement {
                 // Iterate over the mapping, make a dataset for every active method
                 for (const [key, value] of (Object.entries(methodMapping)).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))) {
                     if (value.active) {
-                        //Initiate query Attribute Data
+                        // Initiate query Attribute Data
                         const dataset = await this._loadAttributeData(asset, attribute, color ?? this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, value.formula, faint, `${asset.name} | ${label} \n${i18next.t(value.formula)}`, options, unit);
                         dataset.index = (Object.keys(methodMapping).indexOf(key) * 1000) + (index + 1);
                         dataset.assetId = asset.id;
@@ -1194,7 +1191,7 @@ export class OrAttributeBarChart extends LitElement {
             backgroundColor: this._style.getPropertyValue("--internal-or-asset-tree-background-color"),
             tooltip: {
                 trigger: "axis",
-                confine: true, //make tooltip not go outside frame bounds
+                confine: true, // make tooltip not go outside frame bounds
                 axisPointer: {
                     type: "cross",
                     label: {
@@ -1302,7 +1299,7 @@ export class OrAttributeBarChart extends LitElement {
             },
             emphasis: {},
             label: {
-                show: this.stacked ? false : true,
+                show: !this.stacked,
                 align: "left",
                 verticalAlign: "middle",
                 position: "top",

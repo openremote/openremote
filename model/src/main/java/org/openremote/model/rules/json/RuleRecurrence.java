@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,40 +12,37 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules.json;
 
-/**
- * Controls if/when a rule can be eligible for firing again;
- */
+/** Controls if/when a rule can be eligible for firing again; */
 public class RuleRecurrence {
 
-    /**
-     * Defines the scope of the recurrence
-     */
-    public enum Scope {
-
-        /**
-         * Recurrence applies to each asset individually (i.e. timer starts from when rule triggered, each asset that
-         * triggered the rule will have their own timer based on {@link #mins} value)
-         */
-        PER_ASSET,
-
-        /**
-         * Recurrence applies globally (i.e. timer starts from when rule triggered, there is a single timer based on
-         * {@link #mins} value, this rule will not fire again until timer expires)
-         */
-        GLOBAL
-    }
+  /** Defines the scope of the recurrence */
+  public enum Scope {
 
     /**
-     * If not defined defaults to {@link Scope#PER_ASSET}
+     * Recurrence applies to each asset individually (i.e. timer starts from when rule triggered,
+     * each asset that triggered the rule will have their own timer based on {@link #mins} value)
      */
-    public Scope scope;
+    PER_ASSET,
 
     /**
-     * How many mins until firing is allowed to recur; null=NEVER, 0=ALWAYS, >0=N mins from last firing.
+     * Recurrence applies globally (i.e. timer starts from when rule triggered, there is a single
+     * timer based on {@link #mins} value, this rule will not fire again until timer expires)
      */
-    public Long mins;
+    GLOBAL
+  }
+
+  /** If not defined defaults to {@link Scope#PER_ASSET} */
+  public Scope scope;
+
+  /**
+   * How many mins until firing is allowed to recur; null=NEVER, 0=ALWAYS, >0=N mins from last
+   * firing.
+   */
+  public Long mins;
 }

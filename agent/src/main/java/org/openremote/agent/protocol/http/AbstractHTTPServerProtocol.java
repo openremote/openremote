@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,11 +12,24 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.http;
 
-import jakarta.ws.rs.core.Application;
+import static java.util.logging.Level.INFO;
+import static org.openremote.container.web.WebService.getStandardProviders;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.CORSConfig;
@@ -34,143 +44,150 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.util.logging.Level.INFO;
-import static org.openremote.container.web.WebService.getStandardProviders;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import jakarta.ws.rs.core.Application;
 
 /**
- * This is an abstract protocol for creating JAX-RS deployments; a concrete implementation should be created for each
- * required JAX-RS deployment. Multiple instances of the same deployment can be created by creating multiple protocol
- * instances for the desired concrete implementation.
- * <p>
- * The deployment is deployed by creating an instance of a concrete {@link AbstractHTTPServerAgent} implementation with
- * the following {@link Attribute}s:
+ * This is an abstract protocol for creating JAX-RS deployments; a concrete implementation should be
+ * created for each required JAX-RS deployment. Multiple instances of the same deployment can be
+ * created by creating multiple protocol instances for the desired concrete implementation.
+ *
+ * <p>The deployment is deployed by creating an instance of a concrete {@link
+ * AbstractHTTPServerAgent} implementation with the following {@link Attribute}s:
+ *
  * <ul>
- * <li>{@link AbstractHTTPServerAgent#ALLOWED_ORIGINS}</li>
- * <li>{@link AbstractHTTPServerAgent#ALLOWED_HTTP_METHODS}</li>
+ *   <li>{@link AbstractHTTPServerAgent#ALLOWED_ORIGINS}
+ *   <li>{@link AbstractHTTPServerAgent#ALLOWED_HTTP_METHODS}
  * </ul>
- * The path used for the deployment is determined by {@link #getDeploymentPath}. The realm that the {@link Agent}
- * belongs to will be used implicitly for all incoming requests to any deployments
- * that this protocol creates and therefore only users of that realm will be able to make calls to the deployment when
- * {@link AbstractHTTPServerAgent#ROLE_BASED_SECURITY} is true.
+ *
+ * The path used for the deployment is determined by {@link #getDeploymentPath}. The realm that the
+ * {@link Agent} belongs to will be used implicitly for all incoming requests to any deployments
+ * that this protocol creates and therefore only users of that realm will be able to make calls to
+ * the deployment when {@link AbstractHTTPServerAgent#ROLE_BASED_SECURITY} is true.
  */
-public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerProtocol<T, U, V>, U extends AbstractHTTPServerAgent<U, T, V>, V extends AgentLink<?>> extends AbstractProtocol<U, V> {
+public abstract class AbstractHTTPServerProtocol<
+        T extends AbstractHTTPServerProtocol<T, U, V>,
+        U extends AbstractHTTPServerAgent<U, T, V>,
+        V extends AgentLink<?>>
+    extends AbstractProtocol<U, V> {
 
-    /**
-     * This is the path prefix for all HTTP server agent deployments
-     */
-    public static final String DEPLOYMENT_PATH_PREFIX = "/http_agent";
+  /** This is the path prefix for all HTTP server agent deployments */
+  public static final String DEPLOYMENT_PATH_PREFIX = "/http_agent";
 
-    /**
-     * The regex used to validate the deployment path.
-     */
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
-    protected Container container;
-    protected boolean devMode;
-    protected IdentityService identityService;
-    protected WebService webService;
+  /** The regex used to validate the deployment path. */
+  private static final Logger LOG =
+      SyslogCategory.getLogger(PROTOCOL, AbstractHTTPServerProtocol.class);
 
-    public AbstractHTTPServerProtocol(U agent) {
-        super(agent);
+  protected Container container;
+  protected boolean devMode;
+  protected IdentityService identityService;
+  protected WebService webService;
+
+  public AbstractHTTPServerProtocol(U agent) {
+    super(agent);
+  }
+
+  @Override
+  public void doStart(Container container) throws Exception {
+    this.container = container;
+    this.devMode = container.isDevMode();
+
+    identityService =
+        container.hasService(IdentityService.class)
+            ? container.getService(IdentityService.class)
+            : null;
+
+    webService = container.getService(WebService.class);
+
+    Application application =
+        new WebApplication(
+            container,
+            null,
+            Stream.of(
+                    List.of(
+                        (Object)
+                            new RealmInjectorFilter(
+                                agent.getRealm())), // Need this as realm is in the context path of
+                    // the deployment
+                    getStandardProviders(devMode, 0),
+                    getApiSingletons())
+                .flatMap(Collection::stream)
+                .toList());
+
+    deploy(application);
+    setConnectionStatus(ConnectionStatus.CONNECTED);
+  }
+
+  @Override
+  protected void doStop(Container container) throws Exception {
+    undeploy(getDeploymentName());
+  }
+
+  /**
+   * Should return instances of all JAX-RS interface implementations that make up this protocol's
+   * deployment.
+   */
+  protected abstract Set<Object> getApiSingletons();
+
+  /**
+   * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}, {@link
+   * Agent#getRealm()} and {@link Agent#getId()}, For example, an agent in a realm called
+   * manufacturer:
+   *
+   * <p>Full path to deployment = "{@value
+   * #DEPLOYMENT_PATH_PREFIX}/manufacturer/6lMDrFZ5Qhd78BTmoF9Pwn"
+   */
+  protected String getDeploymentPath() {
+    return DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + agent.getId();
+  }
+
+  /** Get a unique deployment name for this instance. */
+  protected String getDeploymentName() {
+    return getDeploymentName(getClass(), agent.getId());
+  }
+
+  protected boolean isSecure() {
+    return agent.isRoleBasedSecurity().orElse(false);
+  }
+
+  protected void deploy(Application application) {
+    LOG.log(INFO, "Deploying JAX-RS application for protocol instance: " + this);
+
+    boolean secure = isSecure();
+    String deploymentPath = getDeploymentPath();
+    String deploymentName = getDeploymentName();
+
+    Set<String> allowedOrigins = agent.getAllowedOrigins().map(Set::of).orElse(null);
+    String allowedMethods =
+        agent
+            .getAllowedHTTPMethods()
+            .map(methods -> Arrays.stream(methods).map(Enum::name).collect(Collectors.joining(",")))
+            .orElse(null);
+
+    CORSConfig corsConfig = new CORSConfig();
+
+    if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+      allowedOrigins.forEach(corsConfig::addCorsAllowedOrigin);
+    }
+    if (!TextUtil.isNullOrEmpty(allowedMethods)) {
+      corsConfig.setCorsAllowedMethods(allowedMethods);
     }
 
-    @Override
-    public void doStart(Container container) throws Exception {
-        this.container = container;
-        this.devMode = container.isDevMode();
+    webService.deployJaxRsApplication(
+        application, deploymentPath, deploymentName, null, secure, corsConfig);
+  }
 
-        identityService = container.hasService(IdentityService.class)
-                ? container.getService(IdentityService.class)
-                : null;
+  protected void undeploy(String deploymentName) {
+    LOG.log(INFO, "Un-deploying JAX-RS deployment for protocol instance: " + this);
+    webService.undeploy(deploymentName);
+  }
 
-        webService = container.getService(WebService.class);
+  @Override
+  public String getProtocolInstanceUri() {
+    return "httpServer://" + getDeploymentPath();
+  }
 
-       Application application = new WebApplication(
-          container,
-          null,
-          Stream.of(
-             List.of((Object)new RealmInjectorFilter(agent.getRealm())), // Need this as realm is in the context path of the deployment
-             getStandardProviders(devMode, 0),
-             getApiSingletons()).flatMap(Collection::stream).toList());
-
-        deploy(application);
-        setConnectionStatus(ConnectionStatus.CONNECTED);
-    }
-
-    @Override
-    protected void doStop(Container container) throws Exception {
-        undeploy(getDeploymentName());
-    }
-
-    /**
-     * Should return instances of all JAX-RS interface implementations that make up this protocol's deployment.
-     */
-    abstract protected Set<Object> getApiSingletons();
-
-    /**
-     * Deployment path will always be prefixed with {@link #DEPLOYMENT_PATH_PREFIX}, {@link Agent#getRealm()} and
-     * {@link Agent#getId()}, For example, an agent in a realm called manufacturer:
-     * <p>
-     * Full path to deployment = "{@value #DEPLOYMENT_PATH_PREFIX}/manufacturer/6lMDrFZ5Qhd78BTmoF9Pwn"
-     */
-    protected String getDeploymentPath() {
-        return DEPLOYMENT_PATH_PREFIX + "/" + agent.getRealm() + "/" + agent.getId();
-    }
-
-    /**
-     * Get a unique deployment name for this instance.
-     */
-    protected String getDeploymentName() {
-        return getDeploymentName(getClass(), agent.getId());
-    }
-
-    protected boolean isSecure() {
-        return agent.isRoleBasedSecurity().orElse(false);
-    }
-
-    protected void deploy(Application application) {
-        LOG.log(INFO, "Deploying JAX-RS application for protocol instance: " + this);
-
-        boolean secure = isSecure();
-        String deploymentPath = getDeploymentPath();
-        String deploymentName = getDeploymentName();
-
-        Set<String> allowedOrigins = agent.getAllowedOrigins().map(Set::of).orElse(null);
-        String allowedMethods = agent.getAllowedHTTPMethods().map(methods ->
-                Arrays.stream(methods).map(Enum::name)
-                        .collect(Collectors.joining(","))).orElse(null);
-
-        CORSConfig corsConfig = new CORSConfig();
-
-        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
-            allowedOrigins.forEach(corsConfig::addCorsAllowedOrigin);
-        }
-        if (!TextUtil.isNullOrEmpty(allowedMethods)) {
-            corsConfig.setCorsAllowedMethods(allowedMethods);
-        }
-
-        webService.deployJaxRsApplication(application, deploymentPath, deploymentName, null, secure, corsConfig);
-    }
-
-    protected void undeploy(String deploymentName) {
-       LOG.log(INFO, "Un-deploying JAX-RS deployment for protocol instance: " + this);
-       webService.undeploy(deploymentName);
-    }
-
-    @Override
-    public String getProtocolInstanceUri() {
-        return "httpServer://" + getDeploymentPath();
-    }
-
-    public static String getDeploymentName(Class<? extends AbstractHTTPServerProtocol> protocolClass, String agentId) {
-       return "HttpServerProtocol=" + protocolClass.getSimpleName() + ", Agent ID=" + agentId;
-    }
+  public static String getDeploymentName(
+      Class<? extends AbstractHTTPServerProtocol> protocolClass, String agentId) {
+    return "HttpServerProtocol=" + protocolClass.getSimpleName() + ", Agent ID=" + agentId;
+  }
 }

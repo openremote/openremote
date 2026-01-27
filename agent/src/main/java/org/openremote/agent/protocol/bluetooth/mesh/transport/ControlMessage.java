@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,52 +12,53 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.control.TransportControlMessage;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.openremote.agent.protocol.bluetooth.mesh.control.TransportControlMessage;
+
 public final class ControlMessage extends Message {
 
-    protected Map<Integer, byte[]> lowerTransportControlPdu = new HashMap<>();
-    private byte[] transportControlPdu;
-    private TransportControlMessage transportControlMessage;
+  protected Map<Integer, byte[]> lowerTransportControlPdu = new HashMap<>();
+  private byte[] transportControlPdu;
+  private TransportControlMessage transportControlMessage;
 
-    public ControlMessage() {
-        this.ctl = 1;
-    }
+  public ControlMessage() {
+    this.ctl = 1;
+  }
 
-    @Override
-    public int getCtl() {
-        return ctl;
-    }
+  @Override
+  public int getCtl() {
+    return ctl;
+  }
 
-    public byte[] getTransportControlPdu() {
-        return transportControlPdu;
-    }
+  public byte[] getTransportControlPdu() {
+    return transportControlPdu;
+  }
 
-    public void setTransportControlPdu(final byte[] transportControlPdu) {
-        this.transportControlPdu = transportControlPdu;
-    }
+  public void setTransportControlPdu(final byte[] transportControlPdu) {
+    this.transportControlPdu = transportControlPdu;
+  }
 
-    public Map<Integer, byte[]> getLowerTransportControlPdu() {
-        return lowerTransportControlPdu;
-    }
+  public Map<Integer, byte[]> getLowerTransportControlPdu() {
+    return lowerTransportControlPdu;
+  }
 
-    public void setLowerTransportControlPdu(final Map<Integer, byte[]> segmentedAccessMessages) {
-        this.lowerTransportControlPdu = segmentedAccessMessages;
-    }
+  public void setLowerTransportControlPdu(final Map<Integer, byte[]> segmentedAccessMessages) {
+    this.lowerTransportControlPdu = segmentedAccessMessages;
+  }
 
-    public TransportControlMessage getTransportControlMessage() {
-        return transportControlMessage;
-    }
+  public TransportControlMessage getTransportControlMessage() {
+    return transportControlMessage;
+  }
 
-    public void setTransportControlMessage(final TransportControlMessage transportControlMessage) {
-        this.transportControlMessage = transportControlMessage;
-    }
+  public void setTransportControlMessage(final TransportControlMessage transportControlMessage) {
+    this.transportControlMessage = transportControlMessage;
+  }
 }
-

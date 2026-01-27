@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {pageViewProvider} from "./pages/page-view";
@@ -68,7 +86,7 @@ fetch(configURL).then(async (result) => {
     orApp.appConfigProvider = (manager) => {
 
         // Configure app config
-        let pages: PageProvider<any>[] = [];
+        const pages: PageProvider<any>[] = [];
         const orAppConfig: AppConfig<RootState> = {
             pages: pages,
         };
@@ -90,12 +108,12 @@ fetch(configURL).then(async (result) => {
 
         // Check local storage for set language, otherwise use language set in config
         manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
-            manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
+            manager.language = (value || orAppConfig.realms[manager.displayRealm].language);
         }).catch(() => {
             if (orAppConfig.realms[manager.displayRealm]){
                 manager.language = orAppConfig.realms[manager.displayRealm].language
-            } else if (orAppConfig.realms['default']){
-                manager.language = orAppConfig.realms['default'].language
+            } else if (orAppConfig.realms.default){
+                manager.language = orAppConfig.realms.default.language
             } else {
                 manager.language = 'en'
             }

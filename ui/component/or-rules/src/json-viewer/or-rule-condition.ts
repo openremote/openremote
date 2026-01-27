@@ -1,19 +1,34 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil, AssetQuery} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
-import "./or-rule-asset-query";
+import {OrRuleAssetQuery} from "./or-rule-asset-query";
 import "./or-rule-trigger-query";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-icon";
-import "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {Util} from "@openremote/core";
-import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {OrRuleAssetQuery} from "./or-rule-asset-query";
 
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
@@ -44,7 +59,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
                 return {
                     text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
                     value: assetTypeInfo.assetDescriptor!.name,
-                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
+                    icon: icon || AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                     styleMap: styleMap
                 } as ListItem;
             });
@@ -66,7 +81,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
                 return {
                     text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
                     value: assetTypeInfo.assetDescriptor!.name,
-                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
+                    icon: icon || AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                     styleMap: styleMap
                 } as ListItem;
             });

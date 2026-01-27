@@ -1,7 +1,23 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {pageProvisioningProvider} from "./pages/page-provisioning";
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
-import "@openremote/or-app";
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
     headerItemAccount,
@@ -22,27 +38,16 @@ import {
     headerItemRules,
     headerItemUsers
 } from "./headers";
-import "./pages/page-map";
 import {PageMapConfig, pageMapProvider, pageMapReducer} from "./pages/page-map";
-import "./pages/page-assets";
 import {PageAssetsConfig, pageAssetsProvider, pageAssetsReducer} from "./pages/page-assets";
-import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
-import "./pages/page-insights";
 import {PageInsightsConfig, pageInsightsProvider} from "./pages/page-insights";
-import "./pages/page-services";
 import {pageServicesProvider} from "./pages/page-services";
-import "./pages/page-rules";
 import {PageRulesConfig, pageRulesProvider} from "./pages/page-rules";
-import "./pages/page-logs";
 import {PageLogsConfig, pageLogsProvider} from "./pages/page-logs";
-import "./pages/page-account";
 import {pageAccountProvider} from "./pages/page-account";
-import "./pages/page-users";
 import {pageUsersProvider} from "./pages/page-users";
-import "./pages/page-roles";
 import {pageRolesProvider} from "./pages/page-roles";
-import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
@@ -50,7 +55,7 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var MANAGER_URL: string | undefined;
+declare let MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
     app: appReducer,
@@ -256,8 +261,8 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
                         manager.language = consoleLang;
                     } else if (orAppConfig.realms[manager.displayRealm]) {
                         manager.language = orAppConfig.realms[manager.displayRealm].language
-                    } else if (orAppConfig.realms['default']) {
-                        manager.language = orAppConfig.realms['default'].language
+                    } else if (orAppConfig.realms.default) {
+                        manager.language = orAppConfig.realms.default.language
                     } else {
                         manager.language = 'en'
                     }

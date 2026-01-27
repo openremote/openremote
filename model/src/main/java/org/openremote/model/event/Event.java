@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,80 +12,85 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event;
 
+import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
+
 import org.openremote.model.util.TextUtil;
 
-import java.util.Date;
+import jakarta.persistence.*;
 
 /**
  * A timestamped event.
- * <p>
- * The event type string is a lowercase, dash-separated name of the event class without the "event" suffix. For
- * example, the type string of <code>AssetTreeModifiedEvent</code> is <code>asset-tree-modified</code>. The event
- * type is therefore usable in JavaScript frameworks, e.g. when declaring Polymer event listeners.
+ *
+ * <p>The event type string is a lowercase, dash-separated name of the event class without the
+ * "event" suffix. For example, the type string of <code>AssetTreeModifiedEvent</code> is <code>
+ * asset-tree-modified</code>. The event type is therefore usable in JavaScript frameworks, e.g.
+ * when declaring Polymer event listeners.
  */
 @MappedSuperclass
 public abstract class Event {
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @JsonIgnore
-    protected Date timestamp;
-    @Transient
-    protected String messageID;
+  @Temporal(TemporalType.TIMESTAMP)
+  @Column(
+      name = "TIMESTAMP",
+      updatable = false,
+      nullable = false,
+      columnDefinition = "TIMESTAMP WITH TIME ZONE")
+  @JsonIgnore
+  protected Date timestamp;
 
-    protected Event(Long timestamp) {
-        if (timestamp != null) {
-            this.timestamp = new Date(timestamp);
-        }
-    }
+  @Transient protected String messageID;
 
-    protected Event() {
+  protected Event(Long timestamp) {
+    if (timestamp != null) {
+      this.timestamp = new Date(timestamp);
     }
+  }
 
-    public static String getEventType(String simpleClassName) {
-        String type = TextUtil.toLowerCaseDash(simpleClassName);
-        if (type.length() > 6 && type.endsWith("-event"))
-            type = type.substring(0, type.length() - 6);
-        return type;
-    }
+  protected Event() {}
 
-    public static String getEventType(Class<? extends Event> eventClass) {
-        return getEventType(eventClass.getSimpleName());
-    }
+  public static String getEventType(String simpleClassName) {
+    String type = TextUtil.toLowerCaseDash(simpleClassName);
+    if (type.length() > 6 && type.endsWith("-event")) type = type.substring(0, type.length() - 6);
+    return type;
+  }
 
-    @JsonIgnore
-    final public String getEventType() {
-        return getEventType(getClass());
-    }
+  public static String getEventType(Class<? extends Event> eventClass) {
+    return getEventType(eventClass.getSimpleName());
+  }
 
-    @JsonProperty
-    public long getTimestamp() {
-        return timestamp != null ? timestamp.getTime() : 0L;
-    }
+  @JsonIgnore
+  public final String getEventType() {
+    return getEventType(getClass());
+  }
 
-    public void setTimestamp(long timestamp) {
-        this.timestamp = new Date(timestamp);
-    }
+  @JsonProperty
+  public long getTimestamp() {
+    return timestamp != null ? timestamp.getTime() : 0L;
+  }
 
-    public String getMessageID() {
-        return messageID;
-    }
+  public void setTimestamp(long timestamp) {
+    this.timestamp = new Date(timestamp);
+  }
 
-    public void setMessageID(String messageID) {
-        this.messageID = messageID;
-    }
+  public String getMessageID() {
+    return messageID;
+  }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp +
-            '}';
-    }
+  public void setMessageID(String messageID) {
+    this.messageID = messageID;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{" + "timestamp=" + timestamp + '}';
+  }
 }

@@ -1,10 +1,26 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
-import "@openremote/or-translate";
-import "./or-mwc-input";
-import {InputType, OrMwcInput} from "./or-mwc-input";
 import {i18next} from "@openremote/or-translate";
+import {InputType, OrMwcInput} from "./or-mwc-input";
 import {Util} from "@openremote/core";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
@@ -88,7 +104,7 @@ export async function showOkCancelDialog(title: string, content: string | Templa
                     },
                     {
                         actionName: "ok",
-                        content: okText ? okText : i18next.t("ok"),
+                        content: okText || i18next.t("ok"),
                         action: () => deferred.resolve(true)
                     }
                 ]
@@ -118,7 +134,7 @@ export async function showOkDialog(title: string, content: string | TemplateResu
                     {
                         actionName: "ok",
                         default: true,
-                        content: okText ? okText : i18next.t("ok"),
+                        content: okText || i18next.t("ok"),
                         action: () => deferred.resolve(true)
                     }
                 ]

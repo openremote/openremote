@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {Ref, ref, createRef} from "lit/directives/ref.js";
@@ -17,7 +35,6 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import {DefaultColor4, DefaultColor5, DefaultColor8, Util} from "@openremote/core";
-import "@openremote/or-icon";
 import {OrIcon} from "@openremote/or-icon";
 import {
     AssetDescriptor,
@@ -673,7 +690,7 @@ export class OrMwcInput extends LitElement {
     public type?: InputType;
 
     @property({type: String})
-    public name?: String;
+    public name?: string;
 
     @property({type: Boolean})
     public readonly: boolean = false;
@@ -833,8 +850,10 @@ export class OrMwcInput extends LitElement {
     protected _tempValue: any;
     @state()
     protected isUiValid = true;
+
     @state()
     public searchableValue?: string;
+
     @state()
     protected errorMessage?: string;
 
@@ -915,7 +934,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = (this.value !== null && this.value !== undefined) || this.value === false;
-            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
+            const labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -1029,8 +1048,8 @@ export class OrMwcInput extends LitElement {
                             } else {
                                 inputValue.push(value);
                             }
-                            const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement,
-                                iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
+                            const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement;
+                                const iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
                             if (listItemEl) {
                                 if (index >= 0) {
                                     listItemEl.classList.remove("mdc-list-item--selected");
@@ -1270,7 +1289,7 @@ export class OrMwcInput extends LitElement {
                             </div>
                     `;
                 case InputType.CHECKBOX:
-                    let classList = {
+                    const classList = {
                         "mdc-checkbox": true,
                         "mdc-checkbox--disabled": this.disabled || this.readonly
                     };

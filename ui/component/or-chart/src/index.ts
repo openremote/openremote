@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
 import {i18next, translate} from "@openremote/or-translate"
@@ -13,19 +31,16 @@ import {
     ValueDatapoint
 } from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
-import "@openremote/or-asset-tree";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
 import * as echarts from "echarts/core";
 import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, GridComponent, GridComponentOption, MarkLineComponent, TooltipComponent, TooltipComponentOption} from "echarts/components";
 import {LineChart, LineSeriesOption} from "echarts/charts";
 import {CanvasRenderer} from "echarts/renderers";
 import {UniversalTransition} from "echarts/features";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
@@ -68,7 +83,7 @@ export interface ChartViewConfig {
     attributeRefs?: AttributeRef[];
     fromTimestamp?: number;
     toTimestamp?: number;
-    /*compareOffset?: number;*/
+    /* compareOffset?: number; */
     period?: moment.unitOfTime.Base;
     deltaFormat?: "absolute" | "percentage";
     decimals?: number;
@@ -696,7 +711,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         if (changedProperties.has("_data")) {
-            //Update chart to data from set period
+            // Update chart to data from set period
             this._updateChartData();
         }
 
@@ -1053,7 +1068,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             config.views[viewSelector][this.panelName] = {
                 attributeRefs: this.assetAttributes.map(([index, attr]) => {
                     const asset = this.assets[index];
-                    return !!asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
+                    return asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
                 }).filter((attrRef) => !!attrRef) as AttributeRef[],
             };
         }
@@ -1182,7 +1197,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 startDate = moment().subtract(value, unit).startOf(unit);
                 if (value === 1) { // For singulars like last hour
                     endDate = moment().startOf(unit);
-                } else { //For multiples like last 5 min
+                } else { // For multiples like last 5 min
                     endDate = moment();
                 }
                 break;
@@ -1207,9 +1222,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             throw new Error(`Unsupported time window selected: ${selectedTimeWindow}`);
         }
         const [unit, value] = timeWindow;
-        let newStart = moment(currentStart);
+        const newStart = moment(currentStart);
         direction === "previous" ? newStart.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newStart.add(value, unit as moment.unitOfTime.DurationConstructor);
-        let newEnd = moment(currentEnd)
+        const newEnd = moment(currentEnd)
         direction === "previous" ? newEnd.subtract(value, unit as moment.unitOfTime.DurationConstructor) : newEnd.add(value, unit as moment.unitOfTime.DurationConstructor);
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
@@ -1488,7 +1503,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._zoomChanged = true;
         const { start: zoomStartPercentage, end: zoomEndPercentage } = event.batch?.[0] ?? event; // Events triggered by scroll and zoombar return different structures
 
-        //Define the start and end of the period based on the zoomed area
+        // Define the start and end of the period based on the zoomed area
         this._zoomStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
         this._zoomEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
         this._loadData().then(() => {
@@ -1550,7 +1565,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._zoomHandler = this._chart!.on('datazoom', debounce((params: any) => { this._onZoomChange(params); }, 750));
         }
         else if (!connect) {
-            //Disconnect event listeners
+            // Disconnect event listeners
             this._chart!.off('datazoom', this._zoomHandler);
             this._containerResizeObserver?.disconnect();
             this._containerResizeObserver = undefined;
@@ -1608,10 +1623,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                         // Interpolate between past and future datapoint if they exist, keep up to 2 decimals
                         displayValue = parseFloat((pastDatapoint.value + ((xTime - pastDatapoint.timestamp) / (futureDatapoint.timestamp - pastDatapoint.timestamp)) * (futureDatapoint.value - pastDatapoint.value)).toFixed(2));
                     } else if (!pastDatapoint && futureDatapoint) {
-                        //Show nearest future value if at start of dataset
+                        // Show nearest future value if at start of dataset
                         displayValue = futureDatapoint.value;
                     } else if (pastDatapoint && (!futureDatapoint || dataset.step == "end")) {
-                        //Show nearest past value if: at end of dataset or the stepped setting is active
+                        // Show nearest past value if: at end of dataset or the stepped setting is active
                         displayValue = pastDatapoint.value;
                     }
                 }

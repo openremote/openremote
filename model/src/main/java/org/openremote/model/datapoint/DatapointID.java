@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.datapoint;
 
@@ -25,29 +24,30 @@ import java.util.Objects;
 
 public class DatapointID implements Serializable {
 
-    protected String assetId;
-    protected String attributeName;
-    protected Date timestamp;
+  protected String assetId;
+  protected String attributeName;
+  protected Date timestamp;
 
-    public DatapointID() {
-    }
+  public DatapointID() {}
 
-    public DatapointID(String assetId, String attributeName, Date timestamp) {
-        this.assetId = assetId;
-        this.attributeName = attributeName;
-        this.timestamp = timestamp;
-    }
+  public DatapointID(String assetId, String attributeName, Date timestamp) {
+    this.assetId = assetId;
+    this.attributeName = attributeName;
+    this.timestamp = timestamp;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DatapointID that = (DatapointID) o;
-        return assetId.equals(that.assetId) && attributeName.equals(that.attributeName) && timestamp.equals(that.timestamp);
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DatapointID that = (DatapointID) o;
+    return assetId.equals(that.assetId)
+        && attributeName.equals(that.attributeName)
+        && timestamp.equals(that.timestamp);
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(assetId, attributeName, timestamp);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(assetId, attributeName, timestamp);
+  }
 }

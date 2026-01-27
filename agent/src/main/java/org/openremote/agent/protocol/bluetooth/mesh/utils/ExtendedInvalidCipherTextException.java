@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
@@ -23,42 +22,40 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 
 public class ExtendedInvalidCipherTextException extends InvalidCipherTextException {
 
-    private final String tag;
-    private final String message;
-    private final Throwable cause;
+  private final String tag;
+  private final String message;
+  private final Throwable cause;
 
-    /**
-     * Constructs ExtendedInvalidCipherTextException
-     *
-     * @param message Exception message
-     * @param cause   Throwable cause
-     * @param tag     class tag name
-     */
-    public ExtendedInvalidCipherTextException(final String message, final Throwable cause, final String tag) {
-        this.message = message;
-        this.cause = cause;
-        this.tag = tag;
+  /**
+   * Constructs ExtendedInvalidCipherTextException
+   *
+   * @param message Exception message
+   * @param cause Throwable cause
+   * @param tag class tag name
+   */
+  public ExtendedInvalidCipherTextException(
+      final String message, final Throwable cause, final String tag) {
+    this.message = message;
+    this.cause = cause;
+    this.tag = tag;
+  }
 
-    }
+  /**
+   * Returns the tag name of the class.
+   *
+   * <p>Using the tag we can find out on which class the exception occurred.
+   */
+  public String getTag() {
+    return tag;
+  }
 
-    /**
-     * Returns the tag name of the class.
-     * <p>
-     * Using the tag we can find out on which class the exception occurred.
-     * </p>
-     */
-    public String getTag() {
-        return tag;
-    }
+  @Override
+  public String getMessage() {
+    return message;
+  }
 
-    @Override
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public Throwable getCause() {
-        return cause;
-    }
+  @Override
+  public Throwable getCause() {
+    return cause;
+  }
 }
-

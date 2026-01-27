@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,12 +12,18 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
 
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
+
+import java.security.Principal;
+
 import org.keycloak.KeycloakPrincipal;
-import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
@@ -29,92 +32,82 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.*;
-import java.security.Principal;
-
-import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 public class WebResource implements AuthContext {
 
-    @Context
-    protected Application application;
+  @Context protected Application application;
 
-    @Context
-    protected HttpServletRequest request;
+  @Context protected HttpServletRequest request;
 
-    @Context
-    protected HttpServletResponse response;
+  @Context protected HttpServletResponse response;
 
-    @Context
-    protected UriInfo uriInfo;
+  @Context protected UriInfo uriInfo;
 
-    @Context
-    protected HttpHeaders httpHeaders;
+  @Context protected HttpHeaders httpHeaders;
 
-    @Context
-    protected SecurityContext securityContext;
+  @Context protected SecurityContext securityContext;
 
-    public String getClientRemoteAddress() {
-        return request.getRemoteAddr();
+  public String getClientRemoteAddress() {
+    return request.getRemoteAddr();
+  }
+
+  public String getRequestRealmName() {
+    return request.getHeader(REALM_PARAM_NAME);
+  }
+
+  public boolean isAuthenticated() {
+    return securityContext.getUserPrincipal() != null;
+  }
+
+  public AuthContext getAuthContext() {
+    // The securityContext is a thread-local proxy, careful when/how you call it
+    Principal principal = securityContext.getUserPrincipal();
+    if (principal == null) {
+      return null;
     }
 
-    public String getRequestRealmName() {
-        return request.getHeader(REALM_PARAM_NAME);
+    if (principal instanceof KeycloakPrincipal) {
+      KeycloakPrincipal<?> keycloakPrincipal = (KeycloakPrincipal<?>) principal;
+      return new AccessTokenAuthContext(
+          keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
+          keycloakPrincipal.getKeycloakSecurityContext().getToken());
+    } else if (principal instanceof BasicAuthContext) {
+      return (BasicAuthContext) principal;
+    } else {
+      throw new WebApplicationException(
+          "Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
     }
+  }
 
-    public boolean isAuthenticated() {
-        return securityContext.getUserPrincipal() != null;
-    }
+  // Convenience methods
 
-    public AuthContext getAuthContext() {
-        // The securityContext is a thread-local proxy, careful when/how you call it
-        Principal principal = securityContext.getUserPrincipal();
-        if (principal == null) {
-            return null;
-        }
+  @Override
+  public String getAuthenticatedRealmName() {
+    return isAuthenticated() ? getAuthContext().getAuthenticatedRealmName() : null;
+  }
 
-        if (principal instanceof KeycloakPrincipal) {
-            KeycloakPrincipal<?> keycloakPrincipal = (KeycloakPrincipal<?>) principal;
-            return new AccessTokenAuthContext(
-                keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
-                keycloakPrincipal.getKeycloakSecurityContext().getToken()
-            );
-        } else if (principal instanceof BasicAuthContext) {
-            return (BasicAuthContext) principal;
-        } else {
-            throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
-        }
-    }
+  @Override
+  public String getUsername() {
+    return isAuthenticated() ? getAuthContext().getUsername() : null;
+  }
 
-    // Convenience methods
+  @Override
+  public String getUserId() {
+    return isAuthenticated() ? getAuthContext().getUserId() : null;
+  }
 
-    @Override
-    public String getAuthenticatedRealmName() {
-        return isAuthenticated() ? getAuthContext().getAuthenticatedRealmName() : null;
-    }
+  @Override
+  public String getClientId() {
+    return isAuthenticated() ? getAuthContext().getClientId() : null;
+  }
 
-    @Override
-    public String getUsername() {
-        return isAuthenticated() ? getAuthContext().getUsername() : null;
-    }
+  @Override
+  public boolean hasRealmRole(String role) {
+    return isAuthenticated() && getAuthContext().hasRealmRole(role);
+  }
 
-    @Override
-    public String getUserId() {
-        return isAuthenticated() ? getAuthContext().getUserId() : null;
-    }
-
-    @Override
-    public String getClientId() {
-        return isAuthenticated() ? getAuthContext().getClientId() : null;
-    }
-
-    @Override
-    public boolean hasRealmRole(String role) {
-        return isAuthenticated() && getAuthContext().hasRealmRole(role);
-    }
-
-    @Override
-    public boolean hasResourceRole(String role, String resource) {
-        return isAuthenticated() && getAuthContext().hasResourceRole(role, resource);
-    }
+  @Override
+  public boolean hasResourceRole(String role, String resource) {
+    return isAuthenticated() && getAuthContext().hasResourceRole(role, resource);
+  }
 }

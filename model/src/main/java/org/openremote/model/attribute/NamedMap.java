@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,16 +12,11 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
-
-import com.google.common.collect.ForwardingMap;
-import jakarta.validation.constraints.NotNull;
-import org.openremote.model.value.AbstractNameValueDescriptorHolder;
-import org.openremote.model.value.AbstractNameValueHolder;
-import org.openremote.model.value.NameHolder;
-import org.openremote.model.value.ValueHolder;
 
 import java.io.Serializable;
 import java.util.*;
@@ -32,126 +24,136 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/**
- * Special map for {@link NameHolder} items where item names are used as map keys.
- */
-public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMap<String, T> implements Serializable {
+import com.google.common.collect.ForwardingMap;
 
-    protected Map<String, T> delegate = new HashMap<>();
+import org.openremote.model.value.AbstractNameValueDescriptorHolder;
+import org.openremote.model.value.AbstractNameValueHolder;
+import org.openremote.model.value.NameHolder;
+import org.openremote.model.value.ValueHolder;
 
-    public NamedMap() {
+import jakarta.validation.constraints.NotNull;
+
+/** Special map for {@link NameHolder} items where item names are used as map keys. */
+public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMap<String, T>
+    implements Serializable {
+
+  protected Map<String, T> delegate = new HashMap<>();
+
+  public NamedMap() {}
+
+  public NamedMap(Collection<? extends T> c) {
+    addAll(c);
+  }
+
+  public NamedMap(Map<? extends String, ? extends T> map) {
+    if (map != null) {
+      addAll(map.values());
+    }
+  }
+
+  @Override
+  protected Map<String, T> delegate() {
+    return delegate;
+  }
+
+  public T put(T value) {
+    return this.put(value.getName(), value);
+  }
+
+  @Override
+  public T put(String key, T value) {
+    if (!Objects.equals(key, value.getName())) {
+      throw new IllegalStateException(
+          "Item key and value name must match: key=" + key + ", name=" + value.getName());
+    }
+    return super.put(key, value);
+  }
+
+  @Override
+  public void putAll(Map<? extends String, ? extends T> map) {
+    addAll(map.values());
+  }
+
+  public void putAll(Collection<? extends T> c) {
+    c.forEach(this::put);
+  }
+
+  public void add(@NotNull T t) {
+    put(t);
+  }
+
+  public void addAll(Collection<? extends T> c) {
+    if (c == null) {
+      return;
     }
 
-    public NamedMap(Collection<? extends T> c) {
-        addAll(c);
-    }
+    c.forEach(this::add);
+  }
 
-    public NamedMap(Map<? extends String, ? extends T> map) {
-        if (map != null) {
-            addAll(map.values());
-        }
-    }
+  @SafeVarargs
+  public final void addAll(T... items) {
+    this.addAll(Arrays.asList(items));
+  }
 
-    @Override
-    protected Map<String, T> delegate() {
-        return delegate;
-    }
+  public void addAll(Map<? extends String, ? extends T> map) {
+    addAll(map.values());
+  }
 
-    public T put(T value) {
-        return this.put(value.getName(), value);
-    }
+  public void addOrReplace(T item) {
+    put(item);
+  }
 
-    @Override
-    public T put(String key, T value) {
-        if (!Objects.equals(key, value.getName())) {
-            throw new IllegalStateException("Item key and value name must match: key=" + key + ", name=" + value.getName());
-        }
-        return super.put(key, value);
-    }
+  @SafeVarargs
+  public final void addOrReplace(T... items) {
+    addOrReplace(Arrays.asList(items));
+  }
 
-    @Override
-    public void putAll(Map<? extends String, ? extends T> map) {
-        addAll(map.values());
-    }
+  public final void addOrReplace(Collection<? extends T> items) {
+    items.forEach(this::addOrReplace);
+  }
 
-    public void putAll(Collection<? extends T> c) {
-        c.forEach(this::put);
-    }
+  public void addOrReplace(Map<? extends String, ? extends T> map) {
+    addOrReplace(map.values());
+  }
 
-    public void add(@NotNull T t) {
-        put(t);
-    }
+  public Optional<T> get(String name) {
+    return Optional.ofNullable(super.get(name));
+  }
 
-    public void addAll(Collection<? extends T> c) {
-        if (c == null) {
-            return;
-        }
+  @SuppressWarnings("unchecked")
+  public <V, W extends AbstractNameValueHolder<V>> Optional<W> get(
+      AbstractNameValueDescriptorHolder<V> nameValueDescriptorHolder) {
+    Optional<T> valueProvider = get(nameValueDescriptorHolder.getName());
+    return valueProvider.map(item -> (W) item);
+  }
 
-        c.forEach(this::add);
-    }
+  @SuppressWarnings("unchecked")
+  public <S> Optional<S> getValue(String name, Class<S> clazz) {
+    return get(name).flatMap(valueHolder -> valueHolder.getValue(clazz));
+  }
 
-    @SafeVarargs
-    public final void addAll(T...items) {
-        this.addAll(Arrays.asList(items));
-    }
+  public <S> Optional<S> getValue(
+      AbstractNameValueDescriptorHolder<S> nameValueDescriptorProvider) {
+    return get(nameValueDescriptorProvider).flatMap(ValueHolder::getValue);
+  }
 
-    public void addAll(Map<? extends String, ? extends T> map) {
-        addAll(map.values());
-    }
+  public boolean has(NameHolder nameHolder) {
+    return has(nameHolder.getName());
+  }
 
-    public void addOrReplace(T item) {
-        put(item);
-    }
+  public boolean has(String name) {
+    return containsKey(name);
+  }
 
-    @SafeVarargs
-    public final void addOrReplace(T...items) {
-        addOrReplace(Arrays.asList(items));
-    }
+  public Stream<T> stream() {
+    return values().stream();
+  }
 
-    public final void addOrReplace(Collection<? extends T> items) {
-        items.forEach(this::addOrReplace);
-    }
+  public void forEach(Consumer<? super T> action) {
+    values().forEach(action);
+  }
 
-    public void addOrReplace(Map<? extends String, ? extends T> map) {
-        addOrReplace(map.values());
-    }
-
-    public Optional<T> get(String name) {
-        return Optional.ofNullable(super.get(name));
-    }
-
-    @SuppressWarnings("unchecked")
-    public <V, W extends AbstractNameValueHolder<V>> Optional<W> get(AbstractNameValueDescriptorHolder<V> nameValueDescriptorHolder) {
-        Optional<T> valueProvider = get(nameValueDescriptorHolder.getName());
-        return valueProvider.map(item -> (W)item);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <S> Optional<S> getValue(String name, Class<S> clazz) {
-        return get(name).flatMap(valueHolder -> valueHolder.getValue(clazz));
-    }
-
-    public <S> Optional<S> getValue(AbstractNameValueDescriptorHolder<S> nameValueDescriptorProvider) {
-        return get(nameValueDescriptorProvider).flatMap(ValueHolder::getValue);
-    }
-
-    public boolean has(NameHolder nameHolder) {
-        return has(nameHolder.getName());
-    }
-
-    public boolean has(String name) {
-        return containsKey(name);
-    }
-
-    public Stream<T> stream() {
-        return values().stream();
-    }
-
-    public void forEach(Consumer<? super T> action) {
-        values().forEach(action);
-    }
-
-    public void removeIf(Predicate<? super T> filter) {
-        values().removeIf(filter);
-    }
+  public void removeIf(Predicate<? super T> filter) {
+    values().removeIf(filter);
+  }
 }

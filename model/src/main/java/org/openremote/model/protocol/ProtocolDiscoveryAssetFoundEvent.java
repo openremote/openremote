@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,34 +12,37 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.protocol;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.event.shared.SharedEvent;
 
-/**
- * Raised when protocol device asset(s) has been discovered
- */
+/** Raised when protocol device asset(s) has been discovered */
 public class ProtocolDiscoveryAssetFoundEvent extends SharedEvent {
 
-    protected String agentDescriptor;
-    protected AssetTreeNode[] assets;
+  protected String agentDescriptor;
+  protected AssetTreeNode[] assets;
 
-    @JsonCreator
-    public ProtocolDiscoveryAssetFoundEvent(@JsonProperty("agentDescriptor") String agentDescriptor, @JsonProperty("assets") AssetTreeNode[] assets) {
-        this.agentDescriptor = agentDescriptor;
-        this.assets = assets;
-    }
+  @JsonCreator
+  public ProtocolDiscoveryAssetFoundEvent(
+      @JsonProperty("agentDescriptor") String agentDescriptor,
+      @JsonProperty("assets") AssetTreeNode[] assets) {
+    this.agentDescriptor = agentDescriptor;
+    this.assets = assets;
+  }
 
-    public String getAgentDescriptor() {
-        return agentDescriptor;
-    }
+  public String getAgentDescriptor() {
+    return agentDescriptor;
+  }
 
-    public AssetTreeNode[] getAssets() {
-        return assets;
-    }
+  public AssetTreeNode[] getAssets() {
+    return assets;
+  }
 }

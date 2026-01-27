@@ -1,16 +1,32 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, PropertyValues, TemplateResult, unsafeCSS,} from "lit";
 import {createSelector} from "reselect";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 import {customElement, property} from "lit/decorators.js";
-import manager, {DefaultColor3} from "@openremote/core";
+import manager, {DefaultColor3,Util} from "@openremote/core";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {ClientRole, Realm} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
-import {Util} from "@openremote/core"
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -366,7 +382,7 @@ export class PageRealms extends Page<AppStateKeyed> {
         } else {
             showSnackbar(undefined, "saveRealmFailed");
         }
-        //TODO improve this so that header realm picker is updated
+        // TODO improve this so that header realm picker is updated
         window.location.reload();
     }
 
@@ -377,7 +393,7 @@ export class PageRealms extends Page<AppStateKeyed> {
             } else {
                 showSnackbar(undefined, "saveRealmFailed");
             }
-            //TODO improve this so that header realm picker is updated
+            // TODO improve this so that header realm picker is updated
             window.location.reload();
         });
     }
@@ -385,7 +401,7 @@ export class PageRealms extends Page<AppStateKeyed> {
     private _deleteRealm(realm: Realm) {
 
       let confirmedName = "";
-      let okBtnRef: Ref<OrMwcInput> = createRef();
+      const okBtnRef: Ref<OrMwcInput> = createRef();
 
       const doDelete = async (dialog: OrMwcDialog) => {
         if (okBtnRef.value.disabled) return;

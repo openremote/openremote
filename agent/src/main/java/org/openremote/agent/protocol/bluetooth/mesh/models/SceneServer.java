@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.models;
 
@@ -24,21 +23,20 @@ import java.util.List;
 
 public class SceneServer extends SigModel {
 
-    public SceneServer(final int modelId) {
-        super(modelId);
-    }
+  public SceneServer(final int modelId) {
+    super(modelId);
+  }
 
-    @Override
-    public String getModelName() {
-        return "Scene Server";
-    }
+  @Override
+  public String getModelName() {
+    return "Scene Server";
+  }
 
-    public List<Integer> getScenesNumbers() {
-        return Collections.unmodifiableList(sceneNumbers);
-    }
+  public List<Integer> getScenesNumbers() {
+    return Collections.unmodifiableList(sceneNumbers);
+  }
 
-    public int getCurrentScene() {
-        return currentScene;
-    }
+  public int getCurrentScene() {
+    return currentScene;
+  }
 }
-

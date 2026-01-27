@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
 
@@ -24,24 +23,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class AttributeWriteResult {
 
-    protected AttributeRef ref;
-    protected AttributeWriteFailure failure;
+  protected AttributeRef ref;
+  protected AttributeWriteFailure failure;
 
-    public AttributeWriteResult(AttributeRef ref) {
-        this.ref = ref;
-    }
+  public AttributeWriteResult(AttributeRef ref) {
+    this.ref = ref;
+  }
 
-    @JsonCreator
-    public AttributeWriteResult(@JsonProperty("ref") AttributeRef ref, @JsonProperty("failure") AttributeWriteFailure failure) {
-        this.ref = ref;
-        this.failure = failure;
-    }
+  @JsonCreator
+  public AttributeWriteResult(
+      @JsonProperty("ref") AttributeRef ref,
+      @JsonProperty("failure") AttributeWriteFailure failure) {
+    this.ref = ref;
+    this.failure = failure;
+  }
 
-    public AttributeRef getRef() {
-        return ref;
-    }
+  public AttributeRef getRef() {
+    return ref;
+  }
 
-    public AttributeWriteFailure getFailure() {
-        return failure;
-    }
+  public AttributeWriteFailure getFailure() {
+    return failure;
+  }
 }
