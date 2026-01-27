@@ -1,14 +1,13 @@
 package org.openremote.model.gateway;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.event.shared.SharedEvent;
 
 public class GatewayTunnelStopResponseEvent extends SharedEvent {
 
     protected String error;
 
-    public GatewayTunnelStopResponseEvent() {
-    }
-
+    @JsonCreator
     public GatewayTunnelStopResponseEvent(String error) {
         this.error = error;
     }

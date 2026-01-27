@@ -8,6 +8,7 @@ import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.function.Consumer;
 
+// TODO: Remove sshHostname and sshPort once enough time has passed that the old clients have been updated
 public class GatewayTunnelStartRequestEvent extends SharedEvent implements RespondableEvent {
 
     @Deprecated
@@ -19,7 +20,9 @@ public class GatewayTunnelStartRequestEvent extends SharedEvent implements Respo
     protected Consumer<Event> responseConsumer;
 
     @JsonCreator
-    public GatewayTunnelStartRequestEvent(GatewayTunnelInfo info) {
+    public GatewayTunnelStartRequestEvent(String sshHostname, int sshPort, GatewayTunnelInfo info) {
+        this.sshHostname = sshHostname;
+        this.sshPort = sshPort;
         this.info = info;
     }
 

@@ -12,12 +12,7 @@ public class GatewayCapabilitiesResponseEvent extends SharedEvent {
     protected final boolean tunnelingSupported;
 
     @JsonCreator
-    public GatewayCapabilitiesResponseEvent(@JsonProperty("timestamp") Date timestamp, @JsonProperty("tunnelingSupported") boolean tunnelingSupported) {
-        super(timestamp != null ? timestamp.getTime() : new Date().getTime());
-        this.tunnelingSupported = tunnelingSupported;
-    }
-
-    public GatewayCapabilitiesResponseEvent(final boolean tunnelingSupported) {
+    public GatewayCapabilitiesResponseEvent(boolean tunnelingSupported) {
         this.tunnelingSupported = tunnelingSupported;
     }
 

@@ -9,6 +9,8 @@ import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -47,6 +49,8 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
         // Disable reading ~/.ssh/config
         // This prevents the client from inheriting aliases or settings from the user's config
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
+
+        client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
     }
 
     @Override
@@ -60,7 +64,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     }
 
     @Override
-    public GatewayTunnelSession createSession(String hostname, int port, GatewayTunnelInfo gatewayTunnelInfo, Consumer<Throwable> closedCallback) {
+    public GatewayTunnelSession createSession(String hostname, int port, GatewayTunnelInfo tunnelInfo, Consumer<Throwable> closedCallback) {
         AtomicReference<CompletableFuture<Void>> activeAttemptRef = new AtomicReference<>();;
         AtomicReference<ClientSession> sessionRef = new AtomicReference<>();
         AtomicReference<Throwable> failureCause = new AtomicReference<>();
@@ -68,7 +72,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
         // Flags if the user explicitly called disconnect()
         AtomicBoolean isManualDisconnect = new AtomicBoolean(false);
 
-        LOG.fine("Creating session: hostname=" + hostname + ", port=" + port + ", tunnelInfo=" + gatewayTunnelInfo);
+        LOG.fine("Creating session: hostname=" + hostname + ", port=" + port + ", tunnelInfo=" + tunnelInfo);
 
         // This allows the caller to disconnect this specific session later
         Supplier<CompletableFuture<Void>> disconnectSupplier = () -> {
@@ -123,11 +127,11 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                             @Override
                             public void sessionClosed(Session s) {
                                 if (isManualDisconnect.get()) {
-                                    LOG.fine("Session closed by user: " + gatewayTunnelInfo);
+                                    LOG.fine("Session closed by user: " + tunnelInfo);
                                     tunnelSession.get().onClose(null);
                                 } else {
                                     Throwable failure = failureCause.get() != null ? failureCause.get() : new IOException("Session closed unexpectedly");
-                                    LOG.info("Session closed unexpectedly '" + failure.getMessage() + "' : " + gatewayTunnelInfo);
+                                    LOG.info("Session closed unexpectedly '" + failure.getMessage() + "' : " + tunnelInfo);
                                     tunnelSession.get().onClose(failure);
                                 }
                             }
@@ -137,11 +141,25 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                         try {
                             session.auth().addListener(authFuture -> {
                                 if (authFuture.isSuccess()) {
-                                    LOG.fine("Session connected and authenticated: " + gatewayTunnelInfo);
-                                    futureToComplete.complete(null);
+                                    LOG.fine("Session connected and authenticated: " + tunnelInfo);
+
+                                    String bindAddress = tunnelInfo.getType() ==  GatewayTunnelInfo.Type.TCP ? "" : tunnelInfo.getId();
+                                    int rPort = tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTPS ? 443 : tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTP ? 80 : tunnelInfo.getAssignedPort();
+                                    String target = localhostRewrite != null && "localhost".equals(tunnelInfo.getTarget()) ? localhostRewrite : tunnelInfo.getTarget();
+                                    SshdSocketAddress remoteAddress = new SshdSocketAddress(bindAddress, rPort);
+                                    SshdSocketAddress localAddress = new SshdSocketAddress(target, tunnelInfo.getTargetPort());
+
+                                    try {
+                                        session.startRemotePortForwarding(remoteAddress, localAddress);
+                                        LOG.info("Remote port forwarding started: " + tunnelInfo);
+
+                                        futureToComplete.complete(null);
+                                    } catch (IOException e) {
+                                        futureToComplete.completeExceptionally(e);
+                                    }
                                 } else {
                                     Throwable failure = authFuture.getException();
-                                    String msg = "Authentication failed '" + (failure != null ? failure.getMessage() : "Unknown error") + "': " + gatewayTunnelInfo;
+                                    String msg = "Authentication failed '" + (failure != null ? failure.getMessage() : "Unknown error") + "': " + tunnelInfo;
                                     session.close(true);
                                     LOG.warning(msg);
                                     futureToComplete.completeExceptionally(new IOException(msg, failure));
@@ -154,13 +172,13 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                     } else {
                         // Connection failed (Network level)
                         Throwable t = connFuture.getException();
-                        String msg = "Connection failed '" + (t != null ? t.getMessage() : "Unknown error") + "': " + gatewayTunnelInfo;
+                        String msg = "Connection failed '" + (t != null ? t.getMessage() : "Unknown error") + "': " + tunnelInfo;
                         LOG.warning(msg);
                         futureToComplete.completeExceptionally(new IOException(msg, t));
                     }
                 });
             } catch (Exception e) {
-                LOG.warning("Connection failed '" + e.getMessage() + "': " + gatewayTunnelInfo);
+                LOG.warning("Connection failed '" + e.getMessage() + "': " + tunnelInfo);
                 futureToComplete.completeExceptionally(e);
             }
         };
@@ -169,11 +187,11 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
         Supplier<CompletableFuture<Void>> reconnectSupplier = () -> {
             CompletableFuture<Void> active = activeAttemptRef.get();
             if (active != null && !active.isDone()) {
-                LOG.fine("Reconnect requested but connection attempt already in progress. Returning existing future: " + gatewayTunnelInfo);
+                LOG.fine("Reconnect requested but connection attempt already in progress. Returning existing future: " + tunnelInfo);
                 return active;
             }
 
-            LOG.info("Initiating reconnect for: " + gatewayTunnelInfo);
+            LOG.info("Initiating reconnect for: " + tunnelInfo);
 
             // First, ensure any existing session is closed cleanly
             return disconnectSupplier.get().thenCompose(ignored -> {
@@ -191,7 +209,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
         tunnelSession.set(new GatewayTunnelSession(
                 initialFuture,
-                gatewayTunnelInfo,
+                tunnelInfo,
                 disconnectSupplier,
                 reconnectSupplier,
                 closedCallback

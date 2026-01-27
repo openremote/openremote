@@ -1,5 +1,6 @@
 package org.openremote.model.gateway;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
@@ -13,10 +14,7 @@ public class GatewayTunnelStopRequestEvent extends SharedEvent  implements Respo
     @JsonIgnore
     protected Consumer<Event> responseConsumer;
 
-    protected GatewayTunnelStopRequestEvent() {
-
-    }
-
+    @JsonCreator
     public GatewayTunnelStopRequestEvent(GatewayTunnelInfo info) {
         this.info = info;
     }

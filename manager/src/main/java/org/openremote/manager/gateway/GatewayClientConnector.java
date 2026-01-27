@@ -3,11 +3,14 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.websocket.WebsocketIOClient;
+import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.rules.AssetQueryPredicate;
+import org.openremote.manager.system.VersionInfo;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -35,19 +38,37 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.gateway.GatewayClientService.CLIENT_EVENT_SESSION_PREFIX;
+import static org.openremote.manager.gateway.GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
- * Handles all communication with the central gateway instance.
+ * Handles all communication with the central gateway instance. Some history of gateway API:
+ * <ol>
+ * <li>ALPHA (pre GATEWAY_API_VERSION) NO LONGER SUPPORTED - Initial implementation; client connects to central manager
+ * and then central manager sends various {@link ReadAssetsEvent}s to request all assets from central manager in batches;
+ * first event asks for all assets without attributes and then paginates full retrieval of the assets in subsequent calls.
+ * </li>
+ * <li>BETA (pre GATEWAY_API_VERSION) - Gateway tunneling introduced; same as ALPHA but after asset sync is complete a
+ * {@link GatewayCapabilitiesRequestEvent} is sent with no content to determine if the client supports tunneling and a
+ * {@link GatewayCapabilitiesResponseEvent} is returned with {@code tunnelingSupported:true|false}. Each tunnel start
+ * request contains the public SSH hostname and port to use (which don't actually change from one request to the next)</li>
+ * <li>1.0.0 - Refactor to improve connection synchronisation and also to support active tunnel synchronisation. A
+ * {@link GatewayInitStartEvent} is sent with a list of active tunnels, gateway API version and tunnel public hostname
+ * and port; the client can then synchronise the SSH sessions (for reconnections) and should also send a
+ * {@link AssetsEvent} with all the edge gatewway assets (without attributes) and this replaces the initial
+ * {@link ReadAssetsEvent} that previous versions would send.</li>
+ * </li>
+ * </ol>
  */
 public class GatewayClientConnector implements AutoCloseable {
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientConnector.class.getName());
+    protected static final int GATEWAY_SYNC_TIMEOUT_MILLIS = 60000;
     protected final ClientEventService clientEventService;
     protected final TimerService timerService;
     protected final AssetStorageService assetStorageService;
     protected final AssetProcessingService assetProcessingService;
     protected GatewayConnection connection;
-    protected GatewayIOClient client;
+    protected WebsocketIOClient<String> client;
     protected GatewayTunnelFactory tunnelFactory;
     protected final List<GatewayTunnelSession> activeTunnelSessions;
     protected Map<String, Map<AttributeRef, Long>> attributeTimestamps;
@@ -56,6 +77,7 @@ public class GatewayClientConnector implements AutoCloseable {
     protected String gatewayAPIVersion;
     protected String tunnelHostname;
     protected Integer tunnelPort;
+    protected CompletableFuture<Void> initFuture;
 
     public GatewayClientConnector(GatewayConnection connection,
                                   GatewayTunnelFactory tunnelFactory,
@@ -104,7 +126,7 @@ public class GatewayClientConnector implements AutoCloseable {
         }
     }
 
-    protected GatewayIOClient createClient() {
+    protected WebsocketIOClient<String> createClient() {
         LOG.info("Creating gateway IO client: " + connection);
 
         if (connection.isDisabled()) {
@@ -113,7 +135,7 @@ public class GatewayClientConnector implements AutoCloseable {
         }
 
         try {
-            GatewayIOClient client = new GatewayIOClient(
+            WebsocketIOClient<String> client = new WebsocketIOClient<>(
                     new URIBuilder()
                             .setScheme(connection.isSecured() ? "wss" : "ws")
                             .setHost(connection.getHost())
@@ -133,24 +155,22 @@ public class GatewayClientConnector implements AutoCloseable {
                             null).setBasicAuthHeader(true)
             );
 
+            client.setConnectTimeoutMillis(GATEWAY_SYNC_TIMEOUT_MILLIS);
             client.setEncoderDecoderProvider(() ->
                     new ChannelHandler[] {new AbstractNettyIOClient.MessageToMessageDecoder<>(String.class, client)}
             );
-
-            client.addConnectionStatusConsumer(status -> onClientConnectionStatusChanged(status, false));
-
+            client.addConnectionStatusConsumer(this::onClientConnectionStatusChanged);
             client.addMessageConsumer(this::onCentralManagerMessage);
-
-            realmAssetEventConsumer = this::sendAssetEvent;
+            client.setInitFutureSupplier(this::doInit);
 
             // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
+            realmAssetEventConsumer = this::sendAssetEvent;
             clientEventService.addSubscription(
                     AssetEvent.class,
                     new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
                     realmAssetEventConsumer);
 
             realmAttributeEventConsumer = this::sendAttributeEvent;
-
             clientEventService.addSubscription(
                     AttributeEvent.class,
                     getOutboundAttributeEventFilter(),
@@ -167,16 +187,20 @@ public class GatewayClientConnector implements AutoCloseable {
         return null;
     }
 
-    protected void onClientConnectionStatusChanged(ConnectionStatus connectionStatus, boolean forcePublish) {
-        LOG.finest("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
+    protected CompletableFuture<Void> doInit() {
+        // Set init future which will be completed when gateway asset sync is complete
+        initFuture = new CompletableFuture<>();
+        return initFuture;
+    }
+
+    protected void onClientConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
+
         if (connectionStatus == ConnectionStatus.CONNECTED) {
-            LOG.finer(() -> "Gateway IO client is connected but now waiting for full initialisation to complete '" + connectionStatus + "': " + connection);
-            if (!forcePublish) {
-                return;
-            }
+            LOG.info("Gateway client initialisation complete API version is '" + gatewayAPIVersion + "': " + connection);
         }
 
-        clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
+        clientEventService.publishEvent(new GatewayConnectionStatusEvent(connection.getLocalRealm(), connectionStatus));
     }
 
     protected void onCentralManagerMessage(String message) {
@@ -190,61 +214,71 @@ public class GatewayClientConnector implements AutoCloseable {
         LOG.finer(() -> "Received message from central manager: realm=" + connection.getLocalRealm() + ", " + event);
 
         switch (event) {
-            case GatewayCapabilitiesRequestEvent capabilitiesRequestEvent -> {
-                gatewayAPIVersion = capabilitiesRequestEvent.getVersion();
-                tunnelHostname = capabilitiesRequestEvent.getTunnelHostname();
-                tunnelPort = capabilitiesRequestEvent.getTunnelPort();
+            // Sent by API version >=1.0.0 on initial connection to central manager
+            case GatewayInitStartEvent initStartEvent -> {
+                gatewayAPIVersion = initStartEvent.getVersion();
+                tunnelHostname = initStartEvent.getTunnelHostname();
+                tunnelPort = initStartEvent.getTunnelPort();
 
+                if (!gatewayAPIVersion.equals(VersionInfo.getGatewayApiVersion())) {
+                    LOG.warning("Gateway API version mismatch: Central manager API version is '" + gatewayAPIVersion + "' but this manager is '" + VersionInfo.getGatewayApiVersion() + "': " + connection);
+                }
+
+                doTunnelSync(initStartEvent.getActiveTunnels());
+
+                // Get all assets in the connections realm
+                AssetQuery query = new AssetQuery()
+                        .realm((new RealmPredicate(connection.getLocalRealm())))
+                        .select(new AssetQuery.Select().excludeAttributes()).recursive(true);
+                List<Asset<?>> assets = assetStorageService.findAll(query);
+                assets = assets.stream()
+                        .map(it -> this.applySyncRules(it, connection.getAssetSyncRules()))
+                        .collect(Collectors.toList());
+                AssetsEvent responseEvent = new AssetsEvent(assets);
+                responseEvent.setMessageID(ASSET_READ_EVENT_NAME_INITIAL);
+                sendCentralManagerMessage(responseEvent);
+            }
+            case GatewayInitDoneEvent initDoneEvent -> {
+                initFuture.complete(null);
+            }
+            // The central manager sends N number of these to synchronise gateway descendant assets on the central manager
+            case ReadAssetsEvent readAssets -> {
+                if (gatewayAPIVersion == null) {
+                    LOG.finer("Pre version 1.0.0 central manager read assets request so closing all active tunnels: " + connection);
+                    stopAllGatewayTunnels();
+                }
+
+                AssetQuery query = readAssets.getAssetQuery();
+                // Force realm to be the one that this client is associated with
+                query.realm(new RealmPredicate(connection.getLocalRealm()));
+                List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
+                assets = assets.stream()
+                        .map(it -> this.applySyncRules(it, connection.getAssetSyncRules()))
+                        .collect(Collectors.toList());
+                AssetsEvent responseEvent = new AssetsEvent(assets);
+                responseEvent.setMessageID(event.getMessageID());
+                sendCentralManagerMessage(responseEvent);
+            }
+            // This event is only sent once asset synchronisation has completed but before init done
+            case GatewayCapabilitiesRequestEvent capabilitiesRequestEvent -> {
                 if (gatewayAPIVersion == null) {
                     // This is a legacy version of the openremote on the central instance so we won't get a GatewayInitialisedEvent
                     // so we mark this client as connected now
                     LOG.fine("Central manager running an older version so assuming connection is initialised");
-                    onClientInitComplete(null);
+                    initFuture.complete(null);
                 }
 
                 GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(tunnelFactory != null);
                 responseEvent.setMessageID(event.getMessageID());
-                sendCentralManagerMessage(messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent));
+                sendCentralManagerMessage(responseEvent);
             }
-            case GatewayInitialisedEvent gatewayInitializedEvent -> {
-                onClientInitComplete(gatewayInitializedEvent.getActiveTunnels());
-            }
+            // Central manager is about to disconnect this client
             case GatewayDisconnectEvent disconnectEvent ->
                 LOG.info("Central manager requested disconnect: reason=" + disconnectEvent.getReason());
-            case GatewayTunnelStartRequestEvent startRequestEvent -> {
-                if (tunnelFactory == null) {
-                    LOG.finest("Gateway tunnel creation request received but gateway tunnel factory is not available: realm=" + connection.getLocalRealm());
-                    return;
-                }
-                // If we don't have tunnel hostname and port already then this is a legacy manager so try and get from
-                // the start request event - it never changes in legacy manager so we can safely do this once
-                if (tunnelHostname == null || tunnelPort == 0) {
-                    tunnelHostname = startRequestEvent.getSshHostname();
-                    tunnelPort = startRequestEvent.getSshPort();
-                }
-                startGatewayTunnel(startRequestEvent.getInfo()).whenComplete((v, t) -> {
-                    String error = t != null ? t.getMessage() : null;
-
-                    if (t != null) {
-                        LOG.warning("Gateway tunnel creation failed: " + t.getMessage());
-                    }
-                    GatewayTunnelStartResponseEvent responseEvent = new GatewayTunnelStartResponseEvent(error);
-                    responseEvent.setMessageID(startRequestEvent.getMessageID());
-                    sendCentralManagerMessage(messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent));
-                });
-            }
-            case GatewayTunnelStopRequestEvent stopRequestEvent -> {
-                if (tunnelFactory == null) {
-                    LOG.finest("Gateway tunnel creation request received but gateway tunnel factory is not available: realm=" + connection.getLocalRealm());
-                    return;
-                }
-                String error = stopGatewayTunnel(stopRequestEvent);
-                GatewayTunnelStopResponseEvent responseEvent = new GatewayTunnelStopResponseEvent(error);
-                responseEvent.setMessageID(event.getMessageID());
-                sendCentralManagerMessage(messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent));
-            }
+            // An attribute event has occurred for a gateway descendant asset
             case AttributeEvent attributeEvent ->
                     assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName());
+            // An asset event has occurred for a gateway descendant asset
             case AssetEvent assetEvent -> {
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset<?> asset = assetEvent.getAsset();
@@ -257,17 +291,38 @@ public class GatewayClientConnector implements AutoCloseable {
                     }
                 }
             }
-            case ReadAssetsEvent readAssets -> {
-                AssetQuery query = readAssets.getAssetQuery();
-                // Force realm to be the one that this client is associated with
-                query.realm(new RealmPredicate(connection.getLocalRealm()));
-                List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
-                assets = assets.stream()
-                        .map(it -> this.applySyncRules(it, connection.getAssetSyncRules()))
-                        .collect(Collectors.toList());
-                AssetsEvent responseEvent = new AssetsEvent(assets);
+            case GatewayTunnelStartRequestEvent startRequestEvent -> {
+                if (tunnelFactory == null) {
+                    LOG.finest("Gateway tunnel creation request received but gateway tunnel factory is not available: realm=" + connection.getLocalRealm());
+                    return;
+                }
+                if (tunnelHostname == null || tunnelPort == 0) {
+                    // If we don't have tunnel hostname and port already then this is a legacy manager so try and get from
+                    // the start request event - it never changes in legacy manager so we can safely do this once
+                    // TODO: Remove this once enough time has passed since this commit was made
+                    tunnelHostname = startRequestEvent.getSshHostname();
+                    tunnelPort = startRequestEvent.getSshPort();
+                }
+                startGatewayTunnel(startRequestEvent.getInfo()).whenComplete((v, t) -> {
+                    String error = t != null ? t.getMessage() : null;
+
+                    if (t != null) {
+                        LOG.warning("Gateway tunnel creation failed: " + t);
+                    }
+                    GatewayTunnelStartResponseEvent responseEvent = new GatewayTunnelStartResponseEvent(error);
+                    responseEvent.setMessageID(startRequestEvent.getMessageID());
+                    sendCentralManagerMessage(responseEvent);
+                });
+            }
+            case GatewayTunnelStopRequestEvent stopRequestEvent -> {
+                if (tunnelFactory == null) {
+                    LOG.finest("Gateway tunnel creation request received but gateway tunnel factory is not available: realm=" + connection.getLocalRealm());
+                    return;
+                }
+                String error = stopGatewayTunnel(stopRequestEvent);
+                GatewayTunnelStopResponseEvent responseEvent = new GatewayTunnelStopResponseEvent(error);
                 responseEvent.setMessageID(event.getMessageID());
-                sendCentralManagerMessage(messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent));
+                sendCentralManagerMessage(responseEvent);
             }
             default -> {
                 LOG.info("Received unknown event from central manager: " + event);
@@ -276,14 +331,23 @@ public class GatewayClientConnector implements AutoCloseable {
     }
 
     /**
-     * This indicates that the client initialisation is complete (i.e. assets are synchronised)
+     * Synchronise the current active tunnel sessions async with what the central instance thinks are open.
      */
-    protected void onClientInitComplete(GatewayTunnelInfo[] activeTunnels) {
-        LOG.info("Gateway client initialisation complete: " + connection);
-        clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), ConnectionStatus.CONNECTED));
-        onClientConnectionStatusChanged(ConnectionStatus.CONNECTED, true);
+    protected void doTunnelSync(GatewayTunnelInfo[] activeTunnels) {
+        if (tunnelFactory == null) {
+            return;
+        }
 
-        if (tunnelFactory != null && activeTunnels != null) {
+        Container.EXECUTOR.submit(() -> {
+
+            if (activeTunnels == null || activeTunnels.length == 0) {
+                LOG.fine("No gateway tunnel sessions on central instance so stopping any active sessions: " + connection);
+                stopAllGatewayTunnels();
+                return;
+            }
+
+            LOG.fine("Synchronising gateway tunnel sessions with central instance: " + connection);
+
             // Synchronise the SSH sessions with what the central instance thinks are open
             // Filter out any tunnels expiring in the next 5 seconds
             List<GatewayTunnelInfo> tunnels = Arrays.stream(activeTunnels).filter(activeTunnel -> {
@@ -304,7 +368,7 @@ public class GatewayClientConnector implements AutoCloseable {
                     LOG.finer("Active tunnel session found for tunnel: " + activeTunnel);
                 } else {
                     // No existing session for this active tunnel
-                    LOG.fine("Active tunnel session not found for tunnel: " + activeTunnel);
+                    LOG.fine("Active tunnel session not found for tunnel so starting: " + activeTunnel);
                     startGatewayTunnel(activeTunnel);
                 }
             });
@@ -317,10 +381,7 @@ public class GatewayClientConnector implements AutoCloseable {
                 }
                 return obsolete;
             });
-        } else {
-            // Legacy central instance just close all active tunnels
-            stopAllGatewayTunnels();
-        }
+        });
     }
 
     protected void sendAssetEvent(AssetEvent event) {
@@ -329,7 +390,7 @@ public class GatewayClientConnector implements AutoCloseable {
             event = ValueUtil.clone(event);
             applySyncRules(event.getAsset(), connection.getAssetSyncRules());
         }
-        sendCentralManagerMessage(messageToString(SharedEvent.MESSAGE_PREFIX, event));
+        sendCentralManagerMessage(event);
     }
 
     protected void sendAttributeEvent(AttributeEvent event) {
@@ -344,12 +405,17 @@ public class GatewayClientConnector implements AutoCloseable {
                     connection.getAssetSyncRules().getOrDefault(event.getAssetType(),
                             connection.getAssetSyncRules().get("*")));
         }
-        sendCentralManagerMessage(messageToString(SharedEvent.MESSAGE_PREFIX, event));
+        sendCentralManagerMessage(event);
     }
 
-    protected void sendCentralManagerMessage(String message) {
+    protected void sendCentralManagerMessage(SharedEvent event) {
         if (client != null) {
-            client.sendMessage(message);
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event);
+            } else {
+                LOG.finer(() -> "Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event.getClass().getSimpleName());
+            }
+            client.sendMessage(messageToString(SharedEvent.MESSAGE_PREFIX, event));
         }
     }
 
@@ -362,7 +428,7 @@ public class GatewayClientConnector implements AutoCloseable {
 
         GatewayTunnelSession session = tunnelFactory.createSession(tunnelHostname, tunnelPort, tunnelInfo, this::onTunnelSessionClosed);
         activeTunnelSessions.add(session);
-        return session.connectFuture.orTimeout(5000, TimeUnit.MILLISECONDS);
+        return session.connectFuture.orTimeout(60000, TimeUnit.MILLISECONDS);
     }
 
     protected String stopGatewayTunnel(GatewayTunnelStopRequestEvent stopRequestEvent) {
