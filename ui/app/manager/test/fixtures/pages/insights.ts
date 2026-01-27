@@ -82,7 +82,7 @@ export class InsightsPage implements BasePage {
      * @param from The grid cell coordinates of the widget
      * @param to The grid cell coordinates to resize the widget to
      */
-    async resizeWidgetTo(widget: Locator, [gridX, gridY] = [0, 0], [cellsWidth, cellsHeight] = [8, 8]) {
+    async resizeWidgetAtTo(widget: Locator, [gridX, gridY] = [0, 0], [cellsWidth, cellsHeight] = [8, 8]) {
         const [cellWidth, cellHeight] = await this.getGridCellDimensions();
         const [width, height] = [cellsWidth * cellWidth, cellsHeight * cellHeight];
 
