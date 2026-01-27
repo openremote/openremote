@@ -2,6 +2,7 @@ const util = require("@openremote/util");
 const { rspack } = require('@rspack/core');
 const { RsdoctorRspackPlugin } = require('@rsdoctor/rspack-plugin');
 const packageJson = require('./package.json');
+const { RsdoctorRspackPlugin } = require('@rsdoctor/rspack-plugin');
 
 module.exports = (env, argv) => {
 
