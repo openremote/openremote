@@ -202,6 +202,9 @@ repositories {
     maven {
         url = 'https://jitpack.io'
     }
+    maven {
+        url = 'https://plugins.gradle.org/m2'
+    }
 }
 
 // Eclipse needs help
@@ -418,6 +421,42 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     base {
         // JAR/ZIP base name is the fully qualified subproject name
         archivesName = "${rootProject.name}${path.replaceAll(":", "-")}"
+    }
+}
+
+plugins.apply('com.diffplug.spotless')
+
+spotless {
+    java {
+        target '**/*.java'
+        targetExclude(
+                '**/org/keycloak/adapters/spi/*',
+                '**/org/keycloak/adapters/undertow/*',
+                '**/org/openremote/container/security/basic/PasswordStorage.java',
+                '**/org/openremote/container/security/keycloak/SimpleKeycloakServletExtension.java',
+                '**/org/openremote/container/web/file/*',
+                '**/org/openremote/model/util/TimeUtil.java',
+                '**/org/openremote/model/util/ValueUtil.java'
+        )
+
+        googleJavaFormat()
+        licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt')
+        importOrder('java', 'javax', 'com', 'org')
+        removeUnusedImports()
+        formatAnnotations()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    typescript {
+        target 'src/**/*.ts'
+        targetExclude(
+                'src/model.ts',
+                'src/restclient.ts'
+        )
+
+        eslint().configFile(rootProject.file('ui/.eslintrc.json')).tsconfigFile(rootProject.file('ui/tsconfig.json'))
+        licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt'), '(import|const|declare|export|var) '
     }
 }
 

@@ -1,13 +1,31 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
 import {styleMap} from 'lit/directives/style-map.js';
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
-import "./or-dashboard-preview";
+import {OrDashboardPreview} from "./or-dashboard-preview";
 import "./or-dashboard-widgetsettings";
 import "./or-dashboard-boardsettings";
-import "./controls/dashboard-refresh-controls";
+import {IntervalSelectEvent, intervalToMillis} from "./controls/dashboard-refresh-controls";
 import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
@@ -15,16 +33,13 @@ import {ClientRole, Dashboard, DashboardAccess, DashboardRefreshInterval, Dashbo
 import manager, {DefaultColor1, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
-import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {i18next} from "@openremote/or-translate";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
-import {OrDashboardPreview} from "./or-dashboard-preview";
 import {WidgetManifest} from "./util/or-widget";
 import {ChartWidget} from "./widgets/chart-widget";
 import {GaugeWidget} from "./widgets/gauge-widget";
-import {IntervalSelectEvent, intervalToMillis} from "./controls/dashboard-refresh-controls";
 import {ImageWidget} from "./widgets/image-widget";
 import {KpiWidget} from "./widgets/kpi-widget";
 import {MapWidget} from "./widgets/map-widget";
@@ -510,7 +525,7 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     shareUrl(method: string) {
-        let url = window.location.href.replace("true", "false");
+        const url = window.location.href.replace("true", "false");
         if(method == 'copy') {
             navigator.clipboard.writeText(url);
         } else if(method == 'tab') {
@@ -550,9 +565,11 @@ export class OrDashboardBuilder extends LitElement {
     protected _isReadonly(): boolean {
         return this.readonly;
     }
+
     protected _hasEditAccess(): boolean {
         return manager.hasRole(ClientRole.WRITE_INSIGHTS);
     }
+
     protected _hasViewAccess(): boolean {
         return manager.hasRole(ClientRole.READ_INSIGHTS) && this.userId != null && (this.selectedDashboard?.access == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
     }

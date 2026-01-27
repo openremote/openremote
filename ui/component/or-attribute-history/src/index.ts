@@ -1,5 +1,21 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
-declare function require(name: string): any;
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import * as echarts from "echarts/core";
 import {GridComponent, GridComponentOption, DataZoomComponent, DataZoomComponentOption, TooltipComponent, TooltipComponentOption, DatasetComponentOption} from "echarts/components";
 import {LineChart, LineSeriesOption} from "echarts/charts";
@@ -18,17 +34,16 @@ import {customElement, property, query} from "lit/decorators.js";
 import {i18next, translate} from "@openremote/or-translate"
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
-import "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-panel";
+import "@openremote/or-chart";
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {isAxiosError} from "@openremote/rest";
 import {styleMap} from "lit/directives/style-map.js";
 import { when } from "lit/directives/when.js";
+declare function require(name: string): any;
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, LineChart, CanvasRenderer, UniversalTransition]);
 
@@ -272,9 +287,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     @query("#chart")
     protected _chartElem!: HTMLDivElement;
+
     protected _chartOptions: ECAttributeHistoryOption = {};
     @query("#table")
     protected _tableElem!: HTMLDivElement;
+
     protected _table?: MDCDataTable;
     protected _chart?: echarts.ECharts;
     protected _type?: ValueDescriptor;
@@ -301,7 +318,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
+        const reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
 
         if (this._dataFirstLoaded && !_changedProperties.get('_loading') && !reloadData) {
             return false;
@@ -324,7 +341,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._type = undefined;
             this._data = undefined;
             this._loadData();
-            this._zoomReset = true; //Flag to avoid retrigger of loadData from zoom eventlistener triggered by next line.
+            this._zoomReset = true; // Flag to avoid retrigger of loadData from zoom eventlistener triggered by next line.
             this._chart?.dispatchAction({type: 'dataZoom', start: 0, end: 100})
         }
 
@@ -513,7 +530,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
             } else {
                 if (changedProperties.has("_data")) {
-                    //Update chart to data from set period
+                    // Update chart to data from set period
                     this._updateChartData();
                 }
             }
@@ -700,6 +717,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return [interval, i18next.t(interval.toLowerCase())];
         });
     }
+
     protected _getPeriodOptions() {
         return [
             DatapointInterval.HOUR.toLowerCase(),
@@ -866,7 +884,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         if (!this._zoomReset) {
             this._zoomChanged = true;
             const {start: zoomStartPercentage, end: zoomEndPercentage} = params.batch?.[0] ?? params; // Events triggered by scroll and zoombar return different structures
-            //Define the start and end of the period based on the zoomed area
+            // Define the start and end of the period based on the zoomed area
             this._queryStartOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomStartPercentage / 100);
             this._queryEndOfPeriod = this._startOfPeriod! + ((this._endOfPeriod! - this._startOfPeriod!) * zoomEndPercentage / 100);
 

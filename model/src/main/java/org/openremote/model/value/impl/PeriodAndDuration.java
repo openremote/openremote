@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,58 +12,62 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value.impl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.openremote.model.util.TextUtil;
-
-import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Period;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.openremote.model.util.TextUtil;
+
+import jakarta.validation.constraints.NotNull;
+
 /**
- * Allows proper ISO8601 duration values which combine {@link java.time.Duration} and {@link java.time.Period}
+ * Allows proper ISO8601 duration values which combine {@link java.time.Duration} and {@link
+ * java.time.Period}
  */
 public class PeriodAndDuration implements Serializable {
-    @JsonIgnore
-    protected Period period;
-    @JsonIgnore
-    protected Duration duration;
+  @JsonIgnore protected Period period;
+  @JsonIgnore protected Duration duration;
 
-    @JsonCreator
-    protected PeriodAndDuration(@NotNull String str) {
-        if (TextUtil.isNullOrEmpty(str)) {
-            throw new IllegalArgumentException("Value cannot be null or empty");
-        }
-
-        String[] periodAndDuration = str.split("T");
-        if (periodAndDuration.length == 2 && periodAndDuration[1].length() > 0) {
-            duration = Duration.parse("PT" + periodAndDuration[1]);
-        }
-        if (periodAndDuration[0].length() > 1) {
-            period = Period.parse(periodAndDuration[0]);
-        }
+  @JsonCreator
+  protected PeriodAndDuration(@NotNull String str) {
+    if (TextUtil.isNullOrEmpty(str)) {
+      throw new IllegalArgumentException("Value cannot be null or empty");
     }
 
-    public PeriodAndDuration(Period period, Duration duration) {
-        this.period = period;
-        this.duration = duration;
+    String[] periodAndDuration = str.split("T");
+    if (periodAndDuration.length == 2 && periodAndDuration[1].length() > 0) {
+      duration = Duration.parse("PT" + periodAndDuration[1]);
     }
+    if (periodAndDuration[0].length() > 1) {
+      period = Period.parse(periodAndDuration[0]);
+    }
+  }
 
-    public Period getPeriod() {
-        return period;
-    }
+  public PeriodAndDuration(Period period, Duration duration) {
+    this.period = period;
+    this.duration = duration;
+  }
 
-    public Duration getDuration() {
-        return duration;
-    }
+  public Period getPeriod() {
+    return period;
+  }
 
-    @Override
-    public String toString() {
-        return (period != null ? period.toString() : "P") + (duration != null ? duration.toString().substring(1) : "");
-    }
+  public Duration getDuration() {
+    return duration;
+  }
+
+  @Override
+  public String toString() {
+    return (period != null ? period.toString() : "P")
+        + (duration != null ? duration.toString().substring(1) : "");
+  }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.extension.energy.model;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
@@ -27,65 +28,66 @@ import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class ElectricityChargerAsset extends ElectricityStorageAsset {
 
-    public enum ConnectorType {
-        YAZAKI,
-        MENNEKES,
-        LE_GRAND,
-        CHADEMO,
-        COMBO,
-        SCHUKO,
-        ENERGYLOCK
-    }
+  public enum ConnectorType {
+    YAZAKI,
+    MENNEKES,
+    LE_GRAND,
+    CHADEMO,
+    COMBO,
+    SCHUKO,
+    ENERGYLOCK
+  }
 
-    public static final ValueDescriptor<ConnectorType> CONNECTOR_TYPE_VALUE = new ValueDescriptor<>("connectorType", ConnectorType.class);
+  public static final ValueDescriptor<ConnectorType> CONNECTOR_TYPE_VALUE =
+      new ValueDescriptor<>("connectorType", ConnectorType.class);
 
-    public static final AttributeDescriptor<ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", CONNECTOR_TYPE_VALUE);
-    public static final AttributeDescriptor<Boolean> VEHICLE_CONNECTED = new AttributeDescriptor<>("vehicleConnected", ValueType.BOOLEAN,
-        new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<String> VEHICLE_ID = new AttributeDescriptor<>("vehicleID", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.READ_ONLY, true));
+  public static final AttributeDescriptor<ConnectorType> CONNECTOR_TYPE =
+      new AttributeDescriptor<>("connectorType", CONNECTOR_TYPE_VALUE);
+  public static final AttributeDescriptor<Boolean> VEHICLE_CONNECTED =
+      new AttributeDescriptor<>(
+          "vehicleConnected", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY));
+  public static final AttributeDescriptor<String> VEHICLE_ID =
+      new AttributeDescriptor<>(
+          "vehicleID", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY, true));
 
-    public static final AssetDescriptor<ElectricityChargerAsset> DESCRIPTOR = new AssetDescriptor<>("ev-station", "8A293D", ElectricityChargerAsset.class);
+  public static final AssetDescriptor<ElectricityChargerAsset> DESCRIPTOR =
+      new AssetDescriptor<>("ev-station", "8A293D", ElectricityChargerAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected ElectricityChargerAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected ElectricityChargerAsset() {}
 
-    public ElectricityChargerAsset(String name) {
-        super(name);
-    }
+  public ElectricityChargerAsset(String name) {
+    super(name);
+  }
 
-    public Optional<ConnectorType> getConnectorType() {
-        return getAttributes().getValue(CONNECTOR_TYPE);
-    }
+  public Optional<ConnectorType> getConnectorType() {
+    return getAttributes().getValue(CONNECTOR_TYPE);
+  }
 
-    public ElectricityChargerAsset setConnectorType(ConnectorType value) {
-        getAttributes().getOrCreate(CONNECTOR_TYPE).setValue(value);
-        return this;
-    }
+  public ElectricityChargerAsset setConnectorType(ConnectorType value) {
+    getAttributes().getOrCreate(CONNECTOR_TYPE).setValue(value);
+    return this;
+  }
 
-    public Optional<Boolean> getVehicleConnected() {
-        return getAttributes().getValue(VEHICLE_CONNECTED);
-    }
+  public Optional<Boolean> getVehicleConnected() {
+    return getAttributes().getValue(VEHICLE_CONNECTED);
+  }
 
-    public ElectricityChargerAsset setVehicleConnected(boolean value) {
-        getAttributes().getOrCreate(VEHICLE_CONNECTED).setValue(value);
-        return this;
-    }
+  public ElectricityChargerAsset setVehicleConnected(boolean value) {
+    getAttributes().getOrCreate(VEHICLE_CONNECTED).setValue(value);
+    return this;
+  }
 
-    public Optional<String> getVehicleID() {
-        return getAttributes().getValue(VEHICLE_ID);
-    }
+  public Optional<String> getVehicleID() {
+    return getAttributes().getValue(VEHICLE_ID);
+  }
 
-    public ElectricityChargerAsset setVehicleID(String value) {
-        getAttributes().getOrCreate(VEHICLE_ID).setValue(value);
-        return this;
-    }
+  public ElectricityChargerAsset setVehicleID(String value) {
+    getAttributes().getOrCreate(VEHICLE_ID).setValue(value);
+    return this;
+  }
 }

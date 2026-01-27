@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.udp;
+
+import java.net.InetSocketAddress;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.socket.DatagramChannel;
@@ -25,35 +26,40 @@ import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
-import java.net.InetSocketAddress;
-
 /**
  * This is an {@link AbstractUDPServer} implementation that handles {@link String} messages.
- * <p>
- * Uses {@link DelimiterBasedFrameDecoder} and {@link StringDecoder}.
+ *
+ * <p>Uses {@link DelimiterBasedFrameDecoder} and {@link StringDecoder}.
  */
 public class UDPStringServer extends AbstractUDPServer<String> {
 
-    protected String delimiter;
-    protected int maxFrameLength;
-    protected boolean stripDelimiter;
+  protected String delimiter;
+  protected int maxFrameLength;
+  protected boolean stripDelimiter;
 
-    public UDPStringServer(InetSocketAddress localAddress, String delimiter, int maxFrameLength, boolean stripDelimiter) {
-        super(localAddress);
-        this.delimiter = delimiter;
-        this.maxFrameLength = maxFrameLength;
-        this.stripDelimiter = stripDelimiter;
-    }
+  public UDPStringServer(
+      InetSocketAddress localAddress,
+      String delimiter,
+      int maxFrameLength,
+      boolean stripDelimiter) {
+    super(localAddress);
+    this.delimiter = delimiter;
+    this.maxFrameLength = maxFrameLength;
+    this.stripDelimiter = stripDelimiter;
+  }
 
-    @Override
-    protected void addDecoders(DatagramChannel channel) {
-        // Add delimiter and string decoders to do the work
-        addDecoder(channel, new DelimiterBasedFrameDecoder(maxFrameLength, stripDelimiter, Unpooled.wrappedBuffer(delimiter.getBytes())));
-        addDecoder(channel, new StringDecoder());
-    }
+  @Override
+  protected void addDecoders(DatagramChannel channel) {
+    // Add delimiter and string decoders to do the work
+    addDecoder(
+        channel,
+        new DelimiterBasedFrameDecoder(
+            maxFrameLength, stripDelimiter, Unpooled.wrappedBuffer(delimiter.getBytes())));
+    addDecoder(channel, new StringDecoder());
+  }
 
-    @Override
-    protected void addEncoders(DatagramChannel channel) {
-        addEncoder(channel, new StringEncoder());
-    }
+  @Override
+  protected void addEncoders(DatagramChannel channel) {
+    addEncoder(channel, new StringEncoder());
+  }
 }

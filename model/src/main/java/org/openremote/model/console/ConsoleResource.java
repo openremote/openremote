@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,42 +12,48 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.console;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.http.RequestParams;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Console", description = "Operations on consoles")
 @Path("console")
 public interface ConsoleResource {
 
-    /**
-     * Creates or updates the registration for the specified console; if the {@link ConsoleRegistration#getId} contains
-     * an ID then it is an update operation otherwise it is a create operation, in both cases the saved {@link
-     * ConsoleRegistration} is returned which should be used for future calls to this endpoint.
-     * <p>
-     * Behind the scenes the console registration is converted into an asset and the {@link ConsoleRegistration} data is
-     * stored in the appropriate {@link ConsoleAsset} {@link Attribute}s.
-     * <p>
-     * This is a public endpoint and allows the registration of consoles anonymously; if there is an authenticated user
-     * registering the console  then the console asset will be linked to that user. If multiple users login on the same
-     * console then it will be associated with each user (i.e. a 1-many relationship).
-     */
-    @POST
-    @Path("register")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "register", summary = "Create or update the registration for a console")
-    ConsoleRegistration register(@BeanParam RequestParams requestParams, @NotNull @Valid ConsoleRegistration consoleRegistration);
+  /**
+   * Creates or updates the registration for the specified console; if the {@link
+   * ConsoleRegistration#getId} contains an ID then it is an update operation otherwise it is a
+   * create operation, in both cases the saved {@link ConsoleRegistration} is returned which should
+   * be used for future calls to this endpoint.
+   *
+   * <p>Behind the scenes the console registration is converted into an asset and the {@link
+   * ConsoleRegistration} data is stored in the appropriate {@link ConsoleAsset} {@link Attribute}s.
+   *
+   * <p>This is a public endpoint and allows the registration of consoles anonymously; if there is
+   * an authenticated user registering the console then the console asset will be linked to that
+   * user. If multiple users login on the same console then it will be associated with each user
+   * (i.e. a 1-many relationship).
+   */
+  @POST
+  @Path("register")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @Operation(operationId = "register", summary = "Create or update the registration for a console")
+  ConsoleRegistration register(
+      @BeanParam RequestParams requestParams,
+      @NotNull @Valid ConsoleRegistration consoleRegistration);
 }

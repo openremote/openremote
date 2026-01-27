@@ -1,24 +1,34 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
-declare function require(name: string): any;
-
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-icon";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
-import "@openremote/or-attribute-history";
-import "@openremote/or-chart";
-import "@openremote/or-mwc-components/or-mwc-table";
+import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import {OrChartConfig} from "@openremote/or-chart";
+import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util} from "@openremote/core";
-import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
-import {OrChartConfig} from "@openremote/or-chart";
-import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
 import {
     AgentDescriptor,
     Asset,
@@ -40,12 +50,12 @@ import i18next, {InitOptions, TOptions} from "i18next";
 import {styleMap} from "lit/directives/style-map.js";
 import {classMap} from "lit/directives/class-map.js";
 import {GenericAxiosResponse} from "axios";
-import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
-import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import { when } from "lit/directives/when.js";
+
+declare function require(name: string): any;
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
@@ -416,8 +426,8 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
 
         const discoverAssets = () => {
-            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
-                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput;
+                const cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
 
             if (!discoverBtn || !cancelBtn) {
                 return false;
@@ -433,7 +443,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         showSnackbar(undefined, "somethingWentWrong", "dismiss");
                     } else {
                         showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", "dismiss");
-                        console.info(response.data, response) //todo: do something with this response
+                        console.info(response.data, response) // todo: do something with this response
                     }
                 })
                 .catch((err) => {
@@ -448,8 +458,8 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
 
         const cancelDiscovery = () => {
-            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
-                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput;
+                const cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
 
             discoverBtn.disabled = false;
             discoverBtn.label = i18next.t("discoverAssets");
@@ -475,7 +485,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             if (fileInputElem) {
                 const reader = new FileReader();
                 if (fileInputElem.files && fileInputElem.files.length) {
-                    reader.readAsDataURL(fileInputElem.files[0]); //convert to base64
+                    reader.readAsDataURL(fileInputElem.files[0]); // convert to base64
                 }
 
                 reader.onload = () => {
@@ -564,7 +574,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             if (hostElement.shadowRoot) {
                 const attributeHistory = hostElement.shadowRoot.getElementById("attribute-history") as OrAttributeHistory;
                 if (attributeName && attributeHistory) {
-                    let attribute = asset.attributes && asset.attributes![attributeName];
+                    const attribute = asset.attributes && asset.attributes![attributeName];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute!.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
                     attributeHistory.attribute = attribute;
@@ -579,7 +589,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             return [attr.name, label];
             }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
 
-        let attrTemplate = html`
+        const attrTemplate = html`
                 <div id="attribute-picker">
                     <or-mwc-input .checkAssetWrite="${false}" .label="${i18next.t("attribute")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-mwc-input>
                 </div>`;
@@ -850,7 +860,7 @@ export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, ho
     }
 
     return html`
-        <or-attribute-input class="force-btn-padding" disablesubscribe .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" resizeVertical .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
+        <or-attribute-input class="force-btn-padding" disablesubscribe .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" resizeVertical .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location'}"></or-attribute-input>
     `;
 }
 
@@ -1264,7 +1274,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         // Load child assets for group asset
-        let childAssets: Asset[] | undefined = undefined;
+        let childAssets: Asset[] | undefined;
         if (asset.type === WellknownAssets.GROUPASSET) {
             childAssets = await getAssetChildren(asset.id!, asset.attributes![WellknownAttributes.CHILDASSETTYPE].value);
         }

@@ -1,8 +1,26 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import manager, {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
-import "./or-dashboard-widgetcontainer";
+import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
 import {debounce} from "lodash";
 import {DashboardGridItem, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
 import {getActivePreset} from "./index";
@@ -17,13 +35,12 @@ import {cache} from "lit/directives/cache.js";
 import {guard} from "lit/directives/guard.js";
 import {OrDashboardEngine} from "./or-dashboard-engine";
 import {WidgetService} from "./service/widget-service";
-import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
 const extracss = require('gridstack/dist/gridstack-extra.css');
 
-//language=css
+// language=css
 const editorStyling = css`
     
     #loadingContainer {
@@ -501,7 +518,7 @@ export class OrDashboardPreview extends LitElement {
         } catch (e) { console.error(e); }
 
         const customPreset = "Custom";
-        let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
+        const screenPresets = this.template?.screenPresets?.map(s => s.displayName);
         screenPresets?.push(customPreset);
         return html`
             <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%; position: relative;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
@@ -602,7 +619,7 @@ export class OrDashboardPreview extends LitElement {
     private cachedGridstackCSS: Map<number, TemplateResult[]> = new Map<number, TemplateResult[]>();
 
     // Provides support for > 12 columns in GridStack (which requires manual css edits)
-    //language=html
+    // language=html
     protected applyCustomGridstackGridCSS(columns: number): TemplateResult {
         if(this.cachedGridstackCSS.has(columns)) {
             return html`${this.cachedGridstackCSS.get(columns)!.map((x) => x)}`;
@@ -667,8 +684,8 @@ export class OrDashboardPreview extends LitElement {
         // If only columns property changed, change columns through the framework and then recreate grid.
         if(changes.changedKeys.length == 1 && changes.changedKeys.includes('columns') && this.grid) {
             this.grid.column(changes.newValue.columns!);
-            let maingrid = this.shadowRoot?.querySelector(".maingrid");
-            let gridElement = this.shadowRoot?.getElementById("gridElement");
+            const maingrid = this.shadowRoot?.querySelector(".maingrid");
+            const gridElement = this.shadowRoot?.getElementById("gridElement");
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = maingrid!.scrollHeight + 'px';
             console.debug("Amount of columns has been changed! Recreating grid...");

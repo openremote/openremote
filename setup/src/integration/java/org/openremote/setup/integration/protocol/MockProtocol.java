@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,17 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.integration.protocol;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -32,141 +37,141 @@ import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.value.ValueType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-
 /**
- * A mock protocol for testing purposes that records the various method calls and supports protocol discovery
+ * A mock protocol for testing purposes that records the various method calls and supports protocol
+ * discovery
  */
-public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> implements ProtocolAssetDiscovery, ProtocolAssetImport {
+public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink>
+    implements ProtocolAssetDiscovery, ProtocolAssetImport {
 
-    public static final String PROTOCOl_NAME = "Mock protocol";
-    public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
-    public List<String> protocolMethodCalls = new ArrayList<>();
-    public boolean updateSensor = true;
-    protected Container container;
+  public static final String PROTOCOl_NAME = "Mock protocol";
+  public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
+  public List<String> protocolMethodCalls = new ArrayList<>();
+  public boolean updateSensor = true;
+  protected Container container;
 
-    public MockProtocol(MockAgent agent) {
-        super(agent);
+  public MockProtocol(MockAgent agent) {
+    super(agent);
+  }
+
+  @Override
+  protected void doStart(Container container) throws Exception {
+    this.container = container;
+    protocolMethodCalls.add("START");
+
+    if (!agent.getRequired().isPresent()) {
+      throw new IllegalStateException("Agent required attribute is not defined");
     }
 
-    @Override
-    protected void doStart(Container container) throws Exception {
-        this.container = container;
-        protocolMethodCalls.add("START");
+    setConnectionStatus(ConnectionStatus.CONNECTED);
+  }
 
-        if (!agent.getRequired().isPresent()) {
-            throw new IllegalStateException("Agent required attribute is not defined");
-        }
+  @Override
+  protected void doStop(Container container) throws Exception {
+    protocolMethodCalls.add("STOP");
+  }
 
-        setConnectionStatus(ConnectionStatus.CONNECTED);
+  @Override
+  protected void doLinkAttribute(String assetId, Attribute<?> attribute, MockAgentLink agentLink)
+      throws RuntimeException {
+    protocolMethodCalls.add("LINK_ATTRIBUTE:" + assetId + ":" + attribute.getName());
+
+    if (!agentLink.getRequiredValue().isPresent()) {
+      // This tests exception handling during linking of attributes
+      throw new IllegalStateException("Attribute is not valid");
     }
+  }
 
-    @Override
-    protected void doStop(Container container) throws Exception {
-        protocolMethodCalls.add("STOP");
+  @Override
+  protected void doUnlinkAttribute(
+      String assetId, Attribute<?> attribute, MockAgentLink agentLink) {
+    protocolMethodCalls.add("UNLINK_ATTRIBUTE:" + assetId + ":" + attribute.getName());
+  }
+
+  @Override
+  protected void doLinkedAttributeWrite(
+      MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + event.getName());
+    protocolWriteAttributeEvents.add(event);
+    if (updateSensor) {
+      updateReceived(event.getRef(), event.getValue(), event.getTimestamp());
     }
+  }
 
-    @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, MockAgentLink agentLink) throws RuntimeException {
-        protocolMethodCalls.add("LINK_ATTRIBUTE:" + assetId + ":" + attribute.getName());
+  @Override
+  public String getProtocolName() {
+    return PROTOCOl_NAME;
+  }
 
-        if (!agentLink.getRequiredValue().isPresent()) {
-            // This tests exception handling during linking of attributes
-            throw new IllegalStateException("Attribute is not valid");
-        }
+  @Override
+  public String getProtocolInstanceUri() {
+    return "mock://" + getAgent().getId();
+  }
+
+  public void updateReceived(final AttributeRef attributeRef, final Object value, Long timestamp) {
+    // Assume we've pushed the update to the actual device and it responded with OK
+    // so now we want to cause a sensor update that will go through the processing
+    // chain.
+    if (timestamp != null) {
+      updateLinkedAttribute(attributeRef, value, timestamp);
+    } else {
+      updateLinkedAttribute(attributeRef, value);
     }
+  }
 
-    @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, MockAgentLink agentLink) {
-        protocolMethodCalls.add("UNLINK_ATTRIBUTE:" + assetId + ":" + attribute.getName());
-    }
+  protected void updateAttribute(AttributeState state) {
+    sendAttributeEvent(state);
+  }
 
-    @Override
-    protected void doLinkedAttributeWrite(MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + event.getName());
-        protocolWriteAttributeEvents.add(event);
-        if (updateSensor) {
-            updateReceived(event.getRef(), event.getValue(), event.getTimestamp());
-        }
-    }
+  @Override
+  public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
+    return container
+        .getExecutor()
+        .submit(
+            () -> {
 
-    @Override
-    public String getProtocolName() {
-        return PROTOCOl_NAME;
-    }
+              // Simulate discovery init delay
+              Thread.sleep(2000);
 
-    @Override
-    public String getProtocolInstanceUri() {
-        return "mock://" + getAgent().getId();
-    }
+              // Discover a few assets
+              assetConsumer.accept(
+                  new AssetTreeNode[] {
+                    new AssetTreeNode(
+                        new ThingAsset("MockAsset1")
+                            .addAttributes(
+                                new Attribute<>("mock1", ValueType.TEXT, "dummy1"),
+                                new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234))),
+                    new AssetTreeNode(
+                        new ThingAsset("MockAsset2")
+                            .addAttributes(
+                                new Attribute<>("mock1", ValueType.TEXT, "dummy2"),
+                                new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)))
+                  });
 
-    public void updateReceived(final AttributeRef attributeRef, final Object value, Long timestamp) {
-        // Assume we've pushed the update to the actual device and it responded with OK
-        // so now we want to cause a sensor update that will go through the processing
-        // chain.
-        if (timestamp != null) {
-            updateLinkedAttribute(attributeRef, value, timestamp);
-        } else {
-            updateLinkedAttribute(attributeRef, value);
-        }
-    }
+              // Simulate a delay
+              Thread.sleep(1000);
 
-    protected void updateAttribute(AttributeState state) {
-        sendAttributeEvent(state);
-    }
+              // Discover a few assets
+              assetConsumer.accept(
+                  new AssetTreeNode[] {
+                    new AssetTreeNode(
+                        new ThingAsset("MockAsset3")
+                            .addAttributes(
+                                new Attribute<>("mock1", ValueType.TEXT, "dummy3"),
+                                new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234))),
+                    new AssetTreeNode(
+                        new ThingAsset("MockAsset3")
+                            .addAttributes(
+                                new Attribute<>("mock1", ValueType.TEXT, "dummy3"),
+                                new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)))
+                  });
 
-    @Override
-    public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
-        return container.getExecutor().submit(() -> {
-
-            // Simulate discovery init delay
-            Thread.sleep(2000);
-
-            // Discover a few assets
-            assetConsumer.accept(new AssetTreeNode[] {
-                new AssetTreeNode(
-                    new ThingAsset("MockAsset1").addAttributes(
-                        new Attribute<>("mock1", ValueType.TEXT, "dummy1"),
-                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
-                    )
-                ),
-                new AssetTreeNode(
-                    new ThingAsset("MockAsset2").addAttributes(
-                        new Attribute<>("mock1", ValueType.TEXT, "dummy2"),
-                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
-                    )
-                )
+              return null;
             });
+  }
 
-            // Simulate a delay
-            Thread.sleep(1000);
-
-            // Discover a few assets
-            assetConsumer.accept(new AssetTreeNode[] {
-                new AssetTreeNode(
-                    new ThingAsset("MockAsset3").addAttributes(
-                        new Attribute<>("mock1", ValueType.TEXT, "dummy3"),
-                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
-                    )
-                ),
-                new AssetTreeNode(
-                    new ThingAsset("MockAsset3").addAttributes(
-                        new Attribute<>("mock1", ValueType.TEXT, "dummy3"),
-                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
-                    )
-                )
-            });
-
-           return null;
-        });
-    }
-
-    @Override
-    public Future<Void> startAssetImport(byte[] fileData, Consumer<AssetTreeNode[]> assetConsumer) {
-        return CompletableFuture.completedFuture(null);
-    }
+  @Override
+  public Future<Void> startAssetImport(byte[] fileData, Consumer<AssetTreeNode[]> assetConsumer) {
+    return CompletableFuture.completedFuture(null);
+  }
 }

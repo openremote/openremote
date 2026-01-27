@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,29 +12,32 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.security.keycloak;
 
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
 import org.keycloak.adapters.NodesRegistrationManagement;
 
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+
 /**
- * This is a copy of the same class from the now obsolete keycloak-undertow-adapter but for jakarta EE.
- *
+ * This is a copy of the same class from the now obsolete keycloak-undertow-adapter but for jakarta
+ * EE.
  */
 // TODO: Move to a standard OIDC adapter
 public class UndertowNodesRegistrationManagementWrapper implements ServletContextListener {
 
-    private final NodesRegistrationManagement delegate;
+  private final NodesRegistrationManagement delegate;
 
-    public UndertowNodesRegistrationManagementWrapper(NodesRegistrationManagement delegate) {
-        this.delegate = delegate;
-    }
+  public UndertowNodesRegistrationManagementWrapper(NodesRegistrationManagement delegate) {
+    this.delegate = delegate;
+  }
 
-    @Override
-    public void contextDestroyed(ServletContextEvent sce) {
-        delegate.stop();
-    }
+  @Override
+  public void contextDestroyed(ServletContextEvent sce) {
+    delegate.stop();
+  }
 }

@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
 import {i18next} from "@openremote/or-translate"
@@ -21,12 +39,10 @@ import "chartjs-adapter-moment";
 import {OrChartConfig} from "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import "@openremote/or-mwc-components/or-mwc-dialog";
-import "@openremote/or-attribute-picker";
-import moment from "moment";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import moment from "moment";
+import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {when} from "lit/directives/when.js";
 import {debounce} from "lodash";
@@ -204,27 +220,37 @@ export class OrAttributeCard extends LitElement {
 
     @property()
     private mainValue?: number;
+
     @property()
     private mainValueDecimals: number = 2;
+
     @property()
     private mainValueSize: "xs" | "s" | "m" | "l" | "xl" = "m";
+
     @property()
     private delta?: {val?: number, unit?: string} = undefined;
+
     @property()
     private deltaPlus: string = "";
+
     @property()
     private deltaFormat: "absolute" | "percentage" = "absolute";
+
     @property()
     public showControls: boolean = true;
+
     @property()
     public hideAttributePicker: boolean = false;
+
     @property()
     public showTitle: boolean = true;
+
     @property()
     protected _loading: boolean = false;
 
     @property()
     private period: moment.unitOfTime.Base = "day";
+
     private asset?: Asset;
     private formattedMainValue?: {value: number|undefined, unit: string};
 
@@ -233,6 +259,7 @@ export class OrAttributeCard extends LitElement {
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
+
     private _chart?: Chart<"line", ScatterDataPoint[]>;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
@@ -356,9 +383,11 @@ export class OrAttributeCard extends LitElement {
     shouldHideAttributePicker(): boolean {
         return (this.hideAttributePicker && this.hideAttributePicker.toString() == "true");
     }
+
     shouldShowControls(): boolean { // Checking for string input as well since that was not working
         return (this.showControls && this.showControls.toString() == "true");
     }
+
     shouldShowTitle(): boolean {
         return (this.showTitle && this.showTitle.toString() == "true");
     }
@@ -602,7 +631,7 @@ export class OrAttributeCard extends LitElement {
         }
 
         const viewSelector = window.location.hash;
-        let config: OrChartConfig = allConfigs.find(e => e.realm === this.realm) as OrChartConfig;
+        const config: OrChartConfig = allConfigs.find(e => e.realm === this.realm) as OrChartConfig;
 
         const view = config && config.views && config.views[viewSelector] ? config.views[viewSelector][this.panelName] : undefined;
 
@@ -687,7 +716,7 @@ export class OrAttributeCard extends LitElement {
             config.views[viewSelector][this.panelName] = {
                 attributeRefs: this.assetAttributes.map(([index, attr]) => {
                     const asset = this.assets[index];
-                    return !!asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
+                    return asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
                 }).filter((attrRef) => !!attrRef) as AttributeRef[],
                 period: this.period,
                 deltaFormat: this.deltaFormat,

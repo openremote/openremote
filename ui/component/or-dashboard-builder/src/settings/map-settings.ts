@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
@@ -5,13 +23,11 @@ import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
 import {AttributeMarkerColours, LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
-import "../panels/assettypes-panel";
-import "../panels/thresholds-panel";
-import {when} from "lit/directives/when.js";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
+import {BoolColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
+import {when} from "lit/directives/when.js";
 import manager from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {BoolColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
 
 const styling = css`
   .switchMwcInputContainer {

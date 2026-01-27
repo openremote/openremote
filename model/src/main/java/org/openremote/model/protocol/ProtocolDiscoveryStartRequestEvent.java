@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.protocol;
 
@@ -24,38 +23,38 @@ import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.event.shared.RealmScopedEvent;
 
 /**
- * Initiates a protocol discovery process (either instance or asset discovery depending on {@link #isAssetDiscovery()});
- * for a given client only one discovery process can be running at a time so any already running discovery process will
- * be stopped.
+ * Initiates a protocol discovery process (either instance or asset discovery depending on {@link
+ * #isAssetDiscovery()}); for a given client only one discovery process can be running at a time so
+ * any already running discovery process will be stopped.
  */
 public class ProtocolDiscoveryStartRequestEvent extends RealmScopedEvent {
 
-    protected String agentDescriptor;
-    protected String assetId;
-    protected boolean assetDiscovery;
+  protected String agentDescriptor;
+  protected String assetId;
+  protected boolean assetDiscovery;
 
-    public ProtocolDiscoveryStartRequestEvent(String realm, String agentDescriptor, String assetId, boolean assetDiscovery) {
-        super(realm);
-        this.agentDescriptor = agentDescriptor;
-        this.assetId = assetId;
-        this.assetDiscovery = assetDiscovery;
-    }
+  public ProtocolDiscoveryStartRequestEvent(
+      String realm, String agentDescriptor, String assetId, boolean assetDiscovery) {
+    super(realm);
+    this.agentDescriptor = agentDescriptor;
+    this.assetId = assetId;
+    this.assetDiscovery = assetDiscovery;
+  }
 
-    public String getAgentDescriptor() {
-        return agentDescriptor;
-    }
+  public String getAgentDescriptor() {
+    return agentDescriptor;
+  }
 
-    /**
-     * If {@link #isAssetDiscovery} then this should be the ID of the {@link Agent} on which {@link Asset} discovery
-     * should be initiated. Otherwise this should be the ID of the parent {@link Asset} under which the discovered
-     * {@link Agent} would be created.
-     */
-    public String getAssetId() {
-        return assetId;
-    }
+  /**
+   * If {@link #isAssetDiscovery} then this should be the ID of the {@link Agent} on which {@link
+   * Asset} discovery should be initiated. Otherwise this should be the ID of the parent {@link
+   * Asset} under which the discovered {@link Agent} would be created.
+   */
+  public String getAssetId() {
+    return assetId;
+  }
 
-    public boolean isAssetDiscovery() {
-        return assetDiscovery;
-    }
-
+  public boolean isAssetDiscovery() {
+    return assetDiscovery;
+  }
 }

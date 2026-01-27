@@ -1,10 +1,28 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {ConsoleProvider, ConsoleRegistration} from "@openremote/model";
 import manager from "./index";
 import {AxiosResponse} from "axios";
 import {Deferred} from "./util";
 
 // No ES6 module support in platform lib
-let platform = require('platform');
+const platform = require('platform');
 
 export interface ProviderAction {
     provider: string;
@@ -61,24 +79,24 @@ export class Console {
         window.OpenRemoteConsole = this;
 
         // Check for query parameters to override values
-        let queryParams = new URLSearchParams(window.location.search);
-        let consoleName = queryParams.get("consoleName");
-        let consoleVersion = queryParams.get("consoleVersion");
-        let consolePlatform = queryParams.get("consolePlatform");
-        let consoleProviders = queryParams.get("consoleProviders");
-        let autoEnableStr = queryParams.get("consoleAutoEnable");
+        const queryParams = new URLSearchParams(window.location.search);
+        const consoleName = queryParams.get("consoleName");
+        const consoleVersion = queryParams.get("consoleVersion");
+        const consolePlatform = queryParams.get("consolePlatform");
+        const consoleProviders = queryParams.get("consoleProviders");
+        const autoEnableStr = queryParams.get("consoleAutoEnable");
 
-        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push"];
+        const requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push"];
         this._pendingProviderEnables = requestedProviders;
 
         // Look for existing console registration in local storage or just create a new one
-        let consoleReg: ConsoleRegistration = Console._createConsoleRegistration();
+        const consoleReg: ConsoleRegistration = Console._createConsoleRegistration();
 
-        let consoleRegStr = window.localStorage.getItem("OpenRemoteConsole:" + realm);
+        const consoleRegStr = window.localStorage.getItem("OpenRemoteConsole:" + realm);
         if (consoleRegStr) {
             try {
-                let storedRegObj = JSON.parse(consoleRegStr);
-                let storedReg = storedRegObj as ConsoleRegistration;
+                const storedRegObj = JSON.parse(consoleRegStr);
+                const storedReg = storedRegObj as ConsoleRegistration;
                 if (storedReg.id) {
                     consoleReg.id = storedReg.id;
                 }
@@ -96,18 +114,18 @@ export class Console {
             }
         }
 
-        let oldProviders = consoleReg.providers;
+        const oldProviders = consoleReg.providers;
         consoleReg.providers = {};
 
-        for (let providerName of requestedProviders) {
-            let provider = oldProviders && oldProviders.hasOwnProperty(providerName) ? oldProviders[providerName] : {
+        for (const providerName of requestedProviders) {
+            const provider = oldProviders && oldProviders.hasOwnProperty(providerName) ? oldProviders[providerName] : {
                 enabled: false,
                 disabled: false
             };
             consoleReg.providers[providerName] = provider;
         }
 
-        let appName = manager.getAppName();
+        const appName = manager.getAppName();
         if (appName.length > 0 && consoleReg.apps!.indexOf(appName) < 0) {
             consoleReg.apps!.push(appName);
         }
@@ -167,7 +185,7 @@ export class Console {
 
         try {
             if (this._registration.providers) {
-                for (let providerName of Object.keys(this._registration.providers)) {
+                for (const providerName of Object.keys(this._registration.providers)) {
                     await this._initialiseProvider(providerName);
                 }
             }
@@ -202,7 +220,7 @@ export class Console {
         }
 
         for (let index = this._pendingProviderEnables.length - 1; index > -1; index--) {
-            let providerName = this._pendingProviderEnables[index];
+            const providerName = this._pendingProviderEnables[index];
             await this.enableProvider(providerName);
         }
     }
@@ -219,20 +237,20 @@ export class Console {
         }
 
         console.debug("Console: enabling provider '" + providerName + "'");
-        let msg: ProviderEnableRequest = {
+        const msg: ProviderEnableRequest = {
             provider: providerName,
             action: "PROVIDER_ENABLE",
             consoleId: this._registration.id!,
             data
         };
-        let response = await this.sendProviderMessage(msg, true);
+        const response = await this.sendProviderMessage(msg, true);
 
         this._registration.providers![providerName].hasPermission = response.hasPermission;
         this._registration.providers![providerName].success = response.success;
         this._registration.providers![providerName].enabled = response.success;
         this._registration.providers![providerName].data = response.data;
 
-        let index = this._pendingProviderEnables.indexOf(providerName);
+        const index = this._pendingProviderEnables.indexOf(providerName);
 
         if (index >= 0) {
             this._pendingProviderEnables.splice(index, 1);
@@ -258,7 +276,7 @@ export class Console {
 
         console.debug("Console: disabling provider '" + provider + "'");
 
-        let response = await this.sendProviderMessage({
+        const response = await this.sendProviderMessage({
             provider: provider,
             action: "PROVIDER_DISABLE"
         }, true);
@@ -282,7 +300,7 @@ export class Console {
             return;
         }
 
-        let promiseName = message.provider + message.action;
+        const promiseName = message.provider + message.action;
 
         if (this._pendingProviderPromises[promiseName]) {
             throw new Error("Message already pending for provider '" + message.provider + "' with action '" + message.action + "'");
@@ -359,7 +377,7 @@ export class Console {
 
 
     public async retrieveData<T>(key: string): Promise<T | undefined> {
-        let responsePromise = this.sendProviderMessage({
+        const responsePromise = this.sendProviderMessage({
             provider: "storage",
             action: "RETRIEVE",
             key: key
@@ -428,7 +446,7 @@ export class Console {
 
                     switch (msg.action.trim().toUpperCase()) {
                         case "PROVIDER_INIT":
-                            let initResponse: ProviderInitialiseResponse = {
+                            const initResponse: ProviderInitialiseResponse = {
                                 action: "PROVIDER_INIT",
                                 provider: "push",
                                 version: "web",
@@ -441,7 +459,7 @@ export class Console {
                             this._handleProviderResponse(JSON.stringify(initResponse));
                             break;
                         case "PROVIDER_ENABLE":
-                            let enableResponse: ProviderEnableResponse = {
+                            const enableResponse: ProviderEnableResponse = {
                                 action: "PROVIDER_ENABLE",
                                 provider: "push",
                                 hasPermission: true,
@@ -459,7 +477,7 @@ export class Console {
 
                     switch (msg.action) {
                         case "PROVIDER_INIT":
-                            let initResponse: ProviderInitialiseResponse = {
+                            const initResponse: ProviderInitialiseResponse = {
                                 action: "PROVIDER_INIT",
                                 provider: "storage",
                                 version: "1.0.0",
@@ -472,7 +490,7 @@ export class Console {
                             this._handleProviderResponse(JSON.stringify(initResponse));
                             break;
                         case "PROVIDER_ENABLE":
-                            let enableResponse: ProviderEnableResponse = {
+                            const enableResponse: ProviderEnableResponse = {
                                 action: "PROVIDER_ENABLE",
                                 provider: "storage",
                                 hasPermission: true,
@@ -481,7 +499,7 @@ export class Console {
                             this._handleProviderResponse(JSON.stringify(enableResponse));
                             break;
                         case "STORE": {
-                                let keyValue = msg.key ? msg.key.trim() : null;
+                                const keyValue = msg.key ? msg.key.trim() : null;
 
                                 if (!keyValue || keyValue.length === 0) {
                                     throw new Error("Storage provider 'store' action requires a `key`");
@@ -495,7 +513,7 @@ export class Console {
                             }
                             break;
                         case "RETRIEVE": {
-                                let keyValue = msg.key ? msg.key.trim() : null;
+                                const keyValue = msg.key ? msg.key.trim() : null;
 
                                 if (!keyValue || keyValue.length === 0) {
                                     throw new Error("Storage provider 'retrieve' action requires a `key`");
@@ -535,11 +553,11 @@ export class Console {
             return;
         }
 
-        let msgJson = JSON.parse(msg);
-        let name = msgJson.provider;
-        let action = msgJson.action;
+        const msgJson = JSON.parse(msg);
+        const name = msgJson.provider;
+        const action = msgJson.action;
 
-        let deferredAndTimeout = this._pendingProviderPromises[name + action];
+        const deferredAndTimeout = this._pendingProviderPromises[name + action];
 
         if (deferredAndTimeout) {
             window.clearTimeout(deferredAndTimeout[1]);
@@ -547,14 +565,14 @@ export class Console {
             deferredAndTimeout[0].resolve(msgJson);
         }
 
-        let listener = this._providerMessageListeners[name + action];
+        const listener = this._providerMessageListeners[name + action];
         if (listener) {
             listener(msgJson);
         }
     }
 
     protected _callCompletedCallback() {
-        let callback = this._enableCompleteCallback;
+        const callback = this._enableCompleteCallback;
         this._enableCompleteCallback = null;
         if (callback) {
             window.setTimeout(() => {
@@ -564,7 +582,7 @@ export class Console {
     }
 
     protected static _createConsoleRegistration(): ConsoleRegistration {
-        let reg: ConsoleRegistration = {
+        const reg: ConsoleRegistration = {
             name: platform.name,
             version: platform.version,
             platform: platform.os.toString(),
@@ -613,7 +631,7 @@ export class Console {
         }
 
         if (initResponse.disabled || initResponse.enabled) {
-            let index = this._pendingProviderEnables.indexOf(providerName);
+            const index = this._pendingProviderEnables.indexOf(providerName);
             if (index >= 0) {
                 this._pendingProviderEnables.splice(index, 1);
             }

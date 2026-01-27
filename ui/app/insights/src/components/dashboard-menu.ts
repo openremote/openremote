@@ -1,11 +1,28 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { html, css, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import "@openremote/or-mwc-components/or-mwc-drawer";
+import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import {when} from "lit/directives/when.js";
 import { Dashboard } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
-import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import {style} from "../style";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DefaultColor5} from "@openremote/core";

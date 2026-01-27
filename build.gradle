@@ -25,6 +25,17 @@ scmVersion {
     }
 }
 
+buildscript {
+    repositories {
+        maven {
+            url = 'https://plugins.gradle.org/m2'
+        }
+    }
+    dependencies {
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:8.2.0'
+    }
+}
+
 allprojects {
     apply from: "${findProject(':openremote') != null ? project(':openremote').projectDir : rootDir}/project.gradle"
     version = scmVersion.version
@@ -78,12 +89,12 @@ tasks.register('checkFilesGitIgnoredNew', Exec) {
 def gitFile = Paths.get(projectDir.path, '.git').toFile()
 checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
-tasks.register('clean') {
+tasks.register('cleanTmp') {
+    mustRunAfter("clean")
     doLast {
         delete 'tmp'
     }
 }
-
 
 buildscript {
     repositories {

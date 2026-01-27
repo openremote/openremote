@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
@@ -50,18 +49,15 @@ import {
     AssetQueryOrderBy$Property,
     AssetQueryMatch
 } from "@openremote/model";
-import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
-import "./or-rule-viewer";
-import "./or-rule-group-viewer";
-import "./or-rule-tree";
-import "./flow-viewer/flow-viewer";
 import {OrRuleViewer} from "./or-rule-viewer";
+import "./or-rule-group-viewer";
+import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
+import "./flow-viewer/flow-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {OrRuleTree, RuleTreeNode} from "./or-rule-tree";
 import {OrTreeDragEvent} from "@openremote/or-tree-menu";
 import {when} from "lit/directives/when.js";
 
@@ -437,7 +433,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
     const assetDescriptors: AssetDescriptor[] = AssetModelUtil.getAssetDescriptors();
 
     return getAssetTypes().then(availibleAssetTypes => {
-        let allowedAssetTypes: string[] = availibleAssetTypes ? availibleAssetTypes : [];
+        let allowedAssetTypes: string[] = availibleAssetTypes || [];
         let excludedAssetTypes: string[] = [];
         if (!config || !config.descriptors) {
             return assetDescriptors.map((ad) => AssetModelUtil.getAssetTypeInfo(ad)!);
@@ -472,7 +468,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
         }).map((ad) => {
 
-            let typeInfo = AssetModelUtil.getAssetTypeInfo(ad)!;
+            const typeInfo = AssetModelUtil.getAssetTypeInfo(ad)!;
 
             // Amalgamate matching descriptor from config if defined
             const configDescriptor = getAssetDescriptorFromSection(ad.name!, config, useActionConfig);
@@ -953,7 +949,7 @@ export class OrRules extends translate(i18next)(LitElement) {
         if(groupNodes.length === 1) {
             if(this._viewer) this._viewer.ruleset = undefined; // clear viewer, since a group is selected instead
             this._selectedGroup = groupNodes[0].groupId;
-            return;
+            
         }
 
         // If the user has clicked the same node so let's force reload it

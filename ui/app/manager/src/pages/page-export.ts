@@ -1,16 +1,32 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, unsafeCSS, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import "@openremote/or-rules";
+import { buttonStyle } from "@openremote/or-rules";
 import {Store} from "@reduxjs/toolkit";
-import {Page, PageProvider} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import {Page, PageProvider,AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
 import manager, { DefaultColor3, Util } from "@openremote/core";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrAssetAttributePickerPickedEvent, OrAssetAttributePicker} from "@openremote/or-attribute-picker";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
-import { buttonStyle } from "@openremote/or-rules";
 import {createSelector} from "reselect";
 import {isAxiosError} from "@openremote/rest";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -197,6 +213,7 @@ export class PageExport extends Page<AppStateKeyed> {
 
     @property({type: Number})
     private oldestTimestamp: number = moment().subtract(1, 'months').valueOf();
+
     @property({type: Number})
     private latestTimestamp: number = moment().valueOf();
 
@@ -403,7 +420,7 @@ export class PageExport extends Page<AppStateKeyed> {
     
     protected async loadConfig() {
 
-        let configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
+        const configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
         if (!configs.length || !Object.getOwnPropertyNames(configs[0]).includes("realm")) {
             manager.console.storeData("OrExportConfig", null);
         }
@@ -424,8 +441,8 @@ export class PageExport extends Page<AppStateKeyed> {
     
     protected async saveConfig() {
 
-        let configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
-        let config = configs.find(c => c.realm === this.realm);
+        const configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
+        const config = configs.find(c => c.realm === this.realm);
         if (config) {
             config.selectedAttributes = this.config.selectedAttributes;
         }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,71 +12,115 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.lorawan;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Optional;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DeviceRecord {
 
-    @JsonProperty("devEUI")
-    private String devEUI;
+  @JsonProperty("devEUI")
+  private String devEUI;
 
-    @JsonProperty("name")
-    private String name;
+  @JsonProperty("name")
+  private String name;
 
-    @JsonProperty("vendor_id")
-    private String vendorId;
+  @JsonProperty("vendor_id")
+  private String vendorId;
 
-    @JsonProperty("model_id")
-    private String modelId;
+  @JsonProperty("model_id")
+  private String modelId;
 
-    @JsonProperty("firmwareVersion")
-    private String firmwareVersion;
+  @JsonProperty("firmwareVersion")
+  private String firmwareVersion;
 
-    @JsonProperty("assetTypeName")
-    private String assetTypeName;
+  @JsonProperty("assetTypeName")
+  private String assetTypeName;
 
-    public String getDevEUI() { return devEUI; }
-    public void setDevEUI(String devEUI) { this.devEUI = devEUI; }
+  public String getDevEUI() {
+    return devEUI;
+  }
 
-    public String getName() {
-        if (name == null || name.trim().isEmpty()) {
-            return Optional.ofNullable(devEUI).orElse("");
-        }
-        return name;
+  public void setDevEUI(String devEUI) {
+    this.devEUI = devEUI;
+  }
+
+  public String getName() {
+    if (name == null || name.trim().isEmpty()) {
+      return Optional.ofNullable(devEUI).orElse("");
     }
-    public void setName(String name) { this.name = name; }
+    return name;
+  }
 
-    public String getVendorId() { return vendorId; }
-    public void setVendorId(String vendorId) { this.vendorId = vendorId; }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public String getModelId() { return modelId; }
-    public void setModelId(String modelId) { this.modelId = modelId; }
+  public String getVendorId() {
+    return vendorId;
+  }
 
-    public String getFirmwareVersion() { return firmwareVersion; }
-    public void setFirmwareVersion(String firmwareVersion) { this.firmwareVersion = firmwareVersion; }
+  public void setVendorId(String vendorId) {
+    this.vendorId = vendorId;
+  }
 
-    public String getAssetTypeName() { return assetTypeName; }
-    public void setAssetTypeName(String assetTypeName) { this.assetTypeName = assetTypeName; }
+  public String getModelId() {
+    return modelId;
+  }
 
-    @Override
-    public String toString() {
-        return "DeviceRecord{" +
-            "devEUI='" + (devEUI != null ? devEUI : "") + '\'' +
-            ", name='" + (name != null ? name : "") + '\'' +
-            ", vendorId='" + (vendorId != null ? vendorId : "") + '\'' +
-            ", modelId='" + (modelId != null ? modelId : "") + '\'' +
-            ", firmwareVersion='" + (firmwareVersion != null ? firmwareVersion : "") + '\'' +
-            ", assetTypeName='" + (assetTypeName != null ? assetTypeName : "") + '\'' +
-            '}';
-    }
+  public void setModelId(String modelId) {
+    this.modelId = modelId;
+  }
 
-    public boolean isValid() {
-        return devEUI != null && !devEUI.trim().isEmpty() &&
-               assetTypeName != null && !assetTypeName.trim().isEmpty();
-    }
+  public String getFirmwareVersion() {
+    return firmwareVersion;
+  }
+
+  public void setFirmwareVersion(String firmwareVersion) {
+    this.firmwareVersion = firmwareVersion;
+  }
+
+  public String getAssetTypeName() {
+    return assetTypeName;
+  }
+
+  public void setAssetTypeName(String assetTypeName) {
+    this.assetTypeName = assetTypeName;
+  }
+
+  @Override
+  public String toString() {
+    return "DeviceRecord{"
+        + "devEUI='"
+        + (devEUI != null ? devEUI : "")
+        + '\''
+        + ", name='"
+        + (name != null ? name : "")
+        + '\''
+        + ", vendorId='"
+        + (vendorId != null ? vendorId : "")
+        + '\''
+        + ", modelId='"
+        + (modelId != null ? modelId : "")
+        + '\''
+        + ", firmwareVersion='"
+        + (firmwareVersion != null ? firmwareVersion : "")
+        + '\''
+        + ", assetTypeName='"
+        + (assetTypeName != null ? assetTypeName : "")
+        + '\''
+        + '}';
+  }
+
+  public boolean isValid() {
+    return devEUI != null
+        && !devEUI.trim().isEmpty()
+        && assetTypeName != null
+        && !assetTypeName.trim().isEmpty();
+  }
 }

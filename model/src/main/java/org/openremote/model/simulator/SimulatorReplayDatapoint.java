@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,44 +12,46 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.simulator;
-
-import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
-import org.openremote.model.datapoint.ValueDatapoint;
 
 import java.io.Serializable;
 import java.util.Optional;
 
+import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
+
 /**
- * Represents a value at a point in time defined as the number of seconds relative to the occurrence start.
+ * Represents a value at a point in time defined as the number of seconds relative to the occurrence
+ * start.
  */
 @JsonSchemaTitle("Data point")
 public class SimulatorReplayDatapoint implements Serializable {
 
-    /**
-     * Seconds relative to occurrence start
-     */
-    public long timestamp;
-    public Object value;
+  /** Seconds relative to occurrence start */
+  public long timestamp;
 
-    protected SimulatorReplayDatapoint() {}
+  public Object value;
 
-    public SimulatorReplayDatapoint(long timestamp, Object value) {
-        this.timestamp = timestamp;
-        this.value = value;
-    }
+  protected SimulatorReplayDatapoint() {}
 
-    public long getTimestamp() {
-        return timestamp;
-    }
+  public SimulatorReplayDatapoint(long timestamp, Object value) {
+    this.timestamp = timestamp;
+    this.value = value;
+  }
 
-    public Optional<Object> getValue() {
-        return Optional.ofNullable(value);
-    }
+  public long getTimestamp() {
+    return timestamp;
+  }
 
-    public ValueDatapoint<Object> toValueDatapoint() {
-        return new ValueDatapoint<>(timestamp, value);
-    }
+  public Optional<Object> getValue() {
+    return Optional.ofNullable(value);
+  }
+
+  public ValueDatapoint<Object> toValueDatapoint() {
+    return new ValueDatapoint<>(timestamp, value);
+  }
 }

@@ -1,7 +1,25 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
     createListGroup,
@@ -12,7 +30,6 @@ import {
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -254,9 +271,9 @@ export class OrAddAssetDialog extends LitElement {
             return false;
         }
         
-        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
-            attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
-            optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name);
+            const attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional);
+            const optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
 
         return html`
             <div id="type-title">

@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,48 +12,51 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.datapoint;
+
+import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Date;
-
 public class ValueDatapoint<T> {
 
-    protected long timestamp;
-    protected T value;
+  protected long timestamp;
+  protected T value;
 
-    protected ValueDatapoint(@JsonProperty("x") Date timestamp,
-                          @JsonProperty("y") T value) {
-        this(timestamp.getTime(), value);
-    }
+  protected ValueDatapoint(@JsonProperty("x") Date timestamp, @JsonProperty("y") T value) {
+    this(timestamp.getTime(), value);
+  }
 
-    @JsonCreator
-    public ValueDatapoint(@JsonProperty("x") long timestamp,
-                          @JsonProperty("y") T value) {
-        this.timestamp = timestamp;
-        this.value = value;
-    }
+  @JsonCreator
+  public ValueDatapoint(@JsonProperty("x") long timestamp, @JsonProperty("y") T value) {
+    this.timestamp = timestamp;
+    this.value = value;
+  }
 
+  @JsonProperty("x")
+  public long getTimestamp() {
+    return timestamp;
+  }
 
-    @JsonProperty("x")
-    public long getTimestamp() {
-        return timestamp;
-    }
+  @JsonProperty("y")
+  public T getValue() {
+    return value;
+  }
 
-    @JsonProperty("y")
-    public T getValue() {
-        return value;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "timestamp='" + timestamp + '\'' +
-            ", value=" + value +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName()
+        + "{"
+        + "timestamp='"
+        + timestamp
+        + '\''
+        + ", value="
+        + value
+        + '}';
+  }
 }

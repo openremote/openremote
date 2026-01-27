@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { MDCTabBar } from "@material/tab-bar";
 import {css, CSSResult, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -16,7 +34,7 @@ export interface OrMwcTabItem {
     content?: TemplateResult | string
 }
 
-//language=css
+// language=css
 const tabStyling = css`
     .mdc-tab {
         background: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
@@ -166,7 +184,7 @@ export class OrMwcTabs extends LitElement {
                 <div>
                     <div>
                         <!-- Content of menu Item. Using either unsafeHTML or HTML depending on input type -->
-                        ${(selectedItem != null && selectedItem.content != null) ? (typeof selectedItem.content == "string" ? unsafeHTML(selectedItem.content as string) : html`${selectedItem.content}`) : undefined}
+                        ${(selectedItem != null && selectedItem.content != null) ? (typeof selectedItem.content === "string" ? unsafeHTML(selectedItem.content as string) : html`${selectedItem.content}`) : undefined}
                     </div>
                 </div>
             </div>

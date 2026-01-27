@@ -1,10 +1,9 @@
 buildDir = "dist"
 
-task clean() {
-    doLast {
-        delete "dist"
-    }
+clean.doLast {
+    delete "dist"
 }
+
 
 tasks.register('npmAnalyze', Exec) {
     mustRunAfter npmClean

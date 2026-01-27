@@ -1,34 +1,55 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.attribute;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.annotation.Nonnull;
+
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
 
-import java.util.Optional;
+import jakarta.annotation.Nonnull;
 
-public interface AttributeInfo extends AssetInfo, NameValueHolder<Object>, MetaHolder, Comparable<AttributeInfo> {
-    @JsonProperty
-    long getTimestamp();
+public interface AttributeInfo
+    extends AssetInfo, NameValueHolder<Object>, MetaHolder, Comparable<AttributeInfo> {
+  @JsonProperty
+  long getTimestamp();
 
-    @JsonProperty
-    AttributeRef getRef();
+  @JsonProperty
+  AttributeRef getRef();
 
-    String getId();
+  String getId();
 
-    String getName();
+  String getName();
 
-    @JsonProperty
-    Optional<Object> getValue();
+  @JsonProperty
+  Optional<Object> getValue();
 
-    AttributeState getState();
+  AttributeState getState();
 
-    @JsonProperty
-    Optional<Object> getOldValue();
+  @JsonProperty
+  Optional<Object> getOldValue();
 
-    <U> Optional<U> getOldValue(@Nonnull Class<U> valueType);
+  <U> Optional<U> getOldValue(@Nonnull Class<U> valueType);
 
-    @JsonProperty
-    long getOldValueTimestamp();
+  @JsonProperty
+  long getOldValueTimestamp();
 }

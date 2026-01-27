@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,37 +12,41 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
-
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.client.ClientResponseFilter;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * A filter for updating response headers.
- */
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
+
+/** A filter for updating response headers. */
 public class ResponseHeaderUpdateFilter implements ClientResponseFilter {
 
-    protected Set<Map.Entry<String, List<String>>> headers;
+  protected Set<Map.Entry<String, List<String>>> headers;
 
-    public ResponseHeaderUpdateFilter(Map<String, List<String>> headers) {
-        this.headers = headers.entrySet();
-    }
+  public ResponseHeaderUpdateFilter(Map<String, List<String>> headers) {
+    this.headers = headers.entrySet();
+  }
 
-    @Override
-    public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
-        headers.forEach(headerAndValues -> {
-            responseContext.getHeaders().remove(headerAndValues.getKey());
-            if (!headerAndValues.getValue().isEmpty()) {
-                responseContext.getHeaders().addAll(headerAndValues.getKey(), headerAndValues.getValue());
-            }
+  @Override
+  public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
+      throws IOException {
+    headers.forEach(
+        headerAndValues -> {
+          responseContext.getHeaders().remove(headerAndValues.getKey());
+          if (!headerAndValues.getValue().isEmpty()) {
+            responseContext
+                .getHeaders()
+                .addAll(headerAndValues.getKey(), headerAndValues.getValue());
+          }
         });
-    }
+  }
 }

@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
@@ -5,15 +23,13 @@ import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateP
 import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
-import "./or-add-attribute-panel";
-import {getField, getPanel, getPropertyTemplate} from "./index";
 import {
     OrAddAttributePanelAttributeChangedEvent,
 } from "./or-add-attribute-panel";
+import {getField, getPanel, getPropertyTemplate} from "./index";
 import {panelStyles} from "./style";
 import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
 import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
@@ -274,7 +290,7 @@ export class OrEditAssetPanel extends LitElement {
             const tdElems = tdElem.closest("table")?.getElementsByClassName("expander-cell");
 
             if (tdElems) {
-                for (var i = 0; i < tdElems.length; i++) {
+                for (let i = 0; i < tdElems.length; i++) {
                     const expanderIcon = tdElems[i].getElementsByTagName("or-icon")[0] as OrIcon;
 
                     if ((expanderIcon.icon === "chevron-right" && !this.expandedAll) || (expanderIcon.icon === "chevron-down" && this.expandedAll)) {

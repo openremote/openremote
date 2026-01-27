@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     computeLabel,
     createDefaultValue,
@@ -14,9 +32,8 @@ import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFrom
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import "@openremote/or-mwc-components/or-mwc-list";
-import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";
@@ -84,6 +101,7 @@ export class ControlArrayElement extends ControlBaseElement {
 
     @property()
     protected minimal?: boolean;
+
     protected resolvedSchema!: JsonSchema;
     protected itemInfos: CombinatorInfo[] | undefined;
     protected addItem!: (value: any) => void;

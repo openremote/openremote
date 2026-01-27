@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,27 +12,30 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
 
-import org.keycloak.adapters.KeycloakDeployment;
-
 import javax.security.auth.callback.Callback;
 
+import org.keycloak.adapters.KeycloakDeployment;
+
 /**
- * A {@link Callback} that should return the {@link org.keycloak.adapters.KeycloakDeployment} for the specified realm
+ * A {@link Callback} that should return the {@link org.keycloak.adapters.KeycloakDeployment} for
+ * the specified realm
  */
 public class KeycloakDeploymentCallback implements Callback, java.io.Serializable {
 
-    protected KeycloakDeployment deployment;
+  protected KeycloakDeployment deployment;
 
-    public KeycloakDeploymentCallback setDeployment(KeycloakDeployment deployment) {
-        this.deployment = deployment;
-        return this;
-    }
+  public KeycloakDeploymentCallback setDeployment(KeycloakDeployment deployment) {
+    this.deployment = deployment;
+    return this;
+  }
 
-    public KeycloakDeployment getDeployment() {
-        return deployment;
-    }
+  public KeycloakDeployment getDeployment() {
+    return deployment;
+  }
 }

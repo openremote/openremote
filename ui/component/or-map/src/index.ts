@@ -1,12 +1,29 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import manager, {EventCallback} from "@openremote/core";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {IControl, LngLat, LngLatBoundsLike, LngLatLike, GeolocateControl} from "maplibre-gl";
 import {ClusterConfig, MapWidget} from "./mapwidget";
 import {style} from "./style";
-import "./markers/or-map-marker";
-import "./markers/or-map-marker-asset";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
+import "./markers/or-map-marker-asset";
 import * as Util from "./util";
 import {
     InputType,
@@ -314,7 +331,7 @@ export class OrMap extends LitElement {
     public cluster?: ClusterConfig;
 
     @property({type: String, converter: {
-            fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
+            fromAttribute(value: string | null, type?: string): LngLatLike | undefined {
                 if (!value) {
                     return;
                 }
@@ -328,7 +345,7 @@ export class OrMap extends LitElement {
                 return new LngLat(lng, lat);
             },
 
-            toAttribute(value?: LngLatLike, type?: String): string {
+            toAttribute(value?: LngLatLike, type?: string): string {
                 const lngLat = Util.getLngLat(value);
 
                 if (!lngLat) {

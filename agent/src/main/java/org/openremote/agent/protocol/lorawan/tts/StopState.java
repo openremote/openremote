@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.lorawan.tts;
 
@@ -23,28 +22,23 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
 public class StopState implements ConnectionState {
-    private final TheThingsStackProtocol protocol;
+  private final TheThingsStackProtocol protocol;
 
-    public StopState(ConnectionStateManager manager) {
-        this.protocol = manager.getProtocol();
-    }
+  public StopState(ConnectionStateManager manager) {
+    this.protocol = manager.getProtocol();
+  }
 
-    @Override
-    public void start(Container container) throws Exception {
-    }
+  @Override
+  public void start(Container container) throws Exception {}
 
-    @Override
-    public void stop(Container container) {
+  @Override
+  public void stop(Container container) {}
 
-    }
+  @Override
+  public void onMqttConnectionStatusChanged(ConnectionStatus connectionStatus) {
+    protocol.setConnectionStatus(connectionStatus);
+  }
 
-    @Override
-    public void onMqttConnectionStatusChanged(ConnectionStatus connectionStatus) {
-        protocol.setConnectionStatus(connectionStatus);
-    }
-
-    @Override
-    public void onGrpcConnectionStatusChanged(ConnectionStatus connectionStatus) {
-
-    }
+  @Override
+  public void onGrpcConnectionStatusChanged(ConnectionStatus connectionStatus) {}
 }

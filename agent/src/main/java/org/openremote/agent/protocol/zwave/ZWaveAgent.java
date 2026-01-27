@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.zwave;
 
@@ -28,24 +27,21 @@ import jakarta.persistence.Entity;
 @Entity
 public class ZWaveAgent extends Agent<ZWaveAgent, ZWaveProtocol, ZWaveAgentLink> {
 
-    public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
+  public static final AttributeDescriptor<String> SERIAL_PORT =
+      Agent.SERIAL_PORT.withOptional(false);
 
-    public static AgentDescriptor<ZWaveAgent, ZWaveProtocol, ZWaveAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        ZWaveAgent.class, ZWaveProtocol.class, ZWaveAgentLink.class, null
-    );
+  public static AgentDescriptor<ZWaveAgent, ZWaveProtocol, ZWaveAgentLink> DESCRIPTOR =
+      new AgentDescriptor<>(ZWaveAgent.class, ZWaveProtocol.class, ZWaveAgentLink.class, null);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected ZWaveAgent() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected ZWaveAgent() {}
 
-    public ZWaveAgent(String name) {
-        super(name);
-    }
+  public ZWaveAgent(String name) {
+    super(name);
+  }
 
-    @Override
-    public ZWaveProtocol getProtocolInstance() {
-        return new ZWaveProtocol(this);
-    }
+  @Override
+  public ZWaveProtocol getProtocolInstance() {
+    return new ZWaveProtocol(this);
+  }
 }

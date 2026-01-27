@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -25,34 +26,32 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class CityAsset extends Asset<CityAsset> {
 
-    public static final AttributeDescriptor<String> REGION = new AttributeDescriptor<>("region", ValueType.TEXT)
-        .withOptional(true);
-    public static final AttributeDescriptor<String> COUNTRY = new AttributeDescriptor<>("country", ValueType.TEXT);
-    public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT)
-        .withOptional(true);
+  public static final AttributeDescriptor<String> REGION =
+      new AttributeDescriptor<>("region", ValueType.TEXT).withOptional(true);
+  public static final AttributeDescriptor<String> COUNTRY =
+      new AttributeDescriptor<>("country", ValueType.TEXT);
+  public static final AttributeDescriptor<String> CITY =
+      new AttributeDescriptor<>("city", ValueType.TEXT).withOptional(true);
 
-    public static final AssetDescriptor<CityAsset> DESCRIPTOR = new AssetDescriptor<>("city", null, CityAsset.class);
+  public static final AssetDescriptor<CityAsset> DESCRIPTOR =
+      new AssetDescriptor<>("city", null, CityAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected CityAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected CityAsset() {}
 
-    public CityAsset(String name) {
-        super(name);
-    }
+  public CityAsset(String name) {
+    super(name);
+  }
 
-    public Optional<String> getRegion() { 
-		return getAttributes().getValue(REGION); 
-	}
+  public Optional<String> getRegion() {
+    return getAttributes().getValue(REGION);
+  }
 
-    public Optional<String> getCountry() {
-        return getAttributes().getValue(COUNTRY);
-    }
+  public Optional<String> getCountry() {
+    return getAttributes().getValue(COUNTRY);
+  }
 }

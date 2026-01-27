@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,47 +12,47 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import java.io.IOException;
 
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.Resource;
 
-import java.io.IOException;
-
-/**
- *
- */
+/** */
 public class DirectoryAwareClassPathResourceManager extends ClassPathResourceManager {
 
-   public DirectoryAwareClassPathResourceManager(ClassLoader loader, Package p) {
-      super(loader, p);
-   }
+  public DirectoryAwareClassPathResourceManager(ClassLoader loader, Package p) {
+    super(loader, p);
+  }
 
-   public DirectoryAwareClassPathResourceManager(ClassLoader classLoader, String prefix) {
-      super(classLoader, prefix);
-   }
+  public DirectoryAwareClassPathResourceManager(ClassLoader classLoader, String prefix) {
+    super(classLoader, prefix);
+  }
 
-   public DirectoryAwareClassPathResourceManager(ClassLoader classLoader) {
-      super(classLoader);
-   }
+  public DirectoryAwareClassPathResourceManager(ClassLoader classLoader) {
+    super(classLoader);
+  }
 
-   @Override
-   public Resource getResource(String path) throws IOException {
-      Resource res = super.getResource(path);
+  @Override
+  public Resource getResource(String path) throws IOException {
+    Resource res = super.getResource(path);
 
-      // Check if this is actually a directory not a file
-      if (res == null || (res.getContentLength() != null && res.getContentLength() == 0)) {
+    // Check if this is actually a directory not a file
+    if (res == null || (res.getContentLength() != null && res.getContentLength() == 0)) {
 
-         Resource dirRes = super.getResource(path + "/");
+      Resource dirRes = super.getResource(path + "/");
 
-         // The DefaultServlet will see dirRes.isDirectory() == true and force a redirect
-         if (dirRes != null) {
-            return dirRes;
-         }
+      // The DefaultServlet will see dirRes.isDirectory() == true and force a redirect
+      if (dirRes != null) {
+        return dirRes;
       }
+    }
 
-      return res;
-   }
+    return res;
+  }
 }

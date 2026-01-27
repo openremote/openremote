@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     CombinatorKeyword,
     composeWithUi,
@@ -24,7 +42,6 @@ import {
 import {DefaultColor5, Util} from "@openremote/core";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
-import "@openremote/or-components/or-ace-editor";
 import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
 import {html, TemplateResult, unsafeCSS} from "lit";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
@@ -371,7 +388,7 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                     action: () => {
                         const editor = editorRef.value!;
                         if (editor.validate()) {
-                            const data = !!editor.getValue() ? JSON.parse(editor.getValue()!) : undefined;
+                            const data = editor.getValue() ? JSON.parse(editor.getValue()!) : undefined;
                             updateCallback(data);
                         }
                     },

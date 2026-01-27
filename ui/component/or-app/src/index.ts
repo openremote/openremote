@@ -1,17 +1,32 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {AppConfig, Page, RealmAppConfig, router} from "./types";
-import "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import "@openremote/or-mwc-components/or-mwc-snackbar";
-import "./or-header";
+import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
-import {i18next} from "@openremote/or-translate"
 import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
-import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
@@ -247,7 +262,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
 
-                let realm: string | null | undefined = undefined;
+                let realm: string | null | undefined;
 
                 // Set current display realm if super user
                 if (manager.isSuperUser()) {

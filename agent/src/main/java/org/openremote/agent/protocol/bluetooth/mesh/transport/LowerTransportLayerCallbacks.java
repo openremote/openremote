@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,23 +12,23 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
 public interface LowerTransportLayerCallbacks {
 
-    /**
-     * Callback to notify that a block acknowledgement message be sent now.
-     *
-     * @param controlMessage control message to be sent
-     */
-    void sendSegmentAcknowledgementMessage(final ControlMessage controlMessage);
+  /**
+   * Callback to notify that a block acknowledgement message be sent now.
+   *
+   * @param controlMessage control message to be sent
+   */
+  void sendSegmentAcknowledgementMessage(final ControlMessage controlMessage);
 
-    /**
-     * Callback to notify that the incomplete timer has expired.
-     */
-    void onIncompleteTimerExpired();
+  /** Callback to notify that the incomplete timer has expired. */
+  void onIncompleteTimerExpired();
 
-    int getTtl();
+  int getTtl();
 }

@@ -740,6 +740,11 @@ jobs:
           fi
         timeout-minutes: 20
 
+      - name: Run Spotless check
+        id: run-spotless-check
+        if: steps.backend-files-changed.outputs.any_modified  == 'true' || steps.ui-files-changed.outputs.any_modified == 'true'
+        run: ./gradlew spotlessCheck
+
       - name: Run backend tests
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}

@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
@@ -32,15 +31,12 @@ import {ClientRole, RulesetUnion} from "@openremote/model";
 import manager, {Util} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
-import "./flow-viewer/components/flow-editor";
-import "@openremote/or-scheduler";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {project} from "./flow-viewer/components/flow-editor";
+import { OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {project} from "./flow-viewer/components/flow-editor";
-import { OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
 
 const DISABLED_RRULE_PARTS = [
     'interval',
@@ -203,7 +199,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             return html`<div class="wrapper" style="justify-content: center"><or-translate value="noRuleSelected"></or-translate></div>`;
         }
 
-        let viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, this.readonly);
+        const viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, this.readonly);
         let statusIcon: string = "help";
         let statusClass: string = "iconfill-gray";
         let statusText: string = "NOSTATUS";

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,135 +12,140 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query.filter;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.util.JSONSchemaUtil.*;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.util.JSONSchemaUtil.*;
+import org.openremote.model.util.ValueUtil;
+
 /**
- * Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as
- * latitude and longitude values of two corners unless negated.
+ * Predicate for GEO JSON point values; will return true if the point is within the specified
+ * rectangle specified as latitude and longitude values of two corners unless negated.
  */
 @JsonSchemaTitle("Rectangular geofence")
-@JsonSchemaDescription("Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated.")
+@JsonSchemaDescription(
+    "Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated.")
 public class RectangularGeofencePredicate extends GeofencePredicate {
 
-    public static final String name = "rect";
-    public double latMin;
-    public double lngMin;
-    public double latMax;
-    public double lngMax;
+  public static final String name = "rect";
+  public double latMin;
+  public double lngMin;
+  public double latMax;
+  public double lngMax;
 
-    public RectangularGeofencePredicate() {
-    }
+  public RectangularGeofencePredicate() {}
 
-    @JsonCreator
-    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
-                                        @JsonProperty("lngMin") double lngMin,
-                                        @JsonProperty("latMax") double latMax,
-                                        @JsonProperty("lngMax") double lngMax,
-                                        @JsonProperty("negated") boolean negated) {
-        this.latMin = latMin;
-        this.lngMin = lngMin;
-        this.latMax = latMax;
-        this.lngMax = lngMax;
-        this.negated = negated;
-    }
+  @JsonCreator
+  public RectangularGeofencePredicate(
+      @JsonProperty("latMin") double latMin,
+      @JsonProperty("lngMin") double lngMin,
+      @JsonProperty("latMax") double latMax,
+      @JsonProperty("lngMax") double lngMax,
+      @JsonProperty("negated") boolean negated) {
+    this.latMin = latMin;
+    this.lngMin = lngMin;
+    this.latMax = latMax;
+    this.lngMax = lngMax;
+    this.negated = negated;
+  }
 
-    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
-                                        @JsonProperty("lngMin") double lngMin,
-                                        @JsonProperty("latMax") double latMax,
-                                        @JsonProperty("lngMax") double lngMax) {
-        this(latMin, lngMin, latMax, lngMax, false);
-    }
+  public RectangularGeofencePredicate(
+      @JsonProperty("latMin") double latMin,
+      @JsonProperty("lngMin") double lngMin,
+      @JsonProperty("latMax") double latMax,
+      @JsonProperty("lngMax") double lngMax) {
+    this(latMin, lngMin, latMax, lngMax, false);
+  }
 
-    @Override
-    public RectangularGeofencePredicate negate() {
-        negated = !negated;
-        return this;
-    }
+  @Override
+  public RectangularGeofencePredicate negate() {
+    negated = !negated;
+    return this;
+  }
 
-    public double getLatMin() {
-        return latMin;
-    }
+  public double getLatMin() {
+    return latMin;
+  }
 
-    public double getLngMin() {
-        return lngMin;
-    }
+  public double getLngMin() {
+    return lngMin;
+  }
 
-    public double getLatMax() {
-        return latMax;
-    }
+  public double getLatMax() {
+    return latMax;
+  }
 
-    public double getLngMax() {
-        return lngMax;
-    }
+  public double getLngMax() {
+    return lngMax;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RectangularGeofencePredicate that = (RectangularGeofencePredicate) o;
-        return negated == that.negated &&
-            Double.compare(that.latMin, latMin) == 0 &&
-            Double.compare(that.lngMin, lngMin) == 0 &&
-            Double.compare(that.latMax, latMax) == 0 &&
-            Double.compare(that.lngMax, lngMax) == 0;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    RectangularGeofencePredicate that = (RectangularGeofencePredicate) o;
+    return negated == that.negated
+        && Double.compare(that.latMin, latMin) == 0
+        && Double.compare(that.lngMin, lngMin) == 0
+        && Double.compare(that.latMax, latMax) == 0
+        && Double.compare(that.lngMax, lngMax) == 0;
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, negated, latMin, lngMin, latMax, lngMax);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, negated, latMin, lngMin, latMax, lngMax);
+  }
 
-    @Override
-    public double[] getCentrePoint() {
-        double x = (lngMin + lngMax) / 2;
-        double y = (latMin + latMax) / 2;
-        return new double[]{x, y};
-    }
+  @Override
+  public double[] getCentrePoint() {
+    double x = (lngMin + lngMax) / 2;
+    double y = (latMin + latMax) / 2;
+    return new double[] {x, y};
+  }
 
-    @Override
-    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
-        return obj -> {
-            if (obj == null) return false;
+  @Override
+  public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+    return obj -> {
+      if (obj == null) return false;
 
-            Coordinate coordinate;
+      Coordinate coordinate;
 
-            if (obj instanceof Coordinate) {
-                coordinate = (Coordinate) obj;
-            } else {
-                coordinate = ValueUtil.getValue(obj, GeoJSONPoint.class).map(GeoJSONPoint::getCoordinates).orElse(null);
-            }
+      if (obj instanceof Coordinate) {
+        coordinate = (Coordinate) obj;
+      } else {
+        coordinate =
+            ValueUtil.getValue(obj, GeoJSONPoint.class)
+                .map(GeoJSONPoint::getCoordinates)
+                .orElse(null);
+      }
 
-            if (coordinate == null) {
-                return false;
-            }
+      if (coordinate == null) {
+        return false;
+      }
 
-            coordinate.x = Math.min(180d, Math.max(-180d, coordinate.x));
-            coordinate.y = Math.min(90d, Math.max(-90d, coordinate.y));
+      coordinate.x = Math.min(180d, Math.max(-180d, coordinate.x));
+      coordinate.y = Math.min(90d, Math.max(-90d, coordinate.y));
 
-            Envelope envelope = new Envelope(lngMin,
-                lngMax,
-                latMin,
-                latMax);
+      Envelope envelope = new Envelope(lngMin, lngMax, latMin, latMax);
 
-            if (negated) {
-                return !envelope.contains(coordinate);
-            }
+      if (negated) {
+        return !envelope.contains(coordinate);
+      }
 
-            return envelope.contains(coordinate);
-        };
-    }
+      return envelope.contains(coordinate);
+    };
+  }
 }
