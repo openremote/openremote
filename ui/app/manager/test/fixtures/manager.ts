@@ -14,9 +14,9 @@ import {
     type SharedComponentTestFixtures,
     type Shared,
     type TestFixture,
-    withPage,
+    withPage
 } from "@openremote/test";
-import { AssetsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import {AssetsPage, InsightsPage, RealmsPage, RolesPage, RulesPage, UsersPage} from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { MwcInput } from "../../../../component/or-mwc-components/test/fixtures";
@@ -38,6 +38,7 @@ export class Manager {
     public role?: Role;
     public assets: Asset[] = [];
     public rules: number[] = [];
+    public dashboards: string[] = [];
 
     constructor(readonly page: Page, readonly baseURL: string) {
         this.managerHost = process.env.managerUrl || "http://localhost:8080";
@@ -370,6 +371,22 @@ export class Manager {
     }
 
     /**
+     * Deletes dashboards in the active realm
+     * @param config The axios request config
+     */
+    async deleteDashboards(config?: AxiosRequestConfig<any>, realm = this.realm) {
+        for (const [i, id] of this.dashboards.entries()) {
+            try {
+                const response = await rest.api.DashboardResource.delete(realm!, id, config);
+                expect(response.status).toBe(204);
+                this.dashboards.splice(i, 1);
+            } catch (e) {
+                console.warn("Could not delete dashboard: ", id, e);
+            }
+        }
+    }
+
+    /**
      * Deletes rules in the active realm
      * @param config The axios request config
      */
@@ -378,9 +395,9 @@ export class Manager {
             try {
                 const response = await rest.api.RulesResource.deleteRealmRuleset(id!, config);
                 expect(response.status).toBe(204);
-                this.rules.splice(i);
+                this.rules.splice(i, 1);
             } catch (e) {
-                console.warn("Could not delete realm rule: ", id);
+                console.warn("Could not delete realm rule: ", id, e);
             }
         }
     }
@@ -396,7 +413,7 @@ export class Manager {
             expect(response.status).toBe(204);
             this.assets = [];
         } catch (e) {
-            console.warn("Could not delete asset(s): ", assetIds);
+            console.warn("Could not delete asset(s): ", assetIds, e);
         }
     }
 
@@ -414,7 +431,7 @@ export class Manager {
             expect(response.status).toBe(204);
             delete this.role;
         } catch (e) {
-            console.warn("Could not update roles: ", this.role);
+            console.warn("Could not update roles: ", this.role, e);
         }
     }
 
@@ -424,6 +441,10 @@ export class Manager {
     async cleanUp() {
         const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
         const config = { headers: { Authorization: `Bearer ${access_token}` } };
+
+        if (this.dashboards.length > 0) {
+            await this.deleteDashboards(config);
+        }
 
         if (this.rules.length > 0) {
             await this.deleteRealmRulesets(config);
@@ -455,6 +476,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
 
 interface PageFixtures {
     assetsPage: AssetsPage;
+    insightsPage: InsightsPage;
     realmsPage: RealmsPage;
     rolesPage: RolesPage;
     rulesPage: RulesPage;
@@ -477,6 +499,7 @@ export const test = base.extend<Fixtures>({
     manager: async ({ page, baseURL }, use) => await use(new Manager(page, baseURL!)),
     // Pages
     assetsPage: withManager(AssetsPage),
+    insightsPage: withManager(InsightsPage),
     realmsPage: withManager(RealmsPage),
     rolesPage: withManager(RolesPage),
     rulesPage: withManager(RulesPage),

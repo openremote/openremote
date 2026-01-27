@@ -75,6 +75,28 @@ export const preparedAssetsForRules = Object.values(
     )
 );
 
+export const preparedAssetsForInsights: Asset[] = [
+    {
+        name: "Energy Asset 1",
+        type: "ThingAsset",
+        realm: "smartcity",
+        attributes: {
+            ...commonAttrs,
+            energyLevel: {name: "energyLevel", type: "number", meta: {storeDataPoints: true}},
+            power: {name: "power", type: "number", meta: {storeDataPoints: true}}
+        }
+    }, {
+        name: "Energy Asset 2",
+        type: "ThingAsset",
+        realm: "smartcity",
+        attributes: {
+            ...commonAttrs,
+            energyLevel: {name: "energyLevel", type: "number", meta: {storeDataPoints: true}},
+            power: {name: "power", type: "number", meta: {storeDataPoints: true}}
+        }
+    }
+];
+
 type AssetNames = (typeof assets)[number]["name"];
 
 export const assetPatches: Record<
