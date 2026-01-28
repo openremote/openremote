@@ -23,6 +23,8 @@ import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -37,6 +39,11 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     protected File tunnelKeyFile;
     protected String localhostRewrite;
     protected SshClient client;
+    protected ExecutorService forwardingExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "gateway-tunnel-forward");
+        t.setDaemon(true);
+        return t;
+    });
 
     public MINAGatewayTunnelFactory(File tunnelKeyFile, String localhostRewrite) {
         this.tunnelKeyFile = tunnelKeyFile;
@@ -77,6 +84,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     @Override
     public void stop() {
         client.stop();
+        forwardingExecutor.shutdown();
     }
 
     @Override
@@ -168,14 +176,17 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                                     SshdSocketAddress remoteAddress = new SshdSocketAddress(bindAddress, rPort);
                                     SshdSocketAddress localAddress = new SshdSocketAddress(target, tunnelInfo.getTargetPort());
 
-                                    try {
-                                        session.startRemotePortForwarding(remoteAddress, localAddress);
-                                        LOG.info("Remote port forwarding started: " + tunnelInfo);
 
-                                        futureToComplete.complete(null);
-                                    } catch (IOException e) {
-                                        futureToComplete.completeExceptionally(e);
-                                    }
+                                    // startRemotePortForwarding can block; run off the IO thread to avoid deadlock
+                                    forwardingExecutor.execute(() -> {
+                                        try {
+                                            session.startRemotePortForwarding(remoteAddress, localAddress);
+                                            LOG.info("Remote port forwarding started: " + tunnelInfo);
+                                            futureToComplete.complete(null);
+                                        } catch (IOException e) {
+                                            futureToComplete.completeExceptionally(e);
+                                        }
+                                    });
                                 } else {
                                     Throwable failure = authFuture.getException();
                                     String msg = "Authentication failed '" + (failure != null ? failure.getMessage() : "Unknown error") + "': " + tunnelInfo;
