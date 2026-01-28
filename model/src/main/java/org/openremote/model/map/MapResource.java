@@ -55,16 +55,6 @@ public interface MapResource {
     ObjectNode getSettings(@BeanParam RequestParams requestParams);
 
     /**
-     * Returns tileJSON object used to initialise Mapbox JS
-     * @return
-     */
-    @GET
-    @Path("js")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "getSettingsJs", summary = "Retrieve the tileJSON object used for Mapbox GL")
-    ObjectNode getSettingsJs(@BeanParam RequestParams requestParams);
-
-    /**
      * Gets vector tile data for Mapbox GL
      */
     @GET
