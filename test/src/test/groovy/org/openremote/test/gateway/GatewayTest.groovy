@@ -1088,7 +1088,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "an instance of the gateway tunnel factory is created"
         def container = new Container(Collections.emptyMap(), Collections.emptyList())
         def conditions = new PollingConditions(timeout: 15, delay: 1)
-        def tunnelFactory = new MINAGatewayTunnelFactory(container.EXECUTOR, keyPath.toFile(), null)
+        def tunnelFactory = new MINAGatewayTunnelFactory(container.EXECUTOR, Container.SCHEDULED_EXECUTOR, keyPath.toFile(), null)
         tunnelFactory.start()
 
         expect: "the SSH client to be ready"
