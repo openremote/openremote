@@ -69,7 +69,7 @@ export class InsightsPage implements BasePage {
         // Manual drag and drop
         const count = await this.getWidgets().count();
         await this.page.dragAndDrop(`#sidebar .grid-stack-item :has-text("${type}")`, ".maingrid", {
-            sourcePosition: { x: 10, y: 10 }, // Depending on where you grab the widget the drop
+            sourcePosition: { x: 10, y: 10 }, // To drop the widget at the intended cell, grab it close to its top left corner
             targetPosition: { x, y },
             steps: 50,
         });
