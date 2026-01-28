@@ -13,6 +13,7 @@
     { "path": "../../component/or-mwc-components" },
   	{ "path": "../../component/or-icon" },
   	{ "path": "../../component/or-map" },
+    { "path": "../../component/or-attribute-card" },
   	{ "path": "../../component/or-attribute-input" },
   	{ "path": "../../component/or-attribute-picker" },
     { "path": "../../component/or-attribute-barchart" },
