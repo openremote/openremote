@@ -30,7 +30,7 @@
     "lodash.debounce": "^4.0.8"
   },
   "devDependencies": {
-    "@types/lodash.debounce": "^4.0.9"
+    "@types/lodash.debounce": "^4"
   },
   "publishConfig": {
     "access": "public"

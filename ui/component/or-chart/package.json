@@ -39,7 +39,7 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
-    "@types/lodash.debounce": "^4.0.9",
+    "@types/lodash.debounce": "^4",
     "@types/offscreencanvas": "^2019.6.4"
   },
   "publishConfig": {

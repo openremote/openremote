@@ -1697,7 +1697,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@types/lodash.transform": "npm:^4.6.9"
+    "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
     axios: "npm:~1.13.2"
     i18next: "npm:^21.5.3"
@@ -1821,7 +1821,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    "@types/lodash.debounce": "npm:^4.0.9"
+    "@types/lodash.debounce": "npm:^4"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
     qs: "npm:^6.8.0"
@@ -1878,7 +1878,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@types/lodash.debounce": "npm:^4.0.9"
+    "@types/lodash.debounce": "npm:^4"
     chart.js: "npm:^3.6.0"
     chartjs-adapter-moment: "npm:^1.0.0"
     lit: "npm:^3.3.1"
@@ -1899,7 +1899,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@types/lodash.debounce": "npm:^4.0.9"
+    "@types/lodash.debounce": "npm:^4"
     echarts: "npm:~6.0.0"
     jsonpath-plus: "npm:^6.0.1"
     lit: "npm:^3.3.1"
@@ -1952,7 +1952,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@types/lodash.debounce": "npm:^4.0.9"
+    "@types/lodash.debounce": "npm:^4"
     "@types/offscreencanvas": "npm:^2019.6.4"
     echarts: "npm:~6.0.0"
     lit: "npm:^3.3.1"
@@ -1998,8 +1998,8 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@types/lodash.debounce": "npm:^4.0.9"
-    "@types/lodash.throttle": "npm:^4.1.9"
+    "@types/lodash.debounce": "npm:^4"
+    "@types/lodash.throttle": "npm:^4"
     gridstack: "npm:^12.4.2"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
@@ -2030,7 +2030,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    "@types/lodash.debounce": "npm:^4.0.9"
+    "@types/lodash.debounce": "npm:^4"
     gaugeJS: "npm:^1.3.7"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
@@ -2089,7 +2089,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@types/geojson": "npm:^7946.0.7"
-    "@types/lodash.debounce": "npm:^4.0.9"
+    "@types/lodash.debounce": "npm:^4"
     "@types/mapbox": "npm:^1.6.42"
     lit: "npm:^3.3.1"
     lit-html: "npm:^3.3.1"
@@ -2325,7 +2325,6 @@ __metadata:
     "@custom-elements-manifest/analyzer": "npm:^0.10.4"
     "@rspack/cli": "npm:~1.7.1"
     "@rspack/core": "npm:~1.7.1"
-    "@types/lodash": "npm:^4.17.21"
     "@types/react": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^5.9.0"
     "@typescript-eslint/parser": "npm:^5.9.0"
@@ -3404,8 +3403,8 @@ __metadata:
   checksum: 10c0/6375d03e83f870b46398a8761daf6f1995177977aaa463ef8d24c47fe0e03e14fed82ff09680126b95981b8a2d1db531ddfdae265d2ce4a91fdbb8918088162d
   languageName: node
   linkType: hard
-  
-"@types/lodash.debounce@npm:^4.0.9":
+
+"@types/lodash.debounce@npm:^4":
   version: 4.0.9
   resolution: "@types/lodash.debounce@npm:4.0.9"
   dependencies:
@@ -3414,7 +3413,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash.throttle@npm:^4.1.9":
+"@types/lodash.throttle@npm:^4":
   version: 4.1.9
   resolution: "@types/lodash.throttle@npm:4.1.9"
   dependencies:
@@ -3423,7 +3422,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash.transform@npm:^4.6.9":
+"@types/lodash.transform@npm:^4":
   version: 4.6.9
   resolution: "@types/lodash.transform@npm:4.6.9"
   dependencies:
@@ -3432,7 +3431,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.17.21":
+"@types/lodash@npm:*":
   version: 4.17.23
   resolution: "@types/lodash@npm:4.17.23"
   checksum: 10c0/9d9cbfb684e064a2b78aab9e220d398c9c2a7d36bc51a07b184ff382fa043a99b3d00c16c7f109b4eb8614118f4869678dbae7d5c6700ed16fb9340e26cc0bf6

@@ -35,7 +35,7 @@
     "url-search-params-polyfill": "^8.1.0"
   },
   "devDependencies": {
-    "@types/lodash.transform": "^4.6.9",
+    "@types/lodash.transform": "^4",
     "@types/qs": "^6.9.7"
   },
   "publishConfig": {
