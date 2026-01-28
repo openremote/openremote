@@ -445,7 +445,7 @@ services:
     #ports:
     #  - "5432:5432" # DB server
     healthcheck:
-      disable: true
+      start_period: 60s
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
