@@ -444,6 +444,8 @@ services:
 #      - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
+    healthcheck:
+      disable: true
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
