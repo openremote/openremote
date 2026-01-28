@@ -377,7 +377,7 @@ public class MapService implements ContainerService {
     }
 
     /**
-     * Dynamically build Mapbox GL settings based on mapsettings.json
+     * Dynamically build MapLibre GL settings based on mapsettings.json
      */
     public ObjectNode getMapSettings(String realm, URI host) {
         String realmUriKey = realm + host.toString();
@@ -465,35 +465,6 @@ public class MapService implements ContainerService {
                             .build().toString() + "/fonts/" + glyphs : glyphs;
             settings.put("glyphs", glyphsUri);
         });
-
-        return settings;
-    }
-
-    /**
-     * Dynamically build Mapbox JS settings based on mapsettings.json
-     */
-    public ObjectNode getMapSettingsJs(String realm, URI host) {
-        String realmUriKey = realm + host.toString();
-        if (mapSettingsJs.containsKey(realmUriKey)) {
-            return mapSettingsJs.get(realmUriKey);
-        }
-
-        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realmUriKey, r -> ValueUtil.JSON.createObjectNode());
-
-        if (!metadata.isValid() || mapConfig.isEmpty()) {
-            return settings;
-        }
-
-        ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
-        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
-        tilesArray.insert(0, tileUrl);
-
-        settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);
-
-        settings.put("attribution", metadata.attribution);
-        settings.put("format", "png");
-        settings.put("type", "baselayer");
-        settings.replace("tiles", tilesArray);
 
         return settings;
     }

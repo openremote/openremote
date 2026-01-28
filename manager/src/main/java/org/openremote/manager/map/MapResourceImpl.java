@@ -60,14 +60,6 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectNode getSettingsJs(RequestParams requestParams) {
-        return mapService.getMapSettingsJs(
-            getAuthenticatedRealmName(),
-            requestParams.getExternalSchemeHostAndPort()
-        );
-    }
-
-    @Override
     public Response getTile(int zoom, int column, int row) {
         byte[] tile = mapService.getMapTile(zoom, column, row);
         if (tile != null) {
