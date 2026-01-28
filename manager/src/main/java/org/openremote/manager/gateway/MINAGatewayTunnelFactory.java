@@ -5,13 +5,14 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHeartbeatController;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.syslog.SyslogCategory;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,9 +43,18 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
         this.localhostRewrite = localhostRewrite;
         client = SshClient.setUpDefaultClient();
 
-        PropertyResolverUtils.updateProperty(client, "tcpip-forward.timeout", 30000);
+       CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, Duration.ofSeconds(10));
+       CoreModuleProperties.SOCKET_KEEPALIVE.set(client, true);
 
-        // Load the key
+       // Handle keepalive@sish requests from the server
+       client.setGlobalRequestHandlers(Collections.singletonList((connectionService, request, wantReply, buffer) -> {
+          if ("keepalive@sish".equals(request)) {
+             return RequestHandler.Result.ReplySuccess;
+          }
+          return RequestHandler.Result.Unsupported;
+       }));
+
+       // Load the key
         FileKeyPairProvider keyProvider = new FileKeyPairProvider(tunnelKeyFile.toPath());
         Iterable<KeyPair> keys = keyProvider.loadKeys(null);
         client.setKeyIdentityProvider(KeyIdentityProvider.wrapKeyPairs(keys));
@@ -123,7 +134,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                         sessionRef.set(session); // Store in atomic ref for the disconnect supplier to see
 
                         // Set heartbeat so tunnel doesn't get closed by network infra etc.
-                        session.setSessionHeartbeat(SessionHeartbeatController.HeartbeatType.IGNORE, Duration.ofSeconds(10));
+                       session.setSessionHeartbeat(SessionHeartbeatController.HeartbeatType.IGNORE, Duration.ofSeconds(10));
 
                         session.addSessionListener(new SessionListener() {
                             @Override

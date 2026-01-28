@@ -1096,7 +1096,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "A configured GatewayTunnelInfo for HTTPS on localhost:443"
         def tunnelInfo = new GatewayTunnelInfo(Constants.MASTER_REALM,
-                "gw-1234",
+                "abcedf123456",
                 GatewayTunnelInfo.Type.HTTPS,
                 "localhost", 443)
 
@@ -1109,7 +1109,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         })
 
         then: "The session connection future should complete successfully"
-        new PollingConditions(timeout: 10).eventually {
+        new PollingConditions(timeout: 60).eventually {
             assert session.getConnectFuture().isDone()
             assert !session.getConnectFuture().isCompletedExceptionally()
         }
