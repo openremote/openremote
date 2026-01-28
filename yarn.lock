@@ -1993,7 +1993,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    gridstack: "npm:^7.2.0"
+    gridstack: "npm:^12.4.2"
     lit: "npm:^3.3.1"
     lodash: "npm:^4.17.21"
     moment: "npm:^2.29.4"
@@ -7286,10 +7286,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gridstack@npm:^7.2.0":
-  version: 7.3.0
-  resolution: "gridstack@npm:7.3.0"
-  checksum: 10c0/f6ebaa8edba123f5e4c3d689ff1fc6b7bf6d9b9da9ab722e842237b32890ae3b4d0211173ba48c54b5d511f8c9ff8a00044a5a42135b6ea189acd6004d5bdead
+"gridstack@npm:^12.4.2":
+  version: 12.4.2
+  resolution: "gridstack@npm:12.4.2"
+  checksum: 10c0/9b15dabf24947e3f8d529055cbfcd532449b0ea0d4b2ae3b7419eed1742ea394dd19148b023fcbd7d0d69f2b5bc9df33d0f3e01b4153e96f2a7b767e036499bc
   languageName: node
   linkType: hard
 
