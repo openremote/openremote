@@ -1079,6 +1079,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
      * Change the test url and key path to match the instance to connect to.
      * Recommended to run profile/dev-proxy.yml profile.
      */
+    @Ignore
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")

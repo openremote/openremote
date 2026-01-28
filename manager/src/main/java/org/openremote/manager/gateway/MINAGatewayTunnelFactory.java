@@ -161,7 +161,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
          session.addCloseFutureListener(f -> {
             LOG.fine("Remote port forwarding closed: " + this);
             if (isRunning.get()) {
-               scheduleReconnect();
+               handleFailure(null);
             }
          });
       }
@@ -177,13 +177,13 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
             isRunning.set(false);
          } else if (isRunning.get()) {
             // Future was already done (meaning previous success), so this is a drop. Retry.
+            LOG.info("Connection lost so scheduling reconnect" + RECONNECT_DELAY + ": " + this);
             scheduleReconnect();
          }
       }
 
       private void scheduleReconnect() {
          if (!isRunning.get() || !client.isOpen()) return;
-         LOG.fine("Scheduling reconnect in " + RECONNECT_DELAY + ": " + this);
          scheduledExecutor.schedule(this::attemptConnection, RECONNECT_DELAY.toMillis(), TimeUnit.MILLISECONDS);
       }
 
