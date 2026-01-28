@@ -8,6 +8,7 @@ import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
+import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
@@ -1085,8 +1086,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def tunnelSSHPort = 2222
 
         and: "an instance of the gateway tunnel factory is created"
+        def container = new Container(Collections.emptyMap(), Collections.emptyList())
         def conditions = new PollingConditions(timeout: 15, delay: 1)
-        def tunnelFactory = new MINAGatewayTunnelFactory(keyPath.toFile(), null)
+        def tunnelFactory = new MINAGatewayTunnelFactory(container.EXECUTOR, keyPath.toFile(), null)
         tunnelFactory.start()
 
         expect: "the SSH client to be ready"
@@ -1116,7 +1118,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         then: "we keep the tunnel open for manual testing"
         while (true) {
-            println "Tunnel open. Press Ctrl+C to stop."
+            println "Tunnel open."
             Thread.sleep(5000)
         }
 

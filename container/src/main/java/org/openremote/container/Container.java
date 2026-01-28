@@ -115,7 +115,7 @@ public class Container implements org.openremote.model.Container {
         int executorThreadsMax = getInteger(getConfig(), OR_EXECUTOR_THREADS_MAX, OR_EXECUTOR_THREADS_MAX_DEFAULT);
 
         SCHEDULED_EXECUTOR = new ContainerScheduledExecutor("ContainerScheduledExecutor", scheduledExecutorThreads);
-        EXECUTOR = new ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"), new ThreadPoolExecutor.CallerRunsPolicy());
+        EXECUTOR = new  ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"), new ThreadPoolExecutor.CallerRunsPolicy());
 
         LOG.log(INFO, EXECUTOR);
         LOG.log(INFO, SCHEDULED_EXECUTOR);

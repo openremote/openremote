@@ -90,7 +90,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 if (!TextUtil.isNullOrEmpty(localhostRewrite)) {
                     LOG.info("Gateway tunnelling localhostRewrite set to: " + localhostRewrite);
                 }
-                tunnelFactory = new MINAGatewayTunnelFactory(f, localhostRewrite);
+                tunnelFactory = new MINAGatewayTunnelFactory(org.openremote.container.Container.EXECUTOR, f, localhostRewrite);
             } else {
                 LOG.warning("Gateway tunnelling SSH key file does not exist, tunnelling support disabled: " + f.getAbsolutePath());
             }

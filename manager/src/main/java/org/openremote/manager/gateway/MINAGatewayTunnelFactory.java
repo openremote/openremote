@@ -14,6 +14,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
+import org.openremote.container.Container;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -24,7 +25,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -39,13 +39,10 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     protected File tunnelKeyFile;
     protected String localhostRewrite;
     protected SshClient client;
-    protected ExecutorService forwardingExecutor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "gateway-tunnel-forward");
-        t.setDaemon(true);
-        return t;
-    });
+    protected ExecutorService executorService;
 
-    public MINAGatewayTunnelFactory(File tunnelKeyFile, String localhostRewrite) {
+    public MINAGatewayTunnelFactory(ExecutorService executorService, File tunnelKeyFile, String localhostRewrite) {
+        this.executorService = executorService;
         this.tunnelKeyFile = tunnelKeyFile;
         this.localhostRewrite = localhostRewrite;
         client = SshClient.setUpDefaultClient();
@@ -84,7 +81,6 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     @Override
     public void stop() {
         client.stop();
-        forwardingExecutor.shutdown();
     }
 
     @Override
@@ -176,9 +172,8 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                                     SshdSocketAddress remoteAddress = new SshdSocketAddress(bindAddress, rPort);
                                     SshdSocketAddress localAddress = new SshdSocketAddress(target, tunnelInfo.getTargetPort());
 
-
                                     // startRemotePortForwarding can block; run off the IO thread to avoid deadlock
-                                    forwardingExecutor.execute(() -> {
+                                    executorService.execute(() -> {
                                         try {
                                             session.startRemotePortForwarding(remoteAddress, localAddress);
                                             LOG.info("Remote port forwarding started: " + tunnelInfo);

@@ -25,50 +25,39 @@ package org.openremote.manager.gateway;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
- * Tracks a gateway tunnel session
+ * Tracks a gateway tunnel session; the {@link #getConnectFuture} should return a future that tracks the initial
+ * connection of the tunnel; the {@link GatewayTunnelFactory} is responsible for then reconnecting the tunnel session
+ * on failure. If the initial connection fails then the {@link GatewayTunnelFactory} should do nothing other than report
+ * the failure via the {@link #getConnectFuture()} exception.
+ * <p>
+ * The {@link #disconnect} should disconnect the tunnel session and/or cancel any retry logic; if the initial connection
+ * failed then this method should do nothing.
  */
 public class GatewayTunnelSession {
    protected CompletableFuture<Void> connectFuture;
    protected GatewayTunnelInfo tunnelInfo;
-   protected Supplier<CompletableFuture<Void>> disconnectFutureSupplier;
-   protected Supplier<CompletableFuture<Void>> reconnectFutureSupplier;
-   protected Consumer<Throwable> closedCallback;
+   protected Runnable disconnectRunnable;
 
    public GatewayTunnelSession(CompletableFuture<Void> connectFuture,
                                GatewayTunnelInfo tunnelInfo,
-                               Supplier<CompletableFuture<Void>> disconnectFutureSupplier,
-                               Supplier<CompletableFuture<Void>> reconnectFutureSupplier,
-                               Consumer<Throwable> closedCallback) {
+                               Runnable disconnectRunnable) {
       this.connectFuture = connectFuture;
       this.tunnelInfo = tunnelInfo;
-      this.disconnectFutureSupplier = disconnectFutureSupplier;
-      this.reconnectFutureSupplier = reconnectFutureSupplier;
-      this.closedCallback = closedCallback;
+      this.disconnectRunnable = disconnectRunnable;
    }
 
-   CompletableFuture<Void> getConnectFuture() {
+   public CompletableFuture<Void> getConnectFuture() {
       return connectFuture;
    }
 
-   CompletableFuture<Void> disconnect() {
-      return disconnectFutureSupplier.get();
+   public void disconnect() {
+      disconnectRunnable.run();
    }
 
    public GatewayTunnelInfo getTunnelInfo() {
       return tunnelInfo;
-   }
-
-   void onClose(Throwable e) {
-       if (e != null) {
-
-       }
-       if (closedCallback != null) {
-           closedCallback.accept(e);
-       }
    }
 
    @Override
