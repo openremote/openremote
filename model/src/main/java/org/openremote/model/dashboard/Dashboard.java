@@ -9,7 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.openremote.model.util.HibernateUniqueIdentifierType;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -20,10 +20,9 @@ public class Dashboard {
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     protected String id;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn;
+    protected Instant createdOn;
 
     @NotBlank(message = "{Dashboard.realm.NotBlank}")
     @Size(min = 1, max = 255, message = "{Asset.realm.Size}")
@@ -69,7 +68,7 @@ public class Dashboard {
         return this;
     }
 
-    public Dashboard setCreatedOn(Date createdOn) {
+    public Dashboard setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return this;
     }
@@ -108,7 +107,7 @@ public class Dashboard {
         return this.id;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return this.createdOn;
     }
 
