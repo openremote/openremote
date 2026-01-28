@@ -870,6 +870,13 @@ jobs:
         timeout-minutes: 20
         # continue-on-error: true
 
+      - name: Dump docker-compose logs
+        if: failure()
+        run: |
+          docker logs profile-postgresql-1
+          docker inspect profile-postgresql-1
+          docker ps -a
+
       - name: Archive UI app test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
