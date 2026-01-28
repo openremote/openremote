@@ -19,9 +19,11 @@
  */
 package org.openremote.manager.gateway;
 
+import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.system.VersionInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
@@ -57,7 +59,7 @@ public class GatewayConnector {
     public static int SYNC_ASSET_BATCH_SIZE = 20;
     public static final String ASSET_READ_EVENT_NAME_INITIAL = "INITIAL";
     public static final String ASSET_READ_EVENT_NAME_BATCH = "BATCH";
-    public static final long RESPONSE_TIMEOUT_MILLIS = 10000;
+    public static final long RESPONSE_TIMEOUT_MILLIS = 15000;
     protected static final Map<String, Pair<Function<String, String>, Function<String, String>>> ASSET_ID_MAPPERS = new ConcurrentHashMap<>();
     protected final String realm;
     protected final String gatewayId;
@@ -184,7 +186,7 @@ public class GatewayConnector {
         }
 
         requestDisconnect.run();
-        LOG.fine("Disconnected: " + getGatewayIdString());
+        LOG.info("Disconnected: " + getGatewayIdString());
         if (syncProcessorFuture != null) {
             LOG.finest("Aborting active sync process: " + getGatewayIdString());
             syncProcessorFuture.cancel(true);
@@ -256,6 +258,8 @@ public class GatewayConnector {
                         LOG.warning("Capabilities request error [" + error.getMessage() + "] assuming no support: " + getGatewayIdString());
                     }
                 }
+                // Let the gateway know init is complete
+                sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
@@ -282,27 +286,22 @@ public class GatewayConnector {
             eventConsumerMap.put(GatewayTunnelStartResponseEvent.class, (e) -> {
                 GatewayTunnelStartResponseEvent response = (GatewayTunnelStartResponseEvent) e;
                 if (response != null && response.getError() != null) {
-                    throw new RuntimeException("Failed to start tunnel: error=" + response.getError() + ", " + tunnelInfo);
+                    future.completeExceptionally(new RuntimeException("Failed to start tunnel: error=" + response.getError() + ", " + tunnelInfo));
+                } else {
+                    future.complete(null);
                 }
-                future.complete(null);
             });
         }
 
-        sendMessageToGateway(
-                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), tunnelInfo)
-        );
+        sendMessageToGateway(new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), tunnelInfo));
 
         return future
-                .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-                .whenComplete((result, ex) -> {
-                    synchronized (eventConsumerMap) {
-                        eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
-                    }
-                    if (ex != null && !(ex instanceof TimeoutException)) {
-                        // Re-throw unexpected exceptions
-                        throw new RuntimeException("Failed to get gateway response", ex);
-                    }
-                });
+            .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .whenComplete((result, ex) -> {
+                synchronized (eventConsumerMap) {
+                    eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
+                }
+            });
     }
 
     protected CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {
@@ -387,15 +386,26 @@ public class GatewayConnector {
      * Get list of gateway assets (get basic details and then batch load them to minimise load)
      */
     synchronized protected void startSync() {
-
         if (syncAborted()) {
             return;
         }
 
         expectedSyncResponseName = ASSET_READ_EVENT_NAME_INITIAL;
-        ReadAssetsEvent event = new ReadAssetsEvent(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).recursive(true));
-        event.setMessageID(expectedSyncResponseName);
-        sendMessageToGateway(event);
+        sendMessageToGateway(new GatewayInitStartEvent(
+                gatewayService.getGatewayTunnelInfos(gatewayId),
+                VersionInfo.getGatewayApiVersion(),
+                gatewayService.getTunnelSSHHostname(),
+                gatewayService.getTunnelSSHPort() > 0 ? gatewayService.getTunnelSSHPort() : null));
+
+        // TODO: Remove this once enough time has passed since this commit
+        // We delay so the init start has a chance to
+        Container.SCHEDULED_EXECUTOR.schedule(() -> {
+            // Send old read assets event for older gateway versions
+            ReadAssetsEvent event = new ReadAssetsEvent(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).recursive(true));
+            event.setMessageID(expectedSyncResponseName);
+            sendMessageToGateway(event);
+        }, 2000, TimeUnit.MILLISECONDS);
+
         syncProcessorFuture = scheduledExecutorService.schedule(this::onSyncAssetsTimeout, RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 

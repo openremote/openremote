@@ -1,9 +1,6 @@
 package org.openremote.test.protocol.io
 
 
-import io.netty.util.concurrent.Future
-import io.netty.util.concurrent.GlobalEventExecutor
-import io.netty.util.concurrent.Promise
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.manager.gateway.GatewayIOClient
@@ -13,6 +10,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -38,16 +36,15 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
                         null).setBasicAuthHeader(true)
         ) {
             @Override
-            protected Future<Void> startChannel() {
+            protected CompletableFuture<Void> startChannel() {
                 startChannelCount.incrementAndGet()
                 // Simulate failure because resources (bootstrap) are destroyed by disconnect()
                 if (this.bootstrap == null) {
                     throw new NullPointerException("Bootstrap is null")
                 }
                 // Return a dummy future (won't be reached if exception thrown above)
-                Promise<Void> p = GlobalEventExecutor.INSTANCE.newPromise()
-                p.setFailure(new Exception("Fail"))
-                return p
+                def future = CompletableFuture.failedFuture(new Exception("Fail"))
+                return future
             }
 
             @Override

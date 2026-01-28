@@ -20,12 +20,7 @@ public class GatewayCapabilitiesRequestEvent extends SharedEvent implements Resp
     protected Consumer<Event> responseConsumer;
 
     @JsonCreator
-    public GatewayCapabilitiesRequestEvent(@JsonProperty("timestamp") Date timestamp) {
-        super(timestamp != null ? timestamp.getTime() : new Date().getTime());
-    }
-
     public GatewayCapabilitiesRequestEvent() {
-
     }
 
     @Override

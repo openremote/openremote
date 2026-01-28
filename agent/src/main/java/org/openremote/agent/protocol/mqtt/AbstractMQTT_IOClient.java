@@ -529,7 +529,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
         this.connectionStatus = connectionStatus;
         if (!connectionStatusConsumers.isEmpty()) {
-            LOG.finest("Notifying connection status consumers: count=" + connectionStatusConsumers.size());
+            LOG.finest("Connection status changed notifying consumers: " + connectionStatus);
         }
         connectionStatusConsumers.forEach(
                 consumer -> {

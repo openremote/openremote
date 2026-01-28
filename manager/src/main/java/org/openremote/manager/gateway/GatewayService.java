@@ -484,6 +484,12 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return this.tunnelInfos.values();
     }
 
+    public GatewayTunnelInfo[] getGatewayTunnelInfos(String gatewayID) {
+        return getTunnelInfos().stream()
+            .filter(tunnel -> tunnel.getGatewayId().equals(gatewayID))
+            .toArray(GatewayTunnelInfo[]::new);
+    }
+
     protected boolean tunnellingSupported() {
         return !TextUtil.isNullOrEmpty(tunnelSSHHostname) && tunnelSSHPort > 0;
     }
@@ -551,8 +557,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 String msg = "Failed to start tunnel: A timeout occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
                 LOG.log(Level.WARNING, msg);
             } else {
-                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
-                LOG.log(Level.WARNING, msg, e.getCause());
+                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId + ", error=" + e.getCause().getMessage();
+                LOG.log(Level.WARNING, msg);
             }
             throw new RuntimeException(e);
         } catch (InterruptedException e) {

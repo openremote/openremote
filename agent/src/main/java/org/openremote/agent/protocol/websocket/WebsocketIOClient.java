@@ -20,7 +20,10 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -45,7 +48,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -136,7 +138,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
-    protected Future<Void> startChannel() {
+    protected CompletableFuture<Void> startChannel() {
         handshakeFuture = new CompletableFuture<>();
         CompletableFuture<Void> channelFuture;
         try {

@@ -227,7 +227,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, Object.class));
         } catch (Exception e) {
-            LOG.log(Level.INFO, "Failed to parse JSON string: " + jsonString, e);
+            LOG.log(Level.INFO, "Failed to parse JSON string '" + jsonString +"': " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -239,7 +239,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, JSON.constructType(type)));
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to parse JSON", e);
+            LOG.log(Level.WARNING, "Failed to parse JSON: " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -256,7 +256,7 @@ public class ValueUtil {
         try {
             return Optional.of(asJSONOrThrow(object));
         } catch (JsonProcessingException e) {
-            LOG.log(Level.WARNING, "Failed to convert object to JSON string", e);
+            LOG.log(Level.WARNING, "Failed to convert object to JSON string: " + e.getMessage());
             return Optional.empty();
         }
     }
