@@ -48,7 +48,7 @@ import {progressCircular} from "@openremote/or-mwc-components/style";
 import { when } from "lit/directives/when.js";
 
 export interface PanelConfig {
-    type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
+    type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
     title?: string;
     hide?: boolean;
     column?: number;
