@@ -28,8 +28,11 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1",
-    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
     "qs": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/lodash.debounce": "^4"
   },
   "publishConfig": {
     "access": "public"

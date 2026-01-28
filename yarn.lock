@@ -1697,12 +1697,13 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
     axios: "npm:~1.13.2"
     i18next: "npm:^21.5.3"
     i18next-http-backend: "npm:^1.3.1"
     keycloak-js: "npm:^25.0.1"
-    lodash: "npm:^4.17.21"
+    lodash.transform: "npm:^4.6.0"
     moment: "npm:^2.29.4"
     platform: "npm:^1.3.6"
     qs: "npm:^6.8.0"
@@ -1819,8 +1820,9 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@types/lodash.debounce": "npm:^4"
     lit: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
     qs: "npm:^6.8.0"
   languageName: unknown
   linkType: soft
@@ -1875,10 +1877,11 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@types/lodash.debounce": "npm:^4"
     chart.js: "npm:^3.6.0"
     chartjs-adapter-moment: "npm:^1.0.0"
     lit: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1895,10 +1898,11 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@types/lodash.debounce": "npm:^4"
     echarts: "npm:~6.0.0"
     jsonpath-plus: "npm:^6.0.1"
     lit: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1947,10 +1951,11 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@types/lodash.debounce": "npm:^4"
     "@types/offscreencanvas": "npm:^2019.6.4"
     echarts: "npm:~6.0.0"
     lit: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -1992,9 +1997,12 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@types/lodash.debounce": "npm:^4"
+    "@types/lodash.throttle": "npm:^4"
     gridstack: "npm:^12.4.2"
     lit: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
+    lodash.throttle: "npm:^4.1.1"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
@@ -2007,9 +2015,10 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@types/lodash.debounce": "npm:^4"
     gaugeJS: "npm:^1.3.7"
     lit: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
   languageName: unknown
   linkType: soft
 
@@ -2065,10 +2074,11 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@types/geojson": "npm:^7946.0.7"
+    "@types/lodash.debounce": "npm:^4"
     "@types/mapbox": "npm:^1.6.42"
     lit: "npm:^3.3.1"
     lit-html: "npm:^3.3.1"
-    lodash: "npm:^4.17.21"
+    lodash.debounce: "npm:^4.0.8"
     mapbox.js: "npm:^3.3.1"
     maplibre-gl: "npm:^5.12.0"
   languageName: unknown
@@ -2178,30 +2188,6 @@ __metadata:
     "@openremote/model": "workspace:*"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-survey-results@workspace:ui/component/or-survey-results":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-survey-results@workspace:ui/component/or-survey-results"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    lit: "npm:^3.3.1"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-survey@workspace:ui/component/or-survey":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-survey@workspace:ui/component/or-survey"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-translate": "workspace:*"
-    "@types/lodash-es": "npm:^4.17.5"
-    lit: "npm:^3.3.1"
-    lodash-es: "npm:^4.17.15"
-    moment: "npm:2.29.4"
   languageName: unknown
   linkType: soft
 
@@ -3403,19 +3389,37 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash-es@npm:^4.17.5":
-  version: 4.17.12
-  resolution: "@types/lodash-es@npm:4.17.12"
+"@types/lodash.debounce@npm:^4":
+  version: 4.0.9
+  resolution: "@types/lodash.debounce@npm:4.0.9"
   dependencies:
     "@types/lodash": "npm:*"
-  checksum: 10c0/5d12d2cede07f07ab067541371ed1b838a33edb3c35cb81b73284e93c6fd0c4bbeaefee984e69294bffb53f62d7272c5d679fdba8e595ff71e11d00f2601dde0
+  checksum: 10c0/9fbb24e5e52616faf60ba5c82d8c6517f4b86fc6e9ab353b4c56c0760f63d9bf53af3f2d8f6c37efa48090359fb96dba1087d497758511f6c40677002191d042
+  languageName: node
+  linkType: hard
+
+"@types/lodash.throttle@npm:^4":
+  version: 4.1.9
+  resolution: "@types/lodash.throttle@npm:4.1.9"
+  dependencies:
+    "@types/lodash": "npm:*"
+  checksum: 10c0/93f7096dcaea8f54a4f52d5175d97a471f155f5bae4649c967cc29bcae506a456476d13b4392361799b31c3b96659560e1bbfddf00f550a50c685f6c037411a6
+  languageName: node
+  linkType: hard
+
+"@types/lodash.transform@npm:^4":
+  version: 4.6.9
+  resolution: "@types/lodash.transform@npm:4.6.9"
+  dependencies:
+    "@types/lodash": "npm:*"
+  checksum: 10c0/857f4d9483dcfbafc1313aa0c59fcf60ba0fa949d516986160855e089cfe9667ced7ad03a3e984b76c148056ab84c91c074debbd287fbd224d32faef6f190ba2
   languageName: node
   linkType: hard
 
 "@types/lodash@npm:*":
-  version: 4.14.202
-  resolution: "@types/lodash@npm:4.14.202"
-  checksum: 10c0/6064d43c8f454170841bd67c8266cc9069d9e570a72ca63f06bceb484cb4a3ee60c9c1f305c1b9e3a87826049fd41124b8ef265c4dd08b00f6766609c7fe9973
+  version: 4.17.23
+  resolution: "@types/lodash@npm:4.17.23"
+  checksum: 10c0/9d9cbfb684e064a2b78aab9e220d398c9c2a7d36bc51a07b184ff382fa043a99b3d00c16c7f109b4eb8614118f4869678dbae7d5c6700ed16fb9340e26cc0bf6
   languageName: node
   linkType: hard
 
@@ -8329,13 +8333,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash-es@npm:^4.17.15":
-  version: 4.17.21
-  resolution: "lodash-es@npm:4.17.21"
-  checksum: 10c0/fb407355f7e6cd523a9383e76e6b455321f0f153a6c9625e21a8827d10c54c2a2341bd2ae8d034358b60e07325e1330c14c224ff582d04612a46a4f0479ff2f2
-  languageName: node
-  linkType: hard
-
 "lodash.camelcase@npm:^4.3.0":
   version: 4.3.0
   resolution: "lodash.camelcase@npm:4.3.0"
@@ -8375,6 +8372,13 @@ __metadata:
   version: 4.1.1
   resolution: "lodash.throttle@npm:4.1.1"
   checksum: 10c0/14628013e9e7f65ac904fc82fd8ecb0e55a9c4c2416434b1dd9cf64ae70a8937f0b15376a39a68248530adc64887ed0fe2b75204b2c9ec3eea1cb2d66ddd125d
+  languageName: node
+  linkType: hard
+
+"lodash.transform@npm:^4.6.0":
+  version: 4.6.0
+  resolution: "lodash.transform@npm:4.6.0"
+  checksum: 10c0/ad7f376b00dccff09f8597f19a171f2e074756178ae74887346876e10f6f0d83009460cc0793183cc5ee4e24a72ff86e68031c45b5aa2731c2f681a4dc93fe77
   languageName: node
   linkType: hard
 
@@ -8751,13 +8755,6 @@ __metadata:
     moment: ^2.8.0
     webpack: ^1 || ^2 || ^3 || ^4 || ^5
   checksum: 10c0/610c41c77d09e2d1bd8dd412493a3396c3e151080117939357a13b91a71e7782c44ee6405739a11d6ad7dfaf41179ca5eb770d79e3fbf2bf091f10088f0557a7
-  languageName: node
-  linkType: hard
-
-"moment@npm:2.29.4":
-  version: 2.29.4
-  resolution: "moment@npm:2.29.4"
-  checksum: 10c0/844c6f3ce42862ac9467c8ca4f5e48a00750078682cc5bda1bc0e50cc7ca88e2115a0f932d65a06e4a90e26cb78892be9b3ca3dd6546ca2c4d994cebb787fc2b
   languageName: node
   linkType: hard
 
