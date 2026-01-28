@@ -3,7 +3,7 @@
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Web Component for displaying a Mapbox map; either raster or vector (default). This component requires an OpenRemote
+Web Component for displaying a MapLibre map; either raster or vector (default). This component requires an OpenRemote
 Manager to retrieve map settings and tiles.
 
 ## Install

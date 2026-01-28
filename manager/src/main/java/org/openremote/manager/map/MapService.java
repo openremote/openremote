@@ -377,7 +377,7 @@ public class MapService implements ContainerService {
     }
 
     /**
-     * Dynamically build Mapbox GL settings based on mapsettings.json
+     * Dynamically build MapLibre GL settings based on mapsettings.json
      */
     public ObjectNode getMapSettings(String realm, URI host) {
         String realmUriKey = realm + host.toString();

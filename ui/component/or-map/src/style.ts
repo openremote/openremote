@@ -73,14 +73,10 @@ export const style = css`
     .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
         z-index: 1;
     }
-    .leaflet-marker-icon, .maplibregl-marker, .mapboxgl-marker {
+    .leaflet-marker-icon, .maplibregl-marker {
         pointer-events: none !important;
     }
 
-    .or-map-marker {
-        position: absolute; /* This makes mapboxJS behave like mapboxGL */
-    }
-    
     .or-map-marker.active {
         z-index: 1;
     }
