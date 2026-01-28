@@ -857,7 +857,7 @@ jobs:
           fi
 
           # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build --force-recreate
 
           # Wait for services to be healthy
           bash .ci_cd/host_init/healthy.sh profile
@@ -869,6 +869,13 @@ jobs:
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         # continue-on-error: true
+
+      - name: Dump docker-compose logs
+        if: failure()
+        run: |
+          docker logs profile-postgresql-1
+          docker inspect profile-postgresql-1
+          docker ps -a
 
       - name: Archive UI app test results
         if: always()
