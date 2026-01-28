@@ -2000,7 +2000,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@types/lodash.debounce": "npm:^4.0.9"
     "@types/lodash.throttle": "npm:^4.1.9"
-    gridstack: "npm:^7.2.0"
+    gridstack: "npm:^12.4.2"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
     lodash.throttle: "npm:^4.1.1"
@@ -2206,30 +2206,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-survey-results@workspace:ui/component/or-survey-results":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-survey-results@workspace:ui/component/or-survey-results"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    lit: "npm:^3.3.1"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-survey@workspace:ui/component/or-survey":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-survey@workspace:ui/component/or-survey"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-translate": "workspace:*"
-    "@types/lodash-es": "npm:^4.17.5"
-    lit: "npm:^3.3.1"
-    lodash-es: "npm:^4.17.15"
-    moment: "npm:2.29.4"
-  languageName: unknown
-  linkType: soft
-
 "@openremote/or-thermostat@workspace:ui/component/or-thermostat":
   version: 0.0.0-use.local
   resolution: "@openremote/or-thermostat@workspace:ui/component/or-thermostat"
@@ -2349,6 +2325,7 @@ __metadata:
     "@custom-elements-manifest/analyzer": "npm:^0.10.4"
     "@rspack/cli": "npm:~1.7.1"
     "@rspack/core": "npm:~1.7.1"
+    "@types/lodash": "npm:^4.17.21"
     "@types/react": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^5.9.0"
     "@typescript-eslint/parser": "npm:^5.9.0"
@@ -3427,16 +3404,7 @@ __metadata:
   checksum: 10c0/6375d03e83f870b46398a8761daf6f1995177977aaa463ef8d24c47fe0e03e14fed82ff09680126b95981b8a2d1db531ddfdae265d2ce4a91fdbb8918088162d
   languageName: node
   linkType: hard
-
-"@types/lodash-es@npm:^4.17.5":
-  version: 4.17.12
-  resolution: "@types/lodash-es@npm:4.17.12"
-  dependencies:
-    "@types/lodash": "npm:*"
-  checksum: 10c0/5d12d2cede07f07ab067541371ed1b838a33edb3c35cb81b73284e93c6fd0c4bbeaefee984e69294bffb53f62d7272c5d679fdba8e595ff71e11d00f2601dde0
-  languageName: node
-  linkType: hard
-
+  
 "@types/lodash.debounce@npm:^4.0.9":
   version: 4.0.9
   resolution: "@types/lodash.debounce@npm:4.0.9"
@@ -3464,10 +3432,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:*":
-  version: 4.14.202
-  resolution: "@types/lodash@npm:4.14.202"
-  checksum: 10c0/6064d43c8f454170841bd67c8266cc9069d9e570a72ca63f06bceb484cb4a3ee60c9c1f305c1b9e3a87826049fd41124b8ef265c4dd08b00f6766609c7fe9973
+"@types/lodash@npm:^4.17.21":
+  version: 4.17.23
+  resolution: "@types/lodash@npm:4.17.23"
+  checksum: 10c0/9d9cbfb684e064a2b78aab9e220d398c9c2a7d36bc51a07b184ff382fa043a99b3d00c16c7f109b4eb8614118f4869678dbae7d5c6700ed16fb9340e26cc0bf6
   languageName: node
   linkType: hard
 
@@ -7323,10 +7291,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gridstack@npm:^7.2.0":
-  version: 7.3.0
-  resolution: "gridstack@npm:7.3.0"
-  checksum: 10c0/f6ebaa8edba123f5e4c3d689ff1fc6b7bf6d9b9da9ab722e842237b32890ae3b4d0211173ba48c54b5d511f8c9ff8a00044a5a42135b6ea189acd6004d5bdead
+"gridstack@npm:^12.4.2":
+  version: 12.4.2
+  resolution: "gridstack@npm:12.4.2"
+  checksum: 10c0/9b15dabf24947e3f8d529055cbfcd532449b0ea0d4b2ae3b7419eed1742ea394dd19148b023fcbd7d0d69f2b5bc9df33d0f3e01b4153e96f2a7b767e036499bc
   languageName: node
   linkType: hard
 
@@ -8381,13 +8349,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash-es@npm:^4.17.15":
-  version: 4.17.21
-  resolution: "lodash-es@npm:4.17.21"
-  checksum: 10c0/fb407355f7e6cd523a9383e76e6b455321f0f153a6c9625e21a8827d10c54c2a2341bd2ae8d034358b60e07325e1330c14c224ff582d04612a46a4f0479ff2f2
-  languageName: node
-  linkType: hard
-
 "lodash.camelcase@npm:^4.3.0":
   version: 4.3.0
   resolution: "lodash.camelcase@npm:4.3.0"
@@ -8810,13 +8771,6 @@ __metadata:
     moment: ^2.8.0
     webpack: ^1 || ^2 || ^3 || ^4 || ^5
   checksum: 10c0/610c41c77d09e2d1bd8dd412493a3396c3e151080117939357a13b91a71e7782c44ee6405739a11d6ad7dfaf41179ca5eb770d79e3fbf2bf091f10088f0557a7
-  languageName: node
-  linkType: hard
-
-"moment@npm:2.29.4":
-  version: 2.29.4
-  resolution: "moment@npm:2.29.4"
-  checksum: 10c0/844c6f3ce42862ac9467c8ca4f5e48a00750078682cc5bda1bc0e50cc7ca88e2115a0f932d65a06e4a90e26cb78892be9b3ca3dd6546ca2c4d994cebb787fc2b
   languageName: node
   linkType: hard
 

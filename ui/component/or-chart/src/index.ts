@@ -34,7 +34,8 @@ import {cache} from "lit/directives/cache.js";
 import debounce from "lodash.debounce";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
+import {map} from "lit/directives/map.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, LineChart, CanvasRenderer, UniversalTransition]);
@@ -844,7 +845,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <span>${i18next.t('noAttributesConnected')}</span>
                                     </div>
                                 ` : undefined}
-                                ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                                ${map(this.assetAttributes?.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
                                     const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attr.name)?.[1];
@@ -852,21 +853,22 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
                                     const axisNote = (this.attributeConfig.rightAxisAttributes?.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = (color ?? this.colors[colourIndex]) || "";
-                                    return html`
-                                        <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}"
-                                             @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex]!.id, name: attr.name})}"
-                                             @mouseleave="${()=> this._removeDatasetHighlights()}">
-                                            <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
-                                            <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <div style="display: flex; gap: 4px;">
-                                                    <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
-                                                    ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
-                                                </div>
-                                                <span style="font-size:12px; color:grey;">${label}</span>
+                                    return {assetIndex, attr, axisNote, bgColor, label};
+                                    
+                                }).sort(Util.sortByString(x => x.label)), ({assetIndex, attr, axisNote, bgColor, label}) => html`
+                                    <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}"
+                                         @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex]!.id, name: attr.name})}"
+                                         @mouseleave="${()=> this._removeDatasetHighlights()}">
+                                        <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
+                                        <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
+                                            <div style="display: flex; gap: 4px;">
+                                                <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
                                             </div>
+                                            <span style="font-size:12px; color:grey;">${label}</span>
                                         </div>
-                                    `
-                                })}
+                                    </div>
+                                `)}
                             </div>
                         ` : undefined)}
                     </div>

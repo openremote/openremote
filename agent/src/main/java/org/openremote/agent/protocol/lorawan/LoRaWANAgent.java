@@ -47,6 +47,7 @@ public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends Abstr
     public static final AttributeDescriptor<Boolean> LAST_WILL_RETAIN = MQTTAgent.LAST_WILL_RETAIN;
 
     public static final AttributeDescriptor<String> APPLICATION_ID = new AttributeDescriptor<>("applicationId", ValueType.TEXT);
+    public static final AttributeDescriptor<String> API_KEY = new AttributeDescriptor<>("apiKey", ValueType.TEXT);
 
 
     // For Hydrators
@@ -188,6 +189,15 @@ public abstract class LoRaWANAgent<T extends LoRaWANAgent<T, U>, U extends Abstr
 
     public LoRaWANAgent<T, U> setApplicationId(String applicationId) {
         getAttributes().getOrCreate(APPLICATION_ID).setValue(applicationId);
+        return this;
+    }
+
+    public Optional<String> getApiKey() {
+        return getAttributes().getValue(API_KEY);
+    }
+
+    public LoRaWANAgent<T, U> setApiKey(String apiKey) {
+        getAttributes().getOrCreate(API_KEY).setValue(apiKey);
         return this;
     }
 }

@@ -16,6 +16,10 @@ interface WalkFormOptions {
 
 export interface JsonSchema extends JsonSchema7 {
     /**
+     * Allow schemas to specify a custom discriminator property to resolve subtypes
+     */
+    discriminator?: { propertyName?: string };
+    /**
      * Describes what properties should be manually selected by {@link JsonForms#walkForm}
      */
     "or:test:props"?: string[];
@@ -173,10 +177,15 @@ export class JsonForms {
         locator = locator.locator("or-json-forms-array-control").nth(item);
         path.push("or-json-forms-array-control", item);
         await locator.locator("or-collapsible-panel").click();
+
         if (!Array.isArray(schema?.items) && schema.items?.oneOf) {
-            for (const prop of Object.values<any>(schema.items.oneOf)) {
+            for (const subType of Object.values(schema.items.oneOf)) {
                 await locator.getByRole("button", { name: "Add Item" }).click();
-                await this.dialog.locator("li").getByText(prop.title, { exact: true }).click();
+                let resolvedSchema = structuredClone(subType);
+                if (subType.$ref) {
+                    resolvedSchema = this.resolveSchema(schema, subType.$ref!);
+                }
+                await this.dialog.locator("li").getByText(resolvedSchema.title, { exact: true }).click();
                 await this.dialog.getByRole("button", { name: "Add", exact: true }).click();
             }
         } else {
@@ -244,6 +253,11 @@ export class JsonForms {
             await locator.fill(String(schema["or:test:value"] ?? fallback));
             await expect(locator).toHaveValue(String(schema["or:test:value"] ?? fallback));
         }
+    }
+
+    private resolveSchema(schema: JsonSchema, ref: string) {
+        const segments = ref.split("/");
+        return schema.definitions![segments[segments.length - 1]];
     }
 }
 

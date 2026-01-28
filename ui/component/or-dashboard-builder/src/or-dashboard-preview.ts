@@ -21,7 +21,6 @@ import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
-const extracss = require('gridstack/dist/gridstack-extra.css');
 
 //language=css
 const editorStyling = css`
@@ -95,9 +94,13 @@ const editorStyling = css`
         border: 2px solid var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
         margin: -1px !important; /* to compromise with the extra pixel of border. */
     }
+    .grid-stack-item > .ui-resizable-handle {
+        opacity: 0.4;
+    }
     
     /* Grid lines on the background of the grid */
     .grid-element {
+        min-height: 100%;
         background-image:
                 linear-gradient(90deg, #E0E0E0, transparent 1px),
                 linear-gradient(90deg, transparent calc(100% - 1px), #E0E0E0),
@@ -199,10 +202,10 @@ export class OrDashboardPreview extends LitElement {
     protected activePreset?: DashboardScreenPreset;
 
     @state()
-    private rerenderActive: boolean = false;
+    protected rerenderActive: boolean = false;
 
     @state()
-    private isLoading: boolean = false;
+    protected isLoading: boolean = false;
 
 
     protected grid?: GridStack;
@@ -232,7 +235,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
+        return [unsafeCSS(gridcss), editorStyling, style];
     }
 
     /* ------------------------------ */
@@ -370,7 +373,6 @@ export class OrDashboardPreview extends LitElement {
             }
             this.activePreset = newPreset;
 
-
             // If grid got reset, setup the ResizeObserver again.
             if(this.grid == null) {
                 const gridHTML = this.shadowRoot?.querySelector(".maingrid");
@@ -384,8 +386,7 @@ export class OrDashboardPreview extends LitElement {
                 animate: true,
                 cellHeight: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
                 column: this.template?.columns,
-                disableOneColumnMode: (this.activePreset?.scalingPreset !== DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN),
-                oneColumnModeDomSort: true,
+                columnOpts: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) ? { breakpoints: [{w: this.activePreset?.breakpoint ?? 768, c:1}], columnMax: this.template?.columns } : undefined,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                 },
@@ -400,7 +401,6 @@ export class OrDashboardPreview extends LitElement {
 
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = "100%";
-            gridElement!.style.minHeight = "100%";
 
             // When an item gets dropped ontop of the grid. GridStack docs say:
             // "called when an item has been dropped and accepted over a grid. If the item came from another grid, the previous widget node info will also be sent (but dom item long gone)."
@@ -577,51 +577,8 @@ export class OrDashboardPreview extends LitElement {
                     </div>
                 `}
             </div>
-            <style>
-                ${cache(when(this.isExtraLargeGrid(),
-                        () => this.applyCustomGridstackGridCSS(this.getGridstackColumns(this.grid) ? this.getGridstackColumns(this.grid)! : this.template.columns!)
-                ))}
-            </style>
         `
     }
-
-    protected getGridstackColumns(grid: GridStack | undefined): number | undefined {
-        try { return grid?.getColumn(); }
-        catch (e) { return undefined; }
-    }
-
-    protected isExtraLargeGrid(): boolean {
-        return !!this.grid && (
-            (this.getGridstackColumns(this.grid) && this.getGridstackColumns(this.grid)! > 12)
-            || !!(this.template?.columns && this.template.columns > 12)
-        );
-    }
-
-
-
-    private cachedGridstackCSS: Map<number, TemplateResult[]> = new Map<number, TemplateResult[]>();
-
-    // Provides support for > 12 columns in GridStack (which requires manual css edits)
-    //language=html
-    protected applyCustomGridstackGridCSS(columns: number): TemplateResult {
-        if(this.cachedGridstackCSS.has(columns)) {
-            return html`${this.cachedGridstackCSS.get(columns)!.map((x) => x)}`;
-        } else {
-            const htmls: TemplateResult[] = [];
-            for(let i = 0; i < (columns + 1); i++) {
-                htmls.push(html`
-                    <style>
-                        .grid-stack > .grid-stack-item[gs-w="${i}"]:not(.ui-draggable-dragging):not(.ui-resizable-resizing) { width: ${100 - (columns - i) * (100 / columns)}% !important; }
-                        .grid-stack > .grid-stack-item[gs-x="${i}"]:not(.ui-draggable-dragging):not(.ui-resizable-resizing) { left: ${100 - (columns - i) * (100 / columns)}% !important; }                    
-                    </style>
-                `);
-            }
-            this.cachedGridstackCSS.set(columns, htmls);
-            return html`${htmls.map((x) => x)}`;
-        }
-    }
-
-
 
     /* ---------------------------------------------- */
 
@@ -653,7 +610,7 @@ export class OrDashboardPreview extends LitElement {
             }
             this.previousObserverEntry = entries[0];
         });
-    }
+    };
 
     protected _onGridResize() {
         console.debug("Grid resize detected. Recreating the grid...");

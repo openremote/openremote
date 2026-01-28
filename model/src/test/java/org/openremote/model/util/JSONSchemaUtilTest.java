@@ -14,7 +14,6 @@ import org.openremote.model.util.JSONSchemaUtil.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.time.*;
 import java.util.Date;
 import java.util.Map;
@@ -400,6 +399,72 @@ public class JSONSchemaUtilTest {
         );
 
         JsonNode actual = ValueUtil.getSchema(PolymorphicType.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @JsonTypeInfo(property = "customType", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    @JsonSubTypes({
+            @JsonSubTypes.Type(CustomSubType.class),
+            @JsonSubTypes.Type(CustomSubTypeSuperclass.class),
+    })
+    abstract static class CustomPolymorphicType<T extends CustomPolymorphicType<?>> implements Serializable {}
+    @JsonTypeName("SubType")
+    static class CustomSubType extends CustomPolymorphicType<CustomSubType> {}
+    @JsonTypeName("SubTypeSuperclass")
+    static class CustomSubTypeSuperclass extends CustomSubType { }
+
+    @Test
+    public void shouldHaveSubtypesWithCustomTypeProperty() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "definitions": {
+                    "CustomSubType": {
+                        "title": "Custom Sub Type",
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "customType": {
+                                "const": "SubType",
+                                "default": "SubType"
+                            }
+                        },
+                        "required": [
+                            "customType"
+                        ],
+                        "discriminator": {
+                            "propertyName": "customType"
+                        }
+                    },
+                    "CustomSubTypeSuperclass": {
+                        "title": "Custom Sub Type Superclass",
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "customType": {
+                                "const": "SubTypeSuperclass",
+                                "default": "SubTypeSuperclass"
+                            }
+                        },
+                        "required": [
+                            "customType"
+                        ],
+                        "discriminator": {
+                            "propertyName": "customType"
+                        }
+                    }
+                },
+                "oneOf": [
+                    { "$ref": "#/definitions/CustomSubType" },
+                    { "$ref": "#/definitions/CustomSubTypeSuperclass" }
+                ],
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Custom Polymorphic Type"
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(CustomPolymorphicType.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
