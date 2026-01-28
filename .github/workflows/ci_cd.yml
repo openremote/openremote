@@ -857,7 +857,7 @@ jobs:
           fi
 
           # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build --force-recreate
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
           # Wait for services to be healthy
           bash .ci_cd/host_init/healthy.sh profile

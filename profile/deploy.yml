@@ -434,7 +434,7 @@ services:
   # PostgreSQL DBMS
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-develop-slim}
-    restart: always
+    restart: no
     # Shared memory should be increased for any reasonable DB size this should be increased further
     shm_size: 128mb
     # Docker volume for persistent storage of DB; can alternatively map to host
