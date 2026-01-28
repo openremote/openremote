@@ -18,7 +18,6 @@
     { "path": "../../component/or-attribute-barchart" },
     { "path": "../../component/or-asset-tree" },
     { "path": "../../component/or-asset-viewer" },
-    { "path": "../../component/or-data-viewer" },
     { "path": "../../component/or-log-viewer" },
     { "path": "../../component/or-chart" },
     { "path": "../../component/or-rules" },
