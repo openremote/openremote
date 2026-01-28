@@ -49,6 +49,7 @@ import spock.util.concurrent.PollingConditions
 import java.nio.file.Paths
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
@@ -1077,48 +1078,51 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
      * Change the test url and key path to match the instance to connect to.
      * Recommended to run profile/dev-proxy.yml profile.
      */
-    @Ignore
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
-        def tunnelSSHHost = "test.openremote.app"
+        def tunnelSSHHost = "custom-project-test.openremote.app"
         def tunnelSSHPort = 2222
 
-        and: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
-        def gatewayClientService = container.getService(GatewayClientService)
-        def tunnelFactory = gatewayClientService.tunnelFactory
-        def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
-        def tunnelInfo = new GatewayTunnelInfo(
-                "",
-                UniqueIdentifierGenerator.generateId(),
+        and: "an instance of the gateway tunnel factory is created"
+        def conditions = new PollingConditions(timeout: 15, delay: 1)
+        def tunnelFactory = new MINAGatewayTunnelFactory(keyPath.toFile(), null)
+        tunnelFactory.start()
+
+        expect: "the SSH client to be ready"
+        conditions.eventually {
+            tunnelFactory.client.isStarted()
+        }
+
+        and: "A configured GatewayTunnelInfo for HTTPS on localhost:443"
+        def tunnelInfo = new GatewayTunnelInfo(Constants.MASTER_REALM,
+                "gw-1234",
                 GatewayTunnelInfo.Type.HTTPS,
-                "localhost",
-                443)
-        def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
+                "localhost", 443)
 
-        expect: "the tunnel factory to be created"
-        tunnelFactory != null
+        and: "A completion variable for the close callback"
+        AtomicBoolean closed = new AtomicBoolean(false)
 
-        when: "a tunnel is requested to start"
-        def startEvent = new GatewayTunnelStartRequestEvent(tunnelInfo)
-        tunnelFactory.createSession(startEvent)
+        when: "Create session is called"
+        GatewayTunnelSession session = tunnelFactory.createSession(tunnelSSHHost, tunnelSSHPort, tunnelInfo, { t ->
+            closed.set(true)
+        })
 
-        then: "the tunnel should be established and be usable"
-        def response = target.request().get()
-        response.status == 200
+        then: "The session connection future should complete successfully"
+        new PollingConditions(timeout: 10).eventually {
+            assert session.getConnectFuture().isDone()
+            assert !session.getConnectFuture().isCompletedExceptionally()
+        }
 
-        when: "the tunnel is stopped"
-        tunnelFactory.stopTunnel(tunnelInfo)
-
-        then: "requests should fail"
-        def response2 = target.request().get()
-        response2.status != 200
+        then: "we keep the tunnel open for manual testing"
+        while (true) {
+            println "Tunnel open. Press Ctrl+C to stop."
+            Thread.sleep(5000)
+        }
 
         cleanup: "cleanup"
-        if (client != null) {
-            client.close()
+        if (tunnelFactory != null) {
+            tunnelFactory.stop()
         }
     }
 

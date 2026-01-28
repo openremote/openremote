@@ -5,9 +5,11 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHeartbeatController;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
@@ -17,6 +19,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import java.io.File;
 import java.io.IOException;
 import java.security.KeyPair;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +40,8 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
         this.tunnelKeyFile = tunnelKeyFile;
         this.localhostRewrite = localhostRewrite;
         client = SshClient.setUpDefaultClient();
+
+        PropertyResolverUtils.updateProperty(client, "tcpip-forward.timeout", 30000);
 
         // Load the key
         FileKeyPairProvider keyProvider = new FileKeyPairProvider(tunnelKeyFile.toPath());
@@ -116,6 +121,9 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
                     if (connFuture.isConnected()) {
                         ClientSession session = connFuture.getSession();
                         sessionRef.set(session); // Store in atomic ref for the disconnect supplier to see
+
+                        // Set heartbeat so tunnel doesn't get closed by network infra etc.
+                        session.setSessionHeartbeat(SessionHeartbeatController.HeartbeatType.IGNORE, Duration.ofSeconds(10));
 
                         session.addSessionListener(new SessionListener() {
                             @Override
