@@ -1765,7 +1765,6 @@ __metadata:
     "@openremote/or-attribute-picker": "workspace:*"
     "@openremote/or-components": "workspace:*"
     "@openremote/or-dashboard-builder": "workspace:*"
-    "@openremote/or-data-viewer": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-json-forms": "workspace:*"
     "@openremote/or-log-viewer": "workspace:*"
@@ -1997,20 +1996,6 @@ __metadata:
     lit: "npm:^3.3.1"
     lodash: "npm:^4.17.21"
     moment: "npm:^2.29.4"
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-data-viewer@workspace:*, @openremote/or-data-viewer@workspace:ui/component/or-data-viewer":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-data-viewer@workspace:ui/component/or-data-viewer"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-attribute-card": "workspace:*"
-    "@openremote/or-chart": "workspace:*"
-    "@openremote/or-components": "workspace:*"
-    "@openremote/or-translate": "workspace:*"
-    lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
 
