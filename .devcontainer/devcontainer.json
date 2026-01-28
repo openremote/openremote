@@ -1,6 +1,6 @@
 {
   "name": "OpenRemote DevContainer",
-  "image": "mcr.microsoft.com/devcontainers/java:21-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
   "workspaceFolder": "/workspaces/openremote",
   "remoteUser": "root",
   "features": {
@@ -11,7 +11,7 @@
         "jdkDistro": "open",
         "installGradle": "true",
         "installGroovy": "true"
-    },
+    }
   },
   "runArgs": [
     "-v", "${localEnv:HOME}/.gradle:/root/.gradle"
