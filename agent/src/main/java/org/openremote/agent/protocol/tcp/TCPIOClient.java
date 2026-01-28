@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.tcp;
 
 import io.netty.channel.*;
-import io.netty.channel.nio.NioIoHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
@@ -61,7 +61,7 @@ public class TCPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
-        return new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
+        return new NioEventLoopGroup(1);
     }
 
     @Override

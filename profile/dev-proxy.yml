@@ -12,6 +12,7 @@
 #
 volumes:
   postgresql-data:
+  proxy-data:
 
 services:
 
@@ -24,6 +25,9 @@ services:
       # Uncomment to use sish in development
       #SISH_HOST: sish
       #SISH_PORT: 8090
+    volumes:
+      # Named volume preserves container's built-in certs
+      - proxy-data:/deployment
 
   keycloak:
     extends:

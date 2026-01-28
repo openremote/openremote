@@ -5,15 +5,25 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.netty.channel.socket.SocketChannel
+import io.undertow.security.idm.X509CertificateCredential
+import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal
+import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal
+import org.keycloak.KeycloakPrincipal
 import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.mqtt.MQTTHandler
+import org.openremote.manager.provisioning.ProvisioningService
+import org.openremote.manager.security.KeyStoreServiceImpl
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.security.RemotingConnectionPrincipal
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.Constants
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -24,16 +34,21 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.security.ClientRole
+import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.provisioning.MTLSCertificateHelper
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.security.auth.Subject
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
+import java.util.stream.Stream
 
 import static org.openremote.model.util.MapAccess.getInteger
 import static org.openremote.model.util.MapAccess.getString
@@ -855,5 +870,250 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         if (newClient != null) {
             newClient.disconnect()
         }
+    }
+
+    def "Mqtt broker mTLS test"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.1)
+        MQTT_IOClient device1Client
+
+        and: "temporary directories are created"
+        def tempDir = new File(System.getProperty("java.io.tmpdir"), "openremote-mtls-test-keystores-" + System.currentTimeMillis())
+        def tempManagerDir = new File(System.getProperty("java.io.tmpdir"), "openremote-tmp-" + System.currentTimeMillis())
+        tempDir.mkdirs()
+        tempManagerDir.mkdirs()
+        getLOG().info("KeyStore TempDir: $tempDir.absoluteFile")
+        getLOG().info("Manager TempDir: $tempManagerDir.absoluteFile")
+
+        and: "test configuration is set up"
+        def serverKeystorePath = new File(tempDir, "server-keystore.p12").absolutePath
+        def serverTruststorePath = new File(tempDir, "server-truststore.p12").absolutePath
+        def keystorePassword = "secret1"
+        def provisionedAccountAliasName = "mtlsclient"
+        def provisionedAccountKeyAlias = "$Constants.MASTER_REALM.$provisionedAccountAliasName"
+        def ProvisionedAccountUserName = "mtlstest2"
+
+        and: "mTLS certificate helper is initialized"
+        def mtlsHelper = new MTLSCertificateHelper()
+
+        and: "server and client certificates are generated"
+        def (serverKeyPair, serverCert) = mtlsHelper.generateServerCertificate()
+        def (clientKeyPair, clientCert) = mtlsHelper.generateClientCertificate(ProvisionedAccountUserName, Constants.MASTER_REALM)
+
+        and: "server keystores are created and saved to disk"
+        mtlsHelper.createAndSaveServerKeystores(
+                serverKeystorePath,
+                serverTruststorePath,
+                keystorePassword,
+                provisionedAccountKeyAlias,
+                serverKeyPair,
+                serverCert
+        )
+
+        and: "the container configuration is set up with MTLS environment variables"
+        def config = defaultConfig()
+        config.put(Constants.OR_MQTT_MTLS_SERVER_LISTEN_HOST, "localhost")
+        config.put(Constants.OR_MQTT_MTLS_SERVER_LISTEN_PORT, "8884")
+        config.put(Constants.OR_MQTT_MTLS_KEYSTORE_PATH, serverKeystorePath)
+        config.put(Constants.OR_MQTT_MTLS_KEYSTORE_PASSWORD, keystorePassword)
+        config.put(Constants.OR_MQTT_MTLS_TRUSTSTORE_PATH, serverTruststorePath)
+        config.put(Constants.OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, keystorePassword)
+        config.put(Constants.OR_MQTT_MTLS_DISABLED, "false")
+        config.put(KeyStoreServiceImpl.OR_KEYSTORE_PASSWORD, keystorePassword)
+        config.put(PersistenceService.OR_STORAGE_DIR, tempManagerDir.getAbsolutePath())
+
+
+        and: "the container starts"
+        def container = startContainer(config, defaultServices())
+        def keystoreService = container.getService(KeyStoreServiceImpl.class)
+        def mqttBrokerService = container.getService(MQTTBrokerService.class)
+        def identityService = container.getService(ManagerIdentityService.class)
+        def provisioningService = container.getService(ProvisioningService.class)
+        def mqttHost = "localhost"
+        def mqttPort = 8884
+
+        and: "the client certificate is added to the KeyStoreService"
+        mtlsHelper.addClientCertificateToKeyStoreService(
+                keystoreService,
+                provisionedAccountKeyAlias,
+                keystorePassword,
+                clientKeyPair,
+                clientCert
+        )
+
+        expect: "the keystores should contain the certificates"
+        keystoreService.getKeyStore().containsAlias(provisionedAccountKeyAlias)
+        keystoreService.getTrustStore().containsAlias(provisionedAccountKeyAlias)
+
+        when: "A new service user with the corresponding certificate's fields is created"
+        User serviceUser = new User()
+                .setServiceAccount(true)
+                .setEnabled(true)
+                .setRealm("master")
+                .setUsername(ProvisionedAccountUserName);
+        serviceUser = identityService.getIdentityProvider().createUpdateUser("master", serviceUser, null, true);
+
+        identityService.getIdentityProvider().updateUserClientRoles(
+                Constants.MASTER_REALM,
+                serviceUser.getId(),
+                Constants.KEYCLOAK_CLIENT_ID,
+                Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
+        );
+
+        then: "the service user should exist"
+        def fetchedUser = identityService.getIdentityProvider().getUserByUsername("master", "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName")
+        assert fetchedUser != null
+
+        when: "an MQTT client is created with mTLS configuration"
+        def device1UniqueId = "device1"
+        def mqttDevice1ClientId = device1UniqueId
+        device1Client = new MQTT_IOClient(
+                mqttDevice1ClientId,
+                mqttHost,
+                mqttPort,
+                true,
+                false,
+                null,
+                null,
+                null,
+                keystoreService.getKeyManagerFactory(provisionedAccountKeyAlias),
+                keystoreService.getTrustManagerFactory()
+        )
+
+        device1Client.connect()
+
+        then: "the client should connect successfully using mTLS"
+        conditions.eventually {
+            assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        and: "the authenticated client should have the correct subject"
+        conditions.eventually {
+            Subject sub = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId).getSubject()
+            assert sub.getPrincipals().size() == 6
+            assert sub.getPrincipals(RolePrincipal.class).size() == 3
+            assert sub.getPrincipals(RolePrincipal.class).stream().map {rp -> rp.getName()}.toList().containsAll(Constants.READ_ASSETS_ROLE, Constants.WRITE_ASSETS_ROLE, Constants.WRITE_ATTRIBUTES_ROLE)
+            assert sub.getPrincipals(UserPrincipal).size() == 1
+            assert sub.getPrincipals(UserPrincipal)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName"
+            assert sub.getPrincipals(KeycloakPrincipal.class).size() == 1
+            assert sub.getPrincipals(KeycloakPrincipal.class)[0].getName() == "$User.SERVICE_ACCOUNT_PREFIX$ProvisionedAccountUserName"
+            assert sub.getPrincipals(RemotingConnectionPrincipal.class)[0].getRemotingConnection().getClientID() == mqttDevice1ClientId
+
+            assert sub.getPrivateCredentials(X509CertificateCredential.class).size() == 1
+            assert sub.getPrivateCredentials(X509CertificateCredential.class)[0].getCertificate().getSubjectX500Principal().getName().contains("OU=$Constants.MASTER_REALM")
+            assert sub.getPrivateCredentials(X509CertificateCredential.class)[0].getCertificate().getSubjectX500Principal().getName().contains("CN=$ProvisionedAccountUserName")
+
+            assert sub.getPublicCredentials().size() == 0
+        }
+
+        when: "A new keypair is created, without being signed by the issuer"
+        def (invalidKeyPair, invalidCert) = mtlsHelper.generateSelfSignedCertificate("invaliduser", "master")
+
+        and: "Added and saved to the KeyStoreService keystore"
+        def invalidKeyAlias = Constants.MASTER_REALM+".invalidclient"
+        mtlsHelper.addCertificateToKeyStoreService(
+                keystoreService,
+                invalidKeyAlias,
+                keystorePassword,
+                invalidKeyPair,
+                invalidCert,
+                false // Don't include root CA in chain for invalid cert
+        )
+
+        and: "A new MQTT client connects, using those new certificates"
+        def invalidClientId = UniqueIdentifierGenerator.generateId("invaliddevice")
+        MQTT_IOClient invalidClient = new MQTT_IOClient(
+                invalidClientId,
+                mqttHost,
+                mqttPort,
+                true,
+                false,
+                null,
+                null,
+                null,
+                keystoreService.getKeyManagerFactory(null),
+                keystoreService.getTrustManagerFactory()
+        )
+        invalidClient.connectTimeout = 100
+        invalidClient.connect();
+
+        then: "The connection should be rejected"
+
+        conditions.eventually {
+            assert invalidClient.getConnectionStatus() == ConnectionStatus.CONNECTING
+            assert invalidClient != null
+        }
+
+        and: "disconnect invalid client if connected"
+        invalidClient.disconnect()
+
+        when: "A new keypair, properly signed, is created, but the service user for it is not created"
+        def unprovisionedUsername = "unprovisioneduser"
+        def (unprovisionedKeyPair, unprovisionedCert) = mtlsHelper.generateClientCertificate(
+                unprovisionedUsername,
+                Constants.MASTER_REALM,
+                4 // serial offset
+        )
+
+        and: "It is added and saved to the KeyStoreService keystore"
+        def unprovisionedKeyAlias = Constants.MASTER_REALM + "unprovisionedclient"
+        mtlsHelper.addClientCertificateToKeyStoreService(
+                keystoreService,
+                unprovisionedKeyAlias,
+                keystorePassword,
+                unprovisionedKeyPair,
+                unprovisionedCert
+        )
+
+        and: "A new MQTT client connects, using those correct yet unprovisioned certificates"
+        def unprovisionedClientId = UniqueIdentifierGenerator.generateId("unprovisioneddevice")
+        unprovisionedClientId = unprovisionedUsername;
+        MQTT_IOClient unprovisionedClient = new MQTT_IOClient(
+                unprovisionedClientId,
+                mqttHost,
+                mqttPort,
+                true,
+                false,
+                null,
+                null,
+                null,
+                keystoreService.getKeyManagerFactory(unprovisionedKeyAlias),
+                keystoreService.getTrustManagerFactory()
+        )
+
+        unprovisionedClient.connect()
+
+        then: "the connection should be created, but there should be no roles, but there is a ProvisioningPrincipal, that contains the correct certificate"
+        conditions.eventually {
+            assert unprovisionedClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        and: "the authenticated client should have a ProvisioningPrincipal with no user roles"
+        conditions.eventually {
+            Subject unprovisionedJaasSubject = mqttBrokerService.getConnectionFromClientID(unprovisionedClientId).getSubject()
+            assert unprovisionedJaasSubject != null
+            assert unprovisionedJaasSubject.getPrincipals().size() == 3
+            assert unprovisionedJaasSubject.getPrivateCredentials().size() == 1
+            // Should not have role principals since no service user exists
+            assert unprovisionedJaasSubject.getPrincipals(RolePrincipal.class)[0].getName() == "anonymous"
+            // Should not have a UserPrincipal or KeycloakPrincipal
+            assert unprovisionedJaasSubject.getPrincipals(UserPrincipal)[0].getName() == "anonymous"
+            assert unprovisionedJaasSubject.getPrincipals(KeycloakPrincipal.class).isEmpty()
+            // Should have a ProvisioningPrincipal with the certificate
+            assert unprovisionedJaasSubject.getPrivateCredentials(X509CertificateCredential.class).size() == 1
+            def provisioningPrincipal = unprovisionedJaasSubject.getPrivateCredentials(X509CertificateCredential.class)[0]
+            assert provisioningPrincipal.getCertificate() != null
+            assert provisioningPrincipal.getCertificate().getSubjectX500Principal().getName().contains("CN=$unprovisionedUsername")
+        }
+
+        cleanup: "disconnect the client and cleanup temporary files"
+        device1Client.disconnect()
+
+        and: "disconnect unprovisioned client"
+        unprovisionedClient.disconnect()
+
+        and: "delete the created temporary directories"
+        tempDir.deleteDir()
+        tempManagerDir.deleteDir()
     }
 }
