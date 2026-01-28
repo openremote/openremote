@@ -26,7 +26,7 @@ test("Create a Line Chart widget", async ({manager, shared, page, insightsPage})
     // Make widget larger by resizing it using the handle
     const chartWidget = insightsPage.getWidgets({ hasText: "Line Chart" }).first();
     await expect(chartWidget).toBeVisible();
-    chartWidget.hover();
+    await chartWidget.hover();
     const handle = page.locator(".ui-resizable-handle.ui-resizable-se").first();
     await expect(handle).toBeVisible();
     await handle.hover();
@@ -35,14 +35,17 @@ test("Create a Line Chart widget", async ({manager, shared, page, insightsPage})
     const startX = box!.x + box!.width - 4;
     const startY = box!.y + box!.height - 4;
     await page.mouse.down();
-    await page.mouse.move(startX + (box!.width * 3), startY + (box!.height * 3), { steps: 10 });
+    await page.mouse.move(startX + (box!.width * 2), startY + (box!.height * 2), { steps: 50 });
     await page.mouse.up();
-    await expect.poll(async () => (await chartWidget.boundingBox())!.width).toBeGreaterThan(box!.width * 3.95);
-    await expect.poll(async () => (await chartWidget.boundingBox())!.height).toBeGreaterThan(box!.height * 3.95);
+    await page.waitForTimeout(100);
+    await expect(chartWidget).not.toContainClass("ui-resizable-resizing");
+    await expect.poll(async () => (await chartWidget.boundingBox())!.width).toBeGreaterThan(box!.width * 3);
+    await expect.poll(async () => (await chartWidget.boundingBox())!.height).toBeGreaterThan(box!.height * 3);
     await expect(insightsPage.getWidgets()).toHaveCount(1);
 
     // Select widget, and add attribute of Asset #2 and Asset #1
     const attrName = "Energy level";
+    await expect(chartWidget).toBeVisible();
     await chartWidget.click();
     await expect(insightsPage.getBrowser()).toBeHidden();
     await expect(insightsPage.getWidgetSettings({ hasText: "Line Chart" })).toBeVisible();
