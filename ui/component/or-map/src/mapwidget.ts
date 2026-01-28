@@ -15,7 +15,7 @@ import maplibregl,{
 } from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
-import { debounce } from "lodash";
+import debounce from "lodash.debounce";
 import {
     ControlPosition,
     OrMapClickedEvent,

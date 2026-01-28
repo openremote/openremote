@@ -39,7 +39,7 @@ import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {when} from "lit/directives/when.js";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
