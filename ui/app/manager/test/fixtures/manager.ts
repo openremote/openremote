@@ -14,12 +14,12 @@ import {
     type SharedComponentTestFixtures,
     type Shared,
     type TestFixture,
-    withPage
+    withPage,
 } from "@openremote/test";
-import {AssetsPage, InsightsPage, RealmsPage, RolesPage, RulesPage, UsersPage} from "./pages";
+import { AssetsPage, InsightsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
-import { MwcInput } from "../../../../component/or-mwc-components/test/fixtures";
+import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
 import { JsonForms } from "../../../../component/or-json-forms/test/fixtures";
 import { AssetTree } from "../../../../component/or-asset-tree/test/fixtures";
 import { type AxiosRequestConfig } from "axios";
@@ -489,6 +489,7 @@ interface ComponentFixtures extends SharedComponentTestFixtures {
     collapsiblePanel: CollapsiblePanel;
     jsonForms: JsonForms;
     mwcInput: MwcInput;
+    mwcMenu: MwcMenu;
 }
 
 interface Fixtures extends PageFixtures, ComponentFixtures {
@@ -510,4 +511,5 @@ export const test = base.extend<Fixtures>({
     collapsiblePanel: withPage(CollapsiblePanel),
     jsonForms: withPage(JsonForms),
     mwcInput: withPage(MwcInput),
+    mwcMenu: withPage(MwcMenu),
 });
