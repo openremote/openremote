@@ -4,7 +4,7 @@ import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
-import {AttributeMarkerColours, LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
+import {LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
 import {when} from "lit/directives/when.js";
@@ -24,6 +24,19 @@ const styling = css`
 @customElement("map-settings")
 export class MapSettings extends AssetWidgetSettings {
 
+    protected static _allowedValueTypes = ["boolean", "number", "integer", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
+    protected static _config: AssetTypesFilterConfig = {
+        assets: {
+            enabled: true,
+            multi: true,
+            allOfTypeOption: true
+        },
+        attributes: {
+            enabled: true,
+            valueTypes: MapSettings._allowedValueTypes
+        }
+    };
+
     protected widgetConfig!: MapWidgetConfig;
 
     static get styles() {
@@ -31,21 +44,8 @@ export class MapSettings extends AssetWidgetSettings {
     }
 
     protected render(): TemplateResult {
-        const allowedValueTypes = ["boolean", "number", "integer", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
-        const config = {
-            assets: {
-                enabled: true,
-                multi: true,
-                allOfTypeOption: true
-            },
-            attributes: {
-                enabled: true,
-                valueTypes: allowedValueTypes
-            }
-        } as AssetTypesFilterConfig;
         return html`
             <div>
-
                 <!-- Map settings -->
                 <settings-panel displayName="configuration.mapSettings" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -74,7 +74,7 @@ export class MapSettings extends AssetWidgetSettings {
 
                 <!-- Panel where Asset type and the selected attribute can be customized -->
                 <settings-panel displayName="attributes" expanded="${true}">
-                    <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeNames="${this.widgetConfig.attributeName}" .config="${config}"
+                    <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeNames="${this.widgetConfig.attributeName}" .config="${MapSettings._config}"
                                       .allOfType="${this.widgetConfig.allOfType}" .assetIds="${this.widgetConfig.assetIds}"
                                       @assettype-select="${(ev: AssetTypeSelectEvent) => this.onAssetTypeSelect(ev)}"
                                       @alloftype-switch="${(ev: AssetAllOfTypeSwitchEvent) => this.onAssetAllOfTypeSwitch(ev)}"
@@ -102,7 +102,7 @@ export class MapSettings extends AssetWidgetSettings {
                 </settings-panel>
 
                 <!-- List of customizable thresholds -->
-                ${when(this.widgetConfig.assetIds.length > 0 || this.widgetConfig.allOfType, () => html`
+                ${when(this.widgetConfig.attributeName, () => html`
                     <settings-panel displayName="thresholds" expanded="${true}">
                         <thresholds-panel .thresholds="${this.widgetConfig.thresholds}"
                                           .boolColors="${this.widgetConfig.boolColors}"

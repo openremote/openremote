@@ -45,9 +45,20 @@ export class InsightsPage implements BasePage {
     }
 
     /**
+     * Gets the x and y coordinates for the specified widget
+     * @requires the locator to reference a `or-dashboard-widget-container` to be able to get the Gridstack node
+     * @param widget The `or-dashboard-widget-container` locator
+     * @returns The x and y grid cell coordinates
+     */
+    getWidgetLocation(widget: Locator): Promise<[number, number]> {
+        return widget.locator("..").locator("..").evaluate((el: any) => [el.gridstackNode.x, el.gridstackNode.y]);
+    }
+
+    /**
      * Drag an drop a widget on to the insights page grid
      * @param type The widget type to drag and drop
      * @param location The location on the grid where to drop the widget
+     * @param cells The area in cells that this widget covers
      */
     async dragAndDropWidget(type: string, [gridX, gridY] = [0, 0], [cellsWidth, cellsHeight] = [2, 2]) {
         await expect(this.getBuilder()).toBeVisible();
@@ -69,7 +80,7 @@ export class InsightsPage implements BasePage {
         // Manual drag and drop
         const count = await this.getWidgets().count();
         await this.page.dragAndDrop(`#sidebar .grid-stack-item :has-text("${type}")`, ".maingrid", {
-            sourcePosition: { x: 10, y: 10 }, // To drop the widget at the intended cell, grab it close to its top left corner
+            sourcePosition: { x: 10, y: 10 }, // To drop the widget at the intended cell, we grab it close to its top left corner
             targetPosition: { x, y },
             steps: 50,
         });
@@ -77,12 +88,12 @@ export class InsightsPage implements BasePage {
     }
 
     /**
-     * Resize a widget to the specified grid cell coordinates
+     * Resize a widget from its bottom right corner to the specified grid cell coordinates
      * @param widget The locator of the widget
-     * @param from The grid cell coordinates of the widget
      * @param to The grid cell coordinates to resize the widget to
      */
-    async resizeWidgetAtTo(widget: Locator, [gridX, gridY] = [0, 0], [cellsWidth, cellsHeight] = [8, 8]) {
+    async resizeWidgetTo(widget: Locator, [cellsWidth, cellsHeight] = [8, 8]) {
+        const [gridX, gridY] = await this.getWidgetLocation(widget);
         const [cellWidth, cellHeight] = await this.getGridCellDimensions();
         const [width, height] = [cellsWidth * cellWidth, cellsHeight * cellHeight];
 

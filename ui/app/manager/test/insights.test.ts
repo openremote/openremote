@@ -32,7 +32,7 @@ test("Create a Line Chart widget", async ({ manager, shared, page, insightsPage 
     const chartWidget = insightsPage.getWidgets({ hasText: "Line Chart" }).first();
     await chartWidget.click();
     await expect(insightsPage.getBrowser()).toBeHidden();
-    await insightsPage.resizeWidgetAtTo(chartWidget, [1, 1]);
+    await insightsPage.resizeWidgetTo(chartWidget);
     await expect(insightsPage.getWidgets()).toHaveCount(1);
 
     // Add attribute of Asset #2 and Asset #1
@@ -95,22 +95,24 @@ test("Create a Map widget with text thresholds", async ({ manager, shared, page,
 
     // Select widget and make widget larger by resizing it using the handle
     const mapWidget = insightsPage.getWidgets({ hasText: "Map" }).first();
-    await insightsPage.resizeWidgetAtTo(mapWidget);
+    await insightsPage.resizeWidgetTo(mapWidget);
     await expect(insightsPage.getWidgets()).toHaveCount(1);
     await expect(page.locator(".or-map-marker")).not.toBeVisible();
 
     // Select the widget and add "notes" as attribute
+    const thresholdPanel = insightsPage.getWidgetSettings().locator("thresholds-panel");
     await mapWidget.click();
     await expect(insightsPage.getBrowser()).toBeHidden();
     await expect(insightsPage.getWidgetSettings({ hasText: "Map" })).toBeVisible();
     await page.getByRole("textbox", { name: "Asset type" }).click();
     await mwcMenu.getMenuItem("Thing asset").click();
+    await expect(thresholdPanel).toBeHidden();
     await insightsPage.getWidgetSettings().getByRole("button", { name: "Attribute" }).click();
     await mwcInput.getSelectInputOption("Notes", insightsPage.getWidgetSettings()).click();
     await expect(page.locator(".or-map-marker")).toBeVisible();
+    await expect(thresholdPanel).toBeVisible();
 
     // Check default text configuration is correct
-    const thresholdPanel = insightsPage.getWidgetSettings().locator("thresholds-panel");
     const textThresholds = mwcInput.getInputByType("text", thresholdPanel);
     const thresholdsColors = mwcInput.getInputByType("color", thresholdPanel);
     await expect(textThresholds).toHaveCount(2);
