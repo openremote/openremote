@@ -196,16 +196,7 @@ export function assignLocation(asset: Asset, coordinates = [4.483890476199264, 5
 export function assignRandomLocationInArea(asset: Asset, { south, north, east, west }: BBox = rotterdam): Asset {
     const y = randomBetween(south, north);
     const x = randomBetween(east, west);
-
-    Object.assign(asset?.attributes ?? {}, {
-        location: {
-            name: "location",
-            type: "GEO_JSONPoint",
-            value: { type: "Point", coordinates: [x, y] },
-            meta: {},
-        },
-    });
-
+    assignLocation(asset, [x, y]);
     return asset;
 }
 
