@@ -1,5 +1,6 @@
 const util = require("@openremote/util");
 const { rspack } = require('@rspack/core');
+const { RsdoctorRspackPlugin } = require('@rsdoctor/rspack-plugin');
 const packageJson = require('./package.json');
 
 module.exports = (env, argv) => {
@@ -14,6 +15,10 @@ module.exports = (env, argv) => {
         config.performance = {
             hints: false
         };
+    }
+
+    if (process.env.RSDOCTOR === "true") {
+        config.plugins.push(new RsdoctorRspackPlugin());
     }
 
     // Add a custom base URL to resolve the config dir to the path of the dev server not root

@@ -44,7 +44,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.apache.activemq.artemis.utils.CertificateUtil.getCertsFromConnection;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 

@@ -577,6 +577,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         return result;
     }
 
+    @Override
+    public Integer queryCount(RequestParams requestParams, AssetQuery query) {
+        if (query == null) {
+            query = new AssetQuery();
+        }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        return assetStorageService.count(query);
+    }
+
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
         AttributeWriteFailure failure = null;
 
