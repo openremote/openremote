@@ -50,23 +50,42 @@ const meta: Meta = {
     }
 };
 
-export const Primary: Story = {
-    parameters: {
-        docs: {
-            story: {
-                height: "360px"
-            }
+const parameters = {
+    docs: {
+        story: {
+            height: "360px"
         }
-    },
+    }
+};
+
+const loaders = [
+    async storyArgs => ({
+        orManager: await loadOrManager()
+    })
+];
+
+export const Primary: Story = {
+    loaders,
+    parameters,
     render: (args) => template(args, html`
         <or-map-marker colour="#FF0000" icon="information" lat="51.915767" lng="4.483118" title="Marker"></or-map-marker>
-    `),
-    loaders: [
-        async storyArgs => ({
-            orManager: await loadOrManager()
-        })
-    ]
+    `)
 };
+
+export const WithRadius: Story = {
+    loaders,
+    name: "Radius example",
+    parameters: {
+        ...parameters,
+        title: "Applying a marker radius",
+        summary: "Using the `radius` HTML attribute, you can surround your marker with a circle. For example a radius of 100 meters:",
+    },
+    render: (args) => template(args, html`
+        <or-map-marker colour="#FF0000" icon="information" lat="51.915767" lng="4.483118" radius="100" title="Radius"></or-map-marker>
+    `)
+};
+
+export const examples = [WithRadius];
 
 export {customElements, packageJson};
 
