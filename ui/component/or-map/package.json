@@ -30,12 +30,13 @@
     "@openremote/or-translate": "workspace:*",
     "lit": "^3.3.1",
     "lit-html": "^3.3.1",
-    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
     "mapbox.js": "^3.3.1",
     "maplibre-gl": "^5.12.0"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.7",
+    "@types/lodash.debounce": "^4",
     "@types/mapbox": "^1.6.42"
   },
   "publishConfig": {
