@@ -469,35 +469,6 @@ public class MapService implements ContainerService {
         return settings;
     }
 
-    /**
-     * Dynamically build Mapbox JS settings based on mapsettings.json
-     */
-    public ObjectNode getMapSettingsJs(String realm, URI host) {
-        String realmUriKey = realm + host.toString();
-        if (mapSettingsJs.containsKey(realmUriKey)) {
-            return mapSettingsJs.get(realmUriKey);
-        }
-
-        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realmUriKey, r -> ValueUtil.JSON.createObjectNode());
-
-        if (!metadata.isValid() || mapConfig.isEmpty()) {
-            return settings;
-        }
-
-        ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
-        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
-        tilesArray.insert(0, tileUrl);
-
-        settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);
-
-        settings.put("attribution", metadata.attribution);
-        settings.put("format", "png");
-        settings.put("type", "baselayer");
-        settings.replace("tiles", tilesArray);
-
-        return settings;
-    }
-
     public byte[] getMapTile(int zoom, int column, int row) {
         // Flip y, oh why
         row = Double.valueOf(Math.pow(2, zoom) - 1 - row).intValue();
