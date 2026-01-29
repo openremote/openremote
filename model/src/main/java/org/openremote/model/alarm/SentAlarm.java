@@ -35,7 +35,8 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 public class SentAlarm {
     @Id
     @Column(name = "ID")
-    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
     @NotNull
