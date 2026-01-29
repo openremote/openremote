@@ -21,7 +21,6 @@
 package org.openremote.manager.gateway;
 
 import org.openremote.model.gateway.GatewayTunnelInfo;
-import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 
 import java.util.function.Consumer;
 

@@ -3,7 +3,6 @@ package org.openremote.test.protocol;
 import org.openremote.agent.protocol.tcp.TCPIOClient;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 public class TestTCPClient extends TCPIOClient<String> {
 

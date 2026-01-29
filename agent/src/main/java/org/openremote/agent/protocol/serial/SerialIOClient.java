@@ -26,7 +26,6 @@ import org.openremote.model.util.TextUtil;
 
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;

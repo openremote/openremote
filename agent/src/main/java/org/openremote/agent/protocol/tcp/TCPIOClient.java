@@ -28,7 +28,6 @@ import org.openremote.model.util.TextUtil;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 /**
  * This is a {@link IOClient} implementation for TCP.
