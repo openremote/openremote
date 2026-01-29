@@ -13,6 +13,7 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.ConsoleAsset
@@ -37,11 +38,15 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
@@ -51,6 +56,48 @@ import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES
 import static org.openremote.setup.integration.ManagerTestSetup.SMART_BUILDING_LOCATION
 
 class ConsoleTest extends Specification implements ManagerContainerTrait {
+
+    def "Console config endpoint returns 404 when console_config.json is missing"() {
+        given: "a custom app doc root without a console config file"
+        def customAppDocRoot = Files.createTempDirectory("console-config-missing-")
+        def container = startContainer(defaultConfig() << [(ManagerWebService.OR_CUSTOM_APP_DOCROOT): customAppDocRoot.toString()], defaultServices())
+        def requestTarget = getClientApiTarget(serverUri(serverPort), MASTER_REALM).path("apps").path("consoleConfig")
+
+        when: "requesting the console config"
+        def response = requestTarget.request().get()
+
+        then: "the endpoint should return 404"
+        response.status == 404
+
+        cleanup:
+        if (response != null) {
+            response.close()
+        }
+        Files.deleteIfExists(customAppDocRoot)
+    }
+
+    def "Console config endpoint returns 200 when console_config.json exists"() {
+        given: "a custom app doc root with a console config file"
+        def customAppDocRoot = Files.createTempDirectory("console-config-present-")
+        def consoleConfigPath = customAppDocRoot.resolve("console_config.json")
+        Files.write(consoleConfigPath, "{}".getBytes(StandardCharsets.UTF_8))
+
+        def container = startContainer(defaultConfig() << [(ManagerWebService.OR_CUSTOM_APP_DOCROOT): customAppDocRoot.toString()], defaultServices())
+        def requestTarget = getClientApiTarget(serverUri(serverPort), MASTER_REALM).path("apps").path("consoleConfig")
+
+        when: "requesting the console config"
+        def response = requestTarget.request().get()
+
+        then: "the endpoint should return 200"
+        response.status == 200
+
+        cleanup:
+        if (response != null) {
+            response.close()
+        }
+        Files.deleteIfExists(consoleConfigPath)
+        Files.deleteIfExists(customAppDocRoot)
+    }
 
     def "Check full console behaviour"() {
         def notificationIds = new CopyOnWriteArrayList()
