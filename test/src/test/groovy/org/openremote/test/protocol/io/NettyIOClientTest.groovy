@@ -1,9 +1,8 @@
 package org.openremote.test.protocol.io
 
-
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
-import org.openremote.manager.gateway.GatewayIOClient
+import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.test.ManagerContainerTrait
@@ -27,7 +26,7 @@ class NettyIOClientTest extends Specification implements ManagerContainerTrait {
         def pauseLatch = new CountDownLatch(1)
         def startChannelCount = new AtomicInteger(0)
         
-        def client = new GatewayIOClient(
+        def client = new WebsocketIOClient(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=random").build(),
                 null,
                 new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/random/protocol/openid-connect/token",
