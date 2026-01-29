@@ -420,8 +420,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
                     </div>
                 </div>
-                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
                 ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
+                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
                 ${this._eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
             </div>`;
     }
