@@ -321,7 +321,7 @@ public class GatewayClientConnector implements AutoCloseable {
                     LOG.finest("Gateway tunnel creation request received but gateway tunnel factory is not available: realm=" + connection.getLocalRealm());
                     return;
                 }
-                if (tunnelHostname == null || tunnelPort == 0) {
+                if (tunnelHostname == null) {
                     // If we don't have tunnel hostname and port already then this is a legacy manager so try and get from
                     // the start request event - it never changes in legacy manager so we can safely do this once
                     // TODO: Remove this once enough time has passed since this commit was made
