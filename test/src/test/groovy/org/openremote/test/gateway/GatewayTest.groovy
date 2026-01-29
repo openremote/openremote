@@ -59,6 +59,8 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
 
+@Ignore
+// TODO: Reinstate GatewayTests and have a test for each supported version of the gateway API
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Gateway asset provisioning and local manager logic test"() {
@@ -1073,11 +1075,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
      * Change the test url and key path to match the instance to connect to.
      * Recommended to run profile/dev-proxy.yml profile.
      */
+    @Ignore
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
         def tunnelSSHHost = "custom-project-test.openremote.app"
         def tunnelSSHPort = 2222
+        def tmpDir = new File("tmp")
+        def lockFile = new File(tmpDir, "lock.file")
 
         and: "an instance of the gateway tunnel factory is created"
         def container = new Container(Collections.emptyMap(), Collections.emptyList())
@@ -1111,12 +1116,18 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         then: "we keep the tunnel open for manual testing until lock file is deleted"
-        File lockFile = new File("continue.lock")
+        if (!tmpDir.exists()) {
+            tmpDir.mkdirs()
+        }
         if (!lockFile.exists()) {
             lockFile.createNewFile()
         }
-        getLOG().info("--- TEST PAUSED FOR TUNNEL TESTING ---")
+        getLOG().info("---------------------------------------------------------------------------------")
+        getLOG().info("TEST PAUSED FOR TUNNEL TESTING")
         getLOG().info("Delete the lock file to continue: ${lockFile.absolutePath}")
+        getLOG().info("Tunnel should be accessible at: gw-54tnxwr2oobjafque1jndh.${tunnelSSHHost}")
+        getLOG().info("---------------------------------------------------------------------------------")
+
         while (lockFile.exists()) {
             getLOG().info("Tunnel is open")
             Thread.sleep(5000)

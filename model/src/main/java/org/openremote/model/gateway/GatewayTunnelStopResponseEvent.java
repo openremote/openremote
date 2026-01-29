@@ -15,4 +15,12 @@ public class GatewayTunnelStopResponseEvent extends SharedEvent {
     public String getError() {
         return error;
     }
+
+    @Override
+    public String toString() {
+        return "GatewayTunnelStopResponseEvent{" +
+                "error='" + error + '\'' +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }

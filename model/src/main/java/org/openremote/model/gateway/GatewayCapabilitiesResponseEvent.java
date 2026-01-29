@@ -1,10 +1,7 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
-
-import java.util.Date;
 
 public class GatewayCapabilitiesResponseEvent extends SharedEvent {
 
@@ -18,5 +15,13 @@ public class GatewayCapabilitiesResponseEvent extends SharedEvent {
 
     public boolean isTunnelingSupported() {
         return tunnelingSupported;
+    }
+
+    @Override
+    public String toString() {
+        return "GatewayCapabilitiesResponseEvent{" +
+                "tunnelingSupported=" + tunnelingSupported +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

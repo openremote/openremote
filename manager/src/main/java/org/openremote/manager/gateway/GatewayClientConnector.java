@@ -210,6 +210,8 @@ public class GatewayClientConnector implements AutoCloseable {
     }
 
     protected CompletableFuture<Void> doInit() {
+        // Clear gateway API version
+        gatewayAPIVersion = null;
         // Set init future which will be completed when gateway asset sync is complete
         initFuture = new CompletableFuture<>();
         return initFuture;
@@ -497,8 +499,10 @@ public class GatewayClientConnector implements AutoCloseable {
 
         try {
             gatewayTunnelSession.disconnect();
+            LOG.info("Tunnel stopped successfully: " + connection + ", " + gatewayTunnelSession);
         } catch (Exception e) {
             error = e.getMessage();
+            LOG.info("Tunnel stopped with error '" + error + "': " + connection + ", " + gatewayTunnelSession);
         }
         return error;
     }

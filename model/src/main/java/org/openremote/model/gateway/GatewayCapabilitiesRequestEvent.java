@@ -2,12 +2,10 @@ package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Date;
 import java.util.function.Consumer;
 
 /**

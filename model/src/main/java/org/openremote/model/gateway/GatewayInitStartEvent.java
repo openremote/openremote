@@ -25,6 +25,8 @@ package org.openremote.model.gateway;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.event.shared.SharedEvent;
 
+import java.util.Arrays;
+
 /**
  * Indicates that the gateway has connected and the central manager wants to begin synchronisation
  */
@@ -60,5 +62,16 @@ public class GatewayInitStartEvent extends SharedEvent {
 
     public Integer getTunnelPort() {
         return tunnelPort;
+    }
+
+    @Override
+    public String toString() {
+        return "GatewayInitStartEvent{" +
+                "activeTunnels=" + Arrays.toString(activeTunnels) +
+                ", version='" + version + '\'' +
+                ", tunnelHostname='" + tunnelHostname + '\'' +
+                ", tunnelPort=" + tunnelPort +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

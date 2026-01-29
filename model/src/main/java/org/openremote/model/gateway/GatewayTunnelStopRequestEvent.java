@@ -32,4 +32,12 @@ public class GatewayTunnelStopRequestEvent extends SharedEvent  implements Respo
     public void setResponseConsumer(Consumer<Event> responseConsumer) {
         this.responseConsumer = responseConsumer;
     }
+
+    @Override
+    public String toString() {
+        return "GatewayTunnelStopRequestEvent{" +
+                "info=" + info +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }

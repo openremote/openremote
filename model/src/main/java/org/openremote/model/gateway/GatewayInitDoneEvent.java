@@ -25,8 +25,6 @@ package org.openremote.model.gateway;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Date;
-
 /**
  * Indicates that the gateway synchronisation has finished
  */
