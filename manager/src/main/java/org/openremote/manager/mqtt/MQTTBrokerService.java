@@ -52,24 +52,19 @@ import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
-import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
-import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
-import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
+import org.apache.activemq.artemis.spi.core.security.jaas.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.security.AuthorisationService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.manager.security.MultiTenantClientCredentialsGrantsLoginModule;
+import org.openremote.manager.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -81,9 +76,15 @@ import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
+import java.security.Security;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -94,10 +95,11 @@ import java.util.stream.Collectors;
 import static java.lang.System.Logger.Level.*;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.model.util.MapAccess.getInteger;
-import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.syslog.SyslogCategory.API;
+import static org.openremote.model.util.Config.OR_DEV_MODE;
+import static org.openremote.model.util.MapAccess.*;
 
 // TODO: Add queue size limiting in canPublish of MQTTHandlers (needs to be done at auth time to allow pub to be rejected)
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
@@ -121,6 +123,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ExecutorService executorService;
     protected TimerService timerService;
     protected AssetProcessingService assetProcessingService;
+    protected PersistenceService persistenceService;
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
     protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, RemotingConnection> connectionIDConnectionMap = new ConcurrentHashMap<>();
@@ -137,6 +140,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ServerLocator serverLocator;
     protected ClientSessionFactory sessionFactory;
 
+    protected boolean mtlsDisabled;
+    protected int mtlsPort;
+    protected String keystorePath;
+    protected String keystorePassword;
+    protected String truststorePath;
+    protected String truststorePassword;
+
     @Override
     public int getPriority() {
         return PRIORITY;
@@ -144,6 +154,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void init(Container container) throws Exception {
+        // Register BouncyCastle provider for PEM certificate parsing in OpenRemoteSSLContextFactory
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+            LOG.log(INFO, "Registered BouncyCastle security provider");
+        }
+
         host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0");
         port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883);
         int debounceMillis = getInteger(container.getConfig(), MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS, MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT);
@@ -155,6 +171,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         executorService = container.getExecutor();
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
+        persistenceService = container.getService(PersistenceService.class);
+
+        // mTLS values
+        final Path keystoreDirPath = Paths.get("keystores");
+        this.mtlsPort = getInteger(container.getConfig(), OR_MQTT_MTLS_SERVER_LISTEN_PORT, OR_MQTT_MTLS_PORT_DEFAULT);
+        this.mtlsDisabled = getBoolean(container.getConfig(), OR_MQTT_MTLS_DISABLED, true);
+        this.keystorePath = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_keystore.p12")).toString());
+        this.keystorePassword = getString(container.getConfig(), OR_MQTT_MTLS_KEYSTORE_PASSWORD, "secret");
+        this.truststorePath = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PATH, persistenceService.resolvePath(keystoreDirPath.resolve("server_truststore.p12")).toString());
+        this.truststorePassword = getString(container.getConfig(), OR_MQTT_MTLS_TRUSTSTORE_PASSWORD, "secret");
 
         userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(), id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         // This allows last will messages to be processed
@@ -182,6 +208,26 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
+
+        // Add mTLS acceptor if enabled
+        if (!mtlsDisabled) {
+            // Check if we have explicit keystore configuration OR certificates available in /storage/certs
+            Path certsDirPath = Paths.get("/storage/proxy/certs");
+            boolean hasExplicitKeystores = !TextUtil.isNullOrEmpty(this.keystorePath)
+                && !TextUtil.isNullOrEmpty(this.truststorePath)
+                && !TextUtil.isNullOrEmpty(this.keystorePassword)
+                && !TextUtil.isNullOrEmpty(this.truststorePassword);
+            boolean hasCertsDir = Files.exists(certsDirPath) && Files.isDirectory(certsDirPath);
+
+            if (hasExplicitKeystores || hasCertsDir) {
+                LOG.log(INFO, "MQTT mTLS acceptor being started on port " + this.mtlsPort +
+                    (hasCertsDir ? " (using certificates from /storage/certs)" : " (using configured keystore paths)"));
+                addMTLSAcceptor(container);
+            } else {
+                LOG.log(INFO, "MQTT mTLS acceptor not being started: no keystore paths configured and /storage/certs does not exist");
+            }
+        }
+
         serverConfiguration.registerBrokerPlugin(this);
         if (container.getMeterRegistry() != null) {
             serverConfiguration.setMetricsConfiguration(new MetricsConfiguration().setJvmMemory(false).setPlugin(new org.apache.activemq.artemis.core.server.metrics.plugins.SimpleMetricsPlugin() {
@@ -262,19 +308,22 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         server = new EmbeddedActiveMQ();
         server.setConfiguration(serverConfiguration);
 
-        securityManager = new ActiveMQORSecurityManager(authorisationService, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
+        securityManager = new ActiveMQORSecurityManager(identityProvider, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[]{
-                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
                     new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
                         MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
                         AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
                     )),
-                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName()))
+                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName())),
+                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
                 };
             }
         });
+
+        // Set container reference in OpenRemoteSSLContextFactory for mTLS
+        OpenRemoteSSLContextFactory.setContainer(container);
 
         server.setSecurityManager(securityManager);
         server.start();
@@ -309,6 +358,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Don't use producer flow control
         serverLocator = ActiveMQClient.createServerLocator("vm://0").setProducerWindowSize(-1);
         sessionFactory = serverLocator.createSessionFactory();
+
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
@@ -640,6 +690,46 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             connection.setSubject(null); // Clear existing subject
             securityManager.authenticate(realm + ":" + username, password, connection, null);
             notifyConnectionAuthenticated(connection);
+        }
+    }
+
+    /**
+     * Add mTLS acceptor configuration to the server
+     */
+    protected void addMTLSAcceptor(Container container) throws Exception {
+
+        try {
+            URIBuilder mtlsServerURI = new URIBuilder()
+                .setScheme("tcp")
+                .setHost(this.host)
+                .setPort(this.mtlsPort)
+                .setParameter("protocols", "MQTT")
+                .setParameter("allowLinkStealing", "false")
+                .setParameter("defaultMqttSessionExpiryInterval", Integer.toString(DEFAULT_SESSION_EXPIRY_MILLIS))
+                // SSL/TLS configuration for mTLS
+                .setParameter("sslEnabled", "true")
+                .setParameter("needClientAuth", "true") // Require client certificates (mTLS)
+                .setParameter("keyStorePath", this.keystorePath)
+                .setParameter("keyStorePassword", this.keystorePassword)
+                .setParameter("trustStorePath", this.truststorePath)
+                .setParameter("trustStorePassword", this.truststorePassword);
+
+            if (getBoolean(container.getConfig(), OR_DEV_MODE, false)) {
+                // NOTE: Enabling 'trustAll' disables certificate validation and is intended
+                // for local development and testing only. It MUST NOT be used in production.
+                mtlsServerURI.setParameter("trustAll", "true");
+                LOG.log(WARNING, "mTLS acceptor configured with 'trustAll=true' in development mode; "
+                    + "this disables certificate validation and MUST NOT be used in production.");
+            }
+
+            String mtlsServer = mtlsServerURI.build().toString();
+
+            serverConfiguration.addAcceptorConfiguration("mqtt-mtls", mtlsServer);
+            LOG.log(INFO, "Added mTLS MQTT acceptor listening on " + host + ":" + mtlsPort);
+
+        } catch (Exception e) {
+            LOG.log(WARNING, "Failed to configure mTLS acceptor: " + e.getMessage());
+            throw new Exception("mTLS acceptor configuration failed", e);
         }
     }
 }

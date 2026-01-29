@@ -59,7 +59,10 @@ services:
   manager:
 #    privileged: true
     restart: always
-    image: openremote/manager:${MANAGER_VERSION:-latest}
+#    image: openremote/manager:${MANAGER_VERSION:-latest}
+    image: openremote-manager
+    build:
+      context: manager/build/install/manager
     depends_on:
       keycloak:
         condition: service_healthy
@@ -77,6 +80,7 @@ services:
       OR_EMAIL_X_HEADERS:
       OR_EMAIL_FROM:
       OR_EMAIL_ADMIN:
+      OR_MQTT_MTLS_DISABLED: true
       OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES:
@@ -90,3 +94,4 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - manager-data:/storage
+      - proxy-data:/storage/proxy:ro

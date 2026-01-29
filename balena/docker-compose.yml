@@ -2,6 +2,7 @@ volumes:
   proxy-data:
   postgresql-data:
   manager-data:
+  cert-data:
 
 services:
   proxy:
@@ -16,6 +17,7 @@ services:
       - "8883:8883"
     volumes:
       - proxy-data:/deployment
+      - cert-data:/etc/haproxy/certs
     env_file:
       - env
 
@@ -51,5 +53,6 @@ services:
       - "1883:1883"
     volumes:
       - manager-data:/storage
+      - cert-data:/storage/certs
     env_file:
       - env

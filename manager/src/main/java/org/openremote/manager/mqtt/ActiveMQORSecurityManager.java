@@ -30,15 +30,25 @@ import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.manager.security.AuthorisationService;
+import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
+import org.openremote.model.provisioning.ProvisioningUtil;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.security.cert.CertificateParsingException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -46,8 +56,8 @@ import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.utils.CertificateUtil.getCertsFromConnection;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+import static org.openremote.model.security.User.SERVICE_ACCOUNT_PREFIX;
 import static org.openremote.model.syslog.SyslogCategory.API;
-
 /**
  * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a
  * dynamic {@link org.keycloak.adapters.KeycloakDeployment} resolver.
@@ -56,8 +66,9 @@ import static org.openremote.model.syslog.SyslogCategory.API;
  */
 public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
-    private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
-    protected AuthorisationService authorisationService;
+   private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
+   public static final String CLIENT_AUTH_EKU_OID = "1.3.6.1.5.5.7.3.2";
+   protected ManagerIdentityProvider identityProvider;
     protected MQTTBrokerService brokerService;
     protected Function<String, KeycloakDeployment> deploymentResolver;
 
@@ -68,9 +79,9 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     protected SecurityConfiguration certificateConfig;
     protected ActiveMQServer server;
 
-    public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
+    public ActiveMQORSecurityManager(ManagerIdentityProvider identityProvider, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
         super(configurationName, configuration);
-        this.authorisationService = authorisationService;
+        this.identityProvider = identityProvider;
         this.brokerService = brokerService;
         this.deploymentResolver = deploymentResolver;
         this.configName = configurationName;
@@ -98,12 +109,84 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         String realm = null;
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader thisLoader = this.getClass().getClassLoader();
-
+        X509Certificate[] certs = getCertsFromConnection(remotingConnection);
+        final String originalUsername = user;
         if (user != null) {
             String[] realmAndUsername = user.split(":");
             if (realmAndUsername.length == 2) {
                 realm = realmAndUsername[0];
                 user = realmAndUsername[1];
+            }
+        }
+
+        if (certs != null && certs.length > 0) {
+            List<X509Certificate> clientAuthCerts = Arrays.stream(certs).filter(e -> {
+                try {
+                    List<String> EKUs = e.getExtendedKeyUsage();
+                    if (EKUs == null) { return false; }
+
+                    return e.getExtendedKeyUsage().contains(CLIENT_AUTH_EKU_OID);
+                } catch (CertificateParsingException ex) {
+                    LOG.log(Level.FINE, "Failed to parse extended key usage from provided certificates", ex);
+                    return false;
+                }
+            }).toList();
+
+            if (clientAuthCerts.size() != 1) {
+                String errMsg = "Presented certificate chain contains " + clientAuthCerts.size() +
+                        " certificates with Client Authentication Extended Key Usage. " +
+                        "Expected exactly 1 certificate. Please provide a valid certificate chain. " + connectionToString(remotingConnection);
+                LOG.log(Level.WARNING, errMsg);
+                throw new LoginException(errMsg);
+            }
+
+            X509Certificate leaf = clientAuthCerts.getFirst();
+
+            String dn = leaf.getSubjectX500Principal().getName();
+            try {
+                user = ProvisioningUtil.getSubjectCN(leaf.getSubjectX500Principal());
+                realm = ProvisioningUtil.getSubjectOU(leaf.getSubjectX500Principal());
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to process given client certificate");
+            }
+
+            /*
+             * The below logic supports using the Username field from the authentication attempt as a realm override.
+             * This is to support clients that are logging in using client certificates. They cannot change the realm they connect to
+             *  in the certificate DN, so we allow them to specify the realm in the username instead, as an override.
+             */
+            if (identityProvider.realmExists(originalUsername)) {
+                realm = originalUsername;
+            }
+
+
+            if (realm == null) {
+                LOG.log(Level.INFO, "Client certificate was provided, but no realm found in certificate subject," +
+                        "or in the Username field. " +
+                        "Falling back to the username as a realm name. Subject DN=" + dn);
+                throw new LoginException("No realm found matching the OU of the client certificate, or the Username field.");
+            }
+
+            if (!TextUtil.isNullOrEmpty(user)) {
+                User dbUser = null;
+                User[] users = identityProvider.queryUsers(new UserQuery().usernames(new StringPredicate(SERVICE_ACCOUNT_PREFIX + user).match(AssetQuery.Match.EXACT)));
+                if (users != null && users.length == 1) {
+                    dbUser = users[0];
+                } else if (users != null && users.length > 1) {
+                    String errMsg = "Multiple service users found with the same username. " +
+                            "Disallowing connect. username=" + user + ", " + connectionToString(remotingConnection);
+                    LOG.log(Level.WARNING, errMsg);
+                    throw new LoginException(errMsg);
+                }
+                if (dbUser != null) {
+                    password = dbUser.getSecret();
+                } else {
+                    LOG.log(Level.WARNING, "Client certificate was provided, but no service user found. " +
+                            "Allowing anonymous login for autoprovisioning. username=" + user);
+                }
+            } else {
+                LOG.log(Level.WARNING, "Client certificate was provided, but no username found in certificate subject. " +
+                        "Allowing anonymous login for autoprovisioning. Subject DN=" + dn);
             }
         }
 
@@ -113,7 +196,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             }
             if (securityDomain != null) {
                 lc = new LoginContext(securityDomain, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), null);
-            } else if (certificateConfigName != null && certificateConfigName.length() > 0 && getCertsFromConnection(remotingConnection) != null) {
+            } else if (certificateConfigName != null && !certificateConfigName.isEmpty() && getCertsFromConnection(remotingConnection) != null) {
                 lc = new LoginContext(certificateConfigName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), certificateConfig);
             } else {
                 lc = new LoginContext(configName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), config);
@@ -121,6 +204,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             try {
                 lc.login();
             } catch (LoginException e) {
+                LOG.log(Level.WARNING, "Failed to authenticate user: " + user, e);
                 throw e;
             }
             Subject subject = lc.getSubject();

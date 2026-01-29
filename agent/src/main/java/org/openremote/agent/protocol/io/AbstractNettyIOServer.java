@@ -23,7 +23,7 @@ import io.netty.bootstrap.AbstractBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioIoHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -86,7 +86,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
 
         if (workerGroup == null) {
             // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
-            workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
+            workerGroup = new NioEventLoopGroup();
         }
 
         try {

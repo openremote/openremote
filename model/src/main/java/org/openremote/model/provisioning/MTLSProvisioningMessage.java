@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,15 +19,9 @@
  */
 package org.openremote.model.provisioning;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes({
-    @JsonSubTypes.Type(name = "error", value = ErrorResponseMessage.class),
-    @JsonSubTypes.Type(name = "success", value = SuccessResponseMessage.class),
-    @JsonSubTypes.Type(name = "x509", value = X509ProvisioningMessage.class),
-    @JsonSubTypes.Type(name = "mtls", value = MTLSProvisioningMessage.class)
-})
-public abstract class ProvisioningMessage {
+public class MTLSProvisioningMessage extends ProvisioningMessage {
+    @JsonCreator
+    public MTLSProvisioningMessage() {}
 }
