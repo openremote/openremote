@@ -1,14 +1,14 @@
 import manager, { DefaultColor4 } from "@openremote/core";
-import maplibregl,{
+import maplibregl, {
     AddLayerObject,
     IControl,
     GeolocateControl,
     LngLat,
     LngLatLike,
     Map as MapGL,
-    MapOptions as OptionsGL,
+    MapOptions,
     MapMouseEvent,
-    Marker as MarkerGL,
+    Marker,
     NavigationControl,
     StyleSpecification,
     GeoJSONSourceSpecification,
@@ -48,11 +48,11 @@ const metersToPixelsAtMaxZoom = (meters: number, latitude: number) => meters / 0
 let pkey: string | null;
 
 export class MapWidget {
-    protected _mapGl?: MapGL;
+    protected _map?: MapGL;
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;
     protected _loaded = false;
-    protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
+    protected _markers: Map<OrMapMarker, Marker> = new Map();
     protected _geoJsonConfig?: GeoJsonConfig;
     protected _geoJsonSources: string[] = [];
     protected _geoJsonLayers: Map<string, any> = new Map();
@@ -73,8 +73,8 @@ export class MapWidget {
     };
 
     protected _assetTypeColors: any = {};
-    protected _cachedMarkers: Record<string, maplibregl.Marker> = {};
-    protected _markersOnScreen: Record<string, maplibregl.Marker> = {};
+    protected _cachedMarkers: Record<string, Marker> = {};
+    protected _markersOnScreen: Record<string, Marker> = {};
     protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
 
     constructor(styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
@@ -89,8 +89,8 @@ export class MapWidget {
 
     public setCenter(center?: LngLatLike): this {
         this._center = getLngLat(center);
-        if (this._mapGl && this._center) {
-            this._mapGl.setCenter(this._center);
+        if (this._map && this._center) {
+            this._map.setCenter(this._center);
         }
         return this;
     }
@@ -104,10 +104,10 @@ export class MapWidget {
             zoom = this._zoom ? this._zoom : this._viewSettings && this._viewSettings.zoom ? this._viewSettings.zoom : undefined;
         }
 
-        if (this._mapGl) {
+        if (this._map) {
             // Only do flyTo if it has valid LngLat value
-            if(coordinates) {
-                this._mapGl.flyTo({
+            if (coordinates) {
+                this._map.flyTo({
                     center: coordinates,
                     zoom: zoom
                 });
@@ -121,35 +121,35 @@ export class MapWidget {
     }
 
     public resize(): this {
-        if (this._mapGl) {
-            this._mapGl.resize()
+        if (this._map) {
+            this._map.resize()
         }
         return this;
     }
 
     public setZoom(zoom?: number): this {
         this._zoom = zoom;
-        if (this._mapGl && this._zoom) {
-            this._mapGl.setZoom(this._zoom);
+        if (this._map && this._zoom) {
+            this._map.setZoom(this._zoom);
         }
         return this;
     }
 
     public setControls(controls?: (IControl | [IControl, ControlPosition?])[]): this {
         this._controls = controls;
-        if (this._mapGl) {
+        if (this._map) {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
                         const controlAndPosition: [IControl, ControlPosition?] = control;
-                        this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
+                        this._map!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
-                        this._mapGl!.addControl(control);
+                        this._map!.addControl(control);
                     }
                 });
             } else {
                 // Add zoom and rotation controls to the map
-                this._mapGl.addControl(new NavigationControl());
+                this._map.addControl(new NavigationControl());
             }
         }
         return this;
@@ -157,7 +157,7 @@ export class MapWidget {
 
     public setGeoJson(geoJsonConfig?: GeoJsonConfig): this {
         this._geoJsonConfig = geoJsonConfig;
-        if (this._mapGl) {
+        if (this._map) {
             if (this._geoJsonConfig) {
                 this._loadGeoJSON(this._geoJsonConfig);
             } else {
@@ -182,11 +182,11 @@ export class MapWidget {
         if (this._viewSettings) {
 
             // If Map was already present, so only ran during updates such as realm switches
-            if (this._mapGl) {
-                this._mapGl.setMinZoom(this._viewSettings.minZoom);
-                this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
+            if (this._map) {
+                this._map.setMinZoom(this._viewSettings.minZoom);
+                this._map.setMaxZoom(this._viewSettings.maxZoom);
                 if (this._viewSettings.bounds){
-                    this._mapGl.setMaxBounds(this._viewSettings.bounds);
+                    this._map.setMaxBounds(this._viewSettings.bounds);
                 }
                 // Unload all GeoJSON that is present, and load new layers if present
                 if(this._geoJsonConfig) {
@@ -226,8 +226,8 @@ export class MapWidget {
 
         const map: typeof import("maplibre-gl") = await import(/* webpackChunkName: "maplibre-gl" */ "maplibre-gl");
         const settings = await this.loadViewSettings();
-            
-        const options: OptionsGL = {
+
+        const options: MapOptions = {
             attributionControl: {compact: true},
             container: this._mapContainer,
             style: settings as StyleSpecification,
@@ -275,20 +275,20 @@ export class MapWidget {
           return;
         }
 
-        this._mapGl = new map.Map(options);
+        this._map = new map.Map(options);
 
         await this._styleLoaded();
 
-        this._mapGl.on("click", (e: MapMouseEvent) => {
+        this._map.on("click", (e: MapMouseEvent) => {
             this._onMapClick(e.lngLat);
         });
 
-        this._mapGl.on("dblclick", (e: MapMouseEvent) => {
+        this._map.on("dblclick", (e: MapMouseEvent) => {
             this._onMapClick(e.lngLat, true);
         });
 
         if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
-            this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { maplibregl: maplibregl, showResultsWhileTyping: true });
+            this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { maplibregl, showResultsWhileTyping: true });
             // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
             this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
                 var ESC_KEY_CODE = 27,
@@ -339,7 +339,7 @@ export class MapWidget {
                 this._geocoder._geocode(value);
               }
             }, 300);
-            this._mapGl!.addControl(this._geocoder, 'top-left');
+            this._map!.addControl(this._geocoder, 'top-left');
 
             // There's no callback parameter in the options of the MaplibreGeocoder,
             // so this is how we get the selected result.
@@ -354,16 +354,16 @@ export class MapWidget {
             this._controls.forEach((control) => {
                 if (Array.isArray(control)) {
                     const controlAndPosition: [IControl, ControlPosition?] = control;
-                    this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
+                    this._map!.addControl(controlAndPosition[0], controlAndPosition[1]);
                 } else {
-                    this._mapGl!.addControl(control);
+                    this._map!.addControl(control);
                 }
             });
         } else {
             // Add zoom and rotation controls to the map
-            this._mapGl.addControl(new NavigationControl());
+            this._map.addControl(new NavigationControl());
             // Add current location controls to the map
-            this._mapGl.addControl(new GeolocateControl({
+            this._map.addControl(new GeolocateControl({
                 positionOptions: {
                     enableHighAccuracy: true
                 },
@@ -380,7 +380,7 @@ export class MapWidget {
         }
 
         this._initLongPressEvent();
-        this._mapGl.on("load", async () => await this.load());
+        this._map.on("load", async () => await this.load());
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
@@ -389,8 +389,8 @@ export class MapWidget {
 
     protected _styleLoaded(): Promise<void> {
         return new Promise(resolve => {
-            if (this._mapGl) {
-                this._mapGl.once('style.load', resolve);
+            if (this._map) {
+                this._map.once('style.load', resolve);
             }
         });
     }
@@ -399,25 +399,25 @@ export class MapWidget {
      * Load map sources, layers and events
      */
     public async load() {
-        if (!this._mapGl || !this._loaded) {
+        if (!this._map || !this._loaded) {
             console.warn("MapLibre Map not initialized!");
             return;
         }
 
-        if (this._mapGl.getSource('mapPoints')) {
-            if (this._mapGl.getLayer('unclustered-point')) {
-                this._mapGl.removeLayer('unclustered-point');
+        if (this._map.getSource('mapPoints')) {
+            if (this._map.getLayer('unclustered-point')) {
+                this._map.removeLayer('unclustered-point');
             }
-            if (this._mapGl.getLayer('clusters')) {
-                this._mapGl.removeLayer('clusters');
+            if (this._map.getLayer('clusters')) {
+                this._map.removeLayer('clusters');
             }
-            if (this._mapGl.getLayer('cluster-count')) {
-                this._mapGl.removeLayer('cluster-count');
+            if (this._map.getLayer('cluster-count')) {
+                this._map.removeLayer('cluster-count');
             }
-            this._mapGl.removeSource('mapPoints');
+            this._map.removeSource('mapPoints');
         }
 
-        this._mapGl.addSource('mapPoints', {
+        this._map.addSource('mapPoints', {
             'type': 'geojson',
             'cluster': this._clusterConfig?.cluster ?? true,
             'clusterRadius': this._clusterConfig?.clusterRadius ?? 180,
@@ -426,8 +426,8 @@ export class MapWidget {
             'clusterProperties': Object.fromEntries(Object.keys(this._assetTypeColors).map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
         });
 
-        if (!this._mapGl.getLayer('unclustered-point')) {
-            this._mapGl.addLayer({
+        if (!this._map.getLayer('unclustered-point')) {
+            this._map.addLayer({
                 id: 'unclustered-point',
                 type: 'circle',
                 source: 'mapPoints',
@@ -436,15 +436,15 @@ export class MapWidget {
             });
         }
 
-        this._mapGl.on("data", async (e: any) => {
-            if (!this._mapGl) return;
+        this._map.on("data", async (e: any) => {
+            if (!this._map) return;
             if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
 
-            this._mapGl.off('move', () => this._updateMarkers());
-            this._mapGl.off('moveend', () => this._updateMarkers());
+            this._map.off('move', () => this._updateMarkers());
+            this._map.off('moveend', () => this._updateMarkers());
 
-            this._mapGl.on('move', debounce(() => this._updateMarkers()));
-            this._mapGl.on('moveend', () => this._updateMarkers());
+            this._map.on('move', debounce(() => this._updateMarkers()));
+            this._map.on('moveend', () => this._updateMarkers());
             this._updateMarkers()
         })
     }
@@ -452,9 +452,9 @@ export class MapWidget {
     // Clean up of internal resources associated with the map.
     // Normally used during disconnectedCallback
     public unload() {
-        if (this._mapGl) {
-            this._mapGl.remove();
-            this._mapGl = undefined;
+        if (this._map) {
+            this._map.remove();
+            this._map = undefined;
         }
     }
 
@@ -466,12 +466,12 @@ export class MapWidget {
 
         // Remove old layers
         if(this._geoJsonLayers.size > 0) {
-            this._geoJsonLayers.forEach((layer, layerId) => this._mapGl!.removeLayer(layerId));
+            this._geoJsonLayers.forEach((layer, layerId) => this._map!.removeLayer(layerId));
             this._geoJsonLayers = new Map();
         }
         // Remove old sources
         if(this._geoJsonSources.length > 0) {
-            this._geoJsonSources.forEach((sourceId) => this._mapGl!.removeSource(sourceId));
+            this._geoJsonSources.forEach((sourceId) => this._map!.removeSource(sourceId));
             this._geoJsonSources = [];
         }
 
@@ -518,11 +518,11 @@ export class MapWidget {
     }
 
     public addGeoJSONSource(source: GeoJSONSourceSpecification): { source: GeoJSONSourceSpecification, sourceId: string } | undefined {
-        if (!this._mapGl) {
+        if (!this._map) {
             console.error("mapGl instance not found!"); return;
         }
         const id = Date.now() + "-" + (this._geoJsonSources.length + 1);
-        this._mapGl.addSource(id, source)
+        this._map.addSource(id, source)
         this._geoJsonSources.push(id);
         return {
             source: source,
@@ -531,7 +531,7 @@ export class MapWidget {
     }
 
     public addGeoJSONLayer(typeString: string, sourceId: string) {
-        if (!this._mapGl) {
+        if (!this._map) {
             console.error("mapGl instance not found!"); return;
         }
 
@@ -562,7 +562,7 @@ export class MapWidget {
                         'circle-color': realmColor
                     }
                     this._geoJsonLayers.set(layerId, layer);
-                    this._mapGl.addLayer(layer);
+                    this._map.addLayer(layer);
                     break;
                 }
                 case "LineString":
@@ -573,7 +573,7 @@ export class MapWidget {
                         'line-width': 4
                     };
                     this._geoJsonLayers.set(layerId, layer);
-                    this._mapGl.addLayer(layer);
+                    this._map.addLayer(layer);
                     break;
                 }
                 case "Polygon":
@@ -584,7 +584,7 @@ export class MapWidget {
                         'fill-opacity': 0.3
                     };
                     this._geoJsonLayers.set(layerId, layer);
-                    this._mapGl.addLayer(layer);
+                    this._map.addLayer(layer);
 
                     // Add extra layer with outline
                     const outlineId = layerId + "-outline";
@@ -598,7 +598,7 @@ export class MapWidget {
                         },
                     } as AddLayerObject
                     this._geoJsonLayers.set(outlineId, outlineLayer);
-                    this._mapGl.addLayer(outlineLayer);
+                    this._map.addLayer(outlineLayer);
                     break;
                 }
                 case "GeometryCollection": {
@@ -616,10 +616,10 @@ export class MapWidget {
     }
 
     protected _updateMarkers() {
-        if (!this._mapGl) return;
+        if (!this._map) return;
 
-        const newMarkers: Record<string, maplibregl.Marker> = {};
-        const features = this._mapGl.querySourceFeatures('mapPoints');
+        const newMarkers: Record<string, Marker> = {};
+        const features = this._map.querySourceFeatures('mapPoints');
 
         // Asset markers
         for (const feature of features) {
@@ -631,12 +631,12 @@ export class MapWidget {
             let marker = this._cachedMarkers[id]
             if (!marker) { 
                 const placeholder = document.createElement("div");
-                marker = this._cachedMarkers[id] = new maplibregl.Marker({ element: placeholder }).setLngLat(coords);
+                marker = this._cachedMarkers[id] = new Marker({ element: placeholder }).setLngLat(coords);
             }
             newMarkers[id] = marker;
 
             if (!this._markersOnScreen[id]) {
-                marker.addTo(this._mapGl);
+                marker.addTo(this._map);
                 this._assetsOnScreen[id] = JSON.parse(feature.properties.asset);
             };
         }
@@ -654,13 +654,13 @@ export class MapWidget {
                     .filter(([k]) => this._assetTypeColors.hasOwnProperty(k))
                     .map(([type, count]) => [type, this._assetTypeColors[type], count]);
 
-                marker = this._cachedMarkers[id] = new maplibregl.Marker({
-                    element: new OrClusterMarker(slices, id, lng, lat, this._mapGl),
+                marker = this._cachedMarkers[id] = new Marker({
+                    element: new OrClusterMarker(slices, id, lng, lat, this._map),
                 }).setLngLat([lng, lat]);
             }
             newMarkers[id] = marker;
 
-            if (!this._markersOnScreen[id]) marker.addTo(this._mapGl);
+            if (!this._markersOnScreen[id]) marker.addTo(this._map);
         }
 
         for (const id in this._markersOnScreen) {
@@ -729,32 +729,32 @@ export class MapWidget {
     }
 
     protected _updateMarkerPosition(marker: OrMapMarker) {
-        const mGl: MarkerGL | undefined = this._markersGl.get(marker);
+        const mGl: Marker | undefined = this._markers.get(marker);
         mGl?.setLngLat([marker.lng!, marker.lat!]);
         this._createMarkerRadius(marker);
     }
 
     protected _updateMarkerElement(marker: OrMapMarker, doAdd: boolean) {
-        let mGl = this._markersGl.get(marker);
+        let mGl = this._markers.get(marker);
         if (mGl) {
             marker._actualMarkerElement = undefined;
             this._removeMarkerClickHandler(marker, mGl.getElement());
             mGl.remove();
-            this._markersGl.delete(marker);
+            this._markers.delete(marker);
         }
 
         if (doAdd) {
             const elem = marker._createMarkerElement();
 
             if (elem) {
-                mGl = new MarkerGL({
+                mGl = new Marker({
                     element: elem,
                     anchor: "top-left"
                 })
                     .setLngLat([marker.lng!, marker.lat!])
-                    .addTo(this._mapGl!);
+                    .addTo(this._map!);
 
-                this._markersGl.set(marker, mGl);
+                this._markers.set(marker, mGl);
 
                 marker._actualMarkerElement = mGl.getElement() as HTMLDivElement;
 
@@ -769,20 +769,20 @@ export class MapWidget {
     }
 
     protected _removeMarkerRadius(marker:OrMapMarker){
-        if (this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng) {
-            if (this._mapGl.getSource('circleData')) {
-                this._mapGl.removeLayer('marker-radius-circle');
-                this._mapGl.removeSource('circleData');
+        if (this._map && this._loaded && marker.radius && marker.lat && marker.lng) {
+            if (this._map.getSource('circleData')) {
+                this._map.removeLayer('marker-radius-circle');
+                this._map.removeSource('circleData');
             }
         }
     }
 
     protected _createMarkerRadius(marker:OrMapMarker){
-        if (this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng){
+        if (this._map && this._loaded && marker.radius && marker.lat && marker.lng){
 
             this._removeMarkerRadius(marker);
 
-            this._mapGl.addSource('circleData', {
+            this._map.addSource('circleData', {
                 type: 'geojson',
                 data: {
                     type: 'FeatureCollection',
@@ -797,7 +797,7 @@ export class MapWidget {
                 }
             });
 
-            this._mapGl.addLayer({
+            this._map.addLayer({
                 "id": "marker-radius-circle",
                 "type": "circle",
                 "source": "circleData",
@@ -818,11 +818,11 @@ export class MapWidget {
     }
 
     public createBoundaryBox(boundsArray: string[] = []){
-        if (this._mapGl && this._loaded && this._showBoundaryBox && this._viewSettings?.bounds) {
+        if (this._map && this._loaded && this._showBoundaryBox && this._viewSettings?.bounds) {
 
-            if (this._mapGl.getSource('bounds')) {
-                this._mapGl.removeLayer('bounds');
-                this._mapGl.removeSource('bounds');
+            if (this._map.getSource('bounds')) {
+                this._map.removeLayer('bounds');
+                this._map.removeSource('bounds');
             }
 
             if (boundsArray.length !== 4){
@@ -837,13 +837,13 @@ export class MapWidget {
                     [boundsArray[0], boundsArray[3]]
                 ]
             ]
-            this._mapGl.fitBounds([
+            this._map.fitBounds([
                 parseFloat(boundsArray[0]) + .01,
                 parseFloat(boundsArray[1]) - .01,
                 parseFloat(boundsArray[2]) - .01,
                 parseFloat(boundsArray[3]) + .01,
             ])
-            this._mapGl.addSource('bounds', {
+            this._map.addSource('bounds', {
                 'type': 'geojson',
                 'data': {
                     'type': 'Feature',
@@ -856,7 +856,7 @@ export class MapWidget {
                 }
             });
 
-            this._mapGl.addLayer({
+            this._map.addLayer({
                 'id': 'bounds',
                 'type': 'fill',
                 'source': 'bounds',
@@ -950,12 +950,12 @@ export class MapWidget {
         }
 
     protected _initLongPressEvent() {
-        if (this._mapGl) {
+        if (this._map) {
             let pressTimeout: NodeJS.Timeout | null; 
             let pos: LngLat;
             let clearTimeoutFunc = () => { if (pressTimeout) clearTimeout(pressTimeout); pressTimeout = null; };
 
-            this._mapGl.on('touchstart', (e) => {
+            this._map.on('touchstart', (e) => {
                 if (e.originalEvent.touches.length > 1) {
                     return;
                 }
@@ -965,7 +965,7 @@ export class MapWidget {
                 }, 500);
             });
 
-            this._mapGl.on('mousedown', (e) => {
+            this._map.on('mousedown', (e) => {
                 if (!pressTimeout) {
                     pos = e.lngLat;
                     pressTimeout = setTimeout(() => {
@@ -975,15 +975,15 @@ export class MapWidget {
                 }
             });
            
-            this._mapGl.on('dragstart', clearTimeoutFunc);
-            this._mapGl.on('mouseup', clearTimeoutFunc);
-            this._mapGl.on('touchend', clearTimeoutFunc);
-            this._mapGl.on('touchcancel', clearTimeoutFunc);
-            this._mapGl.on('touchmove', clearTimeoutFunc);
-            this._mapGl.on('moveend', clearTimeoutFunc);
-            this._mapGl.on('gesturestart', clearTimeoutFunc);
-            this._mapGl.on('gesturechange', clearTimeoutFunc);
-            this._mapGl.on('gestureend', clearTimeoutFunc);
+            this._map.on('dragstart', clearTimeoutFunc);
+            this._map.on('mouseup', clearTimeoutFunc);
+            this._map.on('touchend', clearTimeoutFunc);
+            this._map.on('touchcancel', clearTimeoutFunc);
+            this._map.on('touchmove', clearTimeoutFunc);
+            this._map.on('moveend', clearTimeoutFunc);
+            this._map.on('gesturestart', clearTimeoutFunc);
+            this._map.on('gesturechange', clearTimeoutFunc);
+            this._map.on('gestureend', clearTimeoutFunc);
         }
     };
 
