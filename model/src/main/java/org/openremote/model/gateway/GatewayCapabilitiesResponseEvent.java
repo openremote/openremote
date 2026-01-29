@@ -7,9 +7,11 @@ public class GatewayCapabilitiesResponseEvent extends SharedEvent {
 
     public static final String TYPE = "gateway-capabilities-response";
     protected final boolean tunnelingSupported;
+    protected final String version;
 
     @JsonCreator
-    public GatewayCapabilitiesResponseEvent(boolean tunnelingSupported) {
+    public GatewayCapabilitiesResponseEvent(String version, boolean tunnelingSupported) {
+        this.version = version;
         this.tunnelingSupported = tunnelingSupported;
     }
 
@@ -17,10 +19,15 @@ public class GatewayCapabilitiesResponseEvent extends SharedEvent {
         return tunnelingSupported;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
     @Override
     public String toString() {
         return "GatewayCapabilitiesResponseEvent{" +
                 "tunnelingSupported=" + tunnelingSupported +
+                ", version=" + version +
                 ", timestamp=" + timestamp +
                 '}';
     }

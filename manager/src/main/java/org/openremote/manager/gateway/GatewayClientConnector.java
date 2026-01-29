@@ -78,7 +78,8 @@ import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
  * {@link GatewayInitStartEvent} is sent with a list of active tunnels, gateway API version and tunnel public hostname
  * and port; the client can then synchronise the SSH sessions (for reconnections) and should also send a
  * {@link AssetsEvent} with all the edge gatewway assets (without attributes) and this replaces the initial
- * {@link ReadAssetsEvent} that previous versions would send.</li>
+ * {@link ReadAssetsEvent} that previous versions would send. {@link GatewayCapabilitiesResponseEvent} now includes edge
+ * gateway API version</li>
  * </li>
  * </ol>
  */
@@ -93,7 +94,7 @@ public class GatewayClientConnector implements AutoCloseable {
     protected WebsocketIOClient<String> client;
     protected GatewayTunnelFactory tunnelFactory;
     protected final List<GatewayTunnelSession> activeTunnelSessions;
-    protected Map<String, Map<AttributeRef, Long>> attributeTimestamps;
+    protected Map<AttributeRef, Long> attributeTimestamps;
     protected Consumer<AssetEvent> realmAssetEventConsumer;
     protected Consumer<AttributeEvent> realmAttributeEventConsumer;
     protected String gatewayAPIVersion;
@@ -292,7 +293,7 @@ public class GatewayClientConnector implements AutoCloseable {
                     initFuture.complete(null);
                 }
 
-                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(tunnelFactory != null);
+                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(VersionInfo.getGatewayApiVersion(), tunnelFactory != null);
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(responseEvent);
             }
@@ -375,7 +376,7 @@ public class GatewayClientConnector implements AutoCloseable {
             // Synchronise the SSH sessions with what the central instance thinks are open
             // Filter out any tunnels expiring in the next 5 seconds
             List<GatewayTunnelInfo> tunnels = Arrays.stream(activeTunnels).filter(activeTunnel -> {
-                if (Duration.between(activeTunnel.getAutoCloseTime(), timerService.getNow()).getSeconds() <= 5) {
+                if (activeTunnel.getAutoCloseTime() != null && Duration.between(timerService.getNow(), activeTunnel.getAutoCloseTime()).getSeconds() <= 5) {
                     LOG.finer("Ignoring tunnel that is expiring soon: " + activeTunnel);
                     return false;
                 }
@@ -402,6 +403,7 @@ public class GatewayClientConnector implements AutoCloseable {
                 boolean obsolete = tunnels.stream().noneMatch(tunnel -> tunnel.equals(activeTunnelSession.getTunnelInfo()));
                 if (obsolete) {
                     LOG.fine("Removing obsolete tunnel session: " + activeTunnelSession);
+                    activeTunnelSession.disconnect();
                 }
                 return obsolete;
             });
@@ -594,7 +596,6 @@ public class GatewayClientConnector implements AutoCloseable {
                         }
                         if (filter.getDurationParsed().isPresent()) {
                             boolean allow = filter.getDurationParsed().map(durationMillis -> {
-                                Map<AttributeRef, Long> attributeTimestamps = this.attributeTimestamps.get(connection.getLocalRealm());
                                 Long lastSendMillis = attributeTimestamps.get(ev.getRef());
                                 if (lastSendMillis == null || timerService.getCurrentTimeMillis() - lastSendMillis > durationMillis) {
                                     LOG.finest(() -> "Gateway client for '" + connection.getLocalRealm() + "' duration setting has allowed attribute event: " + ev.getRef());

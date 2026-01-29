@@ -84,6 +84,7 @@ public class GatewayConnector {
     int syncErrors;
     String expectedSyncResponseName;
     protected boolean tunnellingSupported;
+    protected String gatewayVersion;
     protected final Map<Class<? extends SharedEvent>, Consumer<SharedEvent>> eventConsumerMap = new HashMap<>();
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
@@ -261,6 +262,7 @@ public class GatewayConnector {
                 // Let the gateway know init is complete
                 sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
+                gatewayVersion = response != null ? response.getVersion() : null;
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
                 LOG.finest("Setting connection status=" + ConnectionStatus.CONNECTED + ": " + getGatewayIdString());
@@ -352,6 +354,10 @@ public class GatewayConnector {
 
     protected String getSessionId() {
         return sessionId.get();
+    }
+
+    protected String getGatewayVersion() {
+        return gatewayVersion;
     }
 
     protected void publishAttributeEvent(AttributeEvent event) {

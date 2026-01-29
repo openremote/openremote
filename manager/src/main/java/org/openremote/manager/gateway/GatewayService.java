@@ -684,8 +684,12 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 connector.disconnected(sessionId);
             }
         } finally {
-            // Assume all gateway tunnels have been terminated
-            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equalsIgnoreCase(gatewayId));
+            if (connector == null || connector.getGatewayVersion() == null) {
+                // Assume all gateway tunnels have been terminated
+                tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equalsIgnoreCase(gatewayId));
+            } else {
+                LOG.fine("Gateway supports tunnel re-sync so leaving tunnel sessions in place: " + connector);
+            }
         }
     }
 
