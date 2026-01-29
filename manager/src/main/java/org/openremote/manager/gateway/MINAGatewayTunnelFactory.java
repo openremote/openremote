@@ -205,7 +205,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
             isRunning.set(false);
          } else if (isRunning.get()) {
             // Future was already done (meaning previous success), so this is a drop. Retry.
-            LOG.info("Connection lost so scheduling reconnect" + RECONNECT_DELAY + ": " + this);
+            LOG.info("Connection lost so scheduling reconnect in " + RECONNECT_DELAY + ": " + this);
             scheduleReconnect();
          }
       }

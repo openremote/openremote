@@ -1073,7 +1073,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
      * Change the test url and key path to match the instance to connect to.
      * Recommended to run profile/dev-proxy.yml profile.
      */
-    @Ignore
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
@@ -1111,11 +1110,23 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert !session.getConnectFuture().isCompletedExceptionally()
         }
 
-        then: "we keep the tunnel open for manual testing"
-        while (true) {
-            println "Tunnel open."
+        then: "we keep the tunnel open for manual testing until lock file is deleted"
+        File lockFile = new File("continue.lock")
+        if (!lockFile.exists()) {
+            lockFile.createNewFile()
+        }
+        getLOG().info("--- TEST PAUSED FOR TUNNEL TESTING ---")
+        getLOG().info("Delete the lock file to continue: ${lockFile.absolutePath}")
+        while (lockFile.exists()) {
+            getLOG().info("Tunnel is open")
             Thread.sleep(5000)
         }
+
+        when: "we close the tunnel gracefully"
+        session.disconnect()
+
+        then: "the tunnel should be closed without error"
+        noExceptionThrown()
 
         cleanup: "cleanup"
         if (tunnelFactory != null) {
