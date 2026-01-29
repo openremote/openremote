@@ -135,7 +135,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
             authFuture.addListener(f -> {
                if (f.isSuccess()) {
                   // CRITICAL: We are currently on the I/O thread
-                  scheduledExecutor.submit(() -> setupForwarding(session));
+                  executor.submit(() -> setupForwarding(session));
                } else {
                   closeSessionQuietly(session);
                   handleFailure(f.getException());

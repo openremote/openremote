@@ -118,7 +118,7 @@ public class GatewayClientConnector implements AutoCloseable {
 
         if (!connection.isDisabled()) {
             client = createClient();
-            if (connection.getAssetSyncRules() != null && !connection.getAssetSyncRules().isEmpty()) {
+            if (connection.getAttributeFilters() != null && !connection.getAttributeFilters().isEmpty()) {
                 attributeTimestamps = new ConcurrentHashMap<>();
             }
         }
