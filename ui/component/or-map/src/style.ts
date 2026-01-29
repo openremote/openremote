@@ -64,7 +64,6 @@ export const style = css`
         top: 0;
         bottom: 0;
     }
-    .mapboxgl-ctrl-geocoder,
     .maplibregl-ctrl-geocoder--input {
         width: calc(100% - 20px)
     }
