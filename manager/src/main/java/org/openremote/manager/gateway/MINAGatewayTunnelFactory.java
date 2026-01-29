@@ -1,3 +1,25 @@
+/*
+ *
+ *  * Copyright 2026, OpenRemote Inc.
+ *  *
+ *  * See the CONTRIBUTORS.txt file in the distribution for a
+ *  * full listing of individual contributors.
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU Affero General Public License as
+ *  * published by the Free Software Foundation, either version 3 of the
+ *  * License, or (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  * GNU Affero General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU Affero General Public License
+ *  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.openremote.manager.gateway;
 
 import org.apache.sshd.client.SshClient;
@@ -29,6 +51,9 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
+/**
+ * This is a {@link GatewayTunnelFactory} implementation using the Apache MINA SSHD library
+ */
 public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, MINAGatewayTunnelFactory.class.getName());
@@ -39,6 +64,9 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
     protected ExecutorService executor;
     protected ScheduledExecutorService scheduledExecutor;
 
+   /**
+    * This represents the state of an individual remote forward session
+    */
    private class TunnelSessionManager {
       private final String sshHost;
       private final int sshPort;

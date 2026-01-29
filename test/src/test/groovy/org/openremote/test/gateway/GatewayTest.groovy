@@ -1,6 +1,5 @@
 package org.openremote.test.gateway
 
-
 import io.netty.channel.ChannelHandler
 import jakarta.ws.rs.ForbiddenException
 import org.apache.http.client.utils.URIBuilder
@@ -10,7 +9,6 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
-import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -20,11 +18,7 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetEvent
-import org.openremote.model.asset.AssetResource
-import org.openremote.model.asset.AssetsEvent
-import org.openremote.model.asset.ReadAssetsEvent
+import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
@@ -55,12 +49,12 @@ import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId
 import static org.openremote.manager.gateway.GatewayService.getGatewayClientId
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
