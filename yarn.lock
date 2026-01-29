@@ -2191,16 +2191,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-thermostat@workspace:ui/component/or-thermostat":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-thermostat@workspace:ui/component/or-thermostat"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    lit: "npm:^3.3.1"
-  languageName: unknown
-  linkType: soft
-
 "@openremote/or-timeline@workspace:ui/component/or-timeline":
   version: 0.0.0-use.local
   resolution: "@openremote/or-timeline@workspace:ui/component/or-timeline"
