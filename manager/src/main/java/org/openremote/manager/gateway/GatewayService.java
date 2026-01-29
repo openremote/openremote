@@ -598,9 +598,9 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         if (!connector.isConnected()) {
-            String msg = "Failed to stop tunnel: reason=Not connected, id=" + gatewayId;
-            LOG.info(msg);
-            throw new IllegalArgumentException(msg);
+            LOG.info("Just removing tunnel from list: reason=Not connected, id=" + gatewayId);
+            tunnelInfos.remove(tunnelInfo.getId(), tunnelInfo);
+            return;
         }
 
         // Wait for up to 20 seconds for the tunnel to stop
