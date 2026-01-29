@@ -94,7 +94,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     public isAllDay = true;
 
     @property({ type: Object })
-    public schedule?: CalendarEvent = this.defaultSchedule;
+    public schedule?: CalendarEvent;
 
     @property()
     public timezoneOffset = 0;
@@ -121,6 +121,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             period: i18next.t("planPeriod"),
             recurrence: i18next.t("planRecurrence")
         };
+        // if (this.schedule && !Object.keys(this.schedule).length) {
+            // this.schedule = this.defaultSchedule;
+        // }
+        this._normalizedSchedule = this.applyTimezoneOffset(this.schedule);
         if (this._normalizedSchedule?.start && this._normalizedSchedule?.end) {
             if (this._normalizedSchedule.recurrence) {
                 this._eventType = EventTypes.recurrence;
