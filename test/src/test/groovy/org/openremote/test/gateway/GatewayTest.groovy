@@ -120,7 +120,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         thrown(ForbiddenException.class)
 
         when: "the Gateway client is created"
-        def gatewayClient = new GatewayIOClient(
+        def gatewayClient = new WebsocketIOClient(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingName").build(),
                 null,
                 new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingName/protocol/openid-connect/token",
