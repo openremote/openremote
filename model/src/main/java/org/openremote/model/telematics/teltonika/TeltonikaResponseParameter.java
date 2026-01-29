@@ -1,26 +1,12 @@
 package org.openremote.model.telematics.teltonika;
 
-import org.openremote.model.telematics.DeviceParameter;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.ValueConstraint;
 
-import java.util.function.Function;
+public class TeltonikaResponseParameter extends TeltonikaValueDescriptor<String> {
 
-public class TeltonikaResponseParameter implements DeviceParameter {
+    public static final TeltonikaResponseParameter Instance = new TeltonikaResponseParameter("response", String.class, null);
 
-    public static final TeltonikaResponseParameter Instance = new TeltonikaResponseParameter();
-    @Override
-    public AttributeDescriptor<?> getDescriptor() {
-        return new AttributeDescriptor<>("response", ValueType.TEXT);
-    }
-
-    @Override
-    public Function<Object, Object> getValue() {
-        return value -> value;
-    }
-
-    @Override
-    public String getKey() {
-        return "RSP";
+    public TeltonikaResponseParameter(String name, Class avlType, ValueConstraint... constraints) {
+        super(name, avlType, constraints);
     }
 }

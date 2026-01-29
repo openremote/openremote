@@ -15,10 +15,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.telematics.*;
-import org.openremote.model.telematics.teltonika.TeltonikaMqttMessage;
-import org.openremote.model.telematics.teltonika.TeltonikaParameterRegistry;
-import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset;
-import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptor;
+import org.openremote.model.telematics.teltonika.*;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
@@ -128,7 +125,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             byte[] bytes = new byte[body.readableBytes()];
             body.readBytes(bytes);
-            Message message;
+            TeltonikaMqttMessage message;
             try {
                 message = new TeltonikaMqttMessage(ValueUtil.JSON.readTree(bytes), null);
             } catch (IOException e) {
@@ -138,31 +135,32 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             Payload payload = message.getPayloadByIndex(0);
             Long timestamp = payload.getTimestamp();
 
-            getLogger().fine(String.format("Processing payload with timestamp: %d (%s)",
-                timestamp, new java.util.Date(timestamp)));
+            getLogger().fine(String.format("Processing payload with timestamp: %d (%s)", timestamp, new java.util.Date(timestamp)));
 
             AttributeMap map = new AttributeMap();
             map.addAll(message.getPayloadByIndex(0).entrySet().stream().map(kvp -> {
-                DeviceParameter parameter = kvp.getKey();
+
+                TeltonikaValueDescriptor<?> parameter = (kvp.getKey() instanceof TeltonikaValueDescriptor<?> tvd)
+                        ? tvd
+                        : null;
+
+
+
                 Object value = kvp.getValue();
 
-                // Try to find a matching TeltonikaValueDescriptor to get the correct name/type
-                String fullName = TeltonikaValueDescriptor.VENDOR_PREFIX + "_" + parameter.getKey();
-                ParsingValueDescriptor<?> valueDescriptor = parameterRegistry.getById(parameter.getKey())
-                        .<ParsingValueDescriptor<?>>map(d -> d)
-                        .orElseGet(() -> new TeltonikaValueDescriptor<>(parameter.getKey(), String.class, skipped -> value.toString()));
+                parameter = parameter != null ? parameter : new TeltonikaValueDescriptor<>(kvp.getKey().toString(), String.class, ignored -> value.toString());
 
                 // Try to find matching AttributeDescriptor in TeltonikaTrackerAsset
-                AttributeDescriptor<?> attributeDescriptor = parameterRegistry.findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, valueDescriptor).orElse(null);
+                AttributeDescriptor<?> attributeDescriptor = parameterRegistry.findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, parameter).orElse(null);
                 if(attributeDescriptor == null){
-                    getLogger().warning("No Attribute Descriptor found for key "+parameter.getKey());
-                    attributeDescriptor = new AttributeDescriptor<>(parameter.getKey(), (ValueDescriptor<String>) valueDescriptor);
+                    getLogger().warning("No Attribute Descriptor found for key "+parameter.getAvlId());
+                    attributeDescriptor = new AttributeDescriptor<>(Integer.toString(parameter.getAvlId()), (ValueDescriptor<String>) parameter);
                 }
 
                 // Convert JSON value to binary format to test the binary parsing implementation
                 Object parsedValue;
                 try {
-                    ByteBuf binaryBuffer = convertJsonValueToBinary(value, valueDescriptor);
+                    ByteBuf binaryBuffer = convertJsonValueToBinary(value, parameter);
                     // Convert ByteBuf to ByteBuffer for ParsingValueDescriptor
                     // IMPORTANT: Ensure we start reading from position 0
                     java.nio.ByteBuffer nioBuffer = binaryBuffer.nioBuffer();
@@ -176,23 +174,23 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                         nioBuffer.get(debugBytes);
                         nioBuffer.reset();
                         getLogger().fine(String.format("Converting Key=%s, InputValue=%s, ExpectedLength=%d, ActualBytes=%s",
-                            parameter.getKey(), value, valueDescriptor.getLength(),
+                            parameter.getAvlId(), value, parameter.getLength(),
                             java.util.HexFormat.of().formatHex(debugBytes)));
                     }
 
-                    parsedValue = valueDescriptor.parse(binaryBuffer);
+                    parsedValue = parameter.parse(binaryBuffer);
 
                     getLogger().fine(String.format("Parsed Key=%s: InputValue=%s → ParsedValue=%s (type=%s)",
-                        parameter.getKey(), value, parsedValue, parsedValue != null ? parsedValue.getClass().getSimpleName() : "null"));
+                        parameter.getAvlId(), value, parsedValue, parsedValue != null ? parsedValue.getClass().getSimpleName() : "null"));
 
                     binaryBuffer.release(); // Clean up
                 } catch (Exception e) {
-                    getLogger().severe("Failed to parse value for key " + parameter.getKey() + ": " + e.getMessage());
+                    getLogger().severe("Failed to parse value for key " + parameter.getAvlId() + ": " + e.getMessage());
                     getLogger().severe("Stack trace: " + ExceptionUtils.getStackTrace(e));
                     // Fallback to direct value usage
                     parsedValue = value;
-                    if (value != null && valueDescriptor.getType() != null) {
-                        Class<?> expectedType = valueDescriptor.getType();
+                    if (value != null && parameter.getType() != null) {
+                        Class<?> expectedType = parameter.getType();
                         if (expectedType == Integer.class && value instanceof Number) {
                             parsedValue = ((Number) value).intValue();
                         } else if (expectedType == Long.class && value instanceof Number) {

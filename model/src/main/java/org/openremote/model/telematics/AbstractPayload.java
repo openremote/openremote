@@ -1,5 +1,7 @@
 package org.openremote.model.telematics;
 
+import org.openremote.model.value.ValueDescriptor;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,7 +9,7 @@ import java.util.Set;
 
 public abstract class AbstractPayload implements Payload {
 
-    protected final Map<DeviceParameter, Object> delegate = new HashMap<>();
+    protected final Map<ValueDescriptor<?>, Object> delegate = new HashMap<>();
 
     @Override
     public int size() {
@@ -35,7 +37,7 @@ public abstract class AbstractPayload implements Payload {
     }
 
     @Override
-    public Object put(DeviceParameter key, Object value) {
+    public Object put(ValueDescriptor<?> key, Object value) {
         return delegate.put(key, value);
     }
 
@@ -45,7 +47,7 @@ public abstract class AbstractPayload implements Payload {
     }
 
     @Override
-    public void putAll(Map<? extends DeviceParameter, ?> m) {
+    public void putAll(Map<? extends ValueDescriptor<?>, ?> m) {
         delegate.putAll(m);
     }
 
@@ -55,7 +57,7 @@ public abstract class AbstractPayload implements Payload {
     }
 
     @Override
-    public Set<DeviceParameter> keySet() {
+    public Set<ValueDescriptor<?>> keySet() {
         return delegate.keySet();
     }
 
@@ -65,7 +67,7 @@ public abstract class AbstractPayload implements Payload {
     }
 
     @Override
-    public Set<Entry<DeviceParameter, Object>> entrySet() {
+    public Set<Entry<ValueDescriptor<?>, Object>> entrySet() {
         return delegate.entrySet();
     }
 }

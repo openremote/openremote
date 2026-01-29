@@ -19,6 +19,12 @@ import java.util.stream.Collectors;
 
 public class TeltonikaValueDescriptors {
 
+
+    /**
+     * Auto-generated Teltonika AVL parameter descriptors.
+     * Generated from Teltonika documentation.
+     */
+
     // Helper methods for reading specific byte sizes
     private static final Pattern ISO6709_PATTERN = Pattern.compile("^([+-]\\d{2}\\d{2}\\d{2}\\.\\d+)([+-]\\d{3}\\d{2}\\d{2}\\.\\d+)([+-]\\d{1,5}(?:\\.\\d+)?)?/?$");
 
