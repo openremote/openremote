@@ -21,6 +21,7 @@ package org.openremote.model;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.telematics.teltonika.TeltonikaParameters;
 import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
@@ -43,6 +44,7 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 @ModelDescriptor(assetType = Asset.class, provider = MetaItemType.class)
 @ModelDescriptor(assetType = Asset.class, provider = ValueType.class)
 @ModelDescriptor(assetType = Asset.class, provider = TeltonikaValueDescriptors.class)
+@ModelDescriptor(assetType = Asset.class, provider = TeltonikaParameters.class)
 public class StandardModelProvider implements AssetModelProvider {
 
     protected static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, StandardModelProvider.class);
