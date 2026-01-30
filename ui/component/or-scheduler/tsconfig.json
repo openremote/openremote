@@ -9,6 +9,7 @@
   ],
   "references": [
     { "path": "../or-translate" },
-    { "path": "../or-mwc-components" }
+    { "path": "../or-mwc-components" },
+    { "path": "../or-vaadin-components" }
   ]
 }
