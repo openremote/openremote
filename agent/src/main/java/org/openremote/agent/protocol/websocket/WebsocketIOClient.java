@@ -144,7 +144,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         handshakeFuture = new CompletableFuture<>();
         CompletableFuture<Void> channelFuture;
         try {
-            channelFuture = toCompletableFuture(bootstrap.connect(new InetSocketAddress(host, port)).sync());
+            channelFuture = toCompletableFuture(bootstrap.connect(new InetSocketAddress(host, port)));
         } catch (Exception e) {
             channelFuture = CompletableFuture.failedFuture(e);
         }
