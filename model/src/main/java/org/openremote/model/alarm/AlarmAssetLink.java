@@ -25,7 +25,7 @@ import org.hibernate.annotations.Formula;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -93,9 +93,8 @@ public class AlarmAssetLink {
     @EmbeddedId
     protected Id id;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date createdOn;
+    protected Instant createdOn;
 
     @Formula("(select a.NAME from ASSET a where a.ID = ASSET_ID)")
     protected String assetName;
@@ -126,11 +125,11 @@ public class AlarmAssetLink {
         return parentAssetName;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public void setCreatedOn(Date createdOn) {
+    public void setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
     }
 

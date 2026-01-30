@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.openremote.model.util.TextUtil;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * A timestamped event.
@@ -36,16 +36,15 @@ import java.util.Date;
 @MappedSuperclass
 public abstract class Event {
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @JsonIgnore
-    protected Date timestamp;
+    protected Instant timestamp;
     @Transient
     protected String messageID;
 
     protected Event(Long timestamp) {
         if (timestamp != null) {
-            this.timestamp = new Date(timestamp);
+            this.timestamp = Instant.ofEpochMilli(timestamp);
         }
     }
 
@@ -70,11 +69,11 @@ public abstract class Event {
 
     @JsonProperty
     public long getTimestamp() {
-        return timestamp != null ? timestamp.getTime() : 0L;
+        return timestamp != null ? timestamp.toEpochMilli() : 0L;
     }
 
     public void setTimestamp(long timestamp) {
-        this.timestamp = new Date(timestamp);
+        this.timestamp = Instant.ofEpochMilli(timestamp);
     }
 
     public String getMessageID() {

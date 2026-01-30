@@ -37,6 +37,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
+import java.time.Instant
 
 import java.lang.reflect.Array
 import java.nio.file.Files
@@ -497,7 +498,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     def "Serialize/Deserialize asset model"() {
         given: "An asset"
         def parentId = UniqueIdentifierGenerator.generateId()
-        def createdDate = new Date()
+        def createdDate = Instant.now()
         def asset = new LightAsset("Test light")
             .setId(UniqueIdentifierGenerator.generateId())
             .setRealm(MASTER_REALM)
@@ -524,7 +525,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         // Inject properties which are normally done by the backend on retrieval
         asset.path = [asset.id, parentId]
         asset.createdOn = createdDate
-        asset.getAttributes().values().forEach {it.setTimestamp(asset.createdOn.getTime())}
+        asset.getAttributes().values().forEach {it.setTimestamp(asset.createdOn.toEpochMilli())}
 
         expect: "the attributes to match the set values"
         asset.getTemperature().orElse(null) == 100I
@@ -541,7 +542,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetObjectNode.get("path").get(0).asText() == asset.id
         assetObjectNode.get("path").get(1).asText() == parentId
 
-        assetObjectNode.get("attributes").get("colourRGB").get("timestamp").asLong() == createdDate.getTime()
+        assetObjectNode.get("attributes").get("colourRGB").get("timestamp").asLong() == createdDate.toEpochMilli()
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).isObject()
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).get("id").asText() == "agent_id"
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == DefaultAgentLink.class.getSimpleName()
@@ -556,7 +557,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "it should match the original"
         asset.getName() == asset2.getName()
         asset2.getType() == asset.getType()
-        asset2.getCreatedOn() == asset.getCreatedOn()
+        asset2.getCreatedOn().toEpochMilli() == asset.getCreatedOn().toEpochMilli()
         asset2.getParentId() == parentId
         asset2.getPath() == asset.getPath()
         asset2.getTemperature().orElse(null) == asset.getTemperature().orElse(null)
@@ -584,7 +585,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def attributeEventObjectNode = ValueUtil.parse(attributeEventStr, ObjectNode.class).get()
         attributeEventObjectNode.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
-        attributeEventObjectNode.get("timestamp").asLong() == createdDate.getTime()
+        attributeEventObjectNode.get("timestamp").asLong() == createdDate.toEpochMilli()
         attributeEventObjectNode.has("realm")
         attributeEventObjectNode.get("value").isTextual()
         attributeEventObjectNode.get("value").asText() == "#3264C8"
@@ -599,7 +600,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def attributeEventObjectNode2 = ValueUtil.parse(attributeEventStr2, ObjectNode.class).get()
         attributeEventObjectNode2.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode2.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
-        attributeEventObjectNode2.get("timestamp").asLong() == createdDate.getTime()
+        attributeEventObjectNode2.get("timestamp").asLong() == createdDate.toEpochMilli()
         attributeEventObjectNode2.has("realm")
         attributeEventObjectNode2.get("value").isTextual()
         attributeEventObjectNode2.get("value").asText() == "#3264C8"

@@ -56,6 +56,7 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -221,10 +222,9 @@ import static jakarta.persistence.DiscriminatorType.STRING;
  */
 // @formatter:on
 @Entity
-@Table(name = "ASSET")
+@Table(name = "ASSET", check = @CheckConstraint(constraint = "ID != PARENT_ID"))
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
-@Check(constraints = "ID != PARENT_ID")
 @JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = ThingAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
 @AssetValid
@@ -292,10 +292,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "VERSION", nullable = false)
     protected long version;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn;
+    protected Instant createdOn;
 
     @NotBlank(message = "{Asset.name.NotBlank}")
     @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
@@ -359,11 +358,11 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return (T) this;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public T setCreatedOn(Date createdOn) {
+    public T setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return (T) this;
     }
