@@ -122,7 +122,7 @@ public class TeltonikaValueDescriptors {
     }
 
     public static Optional<TeltonikaValueDescriptor<?>> getByName(String name) {
-        return Optional.ofNullable(DESCRIPTORS_BY_NAME.get(name));
+        return Optional.ofNullable(DESCRIPTORS_BY_NAME.get(TeltonikaValueDescriptor.VENDOR_PREFIX+"_"+name));
     }
 
     /**

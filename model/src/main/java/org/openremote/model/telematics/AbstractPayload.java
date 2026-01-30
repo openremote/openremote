@@ -37,6 +37,14 @@ public abstract class AbstractPayload implements Payload {
     }
 
     @Override
+    public ValueDescriptor<?> getValueDescriptorById(String paramId) {
+        return delegate.keySet().stream()
+                .filter(key -> key.getName().equals(paramId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
     public Object put(ValueDescriptor<?> key, Object value) {
         return delegate.put(key, value);
     }

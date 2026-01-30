@@ -1,6 +1,5 @@
 package org.openremote.model.telematics.teltonika;
 
-import org.jboss.logging.Logger;
 import org.openremote.model.telematics.AbstractPayload;
 
 import java.util.Map;
@@ -19,6 +18,9 @@ public class TeltonikaDataPayload extends AbstractPayload {
                 this.put(TeltonikaValueDescriptors.getByName(entry.getKey()).orElseThrow(), entry.getValue());
             }catch (Exception e) {
                 LOG.log(System.Logger.Level.ERROR, "Failed to map Teltonika payload key: " + entry.getKey() + " with value: " + entry.getValue());
+                if(entry.getKey().equals("ts")) {
+                    LOG.log(System.Logger.Level.INFO, "Timestamp value type: " + entry.getValue().getClass().getName());
+                }
                 this.put(new TeltonikaValueDescriptor<>(entry.getKey(), String.class, ignored -> entry.getValue().toString()), entry.getValue());
             }
         }
@@ -26,6 +28,6 @@ public class TeltonikaDataPayload extends AbstractPayload {
 
     @Override
     public Long getTimestamp() {
-        return (Long) this.get(TeltonikaValueDescriptors.timestamp.getName());
+        return (Long) this.get(this.getValueDescriptorById(TeltonikaValueDescriptors.timestamp.getName()));
     }
 }

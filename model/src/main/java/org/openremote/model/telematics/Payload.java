@@ -8,4 +8,5 @@ public interface Payload extends Map<ValueDescriptor<?>, Object> {
 
     Long getTimestamp();
 
+    ValueDescriptor<?> getValueDescriptorById(String paramId);
 }
