@@ -233,12 +233,11 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
 
         try {
             // Inject OAuth header
-            String authHeaderValue = client.getAuthHeader();
+            String authHeaderValue = client.getAuthHeader().get();
             if (authHeaderValue != null) {
                 if (headers == null) {
                     headers = new MultivaluedHashMap<>();
                 }
-                headers.remove(HttpHeaders.AUTHORIZATION);
                 headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(authHeaderValue));
             }
 
