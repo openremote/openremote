@@ -20,6 +20,7 @@
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
+    "doctor": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 RSDOCTOR=true rspack --mode production",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
     "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
@@ -37,7 +38,6 @@
     "@openremote/or-attribute-picker": "workspace:*",
     "@openremote/or-components": "workspace:*",
     "@openremote/or-dashboard-builder": "workspace:*",
-    "@openremote/or-data-viewer": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-json-forms": "workspace:*",
     "@openremote/or-log-viewer": "workspace:*",
@@ -56,7 +56,8 @@
   },
   "devDependencies": {
     "@openremote/rest": "workspace:*",
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@rsdoctor/rspack-plugin": "~1.4.0"
   },
   "publishConfig": {
     "access": "public"

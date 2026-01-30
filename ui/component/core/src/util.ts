@@ -28,7 +28,7 @@ import i18next from "i18next";
 import Qs from "qs";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import {transform} from "lodash";
+import transform from "lodash.transform";
 
 export class Deferred<T> {
 

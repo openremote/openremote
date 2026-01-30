@@ -806,16 +806,16 @@ export const style = css`
     or-rule-tree {
         min-width: 300px;
         width: 300px;
-        z-index: 2;
+        z-index: 1;
         display: flex;
         flex-direction: column;
         background-color: var(--internal-or-rules-panel-color);
         color: var(--internal-or-rules-list-text-color);
         box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
-    
+
     or-rule-viewer, or-rule-group-viewer {
-        z-index: 1;    
+        z-index: 0;
     }
 `;
 
