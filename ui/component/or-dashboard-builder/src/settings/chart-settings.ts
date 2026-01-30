@@ -4,7 +4,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
