@@ -25,7 +25,7 @@ import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
@@ -58,8 +58,8 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
     }
 
     @Override
-    protected Future<Void> startChannel() {
-        return bootstrap.connect(new JSerialCommDeviceAddress(port));
+    protected CompletableFuture<Void> startChannel() {
+        return toCompletableFuture(bootstrap.connect(new JSerialCommDeviceAddress(port)));
     }
 
     @Override

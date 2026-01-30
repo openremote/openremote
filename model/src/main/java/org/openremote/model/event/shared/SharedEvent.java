@@ -60,7 +60,9 @@ import org.openremote.model.alarm.AlarmEvent;
     @JsonSubTypes.Type(value = GatewayTunnelStartRequestEvent.class, name = "gateway-tunnel-start-request"),
     @JsonSubTypes.Type(value = GatewayTunnelStartResponseEvent.class, name = "gateway-tunnel-start-response"),
     @JsonSubTypes.Type(value = GatewayTunnelStopRequestEvent.class, name = "gateway-tunnel-stop-request"),
-    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response")
+    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response"),
+    @JsonSubTypes.Type(value = GatewayInitStartEvent.class, name = GatewayInitStartEvent.TYPE),
+    @JsonSubTypes.Type(value = GatewayInitDoneEvent.class, name = GatewayInitDoneEvent.TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
