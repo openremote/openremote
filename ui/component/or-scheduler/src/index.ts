@@ -21,6 +21,8 @@ import { html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { CalendarEvent } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import  "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import  "@openremote/or-vaadin-components/or-vaadin-select";
 import { translate, i18next } from "@openremote/or-translate";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
@@ -412,11 +414,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div class="layout horizontal">
-                        <or-mwc-input style="width: 100%"
-                                    .value="${this._eventType}"
-                                    .type="${InputType.SELECT}"
-                                    .options="${Object.entries(this._eventTypes)}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
+                        <or-vaadin-select style="width: 100%" .value="${this._eventType}" .items="${Object.keys(this._eventTypes).map(k => ({ value: k, label: k }))}"
+                            @change="${(e: any) => this.setCalendarEventType(e.target.value)}">
+                        </or-vaadin-select>
                     </div>
                 </div>
                 ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
@@ -470,8 +470,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         <or-mwc-input style="width: 60px;" min="1" max="9" .value="${interval}" .type="${InputType.NUMBER}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
                     `)}
-                    <or-mwc-input style="flex: 1;" .value="${frequency.toString()}" .type="${InputType.SELECT}" .options="${frequencies}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
+                    <or-vaadin-select style="flex: 1;" .value="${frequency.toString()}" .items="${frequencies.map(([value, label]) => ({ value, label }))}"
+                        @change="${(e: any) => this.setRRuleValue(e.target?.value, "freq")}">
+                    </or-vaadin-select>
                 </div>
                 <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
                 <div>
@@ -535,7 +536,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 </div>
 
                 <div class="layout horizontal">
-                    <or-mwc-input .value=${this.isAllDay} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
+                    <or-vaadin-checkbox .checked=${this.isAllDay} @change="${(e: any) => this.setRRuleValue(e.target.checked, "all-day")}" .label="${i18next.t("allDay")}"></or-vaadin-checkbox>
                 </div>
             </div>`;
     }

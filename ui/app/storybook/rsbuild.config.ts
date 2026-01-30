@@ -43,6 +43,7 @@ export default defineConfig({
             "@openremote/or-chart": "../../component/or-chart/src",
             "@openremote/or-icon": "../../component/or-icon/src",
             "@openremote/or-mwc-components": "../../component/or-mwc-components/src",
+            "@openremote/or-scheduler": "../../component/or-scheduler/src",
             "@openremote/or-translate": "../../component/or-translate/src",
             "@openremote/or-tree-menu": "../../component/or-tree-menu/src",
             "@openremote/util": "../../util"
