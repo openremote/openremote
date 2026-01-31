@@ -13,6 +13,7 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.apps.ConsoleAppService
 import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
@@ -97,6 +98,70 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }
         Files.deleteIfExists(consoleConfigPath)
         Files.deleteIfExists(customAppDocRoot)
+    }
+
+    def "Apps endpoint returns built-in and custom apps"() {
+        given: "built-in and custom app doc roots with app folders"
+        def builtInDocRoot = Files.createTempDirectory("apps-builtin-")
+        def customDocRoot = Files.createTempDirectory("apps-custom-")
+        Files.createDirectories(builtInDocRoot.resolve("appBuiltin"))
+        Files.createDirectories(customDocRoot.resolve("appCustom"))
+
+        def container = startContainer(defaultConfig() << [
+                (ManagerWebService.OR_APP_DOCROOT)       : builtInDocRoot.toString(),
+                (ManagerWebService.OR_CUSTOM_APP_DOCROOT): customDocRoot.toString()
+        ], defaultServices())
+        def requestTarget = getClientApiTarget(serverUri(serverPort), MASTER_REALM).path("apps")
+
+        when: "requesting the apps list"
+        def response = requestTarget.request().get()
+
+        then: "both apps are returned"
+        response.status == 200
+        def appList = parse(response.readEntity(String.class)).orElse([])
+        appList.contains("appBuiltin")
+        appList.contains("appCustom")
+
+        cleanup:
+        if (response != null) {
+            response.close()
+        }
+        Files.deleteIfExists(builtInDocRoot.resolve("appBuiltin"))
+        Files.deleteIfExists(builtInDocRoot)
+        Files.deleteIfExists(customDocRoot.resolve("appCustom"))
+        Files.deleteIfExists(customDocRoot)
+    }
+
+    def "Apps info endpoint returns info for custom apps"() {
+        given: "a custom app doc root with an info.json file"
+        def customDocRoot = Files.createTempDirectory("apps-info-custom-")
+        def appDir = customDocRoot.resolve("appInfo")
+        Files.createDirectories(appDir)
+        Files.write(appDir.resolve("info.json"), "{\"name\":\"appInfo\"}".getBytes(StandardCharsets.UTF_8))
+
+        def container = startContainer(defaultConfig() << [
+                (ManagerWebService.OR_CUSTOM_APP_DOCROOT): customDocRoot.toString()
+        ], defaultServices())
+        def consoleAppService = container.getService(ConsoleAppService.class)
+        consoleAppService.@consoleAppDocRoot = customDocRoot
+
+        def requestTarget = getClientApiTarget(serverUri(serverPort), MASTER_REALM).path("apps").path("info")
+
+        when: "requesting the apps info"
+        def response = requestTarget.request().get()
+
+        then: "the response includes the app info"
+        response.status == 200
+        def infoMap = parse(response.readEntity(String.class)).orElse([:])
+        infoMap.containsKey("appInfo")
+
+        cleanup:
+        if (response != null) {
+            response.close()
+        }
+        Files.deleteIfExists(appDir.resolve("info.json"))
+        Files.deleteIfExists(appDir)
+        Files.deleteIfExists(customDocRoot)
     }
 
     def "Check full console behaviour"() {
