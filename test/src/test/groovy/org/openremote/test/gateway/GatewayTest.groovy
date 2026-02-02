@@ -131,7 +131,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
         })
 
-
         and: "we add callback consumers to the client"
         def connectionStatus = gatewayClient.getConnectionStatus()
         List<String> clientReceivedMessages = []

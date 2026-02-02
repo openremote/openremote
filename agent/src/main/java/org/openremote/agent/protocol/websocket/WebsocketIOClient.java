@@ -45,6 +45,8 @@ import org.openremote.model.util.TextUtil;
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -160,11 +162,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             this.headers.forEach(hdrs::add);
         }
 
-        String authHeaderValue = getAuthHeader();
-        if (authHeaderValue != null) {
-            hdrs.set(HttpHeaderNames.AUTHORIZATION, authHeaderValue);
-        }
-
         handler = new WebSocketClientProtocolHandler(
             WebSocketClientHandshakerFactory.newHandshaker(
                 uri, WebSocketVersion.V13, null, true, hdrs)) {
@@ -174,7 +171,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 super.userEventTriggered(ctx, evt);
                 if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
                     if (handshakeStateEvent == ClientHandshakeStateEvent.HANDSHAKE_COMPLETE) {
-                        onHandshakeDone();
+                        executorService.submit(WebsocketIOClient.this::onHandshakeDone);
                     }
                 }
             }
@@ -268,6 +265,24 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         }
     }
 
+    /**
+     * We need to get the auth header before we connect so we have it for the handshake
+     */
+    @Override
+    protected CompletableFuture<Void> doConnect() {
+        return getAuthHeader().thenCompose(authHeader -> {
+            // Push auth header into headers
+            if (authHeader != null) {
+                if (headers == null) {
+                    headers = new HashMap<>(1);
+                }
+                headers.put(HttpHeaderNames.AUTHORIZATION.toString(), Collections.singletonList(authHeader));
+            }
+
+            return super.doConnect();
+        });
+    }
+
     @Override
     protected void doDisconnect() {
         // Cancel ping task
@@ -278,24 +293,34 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         super.doDisconnect();
     }
 
-    public String getAuthHeader() throws Exception {
-        String authHeaderValue = null;
-
-        if (oAuthGrant != null) {
-            LOG.finest("Retrieving OAuth access token: "  + getClientUri());
-
-            try {
-                OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
-                authHeaderValue = oAuthFilter.getAuthHeader();
-                if (TextUtil.isNullOrEmpty(authHeaderValue)) {
-                    throw new RuntimeException("Returned access token is null");
-                }
-                LOG.fine("Retrieved access token via OAuth: " + getClientUri());
-            } catch (Exception e) {
-                throw new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage());
-            }
+    /**
+     * Get the auth header asynchronously
+     */
+    public CompletableFuture<String> getAuthHeader() {
+        if (oAuthGrant == null) {
+            return CompletableFuture.completedFuture(null);
         }
 
-        return authHeaderValue;
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        executorService.submit(() -> {
+            if (oAuthGrant != null) {
+                LOG.finest("Retrieving OAuth access token: "  + getClientUri());
+
+                try {
+                    OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
+                    String authHeaderValue = oAuthFilter.getAuthHeader();
+                    if (TextUtil.isNullOrEmpty(authHeaderValue)) {
+                        throw new RuntimeException("Returned access token is null");
+                    }
+                    LOG.fine("Retrieved access token via OAuth: " + getClientUri());
+                    future.complete(authHeaderValue);
+                } catch (Exception e) {
+                    future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage()));
+                }
+            }
+        });
+
+        return future;
     }
 }
