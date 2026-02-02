@@ -182,12 +182,12 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
          if (!initialFuture.isDone()) {
             LOG.info("Remote port forwarding started: " + this);
          } else {
-            LOG.fine("Remote port forwarding reconnected: " + this);
+            LOG.info("Remote port forwarding reconnected: " + this);
          }
          initialFuture.complete(null);
 
          session.addCloseFutureListener(f -> {
-            LOG.fine("Remote port forwarding closed: " + this);
+            LOG.info("Remote port forwarding closed: " + this);
             if (isRunning.get()) {
                handleFailure(null);
             }
@@ -201,7 +201,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
          if (wasInitialFailure) {
             // If initial connection attempt failed, we stop completely.
-            LOG.info("Initial connect has failed so aborting: " + this);
+            LOG.fine("Initial connect has failed so aborting: " + this);
             isRunning.set(false);
          } else if (isRunning.get()) {
             // Future was already done (meaning previous success), so this is a drop. Retry.
