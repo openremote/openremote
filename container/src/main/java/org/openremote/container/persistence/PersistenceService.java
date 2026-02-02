@@ -120,6 +120,16 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         }
 
         @Override
+        public String getScopeAnnotationName() {
+            return null;
+        }
+
+        @Override
+        public List<String> getQualifierAnnotationNames() {
+            return List.of();
+        }
+
+        @Override
         public PersistenceUnitTransactionType getTransactionType() {
             return PersistenceUnitTransactionType.RESOURCE_LOCAL;
         }

@@ -4,7 +4,7 @@ import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model"
 import { Gauge, GaugeOptions } from "gaugeJS";
 import manager, { Util } from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 
 //language=css

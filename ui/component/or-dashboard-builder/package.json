@@ -38,10 +38,15 @@
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "gridstack": "^7.2.0",
+    "gridstack": "^12.4.2",
     "lit": "^3.3.1",
-    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
+    "lodash.throttle": "^4.1.1",
     "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@types/lodash.debounce": "^4",
+    "@types/lodash.throttle": "^4"
   },
   "publishConfig": {
     "access": "public"
