@@ -745,7 +745,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     negated: value === AssetQueryOperator.OUTSIDE_RADIUS,
                     lat: 0,
                     lng: 0,
-                    radius: 50
+                    radius: 100
                 };
                 break;
             case AssetQueryOperator.WITHIN_RECTANGLE:
