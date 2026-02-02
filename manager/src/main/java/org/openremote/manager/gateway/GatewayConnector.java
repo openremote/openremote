@@ -290,6 +290,7 @@ public class GatewayConnector {
                 if (response != null && response.getError() != null) {
                     future.completeExceptionally(new RuntimeException("Failed to start tunnel: error=" + response.getError() + ", " + tunnelInfo));
                 } else {
+                    LOG.info("Tunnel started: " + tunnelInfo);
                     future.complete(null);
                 }
             });
