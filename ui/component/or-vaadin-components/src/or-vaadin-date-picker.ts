@@ -20,12 +20,6 @@
 import { customElement } from "lit/decorators.js";
 import { DatePicker } from "@vaadin/date-picker";
 import { OrVaadinComponent } from "./util";
-import { LitElement } from "lit";
 
 @customElement("or-vaadin-date-picker")
-export class OrVaadinDatePicker extends (DatePicker as new () => DatePicker & LitElement) implements OrVaadinComponent {
-    override _onEnter(ev: KeyboardEvent) {
-        this.dispatchEvent(new CustomEvent("submit", { bubbles: true, composed: true }));
-        return super._onEnter(ev);
-    }
-}
+export class OrVaadinDatePicker extends DatePicker implements OrVaadinComponent {}

@@ -20,15 +20,6 @@
 import { customElement } from "lit/decorators.js";
 import { DateTimePicker } from "@vaadin/date-time-picker";
 import { OrVaadinComponent } from "./util";
-import { LitElement } from "lit";
 
 @customElement("or-vaadin-date-time-picker")
-export class OrVaadinDateTimePicker
-    extends (DateTimePicker as new () => DateTimePicker & LitElement)
-    implements OrVaadinComponent
-{
-    // override _onEnter(ev: KeyboardEvent) {
-    //     this.dispatchEvent(new CustomEvent("submit", { bubbles: true, composed: true }));
-    //     return super._onEnter(ev);
-    // }
-}
+export class OrVaadinDateTimePicker extends DateTimePicker implements OrVaadinComponent {}

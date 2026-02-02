@@ -22,7 +22,7 @@ import {NumberField} from "@vaadin/number-field";
 import {OrVaadinComponent} from "./util";
 import {LitElement} from "lit";
 
-@customElement("or-vaadin-numberfield")
+@customElement("or-vaadin-number-field")
 export class OrVaadinNumberfield extends (NumberField as new () => NumberField & LitElement) implements OrVaadinComponent {
 
     override _onEnter(ev: KeyboardEvent) {

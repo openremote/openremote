@@ -20,12 +20,6 @@
 import { customElement } from "lit/decorators.js";
 import { RadioGroup } from "@vaadin/radio-group";
 import { OrVaadinComponent } from "./util";
-import { LitElement } from "lit";
 
 @customElement("or-vaadin-radio-group")
-export class OrVaadinGroup extends (RadioGroup as new () => RadioGroup & LitElement) implements OrVaadinComponent {
-    override _onEnter(ev: KeyboardEvent) {
-        this.dispatchEvent(new CustomEvent("submit", { bubbles: true, composed: true }));
-        return super._onEnter(ev);
-    }
-}
+export class OrVaadinGroup extends RadioGroup implements OrVaadinComponent {}
