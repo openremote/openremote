@@ -452,9 +452,31 @@ public class GatewayClientConnector implements AutoCloseable {
 
         LOG.info("Start tunnel request received: " + connection + ", " + tunnelInfo);
 
+        // Check if there is an active tunnel session for this tunnel info already
+        GatewayTunnelSession activeSession = this.activeTunnelSessions.stream()
+                .filter(activeTunnelSession -> activeTunnelSession.getTunnelInfo().equals(tunnelInfo))
+                .findFirst()
+                .orElse(null);
+
+        if (activeSession != null) {
+            LOG.fine("Existing active tunnel session found for tunnel so returning:  " + connection + ", " + tunnelInfo);
+            return activeSession.connectFuture;
+        }
+
         GatewayTunnelSession session = tunnelFactory.createSession(tunnelHostname, tunnelPort, tunnelInfo, this::onTunnelSessionClosed);
         activeTunnelSessions.add(session);
-        return session.connectFuture.orTimeout(60000, TimeUnit.MILLISECONDS);
+
+        // Do cleanup on timeout or error
+        session.connectFuture.orTimeout(GatewayConnector.RESPONSE_TIMEOUT_MILLIS-1000, TimeUnit.MILLISECONDS).whenComplete(
+           (unused, throwable) -> {
+              if (throwable != null) {
+                 LOG.log(Level.WARNING, "Gateway tunnel session failed to connect: " + connection + ", " + tunnelInfo, throwable);
+                 activeTunnelSessions.remove(session);
+              }
+           }
+        );
+
+        return session.connectFuture;
     }
 
     protected String stopGatewayTunnel(GatewayTunnelStopRequestEvent stopRequestEvent) {
