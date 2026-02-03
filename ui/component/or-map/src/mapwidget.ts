@@ -87,7 +87,7 @@ export class MapWidget {
         this._clusterConfig = clusterConfig;
     }
 
-    protected _onMove = () => debounce(() => this._updateMarkers());
+    protected _onMove = () => this._updateMarkers();
     protected _onMoveEnd = () => this._updateMarkers();
 
     public setCenter(center?: LngLatLike): this {
