@@ -959,9 +959,7 @@ export class MapWidget {
                             "type": "Point",
                             "coordinates": [marker.lng, marker.lat]
                         },
-                        properties: {
-                            "title": "You Found Me",
-                        }
+                        properties: {}
                     }]
                 }
             });
@@ -972,14 +970,15 @@ export class MapWidget {
                 "source": "circleData",
                 "paint": {
                     "circle-radius": [
-                        "interpolate", 
-                        ["linear"], 
-                        ["zoom"], 
+                        "interpolate",
+                        ["exponential", 2],
+                        ["zoom"],
                         0, 0, 
                         20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)
                     ],
                     "circle-color": "red",
-                    "circle-opacity": 0.3
+                    "circle-opacity": 0.3,
+                    "circle-pitch-alignment": "map" // Keeps the circle flat against the map surface
                 }
             });
         }
