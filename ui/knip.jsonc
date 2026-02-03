@@ -14,6 +14,7 @@
         "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
         "@types/offscreencanvas", // Referenced in the tsconfig file
         "@vaadin/vaadin-lumo-styles", // Only imports CSS files
+        "@openremote/theme", // Only imports CSS files
         "@rsdoctor/rspack-plugin" // References in webpack config, and imported using require()
     ],
     "ignoreUnresolved": [
