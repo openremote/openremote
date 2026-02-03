@@ -1699,7 +1699,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
-    axios: "npm:~1.13.2"
+    axios: "npm:1.13.2"
     i18next: "npm:^21.5.3"
     i18next-http-backend: "npm:^1.3.1"
     keycloak-js: "npm:^25.0.1"
@@ -1842,7 +1842,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    axios: "npm:~1.13.2"
+    axios: "npm:1.13.2"
     i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
   languageName: unknown
@@ -2056,7 +2056,7 @@ __metadata:
     "@openremote/or-components": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    axios: "npm:~1.13.2"
+    axios: "npm:1.13.2"
     http-link-header: "npm:^1.1.3"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
@@ -2242,7 +2242,7 @@ __metadata:
   resolution: "@openremote/rest@workspace:ui/component/rest"
   dependencies:
     "@types/qs": "npm:^6.9.7"
-    axios: "npm:~1.13.2"
+    axios: "npm:1.13.2"
     qs: "npm:^6.8.0"
   languageName: unknown
   linkType: soft
@@ -4663,7 +4663,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:~1.13.2":
+"axios@npm:1.13.2":
   version: 1.13.2
   resolution: "axios@npm:1.13.2"
   dependencies:
