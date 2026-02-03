@@ -2143,20 +2143,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-smart-notify@workspace:ui/component/or-smart-notify":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-smart-notify@workspace:ui/component/or-smart-notify"
-  dependencies:
-    "@fortawesome/fontawesome-svg-core": "npm:^1.2.12"
-    "@fortawesome/free-regular-svg-icons": "npm:^5.6.3"
-    "@fortawesome/free-solid-svg-icons": "npm:^5.6.3"
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    lit: "npm:^3.3.1"
-    moment: "npm:^2.29.4"
-  languageName: unknown
-  linkType: soft
-
 "@openremote/or-timeline@workspace:ui/component/or-timeline":
   version: 0.0.0-use.local
   resolution: "@openremote/or-timeline@workspace:ui/component/or-timeline"
