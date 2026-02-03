@@ -26,6 +26,13 @@ public class GatewayCapabilitiesResponseEvent extends SharedEvent {
         this.version = version;
     }
 
+    // Constructor from master - defaults tunnelTimeoutManagementSupported to false
+    public GatewayCapabilitiesResponseEvent(String version, boolean tunnelingSupported) {
+        this.version = version;
+        this.tunnelingSupported = tunnelingSupported;
+        this.tunnelTimeoutManagementSupported = false;
+    }
+
     public boolean isTunnelingSupported() {
         return tunnelingSupported;
     }
@@ -36,5 +43,15 @@ public class GatewayCapabilitiesResponseEvent extends SharedEvent {
 
     public String getVersion() {
         return version;
+    }
+
+    @Override
+    public String toString() {
+        return "GatewayCapabilitiesResponseEvent{" +
+                "tunnelingSupported=" + tunnelingSupported +
+                ", tunnelTimeoutManagementSupported=" + tunnelTimeoutManagementSupported +
+                ", version=" + version +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

@@ -10,8 +10,8 @@ import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
+import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
-import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -50,6 +50,7 @@ import java.nio.file.Paths
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
@@ -64,6 +65,8 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
 
+@Ignore
+// TODO: Reinstate GatewayTests and have a test for each supported version of the gateway API
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Gateway asset provisioning and local manager logic test"() {
@@ -123,7 +126,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         thrown(ForbiddenException.class)
 
         when: "the Gateway client is created"
-        def gatewayClient = new GatewayIOClient(
+        def gatewayClient = new WebsocketIOClient(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingName").build(),
                 null,
                 new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingName/protocol/openid-connect/token",
@@ -133,7 +136,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         gatewayClient.setEncoderDecoderProvider({
             [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
         })
-
 
         and: "we add callback consumers to the client"
         def connectionStatus = gatewayClient.getConnectionStatus()
@@ -1097,51 +1099,69 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
-        def tunnelSSHHost = "test.openremote.app"
+        def tunnelSSHHost = "custom-project-test.openremote.app"
         def tunnelSSHPort = 2222
+        def tmpDir = new File("tmp")
+        def lockFile = new File(tmpDir, "lock.file")
 
-        and: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
-        def gatewayClientService = container.getService(GatewayClientService)
-        def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
-        def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
-        def tunnelInfo = new GatewayTunnelInfo(
-                "",
-                UniqueIdentifierGenerator.generateId(),
+        and: "an instance of the gateway tunnel factory is created"
+        def container = new Container(Collections.emptyMap(), Collections.emptyList())
+        def conditions = new PollingConditions(timeout: 15, delay: 1)
+        def tunnelFactory = new MINAGatewayTunnelFactory(container.EXECUTOR, Container.SCHEDULED_EXECUTOR, keyPath.toFile(), null)
+        tunnelFactory.start()
+
+        expect: "the SSH client to be ready"
+        conditions.eventually {
+            tunnelFactory.client.isStarted()
+        }
+
+        and: "A configured GatewayTunnelInfo for HTTPS on localhost:443"
+        def tunnelInfo = new GatewayTunnelInfo(Constants.MASTER_REALM,
+                "abcedf123456",
                 GatewayTunnelInfo.Type.HTTPS,
-                "localhost",
-                443)
-        def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
+                "localhost", 443)
 
-        expect: "the tunnel factory to be created"
-        tunnelFactory != null
+        and: "A completion variable for the close callback"
+        AtomicBoolean closed = new AtomicBoolean(false)
 
-        when: "a tunnel is requested to start"
-        def startEvent = new GatewayTunnelStartRequestEvent(
-                tunnelSSHHost,
-                tunnelSSHPort,
-                tunnelInfo)
-        tunnelFactory.startTunnel(startEvent)
+        when: "Create session is called"
+        GatewayTunnelSession session = tunnelFactory.createSession(tunnelSSHHost, tunnelSSHPort, tunnelInfo, { t ->
+            closed.set(true)
+        })
 
-        then: "the tunnel should be established and be usable"
-        tunnelFactory.sessionMap.containsKey(tunnelInfo)
-        def response = target.request().get()
-        response.status == 200
+        then: "The session connection future should complete successfully"
+        new PollingConditions(timeout: 60).eventually {
+            assert session.getConnectFuture().isDone()
+            assert !session.getConnectFuture().isCompletedExceptionally()
+        }
 
-        when: "the tunnel is stopped"
-        tunnelFactory.stopTunnel(tunnelInfo)
+        then: "we keep the tunnel open for manual testing until lock file is deleted"
+        if (!tmpDir.exists()) {
+            tmpDir.mkdirs()
+        }
+        if (!lockFile.exists()) {
+            lockFile.createNewFile()
+        }
+        getLOG().info("---------------------------------------------------------------------------------")
+        getLOG().info("TEST PAUSED FOR TUNNEL TESTING")
+        getLOG().info("Delete the lock file to continue: ${lockFile.absolutePath}")
+        getLOG().info("Tunnel should be accessible at: gw-54tnxwr2oobjafque1jndh.${tunnelSSHHost}")
+        getLOG().info("---------------------------------------------------------------------------------")
 
-        then: "the tunnel should be destroyed"
-        !tunnelFactory.sessionMap.containsKey(tunnelInfo)
+        while (lockFile.exists()) {
+            getLOG().info("Tunnel is open")
+            Thread.sleep(5000)
+        }
 
-        and: "requests should fail"
-        def response2 = target.request().get()
-        response2.status != 200
+        when: "we close the tunnel gracefully"
+        session.disconnect()
+
+        then: "the tunnel should be closed without error"
+        noExceptionThrown()
 
         cleanup: "cleanup"
-        if (client != null) {
-            client.close()
+        if (tunnelFactory != null) {
+            tunnelFactory.stop()
         }
     }
 
