@@ -72,7 +72,7 @@ export const style = css`
     .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
         z-index: 1;
     }
-    .leaflet-marker-icon, .maplibregl-marker {
+    .maplibregl-marker {
         pointer-events: none !important;
     }
 

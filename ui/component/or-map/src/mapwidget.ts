@@ -250,8 +250,8 @@ export class MapWidget {
 
         if (this._viewSettings) {
             if (this._useZoomControls){
-                options.maxZoom = this._viewSettings.maxZoom
-                options.minZoom = this._viewSettings.minZoom
+                options.maxZoom = this._viewSettings.maxZoom;
+                options.minZoom = this._viewSettings.minZoom;
             }
             if (this._viewSettings.bounds && !this._showBoundaryBox){
                 options.maxBounds = this._viewSettings.bounds;
