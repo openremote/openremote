@@ -1,5 +1,5 @@
 import {css, html, TemplateResult} from "lit";
-import {customElement, property, state } from "lit/decorators.js";
+import {customElement, property, query, state } from "lit/decorators.js";
 import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
@@ -11,7 +11,7 @@ import {getInsightsRoute} from "../routes";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageInsightsConfig {
-    dataViewer?: any // deprecated DataViewerConfig
+
 }
 
 export function pageInsightsProvider(store: Store<AppStateKeyed>, config?: PageInsightsConfig): PageProvider<AppStateKeyed> {
