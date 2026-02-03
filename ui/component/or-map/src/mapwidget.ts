@@ -87,6 +87,9 @@ export class MapWidget {
         this._clusterConfig = clusterConfig;
     }
 
+    protected _onMove = () => debounce(() => this._updateMarkers());
+    protected _onMoveEnd = () => this._updateMarkers();
+
     public setCenter(center?: LngLatLike): this {
         this._center = getLngLat(center);
         if (this._map && this._center) {
@@ -440,12 +443,13 @@ export class MapWidget {
             if (!this._map) return;
             if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
 
-            this._map.off('move', () => this._updateMarkers());
-            this._map.off('moveend', () => this._updateMarkers());
+            this._map.off('move', this._onMove);
+            this._map.off('moveend', this._onMoveEnd);
 
-            this._map.on('move', debounce(() => this._updateMarkers()));
-            this._map.on('moveend', () => this._updateMarkers());
-            this._updateMarkers()
+            this._map.on('move', this._onMove);
+            this._map.on('moveend', this._onMoveEnd);
+
+            this._updateMarkers();
         })
     }
 
