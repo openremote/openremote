@@ -2237,6 +2237,7 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@vaadin/button": "npm:~25.0.3"
     "@vaadin/checkbox": "npm:~25.0.3"
     "@vaadin/date-picker": "npm:~25.0.3"
     "@vaadin/date-time-picker": "npm:~25.0.3"

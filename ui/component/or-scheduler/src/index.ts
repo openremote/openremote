@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { CalendarEvent } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import "@openremote/or-vaadin-components/or-vaadin-dialog";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import { translate, i18next } from "@openremote/or-translate";
-import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { dialogRenderer, dialogFooterRenderer } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
@@ -82,6 +84,12 @@ declare global {
 
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
+    static styles = css`
+        vaadin-dialog::part(content) {
+            background-color: var(--lumo-contrast-5pct) !important;
+        }
+    `;
+
     @property({ type: Object })
     public defaultSchedule?: CalendarEvent;
 
@@ -110,6 +118,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _ends: keyof typeof rruleEnds = "never";
 
     @state()
+    protected _dialogOpened = false;
+
+    @state()
     protected _normalizedSchedule = this.applyTimezoneOffset(this.schedule);
 
     @state()
@@ -117,7 +128,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected _byRRuleParts?: RulePartKey[];
     protected _count = 1;
-    protected _dialog?: OrMwcDialog;
     protected _eventType: EventTypes = EventTypes.default;
     protected _eventTypes: LabeledEventTypes = EventTypes;
     protected _until = moment().toDate();
@@ -253,7 +263,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
 
         this._normalizedSchedule = { ...calendarEvent };
-        this._dialog!.requestUpdate();
+        // this._dialog!.requestUpdate();
         this._normalizedSchedule.recurrence = this.getRRule();
     }
 
@@ -301,7 +311,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 break;
         }
         this._eventType = value;
-        this._dialog!.requestUpdate();
+        // this._dialog!.requestUpdate();
     }
 
     /**
@@ -326,33 +336,77 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected render() {
+        const dependencies = [
+            this.defaultSchedule,
+            this.defaultEventTypeLabel,
+            this.disabledFrequencies,
+            this.disabledRRuleParts,
+            this.header,
+            this.isAllDay,
+            this.schedule,
+            this.timezoneOffset,
+            this._ends,
+            this._dialogOpened,
+            this._normalizedSchedule,
+            this._rrule,
+        ];
         return html`
-            <or-mwc-input outlined .type="${InputType.BUTTON}" label="${this.timeLabel()}" @or-mwc-input-changed="${() => this.showDialog()}"></or-mwc-input>
+            <or-vaadin-button @click="${() => this._dialogOpened = true}">${this.timeLabel()}</or-vaadin-button>
+            <or-vaadin-dialog id="scheduler" .opened="${this._dialogOpened}" .header-title="${i18next.t(this.header)}"
+                @closed="${() => this._dialogOpened = false}"
+                ${dialogRenderer(this.getDialogContent, dependencies)}
+                ${dialogFooterRenderer(this.getDialogFooter, [])}
+            ></or-vaadin-dialog>
         `;
     }
 
-    protected showDialog() {
-        this._dialog = showDialog(new OrMwcDialog()
-            .setHeading(i18next.t(this.header))
-            .setStyles(html`
+    // protected showDialog() {
+    //     this._dialog = showDialog(new OrMwcDialog()
+    //         .setHeading(i18next.t(this.header))
+    //         .setStyles(html`
+    //             `)
+    //         .setActions([
+    //             {
+    //                 actionName: "cancel",
+    //                 content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
+    //                 action: () => {
+    //                     this._dialog = undefined;
+    //                 }
+    //             },
+    //             {
+    //                 actionName: "ok",
+    //                 default: true,
+    //                 content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
+    //                 action: () => {
+    //                     if (this._normalizedSchedule && this.isAllDay) {
+    //                         this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
+    //                         this._normalizedSchedule.end = moment(this._normalizedSchedule.end).startOf("day").endOf("day").toDate().getTime();
+    //                     }
+    //                     if (this._eventType === EventTypes.default) {
+    //                         delete this._normalizedSchedule;
+    //                     } else if (this._eventType === EventTypes.recurrence) {
+    //                         this._normalizedSchedule!.recurrence = this.getRRule();
+    //                     }
+    //                     const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
+    //                     this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
+    //                     this._dialog = undefined;
+    //                 }
+    //             },
+    //         ])
+    //         .setContent(() => this.getDialogContent())
+    //         .setDismissAction(null));
+    // }
+
+    protected getDialogContent(): TemplateResult {
+        const calendar = this._normalizedSchedule;
+
+        return html`
                 <style>
-                    #dialog-content {
-                        max-height: 100vh;
-                        overflow: auto;
-                        background-color: #f5f5f5;
+                    ::part(content) {
+                        background-color: var(--lumo-contrast-5pct) !important;
                     }
-
-                    .mdc-dialog .mdc-dialog__content {
-                        padding: 8px 16px !important;
-                    }
-
                     @media only screen and (max-width: 1279px) {
-                        .mdc-dialog__surface {
-                            overflow-x: auto !important;
-                            overflow-y: auto !important;
-                        }
-
-                        #dialog-content {
+                        #content {
                             min-height: 230px;
                             overflow: auto;
                         }
@@ -378,44 +432,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         display: block;
                         font-weight: bold;
                     }
-                </style>`)
-            .setActions([
-                {
-                    actionName: "cancel",
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
-                    action: () => {
-                        this._dialog = undefined;
-                    }
-                },
-                {
-                    actionName: "ok",
-                    default: true,
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
-                    action: () => {
-                        if (this._normalizedSchedule && this.isAllDay) {
-                            this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
-                            this._normalizedSchedule.end = moment(this._normalizedSchedule.end).startOf("day").endOf("day").toDate().getTime();
-                        }
-                        if (this._eventType === EventTypes.default) {
-                            delete this._normalizedSchedule;
-                        } else if (this._eventType === EventTypes.recurrence) {
-                            this._normalizedSchedule!.recurrence = this.getRRule();
-                        }
-                        const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
-                        this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
-                        this._dialog = undefined;
-                    }
-                },
-            ])
-            .setContent(() => this.getDialogContent())
-            .setDismissAction(null));
-    }
-
-    protected getDialogContent(): TemplateResult {
-        const calendar = this._normalizedSchedule;
-
-        return html`
-            <div style="min-width: 635px; display:grid; flex-direction: row;">
+                </style>
+            <div class="content" style="max-width: 604px; display: grid; flex-direction: row;">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div class="layout horizontal">
@@ -428,6 +446,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
                 ${this._eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
             </div>`;
+    }
+
+    protected getDialogFooter(): TemplateResult {
+        return html``;
     }
 
     /**
@@ -560,7 +582,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             <div id="recurrence-ends" class="section">
                 <label class="title"><or-translate value="schedule._ends"></or-translate></label>
                 <div style="display: flex; gap: 8px;" class="layout horizontal">
-                    <or-vaadin-radio-group style="padding-right: 10px" .value="${this._ends}" @change="${(e: any) => this.setRRuleValue(e.target.value, "recurrence-ends")}">
+                    <or-vaadin-radio-group style="padding-right: 10px" .value="${this._ends}" theme="vertical"
+                        @change="${(e: any) => this.setRRuleValue(e.target.value, "recurrence-ends")}">
                         ${Object.entries(rruleEnds)
                                 .filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))
                                 .map(([k, v]) => html`
