@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { CalendarEvent } from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -84,12 +84,6 @@ declare global {
 
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
-    static styles = css`
-        vaadin-dialog::part(content) {
-            background-color: var(--lumo-contrast-5pct) !important;
-        }
-    `;
-
     @property({ type: Object })
     public defaultSchedule?: CalendarEvent;
 
@@ -263,7 +257,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
 
         this._normalizedSchedule = { ...calendarEvent };
-        // this._dialog!.requestUpdate();
         this._normalizedSchedule.recurrence = this.getRRule();
     }
 
@@ -311,7 +304,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 break;
         }
         this._eventType = value;
-        // this._dialog!.requestUpdate();
     }
 
     /**
@@ -359,21 +351,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             ></or-vaadin-dialog>
         `;
     }
-
-    // protected showDialog() {
-    //     this._dialog = showDialog(new OrMwcDialog()
-    //         .setHeading(i18next.t(this.header))
-    //         .setStyles(html`
-    //             `)
-    //         .setActions([
-    //             {
-    //                 actionName: "cancel",
-    //                 content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
-    //                 action: () => {
-    //                     this._dialog = undefined;
-    //                 }
-    //             },
-    //             {
     //                 actionName: "ok",
     //                 default: true,
     //                 content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
@@ -390,20 +367,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     //                     const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
     //                     this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
     //                     this._dialog = undefined;
-    //                 }
-    //             },
-    //         ])
-    //         .setContent(() => this.getDialogContent())
-    //         .setDismissAction(null));
-    // }
 
     protected getDialogContent(): TemplateResult {
         const calendar = this._normalizedSchedule;
 
         return html`
                 <style>
-                    ::part(content) {
-                        background-color: var(--lumo-contrast-5pct) !important;
+                    or-vaadin-dialog::part(content) {
+                        background-color: var(--lumo-contrast-5pct);
                     }
                     @media only screen and (max-width: 1279px) {
                         #content {
@@ -436,8 +407,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             <div class="content" style="max-width: 604px; display: grid; flex-direction: row;">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
-                    <div class="layout horizontal">
-                        <or-vaadin-select style="width: 100%" .value="${this._eventType}" .items="${Object.keys(this._eventTypes).map(k => ({ value: k, label: k }))}"
+                    <div style="display: flex">
+                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${Object.keys(this._eventTypes).map(k => ({ value: k, label: k }))}"
                             @change="${(e: any) => this.setCalendarEventType(e.target.value)}">
                         </or-vaadin-select>
                     </div>
@@ -531,8 +502,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             ? (this._rrule?.origOptions?.byweekday as Weekday[])?.map(String)
             : this._rrule?.origOptions[part];
 
-        return html`<or-mwc-input style="min-width: 30%"
-                                  .value="${value ?? []}"
+        return html`<or-mwc-input .value="${value ?? []}"
                                   .type="${type}"
                                   .options="${options}"
                                   .label="${part}"
