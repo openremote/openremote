@@ -12,6 +12,7 @@ import maplibregl, {
     NavigationControl,
     StyleSpecification,
     GeoJSONSourceSpecification,
+    MapSourceDataEvent,
 } from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
@@ -89,6 +90,13 @@ export class MapWidget {
 
     protected _onMove = () => this._updateMarkers();
     protected _onMoveEnd = () => this._updateMarkers();
+    protected _onData = (e: MapSourceDataEvent) => {
+        if (this._map && e.isSourceLoaded  && e.sourceId === "mapPoints") {
+            this._map.on('move', this._onMove);
+            this._map.on('moveend', this._onMoveEnd);
+            this._updateMarkers();
+        }
+    };
 
     public setCenter(center?: LngLatLike): this {
         this._center = getLngLat(center);
@@ -439,18 +447,7 @@ export class MapWidget {
             });
         }
 
-        this._map.on("data", async (e: any) => {
-            if (!this._map) return;
-            if (e.sourceId !== 'mapPoints' || !e.isSourceLoaded) return;
-
-            this._map.off('move', this._onMove);
-            this._map.off('moveend', this._onMoveEnd);
-
-            this._map.on('move', this._onMove);
-            this._map.on('moveend', this._onMoveEnd);
-
-            this._updateMarkers();
-        })
+        this._map.on("data", this._onData);
     }
 
     // Clean up of internal resources associated with the map.
