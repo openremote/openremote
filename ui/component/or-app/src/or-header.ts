@@ -420,7 +420,7 @@ export class OrHeader extends LitElement {
                         <div id="desktop-left">
                             ${mainItems ? mainItems.filter(hasRequiredRole).map((headerItem) => {
                                 return html`
-                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
                             }) : ``}
                         </div>
@@ -451,7 +451,7 @@ export class OrHeader extends LitElement {
                         <nav id="drawer-list">
                             ${mainItems ? mainItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
                                 return html`
-                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
                             }) : ``}
                         </nav>
@@ -461,7 +461,7 @@ export class OrHeader extends LitElement {
                         <div id="mobile-bottom" class="${mainItems.length > 0 ? 'mobile-bottom-border' : ''}">
                             ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
                                 return html`
-                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
                             })}
                         </div>` : ``}
@@ -520,16 +520,24 @@ export class OrHeader extends LitElement {
         }
     }
 
-    protected _onHeaderItemSelect(headerItem: HeaderItem) {
+    protected _onHeaderItemSelect(headerItem: HeaderItem, e?: MouseEvent) {
         if (headerItem.action) {
+            e?.preventDefault();
             headerItem.action();
-        } else if (headerItem.href) {
+        }
+        // If not triggered by a MouseEvent, we should navigate manually instead of using <a href="">
+        if(!e && headerItem.href) {
             if (headerItem.absolute) {
-                window.location.href = headerItem.href;
+                globalThis.location.assign(headerItem.href);
             } else {
                 router.navigate(headerItem.href);
             }
         }
+    }
+
+    protected _getHeaderHref({ href, absolute }: HeaderItem): string {
+        if (!href) return "#";
+        return absolute ? href : `#/${href}`;
     }
 
     protected _closeDrawer() {
