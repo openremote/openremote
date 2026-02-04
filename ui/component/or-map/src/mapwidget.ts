@@ -730,8 +730,7 @@ export class MapWidget {
     }
 
     protected _updateMarkerPosition(marker: OrMapMarker) {
-        const mGl: Marker | undefined = this._markers.get(marker);
-        mGl?.setLngLat([marker.lng!, marker.lat!]);
+        this._markers.get(marker)?.setLngLat([marker.lng!, marker.lat!]);
         this._createMarkerRadius(marker);
     }
 
