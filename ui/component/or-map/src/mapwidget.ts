@@ -88,7 +88,7 @@ export class MapWidget {
         this._clusterConfig = clusterConfig;
     }
 
-    protected _onMove = () => this._updateMarkers();
+    protected _onMove = () => debounce(this._updateMarkers);
     protected _onMoveEnd = () => this._updateMarkers();
     protected _onData = (e: MapSourceDataEvent) => {
         if (this._map && e.isSourceLoaded  && e.sourceId === "mapPoints") {
