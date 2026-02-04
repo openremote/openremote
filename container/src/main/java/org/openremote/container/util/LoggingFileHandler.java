@@ -53,7 +53,7 @@ public class LoggingFileHandler extends FileHandler {
     }
 
     private static String pattern() {
-        return getProperty(".pattern").replace("${" + LogUtil.OR_LOGGING_PROPERTY_NAME + "}",System.getProperty(LogUtil.OR_LOGGING_PROPERTY_NAME));
+        return getProperty(".pattern").replace("${" + LogUtil.OR_LOGGING_PROPERTY_NAME + "}", System.getProperty(LogUtil.OR_LOGGING_PROPERTY_NAME));
     }
 
     public LoggingFileHandler() throws IOException {
