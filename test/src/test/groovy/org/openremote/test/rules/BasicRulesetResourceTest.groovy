@@ -98,8 +98,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         globalRuleset.id == rulesetId
         globalRuleset.version == 0
-        globalRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        globalRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         globalRuleset.name == "Test global definition"
         globalRuleset.rules == "SomeRulesCode"
         globalRuleset.lang == GROOVY
@@ -120,8 +120,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         globalRuleset.id == rulesetId
         globalRuleset.version > 0
-        globalRuleset.createdOn.time < System.currentTimeMillis()
-        globalRuleset.lastModified.time > lastModified.time
+        globalRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        globalRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         globalRuleset.name == "Renamed test global definition"
         globalRuleset.rules == "SomeRulesCodeModified"
 
@@ -164,8 +164,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 0
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         realmRuleset.name == "Test realm definition"
         realmRuleset.rules == "SomeRulesCode"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -186,8 +186,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 1
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        realmRuleset.lastModified.time > lastModified.time
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        realmRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         realmRuleset.name == "Renamed test realm definition"
         realmRuleset.rules == "SomeRulesCodeModified"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -247,8 +247,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 0
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         realmRuleset.name == "Test realm definition"
         realmRuleset.rules == "SomeRulesCode"
         realmRuleset.realm == keycloakTestSetup.realmBuilding.name
@@ -270,8 +270,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -292,8 +292,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        assetRuleset.lastModified.time > lastModified.time
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        assetRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -352,8 +352,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment2Id
@@ -461,8 +461,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 0
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         realmRuleset.name == "Test realm definition"
         realmRuleset.rules == "SomeRulesCode"
         realmRuleset.realm == MASTER_REALM
@@ -483,8 +483,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 1
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        realmRuleset.lastModified.time > lastModified.time
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        realmRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         realmRuleset.name == "Renamed test realm definition"
         realmRuleset.rules == "SomeRulesCodeModified"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -560,8 +560,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -582,8 +582,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        assetRuleset.lastModified.time > lastModified.time
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        assetRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -919,8 +919,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment1Id
@@ -941,8 +941,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        assetRuleset.lastModified.time > lastModified.time
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        assetRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.apartment1Id

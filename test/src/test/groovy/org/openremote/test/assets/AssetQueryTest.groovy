@@ -195,7 +195,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerTestSetup.smartOfficeId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Smart office"
         asset.type == BuildingAsset.DESCRIPTOR.getName()
         asset.parentId == null
@@ -210,7 +210,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerTestSetup.smartOfficeId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Smart office"
         asset.type == BuildingAsset.DESCRIPTOR.getName()
         asset.parentId == null
@@ -230,7 +230,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerTestSetup.smartOfficeId
-        assets.get(0).createdOn.time < System.currentTimeMillis()
+        assets.get(0).createdOn.toEpochMilli() < System.currentTimeMillis()
         assets.get(0).name == "Smart office"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == null
@@ -247,7 +247,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerTestSetup.smartOfficeId
-        assets.get(0).createdOn.time < System.currentTimeMillis()
+        assets.get(0).createdOn.toEpochMilli() < System.currentTimeMillis()
         assets.get(0).name == "Smart office"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == null
@@ -266,7 +266,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 3
         assetStorageService.count(query) == 3
         assets.get(0).id == managerTestSetup.apartment1Id
-        assets.get(0).createdOn.time < System.currentTimeMillis()
+        assets.get(0).createdOn.toEpochMilli() < System.currentTimeMillis()
         assets.get(0).name == "Apartment 1"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == managerTestSetup.smartBuildingId
@@ -544,7 +544,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerTestSetup.apartment1LivingroomId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Living Room 1"
         asset.type == RoomAsset.DESCRIPTOR.getName()
         asset.parentId != null
@@ -568,7 +568,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should contain only matches that are protected"
         asset.id == managerTestSetup.apartment1LivingroomId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Living Room 1"
         asset.type == RoomAsset.DESCRIPTOR.getName()
         asset.parentId == managerTestSetup.apartment1Id
