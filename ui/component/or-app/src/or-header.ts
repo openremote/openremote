@@ -524,6 +524,7 @@ export class OrHeader extends LitElement {
         if (headerItem.action) {
             e?.preventDefault();
             headerItem.action();
+            return;
         }
         // If not triggered by a MouseEvent, we should navigate manually instead of using <a href="">
         if(!e && headerItem.href) {
