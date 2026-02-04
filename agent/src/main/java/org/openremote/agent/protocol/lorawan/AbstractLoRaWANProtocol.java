@@ -56,50 +56,52 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.APPLICATION_ID;
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.MQTT_HOST;
-import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.MQTT_PORT;
+import static org.openremote.agent.protocol.lorawan.LoRaWANAgent.*;
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.*;
+import static org.openremote.model.asset.agent.Agent.HOST;
+import static org.openremote.model.asset.agent.Agent.PORT;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK_CONFIG;
+import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 
 public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<S,T>, T extends LoRaWANAgent<T, S>> implements Protocol<T>, ProtocolAssetImport {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractLoRaWANProtocol.class);
 
-    private ExecutorService executorService;
-    private ProtocolAssetService assetService;
-    private MQTTProtocol mqttProtocol;
-    private MQTTAgent mqttAgent;
-    private T agent;
-    private Set<String> devEuiSet = new CopyOnWriteArraySet<>();
-    protected Container container;
+    protected volatile ExecutorService executorService;
+    protected volatile ProtocolAssetService assetService;
+    private final MQTTProtocol mqttProtocol;
+    private final T agent;
+    protected final Set<String> devEuiSet = new CopyOnWriteArraySet<>();
+    protected volatile Container container;
 
     public AbstractLoRaWANProtocol(T agent) {
         this.agent = agent;
-        this.mqttAgent = new MQTTAgent(agent.getName());
+
+        MQTTAgent mqttAgent = new MQTTAgent(agent.getName());
 
         mqttAgent.setId(agent.getId());
-        agent.getMqttHost().ifPresent(host -> mqttAgent.setHost(host));
-        agent.getMqttPort().ifPresent(port -> mqttAgent.setPort(port));
-        agent.getClientId().ifPresent(clientId -> mqttAgent.setClientId(clientId));
-        agent.isSecureMode().ifPresent(secureMode -> mqttAgent.setSecureMode(secureMode));
-        agent.getPublishQoS().ifPresent(publishQos -> mqttAgent.setPublishQos(publishQos));
-        agent.getSubscribeQoS().ifPresent(subscribeQos -> mqttAgent.setSubscribeQos(subscribeQos));
-        agent.getCertificateAlias().ifPresent(certificateAlias -> mqttAgent.setCertificateAlias(certificateAlias));
-        agent.isResumeSession().ifPresent(resumeSession -> mqttAgent.setResumeSession(resumeSession));
-        agent.isWebsocketMode().ifPresent(websocketMode -> mqttAgent.setWebsocketMode(websocketMode));
-        agent.getWebsocketPath().ifPresent(websocketPath -> mqttAgent.setWebsocketPath(websocketPath));
-        agent.getWebsocketQuery().ifPresent(websocketQuery -> mqttAgent.setWebsocketQuery(websocketQuery));
-        agent.getLastWillTopic().ifPresent(lastWillTopic -> mqttAgent.setLastWillTopic(lastWillTopic));
-        agent.getLastWillPayload().ifPresent(lastWillPayload -> mqttAgent.setLastWillPayload(lastWillPayload));
-        agent.isLastWillRetain().ifPresent(lastWillRetain -> mqttAgent.setLastWillRetain(lastWillRetain));
-        agent.getUsernamePassword().ifPresent(usernamePassword -> mqttAgent.setUsernamePassword(usernamePassword));
+        agent.getMqttHost().ifPresent(mqttAgent::setHost);
+        agent.getMqttPort().ifPresent(mqttAgent::setPort);
+        agent.getClientId().ifPresent(mqttAgent::setClientId);
+        agent.isSecureMode().ifPresent(mqttAgent::setSecureMode);
+        agent.getPublishQoS().ifPresent(mqttAgent::setPublishQos);
+        agent.getSubscribeQoS().ifPresent(mqttAgent::setSubscribeQos);
+        agent.getCertificateAlias().ifPresent(mqttAgent::setCertificateAlias);
+        agent.isResumeSession().ifPresent(mqttAgent::setResumeSession);
+        agent.isWebsocketMode().ifPresent(mqttAgent::setWebsocketMode);
+        agent.getWebsocketPath().ifPresent(mqttAgent::setWebsocketPath);
+        agent.getWebsocketQuery().ifPresent(mqttAgent::setWebsocketQuery);
+        agent.getLastWillTopic().ifPresent(mqttAgent::setLastWillTopic);
+        agent.getLastWillPayload().ifPresent(mqttAgent::setLastWillPayload);
+        agent.isLastWillRetain().ifPresent(mqttAgent::setLastWillRetain);
+        agent.getUsernamePassword().ifPresent(mqttAgent::setUsernamePassword);
         mqttAgent.setWildcardSubscriptionTopics(createWildcardSubscriptionTopicList().toArray(new String[0]));
 
-        this.mqttProtocol = new LoRaWANMQTTProtocol(mqttAgent);
+        this.mqttProtocol = createMqttClientProtocol(mqttAgent);
     }
 
     @Override
@@ -116,7 +118,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 .map(String::trim)
                 .map(String::toUpperCase)
                 .filter(s -> !s.isEmpty())
-                .ifPresent(devEUI -> devEuiSet.add(devEUI));
+                .ifPresent(devEuiSet::add);
         }
     }
 
@@ -129,7 +131,10 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 .map(String::trim)
                 .map(String::toUpperCase)
                 .filter(s -> !s.isEmpty())
-                .ifPresent(devEUI -> devEuiSet.remove(devEUI));
+                .ifPresent(devEUI -> {
+                    devEuiSet.remove(devEUI);
+                    doUnlinkDevice(devEUI);
+                });
         }
     }
 
@@ -137,12 +142,6 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     public void start(Container container) throws Exception {
         this.container = container;
         executorService = container.getExecutor();
-        mqttProtocol.start(container);
-    }
-
-    @Override
-    public void stop(Container container) throws Exception {
-        mqttProtocol.stop(container);
     }
 
     @Override
@@ -175,6 +174,8 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
     public boolean onAgentAttributeChanged(AttributeEvent event) {
         if (MQTT_HOST.getName().equals(event.getName()) ||
             MQTT_PORT.getName().equals(event.getName()) ||
+            PORT.getName().equals(event.getName()) ||
+            HOST.getName().equals(event.getName()) ||
             APPLICATION_ID.getName().equals(event.getName()))
         {
             return true;
@@ -203,11 +204,11 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
                 .build();
 
             try (ByteArrayInputStream inputStream = new ByteArrayInputStream(fileData)) {
-                List<CsvRecord> csvEntries = csvMapper.readerFor(CsvRecord.class).with(schema).<CsvRecord>readValues(inputStream).readAll();
+                List<DeviceRecord> csvEntries = csvMapper.readerFor(DeviceRecord.class).with(schema).<DeviceRecord>readValues(inputStream).readAll();
 
                 AssetTreeNode[] assetTreeNodes = csvEntries.stream()
-                    .filter(record -> validateCsvRecord(record))
-                    .filter(record -> duplicateAssetCheck(record))
+                    .filter(this::validateDeviceRecord)
+                    .filter(this::duplicateAssetCheck)
                     .map(this::createAsset)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -216,28 +217,50 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
 
                 assetConsumer.accept(assetTreeNodes);
             } catch (IOException e) {
-                LOG.log(Level.WARNING, "CSV import failed", e);
+                LOG.log(Level.WARNING, "CSV import failed for: " + getProtocolInstanceUri(), e);
             }
         },  null);
+    }
+
+    protected MQTTProtocol getMqttProtocol() {
+        return mqttProtocol;
+    }
+
+    protected void startMqttProtocol(Container container) throws Exception {
+        if (mqttProtocol != null) {
+            mqttProtocol.start(container);
+        }
+    }
+
+    protected void stopMqttProtocol(Container container) {
+        if (mqttProtocol != null) {
+            mqttProtocol.stop(container);
+        }
+    }
+
+    protected void doUnlinkDevice(String devEui) {
+
     }
 
     protected boolean checkCSVImportPrerequisites() {
         Optional<String> applicationId = getAgent().getApplicationId();
         boolean isOk = applicationId.map(id -> !id.trim().isEmpty()).orElse(false);
         if (!isOk) {
-            LOG.log(Level.WARNING, "CSV import failed because agent attribute '" + APPLICATION_ID.getName() + "'  is missing");
+            LOG.warning("CSV import failed because agent attribute '" + APPLICATION_ID.getName() + "'  is missing for: " + getProtocolInstanceUri());
         }
         return isOk;
     }
 
+    protected abstract MQTTProtocol createMqttClientProtocol(MQTTAgent agent);
     protected abstract List<String> createWildcardSubscriptionTopicList();
-    protected abstract boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
-    protected abstract boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
-    protected abstract boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
-    protected abstract boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord);
+    protected abstract boolean configureMQTTSubscriptionTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord);
+    protected abstract boolean configureMQTTPublishTopic(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord);
+    protected abstract boolean configureMQTTMessageMatchFilterAndPredicate(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord);
+    protected abstract boolean configureMQTTWriteValueTemplate(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord);
+    protected abstract String generateAssetId(String devEui);
 
-    protected boolean configureMQTTValueFilter(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTValueFilter(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
         getAgentConfigJsonPath(attribute).ifPresent(
@@ -249,25 +272,25 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
         return true;
     }
 
-    protected boolean configureMQTTValueConverter(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTValueConverter(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
-        getAgentConfigValueConverter(attribute).ifPresent(converter -> agentLink.setValueConverter(converter));
+        getAgentConfigValueConverter(attribute).ifPresent(agentLink::setValueConverter);
         return true;
     }
 
-    protected boolean configureMQTTWriteValueConverter(Attribute<?> attribute, MQTTAgentLink agentLink, CsvRecord csvRecord) {
-        if (attribute == null || agentLink == null || csvRecord == null) {
+    protected boolean configureMQTTWriteValueConverter(Attribute<?> attribute, MQTTAgentLink agentLink, DeviceRecord deviceRecord) {
+        if (attribute == null || agentLink == null || deviceRecord == null) {
             return false;
         }
-        getAgentConfigWriteValueConverter(attribute).ifPresent(converter -> agentLink.setWriteValueConverter(converter));
+        getAgentConfigWriteValueConverter(attribute).ifPresent(agentLink::setWriteValueConverter);
         return true;
     }
 
     protected Optional<ValueType.ObjectMap> getAgentConfig(Attribute<?> attribute) {
         return Optional.ofNullable(attribute)
-            .map(attr -> attr.getMeta())
+            .map(Attribute::getMeta)
             .flatMap(metaMap -> metaMap.get(AGENT_LINK_CONFIG))
             .flatMap(metItem -> metItem.getValue());
     }
@@ -324,31 +347,31 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             .filter(valueConverter -> !valueConverter.isEmpty());
     }
 
-    private boolean validateCsvRecord(CsvRecord record) {
+    private boolean validateDeviceRecord(DeviceRecord record) {
         boolean isValid = false;
         if (record != null) {
             isValid = record.isValid();
             if (!isValid) {
-                LOG.log(Level.WARNING, "CSV import skipped an invalid CSV record: " + record);
+                LOG.warning("CSV import skipped an invalid device record " + record + " for: " + getProtocolInstanceUri());
             }
         }
         return isValid;
     }
 
-    private boolean duplicateAssetCheck(CsvRecord record) {
+    private boolean duplicateAssetCheck(DeviceRecord record) {
         if (record == null) {
             return false;
         }
 
         if (!duplicateAssetCheck(record.getDevEUI())) {
-            LOG.log(Level.INFO, "CSV import skipped a CSV record because an asset already existed: " + record);
+            LOG.info("CSV import skipped a device record " + record + " because an asset already existed for: " + getProtocolInstanceUri());
             return false;
         }
 
         return true;
     }
 
-    private boolean duplicateAssetCheck(String devEUI) {
+    protected boolean duplicateAssetCheck(String devEUI) {
         return Optional.ofNullable(devEUI)
             .map(String::trim)
             .filter(s -> !s.isEmpty())
@@ -357,85 +380,95 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             .orElse(false);
     }
 
-    private Optional<Asset<?>> createAsset(CsvRecord csvRecord) {
-        if (csvRecord == null) {
+    protected Optional<Asset<?>> createAsset(DeviceRecord deviceRecord) {
+        if (deviceRecord == null) {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(csvRecord.getAssetTypeName())
-            .flatMap(name -> resolveAssetClass(name, csvRecord))
-            .map(clazz -> instantiateAsset(clazz, csvRecord))
-            .flatMap(asset -> configureAsset(asset, csvRecord));
+        return Optional.ofNullable(deviceRecord.getAssetTypeName())
+            .flatMap(name -> resolveAssetClass(name, deviceRecord))
+            .flatMap(clazz -> instantiateAsset(clazz, deviceRecord))
+            .flatMap(asset -> configureAsset(asset, deviceRecord));
     }
 
-    private Optional<Class<? extends Asset<?>>> resolveAssetClass(String simpleClassName, CsvRecord csvRecord) {
-        if (simpleClassName == null || csvRecord == null) {
+    private Optional<Class<? extends Asset<?>>> resolveAssetClass(String simpleClassName, DeviceRecord deviceRecord) {
+        if (simpleClassName == null || deviceRecord == null) {
             return Optional.empty();
         }
 
         return ValueUtil.getAssetClass(simpleClassName)
             .or(() -> {
-                LOG.log(Level.WARNING, "CSV import skipped a CSV record because of an invalid asset type name: " + csvRecord);
+                LOG.warning("CSV import skipped a device record " + deviceRecord + " because of an invalid asset type name for: " + getProtocolInstanceUri());
                 return Optional.empty();
             });
     }
 
-    private Asset<?> instantiateAsset(Class<?> clazz, CsvRecord csvRecord) {
-        if (clazz == null || csvRecord == null) {
-            return null;
+    private Optional<Asset<?>> instantiateAsset(Class<?> clazz, DeviceRecord deviceRecord) {
+        if (clazz == null || deviceRecord == null) {
+            return Optional.empty();
         }
 
         Asset<?> asset = null;
         try {
             Constructor<?> constructor = clazz.getConstructor(String.class);
-            asset = (Asset<?>) constructor.newInstance(csvRecord.getName());
+            asset = (Asset<?>) constructor.newInstance(deviceRecord.getName());
         } catch (ReflectiveOperationException e) {
-            LOG.log(Level.INFO, "CSV import failed to create asset for CSV record: " + csvRecord, e);
+            LOG.log(Level.INFO, "CSV import failed to create asset " + deviceRecord + " for: " + getProtocolInstanceUri(), e);
         }
-        return asset;
+        return Optional.ofNullable(asset);
     }
 
-    private Optional<Asset<?>> configureAsset(Asset<?> asset, CsvRecord csvRecord) {
-        if (asset == null || csvRecord == null) {
+    protected Optional<Asset<?>> configureAsset(Asset<?> asset, DeviceRecord deviceRecord) {
+        if (asset == null || deviceRecord == null) {
             return Optional.empty();
         }
 
-        Optional.ofNullable(csvRecord.getDevEUI()).ifPresent(devEUI -> asset.getAttribute(ATTRIBUTE_NAME_DEV_EUI).ifPresent(attribute -> attribute.setValue(devEUI.toUpperCase())));
-        Optional.ofNullable(csvRecord.getVendorId()).ifPresent(vendorId -> asset.getAttribute(ATTRIBUTE_NAME_VENDOR_ID).ifPresent(attribute -> attribute.setValue(vendorId)));
-        Optional.ofNullable(csvRecord.getModelId()).ifPresent(modelId -> asset.getAttribute(ATTRIBUTE_NAME_MODEL_ID).ifPresent(attribute -> attribute.setValue(modelId)));
-        Optional.ofNullable(csvRecord.getFirmwareVersion()).ifPresent(version -> asset.getAttribute(ATTRIBUTE_NAME_FIRMWARE_VERSION).ifPresent(attribute -> attribute.setValue(version)));
+        Optional.ofNullable(deviceRecord.getDevEUI()).ifPresent(devEUI -> asset.getAttribute(ATTRIBUTE_NAME_DEV_EUI).ifPresent(attribute -> attribute.setValue(devEUI.toUpperCase())));
+        Optional.ofNullable(deviceRecord.getVendorId()).ifPresent(vendorId -> asset.getAttribute(ATTRIBUTE_NAME_VENDOR_ID).ifPresent(attribute -> attribute.setValue(vendorId)));
+        Optional.ofNullable(deviceRecord.getModelId()).ifPresent(modelId -> asset.getAttribute(ATTRIBUTE_NAME_MODEL_ID).ifPresent(attribute -> attribute.setValue(modelId)));
+        Optional.ofNullable(deviceRecord.getFirmwareVersion()).ifPresent(version -> asset.getAttribute(ATTRIBUTE_NAME_FIRMWARE_VERSION).ifPresent(attribute -> attribute.setValue(version)));
 
-        boolean isOk = true;
+        asset.getAttribute(ATTRIBUTE_NAME_DEV_EUI)
+            .flatMap(attr -> attr.getValue(String.class))
+            .filter(devEui -> !isNullOrEmpty(devEui))
+            .ifPresent(devEui -> {
+                asset.setId(generateAssetId(devEui));
+                asset.setParentId(getAgent().getId());
+            });
 
-        for (Map.Entry<String, Attribute<?>> entry : asset.getAttributes().entrySet()) {
-            String name = entry.getKey();
-            Attribute<?> attribute = entry.getValue();
+        boolean isOk = !isNullOrEmpty(asset.getId());
+
+        for (Attribute<?> attribute : asset.getAttributes().values()) {
             MQTTAgentLink agentLink = new MQTTAgentLink(agent.getId());
 
             Optional<String> jsonPath = getAgentConfigJsonPath(attribute);
             Optional<String> regex = getAgentConfigRegex(attribute);
             if (jsonPath.isPresent() || regex.isPresent()) {
-                isOk = configureMQTTSubscriptionTopic(attribute, agentLink, csvRecord);
+                isOk = isOk && configureMQTTSubscriptionTopic(attribute, agentLink, deviceRecord);
             }
-            isOk = isOk && configureMQTTValueFilter(attribute, agentLink, csvRecord);
-            isOk = isOk && configureMQTTMessageMatchFilterAndPredicate(attribute, agentLink, csvRecord);
-            isOk = isOk && configureMQTTValueConverter(attribute, agentLink, csvRecord);
+            isOk = isOk && configureMQTTValueFilter(attribute, agentLink, deviceRecord);
+            isOk = isOk && configureMQTTMessageMatchFilterAndPredicate(attribute, agentLink, deviceRecord);
+            isOk = isOk && configureMQTTValueConverter(attribute, agentLink, deviceRecord);
             Optional<Integer> downlinkPort = getAgentConfigDownlinkPort(attribute);
             if (downlinkPort.isPresent()) {
-                isOk = isOk && configureMQTTPublishTopic(attribute, agentLink, csvRecord);
-                isOk = isOk && configureMQTTWriteValueConverter(attribute, agentLink, csvRecord);
-                isOk = isOk && configureMQTTWriteValueTemplate(attribute, agentLink, csvRecord);
+                isOk = isOk && configureMQTTPublishTopic(attribute, agentLink, deviceRecord);
+                isOk = isOk && configureMQTTWriteValueConverter(attribute, agentLink, deviceRecord);
+                isOk = isOk && configureMQTTWriteValueTemplate(attribute, agentLink, deviceRecord);
             }
 
-            if (getAgentConfig(attribute).isPresent() || ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+            if (getAgentConfig(attribute).isPresent()) {
                 attribute.addOrReplaceMeta(
                     new MetaItem<>(AGENT_LINK, agentLink)
                 );
+                MetaMap metaMap = attribute.getMeta();
+                metaMap.remove(AGENT_LINK_CONFIG);
+                attribute.setMeta(metaMap);
+            } else if (ATTRIBUTE_NAME_DEV_EUI.equals(attribute.getName())) {
+                attribute.addOrReplaceMeta(
+                    new MetaItem<>(AGENT_LINK, agentLink),
+                    new MetaItem<>(STORE_DATA_POINTS, false)
+                );
             }
-
-            MetaMap metaMap = attribute.getMeta();
-            metaMap.remove(AGENT_LINK_CONFIG);
-            attribute.setMeta(metaMap);
         }
 
         return isOk ? Optional.of(asset) : Optional.empty();

@@ -198,7 +198,7 @@ export class OrIframe extends LitElement {
 
     public getSrc(): string {
         if (this.preventCache && this.src) {
-            const url = new URL(this.src);
+            const url = new URL(this.src, globalThis.location.href);
             url.searchParams.set("t", Date.now().toString());
             return url.toString();
         }

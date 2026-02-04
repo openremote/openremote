@@ -24,17 +24,18 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "axios": "0.24.0",
+    "axios": "~1.13.2",
     "i18next": "^21.5.3",
     "i18next-http-backend": "^1.3.1",
     "keycloak-js": "^25.0.1",
-    "lodash": "^4.17.21",
+    "lodash.transform": "^4.6.0",
     "moment": "^2.29.4",
     "platform": "^1.3.6",
     "qs": "^6.8.0",
     "url-search-params-polyfill": "^8.1.0"
   },
   "devDependencies": {
+    "@types/lodash.transform": "^4",
     "@types/qs": "^6.9.7"
   },
   "publishConfig": {

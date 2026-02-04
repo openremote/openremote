@@ -1,13 +1,4 @@
-import path from "node:path";
-
-import type { i18n, Resource } from "i18next";
-import type { Page } from "@playwright/test";
-
-declare global {
-    interface Window {
-        _i18next: i18n;
-    }
-}
+import type { Page, Request, Response } from "@playwright/test";
 
 export interface BasePage {
     goto(): Promise<void>;
@@ -48,61 +39,15 @@ export class Shared {
      * @param url The URL to intercept
      * @param cb The callback to handle the response
      */
-    async interceptResponse<T>(url: string, cb: (body?: T) => void) {
+    async interceptResponse<T>(url: string, cb: (body?: T, request?: Request, response?: Response | null) => void) {
         await this.page.route(
             url,
             async (route, request) => {
                 await route.continue();
                 const response = await request.response();
-                cb(await response?.json());
+                cb(await response?.json(), request, response);
             },
             { times: 1 }
         );
-    }
-
-    /**
-     * Init shared fonts to be served for material design icons.
-     */
-    async fonts() {
-        await this.page.route("**/shared/fonts/**", async (route, request) => {
-            await route.fulfill({ path: this.urlPathToFsPath(request.url()) });
-        });
-    }
-
-    /**
-     * Init shared translations to be served for i18next.
-     * @param resources The custom translations to add
-     */
-    async locales(resources?: Resource) {
-        await this.page.route("**/shared/locales/**", async (route, request) => {
-            await route.fulfill({ path: this.urlPathToFsPath(request.url()) });
-        });
-        await this.page.evaluate(async (resources) => {
-            await window._i18next.init({
-                lng: "en",
-                fallbackLng: "en",
-                defaultNS: "test",
-                fallbackNS: "or",
-                ns: ["or"],
-                backend: {
-                    loadPath: "/shared/locales/{{lng}}/{{ns}}.json",
-                },
-            });
-            if (resources) {
-                Object.entries(resources).forEach(([locale, r]) =>
-                    Object.entries(r).forEach(([ns, translations]) => {
-                        window._i18next.addResourceBundle(locale, ns, translations);
-                    })
-                );
-            }
-        }, resources);
-    }
-
-    /**
-     * Resolves a request URL to a local filesystem path.
-     * @param url The incoming request URL to resolve
-     */
-    private urlPathToFsPath(url: string) {
-        return path.resolve(__dirname, decodeURI(`../../app${new URL(url).pathname}`));
     }
 }
