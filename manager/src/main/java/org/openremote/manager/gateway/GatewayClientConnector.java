@@ -135,10 +135,8 @@ public class GatewayClientConnector implements AutoCloseable {
                 client.setEncoderDecoderProvider(null);
 
                 if (this.activeTunnelSessions != null) {
-                    synchronized (this.activeTunnelSessions) {
-                        this.activeTunnelSessions.forEach(GatewayTunnelSession::disconnect);
-                        this.activeTunnelSessions.clear();
-                    }
+                    this.activeTunnelSessions.forEach(GatewayTunnelSession::disconnect);
+                    this.activeTunnelSessions.clear();
                 }
 
             } catch (Exception e) {
