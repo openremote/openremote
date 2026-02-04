@@ -54,10 +54,10 @@ export default defineConfig({
     },
     tools: {
         bundlerChain: (chain, { CHAIN_ID }) => {
-            chain.module.rule(CHAIN_ID.RULE.CSS).exclude.add(/(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/); // Exclude the external CSS imports from default bundling.
+            chain.module.rule(CHAIN_ID.RULE.CSS).exclude.add(/(maplibre|@material|gridstack|@mdi).*\.css$/); // Exclude the external CSS imports from default bundling.
         },
         rspack: (config, { addRules }) => {
-            addRules([{test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, type: "asset/source"}]); // Add rule to treat external CSS imports as raw strings.
+            addRules([{test: /(maplibre|@material|gridstack|@mdi).*\.css$/, type: "asset/source"}]); // Add rule to treat external CSS imports as raw strings.
             return config;
         }
     }
