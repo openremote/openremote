@@ -133,6 +133,14 @@ public class GatewayClientConnector implements AutoCloseable {
                 client.removeAllConnectionStatusConsumers();
                 client.removeAllMessageConsumers();
                 client.setEncoderDecoderProvider(null);
+
+                if (this.activeTunnelSessions != null) {
+                    synchronized (this.activeTunnelSessions) {
+                        this.activeTunnelSessions.forEach(GatewayTunnelSession::disconnect);
+                        this.activeTunnelSessions.clear();
+                    }
+                }
+
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
             } finally {
