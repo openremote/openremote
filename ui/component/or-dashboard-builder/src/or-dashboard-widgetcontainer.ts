@@ -1,7 +1,7 @@
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
-import {throttle} from "lodash";
+import throttle from "lodash.throttle";
 import {style} from "./style";
 import {DashboardWidget} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "./util/or-widget";
