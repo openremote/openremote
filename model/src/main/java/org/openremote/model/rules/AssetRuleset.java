@@ -25,7 +25,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.calendar.CalendarEvent;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -94,13 +94,13 @@ public class AssetRuleset extends Ruleset {
     }
 
     @Override
-    public AssetRuleset setCreatedOn(Date createdOn) {
+    public AssetRuleset setCreatedOn(Instant createdOn) {
         super.setCreatedOn(createdOn);
         return this;
     }
 
     @Override
-    public AssetRuleset setLastModified(Date lastModified) {
+    public AssetRuleset setLastModified(Instant lastModified) {
         super.setLastModified(lastModified);
         return this;
     }

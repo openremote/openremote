@@ -21,6 +21,7 @@
 package org.openremote.model.flow;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -35,8 +36,7 @@ public class Flow extends FlowObject {
 
 
     @Column(name = "CREATED_ON")
-    @Temporal(TemporalType.TIMESTAMP)
-    public Date createdOn = new Date();
+    public Instant createdOn = Instant.now();
 
     @Transient
     public Node[] nodes = new Node[0];
@@ -79,7 +79,7 @@ public class Flow extends FlowObject {
     }
 
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
