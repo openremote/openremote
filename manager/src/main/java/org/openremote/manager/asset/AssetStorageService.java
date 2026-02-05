@@ -1430,10 +1430,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            if (success) {
-                clientEventService.publishEvent(event);
-            }
-
             return success;
 
         } catch (Exception e) {

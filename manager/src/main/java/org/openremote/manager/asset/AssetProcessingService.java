@@ -45,6 +45,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.event.Event;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
@@ -347,7 +348,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             // is not updated so tests can't then detect the problem.
             lastProcessedEventTimestamp = startMillis;
 
-            return persistenceService.doReturningTransaction(em -> {
+            Event result = persistenceService.doReturningTransaction(em -> {
                 // TODO: Retrieve optimised DTO rather than whole asset
                 Asset<?> asset = assetStorageService.find(em, event.getId(), true);
 
@@ -411,17 +412,22 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
                 }
 
+                Event eventToPublish = null;
                 if (intercepted) {
                     LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
                 } else {
                     if (enrichedEvent.isOutdated()) {
                         LOG.log(System.Logger.Level.INFO, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
                         // Generate an event for this so internal subscribers can act on it if needed
-                        clientEventService.publishEvent(new OutdatedAttributeEvent(enrichedEvent));
-                    } else if (!assetStorageService.updateAttributeValue(em, enrichedEvent)) {
-                        throw new AssetProcessingException(
-                            STATE_STORAGE_FAILED, "database update failed, no rows updated"
-                        );
+                        eventToPublish = new OutdatedAttributeEvent(enrichedEvent);
+                    } else {
+                        if (assetStorageService.updateAttributeValue(em, enrichedEvent)) {
+                            eventToPublish = enrichedEvent;
+                        } else {
+                            throw new AssetProcessingException(
+                                    STATE_STORAGE_FAILED, "database update failed, no rows updated"
+                            );
+                        }
                     }
                 }
 
@@ -429,8 +435,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     long processingMillis = System.currentTimeMillis() - startMillis;
                     LOG.log(System.Logger.Level.DEBUG, "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
                 }
-                return true;
+                return eventToPublish;
             });
+            if (result != null) {
+                clientEventService.publishEvent(result);
+            }
+            return result != null;
         });
     }
 
