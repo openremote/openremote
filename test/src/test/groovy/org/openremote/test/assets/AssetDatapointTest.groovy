@@ -5,8 +5,10 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
+import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.datapoint.AssetPredictedDataPointEvent
 import org.openremote.model.datapoint.AssetPredictedDatapointResource
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
@@ -17,10 +19,11 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
@@ -44,6 +47,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def clientEventService = container.getService(ClientEventService.class)
 
         and: "the clock is stopped for testing purposes and advanced to the next hour"
         stopPseudoClock()
@@ -381,7 +385,14 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert datapoints.isEmpty()
         }
 
-        when: "predicted data points are added"
+        when: "we subscribe to predicted data points events"
+        List<AssetPredictedDataPointEvent> predictedEvents = new CopyOnWriteArrayList<>()
+        Consumer<AssetPredictedDataPointEvent> predictedEventConsumer = { event ->
+            predictedEvents.add(event)
+        }
+        clientEventService.addSubscription(AssetPredictedDataPointEvent.class, null, predictedEventConsumer)
+
+        and: "predicted data points are added"
         predictedDatapointResource.writePredictedDatapoints(null, managerTestSetup.thingId, "light1PowerConsumption",
             [
                 new ValueDatapoint<>(getClockTimeOf(container)+60000, 10d),
@@ -406,12 +417,35 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         assert predictedData.size() == 5
         assert predictedData.any {it.value == 20d}
 
+        and: "an upsert event should be published for predicted datapoints"
+        conditions.eventually {
+            assert predictedEvents.any {
+                it.cause == AssetPredictedDataPointEvent.Cause.UPSERT &&
+                    it.ref.id == managerTestSetup.thingId &&
+                    it.ref.name == "light1PowerConsumption"
+            }
+            assert predictedEvents.any {
+                it.cause == AssetPredictedDataPointEvent.Cause.UPSERT &&
+                    it.ref.id == managerTestSetup.thingId &&
+                    it.ref.name == thingLightToggleAttributeName
+            }
+        }
+
         when: "the predicted data is purged and then retrieved"
         assetPredictedDatapointService.purgeValues(managerTestSetup.thingId, "light1PowerConsumption")
         predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
 
         then: "no predicted data should remain for this attribute"
         assert predictedData.isEmpty()
+
+        and: "a delete event should be published"
+        conditions.eventually {
+            assert predictedEvents.any {
+                it.cause == AssetPredictedDataPointEvent.Cause.DELETE &&
+                    it.ref.id == managerTestSetup.thingId &&
+                    it.ref.name == "light1PowerConsumption"
+            }
+        }
 
         when: "other predicted data is retrieved"
         predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
