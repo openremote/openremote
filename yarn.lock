@@ -1920,7 +1920,6 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
-    "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     ace-builds: "npm:^1.41.0"
     lit: "npm:^3.3.1"
