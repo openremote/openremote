@@ -28,13 +28,36 @@ import java.util.logging.LogManager;
  */
 public class LoggingFileHandler extends FileHandler {
 
-    private static String pattern() throws IOException {
-        String prefix = LoggingFileHandler.class.getName();
-        String v = LogManager.getLogManager().getProperty(prefix +".pattern");
-        return v.replace("${" + LogUtil.OR_LOGGING_PROPERTY_NAME + "}", System.getProperty(LogUtil.OR_LOGGING_PROPERTY_NAME));
+    private static String getProperty(String propertyName) {
+        return LogManager.getLogManager().getProperty(LoggingFileHandler.class.getName() + propertyName);
+    }
+
+    private static int getIntProperty(String propertyName, int defaultValue) {
+        String val = getProperty(propertyName);
+        if (val == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(val.trim());
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    private static int count() {
+        return Math.max(1, getIntProperty(".count", 1));
+    }
+
+    private static int limit() {
+        return Math.max(0, getIntProperty(".limit", 0));
+    }
+
+    private static String pattern() {
+        return getProperty(".pattern").replace("${" + LogUtil.OR_LOGGING_PROPERTY_NAME + "}", System.getProperty(LogUtil.OR_LOGGING_PROPERTY_NAME));
     }
 
     public LoggingFileHandler() throws IOException {
-        super(pattern());
+        // The FileHandler(String) constructor cannot be used because this constructor sets the limit and count after configuration.
+        super(pattern(), limit(), count());
     }
 }
