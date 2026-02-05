@@ -186,7 +186,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                     .setId(agentAssetIds[i - 1])
                     .setBaseURI("https://google.co.uk")
                     .setRealm(MASTER_REALM)
-                    .setCreatedOn(Date.from(timerService.getNow()))
+                    .setCreatedOn(timerService.getNow())
             agent.path = (String[]) [agentAssetIds[i - 1]].toArray(new String[0])
 
             agentAssets.add(agent)
@@ -200,7 +200,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
                 def roomAsset = new RoomAsset("Test Building $i Room $j")
                         .setId(assetIds[(i - 1) * 5 + j])
-                        .setCreatedOn(Date.from(timerService.getNow()))
+                        .setCreatedOn(timerService.getNow())
                         .setParentId(assetIds[(i - 1) * 5])
                         .setRealm(MASTER_REALM)
 
@@ -227,7 +227,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
             def buildingAsset = new BuildingAsset("Test Building $i")
                     .setId(assetIds[(i - 1) * 5])
-                    .setCreatedOn(Date.from(timerService.getNow()))
+                    .setCreatedOn(timerService.getNow())
                     .setRealm(MASTER_REALM)
 
             buildingAsset.path = (String[]) [assetIds[(i - 1) * 5]].toArray(new String[0])
@@ -417,7 +417,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def building1Room5AssetId = UniqueIdentifierGenerator.generateId("Test Building 1 Room 5")
         def building1Room5Asset = new RoomAsset("Test Building 1 Room 5")
                 .setId(building1Room5AssetId)
-                .setCreatedOn(Date.from(timerService.getNow()))
+                .setCreatedOn(timerService.getNow())
                 .setParentId(assetIds[0])
                 .setRealm(MASTER_REALM)
         building1Room5Asset.path = (String[]) [building1Room5AssetId, assetIds[0]]
@@ -537,7 +537,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         gatewayClient.disconnect()
         def failedAsset = new BuildingAsset("Failed Asset")
                 .setId(UniqueIdentifierGenerator.generateId("Failed asset"))
-                .setCreatedOn(Date.from(timerService.getNow()))
+                .setCreatedOn(timerService.getNow())
                 .setParentId(gateway.id)
                 .setRealm(managerTestSetup.realmBuildingName)
         failedAsset.path = (String[]) [UniqueIdentifierGenerator.generateId("Failed asset")].toArray(new String[0])
@@ -649,7 +649,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "another asset is added to the gateway during the initial sync process"
         def building2Room5Asset = new RoomAsset("Test Building 2 Room 5")
                 .setId(UniqueIdentifierGenerator.generateId("Test Building 2 Room 5"))
-                .setCreatedOn(Date.from(timerService.getNow()))
+                .setCreatedOn(timerService.getNow())
                 .setParentId(assetIds[5])
                 .setRealm(MASTER_REALM)
         building2Room5Asset.path = (String[]) [UniqueIdentifierGenerator.generateId("Test Building 2 Room 5"), assetIds[5]]
