@@ -1,0 +1,110 @@
+# OpenRemote v3
+#
+# Profile for doing IDE development work and running build tests.
+#
+# Please see profile/deploy.yml for configuration details for each service.
+#
+volumes:
+  postgresql-data:
+  hawkbit-data:
+  hawkbit-artifact-data:
+services:
+
+  keycloak:
+    extends:
+      file: deploy.yml
+      service: keycloak
+    # volumes:
+    #   Map custom themes
+    #  - ../deployment:/deployment
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
+      # Prevent theme caching during dev
+      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+
+  postgresql:
+    extends:
+      file: deploy.yml
+      service: postgresql
+    volumes:
+      - ../tmp:/storage
+      - postgresql-data:/var/lib/postgresql/data
+    # Access directly if needed on localhost
+    ports:
+      - "5432:5432"
+
+  hawkbitdb:
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    restart: always
+    environment:
+      POSTGRES_DB: 'hawkbit'
+      POSTGRES_USER: ${HAWKBIT_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${HAWKBIT_DB_PASSWORD:-postgres}
+    healthcheck:
+      retries: 100
+    volumes:
+      - hawkbit-data:/var/lib/postgresql/data
+
+  hawkbit:
+    image: hawkbit/hawkbit-update-server:0.9.0
+    restart: always
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      hawkbitdb:
+        condition: service_healthy
+    healthcheck:
+      interval: 3s
+      timeout: 3s
+      start_period: 3s
+      retries: 100
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/hawkbit"]
+    volumes:
+      - hawkbit-artifact-data:/opt/hawkbit/artifactrepo
+    environment:
+      - LOGGING_LEVEL_ROOT=INFO
+      # databasource
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://hawkbitdb:5432/hawkbit
+      - SPRING_DATASOURCE_USERNAME=${HAWKBIT_DB_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${HAWKBIT_DB_PASSWORD:-postgres}
+      - spring.jpa.database=POSTGRESQL
+      - spring.datasource.driverClassName=org.postgresql.Driver
+      - hawkbit.dmf.rabbitmq.enabled=false
+      # artifact downloads
+      - hawkbit.artifact.url.protocols.download-http.port=8080
+      - hawkbit.artifact.url.protocols.download-http.protocol=http
+      - 'hawkbit.artifact.url.protocols.download-http.ref={protocol}://{hostnameRequest}:{port}$${server.servlet.context-path}/{tenant}/controller/v1/{controllerId}/softwaremodules/{softwareModuleId}/artifacts/{artifactFileName}'
+      - hawkbit.server.ddi.security.authentication.targettoken.enabled=true
+      - server.use-forward-headers=true
+      - server.forward-headers-strategy=NATIVE
+      - server.servlet.context-path=/hawkbit
+      # OIDC/IAM config (disabled for local dev)
+      #- spring.security.oauth2.client.registration.oidc.client-id=hawkbit
+      #- spring.security.oauth2.client.registration.oidc.client-secret=${HAWKBIT_CLIENT_SECRET:-secret}
+      #- spring.security.oauth2.client.registration.oidc.authorization-grant-type=authorization_code
+      #- spring.security.oauth2.client.registration.oidc.scope=openid
+      #- spring.security.oauth2.client.provider.oidc.issuer-uri=http://keycloak:8080/auth/realms/master
+      #- spring.security.oauth2.client.provider.oidc.user-name-attribute=preferred_username
+    ports:
+      - "8083:8080"
+
+  # ---------------------
+  # HawkBit UI service
+  # ---------------------
+  hawkbit-ui:
+    image: "hawkbit/hawkbit-simple-ui:latest"
+    network_mode: host
+    environment:
+      - 'SPRING_APPLICATION_JSON={"hawkbit.server.mgmtUrl": "http://localhost:8083/hawkbit"}'
+    restart: always
+    labels:
+      NAME: "hawkbit-ui"
