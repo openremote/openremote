@@ -16,7 +16,7 @@ startupProbe:
   httpGet:
     path: /
     port: 8080
-  failureThreshold: 500
+  failureThreshold: 1000
   periodSeconds: 10
 
 service:
@@ -25,20 +25,30 @@ service:
 
 resources:
   limits:
-    cpu: 1500m
-    memory: 8Gi
+    cpu: 18000m
+    memory: 68Gi
   requests:
-    cpu: 1500m
-    memory: 8Gi
+    cpu: 18000m
+    memory: 68Gi
 
 volumeSize: "16Gi"
 
 or:
   env:
     - name: OR_SETUP_USERS
-      value: "1000"
+      value: "50000"
     - name: OR_SETUP_ASSETS
       value: "5"
+    - name: OR_SETUP_ASSETS_WITH_LOCATIONS
+      value: "0"
+    - name: OR_SETUP_LOCATION_CLUSTERS
+      value: "0"
+    - name: OR_SETUP_LOCATION_MAIN_CENTER
+      value: "0,0"
+    - name: OR_SETUP_LOCATION_CENTER_DISTANCE
+      value: "0"
+    - name: OR_SETUP_LOCATION_ASSET_RADIUS
+      value: "0"
     - name: OR_SETUP_STORE_DATA_POINTS
       value: "false"
     - name: OR_JAVA_OPTS
