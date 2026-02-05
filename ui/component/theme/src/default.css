@@ -165,4 +165,8 @@
     --lumo-secondary-text-color: var(--or-color-text-secondary);
     --lumo-tertiary-text-color: var(--or-color-text-tertiary);
     --lumo-disabled-text-color: var(--or-color-text-disabled);
+
+    /* OpenRemote */
+    --lumo-border-radius-m: 0.5em;
+    --vaadin-field-default-width: 8em !important;
 }

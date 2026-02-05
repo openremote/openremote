@@ -347,76 +347,67 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         ];
         return html`
             <or-vaadin-button @click="${() => this._dialogOpened = true}">${this.timeLabel()}</or-vaadin-button>
-            <or-vaadin-dialog id="scheduler" .opened="${this._dialogOpened}" .header-title="${i18next.t(this.header)}"
+            <or-vaadin-dialog id="scheduler" .opened="${this._dialogOpened}" header-title="${i18next.t(this.header)}"
                 @closed="${() => this._dialogOpened = false}"
                 ${dialogRenderer(this.getDialogContent, dependencies)}
                 ${dialogFooterRenderer(this.getDialogFooter, [])}
             ></or-vaadin-dialog>
         `;
     }
-    //                 actionName: "ok",
-    //                 default: true,
-    //                 content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
-    //                 action: () => {
-    //                     if (this._normalizedSchedule && this.isAllDay) {
-    //                         this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
-    //                         this._normalizedSchedule.end = moment(this._normalizedSchedule.end).startOf("day").endOf("day").toDate().getTime();
-    //                     }
-    //                     if (this._eventType === EventTypes.default) {
-    //                         delete this._normalizedSchedule;
-    //                     } else if (this._eventType === EventTypes.recurrence) {
-    //                         this._normalizedSchedule!.recurrence = this.getRRule();
-    //                     }
-    //                     const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
-    //                     this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
-    //                     this._dialog = undefined;
 
     protected getDialogContent(): TemplateResult {
         const calendar = this._normalizedSchedule;
 
         return html`
-                <style>
-                    or-vaadin-dialog::part(content) {
-                        background-color: var(--lumo-contrast-5pct);
-                    }
+            <style>
+                or-vaadin-dialog::part(header),
+                or-vaadin-dialog::part(content) {
+                    background-color: var(--lumo-contrast-5pct);
+                    max-width: 600px;
+                }
 
-                    .period [slot="date-picker"], [slot="time-picker"] {
-                        max-width: 132px
-                    }
+                .period [slot="date-picker"], [slot="time-picker"] {
+                    max-width: 132px
+                }
 
-                    @media only screen and (max-width: 1279px) {
-                        #content {
-                            min-height: 230px;
-                            overflow: auto;
-                        }
-                    }
+                [class$="container"] {
+                    width: 0em !important;
+                }
 
-                    .section {
-                        background-color: white;
-                        margin-top: 10px;
-                        padding: 8px 16px;
-                        border-radius: 4px;
+                @media only screen and (max-width: 1279px) {
+                    #content {
+                        min-height: 230px;
+                        overflow: auto;
                     }
-                    .section > * {
-                        margin: 8px 0;
-                    }
-                    .section:first-child {
-                        margin-top: 0;
-                    }
-                    .section:last-child {
-                        margin-bottom: 0;
-                    }
+                }
 
-                    .title {
-                        display: block;
-                        font-weight: bold;
-                    }
-                </style>
-            <div class="content" style="max-width: 604px; display: grid; flex-direction: row;">
+                .section {
+                    background-color: white;
+                    border-radius: var(--lumo-border-radius-m);
+                    margin-top: 10px;
+                    max-width: 560px;
+                    padding: 20px;
+                }
+                .section > * {
+                    margin: 8px 0;
+                }
+                .section:first-child {
+                    margin-top: 0;
+                }
+                .section:last-child {
+                    margin-bottom: 0;
+                }
+
+                .title {
+                    display: block;
+                    font-weight: bold;
+                }
+            </style>
+            <div class="content" style="display: grid; flex-direction: row;">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
-                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${Object.keys(this._eventTypes).map(k => ({ value: k, label: k }))}"
+                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${Object.keys(this._eventTypes).map(k => ({ value: k, label: i18next.t(k) }))}"
                             @change="${(e: any) => this.setCalendarEventType(e.target.value)}">
                         </or-vaadin-select>
                     </div>
@@ -428,7 +419,22 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected getDialogFooter(): TemplateResult {
-        return html``;
+        return html`
+            <or-vaadin-button theme="error" icon="" @click="${() => null}"><or-translate value="schedule.delete"></or-translate></or-vaadin-button>
+            <or-vaadin-button theme="primary" @click="${() => {
+                if (this._normalizedSchedule && this.isAllDay) {
+                    this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
+                    this._normalizedSchedule.end = moment(this._normalizedSchedule.end).startOf("day").endOf("day").toDate().getTime();
+                }
+                if (this._eventType === EventTypes.default) {
+                    delete this._normalizedSchedule;
+                } else if (this._eventType === EventTypes.recurrence) {
+                    this._normalizedSchedule!.recurrence = this.getRRule();
+                }
+                const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
+                this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
+            }}"><or-translate value="schedule.save"></or-translate></or-vaadin-button>
+        `;
     }
 
     /**
@@ -577,7 +583,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                             </or-vaadin-number-field>`
                         )}
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
-                            <or-vaadin-date-time-picker ?disabled="${this._ends !== "until"}"
+                            <or-vaadin-date-time-picker class="until" ?disabled="${this._ends !== "until"}"
                                 .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
                                 @change="${(e: any) => this.setRRuleValue(e.target.value, "until")}">
                             </or-vaadin-date-time-picker>`

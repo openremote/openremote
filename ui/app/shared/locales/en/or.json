@@ -628,12 +628,14 @@
   "schedule": {
     "count_one": "occurrence",
     "count_other": "occurrences",
+    "delete": "Delete schedule",
     "_ends": "Ends",
     "ends": {
       "until": "On",
       "count": "After"
     },
     "repeat": "Repeat every",
+    "save": "Save schedule",
     "type": "Schedule type"
   },
   "rrule": {
