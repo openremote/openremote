@@ -138,7 +138,6 @@ public class GatewayClientConnector implements AutoCloseable {
                     this.activeTunnelSessions.forEach(GatewayTunnelSession::disconnect);
                     this.activeTunnelSessions.clear();
                 }
-
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
             } finally {
@@ -478,6 +477,7 @@ public class GatewayClientConnector implements AutoCloseable {
               if (throwable != null) {
                  LOG.log(Level.WARNING, "Gateway tunnel session failed to connect: " + connection + ", " + tunnelInfo, throwable);
                  activeTunnelSessions.remove(session);
+                 session.disconnect();
               }
            }
         );
