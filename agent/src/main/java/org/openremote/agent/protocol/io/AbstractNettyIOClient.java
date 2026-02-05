@@ -275,6 +275,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
         });
 
+
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
                 future.cancel(true);
@@ -305,6 +306,13 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
 
         return startFuture;
+    }
+
+    /**
+     * Simply returns {@link Channel#isActive} but can be overridden as needed
+     */
+    protected boolean isChannelReady() {
+        return channel != null && channel.isActive();
     }
 
     @Override
@@ -363,7 +371,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     @Override
     public void sendMessage(T message) {
-        if (channel == null) {
+        LOG.finest("Sending message to server: " + getClientUri());
+
+        if (!isChannelReady()) {
+            LOG.finest("Channel not ready, message not sent: " + getClientUri());
             return;
         }
 

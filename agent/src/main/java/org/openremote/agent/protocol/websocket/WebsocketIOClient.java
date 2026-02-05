@@ -155,6 +155,11 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
+    protected boolean isChannelReady() {
+        return super.isChannelReady() && handshakeFuture != null && handshakeFuture.isDone();
+    }
+
+    @Override
     protected void addEncodersDecoders(Channel channel) throws Exception {
         HttpHeaders hdrs = new DefaultHttpHeaders();
 
@@ -236,7 +241,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     protected void onHandshakeDone() {
         if (handshakeFuture != null) {
             handshakeFuture.complete(null);
-            handshakeFuture = null;
         }
     }
 
@@ -289,7 +293,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         if (pingFuture != null) {
             pingFuture.cancel(false);
         }
-
+        handshakeFuture = null;
         super.doDisconnect();
     }
 
