@@ -88,10 +88,20 @@ export class MapWidget {
         this._clusterConfig = clusterConfig;
     }
 
-    protected _onMove = () => debounce(this._updateMarkers);
-    protected _onMoveEnd = () => this._updateMarkers();
+    protected _onMove = () => this._updateMarkers();
+    protected _onMoveEnd = (e: any) => {
+        // Ensure marker updates happen after the frame
+        requestAnimationFrame(() => {
+            // On WebKit browsers the clicked marker may not be removed,
+            // if the camera zoom level is directly between 2 levels
+            if (e.marker instanceof OrClusterMarker) {
+                this._clearMarker(e.marker._clusterId);
+            }
+            this._updateMarkers();
+        });
+    };
     protected _onData = (e: MapSourceDataEvent) => {
-        if (this._map && e.isSourceLoaded  && e.sourceId === "mapPoints") {
+        if (this._map && e.isSourceLoaded && e.sourceId === "mapPoints") {
             this._map.on('move', this._onMove);
             this._map.on('moveend', this._onMoveEnd);
             this._updateMarkers();
@@ -616,6 +626,11 @@ export class MapWidget {
         }
     }
 
+    protected _clearMarker(id: string) {
+        this._markersOnScreen[id].remove();
+        delete this._assetsOnScreen[id];
+    }
+
     protected _updateMarkers() {
         if (!this._map) return;
 
@@ -669,8 +684,7 @@ export class MapWidget {
             if (!marker
               || marker._element instanceof OrClusterMarker && !marker._element.hasTypes(Object.keys(this._assetTypeColors))
             ) {
-                this._markersOnScreen[id].remove();
-                delete this._assetsOnScreen[id];
+                this._clearMarker(id);
             }
         }
         this._markersOnScreen = newMarkers;
