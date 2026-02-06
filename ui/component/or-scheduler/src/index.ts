@@ -30,9 +30,10 @@ import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-time-picker";
 import "@openremote/or-translate";
 import { translate, i18next } from "@openremote/or-translate";
-import { dialogRenderer, dialogFooterRenderer } from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
@@ -350,9 +351,18 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             <or-vaadin-button @click="${() => this._dialogOpened = true}">${this.timeLabel()}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" .opened="${this._dialogOpened}" header-title="${i18next.t(this.header)}"
                 @closed="${() => this._dialogOpened = false}"
+                ${dialogHeaderRenderer(this.getDialogHeader, [])}
                 ${dialogRenderer(this.getDialogContent, dependencies)}
-                ${dialogFooterRenderer(this.getDialogFooter, [])}
+                ${dialogFooterRenderer(this.getDialogFooter, dependencies)}
             ></or-vaadin-dialog>
+        `;
+    }
+
+    protected getDialogHeader(): TemplateResult {
+        return html`
+            <vaadin-button theme="tertiary" @click="${() => null}">
+                <vaadin-icon icon="lumo:cross"></vaadin-icon>
+            </vaadin-button>
         `;
     }
 
@@ -365,9 +375,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     background-color: var(--lumo-contrast-5pct);
                     max-width: 600px;
                 }
+                or-vaadin-dialog::part(header) {
+                    padding: var(--lumo-space-m);
+                }
+                or-vaadin-dialog::part(content) {
+                    padding: 0 var(--lumo-space-m);
+                }
 
-                .period [slot="date-picker"], [slot="time-picker"] {
-                    max-width: 132px
+                vaadin-input-container::part(input-field)::after {
+                    border-radius: 0px;
                 }
 
                 @media only screen and (max-width: 1279px) {
@@ -380,18 +396,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 .section {
                     background-color: white;
                     border-radius: var(--lumo-border-radius-m);
-                    margin-top: 10px;
-                    max-width: 560px;
-                    padding: 20px;
-                }
-                .section > * {
-                    margin: 8px 0;
-                }
-                .section:first-child {
-                    margin-top: 0;
-                }
-                .section:last-child {
-                    margin-bottom: 0;
+                    padding: var(--lumo-space-m);
                 }
 
                 .title {
@@ -399,7 +404,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     font-weight: bold;
                 }
             </style>
-            <div class="content" style="display: grid; flex-direction: row;">
+            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-s)">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
@@ -416,7 +421,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected getDialogFooter(): TemplateResult {
         return html`
-            <or-vaadin-button theme="error" icon="vaadin:trash" @click="${() => null}"><or-translate value="schedule.delete"></or-translate></or-vaadin-button>
+            <or-vaadin-button style="margin-right: auto" theme="error" icon="vaadin:trash" @click="${() => null}">
+                <or-translate value="schedule.delete"></or-translate>
+            </or-vaadin-button>
             <or-vaadin-button theme="primary" @click="${() => {
                 if (this._normalizedSchedule && this.isAllDay) {
                     this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
@@ -473,7 +480,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div id="recurrence" class="section">
                 <label class="title"><or-translate value="schedule.repeat"></or-translate></label>
-                <div class="layout horizontal" style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px;">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
                         <or-vaadin-number-field min="1" max="9" step-buttons-visible style="width: 106px" .value="${interval}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "interval")}">
@@ -532,21 +539,25 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div id="period" class="section">
                 <label class="title"><or-translate value="period"></or-translate></label>
-                <div style="display: flex; gap: 8px;" class="layout horizontal">
-                    <or-vaadin-date-picker class="small" style="flex: 1" .hidden=${!this.isAllDay} .value="${moment(calendar.start).format("YYYY-MM-DD")}"
-                        @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" .label="${i18next.t("from")}">
+                <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; flex: 1; gap: 2px">
+                        <or-vaadin-date-picker class="compact" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${i18next.t("from")}">
                         </or-vaadin-date-picker>
-                    <or-vaadin-date-time-picker class="period" style="flex: 1" .hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
-                        @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}" .label="${i18next.t("from")}"></or-vaadin-date-time-picker>
-                    <or-vaadin-date-picker style="flex: 1" .hidden=${!this.isAllDay} .value="${moment(calendar.end).format("YYYY-MM-DD")}"
-                        @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" .label="${i18next.t("to")}"></or-vaadin-date-picker>
-                    <or-vaadin-date-time-picker class="period small" style="flex: 1" .hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
-                        @change="${(e: any) => this.setRRuleValue(e.target.value, "end-time")}" .label="${i18next.t("to")}"></or-vaadin-date-time-picker>
+                        <or-vaadin-time-picker class="compact" style="margin-top: auto" .hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}">
+                        </or-vaadin-time-picker>
+                    </div>
+                    <div style="display: flex; flex: 1; gap: 2px">
+                        <or-vaadin-date-picker class="compact" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${i18next.t("to")}">
+                        </or-vaadin-date-picker>
+                        <or-vaadin-time-picker class="compact" style="margin-top: auto" .hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end-time")}">
+                        </or-vaadin-time-picker>
+                    </div>
                 </div>
-
-                <div class="layout horizontal">
-                    <or-vaadin-checkbox .checked=${this.isAllDay} @change="${(e: any) => this.setRRuleValue(e.target.checked, "all-day")}" .label="${i18next.t("allDay")}"></or-vaadin-checkbox>
-                </div>
+                <or-vaadin-checkbox .checked=${this.isAllDay} @change="${(e: any) => this.setRRuleValue(e.target.checked, "all-day")}" .label="${i18next.t("allDay")}"></or-vaadin-checkbox>
             </div>`;
     }
 
@@ -562,7 +573,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div id="recurrence-ends" class="section">
                 <label class="title"><or-translate value="schedule._ends"></or-translate></label>
-                <div style="display: flex; gap: 8px;" class="layout horizontal">
+                <div style="display: flex; gap: 8px;">
                     <or-vaadin-radio-group style="padding-right: 10px" .value="${this._ends}" theme="vertical"
                         @change="${(e: any) => this.setRRuleValue(e.target.value, "recurrence-ends")}">
                         ${Object.entries(rruleEnds)
@@ -575,8 +586,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         ${when(!this.disabledRRuleParts.includes("count"), () => html`
                             <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" step-buttons-visible 
                                 .value="${this._count}"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}">
-                                    <or-translate slot="suffix" value="schedule.count" .options="${{ count: this._count }}"></or-translate>
+                                @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
+                                    <or-translate slot="suffix" value="schedule.count" .options="${{ count: +this._count }}"></or-translate>
                             </or-vaadin-number-field>`
                         )}
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`

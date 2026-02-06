@@ -168,9 +168,5 @@
 
     /* OpenRemote */
     --lumo-border-radius-m: 0.5em;
-    --vaadin-field-default-width: 8em;
+    --vaadin-field-default-width: 100%;
 }
-
-/* [class$="container"] { */
-    /* --vaadin-field-default-width: 8em; */
-/* } */

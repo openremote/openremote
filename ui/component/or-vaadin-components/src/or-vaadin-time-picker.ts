@@ -1,5 +1,5 @@
 /*
- * Copyright 2026, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,13 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Dialog} from "@vaadin/dialog";
-import {OrVaadinComponent} from "./util";
-import {customElement} from "lit/decorators.js";
+import { customElement } from "lit/decorators.js";
+import { TimePicker } from "@vaadin/time-picker";
+import { OrVaadinComponent } from "./util";
 
-export {dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer} from "@vaadin/dialog/lit.js";
-
-@customElement("or-vaadin-dialog")
-export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
-
-}
+@customElement("or-vaadin-time-picker")
+export class OrVaadinTimePicker extends TimePicker implements OrVaadinComponent {}
