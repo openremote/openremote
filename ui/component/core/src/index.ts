@@ -12,7 +12,6 @@ import {
     ConsoleAppConfig,
     EventProviderType,
     ManagerConfig,
-    MapType,
     Role,
     User,
     UsernamePassword
@@ -269,10 +268,6 @@ export class Manager implements EventProviderFactory {
 
     getEventProvider(): EventProvider | undefined {
         return this.events;
-    }
-
-    get mapType() {
-        return this._config.mapType || MapType.VECTOR;
     }
 
     protected static MAX_RECONNECT_DELAY = 45000;

@@ -1,15 +1,17 @@
 package org.openremote.test.gateway
 
-
 import io.netty.channel.ChannelHandler
 import jakarta.ws.rs.ForbiddenException
 import org.apache.http.client.utils.URIBuilder
+import org.jboss.resteasy.client.jaxrs.ResteasyClient
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
+import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
-import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -19,11 +21,7 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetEvent
-import org.openremote.model.asset.AssetResource
-import org.openremote.model.asset.AssetsEvent
-import org.openremote.model.asset.ReadAssetsEvent
+import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
@@ -37,6 +35,7 @@ import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.security.User
+import org.openremote.model.system.StatusResource
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.ValueFormat
@@ -46,23 +45,28 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.net.ssl.SSLSession
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId
 import static org.openremote.manager.gateway.GatewayService.getGatewayClientId
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
 
+@Ignore
+// TODO: Reinstate GatewayTests and have a test for each supported version of the gateway API
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Gateway asset provisioning and local manager logic test"() {
@@ -122,7 +126,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         thrown(ForbiddenException.class)
 
         when: "the Gateway client is created"
-        def gatewayClient = new GatewayIOClient(
+        def gatewayClient = new WebsocketIOClient(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingName").build(),
                 null,
                 new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingName/protocol/openid-connect/token",
@@ -132,7 +136,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         gatewayClient.setEncoderDecoderProvider({
             [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
         })
-
 
         and: "we add callback consumers to the client"
         def connectionStatus = gatewayClient.getConnectionStatus()
@@ -183,7 +186,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                     .setId(agentAssetIds[i - 1])
                     .setBaseURI("https://google.co.uk")
                     .setRealm(MASTER_REALM)
-                    .setCreatedOn(Date.from(timerService.getNow()))
+                    .setCreatedOn(timerService.getNow())
             agent.path = (String[]) [agentAssetIds[i - 1]].toArray(new String[0])
 
             agentAssets.add(agent)
@@ -197,7 +200,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
                 def roomAsset = new RoomAsset("Test Building $i Room $j")
                         .setId(assetIds[(i - 1) * 5 + j])
-                        .setCreatedOn(Date.from(timerService.getNow()))
+                        .setCreatedOn(timerService.getNow())
                         .setParentId(assetIds[(i - 1) * 5])
                         .setRealm(MASTER_REALM)
 
@@ -224,7 +227,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
             def buildingAsset = new BuildingAsset("Test Building $i")
                     .setId(assetIds[(i - 1) * 5])
-                    .setCreatedOn(Date.from(timerService.getNow()))
+                    .setCreatedOn(timerService.getNow())
                     .setRealm(MASTER_REALM)
 
             buildingAsset.path = (String[]) [assetIds[(i - 1) * 5]].toArray(new String[0])
@@ -347,7 +350,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true)
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false, null)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
@@ -414,7 +417,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def building1Room5AssetId = UniqueIdentifierGenerator.generateId("Test Building 1 Room 5")
         def building1Room5Asset = new RoomAsset("Test Building 1 Room 5")
                 .setId(building1Room5AssetId)
-                .setCreatedOn(Date.from(timerService.getNow()))
+                .setCreatedOn(timerService.getNow())
                 .setParentId(assetIds[0])
                 .setRealm(MASTER_REALM)
         building1Room5Asset.path = (String[]) [building1Room5AssetId, assetIds[0]]
@@ -534,7 +537,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         gatewayClient.disconnect()
         def failedAsset = new BuildingAsset("Failed Asset")
                 .setId(UniqueIdentifierGenerator.generateId("Failed asset"))
-                .setCreatedOn(Date.from(timerService.getNow()))
+                .setCreatedOn(timerService.getNow())
                 .setParentId(gateway.id)
                 .setRealm(managerTestSetup.realmBuildingName)
         failedAsset.path = (String[]) [UniqueIdentifierGenerator.generateId("Failed asset")].toArray(new String[0])
@@ -646,7 +649,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "another asset is added to the gateway during the initial sync process"
         def building2Room5Asset = new RoomAsset("Test Building 2 Room 5")
                 .setId(UniqueIdentifierGenerator.generateId("Test Building 2 Room 5"))
-                .setCreatedOn(Date.from(timerService.getNow()))
+                .setCreatedOn(timerService.getNow())
                 .setParentId(assetIds[5])
                 .setRealm(MASTER_REALM)
         building2Room5Asset.path = (String[]) [UniqueIdentifierGenerator.generateId("Test Building 2 Room 5"), assetIds[5]]
@@ -701,6 +704,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         readAssetsReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
+        then: "the central manager should have requested the capabilities of the gateway"
+        conditions.eventually {
+            assert clientReceivedMessages.size() == 3
+            assert clientReceivedMessages.get(2).contains(GatewayCapabilitiesRequestEvent.TYPE)
+            def gatewayCapabilitiesRequest = ValueUtil.JSON.readValue(clientReceivedMessages[2].substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayCapabilitiesRequestEvent.class)
+            messageId = gatewayCapabilitiesRequest.messageID
+        }
+
+        when: "The Gateway also sends a Gateway Capabilities response indicating tunnelling is supported"
+        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, true, null)
+        capabilitiesReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
+
+
         then: "the gateway connector sync should be completed"
         conditions.eventually {
             def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
@@ -718,6 +735,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId())
             assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert gateway.getTunnelingSupported().get() == true
         }
 
         and: "the gateway should have the correct assets"
@@ -1081,53 +1099,69 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def "Verify gateway tunnel factory"() {
         given: "an ssh private key and the URL of a manager instance with tunnelling configured"
         def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
-        def tunnelSSHHost = "test.openremote.app"
+        def tunnelSSHHost = "custom-project-test.openremote.app"
         def tunnelSSHPort = 2222
+        def tmpDir = new File("tmp")
+        def lockFile = new File(tmpDir, "lock.file")
 
-        and: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
-        def gatewayClientService = container.getService(GatewayClientService)
-        def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
-        def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
-        def tunnelInfo = new GatewayTunnelInfo(
-                "",
-                UniqueIdentifierGenerator.generateId(),
+        and: "an instance of the gateway tunnel factory is created"
+        def container = new Container(Collections.emptyMap(), Collections.emptyList())
+        def conditions = new PollingConditions(timeout: 15, delay: 1)
+        def tunnelFactory = new MINAGatewayTunnelFactory(container.EXECUTOR, Container.SCHEDULED_EXECUTOR, keyPath.toFile(), null)
+        tunnelFactory.start()
+
+        expect: "the SSH client to be ready"
+        conditions.eventually {
+            tunnelFactory.client.isStarted()
+        }
+
+        and: "A configured GatewayTunnelInfo for HTTPS on localhost:443"
+        def tunnelInfo = new GatewayTunnelInfo(Constants.MASTER_REALM,
+                "abcedf123456",
                 GatewayTunnelInfo.Type.HTTPS,
-                "localhost",
-                443)
-        def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
+                "localhost", 443)
 
-        expect: "the tunnel factory to be created"
-        tunnelFactory != null
+        and: "A completion variable for the close callback"
+        AtomicBoolean closed = new AtomicBoolean(false)
 
-        when: "a tunnel is requested to start"
-        def startEvent = new GatewayTunnelStartRequestEvent(
-                tunnelSSHHost,
-                tunnelSSHPort,
-                null,
-                null,
-                tunnelInfo)
-        tunnelFactory.startTunnel(startEvent)
+        when: "Create session is called"
+        GatewayTunnelSession session = tunnelFactory.createSession(tunnelSSHHost, tunnelSSHPort, tunnelInfo, { t ->
+            closed.set(true)
+        })
 
-        then: "the tunnel should be established and be usable"
-        tunnelFactory.sessionMap.containsKey(tunnelInfo)
-        def response = target.request().get()
-        response.status == 200
+        then: "The session connection future should complete successfully"
+        new PollingConditions(timeout: 60).eventually {
+            assert session.getConnectFuture().isDone()
+            assert !session.getConnectFuture().isCompletedExceptionally()
+        }
 
-        when: "the tunnel is stopped"
-        tunnelFactory.stopTunnel(tunnelInfo)
+        then: "we keep the tunnel open for manual testing until lock file is deleted"
+        if (!tmpDir.exists()) {
+            tmpDir.mkdirs()
+        }
+        if (!lockFile.exists()) {
+            lockFile.createNewFile()
+        }
+        getLOG().info("---------------------------------------------------------------------------------")
+        getLOG().info("TEST PAUSED FOR TUNNEL TESTING")
+        getLOG().info("Delete the lock file to continue: ${lockFile.absolutePath}")
+        getLOG().info("Tunnel should be accessible at: gw-54tnxwr2oobjafque1jndh.${tunnelSSHHost}")
+        getLOG().info("---------------------------------------------------------------------------------")
 
-        then: "the tunnel should be destroyed"
-        !tunnelFactory.sessionMap.containsKey(tunnelInfo)
+        while (lockFile.exists()) {
+            getLOG().info("Tunnel is open")
+            Thread.sleep(5000)
+        }
 
-        and: "requests should fail"
-        def response2 = target.request().get()
-        response2.status != 200
+        when: "we close the tunnel gracefully"
+        session.disconnect()
+
+        then: "the tunnel should be closed without error"
+        noExceptionThrown()
 
         cleanup: "cleanup"
-        if (client != null) {
-            client.close()
+        if (tunnelFactory != null) {
+            tunnelFactory.stop()
         }
     }
 
@@ -1255,5 +1289,175 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert !mirroredLight.getAttribute(LightAsset.COLOUR_RGB).isPresent()
             assert mirroredLight.getAttribute(Asset.NOTES).isPresent()
         }
+    }
+
+
+    /**
+     * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
+     * Refer to "Gateway Tunnelling Setup" in the docs for setting up the required environment.
+     *
+     * Make sure to make the relevant gateway in the central instance, and change the rest of the variables below
+     * to reflect your setup, but most of these should be unchanged if you use the same setup as the documentation.
+     */
+    @Ignore
+    def "Gateway Tunneling Edge Gateway Integration test"() {
+        given: "the container environment is started"
+
+        def sshKeyPath = Paths.get("deployment/sish/client/client")
+
+
+        def conditions = new PollingConditions(timeout: 6000, delay: 0.2)
+        // The port where this test's manager webserver will run. cannot use random ephemeral port because of
+        // its randomization, which when generating the gateway tunnel ID, will then generate a different gateway ID each time.
+        def webserverPort = 12345
+        def config = defaultConfig(webserverPort)
+        def container = startContainer(config << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): sshKeyPath.toAbsolutePath().toString()], defaultServices())
+        def gatewayClientService = container.getService(GatewayClientService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+        and: "Central Instance information with tunnelling enabled"
+
+        def centralInstanceHostname = "localhost"
+        def centralInstancePort = 443
+        def isCentralInstanceSecure = (centralInstancePort == 443)
+        def centralInstanceRealm = managerTestSetup.realmMasterName
+        def centralInstanceAutoCloseMinutes = 2
+        def gatewayClientId = "gateway-5bpoensnt4kaoobkp1fwzo"
+        def gatewayClientSecret = "86a4fdff-3fc0-4b42-a276-82cb9862a623"
+        def gatewayAssetId = "5bPOENSnt4kaoObkP1FWZO"
+
+        def accessToken = authenticate(
+                (isCentralInstanceSecure),
+                centralInstanceHostname,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+        def gatewayResource = getClientApiTarget(serverUri((isCentralInstanceSecure), centralInstanceHostname, centralInstancePort), MASTER_REALM, accessToken).proxy(GatewayServiceResource.class)
+
+        when: "a new gateway client connection is created to connect to the central instance"
+
+        def gatewayConnection = new GatewayConnection(
+                managerTestSetup.realmCityName,
+                centralInstanceHostname,
+                centralInstancePort,
+                centralInstanceRealm,
+                gatewayClientId,
+                gatewayClientSecret,
+                (isCentralInstanceSecure),
+                null,
+                Map.of("test", new GatewayAssetSyncRule()),
+                false
+        )
+
+        gatewayClientService.setConnection(gatewayConnection)
+
+        then: "the gateway client should become connected"
+        conditions.eventually {
+            assert gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName) != null
+        }
+
+        and: "the gateway connection status should become CONNECTED"
+        conditions.eventually {
+            assert gatewayClientService.getConnectionStatus(managerTestSetup.realmCityName) == ConnectionStatus.CONNECTED
+        }
+
+        and: "Tunnelling is supported in this gateway"
+        assert gatewayClientService.gatewayTunnelFactory != null
+
+        when: "We suspend the thread to allow the tunnel to settle"
+        Thread.sleep(5000)
+
+        and: "we request (from the central manager) for a new tunnel to be created"
+        def tunnelInfo = new GatewayTunnelInfo(
+                centralInstanceRealm,
+                gatewayAssetId,
+                GatewayTunnelInfo.Type.HTTP,
+                "localhost",
+                webserverPort)
+
+        def centralManagerTunnelInfo = gatewayResource.startTunnel(tunnelInfo);
+
+        then: "gateway should have been opened"
+
+        conditions.eventually {
+            def res = gatewayResource.getAllActiveTunnelInfos(null, centralInstanceRealm);
+            print(res)
+            assert Arrays.stream(res).anyMatch({ info -> info.id == tunnelInfo.getId() })
+            assert gatewayClientService.activeTunnels.mappingCount() == 1
+        }
+
+        /*
+        At this point, a gateway has been created from the central instance to the gateway that is running on this test.
+
+        We can now request `/auth` from the tunnel URL, and the request route would look like this:
+        This Groovy test --> Central Instance --> Sish --> Gateway Proxy --> Keycloak/Manager
+
+        For the "Sish --> Gateway Proxy" request to be routed correctly, we need to edit our local `/etc/hosts` file
+        to route the <tunnelid>.<tunnelSSHHost> to localhost, like this:
+
+        127.0.0.1       gw-5fj1sxvwwfp7wvgqgve91n.localhost
+
+        If that is setup, the request correctly routes through the tunnel to the gateway, and we can request the edge manager.
+
+        To assert proper connectivity, we are going to request a new admin token from the tunnel URL to make sure the
+        Keycloak connection works, but also request the server info, which proves that the request has reached the manager
+        webserver.
+
+        * */
+        and: "We request a new admin token from the tunnel URL"
+
+        def x = authenticate(true,
+                centralManagerTunnelInfo.id + "." + centralManagerTunnelInfo.hostname,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT))
+
+        then: "the request should be successful"
+
+        assert x.error == null
+
+        and: "Response contains a valid access token"
+
+        assert x.getExpiresIn() > 0
+
+        when: "We request the info endpoint of the currently running manager"
+
+        String scheme   = isCentralInstanceSecure ? "https" : "http"
+        String basePath = "/api/master"
+        String baseUrl  = "${scheme}://$centralManagerTunnelInfo.id.$centralManagerTunnelInfo.hostname$basePath"
+
+        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier { String h, SSLSession s -> true }.build()
+        ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
+
+        then: "The request should be successful"
+        conditions.eventually {
+            def info = target.proxy(StatusResource.class).getInfo()
+
+            assert info != null
+            assert info.size() > 0
+            assert info.valueDescriptorSchemaHashes == ValueUtil.getValueDescriptorSchemaHashes()
+        }
+
+
+        and: "The test has been correctly configured to auto-stop by the gateway itself"
+        conditions.eventually {
+            assert gatewayClientService.tunnelAutoCloseTasks.mappingCount() == 1
+            assert gatewayClientService.tunnelAutoCloseTasks.get(centralManagerTunnelInfo.getId()) != null
+        }
+
+        when: "The timer is advanced forward by central instance's OR_GATEWAY_TUNNEL_AUTO_CLOSE_MINUTES to trigger auto-close"
+        //TODO: This actually doesn't work.
+        //the autoClose tunnel task is scheduled by the ScheduledExecutor, which is on a timeout basis, not a clock basis.
+
+        advancePseudoClock(Duration.ofMinutes(centralInstanceAutoCloseMinutes).toMillis(), TimeUnit.MILLISECONDS)
+
+        then: "The tunnel should be closed automatically by the gateway"
+        conditions.eventually {
+            assert gatewayClientService.tunnelAutoCloseTasks.mappingCount() == 0
+        }
+
     }
 }

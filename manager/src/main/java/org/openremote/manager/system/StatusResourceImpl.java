@@ -26,13 +26,9 @@ import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class StatusResourceImpl implements StatusResource {
@@ -43,26 +39,12 @@ public class StatusResourceImpl implements StatusResource {
 
     public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
-        Properties versionProps = new Properties();
         String authServerUrl = "";
-        String version = null;
+        String version = VersionInfo.getManagerVersion();
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
             authServerUrl = identityService.getIdentityProvider().getFrontendURI();
-        }
-
-        try (InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
-            if (resourceStream != null) {
-                versionProps.load(resourceStream);
-                version = versionProps.getProperty("version");
-            }
-        } catch (IOException ignored) {
-        }
-
-        if (version == null) {
-            LOG.log(Level.WARNING, "Failed to load manager version properties file: version.properties");
-            version = "0.0.0";
         }
 
         serverInfo = Map.of(
