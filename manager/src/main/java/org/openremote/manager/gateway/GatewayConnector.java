@@ -85,8 +85,8 @@ public class GatewayConnector {
     String expectedSyncResponseName;
     protected boolean tunnellingSupported;
     protected String gatewayVersion;
+    protected boolean tunnelTimeoutManagementSupported;
     protected final Map<Class<? extends SharedEvent>, Consumer<SharedEvent>> eventConsumerMap = new HashMap<>();
-
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
     static {
@@ -264,6 +264,10 @@ public class GatewayConnector {
                 sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
                 gatewayVersion = response != null ? response.getVersion() : null;
+                tunnelTimeoutManagementSupported = VersionInfo.isVersionGreaterOrEqual(gatewayVersion, "1.1.0");
+                if (!Objects.equals(VersionInfo.getGatewayApiVersion(), gatewayVersion)) {
+                    LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Current Central Instance API version: " + VersionInfo.getGatewayApiVersion() + ", Remote Gateway API version: " + gatewayVersion + ". GatewayId: " + gatewayId);
+                }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
                 LOG.finest("Setting connection status=" + ConnectionStatus.CONNECTED + ": " + getGatewayIdString());
@@ -360,6 +364,10 @@ public class GatewayConnector {
 
     protected String getGatewayVersion() {
         return gatewayVersion;
+    }
+
+    public boolean isTunnelTimeoutManagementSupported() {
+        return tunnelTimeoutManagementSupported;
     }
 
     protected void publishAttributeEvent(AttributeEvent event) {
