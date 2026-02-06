@@ -157,6 +157,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected int connectTimeout = 5000;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
     protected Supplier<CompletableFuture<Void>> initFutureSupplier;
+    protected CompletableFuture<Void> connectFuture;
 
     protected AbstractNettyIOClient() {
         this.executorService = Container.EXECUTOR;
@@ -256,7 +257,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
-            CompletableFuture<Void> connectFuture = doConnect();
+            connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
             execution.recordResult(null);
         });
@@ -457,6 +458,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                if (!isChannelReady()) {
+                    if (connectFuture != null) {
+                        connectFuture.completeExceptionally(cause);
+                    }
+                    ctx.close();
+                    return;
+                }
+
                 if (cause instanceof DecoderException decoderException) {
                     onDecodeException(ctx, decoderException);
                 } else if (cause instanceof EncoderException encoderException) {

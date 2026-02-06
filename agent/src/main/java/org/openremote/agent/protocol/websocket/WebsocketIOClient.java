@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.websocket;
+    package org.openremote.agent.protocol.websocket;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -240,6 +240,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     protected void onHandshakeDone() {
         if (handshakeFuture != null) {
+            LOG.finer("Handshake complete: " + getClientUri());
             handshakeFuture.complete(null);
         }
     }
@@ -309,7 +310,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
         executorService.submit(() -> {
             if (oAuthGrant != null) {
-                LOG.finest("Retrieving OAuth access token: "  + getClientUri());
+                LOG.finer("Retrieving OAuth access token: "  + getClientUri());
 
                 try {
                     OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
@@ -317,7 +318,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                     if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                         throw new RuntimeException("Returned access token is null");
                     }
-                    LOG.fine("Retrieved access token via OAuth: " + getClientUri());
+                    LOG.finer("Retrieved access token via OAuth: " + getClientUri());
                     future.complete(authHeaderValue);
                 } catch (Exception e) {
                     future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage()));
