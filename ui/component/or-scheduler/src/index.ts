@@ -26,6 +26,8 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
+import "@openremote/or-vaadin-components/or-vaadin-item";
+import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
@@ -386,6 +388,23 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     border-radius: 0px;
                 }
 
+                
+                or-vaadin-list-box::part() {
+                }
+
+                or-vaadin-item {
+                    color: var(--lumo-primary-color);
+                    background: var(--lumo-contrast-5ct);
+                    padding: 8px 14px;
+                    &::part(checkmark) {
+                        display: none;
+                    }
+                    &[selected] {
+                        color: white;
+                        background: var(--lumo-primary-color);
+                    }
+                }
+
                 @media only screen and (max-width: 1279px) {
                     #content {
                         min-height: 230px;
@@ -519,14 +538,17 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             ? (this._rrule?.origOptions?.byweekday as Weekday[])?.map(String)
             : this._rrule?.origOptions[part];
 
-        return html`<or-mwc-input .value="${value ?? []}"
-                                  .type="${type}"
-                                  .options="${options}"
-                                  .label="${part}"
-                                  multiple
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      this.setRRuleValue(e.detail.value, part);
-                                  }}"></or-mwc-input>`;
+        return html`
+            <or-vaadin-list-box .selectedValues="${Object.keys(value ?? [])}"
+                                .type="${type}"
+                                .label="${part}"
+                                multiple
+                                @change="${(e: any) => {
+                                    this.setRRuleValue(options[e.target.value], part);
+                                }}">
+                ${options.map((o) => html`<or-vaadin-item>${o}</or-vaadin-item>`)}
+            </or-vaadin-list-box>
+        `;
     }
 
     /**
