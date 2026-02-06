@@ -30,7 +30,7 @@ import java.util.Properties;
 public class VersionInfo {
 
     public static final String VERSION = loadVersion();
-    public static final String GATEWAY_API_VERSION = "1.0.0";
+    public static final String GATEWAY_API_VERSION = "1.1.0";
 
     public static String getManagerVersion() {
         return VERSION;

@@ -244,7 +244,7 @@ public class GatewayConnector {
         }
 
         LOG.finest("Requesting gateway capabilities: " + getGatewayIdString());
-        sendMessageToGateway(new GatewayCapabilitiesRequestEvent(null, VersionInfo.getGatewayApiVersion()));
+        sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
 
         future
             .orTimeout(RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
@@ -263,11 +263,9 @@ public class GatewayConnector {
                 sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
                 gatewayVersion = response != null ? response.getVersion() : null;
-                tunnelTimeoutManagementSupported = response != null && response.isTunnelTimeoutManagementSupported();
-
-                String currentGatewayApiVersion = VersionInfo.getGatewayApiVersion();
-                if (gatewayVersion != null && !VersionInfo.isVersionEqual(gatewayVersion, currentGatewayApiVersion)) {
-                    LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Current Central Instance API version: " + currentGatewayApiVersion + ", Remote Gateway API version: " + gatewayVersion + ". GatewayId: " + gatewayId);
+                tunnelTimeoutManagementSupported = VersionInfo.isVersionGreaterOrEqual(gatewayVersion, "1.1.0");
+                if (!Objects.equals(VersionInfo.getGatewayApiVersion(), gatewayVersion)) {
+                    LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Current Central Instance API version: " + VersionInfo.getGatewayApiVersion() + ", Remote Gateway API version: " + gatewayVersion + ". GatewayId: " + gatewayId);
                 }
                 LOG.finest("Tunnelling supported=" + tunnellingSupported + ": " + getGatewayIdString());
                 publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
@@ -361,6 +359,14 @@ public class GatewayConnector {
 
     protected String getSessionId() {
         return sessionId.get();
+    }
+
+    protected String getGatewayVersion() {
+        return gatewayVersion;
+    }
+
+    public boolean isTunnelTimeoutManagementSupported() {
+        return tunnelTimeoutManagementSupported;
     }
 
     protected void publishAttributeEvent(AttributeEvent event) {
@@ -682,14 +688,6 @@ public class GatewayConnector {
         return GatewayConnector.class.getSimpleName() + "{" +
             "gatewayId='" + gatewayId + '\'' +
             '}';
-    }
-
-    public String getGatewayVersion() {
-        return gatewayVersion;
-    }
-
-    public boolean isTunnelTimeoutManagementSupported() {
-        return tunnelTimeoutManagementSupported;
     }
 
     protected String getGatewayIdString() {

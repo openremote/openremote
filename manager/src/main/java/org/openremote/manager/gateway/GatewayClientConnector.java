@@ -102,7 +102,7 @@ public class GatewayClientConnector implements AutoCloseable {
     protected String tunnelHostname;
     protected Integer tunnelPort;
     protected CompletableFuture<Void> initFuture;
-    protected final ConcurrentHashMap<String, ScheduledFuture<?>> tunnelAutoCloseTasks = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<GatewayTunnelSession, ScheduledFuture<?>> tunnelAutoCloseTasks = new ConcurrentHashMap<>();
 
     public GatewayClientConnector(GatewayConnection connection,
                                   GatewayTunnelFactory tunnelFactory,
@@ -301,13 +301,7 @@ public class GatewayClientConnector implements AutoCloseable {
                     initFuture.complete(null);
                 }
 
-                // Check Gateway API version compatibility
-                String centralApiVersion = capabilitiesRequestEvent.getGatewayApiVersion();
-                if (centralApiVersion != null && !VersionInfo.isVersionEqual(VersionInfo.getGatewayApiVersion(), centralApiVersion)) {
-                    LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Central Instance API version: " + centralApiVersion + ", this Gateway's API version: " + VersionInfo.getGatewayApiVersion() + ".");
-                }
-
-                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(tunnelFactory != null, true, VersionInfo.getGatewayApiVersion());
+                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(VersionInfo.getGatewayApiVersion(), tunnelFactory != null);
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(responseEvent);
             }
@@ -486,9 +480,10 @@ public class GatewayClientConnector implements AutoCloseable {
               if (throwable != null) {
                  LOG.log(Level.WARNING, "Gateway tunnel session failed to connect: " + connection + ", " + tunnelInfo, throwable);
                  activeTunnelSessions.remove(session);
+                 session.disconnect();
               } else {
                  // Schedule auto-close if autoCloseTime is set
-                 scheduleAutoCloseTunnel(tunnelInfo);
+                 scheduleAutoCloseTunnel(session);
               }
            }
         );
@@ -539,9 +534,9 @@ public class GatewayClientConnector implements AutoCloseable {
         String error = null;
 
         try {
-            // Cancel any scheduled auto-close task
-            cancelAutoCloseTunnel(gatewayTunnelSession.getTunnelInfo().getId());
             gatewayTunnelSession.disconnect();
+            // Cancel any scheduled auto-close task
+            cancelAutoCloseTunnel(gatewayTunnelSession);
             LOG.info("Tunnel stopped successfully: " + connection + ", " + gatewayTunnelSession);
         } catch (Exception e) {
             error = e.getMessage();
@@ -560,66 +555,54 @@ public class GatewayClientConnector implements AutoCloseable {
     }
 
     /**
-     * Schedule tunnel auto-close using autoCloseTime provided by tunnel info
+     * Schedule tunnel auto-close
      */
-    protected void scheduleAutoCloseTunnel(GatewayTunnelInfo tunnelInfo) {
-        if (tunnelInfo.getAutoCloseTime() == null) {
-            LOG.fine("No auto-close time set for tunnel: " + tunnelInfo.getId());
+    protected void scheduleAutoCloseTunnel(GatewayTunnelSession session) {
+        if (session.getTunnelInfo().getAutoCloseTime() == null) {
+            LOG.fine("No auto-close time set for tunnel: " + session);
             return;
         }
 
-        long delayMillis = tunnelInfo.getAutoCloseTime().toEpochMilli() - timerService.getCurrentTimeMillis();
+        long delayMillis = session.getTunnelInfo().getAutoCloseTime().toEpochMilli() - timerService.getCurrentTimeMillis();
         if (delayMillis <= 0) {
-            LOG.warning("Auto-close time for tunnel " + tunnelInfo.getId() + " is in the past, closing immediately");
-            autoCloseTunnel(tunnelInfo.getId());
+            LOG.warning("Auto-close time for tunnel session is in the past, closing immediately: " + session);
+            autoCloseTunnel(session);
             return;
         }
 
-        LOG.info("Scheduling auto-close for tunnel '" + tunnelInfo.getId() + "' at " + tunnelInfo.getAutoCloseTime() + " (in " + delayMillis + "ms)");
+        LOG.info("Scheduling auto-close for tunnel session at " + session.getTunnelInfo().getAutoCloseTime() + " (in " + delayMillis + "ms)");
 
         ScheduledFuture<?> task = Container.SCHEDULED_EXECUTOR.schedule(
-            () -> autoCloseTunnel(tunnelInfo.getId()),
+            () -> autoCloseTunnel(session),
             delayMillis,
             TimeUnit.MILLISECONDS
         );
 
-        tunnelAutoCloseTasks.put(tunnelInfo.getId(), task);
+        tunnelAutoCloseTasks.put(session, task);
     }
 
     /**
      * Cancel the scheduled auto-close task for a tunnel.
      */
-    protected void cancelAutoCloseTunnel(String tunnelId) {
-        ScheduledFuture<?> task = tunnelAutoCloseTasks.remove(tunnelId);
-        if (task != null && !task.isDone()) {
+    protected void cancelAutoCloseTunnel(GatewayTunnelSession session) {
+        ScheduledFuture<?> task = tunnelAutoCloseTasks.remove(session);
+        if (task != null) {
             task.cancel(false);
-            LOG.fine("Cancelled auto-close task for tunnel: " + tunnelId);
+            LOG.fine("Cancelled auto-close task for tunnel: " + session);
         }
     }
 
     /**
      * Automatically closes a tunnel when its timeout expires, called by the scheduled task.
      */
-    protected void autoCloseTunnel(String tunnelId) {
-        GatewayTunnelSession tunnelSession = activeTunnelSessions.stream()
-                .filter(session -> session.getTunnelInfo().getId().equals(tunnelId))
-                .findFirst()
-                .orElse(null);
-
-        if (tunnelSession == null) {
-            LOG.fine("Tunnel '" + tunnelId + "' not found in active tunnels, it may have already been closed");
-            return;
-        }
-
-        LOG.info("Automatically closing tunnel due to timeout: " + tunnelId);
+    protected void autoCloseTunnel(GatewayTunnelSession session) {
+        LOG.info("Automatically closing tunnel due to timeout: " + session);
 
         try {
-            activeTunnelSessions.remove(tunnelSession);
-            stopGatewayTunnel(tunnelSession);
+            activeTunnelSessions.remove(session);
+            stopGatewayTunnel(session);
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + tunnelId, e);
-        } finally {
-            cancelAutoCloseTunnel(tunnelId);
+            LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + session + ", error=" + e.getMessage());
         }
     }
 
