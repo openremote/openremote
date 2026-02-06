@@ -140,7 +140,6 @@ public class GatewayClientConnector implements AutoCloseable {
                     this.activeTunnelSessions.forEach(GatewayTunnelSession::disconnect);
                     this.activeTunnelSessions.clear();
                 }
-
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
             } finally {
@@ -240,7 +239,7 @@ public class GatewayClientConnector implements AutoCloseable {
         SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event == null) {
-            LOG.finer("Received empty message from central manager: realm=" + connection.getLocalRealm());
+            LOG.warning("Received empty message from central manager: realm=" + connection);
             return;
         }
 
@@ -277,7 +276,7 @@ public class GatewayClientConnector implements AutoCloseable {
             // The central manager sends N number of these to synchronise gateway descendant assets on the central manager
             case ReadAssetsEvent readAssets -> {
                 if (gatewayAPIVersion == null) {
-                    LOG.finer("Pre version 1.0.0 central manager read assets request so closing all active tunnels: " + connection);
+                    LOG.info("Pre version 1.0.0 central manager read assets request so closing all active tunnels: " + connection);
                     stopAllGatewayTunnels();
                 }
 
@@ -297,7 +296,7 @@ public class GatewayClientConnector implements AutoCloseable {
                 if (gatewayAPIVersion == null) {
                     // This is a legacy version of the openremote on the central instance so we won't get a GatewayInitialisedEvent
                     // so we mark this client as connected now
-                    LOG.fine("Central manager running an older version so assuming connection is initialised");
+                    LOG.info("Central manager running an older version so assuming connection is initialised");
                     initFuture.complete(null);
                 }
 
@@ -373,13 +372,7 @@ public class GatewayClientConnector implements AutoCloseable {
 
         Container.EXECUTOR.submit(() -> {
 
-            if (activeTunnels == null || activeTunnels.length == 0) {
-                LOG.fine("No gateway tunnel sessions on central instance so stopping any active sessions: " + connection);
-                stopAllGatewayTunnels();
-                return;
-            }
-
-            LOG.fine("Synchronising gateway tunnel sessions with central instance: " + connection);
+            LOG.info("Synchronising gateway tunnel sessions with central instance: " + connection);
 
             // Synchronise the SSH sessions with what the central instance thinks are open
             // Filter out any tunnels expiring in the next 5 seconds
@@ -391,6 +384,12 @@ public class GatewayClientConnector implements AutoCloseable {
                 return true;
             }).toList();
 
+            if (tunnels.isEmpty()) {
+                LOG.finer("No gateway tunnel sessions on central instance so stopping any active sessions: " + connection);
+                stopAllGatewayTunnels();
+                return;
+            }
+
             // Create any new tunnels currently not established
             tunnels.forEach(activeTunnel -> {
                 GatewayTunnelSession activeSession = this.activeTunnelSessions.stream()
@@ -401,7 +400,7 @@ public class GatewayClientConnector implements AutoCloseable {
                     LOG.finer("Active tunnel session found for tunnel: " + activeTunnel);
                 } else {
                     // No existing session for this active tunnel
-                    LOG.fine("Active tunnel session not found for tunnel so starting: " + activeTunnel);
+                    LOG.finer("Active tunnel session not found for tunnel so starting: " + activeTunnel);
                     startGatewayTunnel(activeTunnel);
                 }
             });
@@ -410,7 +409,7 @@ public class GatewayClientConnector implements AutoCloseable {
             this.activeTunnelSessions.removeIf(activeTunnelSession -> {
                 boolean obsolete = tunnels.stream().noneMatch(tunnel -> tunnel.equals(activeTunnelSession.getTunnelInfo()));
                 if (obsolete) {
-                    LOG.fine("Removing obsolete tunnel session: " + activeTunnelSession);
+                    LOG.finer("Removing obsolete tunnel session: " + activeTunnelSession);
                     activeTunnelSession.disconnect();
                 }
                 return obsolete;
@@ -444,10 +443,11 @@ public class GatewayClientConnector implements AutoCloseable {
 
     protected void sendCentralManagerMessage(SharedEvent event) {
         if (client != null) {
-            if (LOG.isLoggable(Level.FINEST)) {
-                LOG.finest("Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event);
-            } else {
-                LOG.finer(() -> "Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event.getClass().getSimpleName());
+            boolean isAttributeEvent = event instanceof AttributeEvent;
+            if (isAttributeEvent && LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Sending attribute event to central manager: realm=" + connection.getLocalRealm() + ", " + event);
+            } else if (!isAttributeEvent) {
+                LOG.fine(() -> "Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event);
             }
             client.sendMessage(messageToString(SharedEvent.MESSAGE_PREFIX, event));
         }
@@ -704,7 +704,7 @@ public class GatewayClientConnector implements AutoCloseable {
             if (allowEvent && connection.getAssetSyncRules() != null) {
                 GatewayAssetSyncRule syncRule = connection.getAssetSyncRules().getOrDefault(ev.getAssetType(), connection.getAssetSyncRules().get("*"));
                 if (syncRule != null && syncRule.excludeAttributes != null && syncRule.excludeAttributes.contains(ev.getName())) {
-                    LOG.finer(() -> "Attribute event excluded due to sync rule: " + ev);
+                    LOG.finest(() -> "Attribute event excluded due to sync rule: " + ev);
                     allowEvent = false;
                 }
             }
