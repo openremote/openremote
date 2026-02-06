@@ -307,6 +307,16 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         // Check this asset has an FCM token (i.e. it is registered for push notifications)
         String fcmToken = consoleFCMTokenMap.get(targetId);
 
+        if (TextUtil.isNullOrEmpty(fcmToken) && targetType == Notification.TargetType.ASSET) {
+            ConsoleAsset consoleAsset = assetStorageService.find(targetId, true, ConsoleAsset.class);
+            if (consoleAsset != null) {
+                fcmToken = getFcmToken(consoleAsset).orElse(null);
+                if (!TextUtil.isNullOrEmpty(fcmToken)) {
+                    consoleFCMTokenMap.put(targetId, fcmToken);
+                }
+            }
+        }
+
         if (TextUtil.isNullOrEmpty(fcmToken)) {
             String msg = "No FCM token found for console: " + targetId;
             LOG.finer(msg);
