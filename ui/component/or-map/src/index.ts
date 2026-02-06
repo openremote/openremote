@@ -17,7 +17,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
-import { Asset, Attribute, GeoJsonConfig, GeoJSONPoint, MapType, WellknownAttributes } from "@openremote/model";
+import { Asset, Attribute, GeoJsonConfig, GeoJSONPoint, WellknownAttributes } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { CenterControl } from "./controls/center";
 
@@ -307,9 +307,6 @@ export class OrMap extends LitElement {
 
     public static styles = style;
 
-    @property({type: String})
-    public type: MapType = manager.mapType;
-
     @property({type: Object})
     public cluster?: ClusterConfig;
 
@@ -452,7 +449,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
+            this._map = new MapWidget(this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls)
