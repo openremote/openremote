@@ -1,46 +1,86 @@
 # OpenRemote v3
 #
-# Profile for doing IDE development work and running build tests.
+# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
+#
+# It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
+# is shown at https://demo.openremote.io)
+# with username 'admin' and password 'secret'. There is no map data available in the vanilla
+# system so the map tile server will not function. Persistent data is stored in a docker
+# volume called postgresql-data between restarts, simply delete this volume to reset the
+# system to an empty state.
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
 volumes:
+  proxy-data:
+  manager-data:
   postgresql-data:
+  deployment-data:
+  # hawkbit volumes
   hawkbit-data:
   hawkbit-artifact-data:
+
 services:
+  proxy:
+    image: openremote/proxy:${PROXY_VERSION:-latest}
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8883:8883"
+      - "127.0.0.1:8404:8404" # Localhost metrics access
+    volumes:
+      - proxy-data:/deployment
+      - ../deployment/proxy/haproxy.cfg:/etc/haproxy/haproxy.cfg:ro
+    environment:
+      LE_EMAIL: ${OR_EMAIL_FROM:-}
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+      DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      # configure hawkbit (optional) proxy backends
+      HAWKBIT_HOST: hawkbit
+      HAWKBIT_PORT: 8080
+      HAWKBIT_UI_HOST: hawkbit-ui
+      HAWKBIT_UI_PORT: 8088
+      HAPROXY_CONFIG: /etc/haproxy/haproxy.cfg
+
+  postgresql:
+    restart: always
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    shm_size: 128mb
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - manager-data:/storage
 
   keycloak:
-    extends:
-      file: deploy.yml
-      service: keycloak
-    # volumes:
-    #   Map custom themes
-    #  - ../deployment:/deployment
-    ports:
-      - "8081:8080"
+    restart: always
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
     depends_on:
       postgresql:
         condition: service_healthy
-    environment:
-      KC_HOSTNAME_STRICT_HTTPS: 'false'
-      KC_HOSTNAME_STRICT: 'false'
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
-      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
-      # Prevent theme caching during dev
-      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
-
-  postgresql:
-    extends:
-      file: deploy.yml
-      service: postgresql
     volumes:
-      - ../tmp:/storage
-      - postgresql-data:/var/lib/postgresql/data
-    # Access directly if needed on localhost
+      - ../deployment:/deployment
+    environment:
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
+
+  manager:
+    restart: always
+    image: openremote/manager:${MANAGER_VERSION:-latest}
+    depends_on:
+      keycloak:
+        condition: service_healthy
     ports:
-      - "5432:5432"
+      - "127.0.0.1:8405:8405"
+    environment:
+      OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
+      OR_SSL_PORT: ${OR_SSL_PORT:--1}
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      OR_ADDITIONAL_HOSTNAMES:
+    volumes:
+      - manager-data:/storage
+      - deployment-data:/deployment
 
   hawkbitdb:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
@@ -97,14 +137,12 @@ services:
     ports:
       - "8083:8080"
 
-  # ---------------------
-  # HawkBit UI service
-  # ---------------------
+ 
+  # Note, does not do OIDC yet, it is supported but needs to be figured out still.
   hawkbit-ui:
     image: "hawkbit/hawkbit-simple-ui:latest"
-    network_mode: host
     environment:
-      - 'SPRING_APPLICATION_JSON={"hawkbit.server.mgmtUrl": "http://localhost:8083/hawkbit"}'
+      - "SPRING_APPLICATION_JSON={\"hawkbit.server.mgmtUrl\":\"http://hawkbit:8080/hawkbit\",\"server.servlet.context-path\":\"/hawkbit/ui\",\"server.use-forward-headers\":true,\"server.forward-headers-strategy\":\"NATIVE\"}"
     restart: always
     labels:
       NAME: "hawkbit-ui"
