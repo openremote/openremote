@@ -467,7 +467,7 @@ public class GatewayClientConnector implements AutoCloseable {
                 .orElse(null);
 
         if (activeSession != null) {
-            LOG.fine("Existing active tunnel session found for tunnel so returning:  " + connection + ", " + tunnelInfo);
+            LOG.fine("Existing active tunnel session found for tunnel so returning it:  " + connection + ", " + tunnelInfo);
             return activeSession.connectFuture;
         }
 

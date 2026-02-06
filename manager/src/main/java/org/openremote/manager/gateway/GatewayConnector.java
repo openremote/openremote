@@ -260,6 +260,7 @@ public class GatewayConnector {
                     }
                 }
                 // Let the gateway know init is complete
+                LOG.info("Gateway fully initialised: " + getGatewayIdString());
                 sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
                 gatewayVersion = response != null ? response.getVersion() : null;
@@ -644,7 +645,7 @@ public class GatewayConnector {
     }
 
     protected void onInitialSyncComplete() {
-        LOG.info("Initial sync complete: " + gatewayId);
+        LOG.fine("Asset sync complete: " + gatewayId);
         initialSyncInProgress = false;
         cachedAssetEvents.clear();
         cachedAttributeEvents.clear();
