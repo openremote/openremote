@@ -1,0 +1,8 @@
+build/
+build.gradle
+test/
+webpack.config.js
+rspack.config.js
+tsconfig.json
+dist/*.map
+*.tsbuildinfo

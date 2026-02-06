@@ -89,5 +89,5 @@ signing {
 tasks.register('installDist', Copy) {
     dependsOn resolveTask(":manager:installDist")
     from jar.archiveFile
-    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+    into project(":manager").layout.buildDirectory.dir("install/manager/lib")
 }
