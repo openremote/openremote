@@ -625,12 +625,14 @@
   "schedule": {
     "count_one": "herhaling",
     "count_other": "herhalingen",
+    "delete": "Schema verwijderen",
     "_ends": "Eindigt",
     "ends": {
       "until": "Op",
       "count": "Na"
     },
     "repeat": "Herhaal elke",
+    "save": "Schema opslaan",
     "type": "Schema type"
   },
   "rrule": {
