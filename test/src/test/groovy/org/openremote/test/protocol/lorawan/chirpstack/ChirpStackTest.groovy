@@ -60,6 +60,8 @@ import spock.util.concurrent.PollingConditions
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.TimeUnit
+import java.util.logging.Level
+import java.util.logging.Logger
 
 import static org.openremote.agent.protocol.lorawan.LoRaWANConstants.ATTRIBUTE_NAME_DEV_EUI
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
@@ -436,6 +438,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
     }
 
     static class SubscriptionTracker extends AbstractInterceptHandler {
+        static final Logger LOG = Logger.getLogger(SubscriptionTracker.class.getName())
         final Set<String> subscriptions = new CopyOnWriteArraySet<>()
 
         @Override
@@ -453,7 +456,7 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
 
         @Override
         void onSessionLoopError(Throwable throwable) {
-
+            LOG.log(Level.SEVERE, "MQTT session loop error in SubscriptionTracker", throwable)
         }
 
         boolean containsTopic(String topic) {
