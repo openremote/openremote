@@ -276,7 +276,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
         });
 
-
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
                 future.cancel(true);
@@ -375,7 +374,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         LOG.finest("Sending message to server: " + getClientUri());
 
         if (!isChannelReady()) {
-            LOG.finest("Channel not ready, message not sent: " + getClientUri());
+            LOG.finer("Channel not ready, message not sent: " + getClientUri());
             return;
         }
 
