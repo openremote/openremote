@@ -24,6 +24,7 @@ package org.openremote.manager.gateway;
 
 import org.openremote.model.gateway.GatewayTunnelInfo;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -60,7 +61,19 @@ public class GatewayTunnelSession {
       return tunnelInfo;
    }
 
-   @Override
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        GatewayTunnelSession that = (GatewayTunnelSession) o;
+        return Objects.equals(tunnelInfo, that.tunnelInfo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(tunnelInfo);
+    }
+
+    @Override
    public String toString() {
       return "GatewayTunnelSession{" +
          "connectFuture=" + connectFuture +

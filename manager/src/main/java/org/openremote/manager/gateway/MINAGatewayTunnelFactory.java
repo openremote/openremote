@@ -89,13 +89,13 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
       void stop() {
          if (isRunning.compareAndSet(true, false)) {
-            LOG.fine("Stopping session: " + this);
+            LOG.info("Stopping session: " + this);
             ClientSession session = currentSession.getAndSet(null);
             if (session != null) {
                try {
                   session.close();
                } catch (IOException e) {
-                  LOG.fine("Error closing session during tunnel stop msg=" + e.getMessage() + ": " + this);
+                  LOG.warning("Error closing session during tunnel stop msg=" + e.getMessage() + ": " + this);
                }
             }
          }
@@ -187,7 +187,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
          initialFuture.complete(null);
 
          session.addCloseFutureListener(f -> {
-            LOG.info("Remote port forwarding closed: " + this);
+            LOG.finer("Remote port forwarding session closed: " + this);
             if (isRunning.get()) {
                handleFailure(null);
             }
@@ -201,7 +201,7 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
          if (wasInitialFailure) {
             // If initial connection attempt failed, we stop completely.
-            LOG.fine("Initial connect has failed so aborting: " + this);
+            LOG.info("Initial connect has failed so aborting: " + this);
             isRunning.set(false);
          } else if (isRunning.get()) {
             // Future was already done (meaning previous success), so this is a drop. Retry.
