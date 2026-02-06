@@ -81,9 +81,9 @@ ct.describe("Default event type should", () => {
         await expect(dialog.locator("#event-type")).toBeVisible();
         await expect(dialog.getByRole("button", { name: "Default", exact: true })).toBeVisible();
 
-        await expect(dialog.locator("#recurrence")).not.toBeVisible();
-
         await expect(dialog.locator("#period")).not.toBeVisible();
+
+        await expect(dialog.locator("#recurrence")).not.toBeVisible();
 
         await expect(dialog.locator("#recurrence-ends")).not.toBeVisible();
     });
@@ -119,14 +119,14 @@ ct.describe("Period event type should", () => {
         await expect(dialog.locator("#event-type")).toBeVisible();
         await expect(dialog.getByRole("button", { name: "Plan an occurrence", exact: true })).toBeVisible();
 
-        await expect(dialog.locator("#recurrence")).not.toBeVisible();
-
         await expect(dialog.locator("#period")).toBeVisible();
         await expect(dialog.locator("label", { hasText: "from" })).toHaveCount(2);
-        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeDisabled();
+        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeHidden();
         await expect(dialog.locator("label", { hasText: "to" })).toHaveCount(2);
-        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeDisabled();
+        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeHidden();
         await expect(dialog.getByRole("checkbox", { checked: true, name: "All day" })).toBeVisible();
+
+        await expect(dialog.locator("#recurrence")).not.toBeVisible();
 
         await expect(dialog.locator("#recurrence-ends")).not.toBeVisible();
     });
@@ -162,9 +162,9 @@ ct.describe("Period event type should", () => {
         await selectEventType("Plan an occurrence", dialog, mwcInput);
 
         await dialog.getByRole("checkbox", { name: "All day" }).uncheck();
-        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeEnabled();
+        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeVisible();
         await dialog.locator("label", { hasText: "from" }).last().fill("09:00");
-        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeEnabled();
+        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeVisible();
         await dialog.locator("label", { hasText: "to" }).last().fill("18:00");
 
         await dialog.getByRole("button", { name: "apply" }).click();
@@ -192,6 +192,13 @@ ct.describe("Recurrence event type should", () => {
 
         await expect(dialog.locator("#event-type")).toBeVisible();
         await expect(dialog.getByRole("button", { name: "Plan a repeating occurrence", exact: true })).toBeVisible();
+
+        await expect(dialog.locator("#period")).toBeVisible();
+        await expect(dialog.locator("label", { hasText: "from" })).toHaveCount(2);
+        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeHidden();
+        await expect(dialog.locator("label", { hasText: "to" })).toHaveCount(2);
+        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeHidden();
+        await expect(dialog.getByRole("checkbox", { checked: true, name: "All day" })).toBeVisible();
 
         await expect(dialog.locator("#recurrence")).toBeVisible();
         await dialog.getByRole("button", { name: "Day" }).click();
@@ -226,13 +233,6 @@ ct.describe("Recurrence event type should", () => {
             }
             await dialog.getByRole("button", { name: FREQUENCIES[freq as Frequency], exact: true }).click({ delay: 100 });
         }
-
-        await expect(dialog.locator("#period")).toBeVisible();
-        await expect(dialog.locator("label", { hasText: "from" })).toHaveCount(2);
-        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeDisabled();
-        await expect(dialog.locator("label", { hasText: "to" })).toHaveCount(2);
-        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeDisabled();
-        await expect(dialog.getByRole("checkbox", { checked: true, name: "All day" })).toBeVisible();
 
         const ends = dialog.locator("#recurrence-ends");
         await expect(ends).toBeVisible();
@@ -275,9 +275,9 @@ ct.describe("Recurrence event type should", () => {
         await selectEventType("Plan a repeating occurrence", dialog, mwcInput);
 
         await dialog.getByRole("checkbox", { name: "All day" }).uncheck();
-        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeEnabled();
+        await expect(dialog.locator("label", { hasText: "from" }).last()).toBeVisible();
         await dialog.locator("label", { hasText: "from" }).last().fill("09:00");
-        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeEnabled();
+        await expect(dialog.locator("label", { hasText: "to" }).last()).toBeVisible();
         await dialog.locator("label", { hasText: "to" }).last().fill("18:00");
 
         await dialog.getByRole("button", { name: "apply" }).click();
