@@ -2155,6 +2155,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@vaadin/button": "npm:~25.0.3"
     "@vaadin/checkbox": "npm:~25.0.3"
+    "@vaadin/checkbox-group": "npm:~25.0.3"
     "@vaadin/date-picker": "npm:~25.0.3"
     "@vaadin/date-time-picker": "npm:~25.0.3"
     "@vaadin/dialog": "npm:~25.0.3"
@@ -3832,6 +3833,21 @@ __metadata:
     "@vaadin/vaadin-themable-mixin": "npm:~25.0.3"
     lit: "npm:^3.0.0"
   checksum: 10c0/f71a08da338d19a2b946a92b922418e8406dc3f29e36ff839a0cef0ce3238c2affab3ed428e42188a20b561a31806088b5b48461c8c214be98b7cdfa25c1bfd5
+  languageName: node
+  linkType: hard
+
+"@vaadin/checkbox-group@npm:~25.0.3":
+  version: 25.0.3
+  resolution: "@vaadin/checkbox-group@npm:25.0.3"
+  dependencies:
+    "@open-wc/dedupe-mixin": "npm:^1.3.0"
+    "@vaadin/a11y-base": "npm:~25.0.3"
+    "@vaadin/checkbox": "npm:~25.0.3"
+    "@vaadin/component-base": "npm:~25.0.3"
+    "@vaadin/field-base": "npm:~25.0.3"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.0.3"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/8f18a62f56610cdae707aacfb625c4189bf264ad48e699441b61a304d9931171133d993c92372c63cad4bc58428cefcf897ba87c5fbc3c6e44712644a7e6e80b
   languageName: node
   linkType: hard
 

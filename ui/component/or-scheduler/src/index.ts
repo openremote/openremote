@@ -20,14 +20,15 @@
 import { html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { CalendarEvent } from "@openremote/model";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
-import "@openremote/or-vaadin-components/or-vaadin-item";
-import "@openremote/or-vaadin-components/or-vaadin-list-box";
+// import "@openremote/or-vaadin-components/or-vaadin-item";
+// import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
@@ -388,20 +389,21 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     border-radius: 0px;
                 }
 
-                
-                or-vaadin-list-box::part() {
-                }
-
-                or-vaadin-item {
-                    color: var(--lumo-primary-color);
-                    background: var(--lumo-contrast-5ct);
-                    padding: 8px 14px;
-                    &::part(checkmark) {
+                or-vaadin-checkbox-group {
+                    display: flex;
+                    gap: 6px;
+                    &::before, ::part(checkbox) {
                         display: none;
                     }
-                    &[selected] {
-                        color: white;
+                    &::part(label) {
+                        background: var(--lumo-contrast-5pct);
+                        border-radius: var(--lumo-border-radius-m);
+                        color: var(--lumo-primary-color);
+                        --vaadin-checkbox-label-padding: 8px 14px;
+                    }
+                    &[checked]::part(label) {
                         background: var(--lumo-primary-color);
+                        color: white;
                     }
                 }
 
@@ -539,15 +541,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             : this._rrule?.origOptions[part];
 
         return html`
-            <or-vaadin-list-box .selectedValues="${Object.keys(value ?? [])}"
+            <or-vaadin-checkbox-group .selectedValues="${Object.keys(value ?? [])}"
                                 .type="${type}"
-                                .label="${part}"
                                 multiple
                                 @change="${(e: any) => {
                                     this.setRRuleValue(options[e.target.value], part);
                                 }}">
-                ${options.map((o) => html`<or-vaadin-item>${o}</or-vaadin-item>`)}
-            </or-vaadin-list-box>
+                ${options.map((o) => html`<or-vaadin-checkbox value="${o}" label="${o}"></or-vaadin-checkbox>`)}
+            </or-vaadin-checkbox-group>
         `;
     }
 
