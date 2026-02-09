@@ -5,7 +5,7 @@ import {GridComponent, GridComponentOption, DataZoomComponent, DataZoomComponent
 import {LineChart, LineSeriesOption} from "echarts/charts";
 import {UniversalTransition} from "echarts/features";
 import {CanvasRenderer} from "echarts/renderers";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 import {
     css,
     html,

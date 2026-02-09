@@ -20,7 +20,7 @@ services:
       file: deploy.yml
       service: proxy
     environment:
-      MANAGER_HOST: 'host.docker.internal'
+      MANAGER_HOST: ${MANAGER_HOST:-'host.docker.internal'}
       # Uncomment to use sish in development
       #SISH_HOST: sish
       #SISH_PORT: 8090
