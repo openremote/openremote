@@ -2227,7 +2227,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/theme@workspace:ui/component/theme"
   dependencies:
-    "@vaadin/vaadin-lumo-styles": "npm:~25.0.1"
+    "@vaadin/vaadin-lumo-styles": "npm:~25.0.3"
   languageName: unknown
   linkType: soft
 
@@ -3885,18 +3885,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vaadin/component-base@npm:~25.0.1":
-  version: 25.0.1
-  resolution: "@vaadin/component-base@npm:25.0.1"
-  dependencies:
-    "@open-wc/dedupe-mixin": "npm:^1.3.0"
-    "@vaadin/vaadin-development-mode-detector": "npm:^2.0.0"
-    "@vaadin/vaadin-usage-statistics": "npm:^2.1.0"
-    lit: "npm:^3.0.0"
-  checksum: 10c0/063a7f5300f9c20040471fa12df04b452cf36e3b618499a7e1008f906f81304729b8b6ce3ae630411af9f0c6addfc7edeee834568d058b06819192f21ef25674
-  languageName: node
-  linkType: hard
-
 "@vaadin/component-base@npm:~25.0.3":
   version: 25.0.3
   resolution: "@vaadin/component-base@npm:25.0.3"
@@ -3980,18 +3968,6 @@ __metadata:
     "@vaadin/component-base": "npm:~25.0.3"
     lit: "npm:^3.0.0"
   checksum: 10c0/5cde82446986f3923825257b2464f7ebf767ea4ef489b6136033f6a6f31349308e3f468ccd5020a2bca823c5ffb677ce68153d13b121379b723c2ddf73d04766
-  languageName: node
-  linkType: hard
-
-"@vaadin/icon@npm:~25.0.1":
-  version: 25.0.1
-  resolution: "@vaadin/icon@npm:25.0.1"
-  dependencies:
-    "@open-wc/dedupe-mixin": "npm:^1.3.0"
-    "@vaadin/component-base": "npm:~25.0.1"
-    "@vaadin/vaadin-themable-mixin": "npm:~25.0.1"
-    lit: "npm:^3.0.0"
-  checksum: 10c0/8a87e7f64082d79fa68522ed97f5a4c4fdb1bfdbc66745a5d2fbef75183c105b9398e4db021f3f42f137e997fe96abecdf33531df7f01af86fac29869d2dc4d8
   languageName: node
   linkType: hard
 
@@ -4195,25 +4171,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vaadin/vaadin-lumo-styles@npm:~25.0.1":
-  version: 25.0.1
-  resolution: "@vaadin/vaadin-lumo-styles@npm:25.0.1"
+"@vaadin/vaadin-lumo-styles@npm:~25.0.3":
+  version: 25.0.3
+  resolution: "@vaadin/vaadin-lumo-styles@npm:25.0.3"
   dependencies:
-    "@vaadin/component-base": "npm:~25.0.1"
-    "@vaadin/icon": "npm:~25.0.1"
-    "@vaadin/vaadin-themable-mixin": "npm:~25.0.1"
-  checksum: 10c0/4ecce43381dbc8660f2428df5b1a053608411114b3c919c90b7aae3edfdda30d7e2d2de8762ca29152eafec2abea8044e522f47d9d381da6eca868549e095fa4
-  languageName: node
-  linkType: hard
-
-"@vaadin/vaadin-themable-mixin@npm:~25.0.1":
-  version: 25.0.1
-  resolution: "@vaadin/vaadin-themable-mixin@npm:25.0.1"
-  dependencies:
-    "@open-wc/dedupe-mixin": "npm:^1.3.0"
-    "@vaadin/component-base": "npm:~25.0.1"
-    lit: "npm:^3.0.0"
-  checksum: 10c0/4b7dfb7f5c49c8757634ac7bda85daca552ddd8d57ef1f9c0569a345313e02eddd63986e8ac8cae557bf76fcaed1cb390221a7c3f0fcb9a849d865610d8a31f3
+    "@vaadin/component-base": "npm:~25.0.3"
+    "@vaadin/icon": "npm:~25.0.3"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.0.3"
+  checksum: 10c0/be792133987a84d9b2562e47f22a4bdec4415e8f9db1ec1c01c2d98ae9f43b8c766316d5960b53fec14b80a09af96cd913b9c65895378aa44cd922bf0c6e5367
   languageName: node
   linkType: hard
 
