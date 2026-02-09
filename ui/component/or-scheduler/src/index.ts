@@ -27,6 +27,7 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
+import "@openremote/or-vaadin-components/or-vaadin-icon";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
@@ -383,13 +384,20 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     padding: 0 var(--lumo-space-m);
                 }
 
-                vaadin-input-container::part(input-field)::after {
-                    border-radius: 0px;
+                or-vaadin-date-picker[combined] {
+                    --vaadin-input-field-top-end-radius: 0;
+                    --vaadin-input-field-bottom-end-radius: 0;
+                }
+                or-vaadin-time-picker {
+                    --vaadin-input-field-top-start-radius: 0;
+                    --vaadin-input-field-bottom-start-radius: 0;
                 }
 
                 or-vaadin-checkbox-group {
                     display: flex;
-                    gap: 6px;
+                    &::part(group-field) {
+                        gap: 6px;
+                    }
                     &::before, ::part(checkbox) {
                         display: none;
                     }
@@ -448,7 +456,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected getDialogFooter(): TemplateResult {
         return html`
-            <or-vaadin-button style="margin-right: auto" theme="error" icon="vaadin:trash" @click="${() => null}">
+            <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" icon="vaadin:trash" @click="${() => null}">
                 <or-translate value="schedule.delete"></or-translate>
             </or-vaadin-button>
             <or-vaadin-button theme="primary" @click="${() => {
@@ -570,18 +578,18 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <label class="title"><or-translate value="period"></or-translate></label>
                 <div style="display: flex; gap: 8px;">
                     <div style="display: flex; flex: 1; gap: 2px">
-                        <or-vaadin-date-picker class="compact" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
+                        <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${i18next.t("from")}">
                         </or-vaadin-date-picker>
-                        <or-vaadin-time-picker class="compact" style="margin-top: auto" .hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
+                        <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}">
                         </or-vaadin-time-picker>
                     </div>
                     <div style="display: flex; flex: 1; gap: 2px">
-                        <or-vaadin-date-picker class="compact" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
+                        <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${i18next.t("to")}">
                         </or-vaadin-date-picker>
-                        <or-vaadin-time-picker class="compact" style="margin-top: auto" .hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
+                        <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "end-time")}">
                         </or-vaadin-time-picker>
                     </div>

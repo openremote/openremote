@@ -39,6 +39,8 @@
     "@vaadin/date-picker": "~25.0.3",
     "@vaadin/date-time-picker": "~25.0.3",
     "@vaadin/dialog": "~25.0.3",
+    "@vaadin/icon": "~25.0.3",
+    "@vaadin/icons": "~25.0.3",
     "@vaadin/item": "~25.0.3",
     "@vaadin/list-box": "~25.0.3",
     "@vaadin/number-field": "~25.0.3",
