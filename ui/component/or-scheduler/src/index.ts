@@ -555,12 +555,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             : this._rrule?.origOptions[part];
 
         return html`
-            <or-vaadin-checkbox-group .selectedValues="${Object.keys(value ?? [])}"
-                                .type="${type}"
-                                multiple
-                                @change="${(e: any) => {
-                                    this.setRRuleValue(options[e.target.value], part);
-                                }}">
+            <or-vaadin-checkbox-group .value="${value ?? []}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}">
                 ${options.map((o) => html`<or-vaadin-checkbox value="${o}" label="${o}"></or-vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         `;
