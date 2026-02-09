@@ -42,7 +42,7 @@ const meta: Meta = {
         },
         docs: {
             subtitle: `<${tagName}>`,
-            description: "Checkbox is an input field representing a binary choice. Checkbox Group is a group of related binary choices."
+            description: "Checkbox is an input field representing a binary choice."
         }
     }
 };

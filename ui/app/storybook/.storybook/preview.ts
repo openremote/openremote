@@ -28,6 +28,7 @@ const preview: Preview = {
     parameters: {
         controls: {
             expanded: true,
+            exclude: ["undefined-event"],
             matchers: {
                 color: /(background|color)$/i,
                 date: /Date$/i
