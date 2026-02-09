@@ -392,16 +392,16 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 or-vaadin-checkbox-group {
                     display: flex;
                     gap: 6px;
-                    &::before, ::part(checkbox) {
+                    & ::before, ::part(checkbox) {
                         display: none;
                     }
-                    &::part(label) {
+                    & ::part(label) {
                         background: var(--lumo-contrast-5pct);
                         border-radius: var(--lumo-border-radius-m);
                         color: var(--lumo-primary-color);
                         --vaadin-checkbox-label-padding: 8px 14px;
                     }
-                    &[checked]::part(label) {
+                    & [checked]::part(label) {
                         background: var(--lumo-primary-color);
                         color: white;
                     }
