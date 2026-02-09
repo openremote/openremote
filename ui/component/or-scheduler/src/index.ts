@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { html, LitElement, PropertyValues, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { Util } from "@openremote/core";
 import { CalendarEvent } from "@openremote/model";
 import "@openremote/or-vaadin-components/or-vaadin-button";
@@ -37,7 +37,7 @@ import "@openremote/or-vaadin-components/or-vaadin-time-picker";
 import "@openremote/or-translate";
 import { translate, i18next } from "@openremote/or-translate";
 import { InputType } from "@openremote/or-vaadin-components/util";
-import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer } from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer, OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import moment from "moment";
 import { Days } from "rrule/dist/esm/rrule";
@@ -83,9 +83,26 @@ export class OrSchedulerChangedEvent extends CustomEvent<OrSchedulerChangedEvent
     }
 }
 
+export interface OrSchedulerRemovedEventDetail {
+    value?: CalendarEvent;
+}
+
+export class OrSchedulerRemovedEvent extends CustomEvent<OrSchedulerRemovedEventDetail> {
+
+    public static readonly NAME = "or-scheduler-removed";
+
+    constructor(value?: CalendarEvent) {
+        super(OrSchedulerRemovedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrSchedulerChangedEvent.NAME]: OrSchedulerChangedEvent;
+        [OrSchedulerRemovedEvent.NAME]: OrSchedulerRemovedEvent;
     }
 }
 
@@ -109,6 +126,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: Boolean })
     public isAllDay = true;
 
+    @property({ type: Boolean })
+    public removable = false;
+  
     @property({ type: Object })
     public schedule?: CalendarEvent = this.defaultSchedule;
 
@@ -119,9 +139,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _count = 1;
 
     @state()
-    protected _dialogOpened = false;
-
-    @state()
     protected _ends: keyof typeof rruleEnds = "never";
 
     @state()
@@ -129,6 +146,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     @state()
     protected _rrule?: RRule;
+
+    @query("#scheduler")
+    protected _dialog!: OrVaadinDialog;
 
     protected _byRRuleParts?: RulePartKey[];
     protected _eventType: EventTypes = EventTypes.default;
@@ -203,8 +223,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected setRRuleValue(value: any, key: keyof RuleParts | "start" | "end" | "start-time" | "end-time" | "all-day" | "recurrence-ends") {
         let origOptions = this._rrule?.origOptions;
         const calendarEvent = this._normalizedSchedule!;
-
-        console.log(value, key)
 
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
@@ -349,15 +367,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             this.schedule,
             this.timezoneOffset,
             this._count,
-            this._dialogOpened,
             this._ends,
             this._normalizedSchedule,
             this._rrule,
         ];
         return html`
-            <or-vaadin-button @click="${() => this._dialogOpened = true}">${this.timeLabel()}</or-vaadin-button>
-            <or-vaadin-dialog id="scheduler" .opened="${this._dialogOpened}" header-title="${i18next.t(this.header)}"
-                @closed="${() => this._dialogOpened = false}"
+            <or-vaadin-button @click="${() => this._dialog!.open()}">${this.timeLabel()}</or-vaadin-button>
+            <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" @closed="${() => this._dialog!.close()}"
                 ${dialogHeaderRenderer(this.getDialogHeader, [])}
                 ${dialogRenderer(this.getDialogContent, dependencies)}
                 ${dialogFooterRenderer(this.getDialogFooter, dependencies)}
@@ -367,7 +383,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected getDialogHeader(): TemplateResult {
         return html`
-            <vaadin-button theme="tertiary" @click="${() => null}">
+            <vaadin-button theme="tertiary" @click="${() => this._dialog!.close()}">
                 <vaadin-icon icon="lumo:cross"></vaadin-icon>
             </vaadin-button>
         `;
@@ -461,9 +477,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected getDialogFooter(): TemplateResult {
         return html`
-            <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" icon="vaadin:trash" @click="${() => null}">
-                <or-translate value="schedule.delete"></or-translate>
-            </or-vaadin-button>
+            ${when(this.removable, () => html`
+                <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" icon="vaadin:trash" @click="${() => {
+                    this._dialog!.close();
+                    this.dispatchEvent(new OrSchedulerRemovedEvent())
+                }}">
+                    <or-translate value="schedule.delete"></or-translate>
+                </or-vaadin-button>`
+            )}
             <or-vaadin-button theme="primary" @click="${() => {
                 if (this._normalizedSchedule && this.isAllDay) {
                     this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
@@ -476,6 +497,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 }
                 const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
                 this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
+                this._dialog!.close();
             }}"><or-translate value="schedule.save"></or-translate></or-vaadin-button>
         `;
     }
