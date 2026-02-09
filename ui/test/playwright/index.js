@@ -7,6 +7,17 @@ import HttpBackend from "i18next-http-backend";
 import { IconSets, OrIconSet, createMdiIconSet, createSvgIconSet } from "@openremote/or-icon";
 import { AssetEventCause, AssetModelUtil, ClientRole } from "@openremote/model";
 
+// Import theme package for importing type definitions
+import "@openremote/theme";
+// Import theme CSS file as string to use within Lit
+import themeCss from "@openremote/theme/default.css";
+
+// Apply theme to the Manager app
+const style = document.createElement("style");
+style.id = "orDefaultTheme";
+style.textContent = themeCss;
+document.head.appendChild(style);
+
 IconSets.addIconSet("mdi", createMdiIconSet(""));
 IconSets.addIconSet("or", createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 

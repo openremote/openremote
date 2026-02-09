@@ -18,16 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { MwcDialog, MwcInput } from "../../../or-mwc-components/test/fixtures";
+import { VaadinDialog, VaadinInput } from "../../../or-vaadin-components/test/fixtures";
 import { ct as base, type SharedComponentTestFixtures, withPage } from "@openremote/test";
 export { expect } from "@openremote/test";
 
 interface ComponentFixtures extends SharedComponentTestFixtures {
     mwcDialog: MwcDialog;
     mwcInput: MwcInput;
+    vaadinDialog: VaadinDialog;
+    vaadinInput: VaadinInput;
 }
 
 export const ct = base.extend<ComponentFixtures>({
     // Components
     mwcDialog: withPage(MwcDialog),
     mwcInput: withPage(MwcInput),
+    vaadinDialog: withPage(VaadinDialog),
+    vaadinInput: withPage(VaadinInput),
 });

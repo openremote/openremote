@@ -587,7 +587,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${label}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
-            <or-vaadin-multi-select-combo-box .items="${options}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
+            <or-vaadin-multi-select-combo-box .label="${part}" .items="${options}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
         `;
     }
 
