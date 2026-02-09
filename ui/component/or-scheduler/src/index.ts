@@ -19,8 +19,8 @@
  */
 import { html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { Util } from "@openremote/core";
 import { CalendarEvent } from "@openremote/model";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
@@ -32,9 +32,11 @@ import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-time-picker";
 import "@openremote/or-translate";
 import { translate, i18next } from "@openremote/or-translate";
+import { InputType } from "@openremote/or-vaadin-components/util";
 import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import moment from "moment";
@@ -42,6 +44,7 @@ import { Days } from "rrule/dist/esm/rrule";
 import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds } from "./util";
 import type { RulePartKey, RuleParts, LabeledEventTypes, Frequency } from "./types";
 import { when } from "lit/directives/when.js";
+import { CheckboxGroupValueChangedEvent } from "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 export { RuleParts, RulePartKey, Frequency, LabeledEventTypes };
 
 export * from "./util";
@@ -200,6 +203,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected setRRuleValue(value: any, key: keyof RuleParts | "start" | "end" | "start-time" | "end-time" | "all-day" | "recurrence-ends") {
         let origOptions = this._rrule?.origOptions;
         const calendarEvent = this._normalizedSchedule!;
+
+        console.log(value, key)
 
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
@@ -525,13 +530,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         @change="${(e: any) => this.setRRuleValue(e.target?.value, "freq")}">
                     </or-vaadin-select>
                 </div>
-                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
+                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS) as [string, string][])}</div>
                 <div>
                     ${this.getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
                     ${this.getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
                     ${this.getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
                 </div>
-                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.keys(Days))}</div>
+                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.keys(Days).map(v => [v, v]))}</div>
                 <div>
                     ${this.getByRulePart("byhour", InputType.SELECT, byHourOptions)}
                     ${this.getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
@@ -545,19 +550,22 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * 
      * @returns The specified BY_XXX RRule part field or undefined if not applicable
      */
-    protected getByRulePart<T>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
+    protected getByRulePart<T extends number | [string, string]>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
         if (!this._byRRuleParts?.includes(part)) {
             return undefined
         }
 
-        const value = part === "byweekday"
+        const value = (part === "byweekday"
             ? (this._rrule?.origOptions?.byweekday as Weekday[])?.map(String)
-            : this._rrule?.origOptions[part];
+            : this._rrule?.origOptions[part]
+        ) ?? [];
 
-        return html`
-            <or-vaadin-checkbox-group .value="${value ?? []}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}">
-                ${options.map((o) => html`<or-vaadin-checkbox value="${o}" label="${o}"></or-vaadin-checkbox>`)}
+        return type === InputType.CHECKBOX_LIST ? html`
+          <or-vaadin-checkbox-group .value="${value}" @value-changed="${(e: CheckboxGroupValueChangedEvent) => { if (!Util.objectsEqual(e.detail.value, value, true)) { this.setRRuleValue(e.detail.value, part) } }}">
+                ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${label}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
+        ` : html`
+            <or-vaadin-multi-select-combo-box .items="${options}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
         `;
     }
 
@@ -574,7 +582,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div style="display: flex; gap: 8px;">
                     <div style="display: flex; flex: 1; gap: 2px">
                         <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${i18next.t("from")}">
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${Util.camelCaseToSentenceCase(i18next.t("from"))}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}">
@@ -582,7 +590,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     </div>
                     <div style="display: flex; flex: 1; gap: 2px">
                         <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${i18next.t("to")}">
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${Util.camelCaseToSentenceCase(i18next.t("to"))}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "end-time")}">

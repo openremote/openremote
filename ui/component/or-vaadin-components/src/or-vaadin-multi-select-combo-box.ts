@@ -18,11 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { customElement } from "lit/decorators.js";
-import { CheckboxGroup } from "@vaadin/checkbox-group";
+import { MultiSelectComboBox } from "@vaadin/multi-select-combo-box";
 import { OrVaadinComponent } from "./util";
-import "@vaadin/checkbox"
 
-export type * from "@vaadin/checkbox-group"
-
-@customElement("or-vaadin-checkbox-group")
-export class OrVaadinCheckboxGroup extends CheckboxGroup implements OrVaadinComponent {}
+@customElement("or-vaadin-multi-select-combo-box")
+export class OrVaadinMultiSelectComboBox extends MultiSelectComboBox implements OrVaadinComponent {
+}
