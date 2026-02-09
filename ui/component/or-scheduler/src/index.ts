@@ -27,8 +27,6 @@ import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
-// import "@openremote/or-vaadin-components/or-vaadin-item";
-// import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
@@ -392,7 +390,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 or-vaadin-checkbox-group {
                     display: flex;
                     gap: 6px;
-                    & ::before, ::part(checkbox) {
+                    &::before, ::part(checkbox) {
                         display: none;
                     }
                     & ::part(label) {
@@ -407,22 +405,30 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }
                 }
 
-                @media only screen and (max-width: 1279px) {
-                    #content {
-                        min-height: 230px;
-                        overflow: auto;
-                    }
-                }
-
                 .section {
                     background-color: white;
                     border-radius: var(--lumo-border-radius-m);
+                    display: flex;
+                    flex-direction: column;
+                    flex-grow: 1;
                     padding: var(--lumo-space-m);
                 }
 
                 .title {
                     display: block;
                     font-weight: bold;
+                }
+
+                .period {
+                    display: flex;
+                    flex: 1;
+                    gap: 2px;
+                }
+
+                @media only screen and (max-width: 1279px) {
+                    .period {
+                        flex-wrap: wrap;
+                    }                    
                 }
             </style>
             <div style="display: flex; flex-direction: column; gap: var(--lumo-space-s)">
