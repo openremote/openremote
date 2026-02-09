@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.thetransactioncompany.cors.CORSFilter;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
@@ -138,6 +139,9 @@ public abstract class WebService implements ContainerService {
                         .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
+                        // TODO: setting entity size to unlimited to reset to Undertow 2.3.20.Final behaviour
+                        // but should be addressed in a better way: https://github.com/openremote/openremote/issues/2490
+                        .setServerOption(UndertowOptions.MAX_ENTITY_SIZE,  -1L)
         ).build();
 
         // We have to set system properties for websocket timeouts

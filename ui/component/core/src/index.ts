@@ -1,7 +1,7 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
-import {AxiosRequestConfig} from "axios";
+import {InternalAxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
@@ -12,7 +12,6 @@ import {
     ConsoleAppConfig,
     EventProviderType,
     ManagerConfig,
-    MapType,
     Role,
     User,
     UsernamePassword
@@ -269,10 +268,6 @@ export class Manager implements EventProviderFactory {
 
     getEventProvider(): EventProvider | undefined {
         return this.events;
-    }
-
-    get mapType() {
-        return this._config.mapType || MapType.VECTOR;
     }
 
     protected static MAX_RECONNECT_DELAY = 45000;
@@ -569,7 +564,7 @@ export class Manager implements EventProviderFactory {
 
         // Add interceptor to inject authorization header on each request
         rest.addRequestInterceptor(
-            (config: AxiosRequestConfig) => {
+            (config: InternalAxiosRequestConfig) => {
                 if (!config!.headers!.Authorization) {
                     const authHeader = this.getAuthorizationHeader();
 

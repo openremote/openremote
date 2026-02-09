@@ -13,6 +13,7 @@
     "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {
+    "@openremote/theme": "workspace:*",
     "lit": "^3.3.1"
   },
   "devDependencies": {
@@ -24,6 +25,6 @@
     "@wc-toolkit/storybook-helpers": "^10.0.0",
     "storybook": "~10.1.11",
     "storybook-web-components-rsbuild": "~3.2.0",
-    "typescript": "~5.9.3"
+    "typescript": "5.8.3"
   }
 }

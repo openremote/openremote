@@ -15,7 +15,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
-    "test": "echo \"No tests\" && exit 0",
+    "test": "npx tsc -b && npx playwright test",
     "prepack": "npx rspack"
   },
   "author": "OpenRemote",
@@ -36,7 +36,7 @@
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "axios": "0.24.0"
+    "axios": "1.13.2"
   },
   "publishConfig": {
     "access": "public"

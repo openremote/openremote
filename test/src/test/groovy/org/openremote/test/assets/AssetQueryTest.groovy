@@ -88,13 +88,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].realm == managerTestSetup.realmMasterName
 
         when: "a user filtering query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                        .userIds(keycloakTestSetup.testuser3Id)
-        )
+        def query = new AssetQuery().userIds(keycloakTestSetup.testuser3Id)
+        assets = assetStorageService.findAll(query)
 
         then: "only the users assets should be retrieved"
         assets.size() == 6
+        assetStorageService.count(query) == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
         assets.get(1).getAttributes().size() == 14
@@ -109,14 +108,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(5).id == managerTestSetup.apartment1BathroomId
 
         when: "a user filtering query is executed that limits to protected attributes"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .userIds(keycloakTestSetup.testuser3Id)
-                    .access(PROTECTED)
-        )
+        query = new AssetQuery()
+                .userIds(keycloakTestSetup.testuser3Id)
+                .access(PROTECTED)
+        assets = assetStorageService.findAll(query)
 
         then: "only the users assets should be retrieved"
         assets.size() == 6
+        assetStorageService.count(query) == 6
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment1LivingroomId
         assets.get(1).getAttributes().size() == 8
@@ -133,14 +132,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(5).id == managerTestSetup.apartment1BathroomId
 
         when: "a query is executed that returns a protected attribute without any other meta items"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .ids(managerTestSetup.apartment2LivingroomId)
-                    .access(PROTECTED)
-        )
+        query = new AssetQuery()
+                .ids(managerTestSetup.apartment2LivingroomId)
+                .access(PROTECTED)
+        assets = assetStorageService.findAll(query)
 
         then: "only one asset should be retrieved"
         assets.size() == 1
+        assetStorageService.count(query) == 1
         assets.get(0).id == managerTestSetup.apartment2LivingroomId
         assets.get(0).getAttributes().size() == 2
         assets.get(0).getAttribute("windowOpen").isPresent()
@@ -149,16 +148,16 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).getAttribute("targetTemperature").isPresent()
 
         when: "a recursive query is executed for apartment 1 assets"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .ids(managerTestSetup.smartBuildingId)
-                    .orderBy(new OrderBy(CREATED_ON))
-                    .recursive(true)
-                    .access(PROTECTED)
-        )
+        query = new AssetQuery()
+                .ids(managerTestSetup.smartBuildingId)
+                .orderBy(new OrderBy(CREATED_ON))
+                .recursive(true)
+                .access(PROTECTED)
+        assets = assetStorageService.findAll(query)
 
         then: "result should contain only basic info and attribute names"
         assets.size() == 13
+        assetStorageService.count(query) == 13
         assets.find {it.id == managerTestSetup.smartBuildingId}.name == "Smart building"
         def apartment1 = assets.find {it.id == managerTestSetup.apartment1Id}
         apartment1.name == "Apartment 1"
@@ -196,7 +195,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerTestSetup.smartOfficeId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Smart office"
         asset.type == BuildingAsset.DESCRIPTOR.getName()
         asset.parentId == null
@@ -211,7 +210,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerTestSetup.smartOfficeId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Smart office"
         asset.type == BuildingAsset.DESCRIPTOR.getName()
         asset.parentId == null
@@ -231,7 +230,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerTestSetup.smartOfficeId
-        assets.get(0).createdOn.time < System.currentTimeMillis()
+        assets.get(0).createdOn.toEpochMilli() < System.currentTimeMillis()
         assets.get(0).name == "Smart office"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == null
@@ -248,7 +247,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerTestSetup.smartOfficeId
-        assets.get(0).createdOn.time < System.currentTimeMillis()
+        assets.get(0).createdOn.toEpochMilli() < System.currentTimeMillis()
         assets.get(0).name == "Smart office"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == null
@@ -258,16 +257,16 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         ((BuildingAsset)assets.get(0)).getStreet().orElse("") == "Torenallee 20"
 
         when: "a query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .select(new Select().excludeAttributes())
-                    .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-        )
+        query = new AssetQuery()
+                .select(new Select().excludeAttributes())
+                .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
+        assets = assetStorageService.findAll(query)
 
         then: "result should match"
         assets.size() == 3
+        assetStorageService.count(query) == 3
         assets.get(0).id == managerTestSetup.apartment1Id
-        assets.get(0).createdOn.time < System.currentTimeMillis()
+        assets.get(0).createdOn.toEpochMilli() < System.currentTimeMillis()
         assets.get(0).name == "Apartment 1"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == managerTestSetup.smartBuildingId
@@ -277,15 +276,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerTestSetup.apartment3Id
 
         when: "a query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .select(new Select().excludeAttributes())
-                    .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-                    .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
-        )
+        query = new AssetQuery()
+                .select(new Select().excludeAttributes())
+                .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
+                .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+        assets = assetStorageService.findAll(query)
 
         then: "result should match"
         assets.size() == 3
+        assetStorageService.count(query) == 3
         assets.get(0).id == managerTestSetup.apartment1Id
         assets.get(1).id == managerTestSetup.apartment2Id
         assets.get(2).id == managerTestSetup.apartment3Id
@@ -545,7 +544,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerTestSetup.apartment1LivingroomId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Living Room 1"
         asset.type == RoomAsset.DESCRIPTOR.getName()
         asset.parentId != null
@@ -569,7 +568,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should contain only matches that are protected"
         asset.id == managerTestSetup.apartment1LivingroomId
-        asset.createdOn.time < System.currentTimeMillis()
+        asset.createdOn.toEpochMilli() < System.currentTimeMillis()
         asset.name == "Living Room 1"
         asset.type == RoomAsset.DESCRIPTOR.getName()
         asset.parentId == managerTestSetup.apartment1Id
