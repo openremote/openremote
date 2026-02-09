@@ -24,6 +24,7 @@ import java.util.Set;
 public class JWTAuthenticationFilter implements Filter {
 
     public static final String NAME = "JWTAuthFilter";
+    public static final String AUTH_TYPE = "JWT";
     private final KeyResolverService keyResolverService;
 
     public JWTAuthenticationFilter(KeyResolverService keyResolverService) {
@@ -81,9 +82,7 @@ public class JWTAuthenticationFilter implements Filter {
             // 5. Process the token. This verifies the signature and validates the claims.
             JWTClaimsSet claimsSet = jwtProcessor.process(token, null);
 
-            Principal principal = claimsSet::getSubject;
-            List<String> rolesList = claimsSet.getStringListClaim("roles");
-            Set<String> roles = (rolesList != null) ? new HashSet<>(rolesList) : Collections.emptySet();
+            TokenPrincipal principal = new TokenPrincipal(claimsSet);
 
             // Wrap the request to provide security context
             HttpServletRequestWrapper authenticatedRequest = new HttpServletRequestWrapper(httpRequest) {
@@ -94,12 +93,12 @@ public class JWTAuthenticationFilter implements Filter {
 
                 @Override
                 public boolean isUserInRole(String role) {
-                    return roles.contains(role);
+                    return principal.isUserInRole(role);
                 }
 
                 @Override
                 public String getAuthType() {
-                    return "JWT";
+                    return AUTH_TYPE;
                 }
             };
 
