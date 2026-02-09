@@ -1,22 +1,7 @@
-# OpenRemote v3
-#
-# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
-# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
-#
-# It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
-# is shown at https://demo.openremote.io)
-# with username 'admin' and password 'secret'. There is no map data available in the vanilla
-# system so the map tile server will not function. Persistent data is stored in a docker
-# volume called postgresql-data between restarts, simply delete this volume to reset the
-# system to an empty state.
-#
-# Please see profile/deploy.yml for configuration details for each service.
-#
+# Deploys the proxy, manager postgres, keycloak, hawkbit postgres, hawkbit, and hawkbit ui
 volumes:
   proxy-data:
-  manager-data:
   postgresql-data:
-  deployment-data:
   # hawkbit volumes
   hawkbit-data:
   hawkbit-artifact-data:
@@ -50,7 +35,6 @@ services:
     shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - manager-data:/storage
 
   keycloak:
     restart: always
@@ -64,23 +48,6 @@ services:
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
       KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
-
-  manager:
-    restart: always
-    image: openremote/manager:${MANAGER_VERSION:-latest}
-    depends_on:
-      keycloak:
-        condition: service_healthy
-    ports:
-      - "127.0.0.1:8405:8405"
-    environment:
-      OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
-      OR_SSL_PORT: ${OR_SSL_PORT:--1}
-      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      OR_ADDITIONAL_HOSTNAMES:
-    volumes:
-      - manager-data:/storage
-      - deployment-data:/deployment
 
   hawkbitdb:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
@@ -137,8 +104,6 @@ services:
     ports:
       - "8083:8080"
 
- 
-  # Note, does not do OIDC yet, it is supported but needs to be figured out still.
   hawkbit-ui:
     image: "hawkbit/hawkbit-simple-ui:latest"
     environment:
