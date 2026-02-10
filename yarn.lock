@@ -2161,8 +2161,6 @@ __metadata:
     "@vaadin/dialog": "npm:~25.0.3"
     "@vaadin/icon": "npm:~25.0.3"
     "@vaadin/icons": "npm:~25.0.3"
-    "@vaadin/item": "npm:~25.0.3"
-    "@vaadin/list-box": "npm:~25.0.3"
     "@vaadin/multi-select-combo-box": "npm:~25.0.3"
     "@vaadin/number-field": "npm:~25.0.3"
     "@vaadin/password-field": "npm:~25.0.3"

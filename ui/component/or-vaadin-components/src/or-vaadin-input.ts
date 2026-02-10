@@ -21,13 +21,8 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
 import "./or-vaadin-checkbox";
-// import "./or-vaadin-date-picker";
-// import "./or-vaadin-date-time-picker";
 import "./or-vaadin-number-field";
 import "./or-vaadin-passwordfield";
-// import "./or-vaadin-radio-button";
-// import "./or-vaadin-radio-group";
-import "./or-vaadin-select";
 import "./or-vaadin-textfield";
 import "./or-vaadin-textarea";
 
@@ -60,12 +55,8 @@ export class OrVaadinInput extends LitElement {
      * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
      */
     public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
-        // customElements.get("or-vaadin-date-picker"),
-        // customElements.get("or-vaadin-date-time-picker"),
         customElements.get("or-vaadin-number-field"),
         customElements.get("or-vaadin-passwordfield"),
-        // customElements.get("or-vaadin-radio-button"),
-        // customElements.get("or-vaadin-radio-group"),
         customElements.get("or-vaadin-select"),
         customElements.get("or-vaadin-textarea"),
         customElements.get("or-vaadin-textfield")
@@ -79,12 +70,8 @@ export class OrVaadinInput extends LitElement {
     public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
         [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
         [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
-        // [InputType.DATE, OrVaadinInput.getDatePickerTemplate],
-        // [InputType.DATETIME, OrVaadinInput.getDateTimePickerTemplate],
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
-        // [InputType.RADIO, OrVaadinInput.getRadioGroupTemplate],
-        // [InputType.RADIO, OrVaadinInput.getSelectTemplate],
         [InputType.SELECT, OrVaadinInput.getSelectTemplate],
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
         [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
@@ -259,14 +246,6 @@ export class OrVaadinInput extends LitElement {
         return html`<or-vaadin-checkbox id="elem" @change=${onChange}></or-vaadin-checkbox>`;
     }
 
-    // public static getDatePickerTemplate(onChange?: (e: Event) => void) {
-    //     return html`<or-vaadin-date-picker id="elem" @change=${onChange}></or-vaadin-date-picker>`;
-    // }
-
-    // public static getDateTimePickerTemplate(onChange?: (e: Event) => void) {
-    //     return html`<or-vaadin-date-time-picker id="elem" @change=${onChange}></or-vaadin-date-time-picker>`;
-    // }
-
     public static getNumberFieldTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-number-field id="elem" @change=${onChange}></or-vaadin-number-field>`;
     }
@@ -274,10 +253,6 @@ export class OrVaadinInput extends LitElement {
     public static getPasswordFieldTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-passwordfield id="elem" @change=${onChange}></or-vaadin-passwordfield>`;
     }
-
-    // public static getRadioGroupTemplate(onChange?: (e: Event) => void) {
-    //     return html`<or-vaadin-radio-group id="elem" @change=${onChange}></or-vaadin-radio-group>`;
-    // }
 
     public static getSelectTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
