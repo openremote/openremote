@@ -261,6 +261,7 @@ public class GatewayConnector {
                 }
                 // Let the gateway know init is complete
                 LOG.info("Gateway fully initialised: " + getGatewayIdString());
+                
                 sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
                 gatewayVersion = response != null ? response.getVersion() : null;
