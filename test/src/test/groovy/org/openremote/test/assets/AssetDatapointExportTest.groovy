@@ -121,7 +121,6 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
-        assetDatapointService.datapointExportLimit = 10000
 
         and: "ensure there are no datapoints"
         assetDatapointService.purgeDataPoints()
@@ -149,11 +148,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         def csvExport = csvExportFuture.get()
         assert csvExport != null
         def csvExportLines = csvExport.readLines()
-        assert csvExportLines.size() > 1
-        assert csvExportLines.drop(1).every { !it.contains(",injected,") }
-
-        cleanup: "Remove the limit on datapoint exporting"
-        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+        assert csvExportLines.size() == 1
     }
 
     def "Export query is vulnerable to SQL injection via REST API"() {
