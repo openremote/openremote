@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import {setCustomElementsManifest, type Meta, type StoryObj} from "@storybook/web-components";
-import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
+import {getORStorybookHelpers} from "../../storybook-utils.js";
 import customElements from "../custom-elements.json" with {type: "json"};
 import packageJson from "../package.json" with {type: "json"};
 import "../src/or-vaadin-checkbox";
@@ -27,7 +27,7 @@ const tagName = "or-vaadin-checkbox";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
-const { events, args, argTypes, template } = getStorybookHelpers(tagName, { excludeCategories: ["properties", "methods"] });
+const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
     title: "Playground/or-vaadin-components/checkbox",
@@ -49,8 +49,7 @@ const meta: Meta = {
 
 export const Primary: Story = {
     args: {
-        label: "Checkbox",
-        checked: true
+        label: "Checkbox"
     }
 };
 

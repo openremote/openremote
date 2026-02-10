@@ -18,7 +18,7 @@ const VaadinJSDocParserPlugin = {
         const sections = [
             { key: 'shadow DOM parts', category: 'attributes', inputType: 'string' },
             { key: 'state attributes', category: 'attributes', inputType: 'boolean' },
-            { key: 'custom CSS properties', category: 'cssProperties' }
+            { key: 'custom CSS properties', category: 'cssProperties', inputType: 'string' }
         ];
 
         sections.forEach(({ key, category, inputType }, i) => {
