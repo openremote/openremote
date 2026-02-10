@@ -479,10 +479,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected getDialogFooter(): TemplateResult {
         return html`
             ${when(this.removable, () => html`
-                <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" icon="vaadin:trash" @click="${() => {
+                <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" @click="${() => {
                     this._dialog!.close();
                     this.dispatchEvent(new OrSchedulerRemovedEvent())
                 }}">
+                    <or-vaadin-icon icon="vaadin:trash"></or-vaadin-icon>
                     <or-translate value="schedule.delete"></or-translate>
                 </or-vaadin-button>`
             )}
