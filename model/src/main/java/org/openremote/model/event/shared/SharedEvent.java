@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.datapoint.AssetPredictedDataPointEvent;
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent;
 import org.openremote.model.event.Event;
 import org.openremote.model.gateway.*;
 import org.openremote.model.services.ExternalServiceEvent;
@@ -43,7 +43,7 @@ import org.openremote.model.alarm.AlarmEvent;
     @JsonSubTypes.Type(value = ExternalServiceEvent.class, name = "external-service"),
     @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
-    @JsonSubTypes.Type(value = AssetPredictedDataPointEvent.class, name = "asset-predicted-data-points"),
+    @JsonSubTypes.Type(value = AssetPredictedDatapointEvent.class, name = "asset-predicted-data-points"),
     @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
     @JsonSubTypes.Type(value = AssetsEvent.class, name = "assets"),
     @JsonSubTypes.Type(value = ReadAttributeEvent.class, name = "read-asset-attribute"),

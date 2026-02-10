@@ -27,7 +27,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.AssetPredictedDataPointEvent;
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 
@@ -83,7 +83,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
 
     public void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) {
         upsertValue(assetId, attributeName, value, timestamp);
-        publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDataPointEvent.Cause.UPSERT);
+        publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
     }
 
     public void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
@@ -92,7 +92,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         }
 
         upsertValues(assetId, attributeName, valuesAndTimestamps);
-        publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDataPointEvent.Cause.UPSERT);
+        publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
     }
 
     public void purgeValues(String assetId, String attributeName) {
@@ -101,7 +101,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         ).setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
 
         if (deleted > 0) {
-            publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDataPointEvent.Cause.DELETE);
+            publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
         }
     }
 
@@ -111,7 +111,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         ).setParameter(1, assetId).setParameter(2, attributeName).setParameter(3, Timestamp.from(timestamp)).executeUpdate());
 
         if (deleted > 0) {
-            publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDataPointEvent.Cause.DELETE);
+            publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
         }
     }
 
@@ -135,13 +135,13 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         return super.getFirstPurgeMillis(currentTime) - 1800000; // Run half hour before default
     }
 
-    protected void publishPredictedDataPointsEvent(String assetId, String attributeName, AssetPredictedDataPointEvent.Cause cause) {
+    protected void publishPredictedDataPointsEvent(String assetId, String attributeName, AssetPredictedDatapointEvent.Cause cause) {
         if (clientEventService == null) {
             return;
         }
 
         clientEventService.publishEvent(
-            new AssetPredictedDataPointEvent(cause, new AttributeRef(assetId, attributeName), Instant.now())
+            new AssetPredictedDatapointEvent(cause, new AttributeRef(assetId, attributeName), Instant.now())
         );
     }
 

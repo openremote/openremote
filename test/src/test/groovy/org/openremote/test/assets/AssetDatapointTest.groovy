@@ -8,7 +8,7 @@ import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.datapoint.AssetPredictedDataPointEvent
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent
 import org.openremote.model.datapoint.AssetPredictedDatapointResource
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
@@ -386,11 +386,11 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "we subscribe to predicted data points events"
-        List<AssetPredictedDataPointEvent> predictedEvents = new CopyOnWriteArrayList<>()
-        Consumer<AssetPredictedDataPointEvent> predictedEventConsumer = { event ->
+        List<AssetPredictedDatapointEvent> predictedEvents = new CopyOnWriteArrayList<>()
+        Consumer<AssetPredictedDatapointEvent> predictedEventConsumer = { event ->
             predictedEvents.add(event)
         }
-        clientEventService.addSubscription(AssetPredictedDataPointEvent.class, null, predictedEventConsumer)
+        clientEventService.addSubscription(AssetPredictedDatapointEvent.class, null, predictedEventConsumer)
 
         and: "predicted data points are added"
         predictedDatapointResource.writePredictedDatapoints(null, managerTestSetup.thingId, "light1PowerConsumption",
@@ -420,12 +420,12 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "an upsert event should be published for predicted datapoints"
         conditions.eventually {
             assert predictedEvents.any {
-                it.cause == AssetPredictedDataPointEvent.Cause.UPSERT &&
+                it.cause == AssetPredictedDatapointEvent.Cause.UPSERT &&
                     it.ref.id == managerTestSetup.thingId &&
                     it.ref.name == "light1PowerConsumption"
             }
             assert predictedEvents.any {
-                it.cause == AssetPredictedDataPointEvent.Cause.UPSERT &&
+                it.cause == AssetPredictedDatapointEvent.Cause.UPSERT &&
                     it.ref.id == managerTestSetup.thingId &&
                     it.ref.name == thingLightToggleAttributeName
             }
@@ -441,7 +441,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "a delete event should be published"
         conditions.eventually {
             assert predictedEvents.any {
-                it.cause == AssetPredictedDataPointEvent.Cause.DELETE &&
+                it.cause == AssetPredictedDatapointEvent.Cause.DELETE &&
                     it.ref.id == managerTestSetup.thingId &&
                     it.ref.name == "light1PowerConsumption"
             }
