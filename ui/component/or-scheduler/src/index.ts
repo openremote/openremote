@@ -405,13 +405,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     padding: 0 var(--lumo-space-m);
                 }
 
-                or-vaadin-date-picker[combined] {
-                    --vaadin-input-field-top-end-radius: 0;
-                    --vaadin-input-field-bottom-end-radius: 0;
-                }
-                or-vaadin-time-picker {
-                    --vaadin-input-field-top-start-radius: 0;
-                    --vaadin-input-field-bottom-start-radius: 0;
+                @media only screen and (min-width: 768px) {
+                    or-vaadin-date-picker[combined] {
+                        --vaadin-input-field-top-end-radius: 0;
+                        --vaadin-input-field-bottom-end-radius: 0;
+                    }
+                    or-vaadin-time-picker {
+                        --vaadin-input-field-top-start-radius: 0;
+                        --vaadin-input-field-bottom-start-radius: 0;
+                    }
                 }
 
                 or-vaadin-checkbox-group {
@@ -439,7 +441,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     border-radius: var(--lumo-border-radius-m);
                     display: flex;
                     flex-direction: column;
-                    flex-grow: 1;
                     padding: var(--lumo-space-m);
                 }
 
@@ -454,13 +455,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     gap: 2px;
                 }
 
-                @media only screen and (max-width: 1279px) {
+                @media only screen and (max-width: 768px) {
                     .period {
                         flex-wrap: wrap;
-                    }                    
+                    }
                 }
             </style>
-            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-s)">
+            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-s); max-width: 85vw">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
@@ -601,8 +602,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div id="period" class="section">
                 <label class="title"><or-translate value="period"></or-translate></label>
-                <div style="display: flex; gap: 8px;">
-                    <div style="display: flex; flex: 1; gap: 2px">
+                <div style="display: flex; gap: 8px">
+                    <div class="period">
                         <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${Util.camelCaseToSentenceCase(i18next.t("from"))}">
                         </or-vaadin-date-picker>
@@ -610,7 +611,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}">
                         </or-vaadin-time-picker>
                     </div>
-                    <div style="display: flex; flex: 1; gap: 2px">
+                    <div class="period">
                         <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${Util.camelCaseToSentenceCase(i18next.t("to"))}">
                         </or-vaadin-date-picker>
