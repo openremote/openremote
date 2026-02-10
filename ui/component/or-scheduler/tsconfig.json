@@ -8,8 +8,9 @@
     "./src"
   ],
   "references": [
+    { "path": "../or-model" },
+    { "path": "../or-core" },
     { "path": "../or-translate" },
-    { "path": "../or-mwc-components" },
     { "path": "../or-vaadin-components" }
   ]
 }

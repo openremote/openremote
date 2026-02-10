@@ -2103,8 +2103,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-scheduler@workspace:ui/component/or-scheduler"
   dependencies:
+    "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     lit: "npm:^3.3.1"
