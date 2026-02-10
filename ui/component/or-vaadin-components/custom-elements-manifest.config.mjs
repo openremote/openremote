@@ -16,25 +16,25 @@ const VaadinJSDocParserPlugin = {
         if (!description) return;
 
         const sections = [
-            { key: 'shadow DOM parts', target: 'attributes', type: 'string' },
-            { key: 'state attributes', target: 'attributes', type: 'boolean' },
-            { key: 'custom CSS properties', target: 'cssProperties' }
+            { key: 'shadow DOM parts', category: 'attributes', inputType: 'string' },
+            { key: 'state attributes', category: 'attributes', inputType: 'boolean' },
+            { key: 'custom CSS properties', category: 'cssProperties' }
         ];
 
-        sections.forEach(({ key, target, type }, i) => {
-            const content = description.split(key)[1]?.split(sections[i + 1]?.key || '$')[0];
-            const regex = /`([^`]+)`(?:\s*\|\s*([^\n|]+))?/g;
-            let match;
+        sections.forEach(({ key, category, inputType }, i) => {
+            const content = description.split(key)[1]?.split(sections[i + 1]?.key || '$')[0] || '';
+            const matches = [...content.matchAll(/`([^`]+)`(?:\s*\|\s*([^\n|]+))?/g)];
+            declaration[category] ??= [];
 
-            declaration[target] = declaration[target] || [];
-            while ((match = regex.exec(content)) !== null) {
-                const entry = { name: match[1] };
-                if (type) {
-                    if (declaration.attributes?.some(a => a.name === entry.name)) continue;
-                    Object.assign(entry, { description: match[2]?.trim(), type: { text: type } });
-                }
-                declaration[target].push(entry);
-            }
+            const existingNames = new Set(declaration.attributes?.map(a => a.name));
+            const entries = matches.flatMap(([_, name, desc]) => {
+                if (inputType && existingNames.has(name)) return []; // Prevent duplicates
+                return [{
+                    name: name,
+                    ...(inputType && { description: desc?.trim(), type: { text: inputType } })
+                }]
+            });
+            declaration[category].push(...entries);
         });
     }
 }
