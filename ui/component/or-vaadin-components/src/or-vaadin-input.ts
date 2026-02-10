@@ -22,8 +22,8 @@ import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
 import "./or-vaadin-checkbox";
 import "./or-vaadin-number-field";
-import "./or-vaadin-passwordfield";
-import "./or-vaadin-textfield";
+import "./or-vaadin-password-field";
+import "./or-vaadin-text-field";
 import "./or-vaadin-textarea";
 
 /**
@@ -56,10 +56,10 @@ export class OrVaadinInput extends LitElement {
      */
     public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
         customElements.get("or-vaadin-number-field"),
-        customElements.get("or-vaadin-passwordfield"),
+        customElements.get("or-vaadin-password-field"),
         customElements.get("or-vaadin-select"),
         customElements.get("or-vaadin-textarea"),
-        customElements.get("or-vaadin-textfield")
+        customElements.get("or-vaadin-text-field")
     ];
 
     /**
@@ -91,7 +91,7 @@ export class OrVaadinInput extends LitElement {
 
     /**
      * List of forbidden attributes that are not processed nor "bubbled down" to the child Vaadin component.
-     * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-textfield id="myId">`, but `<or-vaadin-textfield>`.
+     * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-text-field id="myId">`, but `<or-vaadin-text-field>`.
      */
     public static readonly FORBIDDEN_ATTRIBUTES = ["id"];
 
@@ -251,7 +251,7 @@ export class OrVaadinInput extends LitElement {
     }
 
     public static getPasswordFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-passwordfield id="elem" @change=${onChange}></or-vaadin-passwordfield>`;
+        return html`<or-vaadin-password-field id="elem" @change=${onChange}></or-vaadin-password-field>`;
     }
 
     public static getSelectTemplate(onChange?: (e: Event) => void) {
@@ -263,7 +263,7 @@ export class OrVaadinInput extends LitElement {
     }
 
     public static getTextFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-textfield id="elem" @change=${onChange}></or-vaadin-textfield>`;
+        return html`<or-vaadin-text-field id="elem" @change=${onChange}></or-vaadin-text-field>`;
     }
 }
 

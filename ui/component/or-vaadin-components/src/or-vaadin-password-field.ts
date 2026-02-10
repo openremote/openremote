@@ -22,7 +22,7 @@ import {PasswordField} from "@vaadin/password-field";
 import {OrVaadinComponent} from "./util";
 import {LitElement} from "lit";
 
-@customElement("or-vaadin-passwordfield")
+@customElement("or-vaadin-password-field")
 export class OrVaadinPasswordField extends (PasswordField as new () => PasswordField & LitElement) implements OrVaadinComponent {
 
     override _onEnter(ev: KeyboardEvent) {

@@ -22,8 +22,8 @@ import {TextField} from "@vaadin/text-field";
 import {LitElement} from "lit";
 import {OrVaadinComponent} from "./util";
 
-@customElement("or-vaadin-textfield")
-export class OrVaadinTextfield extends (TextField as new () => TextField & LitElement) implements OrVaadinComponent {
+@customElement("or-vaadin-text-field")
+export class OrVaadinTextField extends (TextField as new () => TextField & LitElement) implements OrVaadinComponent {
 
     override _onEnter(ev: KeyboardEvent) {
         this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));

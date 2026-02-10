@@ -14,10 +14,10 @@ yarn add @openremote/or-vaadin-components
 ### JavaScript / TypeScript example using a Text Field
 Note: using the `document.createElement()` API is an example here. Please check the documentation of your JavaScript framework for proper installation of Lit web components.
 ```typescript
-import "@openremote/or-vaadin-components/or-vaadin-textfield";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 // Load text field into the app
-const textField = document.createElement("or-vaadin-textfield");
+const textField = document.createElement("or-vaadin-text-field");
 textField.setAttribute("label", "Company name");
 textField.setAttribute("value", "OpenRemote");
 document.body.appendChild(textField);
