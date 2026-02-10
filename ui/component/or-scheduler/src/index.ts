@@ -376,7 +376,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" @closed="${() => this._dialog!.close()}"
                 ${dialogHeaderRenderer(this.getDialogHeader, [])}
                 ${dialogRenderer(this.getDialogContent, dependencies)}
-                ${dialogFooterRenderer(this.getDialogFooter, dependencies)}
+                ${dialogFooterRenderer(this.getDialogFooter, [])}
             ></or-vaadin-dialog>
         `;
     }
