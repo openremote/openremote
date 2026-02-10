@@ -436,6 +436,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }
                 }
 
+                vaadin-checkbox {
+                    font-weight: 600;
+                }
+
                 .section {
                     background-color: white;
                     border-radius: var(--lumo-border-radius-m);
@@ -648,12 +652,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         `)}
                     </or-vaadin-radio-group>
                     <div style="display: flex; flex-direction: column-reverse; flex: 1">
-                        ${when(!this.disabledRRuleParts.includes("count"), () => html`
+                        ${when(!this.disabledRRuleParts.includes("count"), () => html`<div>
                             <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" step-buttons-visible 
                                 .value="${this._count}"
                                 @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
-                                    <or-translate slot="suffix" value="schedule.count" .options="${{ count: +this._count }}"></or-translate>
-                            </or-vaadin-number-field>`
+                            </or-vaadin-number-field>
+                            <or-translate slot="suffix" value="schedule.count" .options="${{ count: +this._count }}"></or-translate>
+                            </div>`
                         )}
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
                             <or-vaadin-date-time-picker class="until" ?disabled="${this._ends !== "until"}"
