@@ -40,8 +40,7 @@ import { InputType } from "@openremote/or-vaadin-components/util";
 import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer, OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import moment from "moment";
-import { Days } from "rrule/dist/esm/rrule";
-import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds } from "./util";
+import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds, WEEKDAYS } from "./util";
 import type { RulePartKey, RuleParts, LabeledEventTypes, Frequency } from "./types";
 import { when } from "lit/directives/when.js";
 import { CheckboxGroupValueChangedEvent } from "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
@@ -371,8 +370,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             this._normalizedSchedule,
             this._rrule,
         ];
+        const timeLabel = this.timeLabel();
         return html`
-            <or-vaadin-button @click="${() => this._dialog!.open()}">${this.timeLabel()}</or-vaadin-button>
+            <or-vaadin-button @click="${() => this._dialog!.open()}">${timeLabel?.charAt(0).toUpperCase()}${timeLabel?.slice(1)}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" @closed="${() => this._dialog!.close()}"
                 ${dialogHeaderRenderer(this.getDialogHeader, [])}
                 ${dialogRenderer(this.getDialogContent, dependencies)}
@@ -538,29 +538,30 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const interval = this._rrule?.origOptions.interval ?? 1;
         const frequency = this._rrule?.origOptions.freq ?? FrequencyValue.DAILY;
         const frequencies = Object.entries(FREQUENCIES)
-            .map(([k,v]) => [String(FrequencyValue[k as Frequency]), i18next.t(v, { count: interval })])
-            .filter(([k]) => this.isAllowedFrequency(FrequencyValue[k as Frequency] as any))
+            .map(([k, v]) => ({ value: String(FrequencyValue[k as Frequency]), label: i18next.t(v, { count: interval }) }))
+            .filter(({ value }) => this.isAllowedFrequency(FrequencyValue[value as Frequency] as any))
 
         return html`
             <div id="recurrence" class="section">
                 <label class="title"><or-translate value="schedule.repeat"></or-translate></label>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; margin-bottom: var(--lumo-space-l)">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
                         <or-vaadin-number-field min="1" max="9" step-buttons-visible style="width: 106px" .value="${interval}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "interval")}">
                         </or-vaadin-number-field>
                     `)}
-                    <or-vaadin-select style="flex: 1;" .value="${frequency.toString()}" .items="${frequencies.map(([value, label]) => ({ value, label }))}"
+                    <or-vaadin-select style="flex: 1;" .value="${frequency.toString()}" .items="${frequencies}"
                         @change="${(e: any) => this.setRRuleValue(e.target?.value, "freq")}">
                     </or-vaadin-select>
                 </div>
-                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS) as [string, string][])}</div>
+                <label class="title"><or-translate value="schedule.repeatOn"></or-translate></label>
+                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
                 <div>
                     ${this.getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
                     ${this.getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
                     ${this.getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
                 </div>
-                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.keys(Days).map(v => [v, v]))}</div>
+                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.entries(WEEKDAYS))}</div>
                 <div>
                     ${this.getByRulePart("byhour", InputType.SELECT, byHourOptions)}
                     ${this.getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
@@ -586,10 +587,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
         return type === InputType.CHECKBOX_LIST ? html`
           <or-vaadin-checkbox-group .value="${value}" @value-changed="${(e: CheckboxGroupValueChangedEvent) => { if (!Util.objectsEqual(e.detail.value, value, true)) { this.setRRuleValue(e.detail.value, part) } }}">
-                ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${label}"></vaadin-checkbox>`)}
+                ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
-            <or-vaadin-multi-select-combo-box .label="${part}" .items="${options}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
+            <or-vaadin-multi-select-combo-box .label="${i18next.t(part)}" .items="${options}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
         `;
     }
 
@@ -605,16 +606,16 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <label class="title"><or-translate value="period"></or-translate></label>
                 <div style="display: flex; gap: 8px">
                     <div class="period">
-                        <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${Util.camelCaseToSentenceCase(i18next.t("from"))}">
+                        <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${i18next.t("from")}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}">
                         </or-vaadin-time-picker>
                     </div>
                     <div class="period">
-                        <or-vaadin-date-picker ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${Util.camelCaseToSentenceCase(i18next.t("to"))}">
+                        <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
+                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${i18next.t("to")}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
                             @change="${(e: any) => this.setRRuleValue(e.target.value, "end-time")}">

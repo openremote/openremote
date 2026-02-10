@@ -21,11 +21,13 @@ import { Locator } from "@openremote/test";
 import { ct, expect } from "./fixtures";
 
 import { OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
-import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS } from "../src/util";
+import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS, WEEKDAYS } from "../src/util";
 import { VaadinInput } from "../../or-vaadin-components/test/fixtures";
 import { Frequency } from "../src";
 
-const months = new RegExp(Object.values(MONTHS).join("|"));
+const slice = (m: string) => m.slice(0, 3);
+const months = new RegExp(Object.values(MONTHS).map(slice).join("|"), "i");
+const weekdays = new RegExp(Object.values(WEEKDAYS).map(slice).join("|"), "i");
 const HOUR_IN_MILLIS = 3600 * 1000;
 const DAY_IN_MILLIS = 24 * HOUR_IN_MILLIS;
 
@@ -207,7 +209,7 @@ ct.describe("Recurrence event type should", () => {
         const weekDaysSelector = dialog
             .locator("or-vaadin-checkbox-group")
             .last()
-            .getByRole("checkbox", { name: /MO|TU|WE|TH|FR|SA|SU/ });
+            .getByRole("checkbox", { name: weekdays });
         const monthsSelector = dialog
             .locator("or-vaadin-checkbox-group")
             .first()

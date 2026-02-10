@@ -76,7 +76,7 @@ export const Primary: Story = {
     parameters: {
         docs: {
             story: {
-                height: "800px"
+                height: "900px"
             }
         }
     },
