@@ -28,9 +28,9 @@ import java.util.Objects;
 
 /**
  * This event is used when predicted data points are inserted, updated or deleted for an asset's {@link org.openremote.model.attribute.Attribute}.
- * It does not include any of the values.
+ * It does not include any of the data point values.
  */
-public class AssetPredictedDataPointEvent extends SharedEvent {
+public class AssetPredictedDatapointEvent extends SharedEvent {
 
     public enum Cause {
         UPSERT,
@@ -40,14 +40,14 @@ public class AssetPredictedDataPointEvent extends SharedEvent {
     protected AttributeRef ref;
     protected Cause cause;
 
-    public AssetPredictedDataPointEvent() {
+    public AssetPredictedDatapointEvent() {
     }
-    public AssetPredictedDataPointEvent(Cause cause, AttributeRef ref, Instant timestamp) {
+    public AssetPredictedDatapointEvent(Cause cause, AttributeRef ref, Instant timestamp) {
         this(cause, ref, timestamp.toEpochMilli());
     }
 
     @JsonCreator
-    public AssetPredictedDataPointEvent(Cause cause, AttributeRef ref, Long timestamp) {
+    public AssetPredictedDatapointEvent(Cause cause, AttributeRef ref, Long timestamp) {
         super(timestamp);
         this.cause = cause;
         Objects.requireNonNull(ref);
