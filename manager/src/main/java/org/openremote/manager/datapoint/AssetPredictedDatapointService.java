@@ -141,7 +141,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         }
 
         clientEventService.publishEvent(
-            new AssetPredictedDatapointEvent(cause, new AttributeRef(assetId, attributeName), Instant.now())
+            new AssetPredictedDatapointEvent(cause, new AttributeRef(assetId, attributeName), timerService.getNow())
         );
     }
 
