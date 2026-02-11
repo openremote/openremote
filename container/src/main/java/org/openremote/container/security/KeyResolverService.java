@@ -37,4 +37,8 @@ public class KeyResolverService {
             }
         });
     }
+
+    public String getKeycloakBaseUrl() {
+        return keycloakBaseUrl;
+    }
 }
