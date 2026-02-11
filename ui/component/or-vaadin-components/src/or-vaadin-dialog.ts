@@ -20,6 +20,7 @@
 import {Dialog} from "@vaadin/dialog";
 import {OrVaadinComponent} from "./util";
 import {customElement} from "lit/decorators.js";
+import {LitElement} from "lit";
 
 /**
  * Vaadin uses custom directives for rendering the dialog content.
@@ -29,7 +30,7 @@ import {customElement} from "lit/decorators.js";
 export {dialogHeaderRenderer, DialogHeaderRendererDirective, dialogRenderer, DialogRendererDirective, dialogFooterRenderer, DialogFooterRendererDirective} from "@vaadin/dialog/lit.js";
 
 @customElement("or-vaadin-dialog")
-export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
+export class OrVaadinDialog extends (Dialog as new () => Dialog & LitElement) implements OrVaadinComponent {
 
     public open() {
         this.setAttribute("opened", "true");

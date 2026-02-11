@@ -16,7 +16,7 @@ const VaadinJSDocParserPlugin = {
         if (!description) return;
 
         const sections = [
-            { key: 'shadow DOM parts', category: 'attributes', inputType: 'string' },
+            { key: 'shadow DOM parts', category: 'cssParts', inputType: undefined },
             { key: 'state attributes', category: 'attributes', inputType: 'boolean' },
             { key: 'custom CSS properties', category: 'cssProperties', inputType: 'string' }
         ];
@@ -31,11 +31,39 @@ const VaadinJSDocParserPlugin = {
                 if (inputType && existingNames.has(name)) return []; // Prevent duplicates
                 return [{
                     name: name,
-                    ...(inputType && { description: desc?.trim(), type: { text: inputType } })
+                    description: desc?.trim(),
+                    ...(inputType && { type: { text: inputType } })
                 }]
             });
             declaration[category].push(...entries);
         });
+        console.debug(`Injected additional JSDoc documentation for class ${declaration.name}`)
+    }
+}
+
+/**
+ * Custom plugin that we wrote ourselves, that corrects the 'extends' keyword for our Vaadin classes.
+ * The analyzer does not understand `extends (TextField as new () => TextField & LitElement)`,
+ * so we manually parse the Vaadin class, and link it to the correct Vaadin NPM package.
+ */
+const VaadinSuperclassParserPlugin = {
+    name: 'vaadin-superclass-parser',
+    analyzePhase({ ts, node, moduleDoc }) {
+        if (node.kind !== ts.SyntaxKind.ClassDeclaration || !node.heritageClauses) return;
+
+        const className = node.name.getText();
+        const declaration = moduleDoc.declarations?.find(d => d.name === className);
+        const extendsClause = node.heritageClauses.find(h => h.token === ts.SyntaxKind.ExtendsKeyword);
+        const baseName = extendsClause?.types[0]?.getText().match(/\(([^ ]+) as/)?.[1];
+
+        if (declaration && baseName) {
+            const pkg = baseName.replaceAll(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(); // For example, parses TextField to 'text-field'
+            declaration.superclass = {
+                name: baseName,
+                package: `@vaadin/${pkg}`
+            };
+            console.debug(`Resolved conflict for super class documentation for: @vaadin/${pkg}`);
+        }
     }
 }
 
@@ -50,7 +78,8 @@ export default {
     globs: [...baseConfig.globs, vaadinPath], // Also analyze the code inside the Vaadin folder
     plugins: [
         ...baseConfig.plugins,
+        VaadinSuperclassParserPlugin, // Resolve conflict in package names
         cemInheritancePlugin(), // Inject the analysis of the inherited Vaadin code
-        VaadinJSDocParserPlugin
+        VaadinJSDocParserPlugin // Inject JSDoc of the inherited Vaadin code
     ]
 }
