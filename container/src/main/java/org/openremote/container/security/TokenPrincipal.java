@@ -71,4 +71,8 @@ public class TokenPrincipal implements Principal {
     public boolean isUserInRole(String role) {
         return realmRoles.contains(role) || resourceRoles.values().stream().anyMatch(roles -> roles.contains(role));
     }
+
+    public boolean isUserInRealmRole(String role) {
+        return realmRoles.contains(role);
+    }
 }

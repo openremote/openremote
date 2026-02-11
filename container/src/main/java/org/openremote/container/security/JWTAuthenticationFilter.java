@@ -6,7 +6,9 @@ import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.proc.BadJWTException;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,10 +18,8 @@ import org.openremote.model.Constants;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class JWTAuthenticationFilter implements Filter {
 
@@ -68,32 +68,52 @@ public class JWTAuthenticationFilter implements Filter {
             JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, keySource);
             jwtProcessor.setJWSKeySelector(keySelector);
 
+            AtomicReference<TokenPrincipal> principalRef = new AtomicReference<>();
+
             // 4. **CRITICAL**: Set expected claims. This is essential for security.
             // The issuer for a Keycloak realm is typically 'https://<host>/realms/<realm>'
             // You should also validate the audience ('aud' claim).
-            // jwtProcessor.setJWTClaimsSetVerifier((claims, context) -> {
-            //     final String expectedIssuer = keycloakBaseUrl + "/realms/" + realm;
-            //     if (!expectedIssuer.equals(claims.getIssuer())) {
-            //          throw new BadJWTException("Invalid token issuer");
-            //     }
-            //     // Add audience validation, expiration is checked by default
-            // });
+             jwtProcessor.setJWTClaimsSetVerifier((claims, context) -> {
+                 new DefaultJWTClaimsVerifier<>()
+                 // Populate principal with claims now
+                 TokenPrincipal principal;
+                 try {
+                     principal = new TokenPrincipal(claims);
+                     principalRef.set(principal);
+                 } catch (Exception e) {
+                     throw new BadJWTException("Invalid JWT claims", e);
+                 }
 
-            // 5. Process the token. This verifies the signature and validates the claims.
+                 // Only allow super users to cross realms
+                 String authRealm = principal.getRealm();
+                 if (!Objects.equals(authRealm, realm)) {
+                     if (!principal.isUserInRealmRole(Constants.SUPER_USER_REALM_ROLE)) {
+                         throw new BadJWTException("Invalid token realm");
+                     }
+                 }
+
+                 final String expectedIssuer = keycloakBaseUrl + "/realms/" + realm;
+                 if (!expectedIssuer.equals(claims.getIssuer())) {
+                      throw new BadJWTException("Invalid token issuer");
+                 }
+                 // Add audience validation, expiration is checked by default
+             });
+
+            // Process the token. This verifies the signature and validates the claims.
             JWTClaimsSet claimsSet = jwtProcessor.process(token, null);
 
-            TokenPrincipal principal = new TokenPrincipal(claimsSet);
+
 
             // Wrap the request to provide security context
             HttpServletRequestWrapper authenticatedRequest = new HttpServletRequestWrapper(httpRequest) {
                 @Override
                 public Principal getUserPrincipal() {
-                    return principal;
+                    return principalRef.get();
                 }
 
                 @Override
                 public boolean isUserInRole(String role) {
-                    return principal.isUserInRole(role);
+                    return principalRef.get().isUserInRole(role);
                 }
 
                 @Override
