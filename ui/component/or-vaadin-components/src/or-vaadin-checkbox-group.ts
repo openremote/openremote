@@ -20,9 +20,9 @@
 import { customElement } from "lit/decorators.js";
 import { CheckboxGroup } from "@vaadin/checkbox-group";
 import { OrVaadinComponent } from "./util";
-import "@vaadin/checkbox"
+import "@vaadin/checkbox";
 
-export type * from "@vaadin/checkbox-group"
+export type * from "@vaadin/checkbox-group";
 
 @customElement("or-vaadin-checkbox-group")
 export class OrVaadinCheckboxGroup extends CheckboxGroup implements OrVaadinComponent {}

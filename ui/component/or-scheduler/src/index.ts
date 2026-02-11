@@ -126,7 +126,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     @property({ type: Boolean })
     public removable = false;
-  
+
     @property({ type: Object })
     public schedule?: CalendarEvent = this.defaultSchedule;
 
@@ -208,7 +208,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     /**
      * Converts the recurrence rule to string and normalizes it.
-     * 
+     *
      * The UTC timezone offset 'Z' for the UNTIL rule part is removed,
      * because the timezone is configurable.
      * @param rrule The recurrence rule to normalize.
@@ -391,21 +391,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const calendar = this._normalizedSchedule;
         return html`
             <style>
-                or-vaadin-dialog::part(header),
-                or-vaadin-dialog::part(content) {
-                    background-color: var(--lumo-contrast-5pct);
-                    max-width: 600px;
-                }
-                or-vaadin-dialog::part(header) {
-                    padding: var(--lumo-space-m);
-                }
-                or-vaadin-dialog::part(content) {
-                    padding: 0 var(--lumo-space-m);
-                }
-
                 or-vaadin-checkbox-group {
                     display: flex;
                     &::part(group-field) {
+                        display: flex;
                         gap: 6px;
                     }
                     &::before, ::part(checkbox) {
@@ -423,6 +412,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }
                 }
 
+                or-vaadin-radio-group::part(group-field) {
+                    display: flex;
+                    flex-direction: column;
+                }
+
                 vaadin-checkbox {
                     font-weight: 600;
                 }
@@ -438,12 +432,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     border-radius: var(--lumo-border-radius-m);
                     display: flex;
                     flex-direction: column;
-                    padding: var(--lumo-space-m);
+                    padding: var(--lumo-space-l);
                 }
 
                 .title {
-                    display: block;
-                    font-weight: bold;
+                    padding-bottom: var(--lumo-space-m);
+                    font-size: var(--lumo-font-size-l);
+                    font-style: normal;
+                    font-weight: 600;
+                    line-height: 125.303%; /* 22.554px */
                 }
 
                 @media only screen and (min-width: 768px) {
@@ -463,7 +460,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }
                 }
             </style>
-            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-s); max-width: 85vw">
+            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-m); max-width: 85vw">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
@@ -519,7 +516,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     /**
      * Displays the interval, frequency and BY_XXX RRule part fields
-     * 
+     *
      * Applicable rule parts
      * - `interval`
      * - `freq`
@@ -574,7 +571,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     /**
      * Displays the BY_XXX RRule part fields if allowed by the frequency
-     * 
+     *
      * @returns The specified BY_XXX RRule part field or undefined if not applicable
      */
     protected getByRulePart<T extends number | [string, string]>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
@@ -598,7 +595,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     /**
      * Displays the fields that define when and how long the particular event is
-     * 
+     *
      * @param calendar The specified calendar event
      * @returns The periods allDay and from/to date and time fields
      */
@@ -630,7 +627,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     /**
      * Displays the fields that define how a recurring event should end
-     * 
+     *
      * Applicable rule parts
      * - `until`
      * - `count`
@@ -649,19 +646,19 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                     <vaadin-radio-button style="margin: 6px 0" value="${k}" label="${i18next.t(v)}"></vaadin-radio-button>
                         `)}
                     </or-vaadin-radio-group>
-                    <div style="display: flex; flex-direction: column; flex: 1">
+                    <div style="display: flex; flex-direction: column; flex: 1; ">
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
-                            <or-vaadin-date-time-picker style="margin-top: auto" ?disabled="${this._ends !== "until"}"
+                            <or-vaadin-date-time-picker style="margin-top: auto; padding: var(--lumo-space-s) 0" ?disabled="${this._ends !== "until"}"
                                 .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
                                 @change="${(e: any) => this.setRRuleValue(e.target.value, "until")}">
                             </or-vaadin-date-time-picker>`
                         )}
-                        ${when(!this.disabledRRuleParts.includes("count"), () => html`<div>
+                        ${when(!this.disabledRRuleParts.includes("count"), () => html`<div style="display: inline-flex">
                             <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" style="width: 120px"
                                 step-buttons-visible
                                 .value="${this._count}"
                                 @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
-                            </or-vaadin-number-field><or-translate style="margin-left: var(--lumo-space-s)"
+                            </or-vaadin-number-field><or-translate style="margin-left: 10px"
                                 ?disabled="${this._ends !== "count"}" value="schedule.count" .options="${{ count: +this._count }}">
                                 <style>
                                 [disabled] {

@@ -168,5 +168,30 @@
 
     /* OpenRemote */
     --lumo-border-radius-m: 0.5em;
+    --lumo-border-radius-l: 0.75em;
     --vaadin-field-default-width: 100%;
+    --vaadin-button-margin: 0;
+}
+
+
+/* Overwrites: https://github.com/vaadin/web-components/blob/d0ec3089382fca97e32d4334866b540b9173203d/packages/vaadin-lumo-styles/src/mixins/field-base.css */
+@media lumo_mixins_field-base {
+    :host {
+        padding: 0;
+        width: 100%;
+    }
+}
+
+/* Overwrites: https://github.com/vaadin/web-components/blob/d0ec3089382fca97e32d4334866b540b9173203d/packages/vaadin-lumo-styles/src/mixins/field-label.css */
+@media lumo_mixins_field-label {
+    :host([has-label]) {
+        padding-top: 0;
+    }
+}
+
+/* Overwrites: https://github.com/vaadin/web-components/blob/d0ec3089382fca97e32d4334866b540b9173203d/packages/vaadin-lumo-styles/src/mixins/group-field.css */
+@media lumo_mixins_group-field {
+    :host {
+        padding: 0;
+    }
 }

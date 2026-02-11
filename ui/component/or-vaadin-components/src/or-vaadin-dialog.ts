@@ -17,19 +17,49 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Dialog} from "@vaadin/dialog";
-import {OrVaadinComponent} from "./util";
-import {customElement} from "lit/decorators.js";
+import { Dialog } from "@vaadin/dialog";
+import { OrVaadinComponent } from "./util";
+import { customElement } from "lit/decorators.js";
+import { css, LitElement } from "lit";
 
 /**
  * Vaadin uses custom directives for rendering the dialog content.
  * https://lit.dev/docs/templates/custom-directives/
  * https://vaadin.com/docs/latest/components/dialog/
  */
-export {dialogHeaderRenderer, DialogHeaderRendererDirective, dialogRenderer, DialogRendererDirective, dialogFooterRenderer, DialogFooterRendererDirective} from "@vaadin/dialog/lit.js";
+export {
+    dialogHeaderRenderer,
+    DialogHeaderRendererDirective,
+    dialogRenderer,
+    DialogRendererDirective,
+    dialogFooterRenderer,
+    DialogFooterRendererDirective,
+} from "@vaadin/dialog/lit.js";
+
+type LitJoin<T> = T & typeof LitElement;
 
 @customElement("or-vaadin-dialog")
 export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
+    static get styles() {
+        return [
+            (Dialog as LitJoin<typeof Dialog>).styles,
+            css`
+                ::part(header),
+                ::part(content) {
+                    background-color: var(--lumo-contrast-5pct);
+                    max-width: 600px;
+                }
+                ::part(header),
+                ::part(footer) {
+                    border-radius: var(--lumo-border-radius-l);
+                    padding: var(--lumo-space-l);
+                }
+                ::part(content) {
+                    padding: 0 var(--lumo-space-l);
+                }
+            `,
+        ];
+    }
 
     public open() {
         this.setAttribute("opened", "true");

@@ -68,6 +68,7 @@ export const Primary: Story = {
         ] as RulePartKey[]
         return html`
             <or-scheduler
+                removable
                 .disabledFrequencies="${DISABLED_FREQUENCIES}"
                 .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
             ></or-scheduler>
@@ -76,7 +77,7 @@ export const Primary: Story = {
     parameters: {
         docs: {
             story: {
-                height: "900px"
+                height: "1000px"
             }
         }
     },
