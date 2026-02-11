@@ -71,7 +71,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
     @Override
     public void start(Container container) throws Exception {
         dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
-            this::purgeDataPoints,
+            this::purgeDatapoints,
             getFirstPurgeMillis(timerService.getNow()),
             Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
         );
@@ -83,7 +83,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
 
     public void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) {
         upsertValue(assetId, attributeName, value, timestamp);
-        publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
+        publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
     }
 
     public void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
@@ -92,7 +92,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         }
 
         upsertValues(assetId, attributeName, valuesAndTimestamps);
-        publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
+        publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
     }
 
     public void purgeValues(String assetId, String attributeName) {
@@ -101,7 +101,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         ).setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
 
         if (deleted > 0) {
-            publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
+            publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
         }
     }
 
@@ -111,7 +111,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         ).setParameter(1, assetId).setParameter(2, attributeName).setParameter(3, Timestamp.from(timestamp)).executeUpdate());
 
         if (deleted > 0) {
-            publishPredictedDataPointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
+            publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
         }
     }
 
@@ -135,7 +135,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         return super.getFirstPurgeMillis(currentTime) - 1800000; // Run half hour before default
     }
 
-    protected void publishPredictedDataPointsEvent(String assetId, String attributeName, AssetPredictedDatapointEvent.Cause cause) {
+    protected void publishPredictedDatapointsEvent(String assetId, String attributeName, AssetPredictedDatapointEvent.Cause cause) {
         if (clientEventService == null) {
             return;
         }
@@ -145,7 +145,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         );
     }
 
-    protected void purgeDataPoints() {
+    protected void purgeDatapoints() {
         try {
             // Purge data points not in the above list using default duration
             LOG.finest("Purging predicted data points older than now");
