@@ -52,7 +52,6 @@ import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
 // Import theme package for importing type definitions
 import "@openremote/theme";
-// Import theme CSS file as string to use within Lit
 import themeCss from "@openremote/theme/default.css";
 
 declare var MANAGER_URL: string | undefined;

@@ -22,7 +22,7 @@ import { ct, expect } from "./fixtures";
 
 import { OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS, WEEKDAYS } from "../src/util";
-import { VaadinInput } from "../../or-vaadin-components/test/fixtures";
+import type { VaadinInput } from "../../or-vaadin-components/test/fixtures";
 import { Frequency } from "../src";
 
 const slice = (m: string) => m.slice(0, 3);
