@@ -485,7 +485,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     this._dialog!.close();
                     this.dispatchEvent(new OrSchedulerRemovedEvent())
                 }}">
-                    <or-vaadin-icon icon="vaadin:trash"></or-vaadin-icon>
+                    <or-icon icon="or:trash" style="--or-icon-fill: white"></or-icon>
                     <or-translate value="schedule.delete"></or-translate>
                 </or-vaadin-button>`
             )}
