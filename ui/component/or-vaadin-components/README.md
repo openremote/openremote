@@ -23,6 +23,23 @@ textField.setAttribute("value", "OpenRemote");
 document.body.appendChild(textField);
 ```
 
+### Group fields
+The group fields `or-vaadin-checkbox-group` and `or-vaadin-radio-group` should use the "native" Vaadin child components, `vaadin-checkbox` and `vaadin-radio-button`, respectively. These are registered when importing the group fields.
+
+```html
+<or-vaadin-checkbox-group>
+    <vaadin-checkbox></vaadin-checkbox>
+    <vaadin-checkbox></vaadin-checkbox>
+</or-vaadin-checkbox-group>
+
+<or-vaadin-checkbox-group>
+    <vaadin-radio-button></vaadin-radio-button>
+    <vaadin-radio-button></vaadin-radio-button>
+</or-vaadin-checkbox-group>
+```
+
+### JavaScript / TypeScript example using a Text Field
+
 ## License
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
