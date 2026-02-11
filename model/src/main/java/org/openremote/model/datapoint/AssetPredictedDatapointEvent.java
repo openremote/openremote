@@ -40,8 +40,6 @@ public class AssetPredictedDatapointEvent extends SharedEvent {
     protected AttributeRef ref;
     protected Cause cause;
 
-    public AssetPredictedDatapointEvent() {
-    }
     public AssetPredictedDatapointEvent(Cause cause, AttributeRef ref, Instant timestamp) {
         this(cause, ref, timestamp.toEpochMilli());
     }
