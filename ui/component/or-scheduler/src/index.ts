@@ -29,7 +29,6 @@ import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
-import "@openremote/or-vaadin-components/or-vaadin-radio-button";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
@@ -211,7 +210,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * Converts the recurrence rule to string and normalizes it.
      * 
      * The UTC timezone offset 'Z' for the UNTIL rule part is removed,
-     * because the backend uses a `LocalDateTime` object to compare.
+     * because the timezone is configurable.
      * @param rrule The recurrence rule to normalize.
      * @returns String representation of the defined Recurrence Rule
      */
@@ -356,26 +355,25 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-        const dependencies = [
-            this.defaultSchedule,
-            this.defaultEventTypeLabel,
-            this.disabledFrequencies,
-            this.disabledRRuleParts,
-            this.header,
-            this.isAllDay,
-            this.schedule,
-            this.timezoneOffset,
-            this._count,
-            this._ends,
-            this._normalizedSchedule,
-            this._rrule,
-        ];
         const timeLabel = this.timeLabel();
         return html`
             <or-vaadin-button @click="${() => this._dialog!.open()}">${timeLabel?.charAt(0).toUpperCase()}${timeLabel?.slice(1)}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" @closed="${() => this._dialog!.close()}"
                 ${dialogHeaderRenderer(this.getDialogHeader, [])}
-                ${dialogRenderer(this.getDialogContent, dependencies)}
+                ${dialogRenderer(this.getDialogContent, [
+                    this.defaultSchedule,
+                    this.defaultEventTypeLabel,
+                    this.disabledFrequencies,
+                    this.disabledRRuleParts,
+                    this.header,
+                    this.isAllDay,
+                    this.schedule,
+                    this.timezoneOffset,
+                    this._count,
+                    this._ends,
+                    this._normalizedSchedule,
+                    this._rrule,
+                ])}
                 ${dialogFooterRenderer(this.getDialogFooter, [])}
             ></or-vaadin-dialog>
         `;
@@ -405,17 +403,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     padding: 0 var(--lumo-space-m);
                 }
 
-                @media only screen and (min-width: 768px) {
-                    or-vaadin-date-picker[combined] {
-                        --vaadin-input-field-top-end-radius: 0;
-                        --vaadin-input-field-bottom-end-radius: 0;
-                    }
-                    or-vaadin-time-picker {
-                        --vaadin-input-field-top-start-radius: 0;
-                        --vaadin-input-field-bottom-start-radius: 0;
-                    }
-                }
-
                 or-vaadin-checkbox-group {
                     display: flex;
                     &::part(group-field) {
@@ -440,6 +427,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     font-weight: 600;
                 }
 
+                .period {
+                    display: flex;
+                    flex: 1;
+                    gap: 2px;
+                }
+
                 .section {
                     background-color: white;
                     border-radius: var(--lumo-border-radius-m);
@@ -453,10 +446,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     font-weight: bold;
                 }
 
-                .period {
-                    display: flex;
-                    flex: 1;
-                    gap: 2px;
+                @media only screen and (min-width: 768px) {
+                    or-vaadin-date-picker[combined] {
+                        --vaadin-input-field-top-end-radius: 0;
+                        --vaadin-input-field-bottom-end-radius: 0;
+                    }
+                    or-vaadin-time-picker {
+                        --vaadin-input-field-top-start-radius: 0;
+                        --vaadin-input-field-bottom-start-radius: 0;
+                    }
                 }
 
                 @media only screen and (max-width: 768px) {
@@ -648,23 +646,31 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         ${Object.entries(rruleEnds)
                                 .filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))
                                 .map(([k, v]) => html`
-                                    <or-vaadin-radio-button style="margin: 6px 0" value="${k}" label="${i18next.t(v)}" .checked="${k === this._ends}"></or-vaadin-radio-button>
+                                    <vaadin-radio-button style="margin: 6px 0" value="${k}" label="${i18next.t(v)}"></vaadin-radio-button>
                         `)}
                     </or-vaadin-radio-group>
-                    <div style="display: flex; flex-direction: column-reverse; flex: 1">
-                        ${when(!this.disabledRRuleParts.includes("count"), () => html`<div>
-                            <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" step-buttons-visible 
-                                .value="${this._count}"
-                                @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
-                            </or-vaadin-number-field>
-                            <or-translate slot="suffix" value="schedule.count" .options="${{ count: +this._count }}"></or-translate>
-                            </div>`
-                        )}
+                    <div style="display: flex; flex-direction: column; flex: 1">
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
-                            <or-vaadin-date-time-picker class="until" ?disabled="${this._ends !== "until"}"
+                            <or-vaadin-date-time-picker style="margin-top: auto" ?disabled="${this._ends !== "until"}"
                                 .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
                                 @change="${(e: any) => this.setRRuleValue(e.target.value, "until")}">
                             </or-vaadin-date-time-picker>`
+                        )}
+                        ${when(!this.disabledRRuleParts.includes("count"), () => html`<div>
+                            <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" step-buttons-visible
+                                .value="${this._count}"
+                                @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
+                            </or-vaadin-number-field><or-translate style="margin-left: var(--lumo-space-s)"
+                                ?disabled="${this._ends !== "count"}" value="schedule.count" .options="${{ count: +this._count }}">
+                                <style>
+                                [disabled] {
+                                    color: var(--lumo-contrast-20pct);
+                                    user-select: revert;
+                                    -webkit-user-select: none;
+                                }
+                                </style>
+                            </or-translate>
+                            </div>`
                         )}
                     </div>
                 </div>
