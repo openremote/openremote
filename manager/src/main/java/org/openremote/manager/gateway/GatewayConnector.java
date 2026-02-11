@@ -261,10 +261,11 @@ public class GatewayConnector {
                 }
                 // Let the gateway know init is complete
                 LOG.info("Gateway fully initialised: " + getGatewayIdString());
+                
                 sendMessageToGateway(new GatewayInitDoneEvent());
                 tunnellingSupported = response != null && response.isTunnelingSupported();
                 gatewayVersion = response != null ? response.getVersion() : null;
-                tunnelTimeoutManagementSupported = VersionInfo.isVersionGreaterOrEqual(gatewayVersion, "1.1.0");
+                tunnelTimeoutManagementSupported = gatewayVersion != null && VersionInfo.isVersionGreaterOrEqual(gatewayVersion, "1.1.0");
                 if (!Objects.equals(VersionInfo.getGatewayApiVersion(), gatewayVersion)) {
                     LOG.warning("Remote gateway's Gateway API version does not match the central manager's gateway API version. Current Central Instance API version: " + VersionInfo.getGatewayApiVersion() + ", Remote Gateway API version: " + gatewayVersion + ". GatewayId: " + gatewayId);
                 }
