@@ -657,7 +657,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                             </or-vaadin-date-time-picker>`
                         )}
                         ${when(!this.disabledRRuleParts.includes("count"), () => html`<div>
-                            <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" step-buttons-visible
+                            <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" style="width: 120px"
+                                step-buttons-visible
                                 .value="${this._count}"
                                 @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
                             </or-vaadin-number-field><or-translate style="margin-left: var(--lumo-space-s)"
