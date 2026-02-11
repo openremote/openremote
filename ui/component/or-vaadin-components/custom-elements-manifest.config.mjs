@@ -16,7 +16,7 @@ const VaadinJSDocParserPlugin = {
         if (!description) return;
 
         const sections = [
-            { key: 'shadow DOM parts', category: 'cssParts', inputType: undefined },
+            /*{ key: 'shadow DOM parts', category: 'cssParts', inputType: undefined },*/ // TODO: Fix CSS parts to not override HTML attributes
             { key: 'state attributes', category: 'attributes', inputType: 'boolean' },
             { key: 'custom CSS properties', category: 'cssProperties', inputType: 'string' }
         ];
@@ -26,9 +26,7 @@ const VaadinJSDocParserPlugin = {
             const matches = [...content.matchAll(/`([^`]+)`(?:\s*\|\s*([^\n|]+))?/g)];
             declaration[category] ??= [];
 
-            const existingNames = new Set(declaration.attributes?.map(a => a.name));
             const entries = matches.flatMap(([_, name, desc]) => {
-                if (inputType && existingNames.has(name)) return []; // Prevent duplicates
                 return [{
                     name: name,
                     description: desc?.trim(),
