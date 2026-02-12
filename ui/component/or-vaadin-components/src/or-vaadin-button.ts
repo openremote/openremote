@@ -20,7 +20,7 @@
 import {customElement} from "lit/decorators.js";
 import {Button} from "@vaadin/button";
 import {OrVaadinComponent} from "./util";
-import {LitElement} from "lit";
+import {type LitElement} from "lit";
 
 @customElement("or-vaadin-button")
 export class OrVaadinButton extends (Button as new () => Button & LitElement) implements OrVaadinComponent {
