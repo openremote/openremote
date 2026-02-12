@@ -199,6 +199,137 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         }
     }
 
+    def "Does not apply values when required meta is missing"() {
+        given: "a running container and target attribute without required meta"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists without meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue4")
+
+        when: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
+            ]
+        )
+
+        and: "time advances beyond the datapoints"
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "the attribute value should remain unchanged"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 0d
+        }
+    }
+
+    def "Does not apply values when only HAS_PREDICTED_DATA_POINTS is set"() {
+        given: "a running container and target attribute with only HAS_PREDICTED_DATA_POINTS"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists with only HAS_PREDICTED_DATA_POINTS"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue5")
+        addMeta(assetStorageService, attributeRef, new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
+
+        when: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
+            ]
+        )
+
+        and: "time advances beyond the datapoints"
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "the attribute value should remain unchanged"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 0d
+        }
+    }
+
+    def "Does not apply values when only APPLY_PREDICTED_DATA_POINTS is set"() {
+        given: "a running container and target attribute with only APPLY_PREDICTED_DATA_POINTS"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists with only APPLY_PREDICTED_DATA_POINTS"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue6")
+        addMeta(assetStorageService, attributeRef, new MetaItem<>(APPLY_PREDICTED_DATA_POINTS, true))
+
+        when: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
+            ]
+        )
+
+        and: "time advances beyond the datapoints"
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "the attribute value should remain unchanged"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 0d
+        }
+    }
+
     private static void enablePredictedApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
         def asset = assetStorageService.find(assetId)
         def attribute = asset.getAttribute(attributeName).get()
@@ -216,6 +347,13 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         )
         assetStorageService.merge(asset)
         return new AttributeRef(assetId, attributeName)
+    }
+
+    private static void addMeta(AssetStorageService assetStorageService, AttributeRef attributeRef, MetaItem<?> metaItem) {
+        def asset = assetStorageService.find(attributeRef.getId())
+        def attribute = asset.getAttribute(attributeRef.getName()).get()
+        attribute.addOrReplaceMeta(metaItem)
+        assetStorageService.merge(asset)
     }
 
     private void setupScheduler(ApplyPredictedDataPointsService applyService) {
