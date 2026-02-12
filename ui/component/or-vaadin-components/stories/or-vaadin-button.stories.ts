@@ -50,7 +50,13 @@ const meta: Meta = {
 
 export const Primary: Story = {
     render: args => template(args, html`<span>Button</span>`)
-}
+};
+
+const themeVariants = [
+    { theme: "primary" },
+    { theme: "secondary" },
+    { theme: "tertiary" }
+];
 
 export const Themes: Story = {
     name: "Themes example",
@@ -58,15 +64,10 @@ export const Themes: Story = {
         title: "Using different variants / themes",
         summary: "You can change the theme of the button using the `theme` HTML attribute:"
     },
-    args: [
-        { theme: "primary" },
-        { theme: "secondary" },
-        { theme: "tertiary" }
-    ],
-    render: args => html`
-        ${template(args[0], html`<span>Primary</span>`)}
-        ${template(args[1], html`<span>Secondary</span>`)}
-        ${template(args[2], html`<span>Tertiary</span>`)}
+    render: () => html`
+        ${template(themeVariants[0], html`<span>Primary</span>`)}
+        ${template(themeVariants[1], html`<span>Secondary</span>`)}
+        ${template(themeVariants[2], html`<span>Tertiary</span>`)}
     `
 };
 
