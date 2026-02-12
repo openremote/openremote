@@ -134,7 +134,7 @@ public class SyslogService extends Handler implements ContainerService {
                 "delete from SyslogEvent e " +
                     "where e.timestamp <= :date")
                     .setParameter("date",
-                            Date.from(Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES)))
+                            Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES))
                     .executeUpdate());
         } catch (Throwable e) {
             LOG.log(Level.WARNING, "Failed to purge syslog events", e);
