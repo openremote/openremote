@@ -111,7 +111,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT;
     }
 
-    def "Export query is vulnerable to SQL injection via attributeRefs"() {
+    def "Export query is not vulnerable to SQL injection via attributeRefs"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -151,7 +151,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         assert csvExportLines.size() == 1
     }
 
-    def "Export query is vulnerable to SQL injection via REST API"() {
+    def "Export query is not vulnerable to SQL injection via REST API"() {
 
         given: "the container is started"
         def container = startContainer(defaultConfig(), defaultServices())
