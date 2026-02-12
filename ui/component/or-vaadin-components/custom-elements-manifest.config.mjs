@@ -1,7 +1,6 @@
 import baseConfig from "../custom-elements-manifest.config.mjs";
 import {cemInheritancePlugin} from "@wc-toolkit/cem-inheritance";
 import {fileURLToPath} from "node:url";
-import path from "node:path";
 
 /**
  * Custom plugin that we wrote ourselves, that parses the JSDoc format that Vaadin uses,
@@ -68,8 +67,8 @@ const VaadinSuperclassParserPlugin = {
 /* -------------------------------- */
 
 // Retrieve path to the Vaadin NPM package
-const vaadinPkg = fileURLToPath(import.meta.resolve("@vaadin/button/package.json"));
-const vaadinPath = path.join(vaadinPkg, "../../*/src/*.js").replaceAll("\\", "/");
+const vaadinFilesURL = new URL("../*/src/*.js", import.meta.resolve("@vaadin/button/package.json"));
+const vaadinPath = fileURLToPath(vaadinFilesURL).replaceAll('\\', '/');
 
 export default {
     ...baseConfig,
