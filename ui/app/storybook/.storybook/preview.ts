@@ -31,10 +31,10 @@ const preview: Preview = {
             expanded: true,
             disableSaveFromUI: true,
             presetColors: [
-                style.getPropertyValue("--or-color-primary"),
-                style.getPropertyValue("--or-color-error"),
-                style.getPropertyValue("--or-color-warning"),
-                style.getPropertyValue("--or-color-success")
+                style.getPropertyValue("--or-color-primary").trim(),
+                style.getPropertyValue("--or-color-error").trim(),
+                style.getPropertyValue("--or-color-warning").trim(),
+                style.getPropertyValue("--or-color-success").trim()
             ],
             matchers: {
                 color: /(background|color)$/i,
