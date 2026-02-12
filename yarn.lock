@@ -1734,7 +1734,7 @@ __metadata:
     lit: "npm:^3.3.1"
     maplibre-gl: "npm:^5.12.0"
     moment: "npm:^2.29.4"
-    reselect: "npm:^4.1.8"
+    reselect: "npm:^5.1.0"
   languageName: unknown
   linkType: soft
 
@@ -9771,13 +9771,6 @@ __metadata:
   version: 1.0.0
   resolution: "requires-port@npm:1.0.0"
   checksum: 10c0/b2bfdd09db16c082c4326e573a82c0771daaf7b53b9ce8ad60ea46aa6e30aaf475fe9b164800b89f93b748d2c234d8abff945d2551ba47bf5698e04cd7713267
-  languageName: node
-  linkType: hard
-
-"reselect@npm:^4.1.8":
-  version: 4.1.8
-  resolution: "reselect@npm:4.1.8"
-  checksum: 10c0/06a305a504affcbb67dd0561ddc8306b35796199c7e15b38934c80606938a021eadcf68cfd58e7bb5e17786601c37602a3362a4665c7bf0a96c1041ceee9d0b7
   languageName: node
   linkType: hard
 
