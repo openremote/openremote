@@ -4,6 +4,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.ApplyPredictedDataPointsService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
+import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
@@ -15,9 +16,11 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 import static org.openremote.model.value.MetaItemType.APPLY_PREDICTED_DATA_POINTS
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS
@@ -441,6 +444,146 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
             def asset = assetStorageService.find(attributeRef.getId(), true)
             def attribute = asset.getAttribute(attributeRef.getName()).get()
             assert attribute.getValue(Double.class).orElse(null) == 10d
+        }
+    }
+
+    def "Does not emit attribute events after attribute deletion"() {
+        given: "a running container and target attribute with required meta"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def clientEventService = container.getService(ClientEventService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists with required meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue9")
+        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "we capture attribute events"
+        List<AttributeEvent> events = new CopyOnWriteArrayList<>()
+        Consumer<AttributeEvent> consumer = { event -> events.add(event) }
+        clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
+        and: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(3), 30d)
+            ]
+        )
+
+        when: "time advances to the middle of the predicted datapoints"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "an attribute event should have been emitted for the applied value"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && it.value.orElse(null) == 10d }
+        }
+
+        when: "the attribute is deleted"
+        def asset = assetStorageService.find(attributeRef.getId())
+        asset.getAttributes().remove(attributeRef.getName())
+        assetStorageService.merge(asset)
+
+        then: "the deletion event is observed"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && it.deleted }
+        }
+
+        when: "we clear events and advance time past all datapoints"
+        events.clear()
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "no further attribute events should be emitted"
+        conditions.eventually {
+            assert events.isEmpty()
+        }
+    }
+
+    def "Does not emit attribute events after asset deletion"() {
+        given: "a running container and target attribute with required meta"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def clientEventService = container.getService(ClientEventService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists with required meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue10")
+        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "we capture attribute events"
+        List<AttributeEvent> events = new CopyOnWriteArrayList<>()
+        Consumer<AttributeEvent> consumer = { event -> events.add(event) }
+        clientEventService.addSubscription(AttributeEvent.class, null, consumer)
+
+        and: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(3), 30d)
+            ]
+        )
+
+        when: "time advances to the middle of the predicted datapoints"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "an attribute event should have been emitted for the applied value"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && it.value.orElse(null) == 10d }
+        }
+
+        when: "the asset is deleted"
+        assetStorageService.delete(List.of(attributeRef.getId()))
+
+        then: "the deletion event is observed"
+        conditions.eventually {
+            assert events.any { it.ref == attributeRef && it.deleted }
+        }
+
+        when: "we clear events and advance time past all datapoints"
+        events.clear()
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "no further attribute events should be emitted"
+        conditions.eventually {
+            assert events.isEmpty()
         }
     }
 
