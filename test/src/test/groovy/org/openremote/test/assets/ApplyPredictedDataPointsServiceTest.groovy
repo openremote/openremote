@@ -330,6 +330,120 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         }
     }
 
+    def "Applies values after adding required meta to existing attribute"() {
+        given: "a running container and target attribute without required meta"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists without meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue7")
+
+        and: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
+            ]
+        )
+
+        when: "time advances to the first datapoint"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        and: "required meta is added"
+        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "time advances to the second datapoint"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+        then: "the second predicted value should be applied"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 20d
+            assert attribute.getTimestamp().orElse(0L) == now + TimeUnit.MINUTES.toMillis(2)
+        }
+    }
+
+    def "Does not apply values after removing required meta from attribute"() {
+        given: "a running container and target attribute with required meta"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def applyService = container.getService(ApplyPredictedDataPointsService.class)
+
+        and: "the clock is stopped for deterministic scheduling"
+        stopPseudoClock()
+        def now = getClockTimeOf(container)
+
+        and: "the scheduled executor is mocked to allow manual triggering"
+        setupScheduler(applyService)
+
+        and: "a plain attribute exists with required meta"
+        def attributeRef = createTestAttribute(assetStorageService, managerTestSetup.thingId, "predictedValue8")
+        enablePredictedApplyMeta(assetStorageService, attributeRef.getId(), attributeRef.getName())
+
+        and: "predicted datapoints are added in the future"
+        assetPredictedDatapointService.updateValues(
+            attributeRef.getId(),
+            attributeRef.getName(),
+            [
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(1), 10d),
+                new ValueDatapoint<>(now + TimeUnit.MINUTES.toMillis(2), 20d)
+            ]
+        )
+
+        when: "time advances to the first datapoint"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "the first predicted value should be applied"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 10d
+            assert attribute.getTimestamp().orElse(0L) == now + TimeUnit.MINUTES.toMillis(1)
+        }
+
+        when: "required meta is removed"
+        removeMeta(assetStorageService, attributeRef, HAS_PREDICTED_DATA_POINTS)
+        removeMeta(assetStorageService, attributeRef, APPLY_PREDICTED_DATA_POINTS)
+
+        and: "time advances beyond the datapoints"
+        advancePseudoClock(2, TimeUnit.MINUTES, container)
+        if (future != null) {
+            future.get()
+        }
+
+        then: "the attribute value should remain unchanged"
+        conditions.eventually {
+            def asset = assetStorageService.find(attributeRef.getId(), true)
+            def attribute = asset.getAttribute(attributeRef.getName()).get()
+            assert attribute.getValue(Double.class).orElse(null) == 10d
+        }
+    }
+
     private static void enablePredictedApplyMeta(AssetStorageService assetStorageService, String assetId, String attributeName) {
         def asset = assetStorageService.find(assetId)
         def attribute = asset.getAttribute(attributeName).get()
@@ -353,6 +467,13 @@ class ApplyPredictedDataPointsServiceTest extends Specification implements Manag
         def asset = assetStorageService.find(attributeRef.getId())
         def attribute = asset.getAttribute(attributeRef.getName()).get()
         attribute.addOrReplaceMeta(metaItem)
+        assetStorageService.merge(asset)
+    }
+
+    private static void removeMeta(AssetStorageService assetStorageService, AttributeRef attributeRef, def metaType) {
+        def asset = assetStorageService.find(attributeRef.getId())
+        def attribute = asset.getAttribute(attributeRef.getName()).get()
+        attribute.getMeta().remove(metaType)
         assetStorageService.merge(asset)
     }
 
