@@ -75,7 +75,6 @@ declare global {
 
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
-
     @property({ type: Object })
     public defaultSchedule?: CalendarEvent;
 
@@ -420,8 +419,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
                     </div>
                 </div>
-                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
                 ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
+                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
                 ${this._eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
             </div>`;
     }
@@ -525,13 +524,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             <div id="period" class="section">
                 <label class="title"><or-translate value="period"></or-translate></label>
                 <div style="display: flex; gap: 8px;" class="layout horizontal">
-                    <div>
-                        <or-mwc-input value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
-                        <or-mwc-input .disabled=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start-time")}" .label="${i18next.t("from")}"></or-mwc-input>
+                    <div style="display: flex; flex: 1; gap: 4px">
+                        <or-mwc-input style="flex: 1" value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
+                        <or-mwc-input ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start-time")}" .label="${i18next.t("from")}"></or-mwc-input>
                     </div>
-                    <div>
-                        <or-mwc-input .value="${moment(calendar.end).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
-                        <or-mwc-input .disabled=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end-time")}" .label="${i18next.t("to")}"></or-mwc-input>
+                    <div style="display: flex; flex: 1; gap: 4px">
+                        <or-mwc-input style="flex: 1" .value="${moment(calendar.end).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
+                        <or-mwc-input ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end-time")}" .label="${i18next.t("to")}"></or-mwc-input>
                     </div>
                 </div>
 
