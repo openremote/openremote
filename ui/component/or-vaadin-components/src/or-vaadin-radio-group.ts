@@ -20,6 +20,22 @@
 import { customElement } from "lit/decorators.js";
 import { RadioGroup } from "@vaadin/radio-group";
 import { OrVaadinComponent } from "./util";
+import { css, LitElement } from "lit";
+
+type LitJoin<T> = T & typeof LitElement;
 
 @customElement("or-vaadin-radio-group")
-export class OrVaadinGroup extends RadioGroup implements OrVaadinComponent {}
+export class OrVaadinGroup extends RadioGroup implements OrVaadinComponent {
+  static get styles() {
+        return [
+            // (RadioGroup as LitJoin<typeof RadioGroup>).styles,
+            css`
+              :root,
+              :where(:root),
+              :where(:host) {
+                  --lumo-space-xs: 0 !important;
+              }
+            `,
+        ];
+    }
+}
