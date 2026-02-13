@@ -13,7 +13,7 @@
     "x": 962,
     "y": 1276
   },
-  "alcohol": {
+  "alcohol_shop": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
@@ -293,7 +293,7 @@
     "x": 768,
     "y": 1612
   },
-  "bus_stop.12": {
+  "bus": {
     "height": 24,
     "pixelRatio": 2,
     "width": 24,
@@ -468,7 +468,7 @@
     "x": 936,
     "y": 1302
   },
-  "clothes": {
+  "clothing_store": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
@@ -692,7 +692,7 @@
     "x": 824,
     "y": 1164
   },
-  "ferry": {
+  "ferry_terminal": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
@@ -706,7 +706,7 @@
     "x": 824,
     "y": 1220
   },
-  "firestation": {
+  "fire_station": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
@@ -797,7 +797,7 @@
     "x": 824,
     "y": 1528
   },
-  "garden_centre": {
+  "garden": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
@@ -965,7 +965,7 @@
     "x": 576,
     "y": 1936
   },
-  "internet_cafe": {
+  "hackerspace": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
@@ -1238,7 +1238,7 @@
     "x": 890,
     "y": 1836
   },
-  "oneway": {
+  "arrow": {
     "height": 10,
     "pixelRatio": 2,
     "width": 24,
@@ -1525,7 +1525,7 @@
     "x": 880,
     "y": 1556
   },
-  "rental_bicycle": {
+  "bicycle_rental": {
     "height": 28,
     "pixelRatio": 2,
     "width": 28,
