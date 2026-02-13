@@ -35,7 +35,7 @@
       "url" : "mbtiles://mapdata.mbtiles"
     }
   },
-  "sprite" : "map/sprites/bright-v9",
+  "sprite" : "map/sprites/sprite",
   "glyphs" : "{fontstack}/{range}.pbf",
   "layers": [
     {
