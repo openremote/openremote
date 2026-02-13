@@ -21,16 +21,16 @@ import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/w
 import {getORStorybookHelpers} from "../../storybook-utils";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
-import "../src/index";
+import "../src/or-vaadin-numberfield";
 
-const tagName = "or-tree-menu";
+const tagName = "or-vaadin-numberfield";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
 const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
-    title: "Playground/or-tree-menu",
+    title: "Playground/or-vaadin-components/numberfield",
     component: tagName,
     args: args,
     argTypes: argTypes,
@@ -41,31 +41,19 @@ const meta: Meta = {
             handles: events
         },
         docs: {
-            subtitle: `<${tagName}>`
+            subtitle: `<${tagName}>`,
+            description: "Number Field is an input field that accepts only numeric input. The input can be a decimal or an integer."
         }
     }
 };
 
 export const Primary: Story = {
     args: {
-        menuTitle: "My custom title",
-        nodes: JSON.stringify([])
+        value: 100
     }
 };
 
-export const TreeExample: Story = {
-    name: "Tree Example",
-    parameters: {
-        title: "Building a Tree structure",
-        summary: "You can define the tree using `<or-tree-group>` and `<or-tree-node>` elements."
-    },
-    args: {
-        "menu-title": "My Assets",
-        "nodes": JSON.stringify([])
-    }
-};
-
-export const examples: Story[] = [TreeExample];
+export const examples: Story[] = [];
 
 export {customElements, packageJson};
 
