@@ -8,10 +8,10 @@
     "orutil": "./cli.js"
   },
   "license": "AGPL-3.0-or-later",
-  "devDependencies": {
+  "dependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.4",
-    "@rspack/cli": "~1.7.3",
-    "@rspack/core": "~1.7.3",
+    "@rspack/cli": "~1.7.5",
+    "@rspack/core": "~1.7.5",
     "@types/react": "^18",
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
