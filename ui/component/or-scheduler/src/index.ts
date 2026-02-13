@@ -391,6 +391,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const calendar = this._normalizedSchedule;
         return html`
             <style>
+                or-vaadin-dialog::part(content) {
+                    width: 600px;
+                }
+
                 or-vaadin-checkbox-group {
                     display: flex;
                     &::part(group-field) {
@@ -410,11 +414,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         background: var(--lumo-primary-color);
                         color: white;
                     }
-                }
-
-                or-vaadin-radio-group::part(group-field) {
-                    display: flex;
-                    flex-direction: column;
                 }
 
                 vaadin-checkbox {
