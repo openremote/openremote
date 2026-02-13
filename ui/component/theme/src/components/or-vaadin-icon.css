@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Select} from "@vaadin/select";
-import {customElement} from "lit/decorators.js";
-import {OrVaadinComponent} from "./util";
+@import "@vaadin/vaadin-lumo-styles/components/icon.css";
 
-@customElement("or-vaadin-select")
-export class OrVaadinSelect extends Select implements OrVaadinComponent {
+:root::before,
+:host::before {
+    --_lumo-vaadin-icon-inject: 1;
+    --_lumo-vaadin-icon-inject-modules: lumo_components_icon;
 }

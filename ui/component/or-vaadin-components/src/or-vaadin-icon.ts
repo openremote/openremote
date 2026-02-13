@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Select} from "@vaadin/select";
-import {customElement} from "lit/decorators.js";
-import {OrVaadinComponent} from "./util";
+import { customElement } from "lit/decorators.js";
+import { Icon } from "@vaadin/icon";
+import { OrVaadinComponent } from "./util";
+import "@vaadin/icons";
+import "@vaadin/vaadin-lumo-styles/vaadin-iconset.js";
 
-@customElement("or-vaadin-select")
-export class OrVaadinSelect extends Select implements OrVaadinComponent {
-}
+@customElement("or-vaadin-icon")
+export class OrVaadinIcon extends Icon implements OrVaadinComponent {}

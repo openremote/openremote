@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Select} from "@vaadin/select";
-import {customElement} from "lit/decorators.js";
-import {OrVaadinComponent} from "./util";
+import { customElement } from "lit/decorators.js";
+import { MultiSelectComboBox } from "@vaadin/multi-select-combo-box";
+import { OrVaadinComponent } from "./util";
 
-@customElement("or-vaadin-select")
-export class OrVaadinSelect extends Select implements OrVaadinComponent {
+@customElement("or-vaadin-multi-select-combo-box")
+export class OrVaadinMultiSelectComboBox extends MultiSelectComboBox implements OrVaadinComponent {
 }

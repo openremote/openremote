@@ -57,19 +57,29 @@ export const NOT_APPLICABLE_BY_RRULE_PARTS = {
     MONTHLY: ["BYWEEKNO", "BYYEARDAY"],
 } as Record<keyof typeof Frequency, string[]>;
 
+export const WEEKDAYS = {
+  MO: "Monday",
+  TU: "Tuesday",
+  WE: "Wednesday",
+  TH: "Thursday",
+  FR: "Friday",
+  SA: "Saturday",
+  SU: "Sunday",
+}
+
 export const MONTHS = {
-    1: "JAN",
-    2: "FEB",
-    3: "MAR",
-    4: "APR",
-    5: "MAY",
-    6: "JUN",
-    7: "JUL",
-    8: "AUG",
-    9: "SEP",
-    10: "OCT",
-    11: "NOV",
-    12: "DEC",
+    "1": "january",
+    "2": "february",
+    "3": "march",
+    "4": "april",
+    "5": "may",
+    "6": "june",
+    "7": "july",
+    "8": "august",
+    "9": "september",
+    "10": "october",
+    "11": "november",
+    "12": "december",
 };
 
 export enum EventTypes {

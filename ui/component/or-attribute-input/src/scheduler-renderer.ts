@@ -95,12 +95,14 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         <or-scheduler
             header="scheduleSimulatorActivity"
             defaultEventTypeLabel="defaultSimulatorSchedule"
+            removable
             .defaultSchedule="${defaultEvent}"
             .disabledFrequencies="${DISABLED_FREQUENCIES}"
             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
             .schedule="${props.data}"
             .timezoneOffset="${new Date().getTimezoneOffset() * 60000}"
             @or-scheduler-changed="${onSchedulerChanged}"
+            @or-scheduler-removed="${deleteHandler}"
         >
         </or-scheduler>
     `, deleteHandler);

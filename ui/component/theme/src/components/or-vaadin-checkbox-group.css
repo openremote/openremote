@@ -17,10 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Select} from "@vaadin/select";
-import {customElement} from "lit/decorators.js";
-import {OrVaadinComponent} from "./util";
+@import "@vaadin/vaadin-lumo-styles/components/checkbox-group.css";
 
-@customElement("or-vaadin-select")
-export class OrVaadinSelect extends Select implements OrVaadinComponent {
+:root::before,
+:host::before {
+  --_lumo-vaadin-checkbox-group-inject: 1;
+  --_lumo-vaadin-checkbox-group-inject-modules:
+    lumo_mixins_group-field,
+    lumo_mixins_field-label,
+    lumo_mixins_field-required,
+    lumo_mixins_field-error-message,
+    lumo_mixins_field-helper,
+    lumo_components_checkbox-group,
+    lumo_mixins_field-internal,
+    lumo_mixins_field-internal;
 }

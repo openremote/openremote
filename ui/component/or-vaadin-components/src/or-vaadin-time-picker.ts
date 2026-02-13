@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {Select} from "@vaadin/select";
-import {customElement} from "lit/decorators.js";
-import {OrVaadinComponent} from "./util";
+import { customElement } from "lit/decorators.js";
+import { TimePicker } from "@vaadin/time-picker";
+import { OrVaadinComponent } from "./util";
 
-@customElement("or-vaadin-select")
-export class OrVaadinSelect extends Select implements OrVaadinComponent {
-}
+@customElement("or-vaadin-time-picker")
+export class OrVaadinTimePicker extends TimePicker implements OrVaadinComponent {}
