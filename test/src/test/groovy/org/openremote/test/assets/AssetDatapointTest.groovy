@@ -417,16 +417,14 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         assert predictedData.size() == 5
         assert predictedData.any {it.value == 20d}
 
-        and: "an upsert event should be published for predicted datapoints"
+        and: "an event should be published for predicted datapoints"
         conditions.eventually {
             assert predictedEvents.any {
-                it.cause == AssetPredictedDatapointEvent.Cause.UPSERT &&
-                    it.ref.id == managerTestSetup.thingId &&
+                it.ref.id == managerTestSetup.thingId &&
                     it.ref.name == "light1PowerConsumption"
             }
             assert predictedEvents.any {
-                it.cause == AssetPredictedDatapointEvent.Cause.UPSERT &&
-                    it.ref.id == managerTestSetup.thingId &&
+                it.ref.id == managerTestSetup.thingId &&
                     it.ref.name == thingLightToggleAttributeName
             }
         }
@@ -438,11 +436,10 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "no predicted data should remain for this attribute"
         assert predictedData.isEmpty()
 
-        and: "a delete event should be published"
+        and: "an event should be published"
         conditions.eventually {
             assert predictedEvents.any {
-                it.cause == AssetPredictedDatapointEvent.Cause.DELETE &&
-                    it.ref.id == managerTestSetup.thingId &&
+                it.ref.id == managerTestSetup.thingId &&
                     it.ref.name == "light1PowerConsumption"
             }
         }

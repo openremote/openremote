@@ -32,28 +32,17 @@ import java.util.Objects;
  */
 public class AssetPredictedDatapointEvent extends SharedEvent {
 
-    public enum Cause {
-        UPSERT,
-        DELETE
-    }
-
     protected AttributeRef ref;
-    protected Cause cause;
 
-    public AssetPredictedDatapointEvent(Cause cause, AttributeRef ref, Instant timestamp) {
-        this(cause, ref, timestamp.toEpochMilli());
+    public AssetPredictedDatapointEvent(AttributeRef ref, Instant timestamp) {
+        this(ref, timestamp.toEpochMilli());
     }
 
     @JsonCreator
-    public AssetPredictedDatapointEvent(Cause cause, AttributeRef ref, Long timestamp) {
+    public AssetPredictedDatapointEvent(AttributeRef ref, Long timestamp) {
         super(timestamp);
-        this.cause = cause;
         Objects.requireNonNull(ref);
         this.ref = ref;
-    }
-
-    public Cause getCause() {
-        return cause;
     }
 
     public AttributeRef getRef() {
@@ -64,8 +53,7 @@ public class AssetPredictedDatapointEvent extends SharedEvent {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "cause=" + cause +
-            ", ref=" + ref +
+            "ref=" + ref +
             ", timestamp=" + timestamp +
             '}';
     }

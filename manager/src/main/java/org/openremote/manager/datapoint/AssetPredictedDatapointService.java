@@ -83,7 +83,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
 
     public void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) {
         upsertValue(assetId, attributeName, value, timestamp);
-        publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
+        publishPredictedDatapointsEvent(assetId, attributeName);
     }
 
     public void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
@@ -92,7 +92,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         }
 
         upsertValues(assetId, attributeName, valuesAndTimestamps);
-        publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.UPSERT);
+        publishPredictedDatapointsEvent(assetId, attributeName);
     }
 
     public void purgeValues(String assetId, String attributeName) {
@@ -101,7 +101,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         ).setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
 
         if (deleted > 0) {
-            publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
+            publishPredictedDatapointsEvent(assetId, attributeName);
         }
     }
 
@@ -111,7 +111,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         ).setParameter(1, assetId).setParameter(2, attributeName).setParameter(3, Timestamp.from(timestamp)).executeUpdate());
 
         if (deleted > 0) {
-            publishPredictedDatapointsEvent(assetId, attributeName, AssetPredictedDatapointEvent.Cause.DELETE);
+            publishPredictedDatapointsEvent(assetId, attributeName);
         }
     }
 
@@ -135,13 +135,13 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         return super.getFirstPurgeMillis(currentTime) - 1800000; // Run half hour before default
     }
 
-    protected void publishPredictedDatapointsEvent(String assetId, String attributeName, AssetPredictedDatapointEvent.Cause cause) {
+    protected void publishPredictedDatapointsEvent(String assetId, String attributeName) {
         if (clientEventService == null) {
             return;
         }
 
         clientEventService.publishEvent(
-            new AssetPredictedDatapointEvent(cause, new AttributeRef(assetId, attributeName), timerService.getNow())
+            new AssetPredictedDatapointEvent(new AttributeRef(assetId, attributeName), timerService.getNow())
         );
     }
 
