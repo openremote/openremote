@@ -2201,6 +2201,7 @@ __metadata:
     "@playwright/test": "npm:1.57.0"
     "@rspack/cli": "npm:~1.7.5"
     "@rspack/core": "npm:~1.7.5"
+    "@rspack/dev-server": "npm:~1.1.5"
     "@sand4rt/experimental-ct-web": "npm:1.57.0"
     css-loader: "npm:^6.5.1"
     html-webpack-plugin: "npm:^5.6.3"
