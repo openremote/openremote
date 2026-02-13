@@ -32,7 +32,6 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "ace-builds": "^1.41.0",
     "lit": "^3.3.1",

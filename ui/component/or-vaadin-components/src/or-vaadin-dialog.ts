@@ -21,9 +21,21 @@ import {Dialog} from "@vaadin/dialog";
 import {OrVaadinComponent} from "./util";
 import {customElement} from "lit/decorators.js";
 
-export {dialogFooterRenderer, dialogRenderer} from "@vaadin/dialog/lit.js";
+/**
+ * Vaadin uses custom directives for rendering the dialog content.
+ * https://lit.dev/docs/templates/custom-directives/
+ * https://vaadin.com/docs/latest/components/dialog/
+ */
+export {dialogHeaderRenderer, DialogHeaderRendererDirective, dialogRenderer, DialogRendererDirective, dialogFooterRenderer, DialogFooterRendererDirective} from "@vaadin/dialog/lit.js";
 
 @customElement("or-vaadin-dialog")
 export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
 
+    public open() {
+        this.setAttribute("opened", "true");
+    }
+
+    public close() {
+        this.toggleAttribute("opened", false);
+    }
 }
