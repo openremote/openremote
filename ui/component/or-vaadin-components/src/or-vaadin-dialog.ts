@@ -36,13 +36,13 @@ export {
     DialogFooterRendererDirective,
 } from "@vaadin/dialog/lit.js";
 
-type LitJoin<T> = T & typeof LitElement;
+type WithLit<T> = T & typeof LitElement;
 
 @customElement("or-vaadin-dialog")
 export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
     static get styles() {
         return [
-            (Dialog as LitJoin<typeof Dialog>).styles,
+            (Dialog as WithLit<typeof Dialog>).styles,
             css`
                 ::part(header),
                 ::part(content) {
