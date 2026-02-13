@@ -29,7 +29,8 @@
     lumo_mixins_field-button,
     lumo_mixins_field-helper,
     lumo_mixins_field-base,
-    lumo_components_date-picker;
+    lumo_components_date-picker,
+    lumo_mixins_field-internal;
 
   --_lumo-vaadin-date-picker-year-inject: 1;
   --_lumo-vaadin-date-picker-year-inject-modules: lumo_components_date-picker-year;

@@ -54,5 +54,6 @@
     lumo_mixins_field-button,
     lumo_mixins_field-helper,
     lumo_mixins_field-base,
-    lumo_components_multi-select-combo-box;
+    lumo_components_multi-select-combo-box,
+    lumo_mixins_field-internal;
 }

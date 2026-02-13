@@ -29,7 +29,8 @@
     lumo_mixins_field-button,
     lumo_mixins_field-helper,
     lumo_mixins_field-base,
-    lumo_components_select;
+    lumo_components_select,
+    lumo_mixins_field-internal;
 
   --_lumo-vaadin-select-item-inject: 1;
   --_lumo-vaadin-select-item-inject-modules: lumo_components_item;

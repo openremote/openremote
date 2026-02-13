@@ -30,5 +30,6 @@
     lumo_mixins_field-helper,
     lumo_mixins_field-base,
     lumo_components_custom-field,
-    lumo_components_date-time-picker;
+    lumo_components_date-time-picker,
+    lumo_mixins_field-internal;
 }

@@ -2,8 +2,8 @@
     :host {
         padding: 0;
         width: 100%;
-        &[has-label] {
-            padding-top: 0;
-        }
+    }
+    :host([has-label]) {
+        padding-top: 0;
     }
 }

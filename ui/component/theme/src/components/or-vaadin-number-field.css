@@ -29,5 +29,6 @@
     lumo_mixins_field-button,
     lumo_mixins_field-helper,
     lumo_mixins_field-base,
-    lumo_components_number-field;
+    lumo_components_number-field,
+    lumo_mixins_field-internal;
 }

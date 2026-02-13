@@ -28,5 +28,6 @@
     lumo_mixins_field-required,
     lumo_mixins_field-error-message,
     lumo_mixins_field-helper,
-    lumo_components_radio-group;
+    lumo_components_radio-group,
+    lumo_mixins_field-internal;
 }
