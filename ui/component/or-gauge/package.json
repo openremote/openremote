@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-gauge",
-  "version": "1.14.0-snapshot",
+  "version": "1.17.3-mg-feature-testing-2",
   "description": "OpenRemote gauge",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
