@@ -18,7 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.openremote.agent.protocol.modbus;
-
 import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.Agent;
