@@ -149,7 +149,7 @@ abstract class EventProviderImpl implements EventProvider {
 
                 deferred.resolve(connected);
             }
-        });
+        }).catch(e => console.error(e));
 
         return this._connectingDeferred.promise;
     }
@@ -624,6 +624,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onerror = (err) => {
+            console.error(err);
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
