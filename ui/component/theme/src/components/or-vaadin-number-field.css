@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {customElement} from "lit/decorators.js";
-import {TextArea} from "@vaadin/text-area";
-import {OrVaadinComponent} from "./util";
-import {LitElement} from "lit";
+@import "@vaadin/vaadin-lumo-styles/components/number-field.css";
 
-@customElement("or-vaadin-textarea")
-export class OrVaadinTextarea extends (TextArea as new () => TextArea & LitElement) implements OrVaadinComponent {
-
-    override _onEnter(ev: KeyboardEvent) {
-        this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
-        return super._onEnter(ev);
-    }
+:root::before,
+:host::before {
+  --_lumo-vaadin-number-field-inject: 1;
+  --_lumo-vaadin-number-field-inject-modules:
+    lumo_mixins_field-label,
+    lumo_mixins_field-required,
+    lumo_mixins_field-error-message,
+    lumo_mixins_field-button,
+    lumo_mixins_field-helper,
+    lumo_mixins_field-base,
+    lumo_components_number-field;
 }

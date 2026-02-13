@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@vaadin/vaadin-lumo-styles/lumo.css";
+@import "@vaadin/vaadin-lumo-styles/src/props/index.css";
+@import "@vaadin/vaadin-lumo-styles/src/global/index.css";
+@import "components/index.css";
+@import "mixins/index.css";
 
-@media lumo_mixins_field-base-internal {
-    :host {
-        padding: 0;
-        width: 100%;
-        &[has-label] {
-            padding-top: 0;
-        }
-    }
+:where(:root),
+:where(:host) {
+    --vaadin-lumo-theme: 1;
 }
 
 :root[theme~="dark"] {
@@ -179,9 +177,4 @@
     --lumo-border-radius-l: 0.75em;
     --vaadin-field-default-width: 100%;
     --vaadin-button-margin: 0;
-
-    --_lumo-vaadin-checkbox-group-inject: 1;
-    --_lumo-vaadin-checkbox-group-inject-modules: lumo_mixins_group-field, lumo_mixins_field-label,
-        lumo_mixins_field-required, lumo_mixins_field-error-message, lumo_mixins_field-helper,
-        lumo_components_checkbox-group, lumo_mixins_field-base-internal;
 }

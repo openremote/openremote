@@ -24,7 +24,7 @@ import "./or-vaadin-checkbox";
 import "./or-vaadin-number-field";
 import "./or-vaadin-password-field";
 import "./or-vaadin-text-field";
-import "./or-vaadin-textarea";
+import "./or-vaadin-text-area";
 
 /**
  * Function to register properties (get/setter) of a CustomElement to the child Vaadin element.
@@ -58,7 +58,7 @@ export class OrVaadinInput extends LitElement {
         customElements.get("or-vaadin-number-field"),
         customElements.get("or-vaadin-password-field"),
         customElements.get("or-vaadin-select"),
-        customElements.get("or-vaadin-textarea"),
+        customElements.get("or-vaadin-text-area"),
         customElements.get("or-vaadin-text-field")
     ];
 
@@ -259,7 +259,7 @@ export class OrVaadinInput extends LitElement {
     }
 
     public static getTextAreaTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-textarea id="elem" @change=${onChange}></or-vaadin-textarea>`;
+        return html`<or-vaadin-text-area id="elem" @change=${onChange}></or-vaadin-text-area>`;
     }
 
     public static getTextFieldTemplate(onChange?: (e: Event) => void) {

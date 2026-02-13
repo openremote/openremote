@@ -1,0 +1,9 @@
+@media lumo_mixins_field-internal {
+    :host {
+        padding: 0;
+        width: 100%;
+        &[has-label] {
+            padding-top: 0;
+        }
+    }
+}
