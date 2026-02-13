@@ -87,12 +87,18 @@ public abstract class WebService implements ContainerService {
     public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
     public static final int OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
+    public static final String OR_WEBSERVER_MAX_ENTITY_SIZE = "OR_WEBSERVER_MAX_ENTITY_SIZE";
+    public static final long OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT = 30_000_000L;
+    public static final String OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE = "OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE";
+    public static final long OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT = 30_000_000L;
     private static final System.Logger LOG = System.getLogger(WebService.class.getName());
     protected boolean devMode;
     protected String host;
     protected IdentityService identityService;
     protected int port;
     protected Undertow undertow;
+    protected long maxEntitySize = OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT;
+    protected long multipartMaxEntitySize = OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT;
     protected URI containerHostUri;
     protected PathHandler pathHandler = Handlers.path();
 
@@ -119,8 +125,10 @@ public abstract class WebService implements ContainerService {
     public void init(Container container) throws Exception {
         identityService = container.getService(IdentityService.class);
         devMode = container.isDevMode();
-        host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
-        port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
+        Map<String, String> config = container.getConfig();
+
+        host = getString(config, OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
+        port = getInteger(config, OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
         String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
                 ? getLocalIpAddress()
                 : host;
@@ -131,17 +139,19 @@ public abstract class WebService implements ContainerService {
                         .host(containerHost)
                         .port(port).build();
 
+        maxEntitySize = getLong(config, OR_WEBSERVER_MAX_ENTITY_SIZE, OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT);
+        multipartMaxEntitySize = getLong(config, OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE, OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE_DEFAULT);
+
         undertow = build(
                 container,
-                Undertow.builder()
+                        Undertow.builder()
                         .addHttpListener(port, host)
-                        .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
-                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                        .setIoThreads(getInteger(config, OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
+                        .setWorkerThreads(getInteger(config, OR_WEBSERVER_WORKER_THREADS_MAX, OR_WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
-                        // TODO: setting entity size to unlimited to reset to Undertow 2.3.20.Final behaviour
-                        // but should be addressed in a better way: https://github.com/openremote/openremote/issues/2490
-                        .setServerOption(UndertowOptions.MAX_ENTITY_SIZE,  -1L)
+                        .setServerOption(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE, multipartMaxEntitySize)
+                        .setServerOption(UndertowOptions.MAX_ENTITY_SIZE, maxEntitySize)
         ).build();
 
         // We have to set system properties for websocket timeouts
