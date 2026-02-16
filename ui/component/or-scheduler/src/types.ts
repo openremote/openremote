@@ -46,7 +46,7 @@ import { EventTypes } from "./util";
  *
  * @see {@link RRule} and {@link https://labix.org/python-dateutil/#head-a65103993a21b717f6702063f3717e6e75b4ba66|python-dateutil}.
  */
-export type RuleParts = Pick<
+export type RRuleParts = Pick<
     Options,
     | "interval"
     | "freq" // Must exist (should default to DAILY?)
@@ -63,5 +63,5 @@ export type RuleParts = Pick<
 >;
 
 export type LabeledEventTypes = Record<EventTypes, string>;
-export type RulePartKey = keyof RuleParts;
-export type Frequency = (keyof typeof FrequencyValue);
+export type RRulePartKeys = keyof RRuleParts;
+export type Frequency = keyof typeof FrequencyValue;

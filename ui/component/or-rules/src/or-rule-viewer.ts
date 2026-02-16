@@ -40,7 +40,7 @@ import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
-import { OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
+import { OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
 
 const DISABLED_RRULE_PARTS = [
     'interval',
@@ -52,7 +52,7 @@ const DISABLED_RRULE_PARTS = [
     'byminute',
     'bysecond',
     'count',
-] as RulePartKey[]
+] as RRulePartKeys[]
 
 // language=CSS
 export const style = css`

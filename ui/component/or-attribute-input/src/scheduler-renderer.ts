@@ -31,7 +31,7 @@ import {
     isObjectControl,
     schemaMatches,
 } from "@openremote/or-json-forms";
-import { Frequency, RulePartKey, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
+import { Frequency, RRulePartKeys, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
 
 const DISABLED_FREQUENCIES = [
@@ -49,7 +49,7 @@ const DISABLED_RRULE_PARTS = [
     'byminute',
     // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
     'bysecond'
-] as RulePartKey[]
+] as RRulePartKeys[]
 
 const schedulerTester: RankedTester = rankWith(
     6,
