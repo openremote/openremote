@@ -106,6 +106,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             }
         }
 
+
         try {
             if (thisLoader != currentLoader) {
                 Thread.currentThread().setContextClassLoader(thisLoader);

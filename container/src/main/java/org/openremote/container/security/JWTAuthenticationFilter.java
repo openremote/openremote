@@ -70,9 +70,8 @@ public class JWTAuthenticationFilter implements Filter {
 
             AtomicReference<TokenPrincipal> principalRef = new AtomicReference<>();
 
-            // 4. **CRITICAL**: Set expected claims. This is essential for security.
-            // The issuer for a Keycloak realm is typically 'https://<host>/realms/<realm>'
-            // You should also validate the audience ('aud' claim).
+             // Uses DefaultJWTClaimsVerifier to verify exp, not before, issuer, audience but then also does super
+             // super user cross realm checks
              jwtProcessor.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier<>(new JWTClaimsSet.Builder()
                                                           .issuer(keyResolverService.getKeycloakBaseUrl() + "/realms/" + realm)
                                                           .audience(Constants.KEYCLOAK_CLIENT_ID)
@@ -125,7 +124,7 @@ public class JWTAuthenticationFilter implements Filter {
             chain.doFilter(authenticatedRequest, response);
 
         } catch (Exception e) {
-            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
         }
     }
 }
