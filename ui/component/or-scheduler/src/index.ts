@@ -140,7 +140,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _ends: keyof typeof rruleEnds = "never";
 
     @state()
-    protected _normalizedSchedule = this.applyTimezoneOffset(this.schedule);
+    protected _normalizedSchedule = this._applyTimezoneOffset(this.schedule);
 
     @state()
     protected _rrule?: RRule;
@@ -181,7 +181,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected willUpdate(changedProps: PropertyValues) {
         if (changedProps.has("schedule")) {
-            this._normalizedSchedule = this.applyTimezoneOffset(this.schedule);
+            this._normalizedSchedule = this._applyTimezoneOffset(this.schedule);
         }
     }
 
@@ -214,11 +214,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * @param rrule The recurrence rule to normalize.
      * @returns String representation of the defined Recurrence Rule
      */
-    protected getRRule(rrule = this._rrule): string | undefined {
+    protected _getRRule(rrule = this._rrule): string | undefined {
         return rrule?.toString()?.split("RRULE:")?.[1]?.replace(/(UNTIL=\d+T\d+)Z/, "$1");
     }
 
-    protected setRRuleValue(value: any, key: keyof RuleParts | "start" | "end" | "start-time" | "end-time" | "all-day" | "recurrence-ends") {
+    protected _setRRuleValue(value: any, key: keyof RuleParts | "start" | "end" | "start-time" | "end-time" | "all-day" | "recurrence-ends") {
         let origOptions = this._rrule?.origOptions;
         const calendarEvent = this._normalizedSchedule!;
 
@@ -284,10 +284,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
 
         this._normalizedSchedule = { ...calendarEvent };
-        this._normalizedSchedule.recurrence = this.getRRule();
+        this._normalizedSchedule.recurrence = this._getRRule();
     }
 
-    protected timeLabel(): string | undefined {
+    protected _timeLabel(): string | undefined {
         if (this._eventType === EventTypes.default) {
             return i18next.t(this.defaultEventTypeLabel);
         } if (this._normalizedSchedule && this._rrule) {
@@ -309,7 +309,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
     }
 
-    protected setCalendarEventType(value: any) {
+    protected _setCalendarEventType(value: any) {
         switch (value) {
             case EventTypes.default:
                 this._normalizedSchedule = this.defaultSchedule;
@@ -339,7 +339,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * @param substract Whether to substract the offset
      * @returns The transformed calendar event
      */
-    protected applyTimezoneOffset(schedule?: CalendarEvent, substract = false): CalendarEvent | undefined {
+    protected _applyTimezoneOffset(schedule?: CalendarEvent, substract = false): CalendarEvent | undefined {
         if (schedule) {
             const offset = (substract ? -this.timezoneOffset : this.timezoneOffset);
             let { start, end, recurrence } = { ...schedule };
@@ -348,19 +348,19 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             if (recurrence && RRule.fromString(recurrence).origOptions.until) {
                 const origOptions = RRule.fromString(recurrence).origOptions;
                 origOptions.until = new Date(Number(origOptions.until) + offset)
-                recurrence = this.getRRule(new RRule(origOptions))
+                recurrence = this._getRRule(new RRule(origOptions))
             }
             return { start, end, recurrence }
         }
     }
 
     protected render() {
-        const timeLabel = this.timeLabel();
+        const timeLabel = this._timeLabel();
         return html`
             <or-vaadin-button @click="${() => this._dialog!.open()}">${timeLabel?.charAt(0).toUpperCase()}${timeLabel?.slice(1)}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" @closed="${() => this._dialog!.close()}"
-                ${dialogHeaderRenderer(this.getDialogHeader, [])}
-                ${dialogRenderer(this.getDialogContent, [
+                ${dialogHeaderRenderer(this._getDialogHeader, [])}
+                ${dialogRenderer(this._getDialogContent, [
                     this.defaultSchedule,
                     this.defaultEventTypeLabel,
                     this.disabledFrequencies,
@@ -374,12 +374,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     this._normalizedSchedule,
                     this._rrule,
                 ])}
-                ${dialogFooterRenderer(this.getDialogFooter, [])}
+                ${dialogFooterRenderer(this._getDialogFooter, [])}
             ></or-vaadin-dialog>
         `;
     }
 
-    protected getDialogHeader(): TemplateResult {
+    protected _getDialogHeader(): TemplateResult {
         return html`
             <vaadin-button theme="tertiary" @click="${() => this._dialog!.close()}">
                 <vaadin-icon icon="lumo:cross"></vaadin-icon>
@@ -387,7 +387,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected getDialogContent(): TemplateResult {
+    protected _getDialogContent(): TemplateResult {
         const calendar = this._normalizedSchedule;
         return html`
             <style>
@@ -464,17 +464,17 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
                         <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${Object.entries(this._eventTypes).map(([k,v]) => ({ value: k, label: v }))}"
-                            @change="${(e: any) => this.setCalendarEventType(e.target.value)}">
+                            @change="${(e: any) => this._setCalendarEventType(e.target.value)}">
                         </or-vaadin-select>
                     </div>
                 </div>
-                ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
-                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
-                ${this._eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
+                ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this._getPeriodTemplate(calendar) : ``}
+                ${this._eventType === EventTypes.recurrence ? this._getRepeatTemplate() : ``}
+                ${this._eventType === EventTypes.recurrence ? this._getEndsTemplate() : ``}
             </div>`;
     }
 
-    protected getDialogFooter(): TemplateResult {
+    protected _getDialogFooter(): TemplateResult {
         return html`
             ${when(this.removable, () => html`
                 <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" @click="${() => {
@@ -493,9 +493,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 if (this._eventType === EventTypes.default) {
                     delete this._normalizedSchedule;
                 } else if (this._eventType === EventTypes.recurrence) {
-                    this._normalizedSchedule!.recurrence = this.getRRule();
+                    this._normalizedSchedule!.recurrence = this._getRRule();
                 }
-                const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
+                const schedule = this._applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
                 this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
                 this._dialog!.close();
             }}"><or-translate value="schedule.save"></or-translate></or-vaadin-button>
@@ -507,7 +507,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * @param freq The frequency to check
      * @returns Whether the frequency is allowed
      */
-    protected isAllowedFrequency(freq: Frequency) {
+    protected _isAllowedFrequency(freq: Frequency) {
         // Secondly is disabled because it's not possible to configure the period on a seconds basis
         // with the current period fields
         return freq !== "SECONDLY" && !this.disabledFrequencies.includes(freq);
@@ -532,12 +532,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      *
      * @returns Inputs for the applicable rule parts
      */
-    protected getRepeatTemplate(): TemplateResult {
+    protected _getRepeatTemplate(): TemplateResult {
         const interval = this._rrule?.origOptions.interval ?? 1;
         const frequency = this._rrule?.origOptions.freq ?? FrequencyValue.DAILY;
         const frequencies = Object.entries(FREQUENCIES)
             .map(([k, v]) => ({ value: String(FrequencyValue[k as Frequency]), label: i18next.t(v, { count: interval }) }))
-            .filter(({ value }) => this.isAllowedFrequency(FrequencyValue[value as Frequency] as any))
+            .filter(({ value }) => this._isAllowedFrequency(FrequencyValue[value as Frequency] as any))
 
         return html`
             <div id="recurrence" class="section">
@@ -545,25 +545,25 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div style="display: flex; gap: 8px; margin-bottom: var(--lumo-space-l)">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
                         <or-vaadin-number-field min="1" max="9" step-buttons-visible style="width: 106px" .value="${interval}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "interval")}">
+                            @change="${(e: any) => this._setRRuleValue(e.target.value, "interval")}">
                         </or-vaadin-number-field>
                     `)}
                     <or-vaadin-select style="flex: 1;" .value="${frequency.toString()}" .items="${frequencies}"
-                        @change="${(e: any) => this.setRRuleValue(e.target?.value, "freq")}">
+                        @change="${(e: any) => this._setRRuleValue(e.target?.value, "freq")}">
                     </or-vaadin-select>
                 </div>
                 <label class="title"><or-translate value="schedule.repeatOn"></or-translate></label>
-                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
+                <div>${this._getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
                 <div>
-                    ${this.getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
-                    ${this.getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
-                    ${this.getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
+                    ${this._getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
+                    ${this._getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
+                    ${this._getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
                 </div>
-                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.entries(WEEKDAYS))}</div>
+                <div>${this._getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.entries(WEEKDAYS))}</div>
                 <div>
-                    ${this.getByRulePart("byhour", InputType.SELECT, byHourOptions)}
-                    ${this.getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
-                    ${this.getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
+                    ${this._getByRulePart("byhour", InputType.SELECT, byHourOptions)}
+                    ${this._getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
+                    ${this._getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
                 </div>
             </div>`;
     }
@@ -573,7 +573,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      *
      * @returns The specified BY_XXX RRule part field or undefined if not applicable
      */
-    protected getByRulePart<T extends number | [string, string]>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
+    protected _getByRulePart<T extends number | [string, string]>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
         if (!this._byRRuleParts?.includes(part)) {
             return undefined
         }
@@ -584,11 +584,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         ) ?? [];
 
         return type === InputType.CHECKBOX_LIST ? html`
-          <or-vaadin-checkbox-group .value="${value}" @value-changed="${(e: CheckboxGroupValueChangedEvent) => { if (!Util.objectsEqual(e.detail.value, value, true)) { this.setRRuleValue(e.detail.value, part) } }}">
+          <or-vaadin-checkbox-group .value="${value}" @value-changed="${(e: CheckboxGroupValueChangedEvent) => { if (!Util.objectsEqual(e.detail.value, value, true)) { this._setRRuleValue(e.detail.value, part) } }}">
                 ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
-            <or-vaadin-multi-select-combo-box .label="${i18next.t(part)}" .items="${options}" @change="${(e: any) => this.setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
+            <or-vaadin-multi-select-combo-box .label="${i18next.t(part)}" .items="${options}" @change="${(e: any) => this._setRRuleValue(e.target.value, part)}"></or-vaadin-multi-select-combo-box>
         `;
     }
 
@@ -598,29 +598,29 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * @param calendar The specified calendar event
      * @returns The periods allDay and from/to date and time fields
      */
-    protected getPeriodTemplate(calendar: CalendarEvent): TemplateResult {
+    protected _getPeriodTemplate(calendar: CalendarEvent): TemplateResult {
         return html`
             <div id="period" class="section">
                 <label class="title"><or-translate value="period"></or-translate></label>
                 <div style="display: flex; gap: 8px">
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start")}" label="${i18next.t("from")}">
+                            @change="${(e: any) => this._setRRuleValue(e.target.value, "start")}" label="${i18next.t("from")}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "start-time")}">
+                            @change="${(e: any) => this._setRRuleValue(e.target.value, "start-time")}">
                         </or-vaadin-time-picker>
                     </div>
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end")}" label="${i18next.t("to")}">
+                            @change="${(e: any) => this._setRRuleValue(e.target.value, "end")}" label="${i18next.t("to")}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
-                            @change="${(e: any) => this.setRRuleValue(e.target.value, "end-time")}">
+                            @change="${(e: any) => this._setRRuleValue(e.target.value, "end-time")}">
                         </or-vaadin-time-picker>
                     </div>
                 </div>
-                <or-vaadin-checkbox .checked=${this.isAllDay} @change="${(e: any) => this.setRRuleValue(e.target.checked, "all-day")}" .label="${i18next.t("allDay")}"></or-vaadin-checkbox>
+                <or-vaadin-checkbox .checked=${this.isAllDay} @change="${(e: any) => this._setRRuleValue(e.target.checked, "all-day")}" .label="${i18next.t("allDay")}"></or-vaadin-checkbox>
             </div>`;
     }
 
@@ -632,13 +632,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * - `count`
      * @returns The recurrence ends fields
      */
-    protected getEndsTemplate(): TemplateResult {
+    protected _getEndsTemplate(): TemplateResult {
         return html`
             <div id="recurrence-ends" class="section">
                 <label class="title"><or-translate value="schedule._ends"></or-translate></label>
                 <div style="display: flex; gap: 8px;">
                     <or-vaadin-radio-group style="padding-right: 10px" .value="${this._ends}" theme="vertical"
-                        @change="${(e: any) => this.setRRuleValue(e.target.value, "recurrence-ends")}">
+                        @change="${(e: any) => this._setRRuleValue(e.target.value, "recurrence-ends")}">
                         ${Object.entries(rruleEnds)
                                 .filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))
                                 .map(([k, v]) => html`
@@ -649,14 +649,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
                             <or-vaadin-date-time-picker style="margin-top: auto; padding: var(--lumo-space-s) 0" ?disabled="${this._ends !== "until"}"
                                 .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
-                                @change="${(e: any) => this.setRRuleValue(e.target.value, "until")}">
+                                @change="${(e: any) => this._setRRuleValue(e.target.value, "until")}">
                             </or-vaadin-date-time-picker>`
                         )}
                         ${when(!this.disabledRRuleParts.includes("count"), () => html`<div style="display: inline-flex">
                             <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" style="width: 120px"
                                 step-buttons-visible
                                 .value="${this._count}"
-                                @change="${(e: any) => this.setRRuleValue(e.target.value, "count")}">
+                                @change="${(e: any) => this._setRRuleValue(e.target.value, "count")}">
                             </or-vaadin-number-field><or-translate style="margin-left: 10px"
                                 ?disabled="${this._ends !== "count"}" value="schedule.count" .options="${{ count: +this._count }}">
                                 <style>
