@@ -35,7 +35,7 @@
       "url" : "mbtiles://mapdata.mbtiles"
     }
   },
-  "sprite" : "map/sprites/sprite",
+  "sprite" : "map/sprites/style",
   "glyphs" : "{fontstack}/{range}.pbf",
   "layers": [
     {
@@ -127,7 +127,7 @@
       "paint": {
         "fill-antialias": true,
         "fill-opacity": 0.8,
-        "fill-pattern": "wetland",
+        "fill-pattern": "wetland_bg_11",
         "fill-translate-anchor": "map"
       }
     },
