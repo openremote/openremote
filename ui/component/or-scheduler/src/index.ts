@@ -444,6 +444,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     line-height: 125.303%; /* 22.554px */
                 }
 
+                .label {
+                    margin-left: 10px;
+                }
+                or-vaadin-number-field[disabled] + .label {
+                    color: var(--lumo-contrast-20pct);
+                    user-select: revert;
+                    -webkit-user-select: none;
+                }
+
                 @media only screen and (min-width: 768px) {
                     or-vaadin-date-picker[combined] {
                         --vaadin-input-field-top-end-radius: 0;
@@ -678,15 +687,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                                 step-buttons-visible
                                 .value="${this._count}"
                                 @change="${this._onPartChange("count", "value")}">
-                            </or-vaadin-number-field><or-translate style="margin-left: 10px"
-                                ?disabled="${this._ends !== "count"}" value="schedule.count" .options="${{ count: +this._count }}">
-                                <style>
-                                [disabled] {
-                                    color: var(--lumo-contrast-20pct);
-                                    user-select: revert;
-                                    -webkit-user-select: none;
-                                }
-                                </style>
+                            </or-vaadin-number-field><or-translate class="label" value="schedule.count"
+                                ?disabled="${this._ends !== "count"}" .options="${{ count: +this._count }}">
                             </or-translate>
                             </div>`
                         )}
