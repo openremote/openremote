@@ -36,7 +36,7 @@ services:
 
   postgresql:
     restart: always
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
