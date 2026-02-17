@@ -82,15 +82,11 @@ export class OrSchedulerChangedEvent extends CustomEvent<OrSchedulerChangedEvent
     }
 }
 
-export interface OrSchedulerRemovedEventDetail {
-    value?: CalendarEvent;
-}
-
-export class OrSchedulerRemovedEvent extends CustomEvent<OrSchedulerRemovedEventDetail> {
+export class OrSchedulerRemovedEvent extends CustomEvent<void> {
 
     public static readonly NAME = "or-scheduler-removed";
 
-    constructor(value?: CalendarEvent) {
+    constructor() {
         super(OrSchedulerRemovedEvent.NAME, {
             bubbles: true,
             composed: true
