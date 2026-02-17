@@ -58,13 +58,13 @@ export const NOT_APPLICABLE_BY_RRULE_PARTS = {
 } as Record<keyof typeof Frequency, string[]>;
 
 export const WEEKDAYS = {
-  MO: "Monday",
-  TU: "Tuesday",
-  WE: "Wednesday",
-  TH: "Thursday",
-  FR: "Friday",
-  SA: "Saturday",
-  SU: "Sunday",
+  MO: "monday",
+  TU: "tuesday",
+  WE: "wednesday",
+  TH: "thursday",
+  FR: "friday",
+  SA: "saturday",
+  SU: "sunday",
 }
 
 export const MONTHS = {
