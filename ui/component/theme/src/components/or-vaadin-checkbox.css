@@ -19,10 +19,29 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/checkbox.css";
 
+@media lumo_checkbox_toggle_button {
+    [theme~='button'] :host {
+        &::part(checkbox) {
+            display: none;
+        }
+        &::part(label) {
+            background: var(--lumo-contrast-5pct);
+            border-radius: var(--lumo-border-radius-m);
+            color: var(--lumo-primary-color);
+            --vaadin-checkbox-label-padding: 8px 14px;
+        }
+        &[checked]::part(label) {
+            background: var(--lumo-primary-color);
+            color: white;
+        }
+    }
+}
+
 :root::before,
 :host::before {
     --_lumo-vaadin-checkbox-inject: 1;
     --_lumo-vaadin-checkbox-inject-modules:
     lumo_mixins_checkable-field,
-    lumo_components_checkbox;
+    lumo_components_checkbox,
+    lumo_checkbox_toggle_button;
 }

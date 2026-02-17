@@ -23,8 +23,8 @@
  * seems to be an issue when using Rspack.
  */
 @import "./or-vaadin-button.css";
-@import "./or-vaadin-checkbox.css";
 @import "./or-vaadin-checkbox-group.css";
+@import "./or-vaadin-checkbox.css"; /* Must be after the checkbox-group */
 @import "./or-vaadin-date-time-picker.css";
 @import "./or-vaadin-date-picker.css"; /* Must be after the date-time-picker */
 @import "./or-vaadin-dialog.css";

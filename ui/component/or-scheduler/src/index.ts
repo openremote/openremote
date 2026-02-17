@@ -397,27 +397,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     width: 600px;
                 }
 
-                or-vaadin-checkbox-group {
-                    display: flex;
-                    &::part(group-field) {
-                        display: flex;
-                        gap: 6px;
-                    }
-                    &::before, ::part(checkbox) {
-                        display: none;
-                    }
-                    & ::part(label) {
-                        background: var(--lumo-contrast-5pct);
-                        border-radius: var(--lumo-border-radius-m);
-                        color: var(--lumo-primary-color);
-                        --vaadin-checkbox-label-padding: 8px 14px;
-                    }
-                    & [checked]::part(label) {
-                        background: var(--lumo-primary-color);
-                        color: white;
-                    }
-                }
-
                 vaadin-checkbox {
                     font-weight: 600;
                 }
@@ -615,7 +594,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         ) ?? [];
 
         return type === InputType.CHECKBOX_LIST ? html`
-          <or-vaadin-checkbox-group .value="${value}" @value-changed="${this._onPartChange(part, "detail", value)}">
+          <or-vaadin-checkbox-group .value="${value}" @value-changed="${this._onPartChange(part, "detail", value)}" theme="button">
                 ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
