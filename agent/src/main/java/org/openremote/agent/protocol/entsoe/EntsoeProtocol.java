@@ -1,6 +1,7 @@
 package org.openremote.agent.protocol.entsoe;
 
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -154,17 +155,22 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
 
     }
 
-        protected String buildApiUrl(String zone) {
+    protected String buildApiUrl(String zone) {
         String securityToken = agent.getSecurityToken().orElseThrow(() -> new IllegalStateException("Security token is not set"));
         String baseUrl = agent.getBaseURL().orElse("https://web-api.tp.entsoe.eu/api");
         Instant start = timerService.getNow();
         Instant end = start.plus(1, ChronoUnit.DAYS);
 
-        // TODO: use a proper URL builder
-        return baseUrl + "?documentType=A44&contract_MarketAgreement.type=A01"
-                + "&periodStart=" + PERIOD_FORMATTER.format(start) + "&periodEnd=" + PERIOD_FORMATTER.format(end)
-                + "&in_Domain=" + zone + "&out_Domain=" + zone
-                + "&securityToken=" + securityToken;
+        return UriBuilder.fromUri(baseUrl)
+                .queryParam("documentType", "A44")
+                .queryParam("contract_MarketAgreement.type", "A01")
+                .queryParam("periodStart", PERIOD_FORMATTER.format(start))
+                .queryParam("periodEnd", PERIOD_FORMATTER.format(end))
+                .queryParam("in_Domain", zone)
+                .queryParam("out_Domain", zone)
+                .queryParam("securityToken", securityToken)
+                .build()
+                .toString();
     }
 
     /**
