@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { when } from "lit/directives/when.js";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { Util } from "@openremote/core";
 import { CalendarEvent } from "@openremote/model";
@@ -34,19 +35,16 @@ import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-time-picker";
 import "@openremote/or-translate";
+import moment from "moment";
 import { translate, i18next } from "@openremote/or-translate";
 import { InputType } from "@openremote/or-vaadin-components/util";
 import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer, OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
-import moment from "moment";
 import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds, WEEKDAYS } from "./util";
-import type { RRulePartKeys, RRuleParts, LabeledEventTypes, Frequency } from "./types";
-import { when } from "lit/directives/when.js";
+import type { PartKeys, RRulePartKeys, LabeledEventTypes, Frequency } from "./types";
 
-export { RRuleParts, RRulePartKeys, Frequency, LabeledEventTypes };
+export type * from "./types";
 export * from "./util";
-
-type PartKeys = RRulePartKeys | "start" | "end" | "start-time" | "end-time" | "all-day"| "recurrence-ends";
 
 function range(start: number, end: number): number[] {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i )
@@ -127,7 +125,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: Object })
     public schedule?: CalendarEvent = this.defaultSchedule;
 
-    @property()
+    @property({ type: Number })
     public timezoneOffset = 0;
 
     @state()

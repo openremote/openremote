@@ -64,4 +64,5 @@ export type RRuleParts = Pick<
 
 export type LabeledEventTypes = Record<EventTypes, string>;
 export type RRulePartKeys = keyof RRuleParts;
+export type PartKeys = RRulePartKeys | "start" | "end" | "start-time" | "end-time" | "all-day"| "recurrence-ends";
 export type Frequency = keyof typeof FrequencyValue;
