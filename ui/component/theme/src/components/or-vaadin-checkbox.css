@@ -36,9 +36,6 @@
         background: var(--lumo-primary-color);
         color: white;
     }
-    :not(:first-child) {
-        margin-left: 6px;
-    }
 }
 
 :root::before,

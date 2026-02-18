@@ -19,6 +19,17 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/checkbox-group.css";
 
+@media lumo_components_checkbox-group-internal {
+    :host {
+        [part="group-field"] ::slotted([theme~="button"]) {
+            margin-left: 6px;
+        }
+        [part="group-field"] ::slotted([theme~="button"]:first-child) {
+            margin-left: 0;
+        }
+    }
+}
+
 :root::before,
 :host::before {
   --_lumo-vaadin-checkbox-group-inject: 1;
@@ -29,5 +40,6 @@
     lumo_mixins_field-error-message,
     lumo_mixins_field-helper,
     lumo_components_checkbox-group,
+    lumo_components_checkbox-group-internal,
     lumo_mixins_field-internal;
 }
