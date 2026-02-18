@@ -177,4 +177,5 @@
     --lumo-border-radius-l: 0.75em;
     --vaadin-field-default-width: 100%;
     --vaadin-button-margin: 0;
+    --lumo-clickable-cursor: pointer;
 }

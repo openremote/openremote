@@ -32,10 +32,41 @@
             --vaadin-checkbox-label-padding: 8px 14px;
         }
     }
+
     :host([theme~='button'][checked])::part(label) {
         background: var(--lumo-primary-color);
         color: white;
     }
+
+    :host([theme~='button']) {
+        &::part(label) {
+            cursor: var(--lumo-clickable-cursor);
+            transition:
+                background-color 0.2s,
+                color 0.2s,
+                filter 0.2s,
+                transform 0.1s,
+                box-shadow 0.2s;
+            user-select: none;
+        }
+
+        &:active:not([disabled])::part(label) {
+            filter: brightness(0.9);
+            transform: scale(0.96);
+            transition: transform 0.05s;
+        }
+    }
+
+    @media (hover: hover) {
+        :host([theme~='button']:hover:not([checked]))::part(label) {
+            background: var(--lumo-contrast-10pct);
+        }
+
+        :host([theme~='button'][checked]:hover)::part(label) {
+            filter: brightness(1.1);
+        }
+    }
+
 }
 
 :root::before,
