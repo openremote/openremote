@@ -1,5 +1,6 @@
 package org.openremote.manager.datapoint;
 
+import org.hibernate.Session;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
@@ -28,8 +29,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.*;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -253,10 +257,10 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                                                   long fromTimestamp,
                                                   long toTimestamp) {
         try {
-            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
+            ExportQuery exportQuery = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
             // Verify the query is 'legal' and can be executed
-            if(canQueryDatapoints(query, null, datapointExportLimit)) {
+            if(canQueryDatapoints(exportQuery.query, exportQuery.parameters, datapointExportLimit)) {
                 return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
             }
             throw new RuntimeException("Could not export datapoints.");
@@ -274,15 +278,33 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder("copy (")
-                    .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
-                    .append(") to '/storage/")
-                    .append(EXPORT_STORAGE_DIR_NAME)
-                    .append("/")
-                    .append(fileName)
-                    .append("' delimiter ',' CSV HEADER;");
+            String tempTableName = "tmp_export_attributes";
+            String copySql = buildCopyExportSql(tempTableName, fileName, fromTimestamp, toTimestamp);
 
-            persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+            persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+                // It is not possible to use parametrized prepared statements with the copy statement,
+                // so we're going through a temporary table for safely binding the parameters
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute(
+                        "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
+                    );
+                }
+
+                try (PreparedStatement insertStatement = connection.prepareStatement(
+                    "insert into " + tempTableName + " (entity_id, attribute_name) values (?, ?)"
+                )) {
+                    for (AttributeRef attributeRef : attributeRefs) {
+                        insertStatement.setString(1, validateAssetId(attributeRef.getId()));
+                        insertStatement.setString(2, attributeRef.getName());
+                        insertStatement.addBatch();
+                    }
+                    insertStatement.executeBatch();
+                }
+
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute(copySql);
+                }
+            }));
 
             // The same path must resolve in both the postgresql container and the manager container
             return exportPath.resolve(fileName).toFile();
@@ -293,10 +315,68 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * Function for building an SQL query that SELECTs the content for the data export.
      * Currently, it includes timestamp, asset name, attribute name, and the data point value.
      * Be aware: this SQL query does NOT contain any CSV-related statements.
+     *
+     * It returns a structure containing the parametrized query as a string and the parameter values.
      */
-    protected String getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
-        return new StringBuilder(String.format("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
-                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
-                .append(")").toString();
+    protected ExportQuery getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
+        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(?) and ad.timestamp <= to_timestamp(?) and ");
+        Map<Integer, Object> parameters = new HashMap<>();
+        int paramIndex = 1;
+        parameters.put(paramIndex++, fromTimestamp / 1000);
+        parameters.put(paramIndex++, toTimestamp / 1000);
+
+        sb.append("(ad.entity_id, ad.attribute_name) in (");
+        for (int i = 0; i < attributeRefs.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append("(?, ?)");
+            parameters.put(paramIndex++, validateAssetId(attributeRefs[i].getId()));
+            parameters.put(paramIndex++, attributeRefs[i].getName());
+        }
+        sb.append(") ");
+        sb.append("order by ad.timestamp desc");
+
+        return new ExportQuery(sb.toString(), parameters);
+    }
+
+    protected record ExportQuery(String query, Map<Integer, Object> parameters) {
+    }
+
+    private static String buildCopyExportSql(String tempTableName, String fileName, long fromTimestamp, long toTimestamp) {
+        long fromSeconds = fromTimestamp / 1000;
+        long toSeconds = toTimestamp / 1000;
+
+        StringBuilder sb = new StringBuilder("copy (")
+                .append("select ad.timestamp, a.name, ad.attribute_name, value ")
+                .append("from asset_datapoint ad ")
+                .append("join asset a on ad.entity_id = a.id ")
+                .append("join ").append(tempTableName).append(" t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name ")
+                .append("where ad.timestamp >= to_timestamp(").append(fromSeconds).append(") ")
+                .append("and ad.timestamp <= to_timestamp(").append(toSeconds).append(") ")
+                .append("order by ad.timestamp desc")
+                .append(") to '/storage/")
+                .append(EXPORT_STORAGE_DIR_NAME)
+                .append("/")
+                .append(fileName)
+                .append("' delimiter ',' CSV HEADER;");
+
+        return sb.toString();
+    }
+
+    private static String validateAssetId(String assetId) {
+        if (assetId == null || assetId.length() != 22) {
+            throw new IllegalArgumentException("Invalid asset id");
+        }
+        for (int i = 0; i < assetId.length(); i++) {
+            char c = assetId.charAt(i);
+            boolean isBase62 = (c >= '0' && c <= '9')
+                    || (c >= 'A' && c <= 'Z')
+                    || (c >= 'a' && c <= 'z');
+            if (!isBase62) {
+                throw new IllegalArgumentException("Invalid asset id");
+            }
+        }
+        return assetId;
     }
 }
