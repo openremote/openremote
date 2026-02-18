@@ -23,11 +23,5 @@ ALTER TABLE ${schemaName}.asset_datapoint SET (
     timescaledb.orderby = 'timestamp DESC',
     timescaledb.segmentby = 'entity_id,attribute_name');
 
-ALTER TABLE ${schemaName}.asset_predicted_datapoint SET (
-    timescaledb.enable_columnstore = true,
-    timescaledb.orderby = 'timestamp DESC',
-    timescaledb.segmentby = 'entity_id,attribute_name');
-
 CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL ${columnStorePolicyInterval});
-CALL public.add_columnstore_policy('asset_predicted_datapoint', after => INTERVAL ${columnStorePolicyInterval});
 

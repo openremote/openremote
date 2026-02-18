@@ -6,7 +6,6 @@ import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
@@ -35,7 +34,6 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.*;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -273,15 +271,15 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * This avoids the decompression overhead that occurs when using DELETE on compressed/hypercore chunks.
      * <p>
      * The strategy is:
-     * 1. Query chunk metadata to find chunks that are entirely before the cutoff date
-     * 2. Use drop_chunks() to remove those chunks instantly (no decompression needed)
-     * 3. For the partial chunk spanning the cutoff, use DELETE only for that chunk's data
-     * <p>
-     * If attributes with custom retention exist, we exclude them from drop_chunks and handle them
-     * separately with DELETE since drop_chunks cannot filter by entity_id/attribute_name.
+     * 1. If custom retention attributes exist, adjust the drop cutoff to the longest (max) custom
+     *    retention period, since drop_chunks cannot filter by entity_id/attribute_name
+     * 2. Query chunk metadata to find chunks that are entirely before the adjusted cutoff
+     * 3. Use drop_chunks() to remove those chunks instantly (no decompression needed)
+     * 4. For the partial chunk spanning the cutoff, use DELETE for non-custom-retention data only
      *
-     * @param defaultCutoff The cutoff instant - data older than this should be purged
-     * @param customRetentionAttributes Attributes with custom DATA_POINTS_MAX_AGE_DAYS that should be excluded
+     * @param defaultCutoff The cutoff instant for the default retention policy
+     * @param customRetentionAttributes Attributes with custom DATA_POINTS_MAX_AGE_DAYS that are
+     *                                  excluded from chunk-level drops and handled separately
      * @return true if drop_chunks was used successfully, false if fallback to DELETE is needed
      */
     protected boolean tryDropChunks(Instant defaultCutoff, List<Pair<String, Attribute<?>>> customRetentionAttributes) {
@@ -314,20 +312,40 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     return true; // Nothing to purge
                 }
 
-                Timestamp cutoffTimestamp = Timestamp.from(defaultCutoff);
+                // Determine the final cutoff for drop_chunks
+                Instant dropCutoff = defaultCutoff;
+
+                // If there are attributes with custom retention, we cannot use drop_chunks for the whole table
+                // because drop_chunks doesn't support filtering by entity_id/attribute_name
+                if (!customRetentionAttributes.isEmpty()) {
+                    // Find the maximum custom retention age
+                    int maxCustomAge = customRetentionAttributes.stream()
+                        .mapToInt(attr -> attr.value.getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS).orElse(Integer.MAX_VALUE))
+                        .max()
+                        .orElse(Integer.MAX_VALUE);
+
+                    // We can only safely drop chunks that are older than ALL retention periods
+                    Instant safeDropCutoff = timerService.getNow().truncatedTo(DAYS).minus(maxCustomAge, DAYS);
+                    if (safeDropCutoff.isBefore(defaultCutoff)) {
+                        dropCutoff = safeDropCutoff;
+                        LOG.info("Using safe drop cutoff of " + dropCutoff + " due to custom retention attributes");
+                    }
+                }
+
+                Timestamp cutoffTimestamp = Timestamp.from(dropCutoff);
                 Instant oldestChunkRangeEnd = null;
                 int chunksToDropCount = 0;
 
                 // Find chunks that are entirely before the cutoff
                 for (Object[] chunk : chunks) {
                     // TimescaleDB returns OffsetDateTime for range_start/range_end
-                    Instant rangeEndInstant = TimeUtil.toInstant(chunk[2]);
-                    if (rangeEndInstant.isBefore(defaultCutoff) || rangeEndInstant.equals(defaultCutoff)) {
+                    Instant rangeEndInstant = ((OffsetDateTime) chunk[2]).toInstant();
+                    if (rangeEndInstant.isBefore(dropCutoff) || rangeEndInstant.equals(dropCutoff)) {
                         chunksToDropCount++;
                     } else {
                         // This chunk spans the cutoff or is after it
                         if (oldestChunkRangeEnd == null) {
-                            oldestChunkRangeEnd = TimeUtil.toInstant(chunk[1]);
+                            oldestChunkRangeEnd = ((OffsetDateTime) chunk[1]).toInstant();
                         }
                     }
                 }
@@ -343,25 +361,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         ).setParameter("dt", Date.from(defaultCutoff)).executeUpdate();
                     }
                     return true;
-                }
-
-                // If there are attributes with custom retention, we cannot use drop_chunks for the whole table
-                // because drop_chunks doesn't support filtering by entity_id/attribute_name
-                if (!customRetentionAttributes.isEmpty()) {
-                    // Find the minimum custom retention age
-                    int minCustomAge = customRetentionAttributes.stream()
-                        .mapToInt(attr -> attr.value.getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS).orElse(Integer.MAX_VALUE))
-                        .min()
-                        .orElse(Integer.MAX_VALUE);
-
-                    // We can only safely drop chunks that are older than ALL retention periods
-                    Instant safeDropCutoff = timerService.getNow().truncatedTo(DAYS).minus(minCustomAge, DAYS);
-                    if (safeDropCutoff.isAfter(defaultCutoff)) {
-                        safeDropCutoff = defaultCutoff;
-                    }
-
-                    LOG.info("Using safe drop cutoff of " + safeDropCutoff + " due to custom retention attributes");
-                    cutoffTimestamp = Timestamp.from(safeDropCutoff);
                 }
 
                 // Use drop_chunks to efficiently remove whole chunks

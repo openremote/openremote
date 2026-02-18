@@ -109,17 +109,15 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         when: "storage usage is measured before enabling hypercore"
         def orDatabaseSizeBefore = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
-                SELECT 
-                    pg_database.datname as database_name,
-                    pg_size_pretty(pg_database_size(pg_database.datname)) AS size
+                SELECT pg_database_size(pg_database.datname)
                 FROM pg_database
                 WHERE pg_database.datname = 'openremote';
             """)
-            return query.getSingleResult()
+            return query.getSingleResult() as Long
         }
 
         println "\n=== Storage BEFORE Hypercore ==="
-        println "\nDatabase size: ${orDatabaseSizeBefore[1]}"
+        println "\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeBefore / (1024.0 * 1024.0))}"
 
         and: "compression job is called manually"
         def job_id = persistenceService.doReturningTransaction { em ->
@@ -146,21 +144,18 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
         def orDatabaseSizeAfter = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
-                SELECT 
-                    pg_database.datname as database_name,
-                    pg_size_pretty(pg_database_size(pg_database.datname)) AS size
+                SELECT pg_database_size(pg_database.datname)
                 FROM pg_database
                 WHERE pg_database.datname = 'openremote';
             """)
-            return query.getSingleResult()
+            return query.getSingleResult() as Long
         }
 
-
         println "\n=== Storage AFTER Hypercore ==="
-        println "\nDatabase size: ${orDatabaseSizeAfter[1]}"
+        println "\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeAfter / (1024.0 * 1024.0))}"
 
         then: "storage should be smaller after hypercore"
-        assert orDatabaseSizeBefore[1] > orDatabaseSizeAfter[1]
+        orDatabaseSizeBefore > orDatabaseSizeAfter
 
         when: "Purging will be called, count datapoints before purging"
         def countBeforePurge = 0
@@ -180,10 +175,10 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
         then: "less data points should exist"
         conditions.eventually {
-            def countAfterPurge = countBeforePurge
+            def countAfterPurge = 0
             attributeNames.each { attributeName ->
                 def dataPoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
-                countAfterPurge -= dataPoints.size()
+                countAfterPurge += dataPoints.size()
             }
             def deletedCount = countBeforePurge - countAfterPurge
 
@@ -197,17 +192,15 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         when: "storage usage is measured after deletion"
         def orDatabaseSizeAfterDeletion = persistenceService.doReturningTransaction { em ->
             def query = em.createNativeQuery("""
-                SELECT 
-                    pg_database.datname as database_name,
-                    pg_size_pretty(pg_database_size(pg_database.datname)) AS size
+                SELECT pg_database_size(pg_database.datname)
                 FROM pg_database
                 WHERE pg_database.datname = 'openremote';
             """)
-            return query.getSingleResult()
+            return query.getSingleResult() as Long
         }
 
         println "\n=== Storage AFTER Deletion ==="
-        println "\nDatabase size: ${orDatabaseSizeAfterDeletion[1]}"
+        println "\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeAfterDeletion / (1024.0 * 1024.0))}"
 
         then: "final storage should be measured"
         true
@@ -219,8 +212,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
             finalCount += datapoints.size()
         }
         def actualDeleted = countBeforePurge - finalCount
-        def beforeSizeInMb = Integer.parseInt(orDatabaseSizeBefore[1].replace(" MB", ""))
-        def compressionRatio = ((beforeSizeInMb - Integer.parseInt(orDatabaseSizeAfter[1].replace(" MB", ""))) / beforeSizeInMb) * 100
+        def compressionRatio = ((orDatabaseSizeBefore - orDatabaseSizeAfter) / (double) orDatabaseSizeBefore) * 100
 
         println "\n=== Final Summary ==="
         println "Total datapoints inserted: ${totalDatapoints}"
@@ -229,9 +221,9 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         println "Datapoints remaining: ${finalCount}"
         println "Deletion percentage: ${String.format('%.2f', (actualDeleted / totalDatapoints * 100.0))}%"
         println "\nStorage Summary:"
-        println "  Before hypercore: ${orDatabaseSizeBefore[1]}"
-        println "  After hypercore:  ${orDatabaseSizeAfter[1]}"
-        println "  After deletion:   ${orDatabaseSizeAfterDeletion[1]}"
+        println "  Before hypercore: ${String.format('%.2f MB', orDatabaseSizeBefore / (1024.0 * 1024.0))}"
+        println "  After hypercore:  ${String.format('%.2f MB', orDatabaseSizeAfter / (1024.0 * 1024.0))}"
+        println "  After deletion:   ${String.format('%.2f MB', orDatabaseSizeAfterDeletion / (1024.0 * 1024.0))}"
         println "\nPerformance Summary:"
         println "  Insert time: ${insertDuration} seconds"
         println "  Purge time: ${deleteDuration} seconds"
