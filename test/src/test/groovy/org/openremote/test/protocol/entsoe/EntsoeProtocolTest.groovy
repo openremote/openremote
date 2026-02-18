@@ -57,7 +57,14 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             def requestUri = requestContext.uri
 
             if (requestUri.host == "web-api.tp.entsoe.eu" && requestUri.path == "/api") {
-                def content = '''<?xml version="1.0" encoding="utf-8"?>
+                def zone = requestUri.query?.split("&")
+                        ?.find { it.startsWith("in_Domain=") }
+                        ?.split("=")
+                        ?.with { it.size() > 1 ? it[1] : null }
+
+                def content
+                if (zone == "10YBE----------2") {
+                    content = '''<?xml version="1.0" encoding="utf-8"?>
 <Publication_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3">
   <mRID>68f443af488b4a0a9c4442bddd8c59c0</mRID>
   <revisionNumber>1</revisionNumber>
@@ -107,6 +114,51 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
   </TimeSeries>
 </Publication_MarketDocument>
 '''
+                } else if (zone == "10YNL----------L") {
+                    content = '''<?xml version="1.0" encoding="utf-8"?>
+<Publication_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3">
+  <mRID>bbf443af488b4a0a9c4442bddd8c59c9</mRID>
+  <revisionNumber>1</revisionNumber>
+  <type>A44</type>
+  <createdDateTime>2026-02-17T09:45:56Z</createdDateTime>
+  <period.timeInterval>
+    <start>2026-02-16T23:00Z</start>
+    <end>2026-02-17T23:00Z</end>
+  </period.timeInterval>
+  <TimeSeries>
+    <mRID>1</mRID>
+    <curveType>A03</curveType>
+    <Period>
+      <timeInterval>
+        <start>2026-02-16T23:00Z</start>
+        <end>2026-02-17T23:00Z</end>
+      </timeInterval>
+      <resolution>PT15M</resolution>
+      <Point>
+        <position>1</position>
+        <price.amount>81.11</price.amount>
+      </Point>
+      <Point>
+        <position>2</position>
+        <price.amount>82.22</price.amount>
+      </Point>
+      <Point>
+        <position>3</position>
+        <price.amount>83.33</price.amount>
+      </Point>
+      <Point>
+        <position>4</position>
+        <price.amount>84.44</price.amount>
+      </Point>
+    </Period>
+  </TimeSeries>
+</Publication_MarketDocument>
+'''
+                } else {
+                    requestContext.abortWith(Response.serverError().build())
+                    return
+                }
+
                 requestContext.abortWith(Response.ok(content, MediaType.APPLICATION_XML_TYPE).build())
                 return
             }
@@ -184,6 +236,88 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert (asc[1].value as BigDecimal).compareTo(69.79G) == 0
             assert (asc[2].value as BigDecimal).compareTo(65.84G) == 0
             assert (asc[3].value as BigDecimal).compareTo(65.05G) == 0
+        }
+
+        cleanup: "remove mock client"
+        if (EntsoeProtocol.client.get() != null) {
+            EntsoeProtocol.client.set(null)
+        }
+    }
+
+    def "ENTSO-E integration test writes predicted datapoints for 2 linked attributes with different zones"() {
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        EntsoeProtocol.initClient()
+
+        if (!EntsoeProtocol.client.get().configuration.isRegistered(mockServer)) {
+            EntsoeProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def agentService = container.getService(AgentService.class)
+
+        when: "an ENTSO-E agent is created"
+        def agent = new EntsoeAgent("ENTSO-E Agent")
+                .setRealm(MASTER_REALM)
+                .setSecurityToken("test-token")
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created and connected"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((EntsoeProtocol) agentService.getProtocolInstance(agent.id)) != null
+            assert agentService.getAgent(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        when: "2 attributes are linked to the same agent with different zones"
+        def beLink = new EntsoeAgentLink(agent.id)
+        beLink.setZone("10YBE----------2")
+        def nlLink = new EntsoeAgentLink(agent.id)
+        nlLink.setZone("10YNL----------L")
+
+        def asset = new ThingAsset("Multi Zone Energy Price Asset")
+                .setRealm(MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<>("energyPriceBe", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, beLink)),
+                        new Attribute<>("energyPriceNl", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, nlLink))
+                )
+        asset = assetStorageService.merge(asset)
+
+        def beRef = new AttributeRef(asset.id, "energyPriceBe")
+        def nlRef = new AttributeRef(asset.id, "energyPriceNl")
+        def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+
+        and: "both attributes are linked by protocol"
+        conditions.eventually {
+            assert protocol.getLinkedAttributes().containsKey(beRef)
+            assert protocol.getLinkedAttributes().containsKey(nlRef)
+        }
+
+        and: "a polling update is triggered"
+        protocol.updateAllLinkedAttributes()
+
+        then: "each attribute receives predicted datapoints for its configured zone"
+        conditions.eventually {
+            List<ValueDatapoint> beDatapoints = assetPredictedDatapointService.getDatapoints(beRef).sort { it.timestamp }
+            List<ValueDatapoint> nlDatapoints = assetPredictedDatapointService.getDatapoints(nlRef).sort { it.timestamp }
+
+            assert beDatapoints.size() == 4
+            assert nlDatapoints.size() == 4
+
+            assert (beDatapoints[0].value as BigDecimal).compareTo(73.24G) == 0
+            assert (beDatapoints[1].value as BigDecimal).compareTo(69.79G) == 0
+            assert (beDatapoints[2].value as BigDecimal).compareTo(65.84G) == 0
+            assert (beDatapoints[3].value as BigDecimal).compareTo(65.05G) == 0
+
+            assert (nlDatapoints[0].value as BigDecimal).compareTo(81.11G) == 0
+            assert (nlDatapoints[1].value as BigDecimal).compareTo(82.22G) == 0
+            assert (nlDatapoints[2].value as BigDecimal).compareTo(83.33G) == 0
+            assert (nlDatapoints[3].value as BigDecimal).compareTo(84.44G) == 0
         }
 
         cleanup: "remove mock client"
