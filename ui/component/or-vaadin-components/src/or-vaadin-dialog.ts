@@ -47,7 +47,6 @@ export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
                 ::part(header),
                 ::part(content) {
                     background-color: var(--lumo-contrast-5pct);
-                    max-width: 600px;
                 }
                 ::part(header),
                 ::part(footer) {

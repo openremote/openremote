@@ -390,10 +390,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const calendar = this._normalizedSchedule;
         return html`
             <style>
-                or-vaadin-dialog::part(content) {
-                    width: 600px;
-                }
-
                 vaadin-checkbox {
                     font-weight: 600;
                 }
@@ -446,7 +442,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     }
                 }
             </style>
-            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-m); max-width: 85vw">
+            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-m)">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">

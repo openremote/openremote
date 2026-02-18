@@ -19,11 +19,19 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/dialog.css";
 
+@media lumo_components_dialog-overlay-internal {
+    ::part(overlay) {
+        max-width: 600px !important;
+        width: 100%;
+    }
+}
+
 :root::before,
 :host::before {
   --_lumo-vaadin-dialog-overlay-inject: 1;
   --_lumo-vaadin-dialog-overlay-inject-modules:
     lumo_mixins_overlay,
     lumo_mixins_resizable-overlay,
-    lumo_components_dialog-overlay;
+    lumo_components_dialog-overlay,
+    lumo_components_dialog-overlay-internal;
 }
