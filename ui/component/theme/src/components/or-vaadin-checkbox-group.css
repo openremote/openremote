@@ -19,19 +19,6 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/checkbox-group.css";
 
-@media lumo_checkbox_toggle_buttons {
-    :host([theme~='button']) {
-        display: flex;
-        &::part(group-field) {
-            display: flex;
-            gap: 6px;
-        }
-        &::before {
-            display: none;
-        }
-    }
-}
-
 :root::before,
 :host::before {
   --_lumo-vaadin-checkbox-group-inject: 1;
@@ -42,6 +29,5 @@
     lumo_mixins_field-error-message,
     lumo_mixins_field-helper,
     lumo_components_checkbox-group,
-    lumo_checkbox_toggle_buttons,
     lumo_mixins_field-internal;
 }

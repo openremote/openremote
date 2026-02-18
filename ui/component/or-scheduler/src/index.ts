@@ -586,8 +586,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         ) ?? [];
 
         return type === InputType.CHECKBOX_LIST ? html`
-          <or-vaadin-checkbox-group .value="${value}" @value-changed="${this._onPartChange(part, "detail", value)}" theme="button">
-                ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
+          <or-vaadin-checkbox-group .value="${value}" @value-changed="${this._onPartChange(part, "detail", value)}">
+                ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox theme="button" value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
             <or-vaadin-multi-select-combo-box .label="${i18next.t(part)}" .items="${options}" @change="${this._onPartChange(part, "value")}"></or-vaadin-multi-select-combo-box>

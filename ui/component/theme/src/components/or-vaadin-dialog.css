@@ -20,8 +20,8 @@
 @import "@vaadin/vaadin-lumo-styles/components/dialog.css";
 
 @media lumo_components_dialog-overlay-internal {
-    ::part(overlay) {
-        max-width: 600px !important;
+    :host::part(overlay) {
+        max-width: 600px;
         width: 100%;
     }
 }

@@ -20,8 +20,9 @@
 @import "@vaadin/vaadin-lumo-styles/components/checkbox.css";
 
 @media lumo_checkbox_toggle_button {
-    [theme~='button'] :host {
-        &::part(checkbox) {
+    :host([theme~='button']) {
+        &::part(checkbox),
+        &::part(required-indicator) {
             display: none;
         }
         &::part(label) {
@@ -30,10 +31,13 @@
             color: var(--lumo-primary-color);
             --vaadin-checkbox-label-padding: 8px 14px;
         }
-        &[checked]::part(label) {
-            background: var(--lumo-primary-color);
-            color: white;
-        }
+    }
+    :host([theme~='button'][checked])::part(label) {
+        background: var(--lumo-primary-color);
+        color: white;
+    }
+    :not(:first-child) {
+        margin-left: 6px;
     }
 }
 
