@@ -155,6 +155,11 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
+    protected boolean isChannelReady() {
+        return super.isChannelReady() && handshakeFuture != null && handshakeFuture.isDone();
+    }
+
+    @Override
     protected void addEncodersDecoders(Channel channel) throws Exception {
         HttpHeaders hdrs = new DefaultHttpHeaders();
 
@@ -235,8 +240,8 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     protected void onHandshakeDone() {
         if (handshakeFuture != null) {
+            LOG.finer("Handshake complete: " + getClientUri());
             handshakeFuture.complete(null);
-            handshakeFuture = null;
         }
     }
 
@@ -289,7 +294,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         if (pingFuture != null) {
             pingFuture.cancel(false);
         }
-
+        handshakeFuture = null;
         super.doDisconnect();
     }
 
@@ -305,7 +310,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
         executorService.submit(() -> {
             if (oAuthGrant != null) {
-                LOG.finest("Retrieving OAuth access token: "  + getClientUri());
+                LOG.finer("Retrieving OAuth access token: "  + getClientUri());
 
                 try {
                     OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
@@ -313,7 +318,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                     if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                         throw new RuntimeException("Returned access token is null");
                     }
-                    LOG.fine("Retrieved access token via OAuth: " + getClientUri());
+                    LOG.finer("Retrieved access token via OAuth: " + getClientUri());
                     future.complete(authHeaderValue);
                 } catch (Exception e) {
                     future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage()));

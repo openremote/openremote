@@ -2,6 +2,7 @@ import { expect } from "@openremote/test";
 import { adminStatePath, test, userStatePath } from "./fixtures/manager.js";
 import {
     preparedAssetsWithLocation as assets,
+    assignLocation,
     assignRandomLocationInArea,
     commonAttrs,
     getAssetTypeColour,
@@ -266,11 +267,11 @@ test.describe("Marker clustering", () => {
   test("should display clustered markers", async ({ page, manager, browserName }) => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
-    const bbox = { west: 4.4857, south: 51.9162, east: 4.4865, north: 51.9167 };
+    const bbox = { west: 4.4859, south: 51.9163, east: 4.4864, north: 51.9166 };
     const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
     const assets = getAssetsForAllTypes(assetInfos, { bbox });
-    const outlierbbox = { west: 4.483812, south: 51.916359, east: 4.484017, north: 51.916495 };
-    assets.push({ ...assignRandomLocationInArea(getAssetAt(assetInfos), outlierbbox), name: "outlier", realm: "smartcity" });
+    const outlier = assignLocation(getAssetAt(assetInfos), [4.48106646473, 51.9163295344]);
+    assets.push({ ...outlier, name: "outlier", realm: "smartcity" });
 
     await manager.setup("smartcity", { assets });
     await manager.goToRealmStartPage("smartcity");
@@ -279,18 +280,18 @@ test.describe("Marker clustering", () => {
     await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
 
     const clusterMarker = page.locator("or-cluster-marker");
-    const coords = await clusterMarker.evaluate((marker: OrClusterMarker) => [marker.lng,marker.lat]);
+    await expect(clusterMarker).toHaveCount(1);
+    const coords = await clusterMarker.evaluate((marker: OrClusterMarker) => [marker.lng!, marker.lat!]);
     await expect(clusterMarker.locator("text")).toContainText(`${assets.length}`);
     const assetTypes = getAssetTypes(assets);
     expect(
       await clusterMarker.locator("path[fill]").evaluateAll(el => el.map(e => e.getAttribute("fill")!))
     ).toStrictEqual(assetTypes.map((t) => "#" + getAssetTypeColour(t, assetInfos)));
 
-    // await page.locator("or-map").evaluate((map: OrMap) => map.flyTo([4.482259693115793, 51.91756799273], 17));
-    await page.locator("or-map").evaluate((map: OrMap, [lng,lat]) => map.flyTo([lng!,lat!], 16.1), coords);
-
+    await page.locator("or-map").evaluate((map: OrMap, [lat, lng]) => map.flyTo([lat, lng], 16), coords);
     await expect(clusterMarker.locator("text")).toContainText(`${assets.length}`);
     await expect(page.locator('.or-map-marker')).toHaveCount(1);
+    await expect(clusterMarker).toHaveCount(1);
 
     await clusterMarker.click();
     await expect(clusterMarker).not.toBeVisible();
