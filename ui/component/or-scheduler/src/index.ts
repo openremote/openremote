@@ -649,7 +649,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     <div style="display: flex; flex-direction: column; flex: 1; ">
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
                             <or-vaadin-date-time-picker style="margin-top: auto; padding: var(--lumo-space-s) 0" ?disabled="${this._ends !== "until"}"
-                                .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
+                                .value="${moment(this._until).format("YYYY-MM-DDTHH:mm")}"
                                 @change="${this._onPartChange("until", "value")}">
                             </or-vaadin-date-time-picker>`
                         )}
