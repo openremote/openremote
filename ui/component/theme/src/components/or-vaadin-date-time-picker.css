@@ -19,6 +19,15 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/date-time-picker.css";
 
+@media lumo_components_space-evenly {
+    :host {
+        [part="input-fields"] ::slotted([slot="time-picker"]) {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+    }
+}
+
 :root::before,
 :host::before {
   --_lumo-vaadin-date-time-picker-inject: 1;
@@ -31,5 +40,6 @@
     lumo_mixins_field-base,
     lumo_components_custom-field,
     lumo_components_date-time-picker,
+    lumo_components_space-evenly,
     lumo_mixins_field-internal;
 }

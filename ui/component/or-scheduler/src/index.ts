@@ -643,7 +643,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             <div id="recurrence-ends" class="section">
                 <label class="title"><or-translate value="schedule._ends"></or-translate></label>
                 <div style="display: flex; gap: 8px;">
-                    <or-vaadin-radio-group style="padding-right: 10px" .value="${this._ends}" theme="vertical"
+                    <or-vaadin-radio-group style="padding-right: 10px; width: unset" .value="${this._ends}" theme="vertical"
                         @change="${this._onPartChange("recurrence-ends", "value")}">
                         ${Object.entries(rruleEnds)
                                 .filter(([k]) => !this.disabledRRuleParts?.includes(k as RRulePartKeys))
