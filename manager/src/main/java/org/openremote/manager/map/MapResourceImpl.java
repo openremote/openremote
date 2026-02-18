@@ -74,6 +74,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public ObjectNode uploadMap(RequestParams requestParams, String filename) {
+        // Starting with Resteasy 6.2.15.Final, request.getContentLength() returns -1 if Content-Length header is not set
         if (request.getContentLength() > mapService.customMapLimit) {
             throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }
