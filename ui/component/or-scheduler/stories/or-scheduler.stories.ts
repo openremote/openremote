@@ -68,6 +68,7 @@ export const Primary: Story = {
         ] as RulePartKey[]
         return html`
             <or-scheduler
+                open
                 removable
                 .disabledFrequencies="${DISABLED_FREQUENCIES}"
                 .disabledRRuleParts="${DISABLED_RRULE_PARTS}"

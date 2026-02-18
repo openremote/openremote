@@ -120,6 +120,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     public isAllDay = true;
 
     @property({ type: Boolean })
+    public open = false;
+
+    @property({ type: Boolean })
     public removable = false;
 
     @property({ type: Object })
@@ -354,7 +357,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const timeLabel = this._timeLabel();
         return html`
             <or-vaadin-button @click="${() => this._dialog!.open()}">${timeLabel?.charAt(0).toUpperCase()}${timeLabel?.slice(1)}</or-vaadin-button>
-            <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" @closed="${this._onClose}"
+            <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" ?opened="${this.open}" @closed="${this._onClose}"
                 ${dialogHeaderRenderer(this._getDialogHeader, [])}
                 ${dialogRenderer(this._getDialogContent, [
                     this.defaultSchedule,
