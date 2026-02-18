@@ -2,11 +2,10 @@
   "name": "@openremote/theme",
   "version": "1.14.0-snapshot",
   "description": "CSS themes for OpenRemote components",
-  "main": "src/index.css",
-  "module": "src/index.css",
+  "main": "src/index.js",
   "types": "src/index.d.ts",
   "exports": {
-    ".": "./src/index.css",
+    ".": "./src/index.js",
     "./*.css": "./src/*.css",
     "./*": "./*"
   },

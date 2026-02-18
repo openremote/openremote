@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "rootDir": "src",
+    "typeRoots": ["./@types"]
+  },
+  "include": [
+    "./src",
+    "./@types"
+  ],
+  "references": []
+}
