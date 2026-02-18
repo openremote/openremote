@@ -151,7 +151,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _eventTypes: LabeledEventTypes = EventTypes;
     protected _until = moment().toDate();
 
-    protected firstUpdated(_changedProps: PropertyValues) {
+    connectedCallback() {
+        super.connectedCallback();
         this._eventTypes = {
             default: i18next.t(this.defaultEventTypeLabel),
             period: i18next.t("planPeriod"),
@@ -177,22 +178,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
     }
 
-    protected willUpdate(changedProps: PropertyValues) {
-        if (changedProps.has("schedule")) {
-            this._normalizedSchedule = this._applyTimezoneOffset(this.schedule);
-        }
-    }
-
-    protected updated(changedProps: PropertyValues) {
-        super.updated(changedProps);
-
-        if (changedProps.has("_rrule") && this._rrule) {
-            this._byRRuleParts = BY_RRULE_PARTS
-                .filter(p => !NOT_APPLICABLE_BY_RRULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
-                .filter(p => !this.disabledRRuleParts.includes(p));
-            this._ends = (this._rrule?.origOptions?.until && "until") || (this._rrule?.origOptions?.count && "count") || "never";
-        }
-
+    shouldUpdate(changedProps: PropertyValues) {
         if (changedProps.has("_normalizedSchedule")) {
             if (this._normalizedSchedule?.recurrence) {
                 this._rrule = RRule.fromString(this._normalizedSchedule.recurrence);
@@ -201,6 +187,19 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             } else {
                 this._rrule = undefined;
             }
+        }
+        if (changedProps.has("_rrule") && this._rrule) {
+            this._byRRuleParts = BY_RRULE_PARTS
+                .filter(p => !NOT_APPLICABLE_BY_RRULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
+                .filter(p => !this.disabledRRuleParts.includes(p));
+            this._ends = (this._rrule?.origOptions?.until && "until") || (this._rrule?.origOptions?.count && "count") || "never";
+        }
+        return super.shouldUpdate(changedProps);
+    }
+
+    protected willUpdate(changedProps: PropertyValues) {
+        if (changedProps.has("schedule")) {
+            this._normalizedSchedule = this._applyTimezoneOffset(this.schedule);
         }
     }
 
