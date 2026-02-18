@@ -50,7 +50,6 @@ export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
                 }
                 ::part(header),
                 ::part(footer) {
-                    border-radius: var(--lumo-border-radius-l);
                     padding: var(--lumo-space-l);
                 }
                 ::part(content) {
