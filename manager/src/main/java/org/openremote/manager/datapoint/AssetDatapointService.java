@@ -62,7 +62,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-    protected static final String EXPORT_STORAGE_DIR_NAME = "datapoint";
     protected int maxDatapointAgeDays;
     protected int datapointExportLimit;
 
