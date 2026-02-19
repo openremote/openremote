@@ -17,6 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+/* We intentionally remove paddings around fields so we only need to deal with
+ * our own paddings, margins and gaps.
+ */
 @media lumo_mixins_field-internal {
     :host {
         padding: 0;
