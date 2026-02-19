@@ -13,10 +13,11 @@
     "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {
+    "@openremote/theme": "workspace:*",
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@rsbuild/core": "~1.7.1",
+    "@rsbuild/core": "~1.7.3",
     "@storybook/addon-a11y": "~10.1.11",
     "@storybook/addon-docs": "~10.1.11",
     "@storybook/web-components": "~10.1.11",
