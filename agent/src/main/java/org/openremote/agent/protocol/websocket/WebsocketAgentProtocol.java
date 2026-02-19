@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.channel.ChannelHandler;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -72,7 +73,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);
     public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
-    protected static final AtomicReference<ResteasyClient> resteasyClient = new AtomicReference<>();
+    protected static final AtomicReference<Client> resteasyClient = new AtomicReference<>();
     protected List<Runnable> protocolConnectedTasks;
     protected Map<AttributeRef, Runnable> attributeConnectedTasks;
     protected Map<String, List<String>> clientHeaders;

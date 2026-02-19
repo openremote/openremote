@@ -100,7 +100,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected int sessionMaxSeconds;
     protected int sessionOfflineTimeoutSeconds;
     // The client we use to access Keycloak
-    protected ResteasyClient httpClient;
+    protected ResteasyClient client;
     protected ResteasyWebTarget keycloakTarget;
     protected OAuthGrant oAuthGrant;
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
@@ -128,7 +128,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void init(Container container) {
-        if (httpClient != null) {
+        if (client != null) {
             return;
         }
 
@@ -170,8 +170,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 )
                 .connectionPoolSize(
                     getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
-                );
-        httpClient = WebClient.registerDefaults(clientBuilder).build();
+                )
+                .maxPooledPerRoute(getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT));
+        client = clientBuilder.build();
 
         if (container.isDevMode()) {
             authProxyHandler = ProxyHandler.builder()
@@ -225,8 +226,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void stop(Container container) {
-        if (httpClient != null)
-            httpClient.close();
+        if (client != null)
+            client.close();
     }
 
     @Override
@@ -275,7 +276,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
      * Convenience method for generating access tokens from a given OAuth compliant server
      */
     public Supplier<String> getAccessTokenSupplier(OAuthGrant grant) {
-        OAuthFilter oAuthFilter = new OAuthFilter(httpClient, grant);
+        OAuthFilter oAuthFilter = new OAuthFilter(client, grant);
         return () -> {
             try {
                 return oAuthFilter.getAccessToken();
@@ -304,7 +305,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         URI proxyURI = keycloakServiceUri.build();
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, proxyURI)
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(client, proxyURI)
             .setOAuthAuthentication(grant);
         keycloakTarget = targetBuilder.build();
         realmsResourcePool.clear();

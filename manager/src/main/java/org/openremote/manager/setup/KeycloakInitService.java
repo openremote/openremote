@@ -105,10 +105,10 @@ public class KeycloakInitService implements ContainerService {
             .connectionPoolSize(
                 getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
             );
-        ResteasyClient httpClient = WebClient.registerDefaults(clientBuilder).build();
+        ResteasyClient client = clientBuilder.build();
 
         boolean keycloakAvailable = false;
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(client, keycloakServiceUri.build());
         ResteasyWebTarget target = targetBuilder.build();
         KeycloakResource keycloakResource = target.proxy(KeycloakResource.class);
 
@@ -127,6 +127,7 @@ public class KeycloakInitService implements ContainerService {
                 }
             }
         }
+       client.close();
     }
 
     protected static void pingKeycloak(KeycloakResource resource) throws Exception {

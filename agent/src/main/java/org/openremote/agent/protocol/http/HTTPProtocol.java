@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.http;
 
 import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
@@ -28,8 +29,6 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import org.apache.http.client.utils.URIBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.specimpl.BuiltResponse;
 import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
@@ -278,12 +277,12 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HTTPProtocol.class);
     public static int MIN_POLLING_MILLIS = 5000;
-    protected static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
+    protected static final AtomicReference<Client> client = new AtomicReference<>();
 
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
     protected final Map<AttributeRef, Set<AttributeRef>> pollingLinkedAttributeMap = new HashMap<>();
-    protected ResteasyWebTarget webTarget;
+    protected WebTarget webTarget;
 
     public HTTPProtocol(HTTPAgent agent) {
         super(agent);
@@ -376,11 +375,6 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                     return links;
                 });
             }
-        }
-
-        if (client == null) {
-            LOG.warning("Client is undefined: " + this);
-            return;
         }
 
         // We pass in the combined headers as they can only be set on the invocation builder

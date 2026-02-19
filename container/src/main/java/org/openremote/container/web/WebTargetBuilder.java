@@ -26,10 +26,6 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
@@ -43,7 +39,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 /**
  * This is a factory for creating JAX-RS {@link WebTarget} instances. The instances share a common
@@ -125,7 +120,7 @@ public class WebTargetBuilder {
         failureResponses.removeAll(
             Arrays.stream(responseStatus)
                 .map(Response.Status::getStatusCode)
-                .collect(Collectors.toList())
+                .toList()
         );
         return this;
     }
