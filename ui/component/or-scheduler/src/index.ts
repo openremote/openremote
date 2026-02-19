@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { html, LitElement, PropertyValues, TemplateResult } from "lit";
-import { when } from "lit/directives/when.js";
-import { customElement, property, query, state } from "lit/decorators.js";
-import { Util } from "@openremote/core";
-import { CalendarEvent } from "@openremote/model";
+import "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
@@ -34,20 +30,37 @@ import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-time-picker";
-import "@openremote/or-translate";
-import moment from "moment";
-import { translate, i18next } from "@openremote/or-translate";
+import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
+import { Util } from "@openremote/core";
+import { CalendarEvent } from "@openremote/model";
 import { InputType } from "@openremote/or-vaadin-components/util";
-import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer, OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import { translate, i18next } from "@openremote/or-translate";
+import {
+    dialogRenderer,
+    dialogHeaderRenderer,
+    dialogFooterRenderer,
+    OrVaadinDialog,
+} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
-import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds, WEEKDAYS } from "./util";
+import {
+    BY_RRULE_PARTS,
+    EventTypes,
+    FREQUENCIES,
+    MONTHS,
+    NOT_APPLICABLE_BY_RRULE_PARTS,
+    rruleEnds,
+    WEEKDAYS,
+} from "./util";
+import moment from "moment";
 import type { PartKeys, RRulePartKeys, Frequency } from "./types";
 
 export type * from "./types";
 export * from "./util";
 
 function range(start: number, end: number): number[] {
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i )
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
 // TODO: use es2023
@@ -68,26 +81,24 @@ export interface OrSchedulerChangedEventDetail {
 }
 
 export class OrSchedulerChangedEvent extends CustomEvent<OrSchedulerChangedEventDetail> {
-
     public static readonly NAME = "or-scheduler-changed";
 
     constructor(value?: CalendarEvent) {
         super(OrSchedulerChangedEvent.NAME, {
             detail: { value },
             bubbles: true,
-            composed: true
+            composed: true,
         });
     }
 }
 
 export class OrSchedulerRemovedEvent extends CustomEvent<void> {
-
     public static readonly NAME = "or-scheduler-removed";
 
     constructor() {
         super(OrSchedulerRemovedEvent.NAME, {
             bubbles: true,
-            composed: true
+            composed: true,
         });
     }
 }
@@ -446,14 +457,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
-                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${eventTypes}"
-                            @change="${this._setCalendarEventType}">
+                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${eventTypes}" @change="${this._setCalendarEventType}">
                         </or-vaadin-select>
                     </div>
                 </div>
-                ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this._getPeriodTemplate(calendar) : ``}
-                ${this._eventType === EventTypes.recurrence ? this._getRepeatTemplate() : ``}
-                ${this._eventType === EventTypes.recurrence ? this._getEndsTemplate() : ``}
+                ${when(calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence), () => this._getPeriodTemplate(calendar!))}
+                ${when(this._eventType === EventTypes.recurrence, () => this._getRepeatTemplate())}
+                ${when(this._eventType === EventTypes.recurrence, () => this._getEndsTemplate())}
             </div>`;
     }
 
