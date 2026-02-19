@@ -489,7 +489,7 @@ services:
       # Uncomment to expose on private network:
       # - "${PRIVATE_IP:-127.0.0.1}:9560:9560"
     environment:
-     TZ: ${TZ:-Europe/Amsterdam}
+      TZ: ${TZ:-Europe/Amsterdam}
       # Database connection settings (matches postgresql service)
       # These can be referenced in the config.yaml file using !env tag
       POSTGRES_HOST: ${OR_DB_HOST:-postgresql}
@@ -500,7 +500,7 @@ services:
       # Bloat detection thresholds
       TABLE_BLOAT_THRESHOLD: ${TABLE_BLOAT_THRESHOLD:-1.2}  # 1.2 = 20% table bloat
       INDEX_BLOAT_THRESHOLD: ${INDEX_BLOAT_THRESHOLD:-1.5}  # 1.5 = 50% index bloat
-     QE_CONFIG: /deployment/query-exporter/config.yaml
+      QE_CONFIG: /deployment/query-exporter/config.yaml
 
   # Map tile server
   tileserver:
