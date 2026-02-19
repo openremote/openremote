@@ -118,7 +118,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             &::first-letter { text-transform: uppercase; }
         }
     `;
-  
+
     @property({ type: Object })
     public defaultSchedule?: CalendarEvent;
 
@@ -181,7 +181,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         if (this._scheduleWithOffset) {
             const calendarEvent = this._scheduleWithOffset;
 
-            if (this._rrule) { // TODO: prefer calendarEvent.recurrence
+            if (calendarEvent.recurrence) {
                 const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
                 const fromTo = { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") };
 
@@ -193,7 +193,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 } else if (diff === 0) {
                     template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
                 }
-                return html`<span class="capitalize">${this._rrule.toText()} ${template}</span>`;
+                return html`<span class="capitalize">${this._rrule!.toText()} ${template}</span>`;
             }
 
             const format = this.isAllDay ? "DD-MM-YYYY" : "DD-MM-YYYY HH:mm";
@@ -230,8 +230,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 this._rrule = RRule.fromString(this._scheduleWithOffset.recurrence);
             } else if (this._eventType === EventTypes.default && this.defaultSchedule?.recurrence) {
                 this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
-            } else {
-                this._rrule = undefined;
             }
         }
 
@@ -272,12 +270,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             } else {
                 origOptions![key as RRulePartKeys] = value;
             }
-            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
         } else if (key === "start" && origOptions) {
             const [year, month, date] = value.split("-").map(Number);
             origOptions.dtstart = moment(calendarEvent.start).set({ year, month: month - 1, date }).toDate();
             calendarEvent.start = origOptions.dtstart.getTime();
-            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
         } else if (key === "end") {
             const [year, month, date] = value.split("-").map(Number);
             calendarEvent.end = moment(calendarEvent.end).set({ year, month: month - 1, date }).toDate().getTime();
@@ -291,43 +287,44 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 }).origOptions;
             }
             calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
-            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
         } else if (key === "end-time") {
             const [hour, minute] = value.split(':');
             calendarEvent.end = moment(calendarEvent.end).set({ hour, minute, second: 0, millisecond: 0 }).toDate().getTime();
         } else {
-          switch (key) {
-            case "all-day":
-                this.isAllDay = value;
-                break;
-            case "recurrence-ends":
-                if (value === "until") {
-                    origOptions!.until = this._until;
-                    delete origOptions!.count;
-                } else if (value === "count") {
-                    origOptions!.count = this._count;
-                    delete origOptions!.until;
-                } else {
-                    delete origOptions!.count;
-                    delete origOptions!.until;
-                }
-                this._ends = value;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-            case "until":
-                this._until = new Date(value);
-                origOptions!.until = this._until;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-            case "count":
-                this._count = value;
-                origOptions!.count = this._count;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-          }
+            switch (key) {
+              case "all-day":
+                  this.isAllDay = value;
+                  break;
+              case "recurrence-ends":
+                  if (value === "until") {
+                      origOptions!.until = this._until;
+                      delete origOptions!.count;
+                  } else if (value === "count") {
+                      origOptions!.count = this._count;
+                      delete origOptions!.until;
+                  } else {
+                      delete origOptions!.count;
+                      delete origOptions!.until;
+                  }
+                  this._ends = value;
+                  break;
+              case "until":
+                  this._until = new Date(value);
+                  origOptions!.until = this._until;
+                  break;
+              case "count":
+                  this._count = value;
+                  origOptions!.count = this._count;
+                  break;
+            }
         }
 
-        this._scheduleWithOffset = { ...calendarEvent, recurrence: this._getRRule() };
+        if (this._eventType === EventTypes.recurrence) {
+            this._rrule = new RRule(origOptions);
+            this._scheduleWithOffset = { ...calendarEvent, recurrence: this._getRRule() };
+        } else {
+            this._scheduleWithOffset = { ...calendarEvent };
+        }
     }
 
     protected _setCalendarEventType(event: any) {
@@ -342,13 +339,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                     start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
                     end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
                 };
-                this._rrule = undefined;
                 break;
             case EventTypes.recurrence:
                 this._scheduleWithOffset = {
                     start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
                     end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime(),
-                    recurrence: "FREQ=DAILY"
+                    recurrence: this._getRRule() ?? "FREQ=DAILY"
                 };
                 break;
         }
@@ -376,7 +372,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-        console.log(this._eventType, this._rrule, this.schedule, this._scheduleWithOffset)
         return html`
             <or-vaadin-button @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" ?opened="${this.open}" @closed="${this._onClose}"
