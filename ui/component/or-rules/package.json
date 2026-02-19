@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-rules",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote rules related UI components",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -27,6 +30,7 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-scheduler": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-tree-menu": "workspace:*",
     "@openremote/rest": "workspace:*",
@@ -36,7 +40,6 @@
     "lit": "^3.3.1",
     "moment": "^2.29.4",
     "resize-observer": "^1.0.3",
-    "rrule": "^2.6.4",
     "shortid": "^2.2.15"
   },
   "devDependencies": {

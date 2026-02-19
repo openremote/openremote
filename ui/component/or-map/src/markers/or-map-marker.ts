@@ -1,7 +1,8 @@
-import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
+import {css, CSSResult, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
 import {DefaultBoxShadow} from "@openremote/core";
+import { OrMap } from "..";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -204,19 +205,19 @@ export class OrMapMarker extends LitElement {
         const markerElem = document.createElement("div");
         const markerContainerElem = document.createElement("div");
         markerElem.appendChild(markerContainerElem);
-        this.addMarkerClassNames(markerElem);
-        this.addMarkerContainerClassNames(markerContainerElem);
+        this._addMarkerClassNames(markerElem);
+        this._addMarkerContainerClassNames(markerContainerElem);
         let content = this.createMarkerContent();
         if (!content) {
             // Append default marker
             markerElem.classList.add("or-map-marker-default");
-            content = this.createDefaultMarkerContent();
+            content = this._createDefaultMarkerContent();
         }
         markerContainerElem.appendChild(content);
-        this.updateInteractive(markerElem);
-        this.updateVisibility(markerElem);
-        this.updateColor(markerContainerElem);
-        this.updateActive(markerElem);
+        this._updateInteractive(markerElem);
+        this._updateVisibility(markerElem);
+        this._updateColor(markerContainerElem);
+        this._updateActive(markerElem);
         return markerElem;
     }
 
@@ -248,31 +249,31 @@ export class OrMapMarker extends LitElement {
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("direction")) {
-            this.refreshMarkerContent();
+            this._refreshMarkerContent();
         }
 
         if (_changedProperties.has("color") || _changedProperties.has("activeColor")) {
-            this.updateColor(this.markerContainer);
+            this._updateColor(this.markerContainer);
         }
 
         if (_changedProperties.has("visible")) {
-            this.updateVisibility(this._actualMarkerElement);
+            this._updateVisibility(this._actualMarkerElement);
         }
 
         if (_changedProperties.has("interactive")) {
-            this.updateInteractive(this._actualMarkerElement);
+            this._updateInteractive(this._actualMarkerElement);
         }
 
         if (_changedProperties.has("active")) {
-            this.updateActive(this._actualMarkerElement);
-            this.updateColor(this.markerContainer);
+            this._updateActive(this._actualMarkerElement);
+            this._updateColor(this.markerContainer);
         }
 
         _changedProperties.forEach((oldValue, prop) => this._raisePropertyChange(prop as string));
         return false;
     }
 
-    protected updateVisibility(container?: HTMLDivElement) {
+    protected _updateVisibility(container?: HTMLDivElement) {
         if (container) {
             if (this.visible) {
                 container.removeAttribute("hidden");
@@ -282,21 +283,21 @@ export class OrMapMarker extends LitElement {
         }
     }
 
-    protected getColor() {
+    protected _getColor() {
         return this.color && this.color !== "unset" ? this.color : undefined;
     }
 
-    protected getActiveColor() {
+    protected _getActiveColor() {
         return this.activeColor && this.activeColor !== "unset" ? this.activeColor : undefined;
     }
 
-    protected updateColor(container?: HTMLDivElement) {
+    protected _updateColor(container?: HTMLDivElement) {
         if (container) {
             container.style.removeProperty(markerColorVar);
             container.style.removeProperty(markerActiveColorVar);
 
-            const color = this.getColor();
-            const activeColor = this.getActiveColor();
+            const color = this._getColor();
+            const activeColor = this._getActiveColor();
 
             if (color) {
                 container.style.setProperty(markerColorVar, color);
@@ -307,7 +308,7 @@ export class OrMapMarker extends LitElement {
         }
     }
 
-    protected updateActive(container?: HTMLDivElement) {
+    protected _updateActive(container?: HTMLDivElement) {
         if (container) {
             if (this.active) {
                 container.classList.add("active");
@@ -317,7 +318,7 @@ export class OrMapMarker extends LitElement {
         }
     }
 
-    protected updateInteractive(container?: HTMLDivElement) {
+    protected _updateInteractive(container?: HTMLDivElement) {
         if (container) {
             if (this.interactive) {
                 container.classList.add("interactive");
@@ -327,13 +328,13 @@ export class OrMapMarker extends LitElement {
         }
     }
 
-    protected refreshMarkerContent() {
+    protected _refreshMarkerContent() {
         if (this.markerContainer) {
             let content = this.createMarkerContent();
             if (!content) {
                 // Append default marker
                 this._actualMarkerElement!.classList.add("or-map-marker-default");
-                content = this.createDefaultMarkerContent();
+                content = this._createDefaultMarkerContent();
             } else {
                 this._actualMarkerElement!.classList.remove("or-map-marker-default");
             }
@@ -354,18 +355,44 @@ export class OrMapMarker extends LitElement {
         this.dispatchEvent(new OrMapMarkerChangedEvent(this, prop));
     }
 
-    protected addMarkerClassNames(markerElement: HTMLElement) {
+    protected _addMarkerClassNames(markerElement: HTMLElement) {
         markerElement.classList.add("or-map-marker");
     }
 
-    protected addMarkerContainerClassNames(markerContainer: HTMLElement) {
+    protected _addMarkerContainerClassNames(markerContainer: HTMLElement) {
         markerContainer.classList.add("marker-container");
     }
 
-    protected createDefaultMarkerContent(): HTMLElement {
+    protected _createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
         div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
         return div;
+    }
+    
+    protected _applyMapMarkerStyles() {
+        if (this.parentElement instanceof OrMap) {
+            const container = this.parentElement.shadowRoot?.querySelector("#map");
+            const styles = (this.constructor as any).styles;
+
+            let stylesArr: CSSResult[] = [];
+            if (container && styles) {
+                if (!Array.isArray(styles)) {
+                    stylesArr.push(styles as CSSResult);
+                } else {
+                    stylesArr = styles as CSSResult[];
+                }
+
+                stylesArr.forEach((styleItem) => {
+                    const styleElem = document.createElement("style");
+                    styleElem.textContent = String(styleItem);
+                    if (container.children.length > 0) {
+                        container.insertBefore(styleElem, container.children[0]);
+                    } else {
+                        container.appendChild(styleElem);
+                    }
+                })
+            }
+        }
     }
 
     public hasPosition(): boolean {
@@ -373,5 +400,16 @@ export class OrMapMarker extends LitElement {
             && typeof this.lng === "number"
             && this.lat >= -90 && this.lat < 90
             && this.lng >= -180 && this.lng < 180;
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        this._applyMapMarkerStyles();
+    }
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        // Safely cleanup markers once removed from the DOM
+        this._actualMarkerElement?.parentElement?.removeChild(this._actualMarkerElement);
     }
 }

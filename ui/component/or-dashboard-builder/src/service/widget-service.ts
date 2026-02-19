@@ -9,7 +9,7 @@ export class WidgetService {
     public static getManifest(widgetTypeId: string) {
         const manifest = widgetTypes.get(widgetTypeId);
         if(!manifest) {
-            throw new Error("Widget manifest could not be found during widget creation.");
+            throw new Error(`Widget manifest could not be found during widget creation. [ID=${widgetTypeId}]`);
         }
         return manifest;
     }

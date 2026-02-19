@@ -171,8 +171,8 @@ Value: 6000
         alarm.status == Alarm.Status.OPEN
         alarm.source == Alarm.Source.REALM_RULESET
         alarm.sourceId == Long.toString(realmRuleset.id)
-        alarm.createdOn.toInstant().isAfter(Instant.now().minusSeconds(30))
-        alarm.createdOn.toInstant().isBefore(Instant.now())
+        alarm.createdOn.isAfter(Instant.now().minusSeconds(30))
+        alarm.createdOn.isBefore(Instant.now())
         alarm.acknowledgedOn == null
         alarm.createdOn == alarm.lastModified
         alarm.assigneeId == assigneeId
@@ -184,8 +184,8 @@ Value: 6000
         assetLink.id.alarmId == alarm.id
         assetLink.id.realm == managerTestSetup.realmBuildingName
         assetLink.id.assetId == managerTestSetup.apartment2LivingroomId
-        assetLink.createdOn.toInstant().isAfter(Instant.now().minusSeconds(30))
-        assetLink.createdOn.toInstant().isBefore(Instant.now())
+        assetLink.createdOn.isAfter(Instant.now().minusSeconds(30))
+        assetLink.createdOn.isBefore(Instant.now())
         assetLink.assetName == "Living Room 2"
         assetLink.parentAssetName == "Apartment 2"
 

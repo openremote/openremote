@@ -206,7 +206,7 @@ export class AttributesPanel extends LitElement {
     }
 
     protected getLoadedAsset(attrRef: AttributeRef): Asset | undefined {
-        return this.loadedAssets?.find(asset => asset.id === attrRef.id);
+        return this.loadedAssets?.find(asset => asset.id === attrRef.id && attrRef.name && asset.attributes?.[attrRef.name] !== undefined);
     }
 
     protected removeWidgetAttribute(attributeRef: AttributeRef) {
@@ -267,12 +267,15 @@ export class AttributesPanel extends LitElement {
 
                     <div id="attribute-list">
                         ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback], () => html`
-                            ${map(this.attributeRefs, (attributeRef: AttributeRef) => {
+                            ${map(this.attributeRefs.map(attributeRef => {
                                 const asset = this.getLoadedAsset(attributeRef);
-                                if (asset) {
-                                    const attribute = asset.attributes![attributeRef.name!];
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
-                                    const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
+                                const attribute = asset?.attributes?.[attributeRef.name!];
+                                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset?.type, attributeRef.name, attribute);
+                                const label = Util.getAttributeLabel(attribute, descriptors[0], asset?.type, true);
+                                return { asset, attribute, attributeRef, label };
+                                
+                            }).sort(Util.sortByString(x => x.label)), ({asset, attribute, attributeRef, label}) => {
+                                if (asset && attribute && attributeRef && label) {
                                     return html`
                                         <div class="attribute-list-item">
                                             <div class="attribute-list-item-icon">

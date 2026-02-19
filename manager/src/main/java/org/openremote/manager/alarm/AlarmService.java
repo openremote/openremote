@@ -50,12 +50,13 @@ import org.openremote.model.util.TextUtil;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.text.DateFormat;
+import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.OR_HOSTNAME;
 import static org.openremote.model.alarm.Alarm.Source.*;
 
@@ -176,7 +177,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         Objects.requireNonNull(alarm.getSource(), "Source cannot be null");
         Objects.requireNonNull(alarm.getSourceId(), "Source ID cannot be null");
 
-        Date timestamp = new Date(timerService.getCurrentTimeMillis());
+        Instant timestamp = Instant.ofEpochMilli(timerService.getCurrentTimeMillis());
         SentAlarm sentAlarm = persistenceService.doReturningTransaction(entityManager -> entityManager.merge(new SentAlarm()
                 .setAssigneeId(alarm.getAssigneeId())
                 .setRealm(alarm.getRealm())
@@ -271,7 +272,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         Map<String, String> result = new LinkedHashMap<>();
         result.put("Title", alarm.getTitle());
         result.put("Content", alarm.getContent());
-        result.put("Created", DateFormat.getDateTimeInstance().format(alarm.getCreatedOn()));
+        result.put("Created", DateFormat.getDateTimeInstance().format(Date.from(alarm.getCreatedOn())));
         result.put("Source", alarm.getSource().name());
         result.put("Severity", alarm.getSeverity().name());
         result.put("Status", alarm.getStatus().name());
@@ -317,7 +318,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 .setParameter("content", newAlarm.getContent())
                 .setParameter("severity", newAlarm.getSeverity())
                 .setParameter("status", newAlarm.getStatus())
-                .setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()))
+                .setParameter("lastModified", Instant.ofEpochMilli(timerService.getCurrentTimeMillis()))
                 .setParameter("assigneeId", newAssigneeId)
                 .executeUpdate());
 

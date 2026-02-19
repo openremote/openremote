@@ -7,7 +7,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import { customElement, query, queryAll, state } from "lit/decorators.js";
 import {AttributeInputSettings} from "../settings/attribute-input-settings";
 import { when } from "lit/directives/when.js";
-import {throttle} from "lodash";
+import throttle from "lodash.throttle";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="BZT Generated Test Plan">
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+    </TestPlan>
+    <hashTree>
+      <DNSCacheManager guiclass="DNSCachePanel" testclass="DNSCacheManager" testname="DNS Cache Manager">
+        <collectionProp name="DNSCacheManager.servers"/>
+        <collectionProp name="DNSCacheManager.hosts"/>
+        <boolProp name="DNSCacheManager.clearEachIteration">false</boolProp>
+        <boolProp name="DNSCacheManager.isCustomResolver">false</boolProp>
+      </DNSCacheManager>
+      <hashTree/>
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp Thread Group" enabled="true">
+        <intProp name="ThreadGroup.num_threads">1</intProp>
+        <intProp name="ThreadGroup.ramp_time">1</intProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">stoptestnow</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Setup">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">// Store thread count
+def threadCount = props.get(&quot;THREAD_COUNT&quot;) ?: &quot;500&quot;
+if (threadCount instanceof String) {
+	threadCount = Integer.parseInt(threadCount)
+}
+props.put(&quot;THREAD_COUNT&quot;, threadCount)
+
+log.info(&quot;&gt;&gt;&gt;Thread count ${threadCount}&quot;)
+
+def host = props.get(&quot;MANAGER_HOSTNAME&quot;) ?: &quot;localhost&quot;
+log.info(&quot;&gt;&gt;&gt;Host ${host}&quot;)
+
+// Store global var for tracking device init successes - decrement this on each device start and increment on publish success
+props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0))</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub" enabled="true">
+        <boolProp name="ThreadGroup.delayedStart">true</boolProp>
+        <stringProp name="ThreadGroup.num_threads">${__groovy(props.get(&quot;THREAD_COUNT&quot;) ?: &quot;500&quot;,)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__groovy(Math.max(1\,(int)((props.get(&quot;THREAD_COUNT&quot;) ?: &quot;500&quot;).toInteger() / (props.get(&quot;RAMP_RATE&quot;) ?: &quot;20&quot;).toInteger())),)}</stringProp>
+        <stringProp name="ThreadGroup.duration">${__groovy(props.get(&quot;DURATION&quot;) ?: &quot;300&quot;)}</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Compute assetId" enabled="true">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">import com.devskiller.friendly_id.Url62;
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.NameBasedGenerator;
+
+// Generate asset ids to be used in ForEach controller later
+def assetsCount = vars.get(&quot;ASSETS_COUNT&quot;) ?: &quot;5&quot;
+def count = assetsCount.toInteger()
+for (int i = 1; i &lt;= count; i++) {
+    def assetId = Url62.encode(Generators.nameBasedGenerator().generate(&quot;masterlight-${__threadNum}-${i}&quot;))
+    vars.put(&quot;assetId_${i}&quot;, assetId)
+}
+vars.put(&quot;assetId_matchNr&quot;, count.toString())
+</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Record start time" enabled="true">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">// Record when this thread started
+vars.putObject(&quot;threadStartTime&quot;, System.currentTimeMillis())
+def duration = (props.get(&quot;DURATION&quot;) ?: &quot;300&quot;).toString().toInteger()
+vars.put(&quot;testDuration&quot;, duration.toString())
+log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} started, will run for ${duration} seconds&quot;)
+</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect" enabled="true">
+          <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
+          <stringProp name="mqtt.port">8883</stringProp>
+          <stringProp name="mqtt.version">3.1</stringProp>
+          <stringProp name="mqtt.conn_timeout">10</stringProp>
+          <stringProp name="mqtt.protocol">SSL</stringProp>
+          <stringProp name="mqtt.ws_path"></stringProp>
+          <boolProp name="mqtt.dual_ssl_authentication">false</boolProp>
+          <stringProp name="mqtt.clientcert_file_path"></stringProp>
+          <stringProp name="mqtt.clientcert_password"></stringProp>
+          <stringProp name="mqtt.client_id_prefix">device${__threadNum}</stringProp>
+          <boolProp name="mqtt.client_id_suffix">false</boolProp>
+          <stringProp name="mqtt.conn_keep_alive">30</stringProp>
+          <stringProp name="mqtt.conn_attampt_max">0</stringProp>
+          <stringProp name="mqtt.reconn_attampt_max">0</stringProp>
+          <stringProp name="mqtt.conn_clean_session">true</stringProp>
+          <stringProp name="mqtt.user_name">master:serviceuser${__threadNum}</stringProp>
+          <stringProp name="mqtt.password">serviceuser${__threadNum}</stringProp>
+          <stringProp name="mqtt.connect_name">mqttconn</stringProp>
+          <stringProp name="mqtt.conn_attempt_max">0</stringProp>
+          <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
+        </net.xmeter.samplers.ConnectSampler>
+        <hashTree>
+          <JSR223Timer guiclass="TestBeanGUI" testclass="JSR223Timer" testname="Connect Delay Timer" enabled="false">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">// Decrement successes counter only if previously succeeded - this is used to track when to stop the test
+if (vars.get(&quot;success&quot;) != null) {
+	log.info(&quot;Decrement successes&quot;)
+	props.get(&quot;successes&quot;).decrementAndGet()
+	vars.remove(&quot;success&quot;)
+}
+
+if (vars.getObject(&quot;threadCount&quot;) == null) {
+	vars.putObject(&quot;threadCount&quot;, props.get(&quot;THREAD_COUNT&quot;))
+	return 0
+}
+
+// After the first iteration we want to simulate a random pause between next reconnection
+int upper = 60000
+int lower = 1
+def delay = (int) (Math.random() * (upper - lower)) + lower;
+log.info(&quot;CONNECT DELAY ${ctx.threadNum + 1} = ${delay}ms&quot;)
+return delay</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223Timer>
+          <hashTree/>
+        </hashTree>
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe attributes" enabled="false">
+          <stringProp name="mqtt.topic_name">master/device${__threadNum}/attributevalue/+/${assetId}</stringProp>
+          <stringProp name="mqtt.qos_level">0</stringProp>
+          <boolProp name="mqtt.add_timestamp">false</boolProp>
+          <boolProp name="mqtt.debug_response">true</boolProp>
+          <stringProp name="mqtt.sample_condition">number of received messages</stringProp>
+          <stringProp name="mqtt.sample_condition_value">6</stringProp>
+          <boolProp name="mqtt.sub_async">false</boolProp>
+          <stringProp name="mqtt.connect_name">mqttconn</stringProp>
+          <stringProp name="mqtt.sample_condition_value_opt">20000</stringProp>
+        </net.xmeter.samplers.SubSampler>
+        <hashTree>
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
+            <stringProp name="ConstantTimer.delay">1000</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+        </hashTree>
+        <WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="While Controller">
+          <stringProp name="WhileController.condition">${__groovy(
+    def startTime = vars.getObject(&quot;threadStartTime&quot;);
+    if (startTime == null) {
+        false
+    } else {
+	   def elapsed = (System.currentTimeMillis() - vars.getObject(&quot;threadStartTime&quot;)) / 1000;
+	   def duration = (vars.get(&quot;testDuration&quot;) ?: &quot;300&quot;).toInteger()
+        elapsed &lt; duration;
+    }
+ )}</stringProp>
+        </WhileController>
+        <hashTree>
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">log.info(&quot;&gt;&gt;&gt; Will push &quot; + vars.get(&quot;assetId_matchNr&quot;) + &quot; attribute updates&quot;)</stringProp>
+          </JSR223Sampler>
+          <hashTree>
+            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
+              <stringProp name="ConstantTimer.delay">${__P(MILLIS_BETWEEN_PUBLISHES,1000)}</stringProp>
+            </ConstantTimer>
+            <hashTree/>
+          </hashTree>
+          <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="ForEach Controller">
+            <stringProp name="ForeachController.inputVal">assetId</stringProp>
+            <stringProp name="ForeachController.returnVal">currentAssetId</stringProp>
+            <boolProp name="ForeachController.useSeparator">true</boolProp>
+          </ForeachController>
+          <hashTree>
+            <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish brightness" enabled="true">
+              <stringProp name="mqtt.topic_name">master/device${__threadNum}/writeattributevalue/brightness/${__groovy(vars.get(&quot;currentAssetId&quot;))}</stringProp>
+              <stringProp name="mqtt.qos_level">0</stringProp>
+              <boolProp name="mqtt.add_timestamp">false</boolProp>
+              <stringProp name="mqtt.message_type">String</stringProp>
+              <stringProp name="mqtt.message_type_fixed_length">1024</stringProp>
+              <stringProp name="mqtt.message_to_sent">${__groovy(new Random().nextInt(100))}</stringProp>
+              <boolProp name="mqtt.retained_message">false</boolProp>
+              <stringProp name="mqtt.connect_name">mqttconn</stringProp>
+            </net.xmeter.samplers.PubSampler>
+            <hashTree>
+              <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
+                <stringProp name="ConstantTimer.delay">50</stringProp>
+              </ConstantTimer>
+              <hashTree/>
+            </hashTree>
+            <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler" enabled="false">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="cacheKey">true</stringProp>
+              <stringProp name="script">log.info(&quot;&gt;&gt;&gt;Thread ${__threadNum} - asset ${__evalVar(currentAssetId)}&quot;)
+log.info(&quot;&gt;&gt;&gt;ForEach __jm__ForEach Controller__idx = &quot; + vars.get(&quot;__jm__ForEach Controller__idx&quot;))
+log.info(&quot;&gt;&gt;&gt;Direct vars.get currentAssetId = &quot; + vars.get(&quot;currentAssetId&quot;))</stringProp>
+            </JSR223Sampler>
+            <hashTree/>
+          </hashTree>
+          <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check attribute response" enabled="false"/>
+          <hashTree>
+            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="false">
+              <stringProp name="ConstantTimer.delay">30</stringProp>
+            </ConstantTimer>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Flow Control Action">
+          <intProp name="ActionProcessor.action">1</intProp>
+          <intProp name="ActionProcessor.target">0</intProp>
+          <stringProp name="ActionProcessor.duration">${__groovy((props.get(&quot;DISCONNECT_DELAY&quot;) ?: &quot;0&quot;).toInteger() * 1000)}</stringProp>
+        </TestAction>
+        <hashTree/>
+        <net.xmeter.samplers.DisConnectSampler guiclass="net.xmeter.gui.DisConnectSamplerUI" testclass="net.xmeter.samplers.DisConnectSampler" testname="disconnect" enabled="true">
+          <stringProp name="mqtt.connect_name">mqttconn</stringProp>
+        </net.xmeter.samplers.DisConnectSampler>
+        <hashTree/>
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <objProp>
+            <name>saveConfig</name>
+            <value class="SampleSaveConfiguration">
+              <time>true</time>
+              <latency>true</latency>
+              <timestamp>true</timestamp>
+              <success>false</success>
+              <label>true</label>
+              <code>true</code>
+              <message>true</message>
+              <threadName>true</threadName>
+              <dataType>true</dataType>
+              <encoding>false</encoding>
+              <assertions>false</assertions>
+              <subresults>true</subresults>
+              <responseData>false</responseData>
+              <samplerData>false</samplerData>
+              <xml>false</xml>
+              <fieldNames>true</fieldNames>
+              <responseHeaders>false</responseHeaders>
+              <requestHeaders>false</requestHeaders>
+              <responseDataOnError>false</responseDataOnError>
+              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
+              <bytes>true</bytes>
+              <url>true</url>
+              <threadCounts>true</threadCounts>
+              <sampleCount>true</sampleCount>
+              <idleTime>true</idleTime>
+              <connectTime>true</connectTime>
+            </value>
+          </objProp>
+          <stringProp name="filename"></stringProp>
+        </ResultCollector>
+        <hashTree/>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

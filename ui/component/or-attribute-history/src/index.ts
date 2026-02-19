@@ -5,7 +5,7 @@ import {GridComponent, GridComponentOption, DataZoomComponent, DataZoomComponent
 import {LineChart, LineSeriesOption} from "echarts/charts";
 import {UniversalTransition} from "echarts/features";
 import {CanvasRenderer} from "echarts/renderers";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 import {
     css,
     html,
@@ -463,20 +463,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             end: 100
                         },
                         {
+                            type: 'slider',
                             start: 0,
                             end: 100,
+                            showDataShadow: false,
                             backgroundColor: bgColor,
                             fillerColor: bgColor,
-                            dataBackground: {
-                                areaStyle: {
-                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
-                                }
-                            },
-                            selectedDataBackground: {
-                                areaStyle: {
-                                    color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color"),
-                                }
-                            },
                             moveHandleStyle: {
                                 color: this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color")
                             },

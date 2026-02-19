@@ -77,7 +77,7 @@ class GroupSummationRuleTest extends Specification implements ManagerContainerTr
             assert engine != null
             assert engine.isRunning()
             assert engine.facts.assetStates.count { it.id == parentAsset.id } == 3
-            assert engine.lastFireTimestamp > ruleset.createdOn.getTime()
+            assert engine.lastFireTimestamp > ruleset.createdOn.toEpochMilli()
             assert engine.deployments.get(ruleset.id) != null
         }
 

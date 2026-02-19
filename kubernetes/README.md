@@ -110,6 +110,22 @@ The manager configuration has 2 different flags that related to metrics:
 - `service.metrics.enabled` indicating if a metrics service for the manager should be exposed  
   This is only effective if the manager exposes metrics i.e. both flags must be true for the service to be created.
 
+### JMX
+
+The manager can optionally (it is disabled by default) expose a service to provide JMX access.  
+Check the `service.jmx` section of the values files.
+
+Enabling the service does not configure the manager for JMX access, this requires passing additional configuration flags to the JVM.  
+You can for instance add the following section to your values files
+```yaml
+or:
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: "-Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=8085 -Dcom.sun.management.jmxremote.rmi.port=8085 -Djava.rmi.server.hostname=localhost"
+```
+Note that the hostname is set to localhost. If you're using a ClusterIP service (as configured by default)
+and port forwarding, this is the hostname you need to use for the JMX configuration.
+
 ### When using HAProxy
 
 #### Accessing MQTT

@@ -10,9 +10,7 @@ import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.dashboard.*
 import org.openremote.model.query.DashboardQuery
-import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
-import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.User
 import org.openremote.model.security.UserResource
@@ -24,7 +22,7 @@ import spock.lang.Specification
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.Constants.*
 
 class DashboardTest extends Specification implements ManagerContainerTrait {

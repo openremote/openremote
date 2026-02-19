@@ -162,8 +162,8 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
-    protected static Map<String, ObjectNode> valueDescriptorSchemas = new HashMap<>();
-    protected static Map<String, String> valueDescriptorSchemaHashes = new HashMap<>();
+    protected static Map<String, ObjectNode> valueDescriptorSchemas = new ConcurrentHashMap<>();
+    protected static Map<String, String> valueDescriptorSchemaHashes = new ConcurrentHashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
     protected static MessageDigest md;
@@ -227,7 +227,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, Object.class));
         } catch (Exception e) {
-            LOG.log(Level.INFO, "Failed to parse JSON string: " + jsonString, e);
+            LOG.log(Level.INFO, "Failed to parse JSON string '" + jsonString +"': " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -239,7 +239,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, JSON.constructType(type)));
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to parse JSON", e);
+            LOG.log(Level.WARNING, "Failed to parse JSON: " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -256,7 +256,7 @@ public class ValueUtil {
         try {
             return Optional.of(asJSONOrThrow(object));
         } catch (JsonProcessingException e) {
-            LOG.log(Level.WARNING, "Failed to convert object to JSON string", e);
+            LOG.log(Level.WARNING, "Failed to convert object to JSON string: " + e.getMessage());
             return Optional.empty();
         }
     }
@@ -939,27 +939,25 @@ public class ValueUtil {
         JSON.registerSubtypes(agentLinkSubTypes);
 
         doSchemaInit();
-
-        // Add JSON schemas for complex meta items and generate cache keys
-        Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
-        valueDescriptorSchemas.putAll(metaItems.values().stream()
-                .map(AbstractNameValueDescriptorHolder::getType)
-                .filter(v -> {
-                    String jsonType = v.getJsonType();
-                    return jsonType.equals("array") || jsonType.equals("object");
-                })
-                .collect(Collectors.toMap(
-                        ValueDescriptor::getName,
-                        vd -> (ObjectNode) getSchema(vd.getType())
-                )));
-        valueDescriptorSchemaHashes.putAll(valueDescriptorSchemas.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                v -> hash(v.getValue().toString())
-        )));
     }
 
     protected static void doSchemaInit() {
         generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
+    }
+
+    /**
+     * Computes JSON schemas for complex meta items and generates cache keys
+     */
+    public static void cacheCommonValueDescriptorSchemas() {
+        Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
+        valueDescriptorSchemas.putAll(metaItems.values().stream()
+                .map(AbstractNameValueDescriptorHolder::getType)
+                .filter(v -> v.getJsonType().equals("object") || v.getArrayDimensions() != null && v.getArrayDimensions() > 0)
+                .collect(Collectors.toMap(ValueDescriptor::getName, vd -> (ObjectNode) getSchema(vd.getType()))));
+        valueDescriptorSchemaHashes.putAll(valueDescriptorSchemas.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                v -> hash(v.getValue().toString())
+        )));
     }
 
     public static JsonNode getValueDescriptorSchema(String name) {

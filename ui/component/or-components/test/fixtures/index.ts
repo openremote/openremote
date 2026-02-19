@@ -1,4 +1,4 @@
-import { ct as base, ComponentTestFixtures, Page, Locator, withPage } from "@openremote/test";
+import { ct as base, SharedComponentTestFixtures, Page, Locator, withPage } from "@openremote/test";
 
 export class CollapsiblePanel {
   constructor(private readonly page: Page) {}
@@ -12,7 +12,7 @@ export class CollapsiblePanel {
   }
 }
 
-interface ComponentFixtures extends ComponentTestFixtures {
+interface ComponentFixtures extends SharedComponentTestFixtures {
   collapsiblePanel: CollapsiblePanel;
 }
 

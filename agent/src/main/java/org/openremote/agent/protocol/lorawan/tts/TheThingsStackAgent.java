@@ -24,6 +24,7 @@ import org.openremote.agent.protocol.lorawan.LoRaWANAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
+import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -34,8 +35,9 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
 
     public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
-    public static final AttributeDescriptor<String> TENANT_ID = new AttributeDescriptor<>("tenantId", ValueType.TEXT);
-    public static final AttributeDescriptor<String> API_KEY = new AttributeDescriptor<>("apiKey", ValueType.TEXT);
+    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = Agent.USERNAME_AND_PASSWORD.withOptional(false);
+    public static final AttributeDescriptor<String> TENANT_ID = new AttributeDescriptor<>("tenantId", ValueType.TEXT).withOptional(false);
+    public static final AttributeDescriptor<Boolean> SECURE_GRPC = new AttributeDescriptor<>("secureGRPC", ValueType.BOOLEAN).withOptional(false);
 
     public static final AgentDescriptor<TheThingsStackAgent, TheThingsStackProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         TheThingsStackAgent.class, TheThingsStackProtocol.class, MQTTAgentLink.class
@@ -65,12 +67,12 @@ public class TheThingsStackAgent extends LoRaWANAgent<TheThingsStackAgent, TheTh
         return this;
     }
 
-    public Optional<String> getApiKey() {
-        return getAttributes().getValue(API_KEY);
+    public Optional<Boolean> getSecureGRPC() {
+        return getAttributes().getValue(SECURE_GRPC);
     }
 
-    public TheThingsStackAgent setApiKey(String apiKey) {
-        getAttributes().getOrCreate(API_KEY).setValue(apiKey);
+    public TheThingsStackAgent setSecureGRPC(Boolean secureGRPC) {
+        getAttributes().getOrCreate(SECURE_GRPC).setValue(secureGRPC);
         return this;
     }
 }

@@ -19,26 +19,34 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
+import org.openremote.model.util.JSONSchemaUtil.*;
 
 import java.util.Optional;
+import java.util.TimeZone;
 
+@JsonSchemaDefault("{\"timezone\":\"\"}")
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
-    @JsonPropertyDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
+    @JsonSchemaDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
         " linked attribute) in a continuous loop based on a schedule (by default replays every 24h)." +
         " Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints" +
-        " immediately as determined by the schedule.")
+        " immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored.")
     protected SimulatorReplayDatapoint[] replayData;
 
-    // TODO: consider implementing @JsonSchemaFormat("calendar-event") to reuse the `or-rule-validity` component.
-    @JsonPropertyDescription("When defined overwrites the possible dataset length and when it is replayed." +
-        " This could be once when only a start- (and end) date are defined," +
-        " or a recurring event following the RFC 5545 RRULE format." +
+    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
+    @JsonSchemaFormat("timezone")
+    protected TimeZone timezone;
+
+    @JsonSchemaTitle("Schedule")
+    @JsonSchemaDescription("Overwrites the possible dataset length and when it is replayed." +
+        " The dataset can be scheduled to stop based on the UNTIL rule part" +
+        " or set to recur by a certain amount using the COUNT rule part. The schedule also allows adjusting the frequency" +
+        " at which the dataset is replayed and at what times following the RFC 5545 RRULE format." +
         " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
         " default 24 hours or the recurrence rule the datapoints will be ignored.")
+    @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
 
     // For Hydrators
@@ -64,6 +72,15 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
         this.schedule = schedule;
+        return this;
+    }
+
+    public Optional<TimeZone> getTimezone() {
+        return Optional.ofNullable(timezone);
+    }
+
+    public SimulatorAgentLink setTimezone(TimeZone timezone) {
+        this.timezone = timezone;
         return this;
     }
 }

@@ -33,6 +33,7 @@ import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,7 +82,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
             .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_SECONDS)
             .setPreferHTML(getAgent().getPreferHTML().orElse(false))
-            .setEarliestMessageDate(agent.getCreatedOn());
+            .setEarliestMessageDate(Date.from(agent.getCreatedOn()));
 
         oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth)).orElseGet(() ->
             clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));

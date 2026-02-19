@@ -173,7 +173,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             if (this.isUpdatePending) {
                 return;
             }
-            this._assetIds = undefined;
             if (this._viewer) {
                 this._viewer.assetId = undefined;
             }

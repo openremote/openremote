@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {
     Asset,
@@ -7,16 +7,16 @@ import {
     RuleActionUpdateAttribute,
     RuleActionWriteAttribute,
     WellknownValueTypes,
-    AssetModelUtil
+    AssetModelUtil, AssetQuery
 } from "@openremote/model";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next, translate} from "@openremote/or-translate"
+import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
-import { ifDefined } from "lit/directives/if-defined.js";
-import { when } from "lit/directives/when.js";
+import {ifDefined} from "lit/directives/if-defined.js";
+import {when} from "lit/directives/when.js";
 
 // language=CSS
 const style = css`
@@ -58,22 +58,26 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider!: (type: string) => Promise<Asset[] | undefined>
+    public assetProvider!: (type: string, query?: AssetQuery) => Promise<Asset[] | undefined>;
 
-    @property({type: Array, attribute: false})
-    protected _assets?: Asset[];
+    @state()
+    protected _cache?: {query: AssetQuery, assets: Asset[]};
 
+    @state()
+    protected _selected?: Asset;
 
-    public shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("action")) {
-            this._assets = undefined;
+    protected _loading = false;
+
+    public shouldUpdate(changedProps: PropertyValues): boolean {
+        if (changedProps.has("action")) {
+            this._cache = undefined;
         }
-        return super.shouldUpdate(_changedProperties);
+        return super.shouldUpdate(changedProps);
     }
 
     public refresh() {
         // Clear assets
-        this._assets = undefined;
+        this._cache = undefined;
     }
 
     protected _getAssetType() {
@@ -97,56 +101,63 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         }
 
         const query = this.action.target.assets ? this.action.target.assets : this.action.target.matchedAssets ? this.action.target.matchedAssets : undefined;
-        const assetDescriptor = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
+        const assetDescriptor = this.assetInfos ? this.assetInfos.find(assetTypeInfo => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetDescriptor) {
             return html``;
         }
 
-        if (!this._assets) {
+        if (!this._cache && !this._loading) {
             this.loadAssets(assetType);
         }
 
         // TODO: Add multiselect support
         const ids = getAssetIdsFromQuery(query);
         const idValue = ids && ids.length > 0 ? ids[0] : "*";
-        const idOptions: [string, string] [] = [
+        const idOptions: Map<string, string> = new Map([
             ["*", i18next.t("matched")]
-        ];
+        ]);
+
+        // Set list of displayed assets, and filtering assets out if needed.
+        // If <= 25 assets: display everything
+        // If between 25 and 100 assets: display everything with search functionality
+        // If >= 100 assets: only display if in line with search input
+        const assets: Asset[] = this._cache ? this._cache.assets : [];
+        const searchable = assets.length > 25;
+        if (searchable && this._selected) {
+            idOptions.set(this._selected.id!, this._selected.name!);
+        }
+
         let searchProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             
             <!-- Show SELECT input with 'loading' until the assets are retrieved -->
-            ${when((!this._assets), () => html`
-                <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
+            ${when((!this._cache || this._loading), () => html`
+                <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t("loading")}"></or-mwc-input>
             `, () => {
-
-                // Set list of displayed assets, and filtering assets out if needed.
-                // If <= 25 assets: display everything
-                // If between 25 and 100 assets: display everything with search functionality 
-                // If > 100 assets: only display if in line with search input
-                if (this._assets!.length <= 25) {
-                    idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                if (!searchable) {
+                    assets.forEach(a => idOptions.set(a.id!, a.name!));
                 } else {
                     searchProvider = async (search?: string) => {
+                        await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
                         if (search) {
-                            return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
-                        } else if (this._assets!.length <= 100) {
-                            idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-                            return idOptions;
+                            return assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
+                        } else if (assets.length <= 100) {
+                            assets.forEach(a => idOptions.set(a.id!, a.name!));
+                            return [...idOptions];
                         } else {
-                            const asset = this._assets?.find((asset) => asset.id == idValue);
-                            if (asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
-                                idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
+                            const selected = assets.find(a => a.id === idValue);
+                            if (selected && !Array.from(idOptions.keys()).includes(selected.id!)) {
+                                idOptions.set(selected.id!, selected.name!); // add selected asset if there is one.
                             }
-                            return idOptions;
+                            return [...idOptions];
                         }
-                    }
+                    };
                 }
                 
                 // Get selected asset and its descriptors
-                const asset = idValue && idValue !== "*" ? this._assets!.find(a => a.id === idValue) : undefined;
+                const asset = idValue && idValue !== "*" ? this._cache!.assets.find(a => a.id === idValue) : undefined;
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName, asset && asset.attributes && this.action.attributeName ? asset.attributes[this.action.attributeName] : undefined);
 
                 // Only RW attributes can be used in actions
@@ -180,8 +191,8 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 
                 return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
-                                  .options="${idOptions}" .searchProvider="${searchProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
+                                  .options="${[...idOptions]}" .searchProvider="${searchProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); }}"
                     ></or-mwc-input>
                     ${attributes.length > 0 ? html`
                         <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
@@ -194,11 +205,10 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected set _assetId(assetId: string) {
+    protected set _assetId(assetId: string | undefined) {
         const assetType = this._getAssetType();
 
-
-        if (assetId === "*") {
+        if (!assetId || assetId === "*") {
             this.action.target!.assets = undefined;
             this.action.target = {
                 matchedAssets: {
@@ -206,8 +216,9 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                          assetType || ""
                     ]
                 }
-            }
+            };
         } else {
+            this._selected = this._cache?.assets?.find(a => a.id === assetId);
             this.action.target!.matchedAssets = undefined;
             this.action.target = {
                 assets: {
@@ -218,7 +229,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                         assetType || ""
                     ]
                 }
-            }
+            };
         }
 
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
@@ -238,9 +249,48 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
-    protected loadAssets(type: string) {
-        this.assetProvider(type).then(assets => {
-            this._assets = assets;
-        })
+    /**
+     * Fetches assets using the {@link assetProvider} from the parent component.
+     * This is often linked to the OpenRemote HTTP API to request assets from using an {@link AssetQuery} object.
+     * @param type - The asset type name to filter by
+     * @param search - The asset name to filter by (acts as a search)
+     * @param idValue - Selected asset ID to query along
+     * @protected
+     */
+    protected async loadAssets(type: string, search?: string, idValue?: string): Promise<Asset[] | undefined> {
+        const promises: Promise<Asset[] | undefined>[] = [];
+
+        const query: AssetQuery = { limit: 100 };
+        if (search) {
+            query.names ??= [];
+            query.names.push({ predicateType: "string", value: search });
+        }
+        // If the cache contains assets from the same query, don't send HTTP request again
+        const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
+        if (!this._loading && !isQueryCached) {
+            this._loading = true;
+
+            // Use assetProvider from the parent component to retrieve assets using HTTP
+            promises.push(this.assetProvider(type, {...query}));
+
+            // When idValue is present, it should also be fetched alongside the other assets
+            if (idValue && idValue !== "*") {
+                promises.push(this.assetProvider(type, { ids: [idValue] }));
+            }
+
+            // Start retrieving assets through the assetProvider
+            const responses = await Promise.all(promises);
+            this._loading = false;
+
+            // Only update the state when we retrieve new assets
+            const assets = responses.filter(value => !!value).flat();
+            const cachedIds = this._cache?.assets.map(asset => asset.id) ?? [];
+            this._cache = {
+                query: query,
+                assets: [...(this._cache?.assets ?? []), ...(assets?.filter(a => !cachedIds.includes(a.id)) ?? [])]
+            };
+            return assets;
+        }
+        return this._cache?.assets;
     }
 }

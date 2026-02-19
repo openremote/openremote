@@ -1,4 +1,9 @@
-import {
+import manager, { OREvent } from "@openremote/core";
+import { Agent, AgentDescriptor, AssetModelUtil } from "@openremote/model";
+import { 
+    JsonFormsStateContext,
+    getTemplateWrapper,
+    JsonFormsRendererRegistryEntry,
     RankedTester,
     rankWith,
     and,
@@ -7,10 +12,7 @@ import {
     mapDispatchToControlProps,
     uiTypeIs,
     formatIs
-} from "@jsonforms/core";
-import manager, { OREvent } from "@openremote/core";
-import { Agent, AgentDescriptor, AssetModelUtil } from "@openremote/model";
-import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
+} from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -97,7 +99,8 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
             if (newAgentDescriptor) {
                 props.handleChange("", {
                   id: agent.id,
-                  type: newAgentDescriptor.agentLinkType
+                  type: newAgentDescriptor.agentLinkType,
+                  ...(props.rootSchema?.definitions?.[newAgentDescriptor.agentLinkType ?? ""].default ?? {}),
                 });
             }
         }

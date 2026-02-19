@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-translate",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Provides a web component for translations using i18next",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {

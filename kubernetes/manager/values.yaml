@@ -68,6 +68,11 @@ service:
     type: ClusterIP
     port: 8405
     annotations: {}
+  jmx:
+    enabled: false
+    type: ClusterIP
+    port: 8085
+    annotations: {}
 
 # Expose an Ingress for direct HTTP(S) access to the manager, disable when using HA Proxy
 ingress:
