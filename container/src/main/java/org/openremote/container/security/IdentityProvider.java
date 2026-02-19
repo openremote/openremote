@@ -19,14 +19,13 @@
  */
 package org.openremote.container.security;
 
-import io.undertow.servlet.api.DeploymentInfo;
 import jakarta.servlet.ServletContext;
 import org.openremote.model.Container;
 
 /**
  * SPI for implementations used by {@link IdentityService}.
  */
-public interface IdentityProvider {
+public interface IdentityProvider extends TokenVerifier {
 
     String OR_ADMIN_PASSWORD = "OR_ADMIN_PASSWORD";
     String OR_ADMIN_PASSWORD_DEFAULT = "secret";

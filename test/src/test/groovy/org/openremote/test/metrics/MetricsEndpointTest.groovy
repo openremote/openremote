@@ -22,7 +22,7 @@ class MetricsEndpointTest extends Specification implements ManagerContainerTrait
         and: "a resource client is created"
         // Resteasy client has issues with @Suspended annotation so not used for now
         //def datapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetDatapointResource.class)
-        def requestTarget = getClientTarget(serverUri(HealthService.OR_METRICS_PORT_DEFAULT).path("metrics"), MASTER_REALM)
+        def requestTarget = getClientTarget(serverUri(HealthService.OR_METRICS_PORT_DEFAULT).path("metrics"), null)
 
         when: "requesting the metrics endpoint"
         def response = requestTarget.request().get()

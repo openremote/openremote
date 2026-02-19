@@ -250,12 +250,6 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles) {
-        // TODO Doesn't really respect the description of the interface
-        return auth.isSuperUser();
-    }
-
-    @Override
     public String getFrontendURI() {
         return null;
     }

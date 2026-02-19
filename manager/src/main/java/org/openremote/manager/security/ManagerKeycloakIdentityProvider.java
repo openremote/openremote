@@ -1228,38 +1228,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles) {
-        // Superuser can always subscribe
-        if (auth.isSuperUser())
-            return true;
-
-        // Restricted users get nothing
-        if (isRestrictedUser(auth))
-            return false;
-
-        // User must have role
-        if (requiredRoles != null) {
-            for (ClientRole requiredRole : requiredRoles) {
-                if (!auth.hasResourceRole(requiredRole.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                    return false;
-                }
-            }
-        }
-
-        // Ensure filter matches authenticated realm
-        if (filter != null) {
-            String authenticatedRealm = auth.getAuthenticatedRealmName();
-
-            if (TextUtil.isNullOrEmpty(authenticatedRealm))
-                return false;
-            if (authenticatedRealm.equals(filter.getName()))
-                return true;
-        }
-
-        return false;
-    }
-
-    @Override
     public String getFrontendURI() {
         return frontendURI;
     }

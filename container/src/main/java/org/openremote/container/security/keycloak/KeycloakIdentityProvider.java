@@ -38,7 +38,6 @@ import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.security.JWTAuthenticationFilter;
 import org.openremote.container.security.KeyResolverService;
 import org.openremote.container.web.OAuthFilter;
-import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;

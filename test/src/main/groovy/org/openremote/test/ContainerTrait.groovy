@@ -20,14 +20,18 @@
 package org.openremote.test
 
 import jakarta.persistence.TypedQuery
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
+import org.openremote.container.json.JacksonConfig
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.ClientCredentialsAuthForm
@@ -37,7 +41,6 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.security.keycloak.KeycloakResource
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
-import org.openremote.container.web.WebClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -502,13 +505,24 @@ trait ContainerTrait {
         container.running
     }
 
-    ResteasyClientBuilder createClient() {
-        ResteasyClientBuilder clientBuilder =
-                new ResteasyClientBuilderImpl()
-                        .connectTimeout(2, SECONDS)
-                        .readTimeout(15, SECONDS)
-                        .connectionPoolSize(10)
-        return WebClient.registerDefaults(clientBuilder)
+    ResteasyClientBuilder createClient(String accessToken) {
+
+        def clientBuilder = new ResteasyClientBuilderImpl()
+                .connectTimeout(2, SECONDS)
+                .readTimeout(15, SECONDS)
+                .connectionPoolSize(10)
+                .register(new JacksonConfig())
+                .register(new GZIPDecodingInterceptor())
+
+        if (accessToken != null) {
+            ClientRequestFilter authFilter = context ->
+                {
+                    context.getHeaders().header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                }
+                clientBuilder.register(authFilter)
+        }
+
+        return clientBuilder
     }
 
     UriBuilder serverUri(int serverPort) {
@@ -532,27 +546,19 @@ trait ContainerTrait {
     }
 
     ResteasyWebTarget getClientTarget(UriBuilder serverUri, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.build(), accessToken, null, null)
+        createClient(accessToken).build().target(serverUri)
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), null, null, null)
+        getClientTarget(serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm), null)
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), accessToken, null, null)
+        getClientTarget(serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm), accessToken)
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path).build(), accessToken, null, null)
-    }
-
-    ResteasyWebTarget getClientApiTarget(ResteasyClient client, UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), accessToken, null, null)
-    }
-
-    ResteasyWebTarget getClientApiTarget(ResteasyClient client, UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path).build(), accessToken, null, null)
+        getClientTarget(serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path), null)
     }
 
     int findEphemeralPort() {

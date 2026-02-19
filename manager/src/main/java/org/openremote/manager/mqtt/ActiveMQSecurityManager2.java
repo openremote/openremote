@@ -7,6 +7,7 @@ import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
 import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.container.Container;
+import org.openremote.manager.security.RemotingConnectionPrincipal;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
@@ -63,6 +64,13 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
                 realm = realmAndUsername[0];
                 user = realmAndUsername[1];
             }
+        }
+
+
+        if (subject != null) {
+            // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
+            remotingConnection.setSubject(subject);
+            subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
         }
 
         // Store the subject in the connection

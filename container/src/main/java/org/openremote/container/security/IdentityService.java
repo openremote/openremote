@@ -19,6 +19,7 @@
  */
 package org.openremote.container.security;
 
+import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
@@ -27,7 +28,7 @@ import org.openremote.model.ContainerService;
 
 import java.util.logging.Logger;
 
-public abstract class IdentityService implements ContainerService {
+public abstract class IdentityService implements ContainerService, TokenVerifier {
 
     public static final int PRIORITY = PersistenceService.PRIORITY + 10;
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
@@ -70,6 +71,10 @@ public abstract class IdentityService implements ContainerService {
      */
     public boolean isKeycloakEnabled() {
         return identityProvider instanceof KeycloakIdentityProvider;
+    }
+
+    public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
+        return identityProvider.verify(realm, accessToken);
     }
 
     /**
