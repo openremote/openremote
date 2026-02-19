@@ -18,7 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { Frequency as FrequencyValue, Options } from "rrule";
-import { EventTypes } from "./util";
 
 /**
  * Supported recurrence rule parts in evaluation order:
@@ -62,7 +61,13 @@ export type RRuleParts = Pick<
     | "until"
 >;
 
-export type LabeledEventTypes = Record<EventTypes, string>;
-export type RRulePartKeys = keyof RRuleParts;
-export type PartKeys = RRulePartKeys | "start" | "end" | "start-time" | "end-time" | "all-day"| "recurrence-ends";
 export type Frequency = keyof typeof FrequencyValue;
+export type RRulePartKeys = keyof RRuleParts;
+export type PartKeys =
+  | RRulePartKeys
+  | "start"
+  | "start-time"
+  | "end"
+  | "end-time"
+  | "all-day"
+  | "recurrence-ends";

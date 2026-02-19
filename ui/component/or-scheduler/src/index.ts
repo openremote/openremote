@@ -41,7 +41,7 @@ import { InputType } from "@openremote/or-vaadin-components/util";
 import { dialogRenderer, dialogHeaderRenderer, dialogFooterRenderer, OrVaadinDialog } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds, WEEKDAYS } from "./util";
-import type { PartKeys, RRulePartKeys, LabeledEventTypes, Frequency } from "./types";
+import type { PartKeys, RRulePartKeys, Frequency } from "./types";
 
 export type * from "./types";
 export * from "./util";
@@ -148,16 +148,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected _byRRuleParts?: RRulePartKeys[];
     protected _eventType: EventTypes = EventTypes.default;
-    protected _eventTypes: LabeledEventTypes = EventTypes;
     protected _until = moment().toDate();
 
     connectedCallback() {
         super.connectedCallback();
-        this._eventTypes = {
-            default: i18next.t(this.defaultEventTypeLabel),
-            period: i18next.t("planPeriod"),
-            recurrence: i18next.t("planRecurrence")
-        };
+
         if (this._normalizedSchedule?.start && this._normalizedSchedule?.end) {
             if (this._normalizedSchedule.recurrence) {
                 this._eventType = EventTypes.recurrence;
@@ -387,6 +382,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected _getDialogContent(): TemplateResult {
         const calendar = this._normalizedSchedule;
+        const eventTypes = [
+            { value: "default", label: i18next.t(this.defaultEventTypeLabel) },
+            { value: "period", label: i18next.t("planPeriod") },
+            { value: "recurrence", label: i18next.t("planRecurrence") },
+        ];
+
         return html`
             <style>
                 vaadin-checkbox {
@@ -445,7 +446,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
                     <div style="display: flex">
-                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${Object.entries(this._eventTypes).map(([k,v]) => ({ value: k, label: v }))}"
+                        <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${eventTypes}"
                             @change="${this._setCalendarEventType}">
                         </or-vaadin-select>
                     </div>
