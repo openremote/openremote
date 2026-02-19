@@ -183,14 +183,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
             if (this._rrule) { // TODO: prefer calendarEvent.recurrence
                 const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
-
-                if (this.isAllDay && diff > 0) {
-                    return html`<span class="capitalize">${this._rrule.toText()} <or-translate value="forDays" .options="${{ days: diff }}"></or-translate></span>`;
-                }
+                const fromTo = { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") };
 
                 let template!: TemplateResult;
-                const fromTo = { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") };
-                if (diff > 0) {
+                if (this.isAllDay && diff > 0) {
+                    template = html`<or-translate value="forDays" .options="${{ days: diff }}"></or-translate>`;
+                } else if (diff > 0) {
                     template = html`<or-translate value="fromToDays" .options="${{ ...fromTo, days: diff }}"></or-translate>`;
                 } else if (diff === 0) {
                     template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
