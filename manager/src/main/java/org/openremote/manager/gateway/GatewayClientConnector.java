@@ -52,6 +52,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -101,6 +102,7 @@ public class GatewayClientConnector implements AutoCloseable {
     protected String tunnelHostname;
     protected Integer tunnelPort;
     protected CompletableFuture<Void> initFuture;
+    protected final ConcurrentHashMap<GatewayTunnelSession, ScheduledFuture<?>> tunnelAutoCloseTasks = new ConcurrentHashMap<>();
 
     public GatewayClientConnector(GatewayConnection connection,
                                   GatewayTunnelFactory tunnelFactory,
@@ -133,6 +135,11 @@ public class GatewayClientConnector implements AutoCloseable {
                 client.removeAllConnectionStatusConsumers();
                 client.removeAllMessageConsumers();
                 client.setEncoderDecoderProvider(null);
+
+                if (this.activeTunnelSessions != null) {
+                    this.activeTunnelSessions.forEach(GatewayTunnelSession::disconnect);
+                    this.activeTunnelSessions.clear();
+                }
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
             } finally {
@@ -232,7 +239,7 @@ public class GatewayClientConnector implements AutoCloseable {
         SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event == null) {
-            LOG.finer("Received empty message from central manager: realm=" + connection.getLocalRealm());
+            LOG.warning("Received empty message from central manager: realm=" + connection);
             return;
         }
 
@@ -269,7 +276,7 @@ public class GatewayClientConnector implements AutoCloseable {
             // The central manager sends N number of these to synchronise gateway descendant assets on the central manager
             case ReadAssetsEvent readAssets -> {
                 if (gatewayAPIVersion == null) {
-                    LOG.finer("Pre version 1.0.0 central manager read assets request so closing all active tunnels: " + connection);
+                    LOG.info("Pre version 1.0.0 central manager read assets request so closing all active tunnels: " + connection);
                     stopAllGatewayTunnels();
                 }
 
@@ -289,7 +296,7 @@ public class GatewayClientConnector implements AutoCloseable {
                 if (gatewayAPIVersion == null) {
                     // This is a legacy version of the openremote on the central instance so we won't get a GatewayInitialisedEvent
                     // so we mark this client as connected now
-                    LOG.fine("Central manager running an older version so assuming connection is initialised");
+                    LOG.info("Central manager running an older version so assuming connection is initialised");
                     initFuture.complete(null);
                 }
 
@@ -365,13 +372,7 @@ public class GatewayClientConnector implements AutoCloseable {
 
         Container.EXECUTOR.submit(() -> {
 
-            if (activeTunnels == null || activeTunnels.length == 0) {
-                LOG.fine("No gateway tunnel sessions on central instance so stopping any active sessions: " + connection);
-                stopAllGatewayTunnels();
-                return;
-            }
-
-            LOG.fine("Synchronising gateway tunnel sessions with central instance: " + connection);
+            LOG.info("Synchronising gateway tunnel sessions with central instance: " + connection);
 
             // Synchronise the SSH sessions with what the central instance thinks are open
             // Filter out any tunnels expiring in the next 5 seconds
@@ -383,6 +384,12 @@ public class GatewayClientConnector implements AutoCloseable {
                 return true;
             }).toList();
 
+            if (tunnels.isEmpty()) {
+                LOG.finer("No gateway tunnel sessions on central instance so stopping any active sessions: " + connection);
+                stopAllGatewayTunnels();
+                return;
+            }
+
             // Create any new tunnels currently not established
             tunnels.forEach(activeTunnel -> {
                 GatewayTunnelSession activeSession = this.activeTunnelSessions.stream()
@@ -393,7 +400,7 @@ public class GatewayClientConnector implements AutoCloseable {
                     LOG.finer("Active tunnel session found for tunnel: " + activeTunnel);
                 } else {
                     // No existing session for this active tunnel
-                    LOG.fine("Active tunnel session not found for tunnel so starting: " + activeTunnel);
+                    LOG.finer("Active tunnel session not found for tunnel so starting: " + activeTunnel);
                     startGatewayTunnel(activeTunnel);
                 }
             });
@@ -402,7 +409,7 @@ public class GatewayClientConnector implements AutoCloseable {
             this.activeTunnelSessions.removeIf(activeTunnelSession -> {
                 boolean obsolete = tunnels.stream().noneMatch(tunnel -> tunnel.equals(activeTunnelSession.getTunnelInfo()));
                 if (obsolete) {
-                    LOG.fine("Removing obsolete tunnel session: " + activeTunnelSession);
+                    LOG.finer("Removing obsolete tunnel session: " + activeTunnelSession);
                     activeTunnelSession.disconnect();
                 }
                 return obsolete;
@@ -436,10 +443,11 @@ public class GatewayClientConnector implements AutoCloseable {
 
     protected void sendCentralManagerMessage(SharedEvent event) {
         if (client != null) {
-            if (LOG.isLoggable(Level.FINEST)) {
-                LOG.finest("Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event);
-            } else {
-                LOG.finer(() -> "Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event.getClass().getSimpleName());
+            boolean isAttributeEvent = event instanceof AttributeEvent;
+            if (isAttributeEvent && LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Sending attribute event to central manager: realm=" + connection.getLocalRealm() + ", " + event);
+            } else if (!isAttributeEvent) {
+                LOG.fine(() -> "Sending message to central manager: realm=" + connection.getLocalRealm() + ", " + event);
             }
             client.sendMessage(messageToString(SharedEvent.MESSAGE_PREFIX, event));
         }
@@ -459,19 +467,23 @@ public class GatewayClientConnector implements AutoCloseable {
                 .orElse(null);
 
         if (activeSession != null) {
-            LOG.fine("Existing active tunnel session found for tunnel so returning:  " + connection + ", " + tunnelInfo);
+            LOG.fine("Existing active tunnel session found for tunnel so returning it:  " + connection + ", " + tunnelInfo);
             return activeSession.connectFuture;
         }
 
         GatewayTunnelSession session = tunnelFactory.createSession(tunnelHostname, tunnelPort, tunnelInfo, this::onTunnelSessionClosed);
         activeTunnelSessions.add(session);
 
-        // Do cleanup on timeout or error
+        // Do cleanup on timeout or error, schedule auto-close on success
         session.connectFuture.orTimeout(GatewayConnector.RESPONSE_TIMEOUT_MILLIS-1000, TimeUnit.MILLISECONDS).whenComplete(
            (unused, throwable) -> {
               if (throwable != null) {
                  LOG.log(Level.WARNING, "Gateway tunnel session failed to connect: " + connection + ", " + tunnelInfo, throwable);
                  activeTunnelSessions.remove(session);
+                 session.disconnect();
+              } else {
+                 // Schedule auto-close if autoCloseTime is set
+                 scheduleAutoCloseTunnel(session);
               }
            }
         );
@@ -523,6 +535,8 @@ public class GatewayClientConnector implements AutoCloseable {
 
         try {
             gatewayTunnelSession.disconnect();
+            // Cancel any scheduled auto-close task
+            cancelAutoCloseTunnel(gatewayTunnelSession);
             LOG.info("Tunnel stopped successfully: " + connection + ", " + gatewayTunnelSession);
         } catch (Exception e) {
             error = e.getMessage();
@@ -537,6 +551,58 @@ public class GatewayClientConnector implements AutoCloseable {
         } else {
             LOG.log(Level.WARNING, "Gateway tunnel session closed with error: " + sessionCloseError.getMessage());
 
+        }
+    }
+
+    /**
+     * Schedule tunnel auto-close
+     */
+    protected void scheduleAutoCloseTunnel(GatewayTunnelSession session) {
+        if (session.getTunnelInfo().getAutoCloseTime() == null) {
+            LOG.fine("No auto-close time set for tunnel: " + session);
+            return;
+        }
+
+        long delayMillis = session.getTunnelInfo().getAutoCloseTime().toEpochMilli() - timerService.getCurrentTimeMillis();
+        if (delayMillis <= 0) {
+            LOG.warning("Auto-close time for tunnel session is in the past, closing immediately: " + session);
+            autoCloseTunnel(session);
+            return;
+        }
+
+        LOG.info("Scheduling auto-close for tunnel session at " + session.getTunnelInfo().getAutoCloseTime() + " (in " + delayMillis + "ms)");
+
+        ScheduledFuture<?> task = Container.SCHEDULED_EXECUTOR.schedule(
+            () -> autoCloseTunnel(session),
+            delayMillis,
+            TimeUnit.MILLISECONDS
+        );
+
+        tunnelAutoCloseTasks.put(session, task);
+    }
+
+    /**
+     * Cancel the scheduled auto-close task for a tunnel.
+     */
+    protected void cancelAutoCloseTunnel(GatewayTunnelSession session) {
+        ScheduledFuture<?> task = tunnelAutoCloseTasks.remove(session);
+        if (task != null) {
+            task.cancel(false);
+            LOG.fine("Cancelled auto-close task for tunnel: " + session);
+        }
+    }
+
+    /**
+     * Automatically closes a tunnel when its timeout expires, called by the scheduled task.
+     */
+    protected void autoCloseTunnel(GatewayTunnelSession session) {
+        LOG.info("Automatically closing tunnel due to timeout: " + session);
+
+        try {
+            activeTunnelSessions.remove(session);
+            stopGatewayTunnel(session);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + session + ", error=" + e.getMessage());
         }
     }
 
@@ -638,7 +704,7 @@ public class GatewayClientConnector implements AutoCloseable {
             if (allowEvent && connection.getAssetSyncRules() != null) {
                 GatewayAssetSyncRule syncRule = connection.getAssetSyncRules().getOrDefault(ev.getAssetType(), connection.getAssetSyncRules().get("*"));
                 if (syncRule != null && syncRule.excludeAttributes != null && syncRule.excludeAttributes.contains(ev.getName())) {
-                    LOG.finer(() -> "Attribute event excluded due to sync rule: " + ev);
+                    LOG.finest(() -> "Attribute event excluded due to sync rule: " + ev);
                     allowEvent = false;
                 }
             }

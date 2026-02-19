@@ -24,7 +24,7 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.Date;
+import java.time.Instant;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
@@ -69,17 +69,14 @@ public class SentNotification {
     @Column(name = "ERROR", length = 4096)
     protected String error;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "SENT_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date sentOn;
+    protected Instant sentOn;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "DELIVERED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date deliveredOn;
+    protected Instant deliveredOn;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date acknowledgedOn;
+    protected Instant acknowledgedOn;
 
     @Column(name = "ACKNOWLEDGEMENT")
     protected String acknowledgement;
@@ -111,11 +108,11 @@ public class SentNotification {
         return this;
     }
 
-    public Date getSentOn() {
+    public Instant getSentOn() {
         return sentOn;
     }
 
-    public SentNotification setSentOn(Date sentOn) {
+    public SentNotification setSentOn(Instant sentOn) {
         this.sentOn = sentOn;
         return this;
     }
@@ -165,20 +162,20 @@ public class SentNotification {
         return this;
     }
 
-    public Date getDeliveredOn() {
+    public Instant getDeliveredOn() {
         return deliveredOn;
     }
 
-    public SentNotification setDeliveredOn(Date deliveredOn) {
+    public SentNotification setDeliveredOn(Instant deliveredOn) {
         this.deliveredOn = deliveredOn;
         return this;
     }
 
-    public Date getAcknowledgedOn() {
+    public Instant getAcknowledgedOn() {
         return acknowledgedOn;
     }
 
-    public SentNotification setAcknowledgedOn(Date acknowledgedOn) {
+    public SentNotification setAcknowledgedOn(Instant acknowledgedOn) {
         this.acknowledgedOn = acknowledgedOn;
         return this;
     }

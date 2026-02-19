@@ -233,6 +233,12 @@ services:
       # Manager web server maximum IO thread count; default: Processor core count or 2
       OR_WEBSERVER_IO_THREADS_MAX:
 
+      # Manager web server max request entity size in bytes; default: 30000000
+      OR_WEBSERVER_MAX_ENTITY_SIZE:
+
+      # Manager web server max multipart request entity size in bytes; default: 30000000
+      OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE:
+
       # Database settings
       OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
       OR_DB_HOST: ${OR_DB_HOST:-postgresql}
@@ -433,7 +439,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     restart: always
     # Shared memory should be increased for any reasonable DB size this should be increased further
     shm_size: 128mb

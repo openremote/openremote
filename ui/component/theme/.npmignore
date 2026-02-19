@@ -1,7 +1,6 @@
 build/
 build.gradle
 test/
-src/
 webpack.config.js
 rspack.config.js
 tsconfig.json

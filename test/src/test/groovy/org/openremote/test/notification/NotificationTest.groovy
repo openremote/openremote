@@ -463,7 +463,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notifications = adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null).reverse(true)
         def sentNotification = notifications[0]
         def removeCount = notifications.count {it.sentOn >= sentNotification.sentOn}
-        adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, sentNotification.sentOn.getTime(), null, null, null, null)
+        adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, sentNotification.sentOn.toEpochMilli(), null, null, null, null)
 
         then: "notifications sent after or at that time should have been removed"
         conditions.eventually {
