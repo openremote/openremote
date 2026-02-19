@@ -27,11 +27,11 @@ export const FREQUENCIES = {
     HOURLY: "rrule.frequency.HOURLY",
     MINUTELY: "rrule.frequency.MINUTELY",
     SECONDLY: "rrule.frequency.SECONDLY",
-} as Record<keyof typeof Frequency, string>;
+} as const satisfies Record<keyof typeof Frequency, string>;
 
 /**
- * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
- * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+ * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND,
+ * as per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
  */
 export const BY_RRULE_PARTS = [
     "bymonth",
@@ -45,8 +45,8 @@ export const BY_RRULE_PARTS = [
 ] as const;
 
 /**
- * Dependency of by rule parts table
- * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+ * Dependency of by rule parts table,
+ * as per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
  */
 export const NOT_APPLICABLE_BY_RRULE_PARTS = {
     SECONDLY: ["BYWEEKNO"],
@@ -55,17 +55,17 @@ export const NOT_APPLICABLE_BY_RRULE_PARTS = {
     DAILY: ["BYWEEKNO", "BYYEARDAY"],
     WEEKLY: ["BYWEEKNO", "BYYEARDAY", "BYMONTHDAY"],
     MONTHLY: ["BYWEEKNO", "BYYEARDAY"],
-} as Record<keyof typeof Frequency, string[]>;
+} as Partial<Record<keyof typeof Frequency, string[]>>;
 
 export const WEEKDAYS = {
-  MO: "monday",
-  TU: "tuesday",
-  WE: "wednesday",
-  TH: "thursday",
-  FR: "friday",
-  SA: "saturday",
-  SU: "sunday",
-}
+    MO: "monday",
+    TU: "tuesday",
+    WE: "wednesday",
+    TH: "thursday",
+    FR: "friday",
+    SA: "saturday",
+    SU: "sunday",
+} as const;
 
 export const MONTHS = {
     "1": "january",
@@ -80,7 +80,7 @@ export const MONTHS = {
     "10": "october",
     "11": "november",
     "12": "december",
-};
+} as const;
 
 export enum EventTypes {
     default = "default",
@@ -92,4 +92,4 @@ export const rruleEnds = {
     never: "never",
     until: "schedule.ends.until",
     count: "schedule.ends.count",
-}
+} as const;
