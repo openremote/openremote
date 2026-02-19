@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
@@ -520,18 +522,14 @@ public class MapService implements ContainerService {
                 if (written > customMapLimit) {
                     String msg = "Stream continued passed custom map limit size: " + tilesPath;
                     LOG.log(Level.SEVERE, msg);
-                    throw new IOException(msg);
+                    deletePartiallyWrittenFile(tilesPath, filename);
+                    throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
                 }
                 outputStream.write(buffer, 0, bytesRead);
                 written += bytesRead;
             }
         } catch (IOException e) {
-            try {
-                // Attempt to delete this invalid map data file
-                Files.deleteIfExists(tilesPath);
-            } catch (IOException ex) {
-                LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
-            }
+            deletePartiallyWrittenFile(tilesPath, filename);
             throw e;
         }
 
@@ -541,12 +539,7 @@ public class MapService implements ContainerService {
         saveMapMetadata(metadata);
 
         if (loadedFile == null || !loadedFile.toAbsolutePath().equals(tilesPath.toAbsolutePath())) {
-            try {
-                // Attempt to delete this invalid map data file
-                Files.deleteIfExists(tilesPath);
-            } catch (IOException ex) {
-                LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
-            }
+            deletePartiallyWrittenFile(tilesPath, filename);
             throw new IOException("Failed to load map data ensure the uploaded file is a valid mbtiles file: " + filename);
         }
 
@@ -559,6 +552,15 @@ public class MapService implements ContainerService {
                 LOG.log(Level.WARNING, "Could not delete old file: " + previousCustomTilesPath, ex);
                 // This is problematic as which custom file gets discovered first on next startup??
             }
+        }
+    }
+
+    private void deletePartiallyWrittenFile(Path file, String filename) {
+        try {
+            // Attempt to delete this invalid map data file
+            Files.deleteIfExists(file);
+        } catch (IOException ex) {
+            LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
         }
     }
 
