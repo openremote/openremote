@@ -627,7 +627,7 @@
   "planPeriod": "Eén periode plannen",
   "planRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
-  "fromTo": "Van {{start}} tot {{end}}",
+  "fromTo": "van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
   "forDays": "voor {{days}} dagen",
   "scheduleActivity": "Planner",

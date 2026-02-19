@@ -30,7 +30,7 @@ import "@openremote/or-vaadin-components/or-vaadin-radio-group";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-time-picker";
-import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import { Util } from "@openremote/core";
@@ -112,6 +112,13 @@ declare global {
 
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
+    static styles = css`
+        .capitalize {
+            display: inline-block;
+            &::first-letter { text-transform: uppercase; }
+        }
+    `;
+  
     @property({ type: Object })
     public defaultSchedule?: CalendarEvent;
 
@@ -178,16 +185,17 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
 
                 if (this.isAllDay && diff > 0) {
-                    return html`${this._rrule.toText()} <or-translate value="forDays" .options="${{ days: diff }}"></or-translate>`;
+                    return html`<span class="capitalize">${this._rrule.toText()} <or-translate value="forDays" .options="${{ days: diff }}"></or-translate></span>`;
                 }
 
+                let template!: TemplateResult;
                 const fromTo = { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") };
                 if (diff > 0) {
-                    return html`${this._rrule.toText()} <or-translate value="fromToDays" .options="${{ ...fromTo, days: diff }}"></or-translate>`;
+                    template = html`<or-translate value="fromToDays" .options="${{ ...fromTo, days: diff }}"></or-translate>`;
                 } else if (diff === 0) {
-                    return html`${this._rrule.toText()} <or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
+                    template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
                 }
-                return html`${this._rrule.toText()}`;
+                return html`<span class="capitalize">${this._rrule.toText()} ${template}</span>`;
             }
 
             const format = this.isAllDay ? "DD-MM-YYYY" : "DD-MM-YYYY HH:mm";
@@ -219,7 +227,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(changedProps: PropertyValues) {
-        if (changedProps.has("_normalizedSchedule")) {
+        if (changedProps.has("schedule")) {
             if (this._scheduleWithOffset?.recurrence) {
                 this._rrule = RRule.fromString(this._scheduleWithOffset.recurrence);
             } else if (this._eventType === EventTypes.default && this.defaultSchedule?.recurrence) {
@@ -228,6 +236,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 this._rrule = undefined;
             }
         }
+
         if (changedProps.has("_rrule") && this._rrule) {
             this._byRRuleParts = BY_RRULE_PARTS
                 .filter(p => !NOT_APPLICABLE_BY_RRULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
@@ -320,8 +329,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
           }
         }
 
-        this._scheduleWithOffset = { ...calendarEvent };
-        this._scheduleWithOffset.recurrence = this._getRRule();
+        this._scheduleWithOffset = { ...calendarEvent, recurrence: this._getRRule() };
     }
 
     protected _setCalendarEventType(event: any) {

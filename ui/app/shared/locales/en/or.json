@@ -630,7 +630,7 @@
   "planPeriod": "Plan an occurrence",
   "planRecurrence": "Plan a repeating occurrence",
   "activeFromTo": "Active from {{start}} to {{end}}",
-  "fromTo": "From {{start}} to {{end}}",
+  "fromTo": "from {{start}} to {{end}}",
   "fromToDays": "from {{start}} to {{days}} days later {{end}}",
   "forDays": "for {{days}} days",
   "scheduleActivity": "Schedule Activity",
