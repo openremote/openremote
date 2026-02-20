@@ -35,7 +35,7 @@
       "url" : "mbtiles://mapdata.mbtiles"
     }
   },
-  "sprite" : "map/sprites/style",
+  "sprite" : "map/sprites/osm-liberty",
   "glyphs" : "{fontstack}/{range}.pbf",
   "layers": [
     {
@@ -110,7 +110,7 @@
       "type": "fill",
       "source": "vector_tiles",
       "source-layer": "landcover",
-      "filter": ["all", ["==", "class", "ice"]],
+      "filter": ["all", ["==", "class", "ice_rink"]],
       "paint": {
         "fill-antialias": false,
         "fill-color": "rgba(224, 236, 236, 1)",
