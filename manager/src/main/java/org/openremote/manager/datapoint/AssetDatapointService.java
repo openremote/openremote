@@ -239,7 +239,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
             // Verify the query is 'legal' and can be executed
             if(canQueryDatapoints(exportQuery.query, exportQuery.parameters, datapointExportLimit)) {
-                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
             }
             throw new RuntimeException("Could not export datapoints.");
 
@@ -258,69 +258,44 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         PipedInputStream in = new PipedInputStream(1024 * 1024 * 4); // 4 MB
         PipedOutputStream out = new PipedOutputStream(in);
 
-        final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
-        String query;
-
-        return scheduledExecutorService.schedule(() -> {
-            String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            String tempTableName = "tmp_export_attributes";
-            String copySql = buildCopyExportSql(tempTableName, fileName, fromTimestamp, toTimestamp);
-
-            persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
-                // It is not possible to use parametrized prepared statements with the copy statement,
-                // so we're going through a temporary table for safely binding the parameters
-                try (Statement statement = connection.createStatement()) {
-                    statement.execute(
-                        "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
-                    );
-                }
-
-                try (PreparedStatement insertStatement = connection.prepareStatement(
-                    "insert into " + tempTableName + " (entity_id, attribute_name) values (?, ?)"
-                )) {
-                    for (AttributeRef attributeRef : attributeRefs) {
-                        insertStatement.setString(1, validateAssetId(attributeRef.getId()));
-                        insertStatement.setString(2, attributeRef.getName());
-                        insertStatement.addBatch();
-                    }
-                    insertStatement.executeBatch();
-                }
-
-                try (Statement statement = connection.createStatement()) {
-                    statement.execute(copySql);
-                }
-            }));
-
-            // Column definitions for crosstab result
-            String attributeColumns = headers.stream()
-                    .map(header -> "\"" + header + "\" text")
-                    .collect(Collectors.joining(", "));
-
-            query = String.format(
-                    "copy (select * from crosstab('%s', $cat$%s$cat$) as ct(timestamp timestamp, %s)%s",
-                    getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp, format),
-                    categoryQuery, attributeColumns, TO_STDOUT_WITH_CSV_FORMAT);
-        } else {
-            query = "copy (" + getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp, format) + TO_STDOUT_WITH_CSV_FORMAT;
-        }
-
         // Execute query asynchronously
         scheduledExecutorService.schedule(() -> {
             boolean success = false;
             try {
-                persistenceService.doTransaction(em -> {
-                    Session session = em.unwrap(Session.class);
-                    session.doWork(connection -> {
-                        try {
-                            PGConnection pgConnection = connection.unwrap(PGConnection.class);
-                            CopyManager copyManager = pgConnection.getCopyAPI();
-                            copyManager.copyOut(query, out);
-                            out.flush();
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to export datapoints", e);
+                persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+                    String tempTableName = "tmp_export_attributes";
+
+                    // Create temp table and insert attribute refs safely via PreparedStatement
+                    // to prevent SQL injection (instead of string-interpolating IDs into the query)
+                    try (Statement statement = connection.createStatement()) {
+                        statement.execute(
+                            "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
+                        );
+                    }
+
+                    try (PreparedStatement insertStatement = connection.prepareStatement(
+                        "insert into " + tempTableName + " (entity_id, attribute_name) values (?, ?)"
+                    )) {
+                        for (AttributeRef attributeRef : attributeRefs) {
+                            insertStatement.setString(1, validateAssetId(attributeRef.getId()));
+                            insertStatement.setString(2, attributeRef.getName());
+                            insertStatement.addBatch();
                         }
-                    });
-                });
+                        insertStatement.executeBatch();
+                    }
+
+                    // Build the COPY ... TO STDOUT query based on format
+                    String copyQuery = buildCopyToStdoutQuery(tempTableName, fromTimestamp, toTimestamp, format, attributeRefs);
+
+                    try {
+                        PGConnection pgConnection = connection.unwrap(PGConnection.class);
+                        CopyManager copyManager = pgConnection.getCopyAPI();
+                        copyManager.copyOut(copyQuery, out);
+                        out.flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to export datapoints", e);
+                    }
+                }));
                 success = true;
             } catch (Exception e) {
                 DATA_EXPORT_LOG.log(Level.SEVERE, "Datapoint export failed", e);
@@ -341,6 +316,76 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }, 0, TimeUnit.MILLISECONDS);
 
         return in;
+    }
+
+    /**
+     * Builds a COPY ... TO STDOUT query for streaming CSV data based on the export format.
+     * Uses a temporary table for safe attribute filtering (SQL injection prevention).
+     */
+    private String buildCopyToStdoutQuery(String tempTableName, long fromTimestamp, long toTimestamp,
+                                          DatapointExportFormat format, AttributeRef[] attributeRefs) {
+        long fromSeconds = fromTimestamp / 1000;
+        long toSeconds = toTimestamp / 1000;
+        final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
+
+        if (format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+            Set<String> headers = getAttributeHeaders(attributeRefs);
+
+            // Category query using VALUES clause with dollar-quoting to avoid escaping issues
+            String categoryValues = headers.stream()
+                    .map(header -> "('" + header.replace("'", "''") + "')")
+                    .collect(Collectors.joining(", "));
+            String categoryQuery = "SELECT header FROM (VALUES " + categoryValues + ") AS t(header)";
+
+            // Column definitions for crosstab result
+            String attributeColumns = headers.stream()
+                    .map(header -> "\"" + header + "\" text")
+                    .collect(Collectors.joining(", "));
+
+            // Inner SELECT query for crosstab (uses escaped quotes since it's inside a string argument)
+            String innerQuery;
+            if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+                innerQuery = String.format(
+                        "select public.time_bucket(''1 minute'', ad.timestamp) as bucket_timestamp, " +
+                        "a.name || '' : '' || ad.attribute_name as header, " +
+                        "CASE " +
+                        "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
+                        "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
+                        "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
+                        "END as value " +
+                        "from asset_datapoint ad " +
+                        "join asset a on ad.entity_id = a.id " +
+                        "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
+                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "group by bucket_timestamp, header " +
+                        "order by bucket_timestamp, header",
+                        tempTableName, fromSeconds, toSeconds);
+            } else {
+                innerQuery = String.format(
+                        "select ad.timestamp, a.name || '' : '' || ad.attribute_name as header, ad.value " +
+                        "from asset_datapoint ad " +
+                        "join asset a on ad.entity_id = a.id " +
+                        "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
+                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "order by ad.timestamp, header",
+                        tempTableName, fromSeconds, toSeconds);
+            }
+
+            return String.format(
+                    "copy (select * from crosstab('%s', $cat$%s$cat$) as ct(timestamp timestamp, %s)%s",
+                    innerQuery, categoryQuery, attributeColumns, TO_STDOUT_WITH_CSV_FORMAT);
+        } else {
+            // Plain CSV format using temp table join
+            String innerQuery = String.format(
+                    "select ad.timestamp, a.name, ad.attribute_name, value " +
+                    "from asset_datapoint ad " +
+                    "join asset a on ad.entity_id = a.id " +
+                    "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
+                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                    "order by ad.timestamp desc",
+                    tempTableName, fromSeconds, toSeconds);
+            return "copy (" + innerQuery + TO_STDOUT_WITH_CSV_FORMAT;
+        }
     }
 
     /**
@@ -387,27 +432,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected record ExportQuery(String query, Map<Integer, Object> parameters) {
-    }
-
-    private static String buildCopyExportSql(String tempTableName, String fileName, long fromTimestamp, long toTimestamp) {
-        long fromSeconds = fromTimestamp / 1000;
-        long toSeconds = toTimestamp / 1000;
-
-        StringBuilder sb = new StringBuilder("copy (")
-                .append("select ad.timestamp, a.name, ad.attribute_name, value ")
-                .append("from asset_datapoint ad ")
-                .append("join asset a on ad.entity_id = a.id ")
-                .append("join ").append(tempTableName).append(" t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name ")
-                .append("where ad.timestamp >= to_timestamp(").append(fromSeconds).append(") ")
-                .append("and ad.timestamp <= to_timestamp(").append(toSeconds).append(") ")
-                .append("order by ad.timestamp desc")
-                .append(") to '/storage/")
-                .append(EXPORT_STORAGE_DIR_NAME)
-                .append("/")
-                .append(fileName)
-                .append("' delimiter ',' CSV HEADER;");
-
-        return sb.toString();
     }
 
     private static String validateAssetId(String assetId) {

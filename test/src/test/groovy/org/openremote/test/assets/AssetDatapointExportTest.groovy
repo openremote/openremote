@@ -187,14 +187,13 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
 
         when: "exporting with a malicious attribute name"
         def injectedAttributeName = "x')) UNION ((SELECT now()::timestamp, table_name::text, 'injected'::text, NULL::jsonb FROM information_schema.tables WHERE table_schema='public"
-        def csvExportFuture = assetDatapointService.exportDatapoints(
+        def csvExport = assetDatapointService.exportDatapoints(
                 [new AttributeRef(asset.id, injectedAttributeName)] as AttributeRef[],
                 LocalDateTime.now().minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
 
         then: "the CSV export should not contain injected rows"
-        def csvExport = csvExportFuture.get()
         assert csvExport != null
         def csvExportLines = csvExport.readLines()
         assert csvExportLines.size() == 1
