@@ -109,7 +109,7 @@ ct.describe("Default event type should", () => {
         await vaadinDialog.getDialog().getByRole("button", { name: "Save schedule" }).click();
 
         const actual = (await promise).value;
-        expect(actual).toStrictEqual({ ...expected, recurrence: undefined });
+        expect(actual).toStrictEqual(expected);
         await expect(component.getByRole("button", { name: "Default" })).toHaveCount(1);
     });
 });
