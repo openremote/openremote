@@ -511,17 +511,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected _onSave() {
-        if (this._scheduleWithOffset && this.isAllDay) {
-            this._scheduleWithOffset.start = moment(this._scheduleWithOffset.start).startOf("day").toDate().getTime();
-            this._scheduleWithOffset.end = moment(this._scheduleWithOffset.end).startOf("day").endOf("day").toDate().getTime();
-        }
-        if (this._eventType === EventTypes.default) {
-            delete this._scheduleWithOffset;
-        } else if (this._eventType === EventTypes.recurrence) {
-            this._scheduleWithOffset!.recurrence = this._getRRule();
-        }
-        const schedule = this._applyTimezoneOffset(this._scheduleWithOffset ?? this.defaultSchedule, -this.timezoneOffset);
-        this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
+        this.dispatchEvent(new OrSchedulerChangedEvent(this.schedule ?? this.defaultSchedule));
         this._dialog!.close();
     }
 
