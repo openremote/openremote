@@ -224,7 +224,9 @@ ct.describe("Recurrence event type should", () => {
                 } else if (part === "bymonth") {
                     await expect(monthsSelector).toHaveCount(12);
                 } else {
-                    await expect(dialog.getByRole("combobox", { name: await shared.translate(`rrule.${part}`) })).toBeVisible();
+                    await expect(
+                        dialog.getByRole("combobox", { name: await shared.translate(`rrule.${part}`) })
+                    ).toBeVisible();
                 }
             }
             for (const part of parts as ByRRulePartsKeys[]) {
@@ -233,7 +235,9 @@ ct.describe("Recurrence event type should", () => {
                 } else if (part === "bymonth") {
                     await expect(monthsSelector).not.toBeVisible();
                 } else {
-                    await expect(dialog.getByRole("combobox", { name: await shared.translate(`rrule.${part}`) })).not.toBeVisible();
+                    await expect(
+                        dialog.getByRole("combobox", { name: await shared.translate(`rrule.${part}`) })
+                    ).not.toBeVisible();
                 }
             }
             await dialog
@@ -295,5 +299,25 @@ ct.describe("Recurrence event type should", () => {
 
         expect(actual).toStrictEqual({ end, start, recurrence: "FREQ=DAILY" });
         await expect(component.getByRole("button", { name: "every day " + timeLabel })).toBeVisible();
+    });
+});
+
+ct.describe("Removable button", () => {
+    ct("should show when enabled", async ({ mount, vaadinDialog }) => {
+        const component = await mount(OrScheduler, {
+            props: { header: "Test Calendar Event Component", removable: true },
+        });
+        await component.click();
+        const dialog = vaadinDialog.getDialog();
+        await expect(dialog.getByRole("button", { name: "Delete schedule" })).toBeVisible();
+    });
+
+    ct("should not show when disabled", async ({ mount, vaadinDialog }) => {
+        const component = await mount(OrScheduler, {
+            props: { header: "Test Calendar Event Component", removable: false },
+        });
+        await component.click();
+        const dialog = vaadinDialog.getDialog();
+        await expect(dialog.getByRole("button", { name: "Delete schedule" })).toBeHidden();
     });
 });
