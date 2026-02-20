@@ -29,6 +29,6 @@
         padding-top: 0;
     }
     [class$="container"] {
-        width: 100%; /* Lumo sets default field container with as 12em */
+        width: 100%; /* Lumo sets default field container width as 12em */
     }
 }
