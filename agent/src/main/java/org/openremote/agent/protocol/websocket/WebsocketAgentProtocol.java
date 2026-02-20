@@ -20,15 +20,14 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.channel.ChannelHandler;
-import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.Response;
 import org.apache.http.HttpHeaders;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
+import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -48,14 +47,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.http.HTTPProtocol.DEFAULT_CONTENT_TYPE;
 import static org.openremote.agent.protocol.http.HTTPProtocol.DEFAULT_HTTP_METHOD;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.container.web.WebTargetBuilder.getClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -73,16 +71,14 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);
     public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
-    protected static final AtomicReference<Client> resteasyClient = new AtomicReference<>();
+    protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
     protected List<Runnable> protocolConnectedTasks;
     protected Map<AttributeRef, Runnable> attributeConnectedTasks;
     protected Map<String, List<String>> clientHeaders;
-    protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
+    protected WebService webService;
 
     public WebsocketAgentProtocol(WebsocketAgent agent) {
         super(agent);
-
-        initClient();
     }
 
     @Override
@@ -91,9 +87,14 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     @Override
+    protected void doStart(Container container) throws Exception {
+        super.doStart(container);
+        this.webService = container.getService(WebService.class);
+    }
+
+    @Override
     protected void doStop(Container container) throws Exception {
         super.doStop(container);
-
         clientHeaders = null;
         protocolConnectedTasks = null;
         attributeConnectedTasks = null;
@@ -193,14 +194,6 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         attributeConnectedTasks.remove(attributeRef);
     }
 
-    protected static void initClient() {
-        synchronized (resteasyClient) {
-            if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
-            }
-        }
-    }
-
     protected void onConnected() {
         // Look for any subscriptions that need to be processed
         if (protocolConnectedTasks != null) {
@@ -234,7 +227,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
 
         try {
             // Inject OAuth header
-            String authHeaderValue = client.getAuthHeader().get();
+            String authHeaderValue = webService.getBearerToken(client.oAuthGrant).get();
             if (authHeaderValue != null) {
                 if (headers == null) {
                     headers = new MultivaluedHashMap<>();
@@ -290,7 +283,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
                 });
             }
 
-            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient.get(), uri);
+            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(getClient(), uri);
 
             LOG.fine("Creating web target client for subscription '" + uri + "'");
             Invocation.Builder request = webTargetBuilder.build().request();

@@ -34,13 +34,11 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.container.web.OAuthFilter;
+import org.openremote.container.web.WebService;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
 
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
@@ -54,8 +52,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.container.web.WebTargetBuilder.getClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -66,7 +63,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
-    protected static ResteasyClient client;
     // How long since the last read before a PING is sent
     public static final long PING_MILLIS = 10000;
     // How long to wait for a ping response (i.e. pong)
@@ -115,13 +111,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 //        }
 
         useSsl = "wss".equalsIgnoreCase(scheme);
-    }
-
-    protected synchronized ResteasyClient getClient() {
-        if (client == null) {
-            client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS, null);
-        }
-        return client;
     }
 
     @Override
@@ -298,34 +287,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         super.doDisconnect();
     }
 
-    /**
-     * Get the auth header asynchronously
-     */
     public CompletableFuture<String> getAuthHeader() {
-        if (oAuthGrant == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        CompletableFuture<String> future = new CompletableFuture<>();
-
-        executorService.submit(() -> {
-            if (oAuthGrant != null) {
-                LOG.finer("Retrieving OAuth access token: "  + getClientUri());
-
-                try {
-                    OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
-                    String authHeaderValue = oAuthFilter.getAuthHeader();
-                    if (TextUtil.isNullOrEmpty(authHeaderValue)) {
-                        throw new RuntimeException("Returned access token is null");
-                    }
-                    LOG.finer("Retrieved access token via OAuth: " + getClientUri());
-                    future.complete(authHeaderValue);
-                } catch (Exception e) {
-                    future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage()));
-                }
-            }
-        });
-
-        return future;
+        return WebService.getBearerToken(executorService, getClient(), oAuthGrant);
     }
 }

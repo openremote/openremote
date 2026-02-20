@@ -20,25 +20,26 @@
 package org.openremote.agent.protocol.mail;
 
 import org.openremote.container.web.OAuthFilter;
+import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 
-import jakarta.ws.rs.client.Client;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
+
+import static org.openremote.container.web.WebTargetBuilder.getClient;
 
 public class MailClientBuilder {
     public static final String DEFAULT_FOLDER_NAME = "INBOX";
     public static final int DEFAULT_CHECK_INTERVAL_SECONDS = 5 * 60;
     protected static int MIN_CHECK_INTERVAL_SECONDS = 10;
-    protected static final AtomicReference<Client> jaxrsClient = new AtomicReference<>();
     protected ExecutorService executorService;
     protected ScheduledExecutorService scheduledExecutorService;
     protected int checkInitialDelaySeconds = 0;
@@ -50,7 +51,6 @@ public class MailClientBuilder {
     protected String protocol;
     protected String host;
     protected OAuthGrant oAuthGrant;
-    protected OAuthFilter oAuthFilter;
     protected int port;
     protected String user;
     protected String password;
@@ -206,21 +206,12 @@ public class MailClientBuilder {
         return new MailClient(this);
     }
 
-    public UsernamePassword getAuth() throws SocketException, NullPointerException {
+    public UsernamePassword getAuth() throws SocketException, NullPointerException, ExecutionException, InterruptedException {
         Objects.requireNonNull(user, "User must be supplied");
 
         if (oAuthGrant != null) {
-            synchronized (jaxrsClient) {
-                if (jaxrsClient.get() == null) {
-                    jaxrsClient.set(WebTargetBuilder.createClient(executorService));
-                }
-            }
-            synchronized (this) {
-                if (oAuthFilter == null) {
-                    oAuthFilter = new OAuthFilter(jaxrsClient.get(), oAuthGrant);
-                }
-            }
-            return new UsernamePassword(user, oAuthFilter.getAccessToken());
+            String bearerToken = WebService.getBearerToken(executorService, getClient(), oAuthGrant).get();
+            return new UsernamePassword(user, bearerToken);
         }
 
         Objects.requireNonNull(password, "Password must be supplied");

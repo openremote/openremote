@@ -142,7 +142,6 @@ public abstract class OAuthGrant implements Serializable {
             ", basicAuthHeader=" + basicAuthHeader +
             ", grantType='" + grantType + '\'' +
             ", clientId='" + clientId + '\'' +
-            ", clientSecret='" + clientSecret + '\'' +
             ", scope='" + scope + '\'' +
             '}';
     }

@@ -43,6 +43,8 @@ import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.Headers;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
@@ -52,6 +54,7 @@ import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
@@ -61,10 +64,13 @@ import java.net.Inet4Address;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 import static org.openremote.container.web.CORSConfig.DEFAULT_CORS_ALLOW_ALL;
+import static org.openremote.container.web.WebTargetBuilder.getClient;
 import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
 import static org.openremote.model.Constants.OR_HOSTNAME;
 import static org.openremote.model.util.MapAccess.*;
@@ -91,12 +97,13 @@ public abstract class WebService implements ContainerService {
     protected boolean devMode;
     protected String host;
     protected IdentityService identityService;
+    protected ExecutorService executorService;
     protected int port;
     protected Undertow undertow;
     protected URI containerHostUri;
     protected PathHandler pathHandler = Handlers.path();
 
-   public static final Map<String, String> MIME_TYPES = Map.of(
+    public static final Map<String, String> MIME_TYPES = Map.of(
          "pbf", "application/x-protobuf",
          "wsdl", "application/xml",
          "xsl", "text/xsl");
@@ -118,6 +125,7 @@ public abstract class WebService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         identityService = container.getService(IdentityService.class);
+        executorService = container.getExecutor();
         devMode = container.isDevMode();
         host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
         port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
@@ -548,5 +556,37 @@ public abstract class WebService implements ContainerService {
         }
 
         return props;
+    }
+
+    public CompletableFuture<String> getBearerToken(@NotNull OAuthGrant oAuthGrant) {
+       return getBearerToken(executorService, getClient(), oAuthGrant);
+    }
+
+    /**
+     * Retrieve bearer tokens for the provided {@link OAuthGrant}.
+     */
+    public static CompletableFuture<String> getBearerToken(ExecutorService executorService, Client client, @NotNull OAuthGrant oAuthGrant) {
+        if (oAuthGrant == null) {
+            return CompletableFuture.failedFuture(new NullPointerException(OAuthGrant.class.getSimpleName() + " cannot be null"));
+        }
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        executorService.submit(() -> {
+            LOG.log(DEBUG, "Retrieving OAuth access token: " + oAuthGrant);
+
+            try {
+                OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
+                String authHeaderValue = oAuthFilter.getAuthHeader();
+                if (TextUtil.isNullOrEmpty(authHeaderValue)) {
+                    throw new RuntimeException("Returned access token is null");
+                }
+                LOG.log(DEBUG,"Retrieved access token via OAuth: " + oAuthGrant);
+                future.complete(authHeaderValue);
+            } catch (Exception e) {
+                future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + oAuthGrant + "': " + e.getMessage()));
+            }
+        });
+
+        return future;
     }
 }

@@ -27,25 +27,9 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
     protected static final int CONNECTION_POOL_SIZE = 10;
     protected static final long CONNECTION_TIMEOUT_MILLIS = 10000;
     protected final ExecutorService executorService;
-    protected final AtomicReference<Client> client = new AtomicReference<>();
 
     public ActiveMQSecurityManager2(ExecutorService executorService) {
         this.executorService = executorService;
-    }
-
-    protected Client getClient() {
-        synchronized (client) {
-            if (client.get() == null) {
-                client.set(
-                    createClient(Container.EXECUTOR,
-                        CONNECTION_POOL_SIZE,
-                        CONNECTION_TIMEOUT_MILLIS,
-                        (resteasyClientBuilder ->
-                            // As OAuth will hit the same endpoint a lot we want the full pool to be used
-                            resteasyClientBuilder.maxPooledPerRoute(CONNECTION_POOL_SIZE))));
-            }
-            return client.get();
-        }
     }
 
     @Override

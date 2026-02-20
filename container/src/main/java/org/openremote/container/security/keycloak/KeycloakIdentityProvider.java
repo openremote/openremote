@@ -27,9 +27,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import jakarta.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.resource.RealmsResource;
@@ -37,7 +35,6 @@ import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.security.JWTAuthenticationFilter;
 import org.openremote.container.security.KeyResolverService;
-import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
@@ -51,10 +48,7 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -99,8 +93,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected int sessionTimeoutSeconds;
     protected int sessionMaxSeconds;
     protected int sessionOfflineTimeoutSeconds;
-    // The client we use to access Keycloak
-    protected ResteasyClient client;
     protected ResteasyWebTarget keycloakTarget;
     protected OAuthGrant oAuthGrant;
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
@@ -128,10 +120,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void init(Container container) {
-        if (client != null) {
-            return;
-        }
-
         sessionMaxSeconds = getInteger(container.getConfig(), OR_IDENTITY_SESSION_MAX_MINUTES, OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT) * 60;
         if (sessionMaxSeconds < 60) {
             throw new IllegalArgumentException(OR_IDENTITY_SESSION_MAX_MINUTES + " must be more than 1 minute");
@@ -158,21 +146,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
-
-        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
-                .connectTimeout(
-                    getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
-                    TimeUnit.MILLISECONDS
-                )
-                .readTimeout(
-                    getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-                    TimeUnit.MILLISECONDS
-                )
-                .connectionPoolSize(
-                    getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
-                )
-                .maxPooledPerRoute(getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT));
-        client = clientBuilder.build();
 
         if (container.isDevMode()) {
             authProxyHandler = ProxyHandler.builder()
@@ -226,8 +199,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void stop(Container container) {
-        if (client != null)
-            client.close();
     }
 
     @Override
@@ -273,21 +244,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     /**
-     * Convenience method for generating access tokens from a given OAuth compliant server
-     */
-    public Supplier<String> getAccessTokenSupplier(OAuthGrant grant) {
-        OAuthFilter oAuthFilter = new OAuthFilter(client, grant);
-        return () -> {
-            try {
-                return oAuthFilter.getAccessToken();
-            } catch (Exception e) {
-                LOG.log(Level.INFO, "Failed to get OAuth access token using grant: " + grant, e);
-            }
-            return null;
-        };
-    }
-
-    /**
      * Update the active credentials used to perform keycloak API actions; the token endpoint will be overwritten with this
      * instances keycloak server URI and for the master realm.
      */
@@ -305,7 +261,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         URI proxyURI = keycloakServiceUri.build();
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(client, proxyURI)
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(WebTargetBuilder.getClient(), proxyURI)
             .setOAuthAuthentication(grant);
         keycloakTarget = targetBuilder.build();
         realmsResourcePool.clear();

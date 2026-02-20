@@ -41,23 +41,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 /**
- * This is a factory for creating JAX-RS {@link WebTarget} instances. The instances share a common
- * {@link jakarta.ws.rs.client.Client} that uses a connection pool and has the following
- * {@link jakarta.ws.rs.ext.ContextResolver}s registered (additional filters etc. should be registered on the
- * {@link WebTargetBuilder} instances):
- * <ul>
- * <li>{@link org.openremote.container.json.JacksonConfig}.</li>
- * </ul>
+ * This is a factory for creating JAX-RS {@link WebTarget} client instances that provide built-in authentication:
  */
-// TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API and a default
-//  client should be made available on the Container
 public class WebTargetBuilder {
 
-    public static final int CONNECTION_POOL_SIZE = 10;
-    public static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
-    public static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
+    protected static final int CONNECTION_POOL_SIZE = 10;
+    protected static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
+    protected static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
+    protected static final AtomicReference<ResteasyClient> BUILT_IN_CLIENT = new AtomicReference<>();
     protected ResteasyClient client;
-    protected static ExecutorService executorService;
     protected BasicAuthentication basicAuthentication;
     protected OAuthGrant oAuthGrant;
     protected URI baseUri;
@@ -161,6 +153,21 @@ public class WebTargetBuilder {
         }
 
         return target;
+    }
+
+    public static ResteasyClient getClient() {
+        synchronized (BUILT_IN_CLIENT) {
+            if (BUILT_IN_CLIENT.get() == null) {
+                BUILT_IN_CLIENT.set(
+                        createClient(org.openremote.container.Container.EXECUTOR,
+                                CONNECTION_POOL_SIZE,
+                                CONNECTION_TIMEOUT_MILLISECONDS,
+                                (resteasyClientBuilder ->
+                                        // Don't limit pool usage by request route
+                                        resteasyClientBuilder.maxPooledPerRoute(CONNECTION_POOL_SIZE))));
+            }
+            return BUILT_IN_CLIENT.get();
+        }
     }
 
     public static ResteasyClient createClient(ExecutorService executorService) {
