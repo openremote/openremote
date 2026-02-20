@@ -89,13 +89,13 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
 
       void stop() {
          if (isRunning.compareAndSet(true, false)) {
-            LOG.fine("Stopping session: " + this);
+            LOG.info("Stopping session: " + this);
             ClientSession session = currentSession.getAndSet(null);
             if (session != null) {
                try {
                   session.close();
                } catch (IOException e) {
-                  LOG.fine("Error closing session during tunnel stop msg=" + e.getMessage() + ": " + this);
+                  LOG.warning("Error closing session during tunnel stop msg=" + e.getMessage() + ": " + this);
                }
             }
          }
@@ -182,12 +182,12 @@ public class MINAGatewayTunnelFactory implements GatewayTunnelFactory {
          if (!initialFuture.isDone()) {
             LOG.info("Remote port forwarding started: " + this);
          } else {
-            LOG.fine("Remote port forwarding reconnected: " + this);
+            LOG.info("Remote port forwarding reconnected: " + this);
          }
          initialFuture.complete(null);
 
          session.addCloseFutureListener(f -> {
-            LOG.fine("Remote port forwarding closed: " + this);
+            LOG.finer("Remote port forwarding session closed: " + this);
             if (isRunning.get()) {
                handleFailure(null);
             }

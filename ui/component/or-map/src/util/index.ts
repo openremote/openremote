@@ -84,13 +84,6 @@ export function getLngLatBounds(lngLatBoundsLike?: LngLatBoundsLike): LngLatBoun
     }
 }
 
-export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBounds | undefined {
-    const lngLatBounds = getLngLatBounds(lngLatBoundsLike);
-    if (lngLatBounds) {
-        return L.latLngBounds(lngLatBounds.getNorthEast()!, lngLatBounds.getSouthWest()!);
-    }
-}
-
 export interface OverrideConfigSettings {
     markerConfig: MapMarkerColours;
     currentValue: any;
