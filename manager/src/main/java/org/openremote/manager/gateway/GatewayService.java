@@ -484,6 +484,12 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return this.tunnelInfos.values();
     }
 
+    public GatewayTunnelInfo[] getGatewayTunnelInfos(String gatewayID) {
+        return getTunnelInfos().stream()
+            .filter(tunnel -> tunnel.getGatewayId().equals(gatewayID))
+            .toArray(GatewayTunnelInfo[]::new);
+    }
+
     protected boolean tunnellingSupported() {
         return !TextUtil.isNullOrEmpty(tunnelSSHHostname) && tunnelSSHPort > 0;
     }
@@ -551,8 +557,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 String msg = "Failed to start tunnel: A timeout occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
                 LOG.log(Level.WARNING, msg);
             } else {
-                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
-                LOG.log(Level.WARNING, msg, e.getCause());
+                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId + ", error=" + e.getCause().getMessage();
+                LOG.log(Level.WARNING, msg);
             }
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -580,21 +586,21 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
 
         if (connector == null || !realm.equals(connector.getRealm())) {
-            String msg = "Failed to stop tunnel: reason=Gateway disconnected or doesn't exist, id=" + gatewayId;
+            String msg = "Failed to stop tunnel: reason=Gateway disconnected or doesn't exist, id=" + tunnelInfo.getGatewayId();
             LOG.info(msg);
             throw new IllegalStateException(msg);
         }
 
         if (!connector.isTunnellingSupported()) {
-            String msg = "Failed to stop tunnel: reason=Not supported by gateway, id=" + gatewayId;
+            String msg = "Failed to stop tunnel: reason=Not supported by gateway, id=" + tunnelInfo.getGatewayId();
             LOG.info(msg);
             throw new IllegalArgumentException(msg);
         }
 
         if (!connector.isConnected()) {
-            String msg = "Failed to stop tunnel: reason=Not connected, id=" + gatewayId;
-            LOG.info(msg);
-            throw new IllegalArgumentException(msg);
+            LOG.info("Just removing tunnel from list: reason=Not connected, id=" + tunnelInfo.getGatewayId());
+            tunnelInfos.remove(tunnelInfo.getId(), tunnelInfo);
+            return;
         }
 
         // Wait for up to 20 seconds for the tunnel to stop
@@ -602,11 +608,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         try {
             stopFuture.get(20, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
-            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + gatewayId;
+            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + tunnelInfo.getGatewayId();
             LOG.log(Level.WARNING, msg, e.getCause());
             throw new RuntimeException(msg, e.getCause());
         } catch (InterruptedException | TimeoutException e) {
-            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + gatewayId;
+            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + tunnelInfo.getGatewayId();
             LOG.warning(msg);
             throw new RuntimeException(msg);
         } finally {
@@ -678,8 +684,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 connector.disconnected(sessionId);
             }
         } finally {
-            // Assume all gateway tunnels have been terminated
-            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equalsIgnoreCase(gatewayId));
+            if (connector == null || connector.getGatewayVersion() == null) {
+                // Assume all gateway tunnels have been terminated
+                LOG.fine("Gateway doesn't support tunnel re-sync so removing all tunnel sessions: " + connector);
+                tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equalsIgnoreCase(gatewayId));
+            } else {
+                LOG.fine("Gateway supports tunnel re-sync so leaving tunnel sessions in place: " + connector);
+            }
         }
     }
 

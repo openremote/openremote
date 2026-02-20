@@ -30,8 +30,11 @@ import org.postgresql.copy.CopyManager;
 
 import java.io.*;
 import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.*;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -232,11 +235,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                                                   long toTimestamp,
                                                   DatapointExportFormat format) throws IOException {
         try {
-            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp, null);
+            ExportQuery exportQuery = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
             // Verify the query is 'legal' and can be executed
-            if(canQueryDatapoints(query, null, datapointExportLimit)) {
-                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
+            if(canQueryDatapoints(exportQuery.query, exportQuery.parameters, datapointExportLimit)) {
+                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
             }
             throw new RuntimeException("Could not export datapoints.");
 
@@ -258,14 +261,35 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
         String query;
 
-        if (format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
-            Set<String> headers = getAttributeHeaders(attributeRefs);
+        return scheduledExecutorService.schedule(() -> {
+            String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
+            String tempTableName = "tmp_export_attributes";
+            String copySql = buildCopyExportSql(tempTableName, fileName, fromTimestamp, toTimestamp);
 
-            // Category query using VALUES clause with dollar-quoting to avoid escaping issues
-            String categoryValues = headers.stream()
-                    .map(header -> "('" + header.replace("'", "''") + "')")
-                    .collect(Collectors.joining(", "));
-            String categoryQuery = "SELECT header FROM (VALUES " + categoryValues + ") AS t(header)";
+            persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+                // It is not possible to use parametrized prepared statements with the copy statement,
+                // so we're going through a temporary table for safely binding the parameters
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute(
+                        "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
+                    );
+                }
+
+                try (PreparedStatement insertStatement = connection.prepareStatement(
+                    "insert into " + tempTableName + " (entity_id, attribute_name) values (?, ?)"
+                )) {
+                    for (AttributeRef attributeRef : attributeRefs) {
+                        insertStatement.setString(1, validateAssetId(attributeRef.getId()));
+                        insertStatement.setString(2, attributeRef.getName());
+                        insertStatement.addBatch();
+                    }
+                    insertStatement.executeBatch();
+                }
+
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute(copySql);
+                }
+            }));
 
             // Column definitions for crosstab result
             String attributeColumns = headers.stream()
@@ -318,7 +342,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         return in;
     }
-    
+
     /**
      * Function for building CSV attribute headers when format will make
      * a separate column per attribute.
@@ -335,55 +359,70 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
     /**
      * Function for building an SQL query that SELECTs the content for the data export.
-     * For crosstab formats, uses escaped quotes ('') as these are embedded in a crosstab string argument.
+     * Currently, it includes timestamp, asset name, attribute name, and the data point value.
+     * Be aware: this SQL query does NOT contain any CSV-related statements.
+     *
+     * It returns a structure containing the parametrized query as a string and the parameter values.
      */
-    protected String getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp, DatapointExportFormat format) {
+    protected ExportQuery getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
+        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(?) and ad.timestamp <= to_timestamp(?) and ");
+        Map<Integer, Object> parameters = new HashMap<>();
+        int paramIndex = 1;
+        parameters.put(paramIndex++, fromTimestamp / 1000);
+        parameters.put(paramIndex++, toTimestamp / 1000);
+
+        sb.append("(ad.entity_id, ad.attribute_name) in (");
+        for (int i = 0; i < attributeRefs.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append("(?, ?)");
+            parameters.put(paramIndex++, validateAssetId(attributeRefs[i].getId()));
+            parameters.put(paramIndex++, attributeRefs[i].getName());
+        }
+        sb.append(") ");
+        sb.append("order by ad.timestamp desc");
+
+        return new ExportQuery(sb.toString(), parameters);
+    }
+
+    protected record ExportQuery(String query, Map<Integer, Object> parameters) {
+    }
+
+    private static String buildCopyExportSql(String tempTableName, String fileName, long fromTimestamp, long toTimestamp) {
         long fromSeconds = fromTimestamp / 1000;
         long toSeconds = toTimestamp / 1000;
 
-        if (format == null) {
-            format = DatapointExportFormat.CSV;
-        }
+        StringBuilder sb = new StringBuilder("copy (")
+                .append("select ad.timestamp, a.name, ad.attribute_name, value ")
+                .append("from asset_datapoint ad ")
+                .append("join asset a on ad.entity_id = a.id ")
+                .append("join ").append(tempTableName).append(" t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name ")
+                .append("where ad.timestamp >= to_timestamp(").append(fromSeconds).append(") ")
+                .append("and ad.timestamp <= to_timestamp(").append(toSeconds).append(") ")
+                .append("order by ad.timestamp desc")
+                .append(") to '/storage/")
+                .append(EXPORT_STORAGE_DIR_NAME)
+                .append("/")
+                .append(fileName)
+                .append("' delimiter ',' CSV HEADER;");
 
-        if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
-            String attributeFilter = Arrays.stream(attributeRefs)
-                    .map(attr -> String.format("(ad.entity_id = ''%s'' and ad.attribute_name = ''%s'')", attr.getId(), attr.getName()))
-                    .collect(Collectors.joining(" or "));
-            return String.format(
-                    "select public.time_bucket(''1 minute'', ad.timestamp) as bucket_timestamp, " +
-                    "a.name || '' : '' || ad.attribute_name as header, " +
-                    "CASE " +
-                    "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
-                    "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
-                    "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
-                    "END as value " +
-                    "from asset_datapoint ad " +
-                    "join asset a on ad.entity_id = a.id " +
-                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
-                    "group by bucket_timestamp, header " +
-                    "order by bucket_timestamp, header",
-                    fromSeconds, toSeconds, attributeFilter);
-        } else if (format == DatapointExportFormat.CSV_CROSSTAB) {
-            String attributeFilter = Arrays.stream(attributeRefs)
-                    .map(attr -> String.format("(ad.entity_id = ''%s'' and ad.attribute_name = ''%s'')", attr.getId(), attr.getName()))
-                    .collect(Collectors.joining(" or "));
-            return String.format(
-                    "select ad.timestamp, a.name || '' : '' || ad.attribute_name as header, ad.value " +
-                    "from asset_datapoint ad " +
-                    "join asset a on ad.entity_id = a.id " +
-                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s) " +
-                    "order by ad.timestamp, header",
-                    fromSeconds, toSeconds, attributeFilter);
-        } else {
-            // Plain CSV format - no quote escaping needed
-            String attributeFilter = Arrays.stream(attributeRefs)
-                    .map(attr -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attr.getId(), attr.getName()))
-                    .collect(Collectors.joining(" or "));
-            return String.format(
-                    "select ad.timestamp, a.name, ad.attribute_name, value " +
-                    "from asset_datapoint ad, asset a " +
-                    "where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (%s)",
-                    fromSeconds, toSeconds, attributeFilter);
+        return sb.toString();
+    }
+
+    private static String validateAssetId(String assetId) {
+        if (assetId == null || assetId.length() != 22) {
+            throw new IllegalArgumentException("Invalid asset id");
         }
+        for (int i = 0; i < assetId.length(); i++) {
+            char c = assetId.charAt(i);
+            boolean isBase62 = (c >= '0' && c <= '9')
+                    || (c >= 'A' && c <= 'Z')
+                    || (c >= 'a' && c <= 'z');
+            if (!isBase62) {
+                throw new IllegalArgumentException("Invalid asset id");
+            }
+        }
+        return assetId;
     }
 }
