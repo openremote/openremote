@@ -174,7 +174,7 @@ ct.describe("Period event type should", () => {
         await dialog.locator("or-vaadin-time-picker [slot=input]").first().fill("09:00");
         await dialog.locator("or-vaadin-time-picker [slot=input]").first().press("Enter");
         await dialog.locator("or-vaadin-time-picker [slot=input]").last().fill("18:00");
-        await dialog.locator("or-vaadin-time-picker [slot=input]").first().press("Enter");
+        await dialog.locator("or-vaadin-time-picker [slot=input]").last().press("Enter");
         await dialog.getByRole("button", { name: "Save schedule" }).click();
 
         const actual = (await promise).value;
@@ -296,7 +296,7 @@ ct.describe("Recurrence event type should", () => {
         await dialog.locator("or-vaadin-time-picker [slot=input]").first().fill("09:00");
         await dialog.locator("or-vaadin-time-picker [slot=input]").first().press("Enter");
         await dialog.locator("or-vaadin-time-picker [slot=input]").last().fill("18:00");
-        await dialog.locator("or-vaadin-time-picker [slot=input]").first().press("Enter");
+        await dialog.locator("or-vaadin-time-picker [slot=input]").last().press("Enter");
         await dialog.getByRole("button", { name: "Save schedule" }).click();
 
         const actual = (await promise).value;
