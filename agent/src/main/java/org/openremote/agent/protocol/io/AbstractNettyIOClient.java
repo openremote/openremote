@@ -157,6 +157,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected int connectTimeout = 5000;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
     protected Supplier<CompletableFuture<Void>> initFutureSupplier;
+    protected CompletableFuture<Void> connectFuture;
 
     protected AbstractNettyIOClient() {
         this.executorService = Container.EXECUTOR;
@@ -256,7 +257,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
-            CompletableFuture<Void> connectFuture = doConnect();
+            connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
             execution.recordResult(null);
         });
@@ -305,6 +306,13 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
 
         return startFuture;
+    }
+
+    /**
+     * Simply returns {@link Channel#isActive} but can be overridden as needed
+     */
+    protected boolean isChannelReady() {
+        return channel != null && channel.isActive();
     }
 
     @Override
@@ -363,7 +371,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     @Override
     public void sendMessage(T message) {
-        if (channel == null) {
+        LOG.finest("Sending message to server: " + getClientUri());
+
+        if (!isChannelReady()) {
+            LOG.finer("Channel not ready, message not sent: " + getClientUri());
             return;
         }
 
@@ -446,6 +457,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                if (!isChannelReady()) {
+                    if (connectFuture != null) {
+                        connectFuture.completeExceptionally(cause);
+                    }
+                    ctx.close();
+                    return;
+                }
+
                 if (cause instanceof DecoderException decoderException) {
                     onDecodeException(ctx, decoderException);
                 } else if (cause instanceof EncoderException encoderException) {

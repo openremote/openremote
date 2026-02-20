@@ -60,14 +60,6 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectNode getSettingsJs(RequestParams requestParams) {
-        return mapService.getMapSettingsJs(
-            getAuthenticatedRealmName(),
-            requestParams.getExternalSchemeHostAndPort()
-        );
-    }
-
-    @Override
     public Response getTile(int zoom, int column, int row) {
         byte[] tile = mapService.getMapTile(zoom, column, row);
         if (tile != null) {
@@ -82,6 +74,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public ObjectNode uploadMap(RequestParams requestParams, String filename) {
+        // Starting with Resteasy 6.2.15.Final, request.getContentLength() returns -1 if Content-Length header is not set
         if (request.getContentLength() > mapService.customMapLimit) {
             throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }

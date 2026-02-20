@@ -3,7 +3,7 @@
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Web Component for displaying a Mapbox map; either raster or vector (default). This component requires an OpenRemote
+Web Component for displaying a MapLibre map; either raster or vector (default). This component requires an OpenRemote
 Manager to retrieve map settings and tiles.
 
 ## Install
@@ -19,19 +19,13 @@ For a full list of properties, methods and options refer to the TypeDoc generate
 <or-map center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;" />
 ```
 
-For a raster map (raster tile serving in the OpenRemote Manager must be properly configured):
-
-```$html
-<or-map type="RASTER" center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;" />
-```
-
 The center and zoom are optional overrides for the defaults that will be defined in the `mapsettings` loaded from the
 OpenRemote Manager; each realm can have different `mapsettings` with a fallback to the default.
 
 Markers can be added via markup as children:
 
 ```$html
-<or-map id="vectorMap" center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;">
+<or-map id="map" center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;">
     <or-map-marker id="demo-marker" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
 </or-map>
 ```
@@ -39,10 +33,10 @@ Markers can be added via markup as children:
 Or programmatically:
 
 ```$typescript
-const vectorMap = docuemnt.getElementById("vectorMap");
+const map = document.getElementById("map");
 const assetMarker = document.createElement("or-map-marker-asset");
 assetMarker.setAttribute("asset", apartment1.id!);
-vectorMap.appendChild(assetMarker);
+map.appendChild(assetMarker);
 ```
 
 There are two types of built in markers:
