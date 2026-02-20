@@ -339,26 +339,24 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected _setCalendarEventType(event: any) {
         const value = event.target.value;
-        switch (value) {
-            case EventTypes.default:
-                this.schedule = this.defaultSchedule; // Default is not local time
-                this._rrule = RRule.fromString(this.defaultSchedule?.recurrence ?? "") || undefined;
-                break;
-            case EventTypes.period:
-                this._scheduleWithOffset = {
-                    start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
-                    end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
-                };
-                break;
-            case EventTypes.recurrence:
-                this._scheduleWithOffset = {
-                    start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
-                    end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime(),
-                    recurrence: this._getRRule() ?? "FREQ=DAILY"
-                };
-                break;
-        }
         this._eventType = value;
+
+        if (value === EventTypes.default) {
+            this.schedule = this.defaultSchedule; // Default is not local time
+            const recurrence = this.defaultSchedule?.recurrence;
+            this._rrule = recurrence ? RRule.fromString(recurrence) : undefined;
+            return;
+        }
+
+        const schedule = {
+            start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
+            end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
+        };
+        if (value === EventTypes.period) {
+            this._scheduleWithOffset = schedule;
+        } else {
+            this._scheduleWithOffset = { ...schedule, recurrence: this._getRRule() ?? "FREQ=DAILY" };
+        }
     }
 
     /**
