@@ -331,7 +331,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const value = event.target.value;
         switch (value) {
             case EventTypes.default:
-                this._scheduleWithOffset = this.defaultSchedule;
+                this.schedule = this.defaultSchedule; // Default is not local time
                 this._rrule = RRule.fromString(this.defaultSchedule?.recurrence ?? "") || undefined;
                 break;
             case EventTypes.period:
