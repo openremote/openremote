@@ -20,7 +20,12 @@
 import { Locator } from "@openremote/test";
 import { ct, expect } from "./fixtures";
 
-import { ByRRulePartsKeys, OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
+import {
+    ByRRulePartsKeys,
+    OrScheduler,
+    OrSchedulerChangedEvent,
+    OrSchedulerRemovedEvent,
+} from "@openremote/or-scheduler";
 import { MONTHS, BY_RRULE_PARTS, RFC_STRICT_NOT_APPLICABLE, WEEKDAYS } from "../src/util";
 import type { VaadinInput } from "../../or-vaadin-components/test/fixtures";
 import { Frequency } from "../src";
@@ -319,5 +324,18 @@ ct.describe("Removable button", () => {
         await component.click();
         const dialog = vaadinDialog.getDialog();
         await expect(dialog.getByRole("button", { name: "Delete schedule" })).toBeHidden();
+    });
+
+    ct("should fire removed event when clicked", async ({ mount, vaadinDialog, shared }) => {
+        const [promise, handler] = shared.promiseEventDispatch<OrSchedulerRemovedEvent>();
+        const component = await mount(OrScheduler, {
+            props: { header: "Test Calendar Event Component", removable: true },
+            on: { "or-scheduler-removed": handler },
+        });
+        await component.click();
+        const dialog = vaadinDialog.getDialog();
+        await dialog.getByRole("button", { name: "Delete schedule" }).click();
+        await expect(promise).resolves.toBeNull();
+        await expect(dialog).toBeHidden();
     });
 });
