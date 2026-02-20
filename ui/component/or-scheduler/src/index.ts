@@ -188,7 +188,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
                 const fromTo = { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") };
 
-                let template!: TemplateResult;
+                let template: TemplateResult = html``;
                 if (this.isAllDay && diff > 0) {
                     template = html`<or-translate value="forDays" .options="${{ days: diff }}"></or-translate>`;
                 } else if (diff > 0) {
