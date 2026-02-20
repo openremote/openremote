@@ -22,4 +22,4 @@ import { RadioGroup } from "@vaadin/radio-group";
 import { OrVaadinComponent } from "./util";
 
 @customElement("or-vaadin-radio-group")
-export class OrVaadinGroup extends RadioGroup implements OrVaadinComponent {}
+export class OrVaadinRadioGroup extends RadioGroup implements OrVaadinComponent {}
