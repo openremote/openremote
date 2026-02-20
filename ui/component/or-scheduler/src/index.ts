@@ -274,6 +274,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
                 origOptions!.byweekday = (value as WeekdayStr[]).map(d => RRule[d]);
+            } else if (key === "freq") {
+                for (const part of BY_RRULE_PARTS) delete origOptions![part];
+                origOptions![key as RRulePartKeys] = value;
             } else {
                 origOptions![key as RRulePartKeys] = value;
             }
@@ -612,19 +615,20 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             return undefined
         }
 
+        const opts = this._rrule?.origOptions?.[part] ?? [];
         const value = (part === "byweekday"
-            ? (this._rrule?.origOptions?.byweekday as Weekday[])?.map(String)
-            : this._rrule?.origOptions[part]
-        ) ?? [];
+            ? (opts as Weekday[])?.map(String)
+            : Array.isArray(opts) ? opts : [opts]
+        );
 
         return type === InputType.CHECKBOX_LIST ? html`
             <or-vaadin-checkbox-group .value="${value}" @value-changed="${this._onPartChange(part, "detail", value)}">
                 ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox theme="button" value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
-            <or-vaadin-multi-select-combo-box .label="${i18next.t(`rrule.${part}`)}"
-                .items="${options.filter((n) => this.disableNegativeByPartValues ? +n > 0 : true)}"
-                @change="${this._onPartChange(part, "value")}">
+            <or-vaadin-multi-select-combo-box .selectedItems="${value}" .label="${i18next.t(`rrule.${part}`)}"
+                .items="${this.disableNegativeByPartValues ? options.filter((n) => +n > 0) : options}"
+                @selected-items-changed="${this._onPartChange(part, "detail", value)}">
             </or-vaadin-multi-select-combo-box>
         `;
     }
