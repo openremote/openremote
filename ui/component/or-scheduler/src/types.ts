@@ -19,6 +19,20 @@
  */
 import { Frequency as FrequencyValue, Options } from "rrule";
 
+export type ByRRuleParts = Pick<
+    Options,
+    | "bymonth"
+    | "byweekno"
+    | "byyearday"
+    | "bymonthday"
+    | "byweekday"
+    | "byhour"
+    | "byminute"
+    | "bysecond"
+>;
+export type ByRRulePartsKeys = keyof ByRRuleParts;
+export type ByRRuleCombination = Record<keyof typeof FrequencyValue, ByRRulePartsKeys[]>;
+
 /**
  * Supported recurrence rule parts in evaluation order:
  * - `interval`
@@ -49,17 +63,9 @@ export type RRuleParts = Pick<
     Options,
     | "interval"
     | "freq" // Must exist (should default to DAILY?)
-    | "bymonth"
-    | "byweekno"
-    | "byyearday"
-    | "bymonthday"
-    | "byweekday"
-    | "byhour"
-    | "byminute"
-    | "bysecond"
     | "count"
     | "until"
->;
+> & ByRRuleParts;
 
 export type Frequency = keyof typeof FrequencyValue;
 export type RRulePartKeys = keyof RRuleParts;

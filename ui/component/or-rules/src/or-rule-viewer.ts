@@ -40,19 +40,18 @@ import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
-import { OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
+import { INTUITIVE_NOT_APPLICABLE, OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
 
 const DISABLED_RRULE_PARTS = [
-    'interval',
-    'bymonth',
-    'byweekno',
-    'byyearday',
-    'bymonthday',
-    'byhour',
-    'byminute',
-    'bysecond',
-    'count',
-] as RRulePartKeys[]
+    "interval",
+    "bymonth",
+    "byweekno",
+    "byyearday",
+    "byhour",
+    "byminute",
+    "bysecond",
+    "count",
+] as RRulePartKeys[];
 
 // language=CSS
 export const style = css`
@@ -264,6 +263,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             header="scheduleRuleActivity"
                             defaultEventTypeLabel="validityAlways"
                             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+                            .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
                             .schedule="${this.ruleset?.meta?.validity}"
                             @or-scheduler-changed="${this._onSchedulerChanged}"
                         ></or-scheduler>

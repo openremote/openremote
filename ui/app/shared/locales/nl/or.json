@@ -664,7 +664,15 @@
       "MINUTELY_other": "Minuten",
       "SECONDLY_one": "Seconde",
       "SECONDLY_other": "Seconden"
-    }
+    },
+    "bymonth": "Maanden",
+    "byweekno": "Weken",
+    "byyearday": "Dagen van het jaar",
+    "bymonthday": "Dagen van de maand",
+    "byweekday": "Weekdagen",
+    "byhour": "Uren",
+    "byminute": "Minuten",
+    "bysecond": "Seconden"
   },
   "allDay": "Hele dag",
   "apply": "toepassen",

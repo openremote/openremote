@@ -49,12 +49,12 @@ import {
     EventTypes,
     FREQUENCIES,
     MONTHS,
-    NOT_APPLICABLE_BY_RRULE_PARTS,
-    rruleEnds,
+    RFC_STRICT_NOT_APPLICABLE,
+    RRULE_ENDS,
     WEEKDAYS,
 } from "./util";
 import moment from "moment";
-import type { PartKeys, RRulePartKeys, Frequency } from "./types";
+import type { PartKeys, RRulePartKeys, Frequency, ByRRuleCombination, ByRRulePartsKeys } from "./types";
 
 export type * from "./types";
 export * from "./util";
@@ -131,6 +131,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: Array })
     public disabledRRuleParts: RRulePartKeys[] = [];
 
+    @property({ type: Array })
+    public disabledByPartCombinations: ByRRuleCombination = RFC_STRICT_NOT_APPLICABLE;
+
     @property({ type: String })
     public header = "scheduleActivity";
 
@@ -153,7 +156,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _count = 1;
 
     @state()
-    protected _ends: keyof typeof rruleEnds = "never";
+    protected _ends: keyof typeof RRULE_ENDS = "never";
 
     @state()
     protected _rrule?: RRule;
@@ -235,7 +238,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
         if (changedProps.has("_rrule") && this._rrule) {
             this._byRRuleParts = BY_RRULE_PARTS
-                .filter(p => !NOT_APPLICABLE_BY_RRULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
+                .filter(p => !this.disabledByPartCombinations[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p))
                 .filter(p => !this.disabledRRuleParts.includes(p));
             this._ends = (this._rrule?.origOptions?.until && "until") || (this._rrule?.origOptions?.count && "count") || "never";
         }
@@ -411,6 +414,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
         return html`
             <style>
+                /* Showing just a number is not intuitive when using numbers as options */
+                vaadin-multi-select-combo-box-chip[slot="overflow"]::part(label)::before {
+                    content: "+";
+                }
+
                 vaadin-checkbox {
                     font-weight: 600;
                 }
@@ -562,7 +570,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return html`
             <div id="recurrence" class="section">
                 <label class="title"><or-translate value="schedule.repeat"></or-translate></label>
-                <div style="display: flex; gap: 8px; margin-bottom: var(--lumo-space-l)">
+                <div style="display: flex; gap: 8px">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
                         <or-vaadin-number-field min="1" max="9" step-buttons-visible style="width: 106px" .value="${interval}"
                             @change="${this._onPartChange("interval", "value")}">
@@ -572,19 +580,21 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                         @change="${this._onPartChange("freq", "value")}">
                     </or-vaadin-select>
                 </div>
-                <label class="title"><or-translate value="schedule.repeatOn"></or-translate></label>
-                <div>${this._getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
-                <div>
-                    ${this._getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
-                    ${this._getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
-                    ${this._getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
-                </div>
-                <div>${this._getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.entries(WEEKDAYS))}</div>
-                <div>
-                    ${this._getByRulePart("byhour", InputType.SELECT, byHourOptions)}
-                    ${this._getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
-                    ${this._getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
-                </div>
+                ${when(BY_RRULE_PARTS.some((p) => this._byRRuleParts?.includes(p)), () => html`
+                    <label class="title" style="margin-top: var(--lumo-space-l)"><or-translate value="schedule.repeatOn"></or-translate></label>
+                    <div>${this._getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
+                    <div>
+                        ${this._getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
+                        ${this._getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
+                        ${this._getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
+                    </div>
+                    <div>${this._getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.entries(WEEKDAYS))}</div>
+                    <div>
+                        ${this._getByRulePart("byhour", InputType.SELECT, byHourOptions)}
+                        ${this._getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
+                        ${this._getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
+                    </div>
+                `)}
             </div>`;
     }
 
@@ -593,7 +603,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      *
      * @returns The specified BY_XXX RRule part field or undefined if not applicable
      */
-    protected _getByRulePart<T extends number | [string, string]>(part: RRulePartKeys, type: InputType, options: T[]): TemplateResult | undefined {
+    protected _getByRulePart<T extends number | [string, string]>(part: ByRRulePartsKeys, type: InputType, options: T[]): TemplateResult | undefined {
         if (!this._byRRuleParts?.includes(part)) {
             return undefined
         }
@@ -608,7 +618,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox theme="button" value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
-            <or-vaadin-multi-select-combo-box .label="${i18next.t(part)}" .items="${options}" @change="${this._onPartChange(part, "value")}"></or-vaadin-multi-select-combo-box>
+            <or-vaadin-multi-select-combo-box .label="${i18next.t(`rrule.${part}`)}" .items="${options.filter((n) => +n > 0)}" @change="${this._onPartChange(part, "value")}"></or-vaadin-multi-select-combo-box>
         `;
     }
 
@@ -658,7 +668,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div style="display: flex; gap: 8px;">
                     <or-vaadin-radio-group style="padding-right: 10px; width: unset" .value="${this._ends}" theme="vertical"
                         @change="${this._onPartChange("recurrence-ends", "value")}">
-                        ${Object.entries(rruleEnds)
+                        ${Object.entries(RRULE_ENDS)
                                 .filter(([k]) => !this.disabledRRuleParts?.includes(k as RRulePartKeys))
                                 .map(([k, v]) => html`
                                     <vaadin-radio-button style="margin: 6px 0" value="${k}" label="${i18next.t(v)}"></vaadin-radio-button>

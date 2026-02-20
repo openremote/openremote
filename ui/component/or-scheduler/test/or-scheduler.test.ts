@@ -20,8 +20,8 @@
 import { Locator } from "@openremote/test";
 import { ct, expect } from "./fixtures";
 
-import { OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
-import { MONTHS, BY_RRULE_PARTS, NOT_APPLICABLE_BY_RRULE_PARTS, WEEKDAYS } from "../src/util";
+import { ByRRulePartsKeys, OrScheduler, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
+import { MONTHS, BY_RRULE_PARTS, RFC_STRICT_NOT_APPLICABLE, WEEKDAYS } from "../src/util";
 import type { VaadinInput } from "../../or-vaadin-components/test/fixtures";
 import { Frequency } from "../src";
 
@@ -185,7 +185,7 @@ ct.describe("Period event type should", () => {
 });
 
 ct.describe("Recurrence event type should", () => {
-    ct("show recurrence inputs", async ({ mount, vaadinDialog, vaadinInput }) => {
+    ct("show recurrence inputs", async ({ mount, vaadinDialog, vaadinInput, shared }) => {
         const component = await mount(OrScheduler, {
             props: { header: "Test Calendar Event Component" },
         });
@@ -215,25 +215,25 @@ ct.describe("Recurrence event type should", () => {
             .first()
             .getByRole("checkbox", { name: months });
 
-        for (const [freq, parts] of Object.entries(NOT_APPLICABLE_BY_RRULE_PARTS)) {
+        for (const [freq, parts] of Object.entries(RFC_STRICT_NOT_APPLICABLE)) {
             if (freq === "SECONDLY") continue; // Intentionally skipped as its partially broken and unused
             await vaadinInput.getSelectInputOption(FREQUENCIES[freq as Frequency], dialog).click();
-            for (const part of BY_RRULE_PARTS.filter((p) => !parts.includes(p.toUpperCase()))) {
+            for (const part of BY_RRULE_PARTS.filter((p) => !(parts as ByRRulePartsKeys[]).includes(p))) {
                 if (part === "byweekday") {
                     await expect(weekDaysSelector).toHaveCount(7);
                 } else if (part === "bymonth") {
                     await expect(monthsSelector).toHaveCount(12);
                 } else {
-                    await expect(dialog.getByRole("combobox", { name: part })).toBeVisible();
+                    await expect(dialog.getByRole("combobox", { name: await shared.translate(`rrule.${part}`) })).toBeVisible();
                 }
             }
-            for (const part of parts) {
+            for (const part of parts as ByRRulePartsKeys[]) {
                 if (part === "byweekday") {
                     await expect(weekDaysSelector).not.toBeVisible();
                 } else if (part === "bymonth") {
                     await expect(monthsSelector).not.toBeVisible();
                 } else {
-                    await expect(dialog.getByRole("combobox", { name: part })).not.toBeVisible();
+                    await expect(dialog.getByRole("combobox", { name: await shared.translate(`rrule.${part}`) })).not.toBeVisible();
                 }
             }
             await dialog

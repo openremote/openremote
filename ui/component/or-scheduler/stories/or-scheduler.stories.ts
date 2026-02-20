@@ -23,7 +23,7 @@ import { getStorybookHelpers } from "@wc-toolkit/storybook-helpers";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import manager from "@openremote/core";
-import { Frequency, RulePartKey } from "../src/index";
+import { Frequency, INTUITIVE_NOT_APPLICABLE, type RRulePartKeys } from "../src/index";
 import "../src/index";
 
 const tagName = "or-scheduler";
@@ -54,24 +54,19 @@ export const Primary: Story = {
     render: (_args) => {
         // Unused frequencies
         const DISABLED_FREQUENCIES = [
-            'SECONDLY'
-        ] as Frequency[]
+            "SECONDLY"
+        ] as Frequency[];
         // Unused rrule parts
         const DISABLED_RRULE_PARTS = [
-            'bymonth',
-            'byweekno',
-            'byyearday',
-            'bymonthday',
-            'byhour',
-            'byminute',
-            'bysecond' // Partially broken
-        ] as RulePartKey[]
+            "bysecond" // Partially broken
+        ] as RRulePartKeys[];
         return html`
             <or-scheduler
                 open
                 removable
                 .disabledFrequencies="${DISABLED_FREQUENCIES}"
                 .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+                .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
             ></or-scheduler>
         `;
     },

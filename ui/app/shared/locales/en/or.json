@@ -667,7 +667,15 @@
       "MINUTELY_other": "Minutes",
       "SECONDLY_one": "Second",
       "SECONDLY_other": "Seconds"
-    }
+    },
+    "bymonth": "Months",
+    "byweekno": "Weeks",
+    "byyearday": "Days of year",
+    "bymonthday": "Days of month",
+    "byweekday": "Weekdays",
+    "byhour": "Hours",
+    "byminute": "Minutes",
+    "bysecond": "Seconds"
   },
   "allDay": "All day",
   "apply": "apply",

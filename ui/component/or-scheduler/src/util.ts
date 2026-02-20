@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { Frequency } from "rrule";
+import { ByRRulePartsKeys } from "./types";
 
 export const FREQUENCIES = {
     YEARLY: "rrule.frequency.YEARLY",
@@ -30,8 +31,8 @@ export const FREQUENCIES = {
 } as const satisfies Record<keyof typeof Frequency, string>;
 
 /**
- * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND,
- * as per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+ * Evaluation order in RFC 5545 (Page 44): BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
+ * @link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
  */
 export const BY_RRULE_PARTS = [
     "bymonth",
@@ -44,18 +45,37 @@ export const BY_RRULE_PARTS = [
     "bysecond",
 ] as const;
 
+type ByRRuleCombination = Record<keyof typeof Frequency, ByRRulePartsKeys[]>;
+
 /**
- * Dependency of by rule parts table,
- * as per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+ * Strictly prohibited by RFC 5545 (Page 44).
+ * These combinations are invalid according to the specification.
+ * @link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
  */
-export const NOT_APPLICABLE_BY_RRULE_PARTS = {
-    SECONDLY: ["BYWEEKNO"],
-    MINUTELY: ["BYWEEKNO"],
-    HOURLY: ["BYWEEKNO"],
-    DAILY: ["BYWEEKNO", "BYYEARDAY"],
-    WEEKLY: ["BYWEEKNO", "BYYEARDAY", "BYMONTHDAY"],
-    MONTHLY: ["BYWEEKNO", "BYYEARDAY"],
-} as Partial<Record<keyof typeof Frequency, string[]>>;
+export const RFC_STRICT_NOT_APPLICABLE = {
+    SECONDLY: ["byweekno"],
+    MINUTELY: ["byweekno"],
+    HOURLY: ["byweekno"],
+    DAILY: ["byweekno", "byyearday"],
+    WEEKLY: ["byweekno", "byyearday", "bymonthday"],
+    MONTHLY: ["byweekno", "byyearday"],
+    YEARLY: [],
+} as const satisfies ByRRuleCombination;
+
+const COMMONLY_NOT_APPLICABLE = ["bymonth", "byweekno", "byyearday", "byhour", "byminute", "bysecond"] as const;
+/**
+ * Merged rules: RFC prohibitions + non-required/unintuitive parts.
+ * Use this to simplify UI options for end-users.
+ */
+export const INTUITIVE_NOT_APPLICABLE = {
+    SECONDLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.SECONDLY],
+    MINUTELY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MINUTELY],
+    HOURLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.HOURLY],
+    DAILY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.DAILY],
+    WEEKLY: ["bymonthday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.WEEKLY],
+    MONTHLY: ["byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MONTHLY],
+    YEARLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.YEARLY],
+} as const satisfies ByRRuleCombination;
 
 export const WEEKDAYS = {
     MO: "monday",
@@ -88,7 +108,7 @@ export enum EventTypes {
     recurrence = "recurrence",
 }
 
-export const rruleEnds = {
+export const RRULE_ENDS = {
     never: "never",
     until: "schedule.ends.until",
     count: "schedule.ends.count",
