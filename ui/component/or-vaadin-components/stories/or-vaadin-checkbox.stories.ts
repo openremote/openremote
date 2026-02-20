@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
+import {setCustomElementsManifest, type Meta, type StoryObj} from "@storybook/web-components";
 import {getORStorybookHelpers} from "../../storybook-utils";
-import customElements from "../custom-elements.json" with { type: "json" };
-import packageJson from "../package.json" with { type: "json" };
-import "../src/index";
+import customElements from "../custom-elements.json" with {type: "json"};
+import packageJson from "../package.json" with {type: "json"};
+import "../src/or-vaadin-checkbox";
 
-const tagName = "or-tree-menu";
+const tagName = "or-vaadin-checkbox";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
 const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
-    title: "Playground/or-tree-menu",
+    title: "Playground/or-vaadin-components/checkbox",
     component: tagName,
     args: args,
     argTypes: argTypes,
@@ -41,32 +41,19 @@ const meta: Meta = {
             handles: events
         },
         docs: {
-            subtitle: `<${tagName}>`
+            subtitle: `<${tagName}>`,
+            description: "Checkbox is an input field representing a binary choice."
         }
     }
 };
 
 export const Primary: Story = {
     args: {
-        menuTitle: "My custom title",
-        nodes: JSON.stringify([])
+        label: "Checkbox"
     }
 };
-
-export const TreeExample: Story = {
-    name: "Tree Example",
-    parameters: {
-        title: "Building a Tree structure",
-        summary: "You can define the tree using `<or-tree-group>` and `<or-tree-node>` elements."
-    },
-    args: {
-        "menu-title": "My Assets",
-        "nodes": JSON.stringify([])
-    }
-};
-
-export const examples: Story[] = [TreeExample];
 
 export {customElements, packageJson};
+
 
 export default meta;

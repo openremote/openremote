@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,20 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
+import {setCustomElementsManifest, type Meta, type StoryObj} from "@storybook/web-components";
 import {getORStorybookHelpers} from "../../storybook-utils";
-import customElements from "../custom-elements.json" with { type: "json" };
-import packageJson from "../package.json" with { type: "json" };
-import "../src/index";
+import customElements from "../custom-elements.json" with {type: "json"};
+import packageJson from "../package.json" with {type: "json"};
+import {html} from "lit";
+import "../src/or-vaadin-button";
 
-const tagName = "or-tree-menu";
+const tagName = "or-vaadin-button";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
 const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
-    title: "Playground/or-tree-menu",
+    title: "Playground/or-vaadin-components/button",
     component: tagName,
     args: args,
     argTypes: argTypes,
@@ -41,32 +42,38 @@ const meta: Meta = {
             handles: events
         },
         docs: {
-            subtitle: `<${tagName}>`
+            subtitle: `<${tagName}>`,
+            description: "The Button component allows users to perform actions. It comes in several different style variants and supports icons as well as text labels."
         }
     }
 };
 
 export const Primary: Story = {
-    args: {
-        menuTitle: "My custom title",
-        nodes: JSON.stringify([])
-    }
+    render: args => template(args, html`<span>Button</span>`)
 };
 
-export const TreeExample: Story = {
-    name: "Tree Example",
+const themeVariants = [
+    { theme: "primary" },
+    { theme: "secondary" },
+    { theme: "tertiary" }
+];
+
+export const Themes: Story = {
+    name: "Themes example",
     parameters: {
-        title: "Building a Tree structure",
-        summary: "You can define the tree using `<or-tree-group>` and `<or-tree-node>` elements."
+        title: "Using different variants / themes",
+        summary: "You can change the theme of the button using the `theme` HTML attribute:"
     },
-    args: {
-        "menu-title": "My Assets",
-        "nodes": JSON.stringify([])
-    }
+    render: () => html`
+        ${template(themeVariants[0], html`<span>Primary</span>`)}
+        ${template(themeVariants[1], html`<span>Secondary</span>`)}
+        ${template(themeVariants[2], html`<span>Tertiary</span>`)}
+    `
 };
 
-export const examples: Story[] = [TreeExample];
+export const examples = [Themes];
 
 export {customElements, packageJson};
+
 
 export default meta;
