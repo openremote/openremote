@@ -22,6 +22,7 @@
     "dependencies": {
         "@openremote/core": "workspace:*",
         "@openremote/model": "workspace:*",
+        "@openremote/or-icon": "workspace:*",
         "@openremote/or-translate": "workspace:*",
         "@openremote/or-vaadin-components": "workspace:*",
         "lit": "^3.3.1",
