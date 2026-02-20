@@ -76,7 +76,7 @@ public class MapService implements ContainerService {
     public static final String OR_PATH_PREFIX_DEFAULT = "";
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
     private static final String DEFAULT_VECTOR_TILES_URL = "mbtiles://mapdata.mbtiles";
-    private static final String DEFAULT_SPRITE_PATH = "map/sprites/bright-v9";
+    private static final String DEFAULT_SPRITE_PATH = "map/sprites/osm-liberty";
     private static final String DEFAULT_GLYPHS_PATH = "{fontstack}/{range}.pbf";
     private static ConfigurationService configurationService;
 
