@@ -38,8 +38,6 @@ The group fields `or-vaadin-checkbox-group` and `or-vaadin-radio-group` should u
 </or-vaadin-checkbox-group>
 ```
 
-### JavaScript / TypeScript example using a Text Field
-
 ## License
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
