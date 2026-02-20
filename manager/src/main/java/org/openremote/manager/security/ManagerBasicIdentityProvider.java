@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.security;
 
+import jakarta.security.enterprise.AuthenticationException;
 import org.hibernate.Session;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicIdentityProvider;
@@ -257,5 +259,10 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{}";
+    }
+
+    @Override
+    public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
+        return null;
     }
 }

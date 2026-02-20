@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import io.undertow.util.Headers;
 import jakarta.persistence.Query;
+import jakarta.security.enterprise.AuthenticationException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
@@ -38,6 +39,7 @@ import org.keycloak.representations.idm.*;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.CORSConfig;
@@ -1358,5 +1360,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{}";
+    }
+
+    @Override
+    public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
+        return null;
     }
 }

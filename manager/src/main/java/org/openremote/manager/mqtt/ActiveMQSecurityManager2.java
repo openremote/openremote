@@ -1,5 +1,6 @@
 package org.openremote.manager.mqtt;
 
+import jakarta.security.enterprise.AuthenticationException;
 import jakarta.ws.rs.client.Client;
 import org.apache.activemq.artemis.core.security.CheckType;
 import org.apache.activemq.artemis.core.security.Role;
@@ -8,13 +9,19 @@ import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
 import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.container.Container;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.TokenPrincipal;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
+import org.openremote.model.auth.OAuthGrant;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
+import java.security.Principal;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 
@@ -24,12 +31,16 @@ import static org.openremote.container.web.WebTargetBuilder.createClient;
  */
 public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
 
-    protected static final int CONNECTION_POOL_SIZE = 10;
+    protected static final int CONNECTION_POOL_SIZE = 50;
     protected static final long CONNECTION_TIMEOUT_MILLIS = 10000;
     protected final ExecutorService executorService;
+    protected final IdentityService identityService;
+    protected final Client client;
 
-    public ActiveMQSecurityManager2(ExecutorService executorService) {
+    public ActiveMQSecurityManager2(ExecutorService executorService, IdentityService identityService) {
         this.executorService = executorService;
+        this.identityService = identityService;
+        client = createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLIS, null);
     }
 
     @Override
@@ -50,19 +61,34 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
             }
         }
 
+        if (realm == null) {
+            throw new IllegalArgumentException("Invalid user format: " + user);
+        }
 
-        if (subject != null) {
+        OAuthGrant oAuthGrant = getOAuthGrant(realm, user);
+        Subject subject = null;
+
+        try {
+            String bearerToken = WebService.getBearerToken(executorService, client, oAuthGrant).get(
+                    CONNECTION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+            TokenPrincipal tokenPrincipal = identityService.verify(realm, bearerToken);
+            Principal connectionPrincipal = new RemotingConnectionPrincipal(remotingConnection);
+            subject = new Subject(true, Set.of(tokenPrincipal, connectionPrincipal), Set.of(), Set.of());
+
             // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
             remotingConnection.setSubject(subject);
-            subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        } catch (AuthenticationException e) {
+            throw new RuntimeException(e);
         }
 
-        // Store the subject in the connection
-        try {
-            return remotingConnection.getSubject() != null ? remotingConnection.getSubject() : getAuthenticatedSubject(user, password, remotingConnection, securityDomain);
-        } catch (LoginException e) {
-            return null;
-        }
         return null;
     }
 

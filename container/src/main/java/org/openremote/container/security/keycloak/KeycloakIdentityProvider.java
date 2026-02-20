@@ -212,7 +212,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         registration.setAsyncSupported(true);
     }
 
-    public KeycloakResource getKeycloak() {
+    protected KeycloakResource getKeycloak() {
         return keycloakTarget.proxy(KeycloakResource.class);
     }
 
