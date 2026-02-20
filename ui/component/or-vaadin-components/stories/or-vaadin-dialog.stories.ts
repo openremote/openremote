@@ -26,7 +26,7 @@ import {dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer, OrVaadinDial
 import manager from "@openremote/core";
 import "../src/or-vaadin-button";
 import "../src/or-vaadin-dialog";
-import "../src/or-vaadin-numberfield";
+import "../src/or-vaadin-number-field";
 import "@openremote/or-map";
 
 const tagName = "or-vaadin-dialog";
@@ -82,7 +82,7 @@ export const MapExample: Story = {
             <or-vaadin-dialog header-title="Configure area" ${dialogFooterRenderer(footer)}>
                 <div>
                     <or-map style="aspect-ratio: 1/1;"></or-map>
-                    <or-vaadin-numberfield label="Radius (min. 100m)" min="100" value="100"></or-vaadin-numberfield>
+                    <or-vaadin-number-field label="Radius (min. 100m)" min="100" value="100"></or-vaadin-number-field>
                 </div>
             </or-vaadin-dialog>
             <or-vaadin-button @click="${() => (document.querySelector('or-vaadin-dialog') as OrVaadinDialog).open()}">Show dialog</or-vaadin-button>

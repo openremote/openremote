@@ -27,6 +27,18 @@
   "sort": "Sorteren",
   "openList": "Lijst openen",
   "closeList": "Lijst sluiten",
+  "january": "januari",
+  "february": "februari",
+  "march": "maart",
+  "april": "april",
+  "may": "mei",
+  "june": "juni",
+  "july": "juli",
+  "august": "augustus",
+  "september": "september",
+  "october": "oktober",
+  "november": "november",
+  "december": "december",
   "monday": "maandag",
   "tuesday": "dinsdag",
   "wednesday": "woensdag",
@@ -615,7 +627,7 @@
   "planPeriod": "Eén periode plannen",
   "planRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
-  "fromTo": "Van {{start}} tot {{end}}",
+  "fromTo": "van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
   "forDays": "voor {{days}} dagen",
   "scheduleActivity": "Planner",
@@ -625,12 +637,15 @@
   "schedule": {
     "count_one": "herhaling",
     "count_other": "herhalingen",
+    "delete": "Schema verwijderen",
     "_ends": "Eindigt",
     "ends": {
       "until": "Op",
       "count": "Na"
     },
     "repeat": "Herhaal elke",
+    "repeatOn": "Herhaal op",
+    "save": "Schema opslaan",
     "type": "Schema type"
   },
   "rrule": {
@@ -649,7 +664,15 @@
       "MINUTELY_other": "Minuten",
       "SECONDLY_one": "Seconde",
       "SECONDLY_other": "Seconden"
-    }
+    },
+    "bymonth": "Maanden",
+    "byweekno": "Weken",
+    "byyearday": "Dagen van het jaar",
+    "bymonthday": "Dagen van de maand",
+    "byweekday": "Weekdagen",
+    "byhour": "Uren",
+    "byminute": "Minuten",
+    "bysecond": "Seconden"
   },
   "allDay": "Hele dag",
   "apply": "toepassen",

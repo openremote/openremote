@@ -404,7 +404,7 @@
   "planPeriod": "Planeje uma ocorrência",
   "planRecurrence": "Planeje uma ocorrência repetida",
   "activeFromTo": "Ativo de {{start}} a {{end}}",
-  "fromTo": "De {{start}} a {{end}}",
+  "fromTo": "de {{start}} a {{end}}",
   "fromToDays": "De {{start}} a {{days}} dias depois{{end}}",
   "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Agendar Atividade de Regra",

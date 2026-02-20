@@ -21,11 +21,10 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
 import "./or-vaadin-checkbox";
-import "./or-vaadin-numberfield";
-import "./or-vaadin-passwordfield";
-import "./or-vaadin-textfield";
-import "./or-vaadin-textarea";
-import "./or-vaadin-select";
+import "./or-vaadin-number-field";
+import "./or-vaadin-password-field";
+import "./or-vaadin-text-field";
+import "./or-vaadin-text-area";
 
 /**
  * Function to register properties (get/setter) of a CustomElement to the child Vaadin element.
@@ -56,11 +55,11 @@ export class OrVaadinInput extends LitElement {
      * Be aware: all CustomElements defined here need to be imported during initialization; dynamic imports are not expected to work.
      */
     public static readonly VAADIN_CLASSES: (CustomElementConstructor | undefined)[] = [
-        customElements.get("or-vaadin-numberfield"),
-        customElements.get("or-vaadin-passwordfield"),
+        customElements.get("or-vaadin-number-field"),
+        customElements.get("or-vaadin-password-field"),
         customElements.get("or-vaadin-select"),
-        customElements.get("or-vaadin-textarea"),
-        customElements.get("or-vaadin-textfield")
+        customElements.get("or-vaadin-text-area"),
+        customElements.get("or-vaadin-text-field")
     ];
 
     /**
@@ -69,13 +68,13 @@ export class OrVaadinInput extends LitElement {
      * The map value contains a function, with an {@link onChange} callback parameter for handling events.
      */
     public static readonly TEMPLATES = new Map<InputType, (onChange: (ev: Event) => void) => TemplateResult>([
-        [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
         [InputType.BIG_INT, OrVaadinInput.getNumberFieldTemplate],
+        [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
-        [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
-        [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
-        [InputType.SELECT, OrVaadinInput.getSelectTemplate]
+        [InputType.SELECT, OrVaadinInput.getSelectTemplate],
+        [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
+        [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate],
     ]);
 
     /**
@@ -92,7 +91,7 @@ export class OrVaadinInput extends LitElement {
 
     /**
      * List of forbidden attributes that are not processed nor "bubbled down" to the child Vaadin component.
-     * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-textfield id="myId">`, but `<or-vaadin-textfield>`.
+     * So `<or-vaadin-input id="myId" type="text">`, wouldn't render `<or-vaadin-text-field id="myId">`, but `<or-vaadin-text-field>`.
      */
     public static readonly FORBIDDEN_ATTRIBUTES = ["id"];
 
@@ -248,23 +247,23 @@ export class OrVaadinInput extends LitElement {
     }
 
     public static getNumberFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-numberfield id="elem" @change=${onChange}></or-vaadin-numberfield>`;
-    }
-
-    public static getTextAreaTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-textarea id="elem" @change=${onChange}></or-vaadin-textarea>`;
-    }
-
-    public static getTextFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-textfield id="elem" @change=${onChange}></or-vaadin-textfield>`;
+        return html`<or-vaadin-number-field id="elem" @change=${onChange}></or-vaadin-number-field>`;
     }
 
     public static getPasswordFieldTemplate(onChange?: (e: Event) => void) {
-        return html`<or-vaadin-passwordfield id="elem" @change=${onChange}></or-vaadin-passwordfield>`;
+        return html`<or-vaadin-password-field id="elem" @change=${onChange}></or-vaadin-password-field>`;
     }
 
     public static getSelectTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
+    }
+
+    public static getTextAreaTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-text-area id="elem" @change=${onChange}></or-vaadin-text-area>`;
+    }
+
+    public static getTextFieldTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-text-field id="elem" @change=${onChange}></or-vaadin-text-field>`;
     }
 }
 

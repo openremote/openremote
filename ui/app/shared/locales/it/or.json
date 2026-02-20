@@ -403,7 +403,7 @@
   "planPeriod": "Pianifica un'occorrenza",
   "planRecurrence": "Pianifica un'occorrenza che si ripete",
   "activeFromTo": "Attivo da {{start}} a {{end}}",
-  "fromTo": "Da {{start}} a {{end}}",
+  "fromTo": "da {{start}} a {{end}}",
   "fromToDays": "da {{start}} a {{days}} giorni dopo{{end}}",
   "forDays": "per {{days}} giorni",
   "scheduleRuleActivity": "Programmare l'attività delle regole",

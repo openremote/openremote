@@ -31,25 +31,18 @@ import {
     isObjectControl,
     schemaMatches,
 } from "@openremote/or-json-forms";
-import { Frequency, RulePartKey, OrSchedulerChangedEvent } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
+import { Frequency, RRulePartKeys, OrSchedulerChangedEvent, INTUITIVE_NOT_APPLICABLE } from "@openremote/or-scheduler";
 
 const DISABLED_FREQUENCIES = [
     // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
-    'SECONDLY'
-] as Frequency[]
+    "SECONDLY"
+] as Frequency[];
 
 const DISABLED_RRULE_PARTS = [
-    // Disabled for now, to reduce complexity
-    'bymonth',
-    'byweekno',
-    'byyearday',
-    'bymonthday',
-    'byhour',
-    'byminute',
     // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
-    'bysecond'
-] as RulePartKey[]
+    "bysecond"
+] as RRulePartKeys[];
 
 const schedulerTester: RankedTester = rankWith(
     6,
@@ -95,12 +88,16 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         <or-scheduler
             header="scheduleSimulatorActivity"
             defaultEventTypeLabel="defaultSimulatorSchedule"
+            disableNegativeByPartValues
+            removable
             .defaultSchedule="${defaultEvent}"
             .disabledFrequencies="${DISABLED_FREQUENCIES}"
             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+            .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
             .schedule="${props.data}"
             .timezoneOffset="${new Date().getTimezoneOffset() * 60000}"
             @or-scheduler-changed="${onSchedulerChanged}"
+            @or-scheduler-removed="${deleteHandler}"
         >
         </or-scheduler>
     `, deleteHandler);

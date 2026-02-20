@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { Frequency } from "rrule";
+import { ByRRulePartsKeys } from "./types";
 
 export const FREQUENCIES = {
     YEARLY: "rrule.frequency.YEARLY",
@@ -27,11 +28,11 @@ export const FREQUENCIES = {
     HOURLY: "rrule.frequency.HOURLY",
     MINUTELY: "rrule.frequency.MINUTELY",
     SECONDLY: "rrule.frequency.SECONDLY",
-} as Record<keyof typeof Frequency, string>;
+} as const satisfies Record<keyof typeof Frequency, string>;
 
 /**
- * Evaluation order: BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
- * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+ * Evaluation order in RFC 5545 (Page 44): BYMONTH, BYWEEKNO, BYYEARDAY, BYMONTHDAY, BYDAY, BYHOUR, BYMINUTE and BYSECOND.
+ * @link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
  */
 export const BY_RRULE_PARTS = [
     "bymonth",
@@ -44,33 +45,62 @@ export const BY_RRULE_PARTS = [
     "bysecond",
 ] as const;
 
+type ByRRuleCombination = Record<keyof typeof Frequency, ByRRulePartsKeys[]>;
+
 /**
- * Dependency of by rule parts table
- * As per https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10 page 44
+ * Strictly prohibited by RFC 5545 (Page 44).
+ * These combinations are invalid according to the specification.
+ * @link https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
  */
-export const NOT_APPLICABLE_BY_RRULE_PARTS = {
-    SECONDLY: ["BYWEEKNO"],
-    MINUTELY: ["BYWEEKNO"],
-    HOURLY: ["BYWEEKNO"],
-    DAILY: ["BYWEEKNO", "BYYEARDAY"],
-    WEEKLY: ["BYWEEKNO", "BYYEARDAY", "BYMONTHDAY"],
-    MONTHLY: ["BYWEEKNO", "BYYEARDAY"],
-} as Record<keyof typeof Frequency, string[]>;
+export const RFC_STRICT_NOT_APPLICABLE = {
+    SECONDLY: ["byweekno"],
+    MINUTELY: ["byweekno"],
+    HOURLY: ["byweekno"],
+    DAILY: ["byweekno", "byyearday"],
+    WEEKLY: ["byweekno", "byyearday", "bymonthday"],
+    MONTHLY: ["byweekno", "byyearday"],
+    YEARLY: [],
+} as const satisfies ByRRuleCombination;
+
+const COMMONLY_NOT_APPLICABLE = ["bymonth", "byweekno", "byyearday", "byhour", "byminute", "bysecond"] as const;
+/**
+ * Merged rules: RFC prohibitions + non-required/unintuitive parts.
+ * Use this to simplify UI options for end-users.
+ */
+export const INTUITIVE_NOT_APPLICABLE = {
+    SECONDLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.SECONDLY],
+    MINUTELY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MINUTELY],
+    HOURLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.HOURLY],
+    DAILY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.DAILY],
+    WEEKLY: ["bymonthday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.WEEKLY],
+    MONTHLY: ["byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.MONTHLY],
+    YEARLY: ["bymonthday", "byweekday", ...COMMONLY_NOT_APPLICABLE, ...RFC_STRICT_NOT_APPLICABLE.YEARLY],
+} as const satisfies ByRRuleCombination;
+
+export const WEEKDAYS = {
+    MO: "monday",
+    TU: "tuesday",
+    WE: "wednesday",
+    TH: "thursday",
+    FR: "friday",
+    SA: "saturday",
+    SU: "sunday",
+} as const;
 
 export const MONTHS = {
-    1: "JAN",
-    2: "FEB",
-    3: "MAR",
-    4: "APR",
-    5: "MAY",
-    6: "JUN",
-    7: "JUL",
-    8: "AUG",
-    9: "SEP",
-    10: "OCT",
-    11: "NOV",
-    12: "DEC",
-};
+    "1": "january",
+    "2": "february",
+    "3": "march",
+    "4": "april",
+    "5": "may",
+    "6": "june",
+    "7": "july",
+    "8": "august",
+    "9": "september",
+    "10": "october",
+    "11": "november",
+    "12": "december",
+} as const;
 
 export enum EventTypes {
     default = "default",
@@ -78,8 +108,8 @@ export enum EventTypes {
     recurrence = "recurrence",
 }
 
-export const rruleEnds = {
+export const RRULE_ENDS = {
     never: "never",
     until: "schedule.ends.until",
     count: "schedule.ends.count",
-}
+} as const;
