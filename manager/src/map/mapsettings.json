@@ -110,7 +110,7 @@
       "type": "fill",
       "source": "vector_tiles",
       "source-layer": "landcover",
-      "filter": ["all", ["==", "class", "ice_rink"]],
+      "filter": ["all", ["==", "class", "ice"]],
       "paint": {
         "fill-antialias": false,
         "fill-color": "rgba(224, 236, 236, 1)",
@@ -1530,6 +1530,26 @@
         "text-color": "#765",
         "text-halo-blur": 0.5,
         "text-halo-width": 1
+      }
+    },
+    {
+      "id": "road_shield",
+      "type": "symbol",
+      "source": "vector_tiles",
+      "source-layer": "transportation_name",
+      "minzoom": 7,
+      "filter": ["all", ["<=", "ref_length", 6]],
+      "layout": {
+        "icon-image": "default_{ref_length}",
+        "icon-rotation-alignment": "viewport",
+        "symbol-placement": {"base": 1, "stops": [[10, "point"], [11, "line"]]},
+        "symbol-spacing": 500,
+        "text-field": "{ref}",
+        "text-font": ["Open Sans Regular"],
+        "text-offset": [0, 0.1],
+        "text-rotation-alignment": "viewport",
+        "text-size": 10,
+        "icon-size": 0.8
       }
     },
     {
