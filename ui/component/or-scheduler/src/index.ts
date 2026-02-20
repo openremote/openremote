@@ -126,13 +126,16 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: String })
     public defaultEventTypeLabel = "default";
 
+    @property({ type: Boolean })
+    public disableNegativeByPartValues = false;
+
     @property({ type: Array })
     public disabledFrequencies: Frequency[] = [];
 
     @property({ type: Array })
     public disabledRRuleParts: RRulePartKeys[] = [];
 
-    @property({ type: Array })
+    @property({ type: Object })
     public disabledByPartCombinations: ByRRuleCombination = RFC_STRICT_NOT_APPLICABLE;
 
     @property({ type: String })
@@ -619,7 +622,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox theme="button" value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
             </or-vaadin-checkbox-group>
         ` : html`
-            <or-vaadin-multi-select-combo-box .label="${i18next.t(`rrule.${part}`)}" .items="${options.filter((n) => +n > 0)}" @change="${this._onPartChange(part, "value")}"></or-vaadin-multi-select-combo-box>
+            <or-vaadin-multi-select-combo-box .label="${i18next.t(`rrule.${part}`)}"
+                .items="${options.filter((n) => this.disableNegativeByPartValues ? +n > 0 : true)}"
+                @change="${this._onPartChange(part, "value")}">
+            </or-vaadin-multi-select-combo-box>
         `;
     }
 

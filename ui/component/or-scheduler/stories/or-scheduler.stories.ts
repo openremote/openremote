@@ -64,6 +64,7 @@ export const Primary: Story = {
             <or-scheduler
                 open
                 removable
+                disableNegativeByPartValues
                 .disabledFrequencies="${DISABLED_FREQUENCIES}"
                 .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
                 .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"

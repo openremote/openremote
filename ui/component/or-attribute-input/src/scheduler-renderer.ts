@@ -88,6 +88,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
         <or-scheduler
             header="scheduleSimulatorActivity"
             defaultEventTypeLabel="defaultSimulatorSchedule"
+            disableNegativeByPartValues
             removable
             .defaultSchedule="${defaultEvent}"
             .disabledFrequencies="${DISABLED_FREQUENCIES}"

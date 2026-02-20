@@ -262,6 +262,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             id="rule-header-validity"
                             header="scheduleRuleActivity"
                             defaultEventTypeLabel="validityAlways"
+                            disableNegativeByPartValues
                             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
                             .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
                             .schedule="${this.ruleset?.meta?.validity}"
