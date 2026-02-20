@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.Entity;
 import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
 import org.openremote.agent.protocol.io.IOAgent;
+import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.util.HashMap;
@@ -83,8 +84,8 @@ public abstract class ModbusAgent<T extends ModbusAgent<T, U>, U extends Abstrac
     public static final ValueDescriptor<DeviceConfigMap> VALUE_DEVICE_CONFIG_MAP = new ValueDescriptor<>("DeviceConfigMap", DeviceConfigMap.class);
 
     // Shared device configuration attribute descriptor
-    public static final org.openremote.model.value.AttributeDescriptor<DeviceConfigMap> DEVICE_CONFIG =
-        new org.openremote.model.value.AttributeDescriptor<>("deviceConfig", VALUE_DEVICE_CONFIG_MAP);
+    public static final AttributeDescriptor<DeviceConfigMap> DEVICE_CONFIG =
+        new AttributeDescriptor<>("deviceConfig", VALUE_DEVICE_CONFIG_MAP);
 
     // For Hydrators
     protected ModbusAgent() {}

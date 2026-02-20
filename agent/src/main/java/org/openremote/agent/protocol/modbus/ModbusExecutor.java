@@ -32,7 +32,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -58,7 +57,7 @@ public class ModbusExecutor<F extends ModbusFrame> {
     private final Map<String, List<BatchReadRequest>> cachedBatches = new ConcurrentHashMap<>();
     private final Map<String, ScheduledFuture<?>> batchReadIntervalTasks = new ConcurrentHashMap<>();
     private final Map<AttributeRef, ScheduledFuture<?>> writeIntervalMap = new HashMap<>();
-    public final Object requestLock = new Object();
+    final Object requestLock = new Object();
     protected int timeoutMs = 3000;
 
     public ModbusExecutor(ModbusProtocolCallback<F> callback) {
@@ -173,7 +172,7 @@ public class ModbusExecutor<F extends ModbusFrame> {
             return;
         }
 
-        int unitId = agentLink.getUnitId();
+        int unitId = agentLink.getUnitId() != null ? agentLink.getUnitId() : 1;
         int writeAddress = AgentLink.getOrThrowAgentLinkProperty(Optional.ofNullable(agentLink.getWriteAddress()), "write address");
         int registersCount = Optional.ofNullable(agentLink.getRegistersAmount()).orElse(1);
 
@@ -243,7 +242,7 @@ public class ModbusExecutor<F extends ModbusFrame> {
             if (e instanceof TimeoutException) {
                 LOG.warning(callback.getProtocolName() + " - " + operation + " timed out: " + e.getMessage());
             } else {
-                LOG.log(Level.WARNING, callback.getProtocolName() + " - " + operation + " failed: " + e.getMessage(), e + " Event: " + event);
+                LOG.log(Level.WARNING, callback.getProtocolName() + " - " + operation + " failed: " + e.getMessage() + " Event: " + event, e);
             }
             throw (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
         }
@@ -437,7 +436,7 @@ public class ModbusExecutor<F extends ModbusFrame> {
             }
 
         } catch (Exception e) {
-            String operation = "batch read " + memoryArea + " address=" + batch.getStartAddress() + " quantity=" + batch.getQuantity() + "AttrGroup: " + group;
+            String operation = "batch read " + memoryArea + " address=" + batch.getStartAddress() + " quantity=" + batch.getQuantity() + ", AttrGroup: " + group;
             if (e instanceof TimeoutException) {
                 LOG.warning(callback.getProtocolName() + " - " + operation + " timed out: " + e.getMessage());
             } else {

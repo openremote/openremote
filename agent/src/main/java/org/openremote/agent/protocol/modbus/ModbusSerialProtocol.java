@@ -234,8 +234,4 @@ public class ModbusSerialProtocol
         return "Modbus Serial";
     }
 
-    @Override
-    public String getProtocolInstanceUri() {
-        return client != null ? client.getClientUri() : "";
-    }
 }

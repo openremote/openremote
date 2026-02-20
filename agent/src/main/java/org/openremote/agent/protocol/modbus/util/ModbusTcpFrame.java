@@ -72,4 +72,10 @@ public class ModbusTcpFrame implements ModbusFrame {
     public boolean isException() {
         return pdu != null && pdu.length > 0 && (pdu[0] & 0x80) != 0;
     }
+
+    @Override
+    public String toString() {
+        return String.format("ModbusTcpFrame{txId=%d, unitId=%d, fc=0x%02X, pduLen=%d, exception=%b}",
+                transactionId, unitId, getFunctionCode(), pdu != null ? pdu.length : 0, isException());
+    }
 }

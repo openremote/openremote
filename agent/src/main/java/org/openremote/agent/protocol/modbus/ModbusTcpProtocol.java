@@ -24,6 +24,7 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.modbus.util.ModbusProtocolCallback;
 import org.openremote.agent.protocol.modbus.util.ModbusTcpDecoder;
+import org.openremote.agent.protocol.modbus.util.ModbusTcpEncoder;
 import org.openremote.agent.protocol.modbus.util.ModbusTcpFrame;
 import org.openremote.agent.protocol.tcp.AbstractTCPClientProtocol;
 import org.openremote.model.Container;
@@ -73,7 +74,7 @@ public class ModbusTcpProtocol
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
         return () -> new ChannelHandler[] {
             new ReadTimeoutHandler(30, TimeUnit.SECONDS),
-            new ModbusTcpIOClient.ModbusTcpEncoder(),
+            new ModbusTcpEncoder(),
             new ModbusTcpDecoder(),
             new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusTcpFrame.class, client)
         };
@@ -204,8 +205,4 @@ public class ModbusTcpProtocol
         return "Modbus TCP";
     }
 
-    @Override
-    public String getProtocolInstanceUri() {
-        return client != null ? client.getClientUri() : "";
-    }
 }

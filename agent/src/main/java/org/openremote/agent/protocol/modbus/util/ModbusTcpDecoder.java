@@ -47,6 +47,11 @@ public class ModbusTcpDecoder extends io.netty.handler.codec.ByteToMessageDecode
         int unitId = in.readUnsignedByte();
         int pduLength = length - 1; // Length includes unit ID
 
+        if (pduLength <= 0) {
+            LOG.warning("Received Modbus TCP frame with invalid length: " + length);
+            return;
+        }
+
         if (in.readableBytes() < pduLength) {
             // Not enough data yet, reset and wait
             in.resetReaderIndex();
