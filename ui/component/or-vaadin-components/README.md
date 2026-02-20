@@ -32,10 +32,10 @@ The group fields `or-vaadin-checkbox-group` and `or-vaadin-radio-group` should u
     <vaadin-checkbox></vaadin-checkbox>
 </or-vaadin-checkbox-group>
 
-<or-vaadin-checkbox-group>
+<or-vaadin-radio-group>
     <vaadin-radio-button></vaadin-radio-button>
     <vaadin-radio-button></vaadin-radio-button>
-</or-vaadin-checkbox-group>
+</or-vaadin-radio-group>
 ```
 
 ## License
