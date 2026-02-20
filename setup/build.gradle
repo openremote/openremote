@@ -37,13 +37,15 @@ tasks.named("compileJava") {
     dependsOn("load1Jar", "load2Jar")
 }
 
+
+// Use demo setup sourceset by default for jar
 tasks.register('installDist', Copy) {
-    def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
-    if (setupTask != null) {
-        System.out.println(setupTask.name)
-        dependsOn setupTask
-        dependsOn resolveTask(":manager:installDist")
-        from setupTask.archiveFile
-        into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
-    }
+   def setupTask = getTasksByName("${setupJar}Jar", false)[0] as org.gradle.jvm.tasks.Jar
+   if (setupTask != null) {
+       System.out.println(setupTask.name)
+       dependsOn setupTask
+       dependsOn resolveTask(":manager:installDist")
+       from setupTask.archiveFile
+       into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+   }
 }

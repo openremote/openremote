@@ -1,0 +1,73 @@
+{
+    "version": "0.2.0",
+
+    
+    "configurations": [
+        {
+            "type": "java",
+            "name": "tooling_tasks",
+            "request": "launch",
+            "mainClass": "tooling_tasks"
+        },
+        {
+            "type": "gradle",
+            "name": "Manager (Demo Setup) - Gradle",
+            "request": "launch",
+            "task": "runDemo",
+            "args": [
+                "-p",
+                "setup"
+            ],
+            "env": {
+                "OR_DB_HOST": "host.docker.internal",
+                "OR_KEYCLOAK_HOST": "host.docker.internal",
+                "OR_LOG_CONSOLE_FORMAT": "simple"
+            }
+        },
+        {
+            "type": "gradle",
+            "name": "Manager (Test Setup) - Gradle",
+            "request": "launch",
+            "task": "runTest",
+            "args": [
+                "-p",
+                "setup"
+            ],
+            "env": {
+                "OR_DB_HOST": "host.docker.internal",
+                "OR_KEYCLOAK_HOST": "host.docker.internal",
+                "OR_LOG_CONSOLE_FORMAT": "simple"
+            }
+        },
+        {
+            "type": "gradle",
+            "name": "Manager (Empty) - Gradle",
+            "request": "launch",
+            "task": "run",
+            "args": [
+                "-p",
+                "manager"
+            ],
+            "env": {
+                "OR_DB_HOST": "host.docker.internal",
+                "OR_KEYCLOAK_HOST": "host.docker.internal",
+                "OR_LOG_CONSOLE_FORMAT": "simple"
+            }
+        },
+        {
+            "type": "node",
+            "name": "Manager UI: serve",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "serve"
+            ],
+            "cwd": "${workspaceFolder}/ui/app/manager",
+            "console": "integratedTerminal",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        }
+    ]
+}
