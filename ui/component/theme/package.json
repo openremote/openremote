@@ -3,9 +3,12 @@
   "version": "1.14.0-snapshot",
   "description": "CSS themes for OpenRemote components",
   "main": "src/index.js",
-  "types": "@types/theme.d.ts",
+  "types": "src/index.d.ts",
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
     "./*.css": "./src/*.css",
     "./*": "./*"
   },
