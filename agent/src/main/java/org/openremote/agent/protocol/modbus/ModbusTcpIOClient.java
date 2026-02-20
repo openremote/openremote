@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.modbus;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.modbus.util.ModbusTcpDecoder;
 import org.openremote.agent.protocol.modbus.util.ModbusTcpEncoder;
@@ -39,9 +40,18 @@ public class ModbusTcpIOClient extends TCPIOClient<ModbusTcpFrame> {
 
     private final AtomicInteger transactionIdCounter = new AtomicInteger(0);
 
+    private static final int SO_TIMEOUT_MS = 30_000;
+
     public ModbusTcpIOClient(String host, int port) {
         super(host, port);
         // Note: encoder/decoder provider is set by the protocol's getEncoderDecoderProvider()
+    }
+
+    @Override
+    protected void configureChannel() {
+        super.configureChannel();
+        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, SO_TIMEOUT_MS);
+        bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
     }
 
     public int getNextTransactionId() {
