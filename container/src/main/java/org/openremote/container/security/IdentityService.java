@@ -25,6 +25,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.auth.OAuthGrant;
 
 import java.util.logging.Logger;
 
@@ -75,6 +76,10 @@ public abstract class IdentityService implements ContainerService, TokenVerifier
 
     public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
         return identityProvider.verify(realm, accessToken);
+    }
+
+    public String getBearerToken(String realm, OAuthGrant oAuthGrant) {
+
     }
 
     /**

@@ -107,4 +107,8 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
     public boolean validateUserAndRole(String user, String password, Set<Role> roles, CheckType checkType) {
         throw new UnsupportedOperationException("Invoke validateUserAndRole(String, String, Set<Role>, CheckType, String, RemotingConnection, String) instead");
     }
+
+    protected String getBearerToken(String realm, String username) {
+       identityService.getBearerToken()
+    }
 }
