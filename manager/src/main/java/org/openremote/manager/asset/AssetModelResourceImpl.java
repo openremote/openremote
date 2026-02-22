@@ -20,17 +20,19 @@
 package org.openremote.manager.asset;
 
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Response;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.util.ValueUtil.SchemaResult;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
 
@@ -71,11 +73,26 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public JsonNode getValueDescriptorSchema(RequestParams requestParams, String name, String hash) {
-        JsonNode schema = assetModelService.getValueDescriptorSchema(name);
-        if (schema == null) {
+    public Response getValueDescriptorSchema(String name, String ifNoneMatch) {
+        SchemaResult result = assetModelService.getValueDescriptorSchema(name);
+
+        if (result == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        return schema;
+
+        EntityTag etag = new EntityTag(result.hash());
+
+        if (isTagValid(ifNoneMatch, etag.getValue())) {
+            // If the ETag matches, return 304 (Not Modified)
+            return Response.notModified(etag).build();
+        }
+
+        return Response.ok(result.schema()).tag(etag).build();
+    }
+
+    private boolean isTagValid(String clientTag, String currentHash) {
+        if (clientTag == null || currentHash == null) return false;
+        String clientHash = clientTag.replace("\"", "").replace("W/", "");
+        return clientHash.equals(currentHash);
     }
 }

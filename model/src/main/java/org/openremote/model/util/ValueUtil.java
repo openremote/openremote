@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -153,6 +152,16 @@ public class ValueUtil {
         }
     }
 
+    // TODO: consider canonicalization based on: https://www.rfc-editor.org/rfc/rfc8785
+    public record SchemaResult(String schema, String hash) {
+        public SchemaResult (String schema) {
+            this(schema, hash(schema));
+        }
+        private static String hash(String schema) {
+            return bytesToHexString(md.digest(schema.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
     // Preload the Standard model provider so it takes priority over others
     public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
     public static ObjectMapper JSON = configureObjectMapper(new ObjectMapper());
@@ -162,8 +171,7 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
-    protected static Map<String, ObjectNode> valueDescriptorSchemas = new ConcurrentHashMap<>();
-    protected static Map<String, String> valueDescriptorSchemaHashes = new ConcurrentHashMap<>();
+    protected static Map<String, SchemaResult> valueDescriptorSchemas = new ConcurrentHashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
     protected static MessageDigest md;
@@ -656,10 +664,6 @@ public class ValueUtil {
         return Optional.ofNullable(metaItemDescriptors.get(name));
     }
 
-    public static Map<String, String> getValueDescriptorSchemaHashes() {
-        return valueDescriptorSchemaHashes;
-    }
-
     public static Map<String, ValueDescriptor<?>> getValueDescriptors() {
         return valueDescriptors;
     }
@@ -953,23 +957,16 @@ public class ValueUtil {
         valueDescriptorSchemas.putAll(metaItems.values().stream()
                 .map(AbstractNameValueDescriptorHolder::getType)
                 .filter(v -> v.getJsonType().equals("object") || v.getArrayDimensions() != null && v.getArrayDimensions() > 0)
-                .collect(Collectors.toMap(ValueDescriptor::getName, vd -> (ObjectNode) getSchema(vd.getType()))));
-        valueDescriptorSchemaHashes.putAll(valueDescriptorSchemas.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                v -> hash(v.getValue().toString())
-        )));
+                .collect(Collectors.toMap(ValueDescriptor::getName, vd -> new SchemaResult(getSchema(vd.getType()).toString())))
+        );
     }
 
-    public static JsonNode getValueDescriptorSchema(String name) {
+    public static SchemaResult getValueDescriptorSchema(String name) {
         if (ValueUtil.getValueDescriptor(name).isEmpty()) {
             return null;
         }
         ValueDescriptor<?> vd = ValueUtil.getValueDescriptor(name).get();
-        return valueDescriptorSchemas.computeIfAbsent(vd.getName(), key -> {
-            ObjectNode schema = (ObjectNode) ValueUtil.getSchema(vd.getType());
-            valueDescriptorSchemaHashes.put(vd.getName(), hash(schema.toString()));
-            return schema;
-        });
+        return valueDescriptorSchemas.computeIfAbsent(vd.getName(), key -> new SchemaResult(getSchema(vd.getType()).toString()));
     }
 
     protected static Class<?>[] getAgentLinkClasses() {
@@ -980,10 +977,6 @@ public class ValueUtil {
             )
             .distinct()
             .toArray(Class<?>[]::new);
-    }
-
-    public static String hash(String v) {
-        return bytesToHexString(md.digest(v.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
