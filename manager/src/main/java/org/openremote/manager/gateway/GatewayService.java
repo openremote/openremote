@@ -586,19 +586,19 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
 
         if (connector == null || !realm.equals(connector.getRealm())) {
-            String msg = "Failed to stop tunnel: reason=Gateway disconnected or doesn't exist, id=" + gatewayId;
+            String msg = "Failed to stop tunnel: reason=Gateway disconnected or doesn't exist, id=" + tunnelInfo.getGatewayId();
             LOG.info(msg);
             throw new IllegalStateException(msg);
         }
 
         if (!connector.isTunnellingSupported()) {
-            String msg = "Failed to stop tunnel: reason=Not supported by gateway, id=" + gatewayId;
+            String msg = "Failed to stop tunnel: reason=Not supported by gateway, id=" + tunnelInfo.getGatewayId();
             LOG.info(msg);
             throw new IllegalArgumentException(msg);
         }
 
         if (!connector.isConnected()) {
-            LOG.info("Just removing tunnel from list: reason=Not connected, id=" + gatewayId);
+            LOG.info("Just removing tunnel from list: reason=Not connected, id=" + tunnelInfo.getGatewayId());
             tunnelInfos.remove(tunnelInfo.getId(), tunnelInfo);
             return;
         }
@@ -608,11 +608,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         try {
             stopFuture.get(20, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
-            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + gatewayId;
+            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + tunnelInfo.getGatewayId();
             LOG.log(Level.WARNING, msg, e.getCause());
             throw new RuntimeException(msg, e.getCause());
         } catch (InterruptedException | TimeoutException e) {
-            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + gatewayId;
+            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + tunnelInfo.getGatewayId();
             LOG.warning(msg);
             throw new RuntimeException(msg);
         } finally {

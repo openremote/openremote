@@ -184,7 +184,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart building" &&
                     it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
-                    it.createdOn.time <= timerService.currentTimeMillis
+                    it.createdOn.toEpochMilli() <= timerService.currentTimeMillis
         }
 
         when: "an asset link is deleted"

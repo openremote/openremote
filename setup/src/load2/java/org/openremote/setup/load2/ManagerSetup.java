@@ -78,8 +78,9 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
 
             // Wait until all devices created
             int waitCounter = 0;
+            int waitCounterLimit = (accounts * assets) / 150;
             while (createdAccounts.get() < accounts) {
-                if (waitCounter > 200) {
+                if (waitCounter > waitCounterLimit) {
                     throw new IllegalStateException("Failed to provision all requested devices in the specified time");
                 }
                 waitCounter++;

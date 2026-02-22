@@ -537,7 +537,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         Asset apartment1 = assets[0]
         apartment1.id == managerTestSetup.apartment1Id
         apartment1.name == "Apartment 1"
-        apartment1.createdOn.getTime() < System.currentTimeMillis()
+        apartment1.createdOn.toEpochMilli() < System.currentTimeMillis()
         apartment1.realm == keycloakTestSetup.realmBuilding.name
         apartment1.type == BuildingAsset.DESCRIPTOR.getName()
         apartment1.parentId == managerTestSetup.smartBuildingId
