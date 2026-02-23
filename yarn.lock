@@ -1882,6 +1882,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-scheduler": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/rest": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
