@@ -27,6 +27,18 @@
   "sort": "Sort",
   "openList": "Open list",
   "closeList": "Close list",
+  "january": "January",
+  "february": "February",
+  "march": "March",
+  "april": "April",
+  "may": "May",
+  "june": "June",
+  "july": "July",
+  "august": "August",
+  "september": "September",
+  "october": "October",
+  "november": "November",
+  "december": "December",
   "monday": "Monday",
   "tuesday": "Tuesday",
   "wednesday": "Wednesday",
@@ -618,7 +630,7 @@
   "planPeriod": "Plan an occurrence",
   "planRecurrence": "Plan a repeating occurrence",
   "activeFromTo": "Active from {{start}} to {{end}}",
-  "fromTo": "From {{start}} to {{end}}",
+  "fromTo": "from {{start}} to {{end}}",
   "fromToDays": "from {{start}} to {{days}} days later {{end}}",
   "forDays": "for {{days}} days",
   "scheduleActivity": "Schedule Activity",
@@ -628,12 +640,15 @@
   "schedule": {
     "count_one": "occurrence",
     "count_other": "occurrences",
+    "delete": "Delete schedule",
     "_ends": "Ends",
     "ends": {
       "until": "On",
       "count": "After"
     },
     "repeat": "Repeat every",
+    "repeatOn": "Repeat on",
+    "save": "Save schedule",
     "type": "Schedule type"
   },
   "rrule": {
@@ -652,7 +667,15 @@
       "MINUTELY_other": "Minutes",
       "SECONDLY_one": "Second",
       "SECONDLY_other": "Seconds"
-    }
+    },
+    "bymonth": "Months",
+    "byweekno": "Weeks",
+    "byyearday": "Days of year",
+    "bymonthday": "Days of month",
+    "byweekday": "Weekdays",
+    "byhour": "Hours",
+    "byminute": "Minutes",
+    "bysecond": "Seconds"
   },
   "allDay": "All day",
   "apply": "apply",
