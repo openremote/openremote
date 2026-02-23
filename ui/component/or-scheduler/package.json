@@ -18,10 +18,13 @@
     },
     "author": "OpenRemote",
     "license": "AGPL-3.0-or-later",
+    "repository": "https://github.com/openremote/openremote",
     "dependencies": {
+        "@openremote/core": "workspace:*",
         "@openremote/model": "workspace:*",
-        "@openremote/or-mwc-components": "workspace:*",
+        "@openremote/or-icon": "workspace:*",
         "@openremote/or-translate": "workspace:*",
+        "@openremote/or-vaadin-components": "workspace:*",
         "lit": "^3.3.1",
         "moment": "^2.29.4",
         "rrule": "^2.6.4"
