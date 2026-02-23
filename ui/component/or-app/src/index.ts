@@ -412,7 +412,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return html`
             ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
-            <style>:host > * {--or-color-primary: var(--or-app-color4);--or-color-text-primary: var(--or-app-color4);--lumo-primary-color: var(--or-color-primary);--lumo-primary-text-color: var(--or-color-text-primary);}</style>
+            <style>
+                :host > * {
+                    /* Vaadin + OR theme styles that are 'user configurable' need to be re-applied inside or-app. */
+                    --or-color-primary: var(--or-app-color4);
+                    --or-color-primary-50pct: hsl(from var(--or-color-primary) h s l / 0.76);
+                    --or-color-primary-10pct: hsl(from var(--or-color-primary) h s l / 0.13);
+                    --or-color-text-primary: var(--or-app-color4);
+                    --lumo-primary-color: var(--or-color-primary);
+                    --lumo-primary-color-50pct: var(--or-color-primary-50pct);
+                    --lumo-primary-color-10pct: var(--or-color-primary-10pct);
+                    --lumo-primary-text-color: var(--or-color-text-primary);
+                }
+            </style>
             ${this._config.header ? html`
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}
