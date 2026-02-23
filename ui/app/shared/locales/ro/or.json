@@ -478,7 +478,7 @@
   "planPeriod": "Planifică un eveniment",
   "planRecurrence": "Planifică un eveniment repetitiv",
   "activeFromTo": "Activ de la {{start}} până la {{end}}",
-  "fromTo": "De la {{start}} până la {{end}}",
+  "fromTo": "de la {{start}} până la {{end}}",
   "fromToDays": "de la {{start}} până peste {{days}} zile mai târziu {{end}}",
   "forDays": "pentru {{days}} zile",
   "scheduleRuleActivity": "Planifică Activitatea Regulii",

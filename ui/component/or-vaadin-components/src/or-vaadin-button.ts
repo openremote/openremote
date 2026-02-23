@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {customElement} from "lit/decorators.js";
-import {Button} from "@vaadin/button";
-import {OrVaadinComponent} from "./util";
+import { customElement } from "lit/decorators.js";
+import { Button } from "@vaadin/button";
+import { OrVaadinComponent } from "./util";
 
 @customElement("or-vaadin-button")
-export class OrVaadinButton extends Button implements OrVaadinComponent {
-
-}
+export class OrVaadinButton extends Button implements OrVaadinComponent {}

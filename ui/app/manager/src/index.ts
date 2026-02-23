@@ -2,6 +2,7 @@
 import {pageProvisioningProvider} from "./pages/page-provisioning";
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
+import themeCss from "@openremote/theme";
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
     headerItemAccount,
