@@ -305,7 +305,8 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         if (this.ruleset) {
             this.ruleset.meta ??= {};
             this.ruleset.meta.validity = e?.detail.value;
-            this.requestUpdate("ruleset");
+            this.modified = true;
+            this.requestUpdate();
         }
     }
 
