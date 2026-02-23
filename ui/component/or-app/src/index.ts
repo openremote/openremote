@@ -58,9 +58,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @property({type: Object})
     public managerConfig?: ManagerConfig;
 
-    @property({type: Array})
-    public styles: string[] = [];
-
     @query("main")
     protected _mainElem!: HTMLElement;
 

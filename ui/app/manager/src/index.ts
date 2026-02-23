@@ -276,7 +276,6 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
     style.id = "orDefaultTheme";
     style.textContent = themeCss;
     document.head.appendChild(style);
-    // orApp.styles = [themeCss];
 
     // Load app
     document.body.appendChild(orApp);
