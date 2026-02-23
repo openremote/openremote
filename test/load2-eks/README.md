@@ -6,8 +6,11 @@ and adapting the values files to configure the memory usage on the different pod
 For the manager, JVM parameters are used to make use of the extra memory available to the container.  
 There are different "profiles" available depending on the power required and the tests to be run:
 - large: minimal set-up useful to test memory leaks and pressure condition
-- xlarge: doubles memory allocation for manager compared to large profile (4Gi vs 2Gi), with room for further increases
-- 2xlarge: much bigger setup to test system limits and get a feel for performance level we can reach
+- xlarge-minimal: doubles memory allocation for manager compared to large profile (4Gi vs 2Gi), with room for further increases
+- xlarge: bigger setup using all capacity on 4 CPU/16 GB cluster
+- 2xlarge: bigger setup using all capacity on 8 CPU/32 GB cluster
+- 4xlarge: bigger setup using all capacity on 16 CPU/64 GB cluster
+- 8xlarge: bigger setup using all capacity on 32 CPU/128 GB cluster
 
 The profile is selected by setting the OR_PROFILE environment variable in the `eks-common.sh` script.   
 
