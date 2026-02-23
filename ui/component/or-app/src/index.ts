@@ -58,6 +58,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @property({type: Object})
     public managerConfig?: ManagerConfig;
 
+    @property({type: Array})
+    public styles: string[] = [];
+
     @query("main")
     protected _mainElem!: HTMLElement;
 
@@ -412,6 +415,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return html`
             ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
+            <style>
+                :host > * {
+                    --or-color-primary: var(--or-app-color4, hsl(117, 44%, 46%));
+                    --or-color-text-primary: var(--or-app-color4, hsl(117, 44%, 46%));
+                    --lumo-primary-color: var(--or-color-primary);
+                    --lumo-primary-text-color: var(--or-color-text-primary);
+                }
+            </style>
             ${this._config.header ? html`
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}
