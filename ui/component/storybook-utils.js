@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,12 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {customElement} from "lit/decorators.js";
-import {Button} from "@vaadin/button";
-import {OrVaadinComponent} from "./util";
-import {type LitElement} from "lit";
+import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
 
-@customElement("or-vaadin-button")
-export class OrVaadinButton extends (Button as new () => Button & LitElement) implements OrVaadinComponent {
+export function getORStorybookHelpers(tagName) {
+  const config = getStorybookHelpers(tagName);
 
+  // Sort arguments, so that CSS properties end up on the bottom
+  if (config.args) {
+    const entries = Object.entries(config.args);
+    config.args = Object.fromEntries([
+      ...entries.filter(([k]) => !k.startsWith("--")),
+      ...entries.filter(([k]) => k.startsWith("--"))
+    ]);
+  }
+  return config;
 }
