@@ -114,9 +114,16 @@ declare global {
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
     static styles = css`
-        .capitalize {
-            display: inline-block;
-            &::first-letter { text-transform: uppercase; }
+        .time-label {
+            display: flex;
+            &>:first-child {
+                display: inline-block;
+                flex-shrink: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                &::first-letter { text-transform: uppercase; }
+            }
         }
     `;
 
@@ -200,7 +207,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 } else if (diff === 0) {
                     template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
                 }
-                return html`<span class="capitalize">${this._rrule!.toText()} ${template}</span>`;
+                const fromToTemplate = html`<span><span style="white-space: pre"> </span>${template}</span>`;
+                const monthNames = Object.values(MONTHS).map(i18next.t) as string[];
+                const orderISO = Object.values(WEEKDAYS).map(i18next.t) as string[];
+                const dayNames = [orderISO.pop()!, ...orderISO];
+                const rule = this._rrule!.toText((id) => i18next.t(`rrule.${id}`), { dayNames, monthNames, tokens: {} });
+                return html`<span class="time-label"><span>${rule}</span>${fromToTemplate}</span>`;
             }
 
             const format = this.isAllDay ? "DD-MM-YYYY" : "DD-MM-YYYY HH:mm";
@@ -387,7 +399,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected render() {
         return html`
-            <or-vaadin-button @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
+            <or-vaadin-button style="max-width: 100%" @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" ?opened="${this.open}" @closed="${this._onClose}"
                 ${dialogHeaderRenderer(this._getDialogHeader, [])}
                 ${dialogRenderer(this._getDialogContent, [
