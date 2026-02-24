@@ -1,10 +1,11 @@
 package org.openremote.container.security;
 
 import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.SecurityContext;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,8 +31,8 @@ public class KeyResolverService {
         return jwkSources.computeIfAbsent(realm, r -> {
             try {
                 // The standard URL for the JWKS endpoint in Keycloak
-                URL jwksUrl = new URL(keycloakBaseUrl + "/realms/" + r + "/protocol/openid-connect/certs");
-                return new RemoteJWKSet<>(jwksUrl);
+                URL jwksUrl = URI.create(keycloakBaseUrl + "/realms/" + r + "/protocol/openid-connect/certs").toURL();
+                return JWKSourceBuilder.create(jwksUrl).build();
             } catch (MalformedURLException e) {
                 throw new IllegalStateException("Invalid Keycloak JWKS URL for realm: " + r, e);
             }

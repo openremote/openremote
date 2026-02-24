@@ -29,15 +29,18 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
+import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 @Deprecated
@@ -112,4 +115,14 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
     }
 
     abstract protected Set<String> getDefaultRoles();
+
+    @Override
+    public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret) {
+        return CompletableFuture.failedFuture(new UnsupportedOperationException("This provider does not support bearer tokens"));
+    }
 }

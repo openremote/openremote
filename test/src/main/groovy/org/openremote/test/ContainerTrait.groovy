@@ -22,6 +22,7 @@ package org.openremote.test
 import jakarta.persistence.TypedQuery
 import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.HttpHeaders
+import jakarta.ws.rs.core.MultivaluedHashMap
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
@@ -29,11 +30,13 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor
+import org.keycloak.admin.client.token.TokenService
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.json.JacksonConfig
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.container.security.AuthForm
 import org.openremote.container.security.ClientCredentialsAuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
@@ -41,6 +44,7 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.security.keycloak.KeycloakResource
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -592,16 +596,14 @@ trait ContainerTrait {
         String basePath = "/auth"
         String baseUrl  = "${scheme}://${host}${basePath}"
 
-        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true }.build()
-        ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
-
-        KeycloakResource keycloak = target.proxy(KeycloakResource)
+        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier { String h, SSLSession s -> true }.build()
+        ResteasyWebTarget target = new WebTargetBuilder(client, URI.create(baseUrl)).build()
+        TokenService keycloak = target.proxy(TokenService)
 
         try {
-            return keycloak.getAccessToken(
-                    realm,
-                    new PasswordAuthForm(clientId, username, password)
-            )
+            return keycloak.grantToken(
+                realm,
+                new MultivaluedHashMap<String, String>(Map.of("client_id", clientId, "username", username, "password", password)))
         } finally {
             client.close()
         }

@@ -23,6 +23,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
@@ -31,10 +32,9 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.admin.client.token.TokenService;
 import org.keycloak.representations.AccessToken;
-import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.security.JWTAuthenticationFilter;
-import org.openremote.container.security.KeyResolverService;
+import org.openremote.container.security.*;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
@@ -47,6 +47,7 @@ import javax.security.auth.Subject;
 import java.net.URI;
 import java.security.Principal;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -203,7 +204,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void secureDeployment(ServletContext servletContext) {
-        String keycloakUrl = "http://localhost:8080"; // Load this from your config system
+        String keycloakUrl = keycloakServiceUri.toString();
         KeyResolverService keyResolver = new KeyResolverService(keycloakUrl);
         JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(keyResolver);
 
@@ -212,8 +213,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         registration.setAsyncSupported(true);
     }
 
-    protected KeycloakResource getKeycloak() {
-        return keycloakTarget.proxy(KeycloakResource.class);
+    protected TokenService getKeycloak() {
+        return keycloakTarget.proxy(TokenService.class);
     }
 
     //There is a bug in {@link org.keycloak.admin.client.resource.UserStorageProviderResource#syncUsers} which misses the componentId as parameter
@@ -239,7 +240,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
     }
 
-    public URI getTokenUri(String realm) {
+    protected URI getTokenUri(String realm) {
         return keycloakServiceUri.clone().path("realms").path(realm).path("protocol/openid-connect/token").build();
     }
 
@@ -365,5 +366,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public static boolean isSuperUser(KeycloakSecurityContext securityContext) {
         return securityContext != null && Constants.MASTER_REALM.equals(securityContext.getRealm()) && securityContext.getToken().getRealmAccess().isUserInRole(Constants.SUPER_USER_REALM_ROLE);
+    }
+
+    @Override
+    public CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        exe
+        getKeycloak().getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret));
+    }
+
+    @Override
+    public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
+        return null;
     }
 }

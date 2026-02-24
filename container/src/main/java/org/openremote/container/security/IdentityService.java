@@ -27,6 +27,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.auth.OAuthGrant;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 public abstract class IdentityService implements ContainerService, TokenVerifier {
@@ -78,8 +79,8 @@ public abstract class IdentityService implements ContainerService, TokenVerifier
         return identityProvider.verify(realm, accessToken);
     }
 
-    public String getBearerToken(String realm, OAuthGrant oAuthGrant) {
-
+    public CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret) {
+        return identityProvider.getBearerToken(realm, clientId, clientSecret);
     }
 
     /**

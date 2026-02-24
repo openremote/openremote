@@ -20,13 +20,12 @@
 
 package org.openremote.manager.setup;
 
+import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.keycloak.KeycloakResource;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -109,13 +108,12 @@ public class KeycloakInitService implements ContainerService {
 
         boolean keycloakAvailable = false;
         WebTargetBuilder targetBuilder = new WebTargetBuilder(client, keycloakServiceUri.build());
-        ResteasyWebTarget target = targetBuilder.build();
-        KeycloakResource keycloakResource = target.proxy(KeycloakResource.class);
+        WebTarget target = targetBuilder.build();
 
         while (!keycloakAvailable) {
             LOG.info("Connecting to Keycloak server: " + keycloakServiceUri.build());
             try {
-                pingKeycloak(keycloakResource);
+                pingKeycloak(target);
                 keycloakAvailable = true;
 	            LOG.info("Successfully connected to Keycloak server: " + keycloakServiceUri.build());
             } catch (Exception ex) {
@@ -130,11 +128,11 @@ public class KeycloakInitService implements ContainerService {
        client.close();
     }
 
-    protected static void pingKeycloak(KeycloakResource resource) throws Exception {
+    protected static void pingKeycloak(WebTarget target) throws Exception {
         Response response = null;
 
         try {
-            response = resource.getWelcomePage();
+            response = target.path("/realms/master/.well-known/openid-configuration").request().head();
             if (response != null &&
                 (response.getStatusInfo().getFamily() == SUCCESSFUL
                     || response.getStatusInfo().getFamily() == REDIRECTION)) {

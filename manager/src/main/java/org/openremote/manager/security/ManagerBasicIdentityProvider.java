@@ -21,18 +21,20 @@ package org.openremote.manager.security;
 
 import jakarta.security.enterprise.AuthenticationException;
 import org.hibernate.Session;
-import org.openremote.container.security.TokenPrincipal;
-import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.container.security.basic.BasicIdentityProvider;
 import org.openremote.container.security.basic.PasswordStorage;
-import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.Container;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
 import java.sql.PreparedStatement;
-import java.util.*;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.*;

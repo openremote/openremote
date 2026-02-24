@@ -22,6 +22,8 @@ package org.openremote.container.security;
 import jakarta.servlet.ServletContext;
 import org.openremote.model.Container;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * SPI for implementations used by {@link IdentityService}.
  */
@@ -37,4 +39,9 @@ public interface IdentityProvider extends TokenVerifier {
     void stop(Container container) throws Exception;
 
     void secureDeployment(ServletContext servletContext);
+
+    /**
+     * Retrieves a bearer token for the given realm, client id and client secret using this {@link IdentityProvider}.
+     */
+    CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret);
 }

@@ -7,21 +7,14 @@ import org.apache.activemq.artemis.core.security.Role;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
 import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.TokenPrincipal;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
-import org.openremote.model.auth.OAuthGrant;
 
 import javax.security.auth.Subject;
-import javax.security.auth.login.LoginException;
 import java.security.Principal;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 
@@ -50,46 +43,35 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
             return remotingConnection.getSubject();
         }
 
-        // TODO: Add support for bearer token authentication https://github.com/openremote/openremote/issues/2534
-        // Login user
-        String realm = null;
-        if (user != null) {
-            String[] realmAndUsername = user.split(":");
-            if (realmAndUsername.length == 2) {
-                realm = realmAndUsername[0];
-                user = realmAndUsername[1];
-            }
-        }
-
-        if (realm == null) {
-            throw new IllegalArgumentException("Invalid user format: " + user);
-        }
-
-        OAuthGrant oAuthGrant = getOAuthGrant(realm, user);
-        Subject subject = null;
-
         try {
-            String bearerToken = WebService.getBearerToken(executorService, client, oAuthGrant).get(
-                    CONNECTION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            // TODO: Add support for bearer token authentication https://github.com/openremote/openremote/issues/2534
+            // Login service user
+            String realm = null;
+            if (user != null) {
+                int delimIndex = user.indexOf(':');
+                if (delimIndex > 0) {
+                    realm = user.substring(0, delimIndex);
+                    user = user.substring(delimIndex + 1);
+                }
+            }
 
+            if (realm == null) {
+                throw new IllegalArgumentException("Invalid user format: " + user);
+            }
+
+            String bearerToken = identityService.getBearerToken(realm, user, password).get(
+                CONNECTION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             TokenPrincipal tokenPrincipal = identityService.verify(realm, bearerToken);
             Principal connectionPrincipal = new RemotingConnectionPrincipal(remotingConnection);
-            subject = new Subject(true, Set.of(tokenPrincipal, connectionPrincipal), Set.of(), Set.of());
+            Subject subject = new Subject(true, Set.of(tokenPrincipal, connectionPrincipal), Set.of(), Set.of());
 
             // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
             remotingConnection.setSubject(subject);
 
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
-        } catch (AuthenticationException e) {
+            return subject;
+        } catch (InterruptedException | TimeoutException | ExecutionException | AuthenticationException e) {
             throw new RuntimeException(e);
         }
-
-        return null;
     }
 
     @Override
@@ -106,9 +88,5 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
     @Override
     public boolean validateUserAndRole(String user, String password, Set<Role> roles, CheckType checkType) {
         throw new UnsupportedOperationException("Invoke validateUserAndRole(String, String, Set<Role>, CheckType, String, RemotingConnection, String) instead");
-    }
-
-    protected String getBearerToken(String realm, String username) {
-       identityService.getBearerToken()
     }
 }
