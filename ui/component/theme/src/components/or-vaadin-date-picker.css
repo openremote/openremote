@@ -1,0 +1,50 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+@import "@vaadin/vaadin-lumo-styles/components/date-picker.css";
+
+:root::before,
+:host::before {
+  --_lumo-vaadin-date-picker-inject: 1;
+  --_lumo-vaadin-date-picker-inject-modules:
+    lumo_mixins_field-label,
+    lumo_mixins_field-required,
+    lumo_mixins_field-error-message,
+    lumo_mixins_field-button,
+    lumo_mixins_field-helper,
+    lumo_mixins_field-base,
+    lumo_components_date-picker,
+    lumo_mixins_field-internal;
+
+  --_lumo-vaadin-date-picker-year-inject: 1;
+  --_lumo-vaadin-date-picker-year-inject-modules: lumo_components_date-picker-year;
+
+  --_lumo-vaadin-date-picker-overlay-inject: 1;
+  --_lumo-vaadin-date-picker-overlay-inject-modules:
+    lumo_mixins_overlay,
+    lumo_mixins_menu-overlay-core,
+    lumo_mixins_menu-overlay-ext,
+    lumo_components_date-picker-overlay;
+
+  --_lumo-vaadin-date-picker-overlay-content-inject: 1;
+  --_lumo-vaadin-date-picker-overlay-content-inject-modules: lumo_components_date-picker-overlay-content;
+
+  --_lumo-vaadin-month-calendar-inject: 1;
+  --_lumo-vaadin-month-calendar-inject-modules: lumo_components_date-picker-month-calendar;
+}
