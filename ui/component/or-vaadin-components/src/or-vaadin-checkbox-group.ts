@@ -17,16 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {customElement} from "lit/decorators.js";
-import {PasswordField} from "@vaadin/password-field";
-import {OrVaadinComponent} from "./util";
-import {type LitElement} from "lit";
+import { customElement } from "lit/decorators.js";
+import { CheckboxGroup } from "@vaadin/checkbox-group";
+import { OrVaadinComponent } from "./util";
+import "@vaadin/checkbox";
 
-@customElement("or-vaadin-passwordfield")
-export class OrVaadinPasswordField extends (PasswordField as new () => PasswordField & LitElement) implements OrVaadinComponent {
+export type * from "@vaadin/checkbox-group";
 
-    override _onEnter(ev: KeyboardEvent) {
-        this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
-        return super._onEnter(ev);
-    }
-}
+@customElement("or-vaadin-checkbox-group")
+export class OrVaadinCheckboxGroup extends CheckboxGroup implements OrVaadinComponent {}
