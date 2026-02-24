@@ -216,8 +216,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
         const schedule = this._scheduleWithOffset;
         if (schedule?.start && schedule?.end) {
-            const { start, end, recurrence } = schedule;
-            this._eventType = recurrence ? EventTypes.recurrence : EventTypes.period;
+            const { start, end } = schedule;
             this.isAllDay = this._calculateIsAllDay(start, end);
         }
 
@@ -237,6 +236,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 this._rrule = RRule.fromString(this._scheduleWithOffset.recurrence);
             } else if (this._eventType === EventTypes.default && this.defaultSchedule?.recurrence) {
                 this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
+            }
+
+            const schedule = this._scheduleWithOffset;
+            if (schedule?.start && schedule?.end) {
+                this._eventType = schedule.recurrence ? EventTypes.recurrence : EventTypes.period;
+            } else {
+                this._eventType = EventTypes.default;
             }
         }
 
