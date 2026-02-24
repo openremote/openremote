@@ -65,7 +65,9 @@ const VaadinJSDocParserPlugin = {
             });
             declaration[category].push(...entries);
         });
-        console.debug(`Injected additional JSDoc documentation for class ${declaration.name}`)
+        if(declaration) {
+            console.debug(`Injected additional JSDoc documentation for class ${declaration.name}`);
+        }
     }
 }
 
@@ -78,6 +80,7 @@ const VaadinSuperclassParserPlugin = {
     name: 'vaadin-superclass-parser',
     analyzePhase({ ts, node, moduleDoc }) {
         if (node.kind !== ts.SyntaxKind.ClassDeclaration || !node.heritageClauses) return;
+        if (!node.name) return;
 
         const className = node.name.getText();
         const declaration = moduleDoc.declarations?.find(d => d.name === className);
