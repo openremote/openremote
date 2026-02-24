@@ -78,4 +78,17 @@ public class MapAccess {
         return defaultValue;
     }
 
+
+    static public double getDouble(Map<String, String> config, String key, double defaultValue) {
+        String raw = getString(config, key, null);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (NumberFormatException ignored) {
+            return defaultValue;
+        }
+    }
+
 }
