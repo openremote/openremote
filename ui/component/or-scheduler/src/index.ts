@@ -64,16 +64,9 @@ function range(start: number, end: number): number[] {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-// TODO: use es2023
-function toSpliced<T>(arr: T[], index: number, count: number): T[] {
-    const shallowCopy = [...arr];
-    shallowCopy.splice(index, count);
-    return shallowCopy;
-}
-
-const byWeekNoOptions = toSpliced(range(-53, 53), 53, 1);
-const byYearDayOptions = toSpliced(range(-366, 366), 366, 1); // TODO: optimize option rendering
-const byMonthDayOptions = toSpliced(range(-31, 31), 31, 1);
+const byWeekNoOptions = range(-53, 53).toSpliced(53, 1);
+const byYearDayOptions = range(-366, 366).toSpliced(366, 1);
+const byMonthDayOptions = range(-31, 31).toSpliced(31, 1);
 const byHourOptions = range(1, 24);
 const byMinuteOrSecondsOptions = range(1, 60);
 
@@ -386,14 +379,16 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _applyTimezoneOffset(schedule: CalendarEvent | undefined, offset: number): CalendarEvent | undefined {
         if (schedule) {
             let { start, end, recurrence } = { ...schedule };
-            if (start) start += offset;
-            if (end) end += offset;
             if (recurrence && RRule.fromString(recurrence).origOptions.until) {
                 const origOptions = RRule.fromString(recurrence).origOptions;
                 origOptions.until = new Date(Number(origOptions.until) + offset)
                 recurrence = this._getRRule(new RRule(origOptions))
             }
-            return { start, end, recurrence }
+            return {
+                start: start && start + offset,
+                end: end && end + offset,
+                recurrence
+            }
         }
     }
 

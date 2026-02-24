@@ -9,7 +9,8 @@
       "es2017",
       "es2019",
       "es2021",
-      "es2022"
+      "es2022",
+      "es2023"
     ],
     "strict": true,
     "declaration": true,
