@@ -40,7 +40,7 @@ or:
     - name: OR_SETUP_ASSETS
       value: "5"
     - name: OR_SETUP_ASSETS_WITH_LOCATIONS
-      value: "4"
+      value: "0"
     - name: OR_SETUP_LOCATION_CLUSTERS
       value: "5"
     - name: OR_SETUP_LOCATION_MAIN_CENTER
