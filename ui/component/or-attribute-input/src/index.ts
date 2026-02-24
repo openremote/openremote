@@ -23,13 +23,8 @@ import "@openremote/or-vaadin-components/or-vaadin-input";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";
 import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
-import {getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/util";
-import type {
-    InputType,
-    ValueInputProvider,
-    ValueInputProviderOptions,
-    ValueInputTemplateFunction
-} from "@openremote/or-vaadin-components/util";
+import {getValueHolderInputTemplateProvider, type ValueInputProvider, type ValueInputProviderOptions, type ValueInputTemplateFunction} from "@openremote/or-vaadin-components/value-input-provider";
+import type {InputType} from "@openremote/or-vaadin-components/util";
 import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";

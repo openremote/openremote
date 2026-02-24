@@ -2,8 +2,7 @@ import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "
 import {until} from "lit/directives/until.js";
 import {customElement, property} from "lit/decorators.js";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/util";
-import type {ValueInputProviderOptions} from "@openremote/or-vaadin-components/util";
+import {type ValueInputProviderOptions, getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/value-input-provider";
 import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import {DefaultColor5, DefaultColor3, Util} from "@openremote/core";
