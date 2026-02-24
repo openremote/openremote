@@ -21,16 +21,16 @@ import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/w
 import {getORStorybookHelpers} from "../../storybook-utils";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
-import "../src/or-vaadin-numberfield";
+import "../src/or-vaadin-number-field";
 
-const tagName = "or-vaadin-numberfield";
+const tagName = "or-vaadin-number-field";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
 const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
-    title: "Playground/or-vaadin-components/numberfield",
+    title: "Playground/or-vaadin-components/number-field",
     component: tagName,
     args: args,
     argTypes: argTypes,
