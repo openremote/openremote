@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import {type Meta, setCustomElementsManifest, type StoryObj} from "@storybook/web-components";
-import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
+import {getORStorybookHelpers} from "../../storybook-utils";
 import {Asset, AssetQuery, WellknownMetaItems} from "@openremote/model";
 import manager from "@openremote/core";
 import {html} from "lit";
@@ -31,7 +31,7 @@ const tagName = "or-chart";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
-const { events, args, argTypes, template } = getStorybookHelpers(tagName);
+const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
     title: "Playground/or-chart",

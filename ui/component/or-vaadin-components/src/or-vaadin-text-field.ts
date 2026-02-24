@@ -19,7 +19,7 @@
  */
 import {customElement} from "lit/decorators.js";
 import {TextField} from "@vaadin/text-field";
-import {LitElement} from "lit";
+import {type LitElement} from "lit";
 import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-text-field")

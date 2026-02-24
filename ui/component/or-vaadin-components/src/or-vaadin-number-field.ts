@@ -20,7 +20,7 @@
 import {customElement} from "lit/decorators.js";
 import {NumberField} from "@vaadin/number-field";
 import {OrVaadinComponent} from "./util";
-import {LitElement} from "lit";
+import {type LitElement} from "lit";
 
 @customElement("or-vaadin-number-field")
 export class OrVaadinNumberField extends (NumberField as new () => NumberField & LitElement) implements OrVaadinComponent {

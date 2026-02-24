@@ -19,7 +19,7 @@
  */
 import { html } from "lit";
 import { setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
-import { getStorybookHelpers } from "@wc-toolkit/storybook-helpers";
+import { getORStorybookHelpers } from "../../storybook-utils.js";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import manager from "@openremote/core";
