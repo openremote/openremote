@@ -17,24 +17,51 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { html, LitElement, PropertyValues, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { CalendarEvent } from "@openremote/model";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { translate, i18next } from "@openremote/or-translate";
-import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
-import moment from "moment";
-import { Days } from "rrule/dist/esm/rrule";
-import { BY_RRULE_PARTS, EventTypes, FREQUENCIES, MONTHS, NOT_APPLICABLE_BY_RRULE_PARTS, rruleEnds } from "./util";
-import type { RulePartKey, RuleParts, LabeledEventTypes, Frequency } from "./types";
+import "@openremote/or-icon";
+import "@openremote/or-translate";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
+import "@openremote/or-vaadin-components/or-vaadin-date-picker";
+import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import "@openremote/or-vaadin-components/or-vaadin-dialog";
+import "@openremote/or-vaadin-components/or-vaadin-icon";
+import "@openremote/or-vaadin-components/or-vaadin-number-field";
+import "@openremote/or-vaadin-components/or-vaadin-radio-group";
+import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
+import "@openremote/or-vaadin-components/or-vaadin-time-picker";
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-export { RuleParts, RulePartKey, Frequency, LabeledEventTypes };
+import { Util } from "@openremote/core";
+import { CalendarEvent } from "@openremote/model";
+import { InputType } from "@openremote/or-vaadin-components/util";
+import { translate, i18next } from "@openremote/or-translate";
+import {
+    dialogRenderer,
+    dialogHeaderRenderer,
+    dialogFooterRenderer,
+    OrVaadinDialog,
+} from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
+import {
+    BY_RRULE_PARTS,
+    EventTypes,
+    FREQUENCIES,
+    MONTHS,
+    RFC_STRICT_NOT_APPLICABLE,
+    RRULE_ENDS,
+    WEEKDAYS,
+} from "./util";
+import moment from "moment";
+import type { PartKeys, RRulePartKeys, Frequency, ByRRuleCombination, ByRRulePartsKeys } from "./types";
 
+export type * from "./types";
 export * from "./util";
 
 function range(start: number, end: number): number[] {
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i )
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
 // TODO: use es2023
@@ -55,14 +82,24 @@ export interface OrSchedulerChangedEventDetail {
 }
 
 export class OrSchedulerChangedEvent extends CustomEvent<OrSchedulerChangedEventDetail> {
-
     public static readonly NAME = "or-scheduler-changed";
 
     constructor(value?: CalendarEvent) {
         super(OrSchedulerChangedEvent.NAME, {
             detail: { value },
             bubbles: true,
-            composed: true
+            composed: true,
+        });
+    }
+}
+
+export class OrSchedulerRemovedEvent extends CustomEvent<void> {
+    public static readonly NAME = "or-scheduler-removed";
+
+    constructor() {
+        super(OrSchedulerRemovedEvent.NAME, {
+            bubbles: true,
+            composed: true,
         });
     }
 }
@@ -70,22 +107,36 @@ export class OrSchedulerChangedEvent extends CustomEvent<OrSchedulerChangedEvent
 declare global {
     export interface HTMLElementEventMap {
         [OrSchedulerChangedEvent.NAME]: OrSchedulerChangedEvent;
+        [OrSchedulerRemovedEvent.NAME]: OrSchedulerRemovedEvent;
     }
 }
 
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
+    static styles = css`
+        .capitalize {
+            display: inline-block;
+            &::first-letter { text-transform: uppercase; }
+        }
+    `;
+
     @property({ type: Object })
     public defaultSchedule?: CalendarEvent;
 
     @property({ type: String })
     public defaultEventTypeLabel = "default";
 
+    @property({ type: Boolean })
+    public disableNegativeByPartValues = false;
+
     @property({ type: Array })
     public disabledFrequencies: Frequency[] = [];
 
     @property({ type: Array })
-    public disabledRRuleParts: RulePartKey[] = [];
+    public disabledRRuleParts: RRulePartKeys[] = [];
+
+    @property({ type: Object })
+    public disabledByPartCombinations: ByRRuleCombination = RFC_STRICT_NOT_APPLICABLE;
 
     @property({ type: String })
     public header = "scheduleActivity";
@@ -93,46 +144,84 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     @property({ type: Boolean })
     public isAllDay = true;
 
+    @property({ type: Boolean })
+    public open = false;
+
+    @property({ type: Boolean })
+    public removable = false;
+
     @property({ type: Object })
     public schedule?: CalendarEvent = this.defaultSchedule;
 
-    @property()
+    @property({ type: Number })
     public timezoneOffset = 0;
 
     @state()
-    protected _ends: keyof typeof rruleEnds = "never";
+    protected _count = 1;
 
     @state()
-    protected _normalizedSchedule = this.applyTimezoneOffset(this.schedule);
+    protected _ends: keyof typeof RRULE_ENDS = "never";
 
     @state()
     protected _rrule?: RRule;
 
-    protected _byRRuleParts?: RulePartKey[];
-    protected _count = 1;
-    protected _dialog?: OrMwcDialog;
+    @query("#scheduler")
+    protected _dialog!: OrVaadinDialog;
+
+    protected _byRRuleParts?: RRulePartKeys[];
     protected _eventType: EventTypes = EventTypes.default;
-    protected _eventTypes: LabeledEventTypes = EventTypes;
     protected _until = moment().toDate();
 
-    protected firstUpdated(_changedProps: PropertyValues) {
-        this._eventTypes = {
-            default: i18next.t(this.defaultEventTypeLabel),
-            period: i18next.t("planPeriod"),
-            recurrence: i18next.t("planRecurrence")
-        };
-        if (this._normalizedSchedule?.start && this._normalizedSchedule?.end) {
-            if (this._normalizedSchedule.recurrence) {
-                this._eventType = EventTypes.recurrence;
-            } else {
-                this._eventType = EventTypes.period;
-            }
-            this.isAllDay = this._normalizedSchedule
-                && moment(this._normalizedSchedule.start).isSame(moment(this._normalizedSchedule.start).clone().startOf("day"))
-                && moment(this._normalizedSchedule.end).isSame(moment(this._normalizedSchedule.end).clone().endOf("day"));
+    protected get _scheduleWithOffset(): CalendarEvent | undefined {
+        return this._applyTimezoneOffset(this.schedule, this.timezoneOffset);
+    }
+
+    protected set _scheduleWithOffset(schedule) {
+        this.schedule = this._applyTimezoneOffset(schedule, -this.timezoneOffset);
+    }
+
+    protected get _timeLabel(): TemplateResult | undefined {
+        if (this._eventType === EventTypes.default) {
+            return html`<or-translate value="${this.defaultEventTypeLabel}"></or-translate>`;
         }
-        if (this._normalizedSchedule?.recurrence) {
-            const origOptions = RRule.fromString(this._normalizedSchedule.recurrence).origOptions;
+
+        if (this._scheduleWithOffset) {
+            const calendarEvent = this._scheduleWithOffset;
+
+            if (calendarEvent.recurrence) {
+                const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
+                const fromTo = { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") };
+
+                let template: TemplateResult = html``;
+                if (this.isAllDay && diff > 0) {
+                    template = html`<or-translate value="forDays" .options="${{ days: diff }}"></or-translate>`;
+                } else if (diff > 0) {
+                    template = html`<or-translate value="fromToDays" .options="${{ ...fromTo, days: diff }}"></or-translate>`;
+                } else if (diff === 0) {
+                    template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
+                }
+                return html`<span class="capitalize">${this._rrule!.toText()} ${template}</span>`;
+            }
+
+            const format = this.isAllDay ? "DD-MM-YYYY" : "DD-MM-YYYY HH:mm";
+            return html`<or-translate value="activeFromTo" .options="${{
+                start: moment(calendarEvent.start).format(format),
+                end: moment(calendarEvent.end).format(format)
+            }}"></or-translate>`;
+        }
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+
+        const schedule = this._scheduleWithOffset;
+        if (schedule?.start && schedule?.end) {
+            const { start, end } = schedule;
+            this.isAllDay = this._calculateIsAllDay(start, end);
+        }
+
+        if (schedule?.recurrence) {
+            const origOptions = RRule.fromString(schedule.recurrence).origOptions;
             if (origOptions.until) {
                 this._until = moment(origOptions.until).toDate();
             } else if (origOptions.count) {
@@ -141,61 +230,66 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
     }
 
-    protected willUpdate(changedProps: PropertyValues) {
+    shouldUpdate(changedProps: PropertyValues) {
         if (changedProps.has("schedule")) {
-            this._normalizedSchedule = this.applyTimezoneOffset(this.schedule);
-        }
-    }
+            if (this._scheduleWithOffset?.recurrence) {
+                this._rrule = RRule.fromString(this._scheduleWithOffset.recurrence);
+            } else if (this._eventType === EventTypes.default && this.defaultSchedule?.recurrence) {
+                this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
+            }
 
-    protected updated(changedProps: PropertyValues) {
-        super.updated(changedProps);
+            const schedule = this._scheduleWithOffset;
+            if (schedule?.start && schedule?.end) {
+                this._eventType = schedule.recurrence ? EventTypes.recurrence : EventTypes.period;
+            } else {
+                this._eventType = EventTypes.default;
+            }
+        }
 
         if (changedProps.has("_rrule") && this._rrule) {
             this._byRRuleParts = BY_RRULE_PARTS
-                .filter(p => !NOT_APPLICABLE_BY_RRULE_PARTS[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p.toUpperCase()))
+                .filter(p => !this.disabledByPartCombinations[FrequencyValue[this._rrule!.options.freq] as Frequency]?.includes(p))
                 .filter(p => !this.disabledRRuleParts.includes(p));
             this._ends = (this._rrule?.origOptions?.until && "until") || (this._rrule?.origOptions?.count && "count") || "never";
         }
+        return super.shouldUpdate(changedProps);
+    }
 
-        if (changedProps.has("_normalizedSchedule")) {
-            if (this._normalizedSchedule?.recurrence) {
-                this._rrule = RRule.fromString(this._normalizedSchedule.recurrence);
-            } else if (this._eventType === EventTypes.default && this.defaultSchedule?.recurrence) {
-                this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
-            } else {
-                this._rrule = undefined;
-            }
-        }
+    protected _calculateIsAllDay(startInMillis: number, endInMillis: number): boolean {
+        const start = moment(startInMillis);
+        const end = moment(endInMillis);
+        return start.isSame(start.clone().startOf("day")) && end.isSame(end.clone().endOf("day"));
     }
 
     /**
      * Converts the recurrence rule to string and normalizes it.
-     * 
+     *
      * The UTC timezone offset 'Z' for the UNTIL rule part is removed,
-     * because the backend uses a `LocalDateTime` object to compare.
+     * because the timezone is configurable.
      * @param rrule The recurrence rule to normalize.
      * @returns String representation of the defined Recurrence Rule
      */
-    protected getRRule(rrule = this._rrule): string | undefined {
+    protected _getRRule(rrule = this._rrule): string | undefined {
         return rrule?.toString()?.split("RRULE:")?.[1]?.replace(/(UNTIL=\d+T\d+)Z/, "$1");
     }
 
-    protected setRRuleValue(value: any, key: keyof RuleParts | "start" | "end" | "start-time" | "end-time" | "all-day" | "recurrence-ends") {
+    protected _setRRuleValue(value: any, key: PartKeys) {
         let origOptions = this._rrule?.origOptions;
-        const calendarEvent = this._normalizedSchedule!;
+        const calendarEvent = this._scheduleWithOffset!;
 
         if (key === "interval" || key === "freq" || key.startsWith("by")) {
             if (key === "byweekday") {
                 origOptions!.byweekday = (value as WeekdayStr[]).map(d => RRule[d]);
+            } else if (key === "freq") {
+                for (const part of BY_RRULE_PARTS) delete origOptions![part];
+                origOptions![key as RRulePartKeys] = value;
             } else {
-                origOptions![key as keyof RuleParts] = value;
+                origOptions![key as RRulePartKeys] = value;
             }
-            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
         } else if (key === "start" && origOptions) {
             const [year, month, date] = value.split("-").map(Number);
             origOptions.dtstart = moment(calendarEvent.start).set({ year, month: month - 1, date }).toDate();
             calendarEvent.start = origOptions.dtstart.getTime();
-            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
         } else if (key === "end") {
             const [year, month, date] = value.split("-").map(Number);
             calendarEvent.end = moment(calendarEvent.end).set({ year, month: month - 1, date }).toDate().getTime();
@@ -209,110 +303,83 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 }).origOptions;
             }
             calendarEvent.start = moment(origOptions.dtstart).toDate().getTime();
-            if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
         } else if (key === "end-time") {
             const [hour, minute] = value.split(':');
             calendarEvent.end = moment(calendarEvent.end).set({ hour, minute, second: 0, millisecond: 0 }).toDate().getTime();
         } else {
-          switch (key) {
-            case "all-day":
-                this.isAllDay = value;
-                break;
-            case "recurrence-ends":
-                if (value === "until") {
-                    origOptions!.until = this._until;
-                    delete origOptions!.count;
-                } else if (value === "count") {
-                    origOptions!.count = this._count;
-                    delete origOptions!.until;
-                } else {
-                    delete origOptions!.count;
-                    delete origOptions!.until;
-                }
-                this._ends = value;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-            case "until":
-                this._until = new Date(value);
-                origOptions!.until = this._until;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-            case "count":
-                this._count = value;
-                origOptions!.count = this._count;
-                if (this._eventType === EventTypes.recurrence) this._rrule = new RRule(origOptions);
-                break;
-          }
-        }
-
-        this._normalizedSchedule = { ...calendarEvent };
-        this._dialog!.requestUpdate();
-        this._normalizedSchedule.recurrence = this.getRRule();
-    }
-
-    protected timeLabel(): string | undefined {
-        if (this._eventType === EventTypes.default) {
-            return i18next.t(this.defaultEventTypeLabel);
-        } if (this._normalizedSchedule && this._rrule) {
-            const calendarEvent = this._normalizedSchedule;
-            const diff = moment(calendarEvent.end).diff(calendarEvent.start, "days");
-            let diffString = "";
-            if (this.isAllDay) {
-                if(diff > 0) diffString = " "+i18next.t('forDays', {days: diff});
-                return this._rrule.toText() + diffString;
-            } else {
-                if (diff > 0) diffString = i18next.t("fromToDays", { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm"), days: diff });
-                if (diff === 0) diffString = i18next.t("fromTo", { start: moment(calendarEvent.start).format("HH:mm"), end: moment(calendarEvent.end).format("HH:mm") });
-                return this._rrule.toText() + " " + diffString;
+            switch (key) {
+              case "all-day":
+                  this.isAllDay = value;
+                  break;
+              case "recurrence-ends":
+                  if (value === "until") {
+                      origOptions!.until = this._until;
+                      delete origOptions!.count;
+                  } else if (value === "count") {
+                      origOptions!.count = this._count;
+                      delete origOptions!.until;
+                  } else {
+                      delete origOptions!.count;
+                      delete origOptions!.until;
+                  }
+                  this._ends = value;
+                  break;
+              case "until":
+                  this._until = new Date(value);
+                  origOptions!.until = this._until;
+                  break;
+              case "count":
+                  this._count = value;
+                  origOptions!.count = this._count;
+                  break;
             }
-        } else if (this._normalizedSchedule) {
-            let format = "DD-MM-YYYY";
-            if(!this.isAllDay) format = "DD-MM-YYYY HH:mm";
-            return i18next.t("activeFromTo", { start: moment(this._normalizedSchedule.start).format(format), end: moment(this._normalizedSchedule.end).format(format) });
+        }
+
+        if (this._eventType === EventTypes.recurrence) {
+            this._rrule = new RRule(origOptions);
+            this._scheduleWithOffset = { ...calendarEvent, recurrence: this._getRRule() };
+        } else {
+            this._scheduleWithOffset = { ...calendarEvent };
         }
     }
 
-    protected setCalendarEventType(value: any) {
-        switch (value) {
-            case EventTypes.default:
-                this._normalizedSchedule = this.defaultSchedule;
-                this._rrule = RRule.fromString(this.defaultSchedule?.recurrence ?? "") || undefined;
-                break;
-            case EventTypes.period:
-                this._normalizedSchedule = {
-                    start: this._normalizedSchedule?.start ?? moment().startOf("day").toDate().getTime(),
-                    end: this._normalizedSchedule?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
-                };
-                this._rrule = undefined;
-                break;
-            case EventTypes.recurrence:
-                this._normalizedSchedule = {
-                    start: this._normalizedSchedule?.start ?? moment().startOf("day").toDate().getTime(),
-                    end: this._normalizedSchedule?.end ?? moment().startOf("day").endOf("day").toDate().getTime(),
-                    recurrence: "FREQ=DAILY"
-                };
-                break;
-        }
+    protected _setCalendarEventType(event: any) {
+        const value = event.target.value;
         this._eventType = value;
-        this._dialog!.requestUpdate();
+
+        if (value === EventTypes.default) {
+            this.schedule = this.defaultSchedule; // Default is not local time
+            const recurrence = this.defaultSchedule?.recurrence;
+            this._rrule = recurrence ? RRule.fromString(recurrence) : undefined;
+            return;
+        }
+
+        const schedule = {
+            start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
+            end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
+        };
+        if (value === EventTypes.period) {
+            this._scheduleWithOffset = schedule;
+        } else {
+            this._scheduleWithOffset = { ...schedule, recurrence: this._getRRule() ?? "FREQ=DAILY" };
+        }
     }
 
     /**
      * Apply the timezone offset to the calendarEvent
      * @param schedule The schedule for which to add/substract the offset
-     * @param substract Whether to substract the offset
+     * @param offset The timezone offset in millis to apply
      * @returns The transformed calendar event
      */
-    protected applyTimezoneOffset(schedule?: CalendarEvent, substract = false): CalendarEvent | undefined {
+    protected _applyTimezoneOffset(schedule: CalendarEvent | undefined, offset: number): CalendarEvent | undefined {
         if (schedule) {
-            const offset = (substract ? -this.timezoneOffset : this.timezoneOffset);
             let { start, end, recurrence } = { ...schedule };
             if (start) start += offset;
             if (end) end += offset;
             if (recurrence && RRule.fromString(recurrence).origOptions.until) {
                 const origOptions = RRule.fromString(recurrence).origOptions;
                 origOptions.until = new Date(Number(origOptions.until) + offset)
-                recurrence = this.getRRule(new RRule(origOptions))
+                recurrence = this._getRRule(new RRule(origOptions))
             }
             return { start, end, recurrence }
         }
@@ -320,109 +387,148 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected render() {
         return html`
-            <or-mwc-input outlined .type="${InputType.BUTTON}" label="${this.timeLabel()}" @or-mwc-input-changed="${() => this.showDialog()}"></or-mwc-input>
+            <or-vaadin-button @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
+            <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" ?opened="${this.open}" @closed="${this._onClose}"
+                ${dialogHeaderRenderer(this._getDialogHeader, [])}
+                ${dialogRenderer(this._getDialogContent, [
+                    this.defaultSchedule,
+                    this.defaultEventTypeLabel,
+                    this.disabledFrequencies,
+                    this.disabledRRuleParts,
+                    this.header,
+                    this.isAllDay,
+                    this.schedule,
+                    this.timezoneOffset,
+                    this._count,
+                    this._ends,
+                    this._rrule,
+                ])}
+                ${dialogFooterRenderer(this._getDialogFooter, [])}
+            ></or-vaadin-dialog>
         `;
     }
 
-    protected showDialog() {
-        this._dialog = showDialog(new OrMwcDialog()
-            .setHeading(i18next.t(this.header))
-            .setStyles(html`
-                <style>
-                    #dialog-content {
-                        max-height: 100vh;
-                        overflow: auto;
-                        background-color: #f5f5f5;
-                    }
-
-                    .mdc-dialog .mdc-dialog__content {
-                        padding: 8px 16px !important;
-                    }
-
-                    @media only screen and (max-width: 1279px) {
-                        .mdc-dialog__surface {
-                            overflow-x: auto !important;
-                            overflow-y: auto !important;
-                        }
-
-                        #dialog-content {
-                            min-height: 230px;
-                            overflow: auto;
-                        }
-                    }
-
-                    .section {
-                        background-color: white;
-                        margin-top: 10px;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                    }
-                    .section > * {
-                        margin: 8px 0;
-                    }
-                    .section:first-child {
-                        margin-top: 0;
-                    }
-                    .section:last-child {
-                        margin-bottom: 0;
-                    }
-
-                    .title {
-                        display: block;
-                        font-weight: bold;
-                    }
-                </style>`)
-            .setActions([
-                {
-                    actionName: "cancel",
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
-                    action: () => {
-                        this._dialog = undefined;
-                    }
-                },
-                {
-                    actionName: "ok",
-                    default: true,
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
-                    action: () => {
-                        if (this._normalizedSchedule && this.isAllDay) {
-                            this._normalizedSchedule.start = moment(this._normalizedSchedule.start).startOf("day").toDate().getTime();
-                            this._normalizedSchedule.end = moment(this._normalizedSchedule.end).startOf("day").endOf("day").toDate().getTime();
-                        }
-                        if (this._eventType === EventTypes.default) {
-                            delete this._normalizedSchedule;
-                        } else if (this._eventType === EventTypes.recurrence) {
-                            this._normalizedSchedule!.recurrence = this.getRRule();
-                        }
-                        const schedule = this.applyTimezoneOffset(this._normalizedSchedule ?? this.defaultSchedule, true);
-                        this.dispatchEvent(new OrSchedulerChangedEvent(schedule));
-                        this._dialog = undefined;
-                    }
-                },
-            ])
-            .setContent(() => this.getDialogContent())
-            .setDismissAction(null));
+    protected _getDialogHeader(): TemplateResult {
+        return html`
+            <vaadin-button theme="tertiary" @click="${this._onClose}">
+                <vaadin-icon icon="lumo:cross"></vaadin-icon>
+            </vaadin-button>
+        `;
     }
 
-    protected getDialogContent(): TemplateResult {
-        const calendar = this._normalizedSchedule;
+    protected _getDialogContent(): TemplateResult {
+        const eventTypes = [
+            { value: "default", label: i18next.t(this.defaultEventTypeLabel) },
+            { value: "period", label: i18next.t("planPeriod") },
+            { value: "recurrence", label: i18next.t("planRecurrence") },
+        ];
 
         return html`
-            <div style="min-width: 635px; display:grid; flex-direction: row;">
+            <style>
+                /* Showing just a number is not intuitive when using numbers as options */
+                vaadin-multi-select-combo-box-chip[slot="overflow"]::part(label)::before {
+                    content: "+";
+                }
+
+                vaadin-checkbox {
+                    font-weight: 600;
+                }
+
+                .period {
+                    display: flex;
+                    flex: 1;
+                    gap: 2px;
+                }
+
+                .section {
+                    background-color: white;
+                    border-radius: var(--lumo-border-radius-m);
+                    display: flex;
+                    flex-direction: column;
+                    padding: var(--lumo-space-l);
+                }
+
+                .title {
+                    padding-bottom: var(--lumo-space-m);
+                    font-size: var(--lumo-font-size-l);
+                    font-style: normal;
+                    font-weight: 600;
+                    line-height: 125.303%; /* 22.554px */
+                }
+
+                .label {
+                    margin-left: 10px;
+                }
+                or-vaadin-number-field[disabled] + .label {
+                    color: var(--lumo-contrast-20pct);
+                    user-select: revert;
+                    -webkit-user-select: none;
+                }
+
+                @media only screen and (min-width: 768px) {
+                    or-vaadin-date-picker[combined] {
+                        --vaadin-input-field-top-end-radius: 0;
+                        --vaadin-input-field-bottom-end-radius: 0;
+                    }
+                    or-vaadin-time-picker {
+                        --vaadin-input-field-top-start-radius: 0;
+                        --vaadin-input-field-bottom-start-radius: 0;
+                    }
+                }
+
+                @media only screen and (max-width: 768px) {
+                    .period {
+                        flex-wrap: wrap;
+                    }
+                }
+            </style>
+            <div style="display: flex; flex-direction: column; gap: var(--lumo-space-m)">
                 <div id="event-type" class="section">
                     <label class="title"><or-translate value="schedule.type"></or-translate></label>
-                    <div class="layout horizontal">
-                        <or-mwc-input style="width: 100%"
-                                    .value="${this._eventType}"
-                                    .type="${InputType.SELECT}"
-                                    .options="${Object.entries(this._eventTypes)}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCalendarEventType(e.detail.value)}"></or-mwc-input>
-                    </div>
+                    <or-vaadin-select style="flex: 1" .value="${this._eventType}" .items="${eventTypes}" @change="${this._setCalendarEventType}"></or-vaadin-select>
                 </div>
-                ${calendar && (this._eventType === EventTypes.period || this._eventType === EventTypes.recurrence) ? this.getPeriodTemplate(calendar) : ``}
-                ${this._eventType === EventTypes.recurrence ? this.getRepeatTemplate() : ``}
-                ${this._eventType === EventTypes.recurrence ? this.getEndsTemplate() : ``}
+                ${when(this._eventType !== EventTypes.default, () => this._getPeriodTemplate())}
+                ${when(this._eventType === EventTypes.recurrence, () => this._getRepeatTemplate())}
+                ${when(this._eventType === EventTypes.recurrence, () => this._getEndsTemplate())}
             </div>`;
+    }
+
+    protected _getDialogFooter(): TemplateResult {
+        return html`
+            ${when(this.removable, () => html`
+                <or-vaadin-button style="background-color: unset; margin-right: auto" theme="error" @click="${this._onDelete}">
+                    <or-icon icon="or:trash" style="--or-icon-fill: white"></or-icon>
+                    <or-translate value="schedule.delete"></or-translate>
+                </or-vaadin-button>`
+            )}
+            <or-vaadin-button theme="primary" @click="${this._onSave}"><or-translate value="schedule.save"></or-translate></or-vaadin-button>
+        `;
+    }
+
+    protected _onClose() {
+        this._dialog!.close();
+    }
+
+    protected _onDelete() {
+        this._dialog!.close();
+        this.dispatchEvent(new OrSchedulerRemovedEvent());
+    }
+
+    protected _onSave() {
+        this.dispatchEvent(new OrSchedulerChangedEvent(this.schedule ?? this.defaultSchedule));
+        this._dialog!.close();
+    }
+
+    protected _onPartChange(part: PartKeys, valueProp: "checked" | "value" | "detail", value?: any) {
+        return (e: any) => {
+            if (valueProp === "detail") {
+                if (!Util.objectsEqual(e.detail.value, value, true)) {
+                    this._setRRuleValue(e.detail.value, part);
+                }
+                return;
+            }
+            this._setRRuleValue(e.target[valueProp], part);
+        }
     }
 
     /**
@@ -430,7 +536,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      * @param freq The frequency to check
      * @returns Whether the frequency is allowed
      */
-    protected isAllowedFrequency(freq: Frequency) {
+    protected _isAllowedFrequency(freq: Frequency) {
         // Secondly is disabled because it's not possible to configure the period on a seconds basis
         // with the current period fields
         return freq !== "SECONDLY" && !this.disabledFrequencies.includes(freq);
@@ -438,7 +544,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     /**
      * Displays the interval, frequency and BY_XXX RRule part fields
-     * 
+     *
      * Applicable rule parts
      * - `interval`
      * - `freq`
@@ -455,122 +561,140 @@ export class OrScheduler extends translate(i18next)(LitElement) {
      *
      * @returns Inputs for the applicable rule parts
      */
-    protected getRepeatTemplate(): TemplateResult {
+    protected _getRepeatTemplate(): TemplateResult {
         const interval = this._rrule?.origOptions.interval ?? 1;
         const frequency = this._rrule?.origOptions.freq ?? FrequencyValue.DAILY;
         const frequencies = Object.entries(FREQUENCIES)
-            .map(([k,v]) => [String(FrequencyValue[k as Frequency]), i18next.t(v, { count: interval })])
-            .filter(([k]) => this.isAllowedFrequency(FrequencyValue[k as Frequency] as any))
+            .map(([k, v]) => ({ value: String(FrequencyValue[k as Frequency]), label: i18next.t(v, { count: interval }) }))
+            .filter(({ value }) => this._isAllowedFrequency(FrequencyValue[value as Frequency] as any))
 
         return html`
             <div id="recurrence" class="section">
                 <label class="title"><or-translate value="schedule.repeat"></or-translate></label>
-                <div class="layout horizontal" style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px">
                     ${when(!this.disabledRRuleParts?.includes("interval"), () => html`
-                        <or-mwc-input style="width: 60px;" min="1" max="9" .value="${interval}" .type="${InputType.NUMBER}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "interval")}"></or-mwc-input>
+                        <or-vaadin-number-field min="1" max="9" step-buttons-visible style="width: 106px" .value="${interval}"
+                            @change="${this._onPartChange("interval", "value")}">
+                        </or-vaadin-number-field>
                     `)}
-                    <or-mwc-input style="flex: 1;" .value="${frequency.toString()}" .type="${InputType.SELECT}" .options="${frequencies}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "freq")}"></or-mwc-input>
+                    <or-vaadin-select style="flex: 1;" .value="${frequency.toString()}" .items="${frequencies}"
+                        @change="${this._onPartChange("freq", "value")}">
+                    </or-vaadin-select>
                 </div>
-                <div>${this.getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
-                <div>
-                    ${this.getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
-                    ${this.getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
-                    ${this.getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
-                </div>
-                <div>${this.getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.keys(Days))}</div>
-                <div>
-                    ${this.getByRulePart("byhour", InputType.SELECT, byHourOptions)}
-                    ${this.getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
-                    ${this.getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
-                </div>
+                ${when(BY_RRULE_PARTS.some((p) => this._byRRuleParts?.includes(p)), () => html`
+                    <label class="title" style="margin-top: var(--lumo-space-l)"><or-translate value="schedule.repeatOn"></or-translate></label>
+                    <div>${this._getByRulePart("bymonth", InputType.CHECKBOX_LIST, Object.entries(MONTHS))}</div>
+                    <div>
+                        ${this._getByRulePart("byweekno", InputType.SELECT, byWeekNoOptions)}
+                        ${this._getByRulePart("byyearday", InputType.SELECT, byYearDayOptions)}
+                        ${this._getByRulePart("bymonthday", InputType.SELECT, byMonthDayOptions)}
+                    </div>
+                    <div>${this._getByRulePart("byweekday", InputType.CHECKBOX_LIST, Object.entries(WEEKDAYS))}</div>
+                    <div>
+                        ${this._getByRulePart("byhour", InputType.SELECT, byHourOptions)}
+                        ${this._getByRulePart("byminute", InputType.SELECT, byMinuteOrSecondsOptions)}
+                        ${this._getByRulePart("bysecond", InputType.SELECT, byMinuteOrSecondsOptions)}
+                    </div>
+                `)}
             </div>`;
     }
 
     /**
      * Displays the BY_XXX RRule part fields if allowed by the frequency
-     * 
+     *
      * @returns The specified BY_XXX RRule part field or undefined if not applicable
      */
-    protected getByRulePart<T>(part: RulePartKey, type: InputType, options: T[]): TemplateResult | undefined {
+    protected _getByRulePart<T extends number | [string, string]>(part: ByRRulePartsKeys, type: InputType, options: T[]): TemplateResult | undefined {
         if (!this._byRRuleParts?.includes(part)) {
             return undefined
         }
 
-        const value = part === "byweekday"
-            ? (this._rrule?.origOptions?.byweekday as Weekday[])?.map(String)
-            : this._rrule?.origOptions[part];
+        const opts = this._rrule?.origOptions?.[part] ?? [];
+        const value = (part === "byweekday"
+            ? (opts as Weekday[])?.map(String)
+            : Array.isArray(opts) ? opts : [opts]
+        );
 
-        return html`<or-mwc-input style="min-width: 30%"
-                                  .value="${value ?? []}"
-                                  .type="${type}"
-                                  .options="${options}"
-                                  .label="${part}"
-                                  multiple
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      this.setRRuleValue(e.detail.value, part);
-                                  }}"></or-mwc-input>`;
+        return type === InputType.CHECKBOX_LIST ? html`
+            <or-vaadin-checkbox-group .value="${value}" @value-changed="${this._onPartChange(part, "detail", value)}">
+                ${(options as [string, string][]).map(([value, label]) => html`<vaadin-checkbox theme="button" value="${value}" label="${i18next.t(label).slice(0, 3)}"></vaadin-checkbox>`)}
+            </or-vaadin-checkbox-group>
+        ` : html`
+            <or-vaadin-multi-select-combo-box .selectedItems="${value}" .label="${i18next.t(`rrule.${part}`)}"
+                .items="${this.disableNegativeByPartValues ? options.filter((n) => +n > 0) : options}"
+                @selected-items-changed="${this._onPartChange(part, "detail", value)}">
+            </or-vaadin-multi-select-combo-box>
+        `;
     }
 
     /**
      * Displays the fields that define when and how long the particular event is
-     * 
-     * @param calendar The specified calendar event
+     *
      * @returns The periods allDay and from/to date and time fields
      */
-    protected getPeriodTemplate(calendar: CalendarEvent): TemplateResult {
+    protected _getPeriodTemplate(): TemplateResult {
+        const calendar = this._scheduleWithOffset!;
         return html`
             <div id="period" class="section">
                 <label class="title"><or-translate value="period"></or-translate></label>
-                <div style="display: flex; gap: 8px;" class="layout horizontal">
-                    <div style="display: flex; flex: 1; gap: 4px">
-                        <or-mwc-input style="flex: 1" value="${moment(calendar.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
-                        <or-mwc-input ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start-time")}" .label="${i18next.t("from")}"></or-mwc-input>
+                <div style="display: flex; gap: 8px">
+                    <div class="period">
+                        <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
+                            @change="${this._onPartChange("start", "value")}" label="${i18next.t("from")}"> </or-vaadin-date-picker>
+                        <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
+                            @change="${this._onPartChange("start-time", "value")}">
+                        </or-vaadin-time-picker>
                     </div>
-                    <div style="display: flex; flex: 1; gap: 4px">
-                        <or-mwc-input style="flex: 1" .value="${moment(calendar.end).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
-                        <or-mwc-input ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end-time")}" .label="${i18next.t("to")}"></or-mwc-input>
+                    <div class="period">
+                        <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
+                            @change="${this._onPartChange("end", "value")}" label="${i18next.t("to")}">
+                        </or-vaadin-date-picker>
+                        <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
+                            @change="${this._onPartChange("end-time", "value")}">
+                        </or-vaadin-time-picker>
                     </div>
                 </div>
-
-                <div class="layout horizontal">
-                    <or-mwc-input .value=${this.isAllDay} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
-                </div>
+                <or-vaadin-checkbox .checked=${this.isAllDay} @change="${this._onPartChange("all-day", "checked")}" .label="${i18next.t("allDay")}"></or-vaadin-checkbox>
             </div>`;
     }
 
     /**
      * Displays the fields that define how a recurring event should end
-     * 
+     *
      * Applicable rule parts
      * - `until`
      * - `count`
      * @returns The recurrence ends fields
      */
-    protected getEndsTemplate(): TemplateResult {
+    protected _getEndsTemplate(): TemplateResult {
         return html`
             <div id="recurrence-ends" class="section">
                 <label class="title"><or-translate value="schedule._ends"></or-translate></label>
-                <div style="display: flex; gap: 8px;" class="layout horizontal">
-                    <or-mwc-input style="padding-right: 10px" .type="${InputType.RADIO}"
-                        .value="${this._ends}"
-                        .options="${Object.entries(rruleEnds).filter(([k]) => !this.disabledRRuleParts?.includes(k as RulePartKey))}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "recurrence-ends")}">
-                    </or-mwc-input>
-                    <div style="display: flex; flex-direction: column-reverse; flex: 1">
-                        ${when(!this.disabledRRuleParts.includes("count"), () => html`
-                            <or-mwc-input ?disabled="${this._ends !== "count"}" min="1" .type="${InputType.NUMBER}"
-                                .value="${this._count}"
-                                .label="${i18next.t("schedule.count", { count: this._count })}"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "count")}">
-                            </or-mwc-input>`
-                        )}
+                <div style="display: flex; gap: 8px;">
+                    <or-vaadin-radio-group style="padding-right: 10px; width: unset" .value="${this._ends}" theme="vertical"
+                        @change="${this._onPartChange("recurrence-ends", "value")}">
+                        ${Object.entries(RRULE_ENDS)
+                                .filter(([k]) => !this.disabledRRuleParts?.includes(k as RRulePartKeys))
+                                .map(([k, v]) => html`
+                                    <vaadin-radio-button style="margin: 6px 0" value="${k}" label="${i18next.t(v)}"></vaadin-radio-button>
+                        `)}
+                    </or-vaadin-radio-group>
+                    <div style="display: flex; flex-direction: column; flex: 1; ">
                         ${when(!this.disabledRRuleParts.includes("until"), () => html`
-                            <or-mwc-input ?disabled="${this._ends !== "until"}" .type="${InputType.DATETIME}"
-                                .value="${moment(this._until).format("YYYY-MM-DD HH:mm")}"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}">
-                            </or-mwc-input>`
+                            <or-vaadin-date-time-picker style="margin-top: auto; padding: var(--lumo-space-s) 0" ?disabled="${this._ends !== "until"}"
+                                .value="${moment(this._until).format("YYYY-MM-DDTHH:mm")}"
+                                @change="${this._onPartChange("until", "value")}">
+                            </or-vaadin-date-time-picker>`
+                        )}
+                        ${when(!this.disabledRRuleParts.includes("count"), () => html`<div style="display: inline-flex">
+                            <or-vaadin-number-field ?disabled="${this._ends !== "count"}" min="1" style="width: 120px"
+                                step-buttons-visible
+                                .value="${this._count}"
+                                @change="${this._onPartChange("count", "value")}">
+                            </or-vaadin-number-field><or-translate class="label" value="schedule.count"
+                                ?disabled="${this._ends !== "count"}" .options="${{ count: +this._count }}">
+                            </or-translate>
+                            </div>`
                         )}
                     </div>
                 </div>

@@ -23,5 +23,4 @@ import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-select")
 export class OrVaadinSelect extends Select implements OrVaadinComponent {
-
 }
