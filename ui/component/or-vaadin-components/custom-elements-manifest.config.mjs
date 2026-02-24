@@ -30,7 +30,7 @@ const VaadinJSDocParserPlugin = {
     analyzePhase({ ts, node, moduleDoc }) {
         if (node.kind !== ts.SyntaxKind.ClassDeclaration) return;
         const declaration = moduleDoc.declarations.find(d => d.name === node.name.getText());
-        const description = declaration?.description;
+        const description = declaration?.description; // The JSDoc text above the class
         if (!description) return;
 
         const sections = [
@@ -39,6 +39,18 @@ const VaadinJSDocParserPlugin = {
             { key: 'custom CSS properties', category: 'cssProperties', inputType: 'string' }
         ];
 
+        /**
+         * To parse the JSDoc text into categories, we need a complex regex pattern to parse the values out.
+         * It extracts backticked names and grabs its description by checking for the `|` symbol.
+         * The generated list would be inserted into the custom-elements.json file.
+         * Example JSDoc:
+         * ---
+         * state attributes
+         * `is-active` | Whether the component is toggled on.
+         * `disabled` | Prevents user interaction.
+         * custom CSS properties
+         * `--bg-color` | The background color of the button.
+         */
         sections.forEach(({ key, category, inputType }, i) => {
             const content = description.split(key)[1]?.split(sections[i + 1]?.key || '$')[0] || '';
             const matches = [...content.matchAll(/`([^`]+)`(?:\s*\|\s*([^\n|]+))?/g)];
