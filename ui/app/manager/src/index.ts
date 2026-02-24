@@ -2,6 +2,7 @@
 import {pageProvisioningProvider} from "./pages/page-provisioning";
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
+import themeCss from "@openremote/theme";
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
     headerItemAccount,
@@ -263,12 +264,19 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
                     }
                 }).catch(reason => {
                     console.error("Failed to initialise app: " + reason);
-                })
+                });
             }
-        })
+        });
 
         return orAppConfig;
     };
 
+    // Apply theme to the Manager app
+    const style = document.createElement("style");
+    style.id = "orDefaultTheme";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    // Load app
     document.body.appendChild(orApp);
 });
