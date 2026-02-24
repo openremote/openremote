@@ -223,7 +223,7 @@ public class ApplyPredictedDataPointsService implements ContainerService {
         }
 
         long currentTimestamp = attribute.getTimestamp().orElse(0L);
-        // We apply the most recent past prediction unless the attribute was update more recently
+        // We apply the most recent past prediction unless the attribute was updated more recently
         if (lastPast != null && currentTimestamp < lastPast.getTimestamp()) {
             assetProcessingService.sendAttributeEvent(
                 new AttributeEvent(ref, lastPast.getValue(), lastPast.getTimestamp()),
