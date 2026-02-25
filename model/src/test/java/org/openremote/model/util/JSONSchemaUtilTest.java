@@ -9,7 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import org.openremote.model.query.filter.*;
 import org.openremote.model.util.JSONSchemaUtil.*;
+import org.openremote.model.value.JsonPathFilter;
+import org.openremote.model.value.MathExpressionValueFilter;
+import org.openremote.model.value.RegexValueFilter;
+import org.openremote.model.value.SubStringValueFilter;
+import org.reflections.Reflections;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,9 +24,12 @@ import java.time.*;
 import java.util.Date;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 public class JSONSchemaUtilTest {
+
+    private static final Reflections reflections = new Reflections("org.openremote");
 
     @BeforeEach
     void setup() {
@@ -659,6 +668,25 @@ public class JSONSchemaUtilTest {
 
         JsonNode actual = ValueUtil.getSchema(ReflectedPolymorphicType.class);
         assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @Test
+    public void shouldNotHaveAllOf() {
+        for (Class<?> clazz : reflections.getTypesAnnotatedWith(JsonTypeInfo.class)) {
+            System.out.println(clazz);
+            System.out.println(ValueUtil.getSchema(clazz).toString());
+//            if (clazz.equals(CalendarEventPredicate.class)) continue;
+            if (clazz.equals(ValueEmptyPredicate.class)) continue;
+            if (clazz.equals(ValueAnyPredicate.class)) continue;
+            if (clazz.equals(RegexValueFilter.class)) continue;
+            if (clazz.equals(MathExpressionValueFilter.class)) continue;
+            if (clazz.equals(JsonPathFilter.class)) continue;
+            if (clazz.equals(SubStringValueFilter.class)) continue;
+            if (clazz.equals(RadialGeofencePredicate.class)) continue;
+            if (clazz.equals(GeoJSONGeofencePredicate.class)) continue;
+            if (clazz.equals(RectangularGeofencePredicate.class)) continue;
+            assertFalse(ValueUtil.getSchema(clazz).toString().contains("allOf"));
+        }
     }
 
     static class JavaTimeJacksonModule {
