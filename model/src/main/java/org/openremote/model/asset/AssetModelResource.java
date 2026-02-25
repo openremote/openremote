@@ -19,16 +19,18 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
+import org.jboss.resteasy.annotations.cache.Cache;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.system.StatusResource;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import org.jboss.resteasy.annotations.cache.Cache;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
@@ -105,13 +107,13 @@ public interface AssetModelResource {
 
     /**
      * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
-     * once per client. Either when a new {@code hash} or {@code name} are requested. The HTTP client should cache the response based on the
-     * {@code Cache-Control} header. The {@code hash} for actively cached descriptors can be found by requesting the {@link StatusResource#getInfo()} endpoint.
+     * once per client. Either when a new {@code name} is requested or the "If-None-Match" header does not match the current ETag. The HTTP client should
+     * use the provided ETag to cache the response.
      */
     @GET
     @Path("getValueDescriptorSchema")
     @Produces(APPLICATION_JSON)
-    @Cache(maxAge = 31536000) // A 1-year cache, the supplied hash parameter serves as cache key on the client
-    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the valueDescriptor JSON Schema.")
-    JsonNode getValueDescriptorSchema(@BeanParam RequestParams requestParams, @QueryParam("name") String name, @QueryParam("hash") String hash);
+    @Cache(noCache = true)
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the JSON Schema of the specified value descriptor")
+    Response getValueDescriptorSchema(@QueryParam("name") String name, @Context Request request);
 }
