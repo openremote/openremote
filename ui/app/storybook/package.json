@@ -17,14 +17,14 @@
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@rsbuild/core": "~1.7.1",
-    "@storybook/addon-a11y": "~10.1.11",
-    "@storybook/addon-docs": "~10.1.11",
-    "@storybook/web-components": "~10.1.11",
+    "@rsbuild/core": "~1.7.3",
+    "@storybook/addon-a11y": "~10.2.4",
+    "@storybook/addon-docs": "~10.2.4",
+    "@storybook/web-components": "~10.2.4",
     "@types/react": "^18.3.12",
     "@wc-toolkit/storybook-helpers": "^10.0.0",
-    "storybook": "~10.1.11",
-    "storybook-web-components-rsbuild": "~3.2.0",
+    "storybook": "~10.2.4",
+    "storybook-web-components-rsbuild": "~3.2.2",
     "typescript": "5.8.3"
   }
 }

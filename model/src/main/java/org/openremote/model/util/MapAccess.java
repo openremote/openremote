@@ -56,6 +56,17 @@ public class MapAccess {
         return defaultValue;
     }
 
+    static public long getLong(Map<String, String> map, String key, long defaultValue) {
+        if (map.containsKey(key)) {
+            try {
+                return Long.valueOf(map.get(key));
+            } catch (Exception ex) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
     static public BigDecimal getDecimal(Map<String, String> map, String key, BigDecimal defaultValue) {
         if (map.containsKey(key)) {
             try {
@@ -65,6 +76,19 @@ public class MapAccess {
             }
         }
         return defaultValue;
+    }
+
+
+    static public double getDouble(Map<String, String> config, String key, double defaultValue) {
+        String raw = getString(config, key, null);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (NumberFormatException ignored) {
+            return defaultValue;
+        }
     }
 
 }

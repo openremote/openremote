@@ -430,7 +430,7 @@
   "planPeriod": "Planen Sie einen Zeitraum",
   "planRecurrence": "Planen Sie eine Wiederholung",
   "activeFromTo": "Activ von {{start}} bis {{end}}",
-  "fromTo": "Von {{start}} bis {{end}}",
+  "fromTo": "von {{start}} bis {{end}}",
   "fromToDays": "von {{start}} bis {{days}} Tage später {{end}}",
   "forDays": "für {{days}} Tage",
   "scheduleRuleActivity": "Regelaktivität planen",
