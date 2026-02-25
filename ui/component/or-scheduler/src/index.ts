@@ -64,9 +64,9 @@ function range(start: number, end: number): number[] {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-const byWeekNoOptions = range(-53, 53).toSpliced(53, 1);
-const byYearDayOptions = range(-366, 366).toSpliced(366, 1);
-const byMonthDayOptions = range(-31, 31).toSpliced(31, 1);
+const byWeekNoOptions = range(-53, 53).filter(Boolean); // Exclude 0
+const byYearDayOptions = range(-366, 366).filter(Boolean);
+const byMonthDayOptions = range(-31, 31).filter(Boolean);
 const byHourOptions = range(1, 24);
 const byMinuteOrSecondsOptions = range(1, 60);
 
