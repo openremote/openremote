@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Request;
+import org.jboss.resteasy.annotations.cache.Cache;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -112,6 +113,7 @@ public interface AssetModelResource {
     @GET
     @Path("getValueDescriptorSchema")
     @Produces(APPLICATION_JSON)
+    @Cache(noCache = true)
     @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the JSON Schema of the specified value descriptor")
     Response getValueDescriptorSchema(@QueryParam("name") String name, @Context Request request);
 }
