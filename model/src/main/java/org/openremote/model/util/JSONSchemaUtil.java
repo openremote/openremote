@@ -518,13 +518,7 @@ public class JSONSchemaUtil {
              */
             @Override
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
-                if ((this.rootType.get() == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) ||
-                    (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
-                    && !scope.getType().isInstanceOf(Map.class)
-                    && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
-                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).isTextual()
-                    && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals(context.getKeyword(SchemaKeyword.TAG_TYPE_OBJECT)))
-                ) {
+                if (shouldReceiveTitle(attrs, scope, context)) {
                     // Code found here: http://stackoverflow.com/questions/2559759/how-do-i-convert-camelcase-into-human-readable-names-in-java
                     String title = scope.getType().getErasedType().getSimpleName().replaceAll(
                         String.format("%s|%s|%s",
@@ -541,6 +535,23 @@ public class JSONSchemaUtil {
             @Override
             public void resetAfterSchemaGenerationFinished() {
                 this.rootType.remove();
+            }
+
+            private boolean shouldReceiveTitle(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
+                ResolvedType type = scope.getType(); Class<?> erasedType = type.getErasedType();
+                if (attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
+                    || (type.isInstanceOf(Map.class) && !erasedType.getPackageName().startsWith("org.openremote.model"))
+                    || erasedType.isAnnotationPresent(JsonSchemaTitle.class)
+                ) {
+                    return false;
+                }
+                if (this.rootType.get() == type) {
+                    return true;
+                }
+                boolean isObject = attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                        && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).isTextual()
+                        && attrs.get(context.getKeyword(SchemaKeyword.TAG_TYPE)).textValue().equals(context.getKeyword(SchemaKeyword.TAG_TYPE_OBJECT));
+                return isObject || attrs.has(context.getKeyword(SchemaKeyword.TAG_ONEOF));
             }
         }
 

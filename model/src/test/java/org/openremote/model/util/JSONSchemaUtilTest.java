@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.openremote.model.util.JSONSchemaUtil.*;
+import org.reflections.Reflections;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,9 +22,12 @@ import java.time.*;
 import java.util.Date;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 public class JSONSchemaUtilTest {
+
+    private static final Reflections reflections = new Reflections("org.openremote");
 
     @BeforeAll
     static void setup() {
@@ -314,7 +318,6 @@ public class JSONSchemaUtilTest {
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
-                "title": "I 18n Annotations",
                 "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotations",
                 "additionalProperties": true
             }"""
@@ -662,6 +665,13 @@ public class JSONSchemaUtilTest {
 
         JsonNode actual = ValueUtil.getSchema(ReflectedPolymorphicType.class);
         assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @Test
+    public void shouldNotHaveAllOf() {
+        for (Class<?> clazz : reflections.getTypesAnnotatedWith(JsonTypeInfo.class)) {
+            assertFalse(ValueUtil.getSchema(clazz).toString().contains("allOf"));
+        }
     }
 
     static class JavaTimeJacksonModule {
