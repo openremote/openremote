@@ -15,7 +15,6 @@ databases:
       host: !env POSTGRES_HOST
       port: !env POSTGRES_PORT
       database: !env POSTGRES_DB
-    keep-connected: true
     labels:
       instance: openremote
 
