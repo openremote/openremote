@@ -111,7 +111,6 @@ export class OrScheduler extends translate(i18next)(LitElement) {
             display: flex;
             &>:first-child {
                 display: inline-block;
-                flex-shrink: 1;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -200,7 +199,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 } else if (diff === 0) {
                     template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
                 }
-                const fromToTemplate = html`<span><span style="white-space: pre"> </span>${template}</span>`;
+                const fromToTemplate = html`<span>&nbsp;${template}</span>`;
                 const monthNames = Object.values(MONTHS).map(i18next.t) as string[];
                 const orderISO = Object.values(WEEKDAYS).map(i18next.t) as string[];
                 const dayNames = [orderISO.pop()!, ...orderISO];
