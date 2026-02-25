@@ -39,17 +39,17 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointExportFormat;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.MetaItemType;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.concurrent.ScheduledFuture;
+import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -174,9 +174,17 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp, DatapointExportFormat format) {
         try {
+            if (format == null) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
+
+            if (attributeRefs == null || attributeRefs.length == 0) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
 
             for (AttributeRef attributeRef : attributeRefs) {
                 if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), attributeRef.getId())) {
@@ -199,49 +207,45 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 );
             }
 
-            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
+            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp + " in format " + format);
 
-            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            PipedInputStream pipedInputStream = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
 
-            asyncResponse.register((ConnectionCallback) disconnected -> exportFuture.cancel(true));
+            asyncResponse.register((ConnectionCallback) disconnected -> {
+                try {
+                    pipedInputStream.close();
+                } catch (IOException e) {
+                    DATA_EXPORT_LOG.log(Level.SEVERE, "Could not close input stream: ", e);
+                    throw new RuntimeException(e);
+                }
+            });
 
-            File exportFile = null;
+            try (InputStream fin = pipedInputStream;
+                 ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream())) {
 
-            try {
-                exportFile = exportFuture.get();
-
-                ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream());
-                FileInputStream fin = new FileInputStream(exportFile);
-                ZipEntry zipEntry = new ZipEntry(exportFile.getName());
+                String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
+                ZipEntry zipEntry = new ZipEntry(fileName);
                 zipOut.putNextEntry(zipEntry);
                 IOUtils.copy(fin, zipOut);
                 zipOut.closeEntry();
-                zipOut.close();
-                fin.close();
-
-                response.setContentType("application/zip");
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
-
-                asyncResponse.resume(
-                    response
-                );
-            } catch (Exception ex) {
-                exportFuture.cancel(true);
+            } catch (IOException ex) {
                 asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
-                DATA_EXPORT_LOG.log(Level.SEVERE, "Exception in ScheduledFuture: ", ex);
-            } finally {
-                if (exportFile != null && exportFile.exists()) {
-                    try {
-                        exportFile.delete();
-                    } catch (Exception e) {
-                        DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to delete temporary export file: " + exportFile.getPath(), e);
-                    }
-                }
+                DATA_EXPORT_LOG.log(Level.SEVERE, "Zip exception: ", ex);
             }
+
+            response.setContentType("application/zip");
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
+
+            asyncResponse.resume(
+                response
+            );
         } catch (JsonProcessingException ex) {
             asyncResponse.resume(new BadRequestException(ex));
         } catch (DatapointQueryTooLargeException dqex) {
             asyncResponse.resume(new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE));
+        } catch (IOException ex) {
+            asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
+            DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to create piped output stream: ", ex);
         }
     }
 }
