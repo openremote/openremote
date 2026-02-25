@@ -22,11 +22,20 @@ import {setStorybookHelpersConfig} from "@wc-toolkit/storybook-helpers";
 import {themes} from "storybook/theming";
 import "./styles.css";
 
-setStorybookHelpersConfig({ hideArgRef: true });
+setStorybookHelpersConfig({ hideArgRef: true, categoryOrder: ["attributes", "cssProps", "cssParts", "events", "methods"] });
 
+const style = globalThis.getComputedStyle(document.documentElement);
 const preview: Preview = {
     parameters: {
         controls: {
+            expanded: true,
+            disableSaveFromUI: true,
+            presetColors: [
+                style.getPropertyValue("--or-color-primary").trim(),
+                style.getPropertyValue("--or-color-error").trim(),
+                style.getPropertyValue("--or-color-warning").trim(),
+                style.getPropertyValue("--or-color-success").trim()
+            ],
             matchers: {
                 color: /(background|color)$/i,
                 date: /Date$/i
