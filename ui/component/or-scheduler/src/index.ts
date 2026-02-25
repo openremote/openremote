@@ -384,8 +384,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 recurrence = this._getRRule(new RRule(origOptions))
             }
             return {
-                start: start && start + offset,
-                end: end && end + offset,
+                start: start != null ? start + offset : start,
+                end: end != null ? end + offset : end,
                 recurrence
             }
         }
