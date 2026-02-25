@@ -357,29 +357,8 @@ public class JSONSchemaUtil {
                 if (erasedType.getSuperclass() == Object.class) {
                     return;
                 }
-
-                Class<?> current = erasedType;
-                JsonTypeInfo annotation = null;
-                String key = null;
-                do {
-                    current = current.getSuperclass();
-                    if (current != null) {
-                        annotation = current.getAnnotation(JsonTypeInfo.class);
-                        if (annotation != null) key = annotation.property();
-                    }
-                } while (current != null && current.getSuperclass() != Object.class && key == null);
-
-                // If EXTERNAL_PROPERTY specified, manually add 'const', 'default' and 'required' properties
-                if (annotation != null && annotation.include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
-                    attrs.withArray(context.getKeyword(SchemaKeyword.TAG_REQUIRED))
-                            .add(context.getKeyword(SchemaKeyword.TAG_TYPE));
-                    attrs.withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
-                            .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
-                            .put(context.getKeyword(SchemaKeyword.TAG_CONST), erasedType.getSimpleName())
-                            .put(context.getKeyword(SchemaKeyword.TAG_DEFAULT), erasedType.getSimpleName());
-                    return;
-                }
-                addDefaultToDiscriminator(attrs, context, key);
+                JsonTypeInfo annotation = resolveTypeInfoAnnotation(erasedType);
+                normalizeDiscriminator(attrs, erasedType, context, annotation);
             });
 
             // Effectively disable const generation (on the root of subtypes)
@@ -565,20 +544,51 @@ public class JSONSchemaUtil {
             }
         }
 
+        private JsonTypeInfo resolveTypeInfoAnnotation(Class<?> type) {
+            JsonTypeInfo annotation = null;
+
+            while (annotation == null && type.getSuperclass() != Object.class) {
+                type = type.getSuperclass();
+
+                if (type == null) return annotation;
+
+                annotation = type.getAnnotation(JsonTypeInfo.class);
+            }
+
+            return annotation;
+        }
+
         /**
          * Find and modify the main subtype object under the {@code allOf} keyword of a subtype to add a {@code default}
          * property alongside the {@code const} discriminator property.
          * @param attrs The {@link ObjectNode} representation of the subtype
          * @param context The schema generator {@link SchemaGenerationContext}
          */
-        private void addDefaultToDiscriminator(ObjectNode attrs, SchemaGenerationContext context, String customTypeKey) {
+        private void normalizeDiscriminator(ObjectNode attrs, Class<?> type, SchemaGenerationContext context, JsonTypeInfo annotation) {
+            if (annotation == null) return;
+
+            // If EXTERNAL_PROPERTY specified, manually add 'const', 'default' and 'required' properties
+            if (annotation.include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
+                attrs.withArray(context.getKeyword(SchemaKeyword.TAG_REQUIRED))
+                        .add(context.getKeyword(SchemaKeyword.TAG_TYPE));
+                attrs.withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
+                        .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
+                        .put(context.getKeyword(SchemaKeyword.TAG_CONST), type.getSimpleName())
+                        .put(context.getKeyword(SchemaKeyword.TAG_DEFAULT), type.getSimpleName());
+                return;
+            }
+
             String typeKey = context.getKeyword(SchemaKeyword.TAG_TYPE);
+            String customTypeKey = annotation.property();
             JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
             if (!(allOfNode instanceof ArrayNode allOf)) {
                 JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
                 if (props instanceof ObjectNode propsObj) {
                     // Remove type property on type property for subtypes to enable definition merging
                     propsObj.remove(typeKey);
+                    // If property is already present on the abstract class,
+                    // the generator creates a duplicate which needs to be removed.
+                    propsObj.remove(customTypeKey);
                 }
                 return;
             }
