@@ -158,6 +158,7 @@ public class ValueUtil {
             this(schema, hash(schema));
         }
         private static String hash(String schema) {
+            MessageDigest md = MESSAGE_DIGEST_HOLDER.get(); md.reset();
             return bytesToHexString(md.digest(schema.getBytes(StandardCharsets.UTF_8)));
         }
     }
@@ -174,16 +175,14 @@ public class ValueUtil {
     protected static Map<String, SchemaResult> valueDescriptorSchemas = new ConcurrentHashMap<>();
     protected static Validator validator;
     protected static SchemaGenerator generator;
-    protected static MessageDigest md;
-
-    static {
+    private static final ThreadLocal<MessageDigest> MESSAGE_DIGEST_HOLDER = ThreadLocal.withInitial(() -> {
         try {
-            md = MessageDigest.getInstance("MD5");
+            return MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
             LOG.severe("MD5 algorithm not supported");
             throw new RuntimeException(e);
         }
-    }
+    });
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
