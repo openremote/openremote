@@ -4,7 +4,6 @@ import {ifDefined} from "lit/directives/if-defined.js";
 import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import { i18next, translate } from "@openremote/or-translate";
-import { GenericAxiosResponse } from "@openremote/rest";
 import {
     Attribute,
     AttributeDescriptor,
@@ -117,8 +116,8 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry];
 
-const schemas = new Map<string, any>();
-const inflightRequests = new Map<string, Promise<GenericAxiosResponse<any>>>();
+const schemas = new Map<string, unknown>();
+const inflightRequests = new Map<string, Promise<unknown>>();
 
 async function getSchema(valueDescriptor: ValueDescriptor) {
     const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
