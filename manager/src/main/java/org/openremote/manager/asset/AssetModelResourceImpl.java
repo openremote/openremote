@@ -21,6 +21,7 @@ package org.openremote.manager.asset;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 
 import org.openremote.container.timer.TimerService;
@@ -73,7 +74,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Response getValueDescriptorSchema(String name, String ifNoneMatch) {
+    public Response getValueDescriptorSchema(String name, Request request) {
         SchemaResult result = assetModelService.getValueDescriptorSchema(name);
 
         if (result == null) {
@@ -82,17 +83,12 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
 
         EntityTag etag = new EntityTag(result.hash());
 
-        if (isTagValid(ifNoneMatch, etag.getValue())) {
+        Response.ResponseBuilder builder = request.evaluatePreconditions(etag);
+        if (builder != null) {
             // If the ETag matches, return 304 (Not Modified)
-            return Response.notModified(etag).build();
+            return builder.build();
         }
 
         return Response.ok(result.schema()).tag(etag).build();
-    }
-
-    private boolean isTagValid(String clientTag, String currentHash) {
-        if (clientTag == null || currentHash == null) return false;
-        String clientHash = clientTag.replace("\"", "").replace("W/", "");
-        return clientHash.equals(currentHash);
     }
 }

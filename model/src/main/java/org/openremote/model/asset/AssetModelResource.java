@@ -22,6 +22,8 @@ package org.openremote.model.asset;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -111,9 +113,5 @@ public interface AssetModelResource {
     @Path("getValueDescriptorSchema")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the JSON Schema of the specified value descriptor")
-    Response getValueDescriptorSchema(
-        @QueryParam("name") String name,
-        @Parameter(description = "The ETag previously returned by the server")
-        @HeaderParam("If-None-Match") String ifNoneMatch
-    );
+    Response getValueDescriptorSchema(@QueryParam("name") String name, @Context Request request);
 }
