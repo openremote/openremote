@@ -1060,6 +1060,7 @@ export class Manager implements EventProviderFactory {
         if (this._reconnectTimer) {
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
+            return;
         }
 
         const tryReconnect = async () => {
