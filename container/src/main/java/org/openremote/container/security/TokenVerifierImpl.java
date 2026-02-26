@@ -17,10 +17,10 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TokenVerifierService implements TokenVerifier {
+public class TokenVerifierImpl implements TokenVerifier {
     private final KeyResolver keyResolverService;
 
-    public TokenVerifierService(String keycloakUrl) {
+    public TokenVerifierImpl(String keycloakUrl) {
         keyResolverService = new KeyResolver(keycloakUrl);
     }
 

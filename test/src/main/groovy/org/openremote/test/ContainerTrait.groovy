@@ -574,12 +574,12 @@ trait ContainerTrait {
     }
 
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
-        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getTokenService()
+        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenService()
                 .grantToken(realm, new OAuthPasswordGrant(null, clientId, null, null, username, password).asMultivaluedMap())
     }
 
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
-        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getTokenService()
+        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenService()
                 .grantToken(realm, new OAuthClientCredentialsGrant(null, clientId, clientSecret, null).asMultivaluedMap())
     }
 

@@ -58,7 +58,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.TokenPrincipal;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
@@ -68,7 +67,6 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
@@ -104,7 +102,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
-    public static final String ANONYMOUS_USERNAME = "anonymous";
     // Allow 5 min durable session but this will not enable retained topics etc. as we delete queues aggressively for now
     public static final int DEFAULT_SESSION_EXPIRY_MILLIS = 300000;
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
@@ -259,7 +256,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Start the broker
         server = new EmbeddedActiveMQ();
         server.setConfiguration(serverConfiguration);
-        securityManager = new ActiveMQSecurityManager2(executorService, identityService);
+        securityManager = new ActiveMQORSecurityManager(executorService, identityService);
 
         server.setSecurityManager(securityManager);
         server.start();

@@ -1,21 +1,20 @@
 package org.openremote.test.assets
 
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAssetLink
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
-import jakarta.ws.rs.WebApplicationException
-
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.util.MapAccess.getString
 
 class AssetUserLinkingTest extends Specification implements ManagerContainerTrait {
 
@@ -42,16 +41,13 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
         and: "user access tokens"
         def testUserAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "testuser1", "testuser1").token
-        def accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(MASTER_REALM, KEYCLOAK_CLIENT_ID))
-        def testUser1Token = new AccessTokenAuthContext(MASTER_REALM, accessToken)
+        def testUser1Token = identityService.verify(MASTER_REALM, testUserAccessToken)
 
         testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2").token
-        accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID))
-        def testUser2Token = new AccessTokenAuthContext(keycloakTestSetup.realmBuilding.name, accessToken)
+        def testUser2Token = identityService.verify(keycloakTestSetup.realmBuilding.name, testUserAccessToken)
 
         testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser3", "testuser3").token
-        accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID))
-        def testUser3Token = new AccessTokenAuthContext(keycloakTestSetup.realmBuilding.name, accessToken)
+        def testUser3Token = identityService.verify(keycloakTestSetup.realmBuilding.name, testUserAccessToken)
 
         expect: "some users to be restricted"
         !identityService.getIdentityProvider().isRestrictedUser(testUser1Token)

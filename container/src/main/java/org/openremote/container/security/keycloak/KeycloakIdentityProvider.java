@@ -33,7 +33,6 @@ import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.token.TokenService;
-import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.*;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
@@ -100,7 +99,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
     // Optional reverse proxy that listens to KEYCLOAK_AUTH_PATH and forwards requests to Keycloak (used in dev mode to allow same url to be used for manager and keycloak) - handled by proxy in production
     protected HttpHandler authProxyHandler;
-    protected TokenVerifierService tokenVerifierService;
+    protected TokenVerifier tokenVerifier;
 
     /**
      * The supplied {@link OAuthGrant} will be used to authenticate with keycloak so we can programmatically make changes.
@@ -159,7 +158,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .build();
         }
 
-        tokenVerifierService = new TokenVerifierService(keycloakServiceUri.toString());
+        tokenVerifier = new TokenVerifierImpl(keycloakServiceUri.toString());
     }
 
     @Override
@@ -208,7 +207,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void secureDeployment(ServletContext servletContext) {
-        JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(tokenVerifierService);
+        JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(tokenVerifier);
         FilterRegistration.Dynamic registration = servletContext.addFilter(JWTAuthenticationFilter.NAME, jwtFilter);
         registration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),false,"/*");
         registration.setAsyncSupported(true);
@@ -359,6 +358,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
-        return tokenVerifierService.verify(realm, accessToken);
+        return tokenVerifier.verify(realm, accessToken);
     }
 }
