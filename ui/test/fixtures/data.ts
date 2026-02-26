@@ -58,6 +58,10 @@ export const metaItemDescriptors = {
         name: "hasPredictedDataPoints",
         type: "boolean",
     },
+    applyPredictedDataPoints: {
+        name: "applyPredictedDataPoints",
+        type: "boolean",
+    },
     dataPointsMaxAgeDays: {
         name: "dataPointsMaxAgeDays",
         type: "positiveInteger",
