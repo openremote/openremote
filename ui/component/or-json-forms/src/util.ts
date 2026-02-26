@@ -273,9 +273,7 @@ export function mapStateToCombinatorRendererProps(
         rootSchema,
         visible,
         id,
-        // Fall back to the first schema if none fits
-        indexOfFittingSchema:
-          indexOfFittingSchema !== -1 ? indexOfFittingSchema : 0,
+        indexOfFittingSchema,
         uischemas: state.jsonforms.uischemas!,
         uischema: uischema!,
     };
