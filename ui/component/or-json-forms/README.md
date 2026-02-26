@@ -29,6 +29,18 @@ The following keywords are not (fully) supported:
 
 ### Behavior Specification
 
+- `{ "type": "string" }`  - Displays a text input field.
+- `{ "type": "number" }`  - Displays a number input field.
+- `{ "type": "integer" }` - Displays a number input field.
+- `{ "type": "array" }`   - Displays a wrapper with a button to add items.
+- `{ "type": "object" }`  - Displays a wrapper with a button to add properties.
+
+#### Renderers & Testers
+
+<!--#### Polymorphism
+
+<!--'oneOf', 'anyOf', 'allOf'-->-->
+
 #### Default values
 
 The JSON Forms will resolve default values from the schema based on the `default` property or infer it from the type.
@@ -57,10 +69,6 @@ Depending on the type, it derives the default value as follows:
 | array                   | `[]`    |         |
 | object                  | An object with the required properties, otherwise an empty object |         |
 | null                    | `null`  |         |
-
-#### Polymorphism
-
-<!--'oneOf', 'anyOf', 'allOf'-->
 
 ### Example usage
 
