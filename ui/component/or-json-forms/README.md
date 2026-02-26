@@ -22,8 +22,10 @@ The JSON Forms expects [Draft-07](http://json-schema.org/draft-07) schemas.
 
 The following keywords are not (fully) supported:
 
-- `allOf`
-- `example`
+- `anyOf`: ???
+- `allOf`: ???
+- `$ref`: will only resolve the reference if it is in the schema.
+- `examples`: planned
 
 ### Behavior Specification
 
