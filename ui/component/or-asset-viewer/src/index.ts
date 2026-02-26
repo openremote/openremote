@@ -47,7 +47,8 @@ import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {progressCircular} from "@openremote/or-mwc-components/style";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
@@ -904,7 +905,12 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             break;
     }
 
-    return html`<or-mwc-input id="property-${property}" .type="${type}" dense .value="${value}" .readonly="${itemConfig.readonly !== undefined ? itemConfig.readonly : true}" .label="${itemConfig.label}"></or-mwc-input>`;
+    return html`
+        <or-vaadin-input id="property-${property}" type=${type} .value=${value}
+                         ?readonly=${itemConfig.readonly !== undefined ? itemConfig.readonly : true}
+                         label=${ifDefined(itemConfig.label)}
+        ></or-vaadin-input>
+    `;
 }
 
 export function getField(name: string, itemConfig?: InfoPanelItemConfig, content?: TemplateResult): TemplateResult {

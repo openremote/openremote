@@ -74,14 +74,11 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
 
     if (buttonIcon) {
         content = html`
-                ${content}
-                <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-            e.stopPropagation();
-            if (sendValue) {
-                sendValue();
-            }
-        }}"></or-mwc-input>
-            `;
+            ${content}
+            <or-vaadin-button id="send-btn" theme="icon" ?disabled=${disabled || loading} @click=${(ev: Event) => { ev.stopPropagation(); sendValue?.(); }}>
+                <or-icon icon=${buttonIcon}></or-icon>
+            </or-vaadin-button>
+        `;
     }
 
     return html`
@@ -310,7 +307,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #send-btn { 
                 flex: 0;
                 margin-left: 4px;
-                margin-top: 10px;
+                --or-icon-width: 20px;
             }
         `];
     }
