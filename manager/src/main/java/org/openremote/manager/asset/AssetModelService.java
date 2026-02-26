@@ -46,13 +46,12 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.util.ValueUtil.SchemaResult;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -376,7 +375,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    public JsonNode getValueDescriptorSchema(String name) {
+    public SchemaResult getValueDescriptorSchema(String name) {
         return ValueUtil.getValueDescriptorSchema(name);
     }
 

@@ -3,7 +3,7 @@ import {customElement, property} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {i18next, translate} from "@openremote/or-translate";
+import { i18next, translate } from "@openremote/or-translate";
 import {
     Attribute,
     AttributeDescriptor,
@@ -110,8 +110,35 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry, schedulerRendererRegistryEntry];
 
-let valueDescriptorSchemaHashes: Record<string, string>
-const schemas = new Map<string, any>()
+const schemas = new Map<string, unknown>();
+const inflightRequests = new Map<string, Promise<unknown>>();
+
+async function getSchema(valueDescriptor: ValueDescriptor) {
+    const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
+
+    if (schemas.has(descriptor)) {
+        return schemas.get(descriptor);
+    }
+
+    // Coalesce inflight requests
+    // Firefox won't guarantee subsequent requests provide the
+    // "If-None-Match" request header.
+    if (inflightRequests.has(descriptor)) {
+        return inflightRequests.get(descriptor);
+    }
+
+    const promise = manager.rest.api.AssetModelResource
+        .getValueDescriptorSchema({ name: descriptor })
+        .then(response => {
+            const schema = response.data;
+            schemas.set(descriptor, schema);
+            return schema;
+        })
+        .finally(() => inflightRequests.delete(descriptor));
+
+    inflightRequests.set(descriptor, promise);
+    return promise;
+}
 
 export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
     if (Util.isComplexMetaItem(valueDescriptor)) {
@@ -147,25 +174,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             }
             initialised = true;
 
-            if (!valueDescriptorSchemaHashes) {
-                const response = await manager.rest.api.StatusResource.getInfo();
-                valueDescriptorSchemaHashes = response.data.valueDescriptorSchemaHashes;
-            }
-
-            const descriptor = valueDescriptor.name + "[]".repeat(valueDescriptor.arrayDimensions ?? 0);
-            const hash = valueDescriptorSchemaHashes[descriptor];
-
-            if (!schema && !schemas.has(descriptor)) {
-                const response = await manager.rest.api.AssetModelResource.getValueDescriptorSchema({
-                    name: descriptor,
-                    hash,
-                }, { headers: !hash ? { "Cache-Control": "no-cache" } : {} });
-                schema = response.data;
-                schemas.set(descriptor, schema);
-                // label ||= schema.title
-            } else {
-                schema = schemas.get(descriptor);
-            }
+            schema = await getSchema(valueDescriptor);
 
             if (jsonForms.value && loadingWrapper.value) {
                 const forms = jsonForms.value;
