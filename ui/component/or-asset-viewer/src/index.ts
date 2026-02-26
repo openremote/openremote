@@ -1,6 +1,4 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
-import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
-
 declare function require(name: string): any;
 
 import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
@@ -21,6 +19,7 @@ import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Ut
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import {type OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {
     AgentDescriptor,
     Asset,
