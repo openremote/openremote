@@ -181,7 +181,7 @@ public class ApplyPredictedDataPointsService implements ContainerService {
             asset.getAttributes()
                 .stream()
                 .filter(attr -> hasRequiredMeta(attr.getMeta())) // Required, need to ensure at attribute level that both MetaItem are present
-                .forEach(attr -> rescheduleAttribute(new AttributeRef(asset.getId(), attr.getName())))
+                .forEach(attr -> rescheduleValidatedAttribute(new AttributeRef(asset.getId(), attr.getName()), attr))
         );
     }
 
@@ -198,6 +198,10 @@ public class ApplyPredictedDataPointsService implements ContainerService {
             return;
         }
 
+        rescheduleValidatedAttribute(ref, attribute);
+    }
+
+    protected void rescheduleValidatedAttribute(AttributeRef ref, Attribute<?> attribute) {
         List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(ref);
         if (datapoints == null || datapoints.isEmpty()) {
             removeScheduledEntry(ref);
