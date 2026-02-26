@@ -33,6 +33,7 @@ import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.OIDCTokenResponse;
 import org.openremote.container.security.TokenPrincipal;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -122,7 +123,7 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
     }
 
     @Override
-    public CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret) {
+    public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) {
         return CompletableFuture.failedFuture(new UnsupportedOperationException("This provider does not support bearer tokens"));
     }
 }

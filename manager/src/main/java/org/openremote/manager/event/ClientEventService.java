@@ -26,11 +26,10 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.undertow.UndertowComponent;
 import org.apache.camel.component.undertow.UndertowConstants;
 import org.apache.camel.component.undertow.UndertowHostKey;
-import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.container.security.basic.BasicAuthContext;
-import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -181,17 +180,14 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 switch (eventType) {
                     case ONOPEN -> {
                         WebSocketHttpExchange httpExchange = exchange.getIn().getHeader(UndertowConstants.EXCHANGE, WebSocketHttpExchange.class);
-                        String realm = httpExchange.getRequestHeader(Constants.REALM_PARAM_NAME);
+                        String realm = httpExchange.getRequestHeader(REALM_PARAM_NAME);
                         Principal principal = httpExchange.getUserPrincipal();
                         AuthContext authContext = null;
 
-                        if (principal instanceof KeycloakPrincipal<?> keycloakPrincipal) {
-                            authContext = new AccessTokenAuthContext(
-                                keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
-                                keycloakPrincipal.getKeycloakSecurityContext().getToken()
-                            );
-                        } else if (principal instanceof BasicAuthContext) {
-                            authContext = (BasicAuthContext) principal;
+                        if (principal instanceof TokenPrincipal tokenPrincipal) {
+                            authContext = tokenPrincipal;
+                        } else if (principal instanceof BasicAuthContext basicAuthContext) {
+                            authContext = basicAuthContext;
                         } else if (principal != null) {
                             LOG.log(INFO, "Unsupported user principal type: " + principal);
                         }
@@ -204,22 +200,22 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                         }
 
                         // Push auth and realm into channel for future use
-                        webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
-                        webSocketChannel.setAttribute(Constants.REALM_PARAM_NAME, realm);
+                        webSocketChannel.setAttribute(AUTH_CONTEXT, authContext);
+                        webSocketChannel.setAttribute(REALM_PARAM_NAME, realm);
 
-                        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+                        exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+                        exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
                         exchange.getIn().setHeader(SESSION_OPEN, true);
                         sessionChannels.put(getSessionKey(exchange), webSocketChannel);
                         LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
                     }
                     case ONCLOSE -> {
-                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-                        String realm = (String)webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(AUTH_CONTEXT);
+                        String realm = (String)webSocketChannel.getAttribute(REALM_PARAM_NAME);
                         String sessionKey = getSessionKey(exchange);
 
-                        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+                        exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+                        exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
                         exchange.getIn().setHeader(SESSION_CLOSE, true);
                         sessionChannels.remove(getSessionKey(exchange));
                         LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
@@ -232,12 +228,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                         }
                     }
                     case ONERROR -> {
-                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-                        String realm = (String)webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(AUTH_CONTEXT);
+                        String realm = (String)webSocketChannel.getAttribute(REALM_PARAM_NAME);
                         String sessionKey = getSessionKey(exchange);
 
-                        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+                        exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+                        exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
                         exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
                         LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
                         try {

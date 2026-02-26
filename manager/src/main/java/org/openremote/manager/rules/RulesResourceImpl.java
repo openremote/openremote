@@ -76,7 +76,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public RulesEngineInfo getRealmEngineInfo(RequestParams requestParams, String realm) {
-        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+        if (isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
@@ -90,10 +90,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         if (asset == null)
             return null;
-
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
 
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -142,10 +138,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     @Override
     public RealmRuleset[] getRealmRulesets(@BeanParam RequestParams requestParams, String realm, List<Ruleset.Lang> languages, boolean fullyPopulate) {
 
-        if (isAuthenticated() && !isRealmAccessibleByUser(realm)) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
-
         boolean publicOnly = !isAuthenticated() || isRestrictedUser() | !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         List<RealmRuleset> result = rulesetStorageService.findAll(
@@ -174,10 +166,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         Asset<?> asset = assetStorageService.find(assetId, false);
         if (asset == null)
             return new AssetRuleset[0];
-
-        if (isAuthenticated() && !isRealmAccessibleByUser(asset.getRealm())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
 
         boolean publicOnly = !isAuthenticated() || (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) || !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
@@ -347,9 +335,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
@@ -374,9 +359,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
@@ -392,9 +374,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         Asset<?> asset = assetStorageService.find(existingRuleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
-        }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -424,9 +403,6 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         Asset<?> asset = assetStorageService.find(ruleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
-        }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);

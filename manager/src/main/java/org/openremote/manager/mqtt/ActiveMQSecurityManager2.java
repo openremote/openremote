@@ -8,6 +8,7 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
 import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.OIDCTokenResponse;
 import org.openremote.container.security.TokenPrincipal;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 
@@ -59,9 +60,9 @@ public class ActiveMQSecurityManager2 implements ActiveMQSecurityManager5 {
                 throw new IllegalArgumentException("Invalid user format: " + user);
             }
 
-            String bearerToken = identityService.getBearerToken(realm, user, password).get(
+            OIDCTokenResponse oidcTokenResponse = identityService.authenticate(realm, user, password).get(
                 CONNECTION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-            TokenPrincipal tokenPrincipal = identityService.verify(realm, bearerToken);
+            TokenPrincipal tokenPrincipal = identityService.verify(realm, oidcTokenResponse.getToken());
             Principal connectionPrincipal = new RemotingConnectionPrincipal(remotingConnection);
             Subject subject = new Subject(true, Set.of(tokenPrincipal, connectionPrincipal), Set.of(), Set.of());
 

@@ -1,7 +1,5 @@
 package org.openremote.test.assets
 
-import org.keycloak.adapters.rotation.AdapterTokenVerifier
-import org.openremote.container.security.keycloak.AccessTokenAuthContext
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService

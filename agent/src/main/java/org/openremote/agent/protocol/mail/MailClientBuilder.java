@@ -19,9 +19,7 @@
  */
 package org.openremote.agent.protocol.mail;
 
-import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebService;
-import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 
@@ -206,7 +204,7 @@ public class MailClientBuilder {
         return new MailClient(this);
     }
 
-    public UsernamePassword getAuth() throws SocketException, NullPointerException, ExecutionException, InterruptedException {
+    public UsernamePassword getAuth() throws NullPointerException, ExecutionException, InterruptedException {
         Objects.requireNonNull(user, "User must be supplied");
 
         if (oAuthGrant != null) {

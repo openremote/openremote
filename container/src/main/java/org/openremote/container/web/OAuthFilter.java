@@ -22,6 +22,7 @@ package org.openremote.container.web;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthRefreshTokenGrant;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
@@ -44,7 +45,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class OAuthFilter implements ClientRequestFilter {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OAuthFilter.class);
-    public static final String BEARER_AUTH = "Bearer";
     protected OAuthServerResponse authServerResponse;
     protected Client client;
     protected WebTarget authTarget;
@@ -62,7 +62,7 @@ public class OAuthFilter implements ClientRequestFilter {
         String accessToken = getAccessToken();
 
         if (!TextUtil.isNullOrEmpty(accessToken)) {
-            return BEARER_AUTH + " " + accessToken;
+            return RequestParams.BEARER_AUTH_PREFIX + accessToken;
         }
 
         return null;

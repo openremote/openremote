@@ -39,6 +39,7 @@ import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.util.TextUtil;
@@ -99,6 +100,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
     // Optional reverse proxy that listens to KEYCLOAK_AUTH_PATH and forwards requests to Keycloak (used in dev mode to allow same url to be used for manager and keycloak) - handled by proxy in production
     protected HttpHandler authProxyHandler;
+    protected TokenVerifierService tokenVerifierService;
 
     /**
      * The supplied {@link OAuthGrant} will be used to authenticate with keycloak so we can programmatically make changes.
@@ -156,6 +158,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .setReuseXForwarded(true)
                 .build();
         }
+
+        tokenVerifierService = new TokenVerifierService(keycloakServiceUri.toString());
     }
 
     @Override
@@ -204,17 +208,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void secureDeployment(ServletContext servletContext) {
-        String keycloakUrl = keycloakServiceUri.toString();
-        KeyResolverService keyResolver = new KeyResolverService(keycloakUrl);
-        JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(keyResolver);
-
+        JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(tokenVerifierService);
         FilterRegistration.Dynamic registration = servletContext.addFilter(JWTAuthenticationFilter.NAME, jwtFilter);
-        registration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+        registration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),false,"/*");
         registration.setAsyncSupported(true);
     }
 
-    protected TokenService getKeycloak() {
+    protected TokenService getTokenService() {
         return keycloakTarget.proxy(TokenService.class);
+    }
+
+    protected ReactiveTokenService getReactiveTokenService() {
+        return keycloakTarget.proxy(ReactiveTokenService.class);
     }
 
     //There is a bug in {@link org.keycloak.admin.client.resource.UserStorageProviderResource#syncUsers} which misses the componentId as parameter
@@ -307,16 +312,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
      */
     abstract protected void addClientRedirectUris(String client, List<String> redirectUrls, boolean devMode);
 
-    public static KeycloakSecurityContext getSecurityContext(Subject subject) {
-        if (subject == null || subject.getPrincipals() == null) {
-            return null;
-        }
-
-        return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
-            .map(keycloakPrincipal ->
-                ((KeycloakPrincipal<?>)keycloakPrincipal).getKeycloakSecurityContext()).orElse(null);
-    }
-
     public static String getSubjectName(Subject subject) {
         if (subject == null || subject.getPrincipals() == null) {
             return null;
@@ -324,10 +319,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
             .map(Principal::getName).orElse(null);
-    }
-
-    public static String getSubjectName(Principal principal) {
-        return Optional.ofNullable(principal).map(Principal::getName).orElse(null);
     }
 
     public static String getSubjectNameAndRealm(Principal principal) {
@@ -353,31 +344,21 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             }).orElse(null);
     }
 
-    public static String getSubjectId(Subject subject) {
-        if (subject == null || subject.getPrincipals() == null) {
-            return null;
-        }
-
-        return Optional.ofNullable(getSecurityContext(subject))
-            .map(KeycloakSecurityContext::getToken)
-            .map(AccessToken::getSubject)
-            .orElse(null);
-    }
-
     public static boolean isSuperUser(KeycloakSecurityContext securityContext) {
         return securityContext != null && Constants.MASTER_REALM.equals(securityContext.getRealm()) && securityContext.getToken().getRealmAccess().isUserInRole(Constants.SUPER_USER_REALM_ROLE);
     }
 
     @Override
-    public CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret) {
-        CompletableFuture<String> future = new CompletableFuture<>();
-
-        exe
-        getKeycloak().getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret));
+    public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) {
+        return getReactiveTokenService().grantToken(
+            realm,
+            new OAuthClientCredentialsGrant(null, clientId, clientSecret, null).asMultivaluedMap())
+                .thenApply(OIDCTokenResponse::create)
+                .toCompletableFuture();
     }
 
     @Override
     public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
-        return null;
+        return tokenVerifierService.verify(realm, accessToken);
     }
 }

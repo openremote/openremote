@@ -36,6 +36,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
@@ -232,7 +233,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
                 if (headers == null) {
                     headers = new MultivaluedHashMap<>();
                 }
-                headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(authHeaderValue));
+                headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(RequestParams.BEARER_AUTH_PREFIX + authHeaderValue));
             }
 
             Map<String, List<String>> finalHeaders = headers;

@@ -23,14 +23,10 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.SecurityConstraint;
-import io.undertow.servlet.api.SecurityInfo;
-import io.undertow.servlet.api.WebResourceCollection;
 import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
 import org.apache.camel.component.undertow.UndertowConsumer;
 import org.apache.camel.component.undertow.UndertowHostKey;
 import org.apache.camel.component.undertow.UndertowHostOptions;
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.WebsocketAuthParamHandler;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
@@ -71,7 +67,6 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         }
 
        WebService webService = container.getService(WebService.class);
-       IdentityService identityService = container.getService(IdentityService.class);
 
         String path = registrationInfo.getUri().getPath();
         deployment = Servlets.deployment()
@@ -83,14 +78,8 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
             //httpHandler for servlet is ignored, camel handler is used instead of it
             .addInnerHandlerChainWrapper(h -> handler);
 
-        // Require authentication, but authorize specific roles later in Camel
-        WebResourceCollection resourceCollection = new WebResourceCollection();
-        resourceCollection.addUrlPattern("/*");
-        SecurityConstraint constraint = new SecurityConstraint();
-        constraint.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.PERMIT);
-        constraint.addWebResourceCollection(resourceCollection);
-        deployment.addSecurityConstraints(constraint);
-        identityService.secureDeployment(deployment);
+        webService.configureDeploymentInfo(deployment, true, null);
+
         webService.deploy(deployment, false);
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;

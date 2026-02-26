@@ -23,10 +23,10 @@ import io.netty.buffer.ByteBuf;
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.IdentityProvider;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.gateway.GatewayService;
@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 import static org.openremote.model.value.MetaItemType.USER_CONNECTED;
 
@@ -220,12 +221,12 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         return false;
     }
 
     @Override
-    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         return false;
     }
 
@@ -309,11 +310,11 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     }
 
     protected Pair<String, Set<AttributeRef>> getUserIDAndAttributeRefs(RemotingConnection connection) {
-        String userID = KeycloakIdentityProvider.getSubjectId(connection.getSubject());
+        String userID = IdentityProvider.getSubjectId(connection.getSubject());
 
         if (userID == null) {
             if (LOG.isLoggable(Level.FINEST)) {
-                LOG.finest("Anonymous connection so cannot determine userID: " + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Anonymous connection so cannot determine userID: " + connectionToString(connection));
             }
             return null;
         }

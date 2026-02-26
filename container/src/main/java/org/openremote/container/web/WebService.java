@@ -318,7 +318,7 @@ public abstract class WebService implements ContainerService {
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, realmIndex, secure, corsOverride);
+       configureDeploymentInfo(deploymentInfo, secure, corsOverride);
        deploy(deploymentInfo, false);
    }
 
@@ -357,7 +357,7 @@ public abstract class WebService implements ContainerService {
                .addListeners(Servlets.listener(listenerClass, factory))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, realmIndex, secure, corsOverride);
+       configureDeploymentInfo(deploymentInfo, secure, corsOverride);
        deploy(deploymentInfo, false);
    }
 
@@ -369,7 +369,7 @@ public abstract class WebService implements ContainerService {
            String deploymentPath,
            String deploymentName,
            ResourceSource[] resourceSources,
-           String[] requiredRoles,
+           String[] allowedRoles,
            CORSConfig corsOverride) {
 
         if (resourceSources == null || resourceSources.length == 0) {
@@ -397,6 +397,14 @@ public abstract class WebService implements ContainerService {
 
        MIME_TYPES.forEach((ext, mimeType) -> deploymentInfo.addMimeMapping(new MimeMapping(ext, mimeType)));
 
+       if (allowedRoles != null && allowedRoles.length > 0) {
+           Filter securityFilter = new SecurityFilter(allowedRoles);
+           FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
+                   .setAsyncSupported(true);
+           deploymentInfo.addFilter(securityFilterInfo);
+           deploymentInfo.addFilterUrlMapping(     "Security Filter","/*", DispatcherType.REQUEST);
+       }
+
        Filter alreadyGzippedFilter = new AlreadyGZippedFilter(MIME_TYPES_ALREADY_GZIPPED);
        FilterInfo alreadyGzippedFilterInfo = Servlets.filter(
                "Already GZipped Filter",
@@ -405,18 +413,9 @@ public abstract class WebService implements ContainerService {
        deploymentInfo.addFilter(alreadyGzippedFilterInfo);
        deploymentInfo.addFilterUrlMapping(     "Already GZipped Filter","/*", DispatcherType.REQUEST);
 
-       if (requiredRoles != null && requiredRoles.length > 0) {
-           Filter securityFilter = new SecurityFilter(requiredRoles);
-           FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
-                   .setAsyncSupported(true);
-           deploymentInfo.addFilter(securityFilterInfo);
-           deploymentInfo.addFilterUrlMapping(     "Security Filter","/*", DispatcherType.REQUEST);
-       }
-
        configureDeploymentInfo(
                deploymentInfo,
-               null,
-               requiredRoles != null && requiredRoles.length > 0,
+               allowedRoles != null && allowedRoles.length > 0,
                corsOverride);
        deploy(deploymentInfo, true);
    }
@@ -433,7 +432,6 @@ public abstract class WebService implements ContainerService {
 
     public void configureDeploymentInfo(
             DeploymentInfo deploymentInfo,
-            Integer realmIndex,
             boolean secure,
             CORSConfig corsOverride) {
 
@@ -442,52 +440,6 @@ public abstract class WebService implements ContainerService {
             // Just use default CORS config
             corsOverride = new CORSConfig();
         }
-
-//        // TODO: Remove this handler wrapper once JAX-RS RealmPathExtractorFilter can be utilised before security is applied
-//        if (realmIndex != null) {
-//            deploymentInfo.addInitialHandlerChainWrapper(handler -> {
-//
-//                return exchange -> {
-//                    // Do nothing if the realm header is already set
-//                    if (exchange.getRequestHeaders().contains(REALM_PARAM_NAME)) {
-//                        handler.handleRequest(exchange);
-//                        return;
-//                    }
-//
-//                    String relativePath = exchange.getRelativePath();
-//                    StringBuilder newRelativePathBuilder = new StringBuilder();
-//                    String realm = null;
-//                    int segmentIndex = 0;
-//                    int start = 1; // Path starts with '/'
-//
-//                    for (int i = 1; i <= relativePath.length(); i++) {
-//                        if (i == relativePath.length() || relativePath.charAt(i) == '/') {
-//                            if (i > start) { // Found a segment
-//                                if (segmentIndex == realmIndex) {
-//                                    realm = relativePath.substring(start, i);
-//                                } else {
-//                                    newRelativePathBuilder.append('/').append(relativePath, start, i);
-//                                }
-//                                segmentIndex++;
-//                            }
-//                            start = i + 1;
-//                        }
-//                    }
-//
-//                    if (realm != null) {
-//                        exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
-//
-//                        String newRelativePath = !newRelativePathBuilder.isEmpty() ? newRelativePathBuilder.toString() : "/";
-//                        String newRequestPath = deploymentInfo.getContextPath() + newRelativePath;
-//                        exchange.setRequestURI(newRequestPath);
-//                        exchange.setRelativePath(newRelativePath);
-//                        exchange.setRequestPath(newRequestPath);
-//                    }
-//
-//                    handler.handleRequest(exchange);
-//                };
-//            });
-//        }
 
         if (secure) {
             if (identityService == null)

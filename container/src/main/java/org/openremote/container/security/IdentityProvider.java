@@ -22,6 +22,9 @@ package org.openremote.container.security;
 import jakarta.servlet.ServletContext;
 import org.openremote.model.Container;
 
+import javax.security.auth.Subject;
+import java.security.Principal;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -43,5 +46,18 @@ public interface IdentityProvider extends TokenVerifier {
     /**
      * Retrieves a bearer token for the given realm, client id and client secret using this {@link IdentityProvider}.
      */
-    CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret);
+    CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret);
+
+    static String getSubjectId(Subject subject) {
+        return Optional.ofNullable(getTokenPrincipal(subject)).map(Principal::getName).orElse(null);
+    }
+
+    static TokenPrincipal getTokenPrincipal(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof TokenPrincipal)
+                .map(p -> (TokenPrincipal)p).findFirst().orElse(null);
+    }
 }

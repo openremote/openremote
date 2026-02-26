@@ -36,12 +36,10 @@ import org.openremote.container.Container
 import org.openremote.container.json.JacksonConfig
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
-import org.openremote.container.security.AuthForm
 import org.openremote.container.security.ClientCredentialsAuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
-import org.openremote.container.security.keycloak.KeycloakResource
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
 import org.openremote.container.web.WebTargetBuilder
@@ -59,7 +57,10 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.Protocol
+import org.openremote.model.auth.OAuthClientCredentialsGrant
+import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.gateway.GatewayConnection
+import org.openremote.model.http.RequestParams
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.RulesetQuery
 import org.openremote.model.rules.AssetRuleset
@@ -521,7 +522,7 @@ trait ContainerTrait {
         if (accessToken != null) {
             ClientRequestFilter authFilter = context ->
                 {
-                    context.getHeaders().header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    context.getHeaders().header(HttpHeaders.AUTHORIZATION, RequestParams.BEARER_AUTH_PREFIX + accessToken)
                 }
                 clientBuilder.register(authFilter)
         }
@@ -573,13 +574,13 @@ trait ContainerTrait {
     }
 
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
-        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
-                .getAccessToken(realm, new PasswordAuthForm(clientId, username, password))
+        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getTokenService()
+                .grantToken(realm, new OAuthPasswordGrant(null, clientId, null, null, username, password).asMultivaluedMap())
     }
 
     AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
-        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
-                .getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret))
+        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getTokenService()
+                .grantToken(realm, new OAuthClientCredentialsGrant(null, clientId, clientSecret, null).asMultivaluedMap())
     }
 
     /**
@@ -595,18 +596,13 @@ trait ContainerTrait {
         String scheme   = secure ? "https" : "http"
         String basePath = "/auth"
         String baseUrl  = "${scheme}://${host}${basePath}"
-
-        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier { String h, SSLSession s -> true }.build()
-        ResteasyWebTarget target = new WebTargetBuilder(client, URI.create(baseUrl)).build()
+        ResteasyWebTarget target = new WebTargetBuilder(WebTargetBuilder.getClient(), URI.create(baseUrl)).build()
         TokenService keycloak = target.proxy(TokenService)
 
-        try {
-            return keycloak.grantToken(
-                realm,
-                new MultivaluedHashMap<String, String>(Map.of("client_id", clientId, "username", username, "password", password)))
-        } finally {
-            client.close()
-        }
+        return keycloak.grantToken(
+            realm,
+            new OAuthPasswordGrant(null, clientId, null, null, username, password)
+                    .asMultivaluedMap())
     }
 
     ProducerTemplate getMessageProducerTemplate(Container container) {

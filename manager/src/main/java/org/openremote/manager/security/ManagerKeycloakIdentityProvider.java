@@ -1199,8 +1199,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         boolean isSuperUser = authContext != null && authContext.isSuperUser();
-        boolean isUsersRealm = isSuperUser || authContext == null || authContext.isRealmAccessibleByUser(realm.getName());
-
+        boolean isUsersRealm = isSuperUser || authContext == null;
         return isSuperUser || (isUsersRealm && realm.isActive(timerService.getCurrentTimeMillis()));
     }
 
@@ -1220,7 +1219,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isRestrictedUser(AuthContext authContext) {
-        return authContext != null && authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
+        return authContext != null && authContext.isRestrictedUser();
     }
 
     @Override

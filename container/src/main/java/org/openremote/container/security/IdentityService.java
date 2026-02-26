@@ -25,7 +25,6 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.auth.OAuthGrant;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
@@ -79,8 +78,8 @@ public abstract class IdentityService implements ContainerService, TokenVerifier
         return identityProvider.verify(realm, accessToken);
     }
 
-    public CompletableFuture<String> getBearerToken(String realm, String clientId, String clientSecret) {
-        return identityProvider.getBearerToken(realm, clientId, clientSecret);
+    public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) {
+        return identityProvider.authenticate(realm, clientId, clientSecret);
     }
 
     /**

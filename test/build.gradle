@@ -46,6 +46,8 @@ dependencies {
 
     testImplementation files("../agent/libs/chirpstack-api-4.14.1.jar")
     testImplementation files("../agent/libs/tts-api-3.34.3.jar")
+
+    testImplementation "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion"
 }
 
 tasks.withType(Test) {

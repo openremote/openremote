@@ -27,8 +27,8 @@ import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.provisioning.ProvisioningService;
@@ -167,9 +167,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean checkCanSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         // Skip standard checks
-        if (!canSubscribe(connection, securityContext, topic)) {
+        if (!canSubscribe(connection, authContext, topic)) {
             getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
@@ -177,9 +177,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean checkCanPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         // Skip standard checks
-        if (!canPublish(connection, securityContext, topic)) {
+        if (!canPublish(connection, authContext, topic)) {
             getLogger().fine("Cannot publish to this topic, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
@@ -199,7 +199,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -243,7 +243,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;

@@ -26,15 +26,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * A security filter that will check if the request is authenticated and that the user has all the specified roles
- * by calling {@link HttpServletRequest#isUserInRole} for each {@link #requiredRoles}
+ * A security filter that will check if the request is authenticated and that the user has any of the specified roles
+ * by calling {@link HttpServletRequest#isUserInRole} for each {@link #allowedRoles} until one of them is true.
  */
 public class SecurityFilter implements Filter {
 
-    final protected String[] requiredRoles;
+    final protected String[] allowedRoles;
 
-    public SecurityFilter(String[] requiredRoles) {
-        this.requiredRoles = requiredRoles;
+    public SecurityFilter(String[] allowedRoles) {
+        this.allowedRoles = allowedRoles;
     }
 
     @Override
@@ -43,15 +43,15 @@ public class SecurityFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
-        boolean userHasAllRoles = true;
-        for (String requiredRole : requiredRoles) {
-            if (!req.isUserInRole(requiredRole)) {
-                userHasAllRoles = false;
+        boolean userHasRole = false;
+        for (String allowedRole : allowedRoles) {
+            if (req.isUserInRole(allowedRole)) {
+                userHasRole = true;
                 break;
             }
         }
 
-        if (userHasAllRoles) {
+        if (userHasRole) {
             chain.doFilter(request, response);
         } else {
             if (req.getUserPrincipal() == null) {

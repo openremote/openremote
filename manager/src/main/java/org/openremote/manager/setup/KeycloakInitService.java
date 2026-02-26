@@ -129,19 +129,14 @@ public class KeycloakInitService implements ContainerService {
     }
 
     protected static void pingKeycloak(WebTarget target) throws Exception {
-        Response response = null;
 
-        try {
-            response = target.path("/realms/master/.well-known/openid-configuration").request().head();
+        try (Response response = target.path("/realms/master/.well-known/openid-configuration").request().head()) {
             if (response != null &&
-                (response.getStatusInfo().getFamily() == SUCCESSFUL
-                    || response.getStatusInfo().getFamily() == REDIRECTION)) {
+                    (response.getStatusInfo().getFamily() == SUCCESSFUL
+                            || response.getStatusInfo().getFamily() == REDIRECTION)) {
                 return;
             }
             throw new Exception();
-        } finally {
-            if (response != null)
-                response.close();
         }
     }
 }

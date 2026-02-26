@@ -7,7 +7,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TokenPrincipal implements Principal {
+public class TokenPrincipal implements Principal, AuthContext {
 
     public static final String PREFERRED_USERNAME_CLAIM = "preferred_username";
     public static final String CLIENT_ID_CLAIM = "azp";
@@ -72,7 +72,31 @@ public class TokenPrincipal implements Principal {
         return realmRoles.contains(role) || resourceRoles.values().stream().anyMatch(roles -> roles.contains(role));
     }
 
+    public boolean isUserInResourceRole(String role, String resource) {
+        return resourceRoles.getOrDefault(resource, Collections.emptyList()).contains(role);
+    }
+
     public boolean isUserInRealmRole(String role) {
         return realmRoles.contains(role);
+    }
+
+    @Override
+    public String getAuthenticatedRealmName() {
+        return getRealm();
+    }
+
+    @Override
+    public String getUserId() {
+        return getSubject();
+    }
+
+    @Override
+    public boolean hasRealmRole(String role) {
+        return isUserInRole(role);
+    }
+
+    @Override
+    public boolean hasResourceRole(String role, String resource) {
+        return isUserInResourceRole(role, resource);
     }
 }
