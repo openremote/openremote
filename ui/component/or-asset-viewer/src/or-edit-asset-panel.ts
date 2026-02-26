@@ -389,7 +389,10 @@ export class OrEditAssetPanel extends LitElement {
                                 ${metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.template)}
                             </div>
                             <div class="item-add">
-                                <or-mwc-input .type="${InputType.BUTTON}" label="addMetaItems" icon="plus" @or-mwc-input-changed="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                                <or-vaadin-button @click=${() => this._addMetaItems(attribute)}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="addMetaItems"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                     </div>                     
