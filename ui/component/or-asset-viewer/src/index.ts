@@ -1,4 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+
 declare function require(name: string): any;
 
 import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
@@ -576,12 +578,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         const options = historyAttrs.map((attr) => {
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
-            return [attr.name, label];
-            }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
+            return { value: attr.name, label: label };
+            }).sort(Util.sortByString((item) => item.label ?? item.value));
 
         let attrTemplate = html`
                 <div id="attribute-picker">
-                    <or-mwc-input .checkAssetWrite="${false}" .label="${i18next.t("attribute")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-mwc-input>
+                    <or-vaadin-select .items=${options} @change=${(ev: Event) => attributeChanged((ev.currentTarget as OrVaadinSelect).value)}>
+                        <or-translate slot="label" value="attribute"></or-translate>
+                    </or-vaadin-select>
                 </div>`;
 
         return html`
@@ -593,7 +597,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    z-index: 1;
                }
                
-               #attribute-picker > or-mwc-input {
+               #attribute-picker > or-vaadin-select {
                    width: 250px;
                }
                 
