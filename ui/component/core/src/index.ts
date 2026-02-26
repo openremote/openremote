@@ -1058,9 +1058,9 @@ export class Manager implements EventProviderFactory {
         }
 
         if (this._reconnectTimer) {
+            console.debug("Clearing previous reconnect timeout...");
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
-            return;
         }
 
         const tryReconnect = async () => {
@@ -1078,9 +1078,13 @@ export class Manager implements EventProviderFactory {
             try {
                 await this._updateKeycloakAccessToken();
             } catch (e) {
+                console.error("Could not update Keycloak access token, attempting again using offline token...", e);
                 // Try and use offline token if it is available
                 const offlineToken = await this._getNativeOfflineRefreshToken();
                 this._keycloak!.refreshToken = offlineToken;
+                if(!offlineToken) {
+                    console.warn("No offline token was found on this device.");
+                }
 
                 try {
                     await this._updateKeycloakAccessToken();
