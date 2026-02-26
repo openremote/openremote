@@ -3,7 +3,9 @@
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Web Component for generating forms based on JSON Schema. This component expects the JSON Schemas to be formatted as described in [Usage](#usage).
+Web Component for generating forms based on JSON Schema. This can be useful for creating forms for complex data structures and validating user input.
+
+This component expects the JSON Schemas to be formatted as described in [Usage](#usage).
 
 ## Install
 ```bash
@@ -23,23 +25,20 @@ The following keywords are not (fully) supported:
 - `allOf`
 - `example`
 
-### Specification
+### Behavior Specification
+
+#### Default values
 
 The JSON Forms will resolve default values from the schema based on the `default` property or infer it from the type.
 
-It derives the type from the schema's `type` property.
+It derives the type from the schema's `type` property, or from properties that are characteristic of the type.
 
-```json
-{ "type": "integer" }
-```
-
-But it will also derive the type based on the following properties:
-
-| property                | type   |
-| ----------------------- | ------ |
-| `properties`            | object |
-| `additionalProperties`  | object |
-| `items`                 | array  |
+| property                | type               |
+| ----------------------- | ------------------ |
+| `type`                  | The specified type |
+| `properties`            | object             |
+| `additionalProperties`  | object             |
+| `items`                 | array              |
 
 <!--CombinatorKeyword[] = ['oneOf', 'anyOf', 'allOf']-->
 
@@ -49,19 +48,22 @@ Depending on the type, it derives the default value as follows:
 
 | type                    | value | formats | Formatted default |
 | ----------------------- | ----- | ------- | ------- |
-| [...] (array of values) | [...]    |  | |
+| [...] (array of values) | [...]    |  |       | 
 | string                  | `""`    |  date-time, date, time       | `new Date()` |
-| integer, number         | `0`     |         | 0 |
+| integer, number         | `0`     |         |  |
 | boolean                 | `false` |         |
 | array                   | `[]`    |         |
-| object                  | {}, or ...    |         |
+| object                  | An object with the required properties, otherwise an empty object |         |
 | null                    | `null`  |         |
+
+#### Polymorphism
+
+<!--'oneOf', 'anyOf', 'allOf'-->
 
 ### Example usage
 
 ```typescript
 import { html } from 'lit';
-import { Util } from "@openremote/core";
 import { ErrorObject, StandardRenderers } from "@openremote/or-json-forms";
 import "@openremote/or-json-forms";
 
@@ -78,29 +80,13 @@ public class MyJsonForms extends LitElement {
     };
     // Apply a custom UI schema to remove the outer VerticalLayout
     private static uiSchema: any = { type: "Control", scope: "#" };
-    private initialised = false;
-    private prevValue: any;
-
-    constructor() {
-        super();
-        this.initialised = true;
-    }
 
     render() {
         return html`<or-json-forms .renderers="${jsonFormsAttributeRenderers}" .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>`
     }
 
-    onChanged(dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) {
-        if (!this.initialised) { 
-            return;
-        }
-
-        if (!Util.objectsEqual(dataAndErrors.data, this.prevValue)) {
-            this.prevValue = dataAndErrors.data;
-            this.valueChangeNotifier({
-                value: dataAndErrors.data
-            });
-        }
+    onChanged(dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) {
+        // Do something with the data and errors
     }
 };
 ```
