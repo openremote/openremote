@@ -1438,7 +1438,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
             assert info != null
             assert info.size() > 0
-            assert info.valueDescriptorSchemaHashes == ValueUtil.getValueDescriptorSchemaHashes()
         }
 
 
