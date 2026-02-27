@@ -60,7 +60,7 @@ export const defineAppConfig = (path: string) => {
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
       // Defaults to the default Manager Docker container port as that significantly speeds up the tests compared to serving the frontend with Webpack
-      baseURL: managerUrl || DEV ? "http://localhost:9000" : "http://localhost:8080",
+      baseURL: managerUrl || DEV ? "http://localhost:9000" : "http://localhost:8888",
       /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
       trace: "retain-on-failure",
       video: "on",

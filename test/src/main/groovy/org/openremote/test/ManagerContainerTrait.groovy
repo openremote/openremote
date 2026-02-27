@@ -41,7 +41,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
                 (TIMER_CLOCK_TYPE): PSEUDO.name(),
                 (PersistenceService.OR_DB_PORT): "54321",
-                (KeycloakIdentityProvider.OR_KEYCLOAK_PORT): "8082"
+                (KeycloakIdentityProvider.OR_KEYCLOAK_PORT): "8889"
         ] << System.getenv()
 
         config.values().removeIf { TextUtil.isNullOrEmpty(it)}
