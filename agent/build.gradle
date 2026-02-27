@@ -1,3 +1,7 @@
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+
 apply plugin: "java-library"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
@@ -59,6 +63,33 @@ dependencies {
 
     implementation files("libs/chirpstack-api-4.14.1.jar")
     implementation files("libs/tts-api-3.34.3.jar")
+}
+
+def libraryCategory = objects.named(Category, Category.LIBRARY)
+def javaApiUsage = objects.named(Usage, Usage.JAVA_API)
+def jarElements = objects.named(LibraryElements, LibraryElements.JAR)
+
+configurations {
+    processTranslationsCompileClasspath {
+        description = "Classpath for ui/app/shared:processTranslations when compiling agent sources"
+        canBeResolved = false
+        canBeConsumed = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, libraryCategory)
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, jarElements)
+            attribute(Usage.USAGE_ATTRIBUTE, javaApiUsage)
+        }
+    }
+}
+
+configurations.processTranslationsCompileClasspath.extendsFrom(
+        configurations.api,
+        configurations.implementation,
+        configurations.compileOnly
+)
+
+artifacts {
+    processTranslationsCompileClasspath jar
 }
 
 base {

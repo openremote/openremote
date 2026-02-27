@@ -1,0 +1,40 @@
+{
+  "name": "OpenRemote DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "workspaceFolder": "/workspaces/openremote",
+  "remoteUser": "root",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+        "version": "21",
+        "jdkDistro": "open",
+        "installGradle": "true",
+        "installGroovy": "true"
+    }
+  },
+  "runArgs": [
+    "-v", "${localEnv:HOME}/.gradle:/root/.gradle"
+  ],
+  "onCreateCommand": "echo 'devcontainer ready'",
+  "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "ms-vscode.vscode-typescript-next",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode-remote.remote-containers"
+      ],
+      "settings": {
+        "telemetry.enableTelemetry": false
+      }
+    }
+  },
+  "remoteEnv": {
+    "GRADLE_USER_HOME": "/root/.gradle"
+  }
+}

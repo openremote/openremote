@@ -1,6 +1,9 @@
 import java.security.MessageDigest
 import javax.annotation.processing.Processor
 import javax.tools.ToolProvider
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
 
 apply plugin: 'java'
 apply plugin: "maven-publish"
@@ -71,6 +74,49 @@ signing {
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign publishing.publications.maven
     }
+}
+
+def libraryCategory = objects.named(Category, Category.LIBRARY)
+def javaApiUsage = objects.named(Usage, Usage.JAVA_API)
+def javaRuntimeUsage = objects.named(Usage, Usage.JAVA_RUNTIME)
+def jarElements = objects.named(LibraryElements, LibraryElements.JAR)
+
+configurations {
+    processTranslationsAgentCompileClasspath {
+        canBeConsumed = false
+        canBeResolved = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, libraryCategory)
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, jarElements)
+            attribute(Usage.USAGE_ATTRIBUTE, javaApiUsage)
+        }
+    }
+
+    processTranslationsModelCompileClasspath {
+        canBeConsumed = false
+        canBeResolved = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, libraryCategory)
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, jarElements)
+            attribute(Usage.USAGE_ATTRIBUTE, javaApiUsage)
+        }
+    }
+
+    processTranslationsModelAnnotationProcessorClasspath {
+        canBeConsumed = false
+        canBeResolved = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, libraryCategory)
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, jarElements)
+            attribute(Usage.USAGE_ATTRIBUTE, javaRuntimeUsage)
+        }
+    }
+}
+
+dependencies {
+    processTranslationsAgentCompileClasspath project(path: ":agent", configuration: "processTranslationsCompileClasspath")
+    processTranslationsModelCompileClasspath project(path: ":model", configuration: "processTranslationsCompileClasspath")
+    processTranslationsModelAnnotationProcessorClasspath project(path: ":model", configuration: "processTranslationsAnnotationProcessorClasspath")
 }
 
 def cacheDir = layout.projectDirectory.dir("cache").asFile
@@ -180,7 +226,12 @@ tasks.register('processTranslations', JavaCompile) {
     def modelSourceSet = project(":model").sourceSets.main
 
     source = files(agentSourceSet.allJava, modelSourceSet.allJava)
-    classpath = files(agentSourceSet.compileClasspath, modelSourceSet.compileClasspath)
+    classpath = files(
+            agentSourceSet.output,
+            modelSourceSet.output,
+            configurations.processTranslationsAgentCompileClasspath,
+            configurations.processTranslationsModelCompileClasspath
+    )
     destinationDirectory = layout.buildDirectory.dir("generated/i18n") // unused
     options.compilerArgs += [
         "-proc:only", // Only run the processor
@@ -188,7 +239,10 @@ tasks.register('processTranslations', JavaCompile) {
         "-Ashared=${project.getProjectDir()}".toString()
     ]
     // Pass classpath to compiler
-    options.annotationProcessorPath = modelSourceSet.output + modelSourceSet.compileClasspath
+    options.annotationProcessorPath = files(
+            modelSourceSet.output,
+            configurations.processTranslationsModelAnnotationProcessorClasspath
+    )
 }
 
 jar.dependsOn(generateSources)
