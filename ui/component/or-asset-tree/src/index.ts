@@ -3,6 +3,7 @@ import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -41,6 +42,7 @@ import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {when} from "lit/directives/when.js";
 import debounce from "lodash.debounce";
+import { styleMap } from "lit/directives/style-map";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -425,26 +427,28 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
 
 
-    protected getSelectHeader(): TemplateResult {
-        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
+    protected _getSelectHeader(selected?: AssetDescriptor, descriptors: AssetDescriptor[] = [], disabled = this._loading): TemplateResult {
+        const itemRenderer: ComboBoxLitRenderer<AssetDescriptor> = (descriptor: AssetDescriptor) => html`
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <or-icon icon=${descriptor.icon} style="--or-icon-fill: #${descriptor.colour ?? "000000"}; min-width: 24px;"></or-icon>
+                <or-translate value=${Util.getAssetTypeLabel(descriptor)}></or-translate>
+            </div>
+        `;
+        return html`
+            <or-vaadin-combo-box ?disabled=${disabled} .items=${descriptors} .selected-item=${selected} style="width: 100%; --vaadin-combo-box-overlay-width: 350px; padding-top: 0px;"
+                                 .itemLabelGenerator=${(descriptor: AssetDescriptor) => Util.getAssetTypeLabel(descriptor)} item-value-path="name"
+                                 ${comboBoxRenderer(itemRenderer, [])}
+                                 @change=${(ev: CustomEvent) => { this._assetTypeFilter = (ev.currentTarget as OrVaadinComboBox).value; }}>
+                <or-icon slot="prefix" icon=${selected?.icon ?? "selection-ellipse"} style="color: var(--or-icon-fill); --or-icon-fill: #${selected?.colour ?? "inherit"}"></or-icon>
+                <or-translate slot="label" value="filter.assetTypeLabel"></or-translate>
+            </or-vaadin-combo-box>
+        `;
+        // return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
     }
 
-    protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
+    /*protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
         return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
-    }
-
-    protected assetTypeSelect(): TemplateResult {
-        if (this._assetTypeFilter) {
-            const descriptor: AssetDescriptor | undefined = this._assetTypes.find((at: AssetDescriptor) => { return at.name === this._assetTypeFilter });
-            if (descriptor) {
-                return this.getSelectedHeader(descriptor);
-            } else {
-                return this.getSelectHeader();
-            }
-        } else {
-            return this.getSelectHeader();
-        }
-    }
+    }*/
 
 
     protected atLeastOneNodeToBeShown(): boolean {
@@ -532,18 +536,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
                 <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                     <div class="advanced-filter">
-                        ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
-                                this.assetTypeSelect(),
-                                this.mapDescriptors(this._assetTypes, {text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse"}),
-                                undefined,
-                                (v: string[] | string) => {
-                                    this._assetTypeFilter = (v as string);
-                                },
-                                undefined,
-                                false,
-                                true,
-                                true) : html``
-                        }
+                        ${when(this._assetTypes.length > 0, () => this._getSelectHeader(
+                            this._assetTypes?.find((at: AssetDescriptor) => { return at.name === this._assetTypeFilter }),
+                            this._assetTypes
+                        ))}
                         <or-vaadin-text-field id="attributeNameFilter" style="margin-top: 10px;" ?disabled=${this._loading}
                                               @input=${(e: KeyboardEvent) => this._shouldEnableAttrTypeEvent(e)}
                                               @change=${(e: CustomEvent) => this._shouldEnableAttrType((e.currentTarget as OrVaadinTextField).value)}>
