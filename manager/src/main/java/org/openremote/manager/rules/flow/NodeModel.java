@@ -11,7 +11,10 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueHolder;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 
@@ -27,8 +30,11 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                Optional<AttributeInfo> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
-                return readValue.flatMap(ValueHolder::getValue).orElse(null);
+                AttributeRef attributeRef = new AttributeRef(assetId, attributeName);
+                Optional<AttributeInfo> readValue = info.getFacts().findCachedAttribute(attributeRef)
+                        .or(() -> info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)));
+                Object value = readValue.flatMap(ValueHolder::getValue).orElse(null);
+                return new NodeExecutionResult(value, attributeRef, readValue.orElse(null));
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
@@ -57,7 +63,9 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                Optional<AttributeInfo> attr = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
+                AttributeRef attributeRef = new AttributeRef(assetId, attributeName);
+                Optional<AttributeInfo> attr = info.getFacts().findCachedAttribute(attributeRef)
+                        .or(() -> info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)));
                 if (attr.isPresent()) {
                     AttributeInfo attributeInfo = attr.get();
                     Optional<Object> currentValueOpt = attributeInfo.getValue();
@@ -71,12 +79,13 @@ public enum NodeModel {
                         double timeDifference = (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
 
                         if (timeDifference != 0) {
-                            return (currentValue - oldValue) / timeDifference; // Δx formula
+                            double result = (currentValue - oldValue) / timeDifference; // Δx formula
+                            return new NodeExecutionResult(result, attributeRef, attributeInfo);
                         }
                     }
                 }
 
-                return null;
+                return new NodeExecutionResult(null);
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
@@ -110,7 +119,9 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                Optional<AttributeInfo> attr = info.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)).findFirst();
+                AttributeRef attributeRef = new AttributeRef(assetId, attributeName);
+                Optional<AttributeInfo> attr = info.getFacts().findCachedAttribute(attributeRef)
+                        .or(() -> info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)));
 
                 double integral = 0.0;
                 if (attr.isPresent()) {
@@ -129,7 +140,7 @@ public enum NodeModel {
                     }
                 }
 
-                return integral;
+                return new NodeExecutionResult(integral, attributeRef, attr.orElse(null));
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
@@ -164,14 +175,15 @@ public enum NodeModel {
                 Number timeUnit;
                 timePeriod = TimePeriod.valueOf(info.getInternals()[2].getValue().toString()).getMillis();
                 timeUnit = Long.parseLong(info.getInternals()[1].getValue().toString());
-                if(timePeriod == null) return null;
+                if(timePeriod == null) return new NodeExecutionResult(null);
 
                 long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
 
                 Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
                 final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
-                return valueDatapoints.length > 0 ? valueDatapoints[0].getValue() : null;
+                if (valueDatapoints.length == 0) return new NodeExecutionResult(null);
+                return new NodeExecutionResult(valueDatapoints[0].getValue());
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
@@ -192,7 +204,7 @@ public enum NodeModel {
     LOG_OUTPUT(new Node(NodeType.OUTPUT, new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("value", NodeDataType.ANY)
     }, new NodeSocket[0]),
-            info -> ((RulesBuilder.Action) facts -> {
+            info -> new NodeExecutionResult((RulesBuilder.Action) facts -> {
                 info.setFacts(facts);
                 Object obj = info.getValueFromInput(0);
                 info.LOG.log(Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
@@ -203,7 +215,7 @@ public enum NodeModel {
     }, new NodeSocket[]{
             new NodeSocket("value", NodeDataType.ANY)
     }, new NodeSocket[0]),
-            info -> ((RulesBuilder.Action) facts -> {
+            info -> new NodeExecutionResult((RulesBuilder.Action) facts -> {
                 info.setFacts(facts);
                 Object value = info.getValueFromInput(0);
                 if (value == null) {
@@ -229,9 +241,8 @@ public enum NodeModel {
     }),
             info -> {
                 Object value = info.getInternals()[0].getValue();
-                if (value == null) return false;
-                if (!(value instanceof Boolean)) return false;
-                return value;
+                if (!(value instanceof Boolean)) return new NodeExecutionResult(false);
+                return new NodeExecutionResult(value);
             }),
 
     AND_GATE(new Node(NodeType.PROCESSOR, "&", new NodeInternal[0], new NodeSocket[]{
@@ -243,7 +254,7 @@ public enum NodeModel {
             info -> {
                 boolean a = (boolean) info.getValueFromInput(0);
                 boolean b = (boolean) info.getValueFromInput(1);
-                return a && b;
+                return new NodeExecutionResult(a && b);
             }),
 
     OR_GATE(new Node(NodeType.PROCESSOR, "∥", new NodeInternal[0], new NodeSocket[]{
@@ -255,7 +266,7 @@ public enum NodeModel {
             info -> {
                 boolean a = (boolean) info.getValueFromInput(0);
                 boolean b = (boolean) info.getValueFromInput(1);
-                return a || b;
+                return new NodeExecutionResult(a || b);
             }),
 
     NOT_GATE(new Node(NodeType.PROCESSOR, "!", new NodeInternal[0], new NodeSocket[]{
@@ -265,7 +276,7 @@ public enum NodeModel {
     }),
             info -> {
                 boolean a = (boolean) info.getValueFromInput(0);
-                return !a;
+                return new NodeExecutionResult(!a);
             }),
 
     NUMBER_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
@@ -273,7 +284,7 @@ public enum NodeModel {
     }, new NodeSocket[0], new NodeSocket[]{
             new NodeSocket("value", NodeDataType.NUMBER)
     }),
-            info -> ValueUtil.convert(info.getInternals()[0].getValue(), Double.class)),
+            info -> new NodeExecutionResult(ValueUtil.convert(info.getInternals()[0].getValue(), Double.class))),
 
     ADD_OPERATOR(new Node(NodeType.PROCESSOR, 1, "+", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),
@@ -284,7 +295,7 @@ public enum NodeModel {
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
+                return new NodeExecutionResult(a != null && b != null ? a.doubleValue() + b.doubleValue() : null);
             }),
 
     SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, 2, "-", new NodeInternal[0], new NodeSocket[]{
@@ -296,7 +307,7 @@ public enum NodeModel {
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() - b.doubleValue() : null;
+                return new NodeExecutionResult(a != null && b != null ? a.doubleValue() - b.doubleValue() : null);
             }),
 
     MULTIPLY_OPERATOR(new Node(NodeType.PROCESSOR, 3, "×", new NodeInternal[0], new NodeSocket[]{
@@ -308,7 +319,7 @@ public enum NodeModel {
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() * b.doubleValue() : null;
+                return new NodeExecutionResult(a != null && b != null ? a.doubleValue() * b.doubleValue() : null);
             }),
 
     DIVIDE_OPERATOR(new Node(NodeType.PROCESSOR,4, "÷", new NodeInternal[0], new NodeSocket[]{
@@ -322,13 +333,13 @@ public enum NodeModel {
                 Number b = (Number) info.getValueFromInput(1);
 
                 if (a == null || b == null) {
-                    return null;
+                    return new NodeExecutionResult(null);
                 }
 
                 if (b.doubleValue() == 0d)
-                    return 0d;
+                    return new NodeExecutionResult(0d);
 
-                return a.doubleValue() / b.doubleValue();
+                return new NodeExecutionResult(a.doubleValue() / b.doubleValue());
             }),
 
     EQUALS_COMPARATOR(new Node(NodeType.PROCESSOR, "=", new NodeInternal[0], new NodeSocket[]{
@@ -340,7 +351,7 @@ public enum NodeModel {
             info -> {
                 Object a = info.getValueFromInput(0);
                 Object b = info.getValueFromInput(1);
-                return a != null && b != null && Objects.equals(a, b);
+                return new NodeExecutionResult(a != null && b != null && Objects.equals(a, b));
             }),
 
     SUM_PROCESSOR(new Node(NodeType.PROCESSOR,5, "Σ", new NodeInternal[0], new NodeSocket[]{
@@ -348,32 +359,32 @@ public enum NodeModel {
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> IntStream.range(0, info.getInputs().length)
-                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sum()
+            info -> new NodeExecutionResult(IntStream.range(0, info.getInputs().length)
+                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sum())
     ),
     MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> IntStream.range(0, info.getInputs().length)
-                        .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).max().orElseThrow()
+            info -> new NodeExecutionResult(IntStream.range(0, info.getInputs().length)
+                        .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).max().orElseThrow())
     ),
     MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> IntStream.range(0, info.getInputs().length)
-                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).min().orElseThrow()
+            info -> new NodeExecutionResult(IntStream.range(0, info.getInputs().length)
+                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).min().orElseThrow())
     ),
     AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> IntStream.range(0, info.getInputs().length)
-                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).average().orElseThrow()
+            info -> new NodeExecutionResult(IntStream.range(0, info.getInputs().length)
+                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).average().orElseThrow())
     ),
     MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
@@ -384,11 +395,11 @@ public enum NodeModel {
                 final double[] sortedDoubles = IntStream.range(0, info.getInputs().length)
                         .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sorted().toArray();
                 if (sortedDoubles.length == 0) {
-                    return 0.0;
+                    return new NodeExecutionResult(0.0);
                 } else if (sortedDoubles.length % 2 == 0) {
-                    return (sortedDoubles[sortedDoubles.length / 2 - 1] + sortedDoubles[sortedDoubles.length / 2]) / 2.0;
+                    return new NodeExecutionResult((sortedDoubles[sortedDoubles.length / 2 - 1] + sortedDoubles[sortedDoubles.length / 2]) / 2.0);
                 } else {
-                    return sortedDoubles[sortedDoubles.length / 2];
+                    return new NodeExecutionResult(sortedDoubles[sortedDoubles.length / 2]);
                 }
             }
     ),
@@ -401,7 +412,7 @@ public enum NodeModel {
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null && a.doubleValue() > b.doubleValue();
+                return new NodeExecutionResult(a != null && b != null && a.doubleValue() > b.doubleValue());
             }),
 
     LESS_THAN(new Node(NodeType.PROCESSOR, "<", new NodeInternal[0], new NodeSocket[]{
@@ -413,7 +424,7 @@ public enum NodeModel {
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null && a.doubleValue() < b.doubleValue();
+                return new NodeExecutionResult(a != null && b != null && a.doubleValue() < b.doubleValue());
             }),
 
     ROUND_NODE(new Node(NodeType.PROCESSOR, new NodeInternal[]{
@@ -431,15 +442,16 @@ public enum NodeModel {
                 Number a = (Number) info.getValueFromInput(0);
 
                 if (a == null) {
-                    return null;
+                    return new NodeExecutionResult(null);
                 }
 
-                return switch ((String) info.getInternals()[0].getValue()) {
-                    case "round" -> Math.round(a.doubleValue());
-                    case "ceil" -> Math.ceil(a.doubleValue());
-                    case "floor" -> Math.floor(a.doubleValue());
-                    default -> a;
-                };
+                return new NodeExecutionResult(
+                        switch ((String) info.getInternals()[0].getValue()) {
+                            case "round" -> Math.round(a.doubleValue());
+                            case "ceil" -> Math.ceil(a.doubleValue());
+                            case "floor" -> Math.floor(a.doubleValue());
+                            default -> a;
+                        });
             }),
 
     ABS_OPERATOR(new Node(NodeType.PROCESSOR, "|x|", new NodeInternal[0], new NodeSocket[]{
@@ -449,7 +461,7 @@ public enum NodeModel {
     }),
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
-                return a != null ? Math.abs(a.doubleValue()) : null;
+                return new NodeExecutionResult(a != null ? Math.abs(a.doubleValue()) : null);
             }),
 
     POW_OPERATOR(new Node(NodeType.PROCESSOR, "^", new NodeInternal[0], new NodeSocket[]{
@@ -461,7 +473,7 @@ public enum NodeModel {
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? Math.pow(a.doubleValue(), b.doubleValue()) : null;
+                return new NodeExecutionResult(a != null && b != null ? Math.pow(a.doubleValue(), b.doubleValue()) : null);
             }),
 
     NUMBER_SWITCH(new Node(NodeType.PROCESSOR, new NodeInternal[0], new NodeSocket[]{
@@ -477,7 +489,7 @@ public enum NodeModel {
                 Number a = (Number) info.getValueFromInput(1);
                 Number b = (Number) info.getValueFromInput(2);
 
-                return condition ? (a != null ? a.doubleValue() : null) : (b != null ? b.doubleValue() : null);
+                return new NodeExecutionResult(condition ? (a != null ? a.doubleValue() : null) : (b != null ? b.doubleValue() : null));
             }),
 
     TEXT_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
@@ -487,8 +499,8 @@ public enum NodeModel {
     }),
             info -> {
                 Object value = info.getInternals()[0].getValue();
-                if (!(value instanceof CharSequence charSequence)) return null;
-                return charSequence.toString();
+                if (!(value instanceof CharSequence charSequence)) return new NodeExecutionResult(null);
+                return new NodeExecutionResult(charSequence.toString());
             }),
 
     COMBINE_TEXT(new Node(NodeType.PROCESSOR, new NodeInternal[]{
@@ -505,7 +517,7 @@ public enum NodeModel {
                 Object b = ValueUtil.convert(info.getValueFromInput(1), String.class);
 
                 joiner = joiner == null ? "" : joiner;
-                return "" + (a != null ? a : "") + joiner + (b != null ? b : "");
+                return new NodeExecutionResult("" + (a != null ? a : "") + joiner + (b != null ? b : ""));
             }),
 
     TEXT_SWITCH(new Node(NodeType.PROCESSOR, new NodeInternal[0], new NodeSocket[]{
@@ -519,7 +531,7 @@ public enum NodeModel {
                 boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
                 String a = ValueUtil.convert(info.getValueFromInput(1), String.class);
                 String b = ValueUtil.convert(info.getValueFromInput(2), String.class);
-                return condition ? a : b;
+                return new NodeExecutionResult(condition ? a : b);
             }),
 
     SIN(new Node(NodeType.PROCESSOR, "sin", new NodeInternal[0], new NodeSocket[]{
@@ -530,9 +542,9 @@ public enum NodeModel {
             info -> {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
-                    return a != null ? Math.sin(a.doubleValue()) : null;
+                    return new NodeExecutionResult(a != null ? Math.sin(a.doubleValue()) : null);
                 } catch (Exception e) {
-                    return 0;
+                    return new NodeExecutionResult(0);
                 }
             }),
 
@@ -543,7 +555,7 @@ public enum NodeModel {
     }),
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
-                return a != null ? Math.cos(a.doubleValue()) : null;
+                return new NodeExecutionResult(a != null ? Math.cos(a.doubleValue()) : null);
             }),
 
     TAN(new Node(NodeType.PROCESSOR, "tan", new NodeInternal[0], new NodeSocket[]{
@@ -554,9 +566,9 @@ public enum NodeModel {
             info -> {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
-                    return a != null ? Math.tan(a.doubleValue()) : null;
+                    return new NodeExecutionResult(a != null ? Math.tan(a.doubleValue()) : null);
                 } catch (Exception e) {
-                    return 0;
+                    return new NodeExecutionResult(0);
                 }
             }),
 
@@ -568,9 +580,9 @@ public enum NodeModel {
             info -> {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
-                    return a != null ? Math.sqrt(a.doubleValue()) : null;
+                    return new NodeExecutionResult(a != null ? Math.sqrt(a.doubleValue()) : null);
                 } catch (Exception e) {
-                    return 0;
+                    return new NodeExecutionResult(0);
                 }
             }),
 
@@ -584,9 +596,9 @@ public enum NodeModel {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
                     Number b = (Number) info.getValueFromInput(1);
-                    return a != null  && b != null ? a.doubleValue() % b.doubleValue() : null;
+                    return new NodeExecutionResult(a != null  && b != null ? a.doubleValue() % b.doubleValue() : null);
                 } catch (Exception e) {
-                    return 0;
+                    return new NodeExecutionResult(0);
                 }
             }),
     ;
