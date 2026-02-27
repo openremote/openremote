@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
  * Strategy interface for parsing parameter values from binary data.
  * <p>
  * This interface handles HOW to extract a value from raw bytes, separate from
- * the {@link ParameterDefinition} which describes WHAT the parameter means.
+ * the {@link org.openremote.model.value.ValueDescriptor} which describes WHAT the parameter means.
  * <p>
  * Common parsing strategies:
  * <ul>

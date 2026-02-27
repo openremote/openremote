@@ -1,6 +1,8 @@
 package org.openremote.model.telematics.parameter;
 
 import io.netty.buffer.ByteBuf;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Transient;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueConstraint;
@@ -23,8 +25,12 @@ import org.openremote.model.value.ValueDescriptor;
  */
 public class ParseableValueDescriptor<T> extends ValueDescriptor<T> {
 
-    private final ParameterParser<T> parser;
-    private final int byteLength;
+    @Transient
+    @JsonIgnore
+    private final transient ParameterParser<T> parser;
+
+    @Transient
+    private final transient int byteLength;
 
     /**
      * Creates a ParseableValueDescriptor with a fixed byte length.

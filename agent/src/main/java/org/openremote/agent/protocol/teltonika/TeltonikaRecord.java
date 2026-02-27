@@ -21,6 +21,9 @@ public class TeltonikaRecord {
     private boolean valid;
     private AttributeMap attributes;
     private int globalMask; // For GH3000 codec
+    private String codecName;
+    private String protocolId;
+    private String transport;
 
     public TeltonikaRecord() {
         this.attributes = new AttributeMap();
@@ -77,6 +80,30 @@ public class TeltonikaRecord {
         this.globalMask = globalMask;
     }
 
+    public String getCodecName() {
+        return codecName;
+    }
+
+    public void setCodecName(String codecName) {
+        this.codecName = codecName;
+    }
+
+    public String getProtocolId() {
+        return protocolId;
+    }
+
+    public void setProtocolId(String protocolId) {
+        this.protocolId = protocolId;
+    }
+
+    public String getTransport() {
+        return transport;
+    }
+
+    public void setTransport(String transport) {
+        this.transport = transport;
+    }
+
     @Override
     public String toString() {
         return "TeltonikaRecord{" +
@@ -84,8 +111,10 @@ public class TeltonikaRecord {
                 ", timestamp=" + timestamp +
                 ", location=" + location +
                 ", valid=" + valid +
+                ", codecName='" + codecName + '\'' +
+                ", protocolId='" + protocolId + '\'' +
+                ", transport='" + transport + '\'' +
                 ", attributes=" + attributes.size() + " attrs" +
                 '}';
     }
 }
-

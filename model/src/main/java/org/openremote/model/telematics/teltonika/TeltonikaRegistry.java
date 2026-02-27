@@ -1,8 +1,11 @@
 package org.openremote.model.telematics.teltonika;
 
+import org.openremote.model.asset.Asset;
 import org.openremote.model.telematics.parameter.DynamicParameter;
 import org.openremote.model.telematics.parameter.ParseableValueDescriptor;
 import org.openremote.model.telematics.parameter.TelematicsParameterRegistry;
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -71,6 +74,10 @@ public class TeltonikaRegistry implements TelematicsParameterRegistry<TeltonikaP
         return Optional.ofNullable(parametersByFullName.get(fullName));
     }
 
+    public Optional<TeltonikaParameter<?>> getByName(String name) {
+        return getByFullName(name);
+    }
+
     @Override
     public ParseableValueDescriptor<?> getOrCreateDynamic(String id, int byteLength) {
         TeltonikaParameter<?> known = parametersById.get(id);
@@ -92,6 +99,27 @@ public class TeltonikaRegistry implements TelematicsParameterRegistry<TeltonikaP
     @Override
     public int size() {
         return parametersById.size();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> Optional<AttributeDescriptor<T>> findMatchingAttributeDescriptor(
+            Class<? extends Asset<?>> assetClass,
+            ValueDescriptor<T> valueDescriptor) {
+
+        return Arrays.stream(assetClass.getFields())
+                .filter(field -> Modifier.isStatic(field.getModifiers()) &&
+                        AttributeDescriptor.class.isAssignableFrom(field.getType()))
+                .map(field -> {
+                    try {
+                        return (AttributeDescriptor<?>) field.get(null);
+                    } catch (IllegalAccessException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .filter(attrDesc -> attrDesc.getType().getName().equals(valueDescriptor.getName()))
+                .findFirst()
+                .map(attrDesc -> (AttributeDescriptor<T>) attrDesc);
     }
 
     public int getDynamicParameterCount() {

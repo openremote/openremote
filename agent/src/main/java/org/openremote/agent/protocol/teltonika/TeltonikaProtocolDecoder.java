@@ -8,12 +8,11 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.telematics.ParsingValueDescriptor;
-import org.openremote.model.telematics.teltonika.TeltonikaParameterRegistry;
+import org.openremote.model.telematics.parameter.ParseableValueDescriptor;
+import org.openremote.model.telematics.teltonika.TeltonikaAttributeResolver;
+import org.openremote.model.telematics.teltonika.TeltonikaParameters;
+import org.openremote.model.telematics.teltonika.TeltonikaRegistry;
 import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset;
-import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptor;
-import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors;
-import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
@@ -46,9 +45,15 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
     public static final int CODEC_8_EXT = 0x8E;
     public static final int CODEC_12 = 0x0C;
     public static final int CODEC_13 = 0x0D;
+    public static final int CODEC_14 = 0x0E;
+    public static final int CODEC_15 = 0x0F;
     public static final int CODEC_16 = 0x10;
 
-    private final TeltonikaParameterRegistry parameterRegistry = TeltonikaParameterRegistry.getInstance();
+    public static final String PROTOCOL_TCP_AVL = "teltonika:tcp:avl";
+    public static final String PROTOCOL_UDP_AVL = "teltonika:udp:avl";
+
+    private final TeltonikaRegistry parameterRegistry = TeltonikaRegistry.getInstance();
+    private final TeltonikaAttributeResolver attributeResolver = new TeltonikaAttributeResolver(parameterRegistry);
 
     private final boolean connectionless; // UDP vs TCP
 
@@ -101,7 +106,10 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             return;
         }
 
-        // Skip preamble (4 bytes of zeros)
+        // Validate and skip preamble (4 bytes of zeros)
+        if (buf.getUnsignedInt(buf.readerIndex()) != 0) {
+            throw new IllegalStateException("Invalid Teltonika TCP preamble: expected 0x00000000");
+        }
         buf.skipBytes(4);
 
         // Parse data
@@ -119,7 +127,10 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             return; // Need more data
         }
 
-        buf.readUnsignedShort(); // length
+        int udpLength = buf.readUnsignedShort();
+        if (udpLength != buf.readableBytes()) {
+            throw new IllegalStateException("Invalid Teltonika UDP length: header=" + udpLength + ", available=" + buf.readableBytes());
+        }
         int packetId = buf.readUnsignedShort(); // packet id
         buf.readUnsignedByte();  // packet type
         int locationPacketId = buf.readUnsignedByte();
@@ -167,13 +178,29 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             return null;
         }
 
+        long dataLength = -1;
+        int dataStartIndex = -1;
+
         // Read data length (for TCP)
         if (!connectionless) {
-            buf.readUnsignedInt(); // data length
+            if (buf.readableBytes() < 4) {
+                return null;
+            }
+            dataLength = buf.readUnsignedInt();
+            dataStartIndex = buf.readerIndex();
+
+            if (buf.readableBytes() < dataLength + 4) {
+                throw new IllegalStateException("Incomplete Teltonika TCP frame: expected dataLength=" + dataLength +
+                        " plus CRC, but only " + buf.readableBytes() + " bytes available");
+            }
         }
 
         int codec = buf.readUnsignedByte();
         int count = buf.readUnsignedByte();
+
+        if (!isSupportedCodec(codec)) {
+            throw new IllegalStateException("Unsupported Teltonika codec: " + codec);
+        }
 
         LOG.fine("Parsing codec=" + codec + ", count=" + count);
 
@@ -183,11 +210,16 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             LOG.log(Level.FINE, "Parsing record #" + i);
             TeltonikaRecord record = new TeltonikaRecord();
             record.setImei(imei);
+            record.setCodecName(codecName(codec));
+            record.setProtocolId(connectionless ? PROTOCOL_UDP_AVL : PROTOCOL_TCP_AVL);
+            record.setTransport(connectionless ? "UDP" : "TCP");
 
             if (codec == CODEC_13) {
                 decodeCodec13(buf, record);
             } else if (codec == CODEC_12) {
                 decodeCodec12(buf, record);
+            } else if (codec == CODEC_14 || codec == CODEC_15) {
+                decodeCodec14Or15(buf, record, codec);
             } else {
                 decodeLocation(buf, codec, record);
             }
@@ -199,12 +231,36 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
         if (buf.readableBytes() >= 1) {
             int count2 = buf.readUnsignedByte();
             if (count != count2) {
-                LOG.warning("Record count mismatch: " + count + " != " + count2);
+                throw new IllegalStateException("Teltonika record count mismatch: " + count + " != " + count2);
+            }
+        }
+
+        if (!connectionless) {
+            int consumed = buf.readerIndex() - dataStartIndex;
+            int remainingInData = (int) dataLength - consumed;
+            if (remainingInData > 0) {
+                if (buf.readableBytes() < remainingInData) {
+                    throw new IllegalStateException("Incomplete Teltonika TCP frame payload tail: expected=" + remainingInData +
+                            " bytes, available=" + buf.readableBytes());
+                }
+                buf.skipBytes(remainingInData);
+            } else if (remainingInData < 0) {
+                throw new IllegalStateException("Teltonika payload over-read by " + (-remainingInData) + " bytes");
+            }
+
+            if (buf.readableBytes() < 4) {
+                throw new IllegalStateException("Missing Teltonika CRC (4 bytes) after payload");
+            }
+            long expectedCrc = buf.readUnsignedInt();
+            int actualCrc = crc16Ibm(buf, dataStartIndex, (int) dataLength);
+            if ((expectedCrc & 0xFFFFL) != (actualCrc & 0xFFFFL)) {
+                throw new IllegalStateException("Teltonika CRC mismatch: expected=0x" + Long.toHexString(expectedCrc).toUpperCase() +
+                        ", actual=0x" + Integer.toHexString(actualCrc).toUpperCase());
             }
         }
 
         // Send TCP acknowledgment
-        if (!connectionless && codec != CODEC_12 && codec != CODEC_13) {
+        if (!connectionless && codec != CODEC_12 && codec != CODEC_13 && codec != CODEC_14 && codec != CODEC_15) {
             sendTcpAck(ctx, count);
         }
 
@@ -255,22 +311,22 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             }
 
             if ((locationMask & 0x02) != 0) {
-                addAttribute(attributes, TeltonikaValueDescriptors.altitude, buf.readUnsignedShort(), record.getTimestamp());
+                addAttribute(attributes, TeltonikaParameters.ALTITUDE, buf.readUnsignedShort(), record.getTimestamp());
             }
 
             if ((locationMask & 0x04) != 0) {
                 int course = (int)(buf.readUnsignedByte() * 360.0 / 256);
-                addAttribute(attributes, TeltonikaValueDescriptors.direction, course, record.getTimestamp());
+                addAttribute(attributes, TeltonikaParameters.DIRECTION, course, record.getTimestamp());
             }
 
             if ((locationMask & 0x08) != 0) {
                 int speedSatellite = buf.readUnsignedByte();
-                addAttribute(attributes, TeltonikaValueDescriptors.speedSatellite, speedSatellite, record.getTimestamp());
+                addAttribute(attributes, TeltonikaParameters.SPEED_SATELLITE, speedSatellite, record.getTimestamp());
             }
 
             if ((locationMask & 0x10) != 0) {
                 int satCount = buf.readUnsignedByte();
-                addAttribute(attributes, TeltonikaValueDescriptors.satellites, satCount, record.getTimestamp());
+                addAttribute(attributes, TeltonikaParameters.SATELLITES, satCount, record.getTimestamp());
             }
         }
     }
@@ -286,7 +342,7 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
 
         // Priority
         int priority = buf.readUnsignedByte();
-        addAttribute(attributes, TeltonikaValueDescriptors.priority, priority, timestamp);
+        addAttribute(attributes, TeltonikaParameters.PRIORITY, priority, timestamp);
 
         // GPS position
         double longitude = buf.readInt() / 10000000.0;
@@ -295,24 +351,24 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
 
         // Altitude
         int altitude = buf.readShort();
-        addAttribute(attributes, TeltonikaValueDescriptors.altitude, altitude, timestamp);
+        addAttribute(attributes, TeltonikaParameters.ALTITUDE, altitude, timestamp);
 
         // Direction
         int direction = buf.readUnsignedShort();
-        addAttribute(attributes, TeltonikaValueDescriptors.direction, direction, timestamp);
+        addAttribute(attributes, TeltonikaParameters.DIRECTION, direction, timestamp);
 
         // Satellites
         int satellites = buf.readUnsignedByte();
-        addAttribute(attributes, TeltonikaValueDescriptors.satellites, satellites, timestamp);
+        addAttribute(attributes, TeltonikaParameters.SATELLITES, satellites, timestamp);
         record.setValid(satellites > 0);
 
         // Speed
         int speed = buf.readUnsignedShort();
-        addAttribute(attributes, TeltonikaValueDescriptors.speed, speed, timestamp);
+        addAttribute(attributes, TeltonikaParameters.SPEED, speed, timestamp);
 
         // Event ID
         int eventId = readExtByte(buf, codec, CODEC_8_EXT, CODEC_16);
-        addAttribute(attributes, TeltonikaValueDescriptors.eventTriggered, eventId, timestamp);
+        addAttribute(attributes, TeltonikaParameters.EVENT_TRIGGERED, eventId, timestamp);
 
         // Generation type (CODEC 16 only)
         short generation = -1;
@@ -399,70 +455,17 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
     @SuppressWarnings("unchecked")
     private void parseIoElement(int id, ByteBuf value, AttributeMap attributes) {
         LOG.finer("Parsing IoElement AVL ID:" + id);
-        String idStr = String.valueOf(id);
-        int length = value.readableBytes();
-
-        // Try to find a matching TeltonikaValueDescriptor
-        TeltonikaValueDescriptor<?> descriptor = parameterRegistry.getById(idStr).orElse(null);
-
-        if (descriptor != null) {
-            int expectedLength = descriptor.getLength();
-
-            // Ensure we don't read more than the buffer contains
-            int actualLength = Math.min(expectedLength, value.readableBytes());
-
-            // Allocate a new buffer (unpooled)
-            ByteBuf copy = Unpooled.buffer(actualLength);
-            value.getBytes(value.readerIndex(), copy, actualLength);
-
-            try {
-                Object parsedValue = descriptor.parse(copy);
-
-                Attribute attribute = new Attribute(
-                        parameterRegistry
-                                .findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, descriptor)
-                                .orElseThrow(),
-                        parsedValue
-                );
-
-                attributes.add(attribute);
-                LOG.finest("Parsed IO " + id + " = " + parsedValue + " (type=" +
-                    parsedValue.getClass().getSimpleName() + ")");
-                return;
-            } catch (Exception e) {
-                copy.release();
-                LOG.warning("Failed to parse IO element " + id + ": " + e.getMessage());
-            }
-        }else {
-            LOG.warning("No descriptor found for IO " + id);
+        try {
+            attributes.add(attributeResolver.resolveBinaryIo(id, value, 0));
+        } finally {
+            value.release();
         }
-
-        LOG.fine("No descriptor for IO " + id + ", storing raw value");
-        int readerIndex = value.readerIndex();
-        if (length == 1) {
-            int rawValue = value.getUnsignedByte(readerIndex);
-            attributes.add(new Attribute("teltonika_" + id, ValueType.INTEGER, rawValue));
-        } else if (length == 2) {
-            int rawValue = value.getUnsignedShort(readerIndex);
-            attributes.add(new Attribute("teltonika_" + id, ValueType.INTEGER, rawValue));
-        } else if (length == 4) {
-            long rawValue = value.getUnsignedInt(readerIndex);
-            attributes.add(new Attribute("teltonika_" + id, ValueType.LONG, rawValue));
-        } else if (length == 8) {
-            long rawValue = value.getLong(readerIndex);
-            attributes.add(new Attribute("teltonika_" + id, ValueType.LONG, rawValue));
-        } else {
-            String hexValue = ByteBufUtil.hexDump(value, readerIndex, length);
-            attributes.add(new Attribute("teltonika_" + id, ValueType.TEXT, hexValue));
-        }
-
-        value.release();
     }
 
     /**
      * Helper to add parsed attribute to map.
      */
-    private <T> void addAttribute(AttributeMap attributes, ParsingValueDescriptor<T> descriptor, T value, Long timestamp) {
+    private <T> void addAttribute(AttributeMap attributes, ParseableValueDescriptor<T> descriptor, T value, Long timestamp) {
         attributes.add(new Attribute<>(parameterRegistry.findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, descriptor).orElseThrow(), value, timestamp));
     }
 
@@ -511,6 +514,33 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
         record.setAttributes(attributes);
     }
 
+    private void decodeCodec14Or15(ByteBuf buf, TeltonikaRecord record, int codec) {
+        int type = buf.readUnsignedByte();
+        int length = buf.readInt();
+
+        byte[] payload = new byte[length];
+        buf.readBytes(payload);
+
+        long timestamp = System.currentTimeMillis();
+        if (codec == CODEC_15 && length >= 12) {
+            long ts = ((payload[0] & 0xFFL) << 24)
+                    | ((payload[1] & 0xFFL) << 16)
+                    | ((payload[2] & 0xFFL) << 8)
+                    | (payload[3] & 0xFFL);
+            timestamp = ts * 1000L;
+        }
+        record.setTimestamp(timestamp);
+
+        String text = codec == CODEC_15 && length > 12
+                ? new String(payload, 12, length - 12, StandardCharsets.UTF_8).trim()
+                : extractPrintableAscii(payload);
+
+        AttributeMap attributes = new AttributeMap();
+        attributes.add(new Attribute<>("textCommand", ValueType.TEXT, text));
+        attributes.add(new Attribute<>("codecMessageType", ValueType.INTEGER, type));
+        record.setAttributes(attributes);
+    }
+
     /**
      * Read extended byte (1 or 2 bytes depending on codec).
      */
@@ -552,5 +582,69 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
 
     private String getImei() {
         return this.imei;
+    }
+
+    private String codecName(int codec) {
+        return switch (codec) {
+            case CODEC_GH3000 -> "codec_gh3000";
+            case CODEC_8 -> "codec_8";
+            case CODEC_8_EXT -> "codec_8e";
+            case CODEC_12 -> "codec_12";
+            case CODEC_13 -> "codec_13";
+            case CODEC_14 -> "codec_14";
+            case CODEC_15 -> "codec_15";
+            case CODEC_16 -> "codec_16";
+            default -> "codec_unknown_" + codec;
+        };
+    }
+
+    private boolean isSupportedCodec(int codec) {
+        return codec == CODEC_GH3000 || codec == CODEC_8 || codec == CODEC_8_EXT ||
+                codec == CODEC_12 || codec == CODEC_13 || codec == CODEC_14 ||
+                codec == CODEC_15 || codec == CODEC_16;
+    }
+
+    private int crc16Ibm(ByteBuf buf, int offset, int length) {
+        int crc = 0;
+        for (int i = 0; i < length; i++) {
+            crc ^= buf.getUnsignedByte(offset + i);
+            for (int j = 0; j < 8; j++) {
+                if ((crc & 0x0001) == 1) {
+                    crc = (crc >> 1) ^ 0xA001;
+                } else {
+                    crc >>= 1;
+                }
+            }
+        }
+        return crc & 0xFFFF;
+    }
+
+    private String extractPrintableAscii(byte[] payload) {
+        int bestStart = -1;
+        int bestLen = 0;
+        int currentStart = -1;
+        int currentLen = 0;
+        for (int i = 0; i < payload.length; i++) {
+            int b = payload[i] & 0xFF;
+            if (b >= 32 && b <= 126) {
+                if (currentStart < 0) {
+                    currentStart = i;
+                    currentLen = 1;
+                } else {
+                    currentLen++;
+                }
+                if (currentLen > bestLen) {
+                    bestLen = currentLen;
+                    bestStart = currentStart;
+                }
+            } else {
+                currentStart = -1;
+                currentLen = 0;
+            }
+        }
+        if (bestStart >= 0) {
+            return new String(payload, bestStart, bestLen, StandardCharsets.UTF_8).trim();
+        }
+        return ByteBufUtil.hexDump(payload).toUpperCase();
     }
 }

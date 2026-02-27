@@ -1,7 +1,7 @@
 package org.openremote.model.telematics.asset;
 
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.telematics.TrackerAsset;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.telematics.core.DeviceMessage;
 
 import java.util.List;
@@ -16,13 +16,13 @@ import java.util.List;
  *   <li>Applies attributes to assets (adding new or updating existing)</li>
  * </ul>
  * <p>
- * Note: The actual attribute conversion is handled by {@link org.openremote.model.telematics.parameter.ParseableParameter},
+ * Note: The actual attribute conversion is handled by {@link org.openremote.model.value.AttributeDescriptor },
  * which outputs standard OpenRemote {@link Attribute} objects. The mapper's job is
  * primarily asset lifecycle management.
  *
  * @param <A> The asset type this mapper produces
  */
-public interface TelematicsAssetMapper<A extends TrackerAsset> {
+public interface TelematicsAssetMapper<A extends Asset<?>> {
 
     /**
      * The vendor prefix this mapper handles (e.g., "teltonika").

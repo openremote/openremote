@@ -90,6 +90,20 @@ public class GeoJSONPoint extends GeoJSONGeometry {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GeoJSONPoint)) return false;
+        if (!super.equals(o)) return false;
+        GeoJSONPoint that = (GeoJSONPoint) o;
+        return Objects.equals(coordinates, that.coordinates);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), coordinates);
+    }
+
+    @Override
     public String toString() {
         return "GeoJSONPoint{" +
             "coordinates=" + (coordinates != null ? (coordinates.x + ", " + coordinates.y + ", " + coordinates.getZ()) : "null") +

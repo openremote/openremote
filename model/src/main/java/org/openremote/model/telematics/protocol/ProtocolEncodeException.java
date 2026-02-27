@@ -6,31 +6,31 @@ package org.openremote.model.telematics.protocol;
 public class ProtocolEncodeException extends Exception {
 
     private final String protocolId;
-    private final DeviceCommand.Type commandType;
+    private final String command;
 
     public ProtocolEncodeException(String message) {
         super(message);
         this.protocolId = null;
-        this.commandType = null;
+        this.command = null;
     }
 
-    public ProtocolEncodeException(String protocolId, DeviceCommand.Type commandType, String message) {
-        super("[" + protocolId + "] Failed to encode " + commandType + " command: " + message);
+    public ProtocolEncodeException(String protocolId, String command, String message) {
+        super("[" + protocolId + "] Failed to encode command '" + command + "': " + message);
         this.protocolId = protocolId;
-        this.commandType = commandType;
+        this.command = command;
     }
 
     public ProtocolEncodeException(String message, Throwable cause) {
         super(message, cause);
         this.protocolId = null;
-        this.commandType = null;
+        this.command = null;
     }
 
     public String getProtocolId() {
         return protocolId;
     }
 
-    public DeviceCommand.Type getCommandType() {
-        return commandType;
+    public String getCommand() {
+        return command;
     }
 }

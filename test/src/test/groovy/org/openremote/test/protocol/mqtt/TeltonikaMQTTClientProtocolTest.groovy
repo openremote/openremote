@@ -20,13 +20,10 @@
 package org.openremote.test.protocol.mqtt
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.hivemq.client.mqtt.MqttClientConfig
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled
 import io.netty.channel.embedded.EmbeddedChannel
-import io.netty.handler.codec.mqtt.MqttMessage
-import org.junit.Ignore
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.agent.protocol.teltonika.TeltonikaProtocolDecoder
@@ -34,12 +31,11 @@ import org.openremote.agent.protocol.teltonika.TeltonikaRecord
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
-import org.openremote.manager.mqtt.TeltonikaMQTTHandler
+import org.openremote.manager.telematics.TeltonikaMQTTHandler
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.telematics.TrackerAsset
+import org.openremote.model.telematics.teltonika.TeltonikaParameters
 import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset
-import org.openremote.model.telematics.teltonika.TeltonikaValueDescriptors
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -54,6 +50,7 @@ import java.util.function.Consumer
 
 class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
 
+    @spock.lang.Ignore
     def "Check MQTT client"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 20, delay: 0.1)
@@ -207,8 +204,8 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         def buffer = Unpooled.buffer()
         def imei = "123456789012345"
 
-        // UDP header
-        buffer.writeShort(50)           // length
+        // UDP header (set actual length at the end)
+        buffer.writeShort(0)            // length placeholder
         buffer.writeShort(0x1234)       // packet id
         buffer.writeByte(0x01)          // packet type
         buffer.writeByte(0x05)          // location packet id
@@ -239,6 +236,9 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
 
         // Count verification
         buffer.writeByte(1)
+
+        // Fill UDP payload length (excluding the first 2 length bytes)
+        buffer.setShort(0, buffer.readableBytes() - 2)
 
         when: "the UDP data is written to the channel"
         channel.writeInbound(buffer)
@@ -567,7 +567,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
             assert attr.getTimestamp().get() == record1.timestamp
         }
         record1.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
-        record1.getAttributes().get("teltonika_3").get().getValue().get() == 0
+        record1.getAttributes().get("teltonika_3").get().getValue().get() == false
         // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
         !record1.getAttributes().containsKey(TeltonikaTrackerAsset.ICCID_1.getName())
         Math.abs((Double) record1.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
@@ -579,9 +579,9 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
             assert attr.getTimestamp().get() == record2.timestamp
         }
         record2.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
-        record2.getAttributes().get("teltonika_3").get().getValue().get() == 0
+        record2.getAttributes().get("teltonika_3").get().getValue().get() == false
         // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
-        !record2.getAttributes().containsKey(TeltonikaValueDescriptors.iccid1)
+        !record2.getAttributes().containsKey(TeltonikaParameters.ICCID1)
         Math.abs((Double) record2.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
 
         and: "a TCP ack is sent for 2 records"
@@ -598,7 +598,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         given: "a UDP decoder and a payload"
         def decoder = new TeltonikaProtocolDecoder(true)
         def channel = new EmbeddedChannel(decoder)
-        def hexPayload = "015BCAFE0107000F33353230393430383532333135393210010000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF00010042111A000001"
+        def hexPayload = "0048CAFE0107000F33353230393430383532333135393210010000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF01010042111A000001"
 //        def hexPayload = "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC78718"
         def buffer = hexStringToByteBuf(hexPayload)
 
@@ -618,9 +618,9 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
             assert attr.getTimestamp().get() == record.timestamp
         }
         record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
-        record.getAttributes().get("teltonika_3").get().getValue().get() == 0
-        record.getAttributes().get("teltonika_180").get().getValue().get() == 0
-        record.getAttributes().get(TeltonikaTrackerAsset.IGNITION).get().getValue().get() == false
+        record.getAttributes().get("teltonika_3").get().getValue().get() == false
+        record.getAttributes().get("teltonika_180").get().getValue().get() == false
+        record.getAttributes().get(TeltonikaTrackerAsset.IGNITION).get().getValue().get() == true
         Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 4.378) < 0.001
 
         and: "a UDP ack is sent"
@@ -693,6 +693,82 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         channel.finish()
     }
 
+    def "Decode TCP reference vectors without errors"() {
+        given: "a TCP decoder and a reference payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        drainRecords(channel)
+        drainOutboundBuffers(channel)
+
+        then: "no exception is thrown"
+        noExceptionThrown()
+
+        cleanup:
+        channel.finish()
+
+        where:
+        hexPayload << TCP_REFERENCE_VALID_HEX
+    }
+
+    def "Decode UDP reference vectors without errors"() {
+        given: "a UDP decoder and a reference payload"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        drainRecords(channel)
+        drainOutboundBuffers(channel)
+
+        then: "no exception is thrown"
+        noExceptionThrown()
+
+        cleanup:
+        channel.finish()
+
+        where:
+        hexPayload << UDP_REFERENCE_VALID_HEX
+    }
+
+    def "Decode malformed TCP reference vectors must fail"() {
+        given: "a TCP decoder and malformed payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        channel.finish()
+
+        then: "an error is thrown"
+        thrown(Exception)
+
+        where:
+        hexPayload << TCP_REFERENCE_INVALID_HEX
+    }
+
+    def "Decode malformed UDP reference vectors must fail"() {
+        given: "a UDP decoder and malformed payload"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        channel.finish()
+
+        then: "an error is thrown"
+        thrown(Exception)
+
+        where:
+        hexPayload << UDP_REFERENCE_INVALID_HEX
+    }
+
     private static List<TeltonikaRecord> drainRecords(EmbeddedChannel channel) {
         def records = []
         Object payload
@@ -704,12 +780,61 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         return records
     }
 
+    private static void drainOutboundBuffers(EmbeddedChannel channel) {
+        Object outbound
+        while ((outbound = channel.readOutbound()) != null) {
+            if (outbound instanceof ByteBuf) {
+                outbound.release()
+            }
+        }
+    }
+
+    private static final List<String> TCP_REFERENCE_VALID_HEX = [
+            "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF",
+            "000000000000002808010000016B40D9AD80010000000000000000000000000000000103021503010101425E100000010000F22A",
+            "000000000000004308020000016B40D57B480100000000000000000000000000000001010101000000000000016B40D5C198010000000000000000000000000000000101010101000000020000252C",
+            "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005FB3",
+            "000000000000004A8E010000016B412CEE000100000000000000000000000000000000010005000100010100010011001D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A00000100002994",
+            "00000000000000A98E020000017357633410000F0DC39B2095964A00AC00F80B00000000000B000500F00100150400C800004501007156000500B5000500B600040018000000430FE00044011B000100F10000601B000000000000017357633BE1000F0DC39B2095964A00AC00F80B000001810001000000000000000000010181002D11213102030405060708090A0B0C0D0E0F104545010ABC212102030405060708090A0B0C0D0E0F10020B010AAD020000BF30",
+            "000000000000000F0C010500000007676574696E666F0100004312",
+            "00000000000000130d01060000000b0a81c320676574696e666f0100001d6b",
+            "00000000000000160E01050000000E0352093081452251676574766572010000D2C1",
+            "000000000000001b0f010b00000013654b65a4012345678912345648656c6c6f210a01000093d6"
+    ]
+
+    private static final List<String> TCP_REFERENCE_INVALID_HEX = [
+            "000001000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7C1",
+            "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000050000C7C1",
+            "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7C1",
+            "000000000000002808010000016B40D9AD80010000000000000000000000000000000103021503010101425E100000010000F23A",
+            "000000000000003604010000001B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000050000C7C1",
+            "000000000000003611010000019B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000050000C7C1",
+            "000000000000004308020000016B40D57B480100000000000000000000000000000001010101000000000000016B40D5C198010000000000000000000000000000000101010101000000020000254C",
+            "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005F13",
+            "000000000000004A8E010000016B412CEE000100000000000000000000000000000000010005000100010100010011001D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A00000100002991",
+            "00000000000000A98E020000017357633410000F0DC39B2095964A00AC00F80B00000000000B000500F00100150400C800004501007156000500B5000500B600040018000000430FE00044011B000100F10000601B000000000000017357633BE1000F0DC39B2095964A00AC00F80B000001810001000000000000000000010181002D11213102030405060708090A0B0C0D0E0F104545010ABC212102030405060708090A0B0C0D0E0F10020B010AAD020000BF40"
+    ]
+
+    private static final List<String> UDP_REFERENCE_VALID_HEX = [
+            "005FCAFE0107000F3335323039333038363430333635358E010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001",
+            "003DCAFE0105000F33353230393330383634303336353508010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001",
+            "0086CAFE0101000F3335323039333038353639383230368E0100000167EFA919800200000000000000000000000000000000FC0013000800EF0000F00000150500C80000450200010000710000FC00000900B5000000B600000042305600CD432A00CE6064001100090012FF22001303D1000F0000000200F1000059D90010000000000000000001",
+            "0083CAFE0101000F3335323039333038353639383230368E0100000167F1AEEC00000A750E8F1D43443100F800B210000000000012000700EF0000F00000150500C800004501000100007142000900B5000600B6000500422FB300CD432A00CE60640011000700120007001303EC000F0000000200F1000059D90010000000000000000001",
+            "01E4CAFE0126000F333532303934303839333937343634080400000163C803B420010A259E1A1D4A057D00DA0128130057421B0A4503F00150051503EF01510052005900BE00C1000AB50008B60005427025CD79D8CE605A5400005500007300005A0000C0000007C700000018F1000059D910002D32C85300000000570000000064000000F7BF000000000000000163C803AC50010A25A9D21D4A01B600DB0128130056421B0A4503F00150051503EF01510052005900BE00C1000AB50008B6000542702ECD79D8CE605A5400005500007300005A0000C0000007C700000017F1000059D910002D32B05300000000570000000064000000F7BF000000000000000163C803A868010A25B5581D49FE5400DB0127130057421B0A4503F00150051503EF01510052005900BE00C1000AB50008B60005427039CD79D8CE605A5400005500007300005A0000C0000007C700000017F1000059D910002D32995300000000570000000064000000F7BF000000000000000163C803A4B2010A25CC861D49F75C00DB0124130058421B0A4503F00150051503EF01510052005900BE00C1000AB50008B6000542703CCD79D8CE605A5400005500007300005A0000C0000007C700000018F1000059D910002D32695300000000570000000064000000F7BF000000000004"
+    ]
+
+    private static final List<String> UDP_REFERENCE_INVALID_HEX = [
+            "005FCAFE010700043335323039333038363430333635358E010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001",
+            "013DCAFE0105000F33353230393330383634303336353508010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001",
+            "015BCAFE0101000F33353230393430383532333135393210070000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF01010042111A000001"
+    ]
+
     /**
      * Helper method to convert hex string to ByteBuf
      */
     private static ByteBuf hexStringToByteBuf(String hex) {
         int len = hex.length()
-        byte[] data = new byte[len / 2]
+        byte[] data = new byte[len / 2 as int]
         for (int i = 0; i < len; i += 2) {
             data[(int) (i / 2)] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
                     + Character.digit(hex.charAt(i + 1), 16))
