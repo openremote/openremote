@@ -64,16 +64,9 @@ function range(start: number, end: number): number[] {
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-// TODO: use es2023
-function toSpliced<T>(arr: T[], index: number, count: number): T[] {
-    const shallowCopy = [...arr];
-    shallowCopy.splice(index, count);
-    return shallowCopy;
-}
-
-const byWeekNoOptions = toSpliced(range(-53, 53), 53, 1);
-const byYearDayOptions = toSpliced(range(-366, 366), 366, 1); // TODO: optimize option rendering
-const byMonthDayOptions = toSpliced(range(-31, 31), 31, 1);
+const byWeekNoOptions = range(-53, 53).filter(Boolean); // Exclude 0
+const byYearDayOptions = range(-366, 366).filter(Boolean);
+const byMonthDayOptions = range(-31, 31).filter(Boolean);
 const byHourOptions = range(1, 24);
 const byMinuteOrSecondsOptions = range(1, 60);
 
@@ -114,9 +107,15 @@ declare global {
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
     static styles = css`
-        .capitalize {
-            display: inline-block;
-            &::first-letter { text-transform: uppercase; }
+        .time-label {
+            display: flex;
+            &>:first-child {
+                display: inline-block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                &::first-letter { text-transform: uppercase; }
+            }
         }
     `;
 
@@ -200,7 +199,12 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 } else if (diff === 0) {
                     template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
                 }
-                return html`<span class="capitalize">${this._rrule!.toText()} ${template}</span>`;
+                const fromToTemplate = html`<span>&nbsp;${template}</span>`;
+                const monthNames = Object.values(MONTHS).map(i18next.t) as string[];
+                const orderISO = Object.values(WEEKDAYS).map(i18next.t) as string[];
+                const dayNames = [orderISO.pop()!, ...orderISO]; // Must start with Sunday
+                const rule = this._rrule!.toText((id) => i18next.t(`rrule.${id}`), { dayNames, monthNames, tokens: {} });
+                return html`<span class="time-label"><span>${rule}</span>${fromToTemplate}</span>`;
             }
 
             const format = this.isAllDay ? "DD-MM-YYYY" : "DD-MM-YYYY HH:mm";
@@ -374,20 +378,22 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _applyTimezoneOffset(schedule: CalendarEvent | undefined, offset: number): CalendarEvent | undefined {
         if (schedule) {
             let { start, end, recurrence } = { ...schedule };
-            if (start) start += offset;
-            if (end) end += offset;
             if (recurrence && RRule.fromString(recurrence).origOptions.until) {
                 const origOptions = RRule.fromString(recurrence).origOptions;
                 origOptions.until = new Date(Number(origOptions.until) + offset)
                 recurrence = this._getRRule(new RRule(origOptions))
             }
-            return { start, end, recurrence }
+            return {
+                start: start != null ? start + offset : start,
+                end: end != null ? end + offset : end,
+                recurrence
+            }
         }
     }
 
     protected render() {
         return html`
-            <or-vaadin-button @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
+            <or-vaadin-button style="max-width: 100%" @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
             <or-vaadin-dialog id="scheduler" header-title="${i18next.t(this.header)}" ?opened="${this.open}" @closed="${this._onClose}"
                 ${dialogHeaderRenderer(this._getDialogHeader, [])}
                 ${dialogRenderer(this._getDialogContent, [
