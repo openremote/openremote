@@ -44,6 +44,9 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (KeycloakIdentityProvider.OR_KEYCLOAK_PORT): "8889"
         ] << System.getenv()
 
+        /** Manually set a system property for {@link org.openremote.manager.setup.database.V20250916_01__AddServiceRoles.class} **/
+        System.setProperty(KeycloakIdentityProvider.OR_KEYCLOAK_PORT, "8889")
+
         config.values().removeIf { TextUtil.isNullOrEmpty(it)}
         return config
     }
