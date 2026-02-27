@@ -1,10 +1,10 @@
 import {css, html} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-rules";
-import {OrRules, RulesConfig} from "@openremote/or-rules";
+import {OrRules, OrRulesSelectionEvent, RulesConfig, RulesetNode} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
 import {Store} from "@reduxjs/toolkit";
-import {Page, PageProvider} from "@openremote/or-app";
+import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import manager from "@openremote/core";
 import {createSelector} from "reselect";
@@ -80,6 +80,9 @@ export class PageRules extends Page<AppStateKeyed>  {
     @property()
     public config?: PageRulesConfig;
 
+    @property()
+    protected _ruleId?: number;
+
     @query("#rules")
     protected _orRules!: OrRules;
 
@@ -100,15 +103,61 @@ export class PageRules extends Page<AppStateKeyed>  {
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
+        // Listening to the rule selection event to update internal state
+        this.addEventListener(OrRulesSelectionEvent.NAME, this._onRuleSelection.bind(this));
     }
 
     protected render() {
         return html`
-            <or-rules id="rules" .config="${this.config && this.config.rules ? this.config.rules : PAGE_RULES_CONFIG_DEFAULT.rules}"></or-rules>
+            <or-rules id="rules"
+                      .config="${this.config && this.config.rules ? this.config.rules : PAGE_RULES_CONFIG_DEFAULT.rules}"
+                      .selectedRuleId="${this._ruleId}"
+            ></or-rules>
         `;
     }
 
     public stateChanged(state: AppStateKeyed) {
         this.getRealmState(state);
+
+        // Extracting the id from state and saving internally
+        this._ruleId = parseInt(state.app.params?.id);
+    }
+
+    /**
+     * Handles the selection event from the rule tree.
+     *
+     * If exactly one node is selected and it is of type 'rule', updates the internal `_ruleId`
+     * and updates the route to reflect the newly selected rule.
+     *
+     * @param event - The custom event containing the newly selected nodes.
+     */
+    protected _onRuleSelection(event: OrRulesSelectionEvent) {
+        const selectedNodes = event.detail.newNodes;
+        let newRuleId: number | undefined = undefined;
+        if (selectedNodes.length === 1 && selectedNodes[0].type === 'rule') {
+            const ruleNode = selectedNodes[0] as RulesetNode;
+            newRuleId = ruleNode.ruleset.id;
+
+            if (this._ruleId !== newRuleId) {
+                this._ruleId = newRuleId;
+                this._updateRoute(newRuleId.toString());
+            }
+        } else {
+            this._ruleId = undefined;
+            this._updateRoute();
+        }
+    }
+
+    /**
+     * Updates the browser route to reflect the currently selected rule.
+     *
+     * Navigates to either `rules/<ruleId>` or `rules` if no rule ID is provided.
+     * Navigation is performed without triggering route hooks or handlers.
+     *
+     * @param ruleId - Optional string ID of the selected rule.
+     */
+    protected _updateRoute(ruleId?: string) {
+        const path = ruleId ? `rules/${ruleId}` : 'rules';
+        router.navigate(path, { callHooks: false, callHandler: false });
     }
 }
