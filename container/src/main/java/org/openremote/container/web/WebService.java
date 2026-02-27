@@ -39,7 +39,6 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.*;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
-import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.Headers;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.*;
@@ -256,21 +255,14 @@ public abstract class WebService implements ContainerService {
      * Get standard JAX-RS providers that are used in the deployment with optional realm extraction from the request
      * path
      */
-    public static List<Object> getStandardProviders(boolean devMode, Integer realmIndex) {
-        List<Object> providers = Lists.newArrayList(
-           new RequestLogger(),
+    public static List<Object> getStandardProviders(boolean devMode) {
+
+        return Lists.newArrayList(
            new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
            new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
-           new WebServiceExceptions.ServletUndertowExceptionHandler(devMode),
            new JacksonConfig(),
            new ClientErrorExceptionHandler()
         );
-
-        if (realmIndex != null) {
-           providers.addFirst(new RealmPathExtractorFilter(realmIndex));
-        }
-
-        return providers;
     }
 
     /**
@@ -308,8 +300,8 @@ public abstract class WebService implements ContainerService {
            Class<? extends ServletContainerInitializer> servletContainerInitializerClass,
            String deploymentPath,
            String deploymentName,
-           Integer realmIndex,
            boolean secure,
+           Integer realmIndex,
            CORSConfig corsOverride) throws IllegalArgumentException {
        DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
@@ -318,7 +310,17 @@ public abstract class WebService implements ContainerService {
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, secure, corsOverride);
+       ServletContainerInitializer containerInitializer = (c, ctx) -> {
+           configureServlet(ctx, secure, realmIndex, corsOverride);
+       };
+
+       InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+       deploymentInfo.addServletContainerInitializer(
+               new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+       );
+
+       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
        deploy(deploymentInfo, false);
    }
 
@@ -329,7 +331,8 @@ public abstract class WebService implements ContainerService {
            Integer realmIndex,
            boolean secure,
            CORSConfig corsOverride) throws IllegalArgumentException {
-       ServletContextListener jaxRsListener = new ServletContextListener() {
+
+        ServletContextListener jaxRsListener = new ServletContextListener() {
            @Override
            public void contextInitialized(ServletContextEvent sce) {
                ServletContext ctx = sce.getServletContext();
@@ -344,20 +347,29 @@ public abstract class WebService implements ContainerService {
 
                if (secure) {
                    deployment.setSecurityEnabled(true);
-                   //servlet.setInitParameter(ResteasyContextParameters.RESTEASY_ROLE_BASED_SECURITY, "true");
                }
            }
        };
        Class<? extends EventListener> listenerClass = jaxRsListener.getClass();
-       InstanceFactory<? extends EventListener> factory = new ImmediateInstanceFactory<>(jaxRsListener);
+       InstanceFactory<? extends EventListener> listenerFactory = new ImmediateInstanceFactory<>(jaxRsListener);
 
        DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
                .setContextPath(deploymentPath)
-               .addListeners(Servlets.listener(listenerClass, factory))
+               .addListeners(Servlets.listener(listenerClass, listenerFactory))
                .setClassLoader(this.getClass().getClassLoader());
 
-       configureDeploymentInfo(deploymentInfo, secure, corsOverride);
+       ServletContainerInitializer containerInitializer = (c, ctx) -> {
+           configureServlet(ctx, secure, realmIndex, corsOverride);
+       };
+
+       InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+       deploymentInfo.addServletContainerInitializer(
+               new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+       );
+
+       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
        deploy(deploymentInfo, false);
    }
 
@@ -370,6 +382,7 @@ public abstract class WebService implements ContainerService {
            String deploymentName,
            ResourceSource[] resourceSources,
            String[] allowedRoles,
+           Integer realmIndex,
            CORSConfig corsOverride) {
 
         if (resourceSources == null || resourceSources.length == 0) {
@@ -397,26 +410,30 @@ public abstract class WebService implements ContainerService {
 
        MIME_TYPES.forEach((ext, mimeType) -> deploymentInfo.addMimeMapping(new MimeMapping(ext, mimeType)));
 
-       if (allowedRoles != null && allowedRoles.length > 0) {
-           Filter securityFilter = new SecurityFilter(allowedRoles);
-           FilterInfo securityFilterInfo = Servlets.filter("Security Filter", SecurityFilter.class, () -> new ImmediateInstanceHandle<>(securityFilter))
-                   .setAsyncSupported(true);
-           deploymentInfo.addFilter(securityFilterInfo);
-           deploymentInfo.addFilterUrlMapping(     "Security Filter","/*", DispatcherType.REQUEST);
-       }
+       ServletContainerInitializer containerInitializer = (c, ctx) -> {
+           configureServlet(ctx, allowedRoles != null && allowedRoles.length > 0, realmIndex, corsOverride);
 
-       Filter alreadyGzippedFilter = new AlreadyGZippedFilter(MIME_TYPES_ALREADY_GZIPPED);
-       FilterInfo alreadyGzippedFilterInfo = Servlets.filter(
-               "Already GZipped Filter",
-               AlreadyGZippedFilter.class,
-               () -> new ImmediateInstanceHandle<>(alreadyGzippedFilter)).setAsyncSupported(true);
-       deploymentInfo.addFilter(alreadyGzippedFilterInfo);
-       deploymentInfo.addFilterUrlMapping(     "Already GZipped Filter","/*", DispatcherType.REQUEST);
+           // Add a security filter to mimic JAX-RS @RolesAllowed annotation for file serving
+           if (allowedRoles != null && allowedRoles.length > 0) {
+               Filter securityFilter = new SecurityFilter(allowedRoles);
+               FilterRegistration.Dynamic securityRegistration = ctx.addFilter(SecurityFilter.class.getSimpleName(), securityFilter);
+               securityRegistration.setAsyncSupported(true);
+               securityRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+           }
 
-       configureDeploymentInfo(
-               deploymentInfo,
-               allowedRoles != null && allowedRoles.length > 0,
-               corsOverride);
+           Filter alreadyGzippedFilter = new AlreadyGZippedFilter(MIME_TYPES_ALREADY_GZIPPED);
+           FilterRegistration.Dynamic alreadyGzippedRegistration = ctx.addFilter(AlreadyGZippedFilter.class.getSimpleName(), alreadyGzippedFilter);
+           alreadyGzippedRegistration.setAsyncSupported(true);
+           alreadyGzippedRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+       };
+
+       InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+       deploymentInfo.addServletContainerInitializer(
+           new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+       );
+
+       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
        deploy(deploymentInfo, true);
    }
 
@@ -430,11 +447,11 @@ public abstract class WebService implements ContainerService {
       throw new UnsupportedOperationException("ResourceSource not currently supported");
    }
 
-    public void configureDeploymentInfo(
-            DeploymentInfo deploymentInfo,
+    public void configureServlet(
+            ServletContext ctx,
             boolean secure,
+            Integer realmIndex,
             CORSConfig corsOverride) {
-
 
         if (corsOverride == null) {
             // Just use default CORS config
@@ -446,30 +463,34 @@ public abstract class WebService implements ContainerService {
                 throw new IllegalStateException(
                         "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
                 );
-
-            ServletContainerInitializer containerInitializer =
-                    (c, ctx) -> identityService.secureDeployment(ctx);
-
-            InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
-
-            deploymentInfo.addServletContainerInitializer(
-                    new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
-            );
         }
 
+        // Do all filter registration using the ServletContext for sane predictable ordering
+
+        // CORS filter 1st
         // Cannot set config on constructor as init method will overwrite it
         CORSFilter corsFilter = new CORSFilter();
+        FilterRegistration.Dynamic corsRegistration = ctx.addFilter(CORSFilter.class.getSimpleName(), corsFilter);
+        corsRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),false,"/*");
+        corsRegistration.setAsyncSupported(true);
+        getCORSConfiguration(corsOverride).forEach((k, v) -> corsRegistration.setInitParameter(k.toString(), v.toString()));
 
-        FilterInfo corsFilterInfo = Servlets.filter(
-                "CORS Filter",
-                CORSFilter.class,
-                () -> new ImmediateInstanceHandle<>(corsFilter)).setAsyncSupported(true);
-        getCORSConfiguration(corsOverride).forEach((k,v) -> corsFilterInfo.addInitParam(k.toString(), v.toString()));
-        deploymentInfo.addFilter(corsFilterInfo);
-        deploymentInfo.addFilterUrlMapping(     "CORS Filter","/*", DispatcherType.REQUEST);
+        // The realm extraction from path
+        FilterRegistration.Dynamic realmExtractorRegistration = ctx.addFilter(RealmPathExtractorFilter.class.getSimpleName(), RealmPathExtractorFilter.class);
+        realmExtractorRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+        realmExtractorRegistration.setAsyncSupported(true);
 
-        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-        deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+        // Then logging
+        FilterRegistration.Dynamic loggingRegistration = ctx.addFilter(LoggingFilter.class.getSimpleName(), LoggingFilter.class);
+        loggingRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+        loggingRegistration.setAsyncSupported(true);
+
+        // Then security
+        if (secure) {
+            FilterRegistration.Dynamic securityRegistration = identityService.secureDeployment(ctx);
+            securityRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
+            securityRegistration.setAsyncSupported(true);
+        }
     }
 
     public Undertow getUndertow() {

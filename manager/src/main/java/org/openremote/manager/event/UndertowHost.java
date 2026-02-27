@@ -23,15 +23,21 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.InstanceFactory;
+import io.undertow.servlet.api.ServletContainerInitializerInfo;
+import io.undertow.servlet.util.ImmediateInstanceFactory;
+import jakarta.servlet.ServletContainerInitializer;
 import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
 import org.apache.camel.component.undertow.UndertowConsumer;
 import org.apache.camel.component.undertow.UndertowHostKey;
 import org.apache.camel.component.undertow.UndertowHostOptions;
 import org.openremote.container.security.WebsocketAuthParamHandler;
 import org.openremote.container.web.WebService;
+import org.openremote.container.web.WebServiceExceptions;
 import org.openremote.model.Container;
 
 import java.net.URI;
+import java.util.Collections;
 
 /**
  * Customised to use existing undertow instance so websocket doesn't have to be on a separate web server instance
@@ -78,9 +84,19 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
             //httpHandler for servlet is ignored, camel handler is used instead of it
             .addInnerHandlerChainWrapper(h -> handler);
 
-        webService.configureDeploymentInfo(deployment, true, null);
+        ServletContainerInitializer containerInitializer = (c, ctx) -> {
+            webService.configureServlet(ctx, true, null, null);
+        };
 
+        InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+        deployment.addServletContainerInitializer(
+            new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+        );
+
+        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+        deployment.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(container.isDevMode()));
         webService.deploy(deployment, false);
+
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;
         return handler;

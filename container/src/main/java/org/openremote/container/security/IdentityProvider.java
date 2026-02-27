@@ -19,6 +19,7 @@
  */
 package org.openremote.container.security;
 
+import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import org.openremote.model.Container;
 
@@ -41,7 +42,7 @@ public interface IdentityProvider extends TokenVerifier {
 
     void stop(Container container) throws Exception;
 
-    void secureDeployment(ServletContext servletContext);
+    FilterRegistration.Dynamic secureDeployment(ServletContext servletContext);
 
     /**
      * Retrieves a bearer token for the given realm, client id and client secret using this {@link IdentityProvider}.

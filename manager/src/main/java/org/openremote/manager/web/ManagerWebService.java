@@ -109,7 +109,7 @@ public class ManagerWebService extends WebService {
         initialised = true;
 
         // Configure the JAX-RS Manager API including resources added at startup
-        List<Object> singletons = Stream.of(getStandardProviders(devMode, 0), apiSingletons)
+        List<Object> singletons = Stream.of(getStandardProviders(devMode), apiSingletons)
                 .flatMap(Collection::stream)
                 .toList();
         Application application = new WebApplication(container, apiClasses, singletons);
@@ -139,7 +139,7 @@ public class ManagerWebService extends WebService {
         }
 
         // Deploy static app files unsecured
-        deployFileServlet("/", "App Files", resourceSources.toArray(ResourceSource[]::new), null, null);
+        deployFileServlet("/", "App Files", resourceSources.toArray(ResourceSource[]::new), null, null,null);
     }
 
     protected Object getOpenApiResource() {

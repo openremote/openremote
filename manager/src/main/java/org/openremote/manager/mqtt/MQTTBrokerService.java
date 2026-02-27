@@ -256,7 +256,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Start the broker
         server = new EmbeddedActiveMQ();
         server.setConfiguration(serverConfiguration);
-        securityManager = new ActiveMQORSecurityManager(executorService, identityService);
+        securityManager = new ActiveMQORSecurityManager(this, executorService, identityService);
 
         server.setSecurityManager(securityManager);
         server.start();

@@ -20,6 +20,7 @@
 package org.openremote.container.security;
 
 import jakarta.security.enterprise.AuthenticationException;
+import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
@@ -62,9 +63,9 @@ public abstract class IdentityService implements ContainerService, TokenVerifier
         identityProvider.stop(container);
     }
 
-    public void secureDeployment(ServletContext servletContext) {
+    public FilterRegistration.Dynamic secureDeployment(ServletContext servletContext) {
         LOG.info("Securing servlet context: " + servletContext.getContextPath());
-        identityProvider.secureDeployment(servletContext);
+        return identityProvider.secureDeployment(servletContext);
     }
 
     /**

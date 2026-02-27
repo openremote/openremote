@@ -21,8 +21,7 @@ package org.openremote.container.web;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.client.*;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
@@ -30,21 +29,30 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.syslog.SyslogCategory;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This is a factory for creating JAX-RS {@link WebTarget} client instances that provide built-in authentication:
  */
 public class WebTargetBuilder {
 
+    protected static final Logger LOG = Logger.getLogger(WebTargetBuilder.class.getName());
     protected static final int CONNECTION_POOL_SIZE = 10;
     protected static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
     protected static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
@@ -181,7 +189,8 @@ public class WebTargetBuilder {
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .register(new JacksonConfig());
+            .register(new JacksonConfig())
+            .register(new GZIPDecodingInterceptor());
 
         if (executorService != null) {
             clientBuilder.executorService(executorService);
@@ -189,6 +198,22 @@ public class WebTargetBuilder {
 
         if (builderConfigurator != null) {
             clientBuilder = builderConfigurator.apply(clientBuilder);
+        }
+
+        if (LOG.isLoggable(Level.FINEST)) {
+            clientBuilder.register((ClientResponseFilter) (clientRequestContext, clientResponseContext) -> {
+                int status = clientResponseContext.getStatus();
+                if (status < 400) return;
+
+                String body = "<no body>";
+                if (clientResponseContext.hasEntity()) {
+                    InputStream is = clientResponseContext.getEntityStream();
+                    byte[] bytes = is.readAllBytes();
+                    clientResponseContext.setEntityStream(new ByteArrayInputStream(bytes)); // allow RESTEasy to read it later
+                    body = new String(bytes, StandardCharsets.UTF_8);
+                }
+                LOG.log(Level.FINEST, "Received {0} response from {1} with body: {2}", new Object[]{status, clientRequestContext.getUri(), body});
+            });
         }
 
         return clientBuilder.build();

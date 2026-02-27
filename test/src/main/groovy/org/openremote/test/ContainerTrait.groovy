@@ -20,25 +20,18 @@
 package org.openremote.test
 
 import jakarta.persistence.TypedQuery
+import jakarta.ws.rs.client.ClientRequestContext
 import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.HttpHeaders
-import jakarta.ws.rs.core.MultivaluedHashMap
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
-import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor
 import org.keycloak.admin.client.token.TokenService
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
-import org.openremote.container.json.JacksonConfig
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
-import org.openremote.container.security.ClientCredentialsAuthForm
-import org.openremote.container.security.IdentityService
-import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
@@ -72,13 +65,11 @@ import org.openremote.model.util.MapAccess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import javax.net.ssl.SSLSession
 import java.util.concurrent.TimeUnit
 import java.util.logging.Handler
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
-import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
@@ -510,24 +501,17 @@ trait ContainerTrait {
         container.running
     }
 
-    ResteasyClientBuilder createClient(String accessToken) {
-
-        def clientBuilder = new ResteasyClientBuilderImpl()
-                .connectTimeout(2, SECONDS)
-                .readTimeout(15, SECONDS)
-                .connectionPoolSize(10)
-                .register(new JacksonConfig())
-                .register(new GZIPDecodingInterceptor())
-
-        if (accessToken != null) {
-            ClientRequestFilter authFilter = context ->
-                {
-                    context.getHeaders().header(HttpHeaders.AUTHORIZATION, RequestParams.BEARER_AUTH_PREFIX + accessToken)
+    ResteasyClient createClient(String accessToken) {
+        WebTargetBuilder.createClient(Container.EXECUTOR, 1, 10000, { builder ->
+            if (accessToken != null) {
+                ClientRequestFilter authFilter = {context ->
+                    (context as ClientRequestContext).getHeaders().putSingle(HttpHeaders.AUTHORIZATION, RequestParams.BEARER_AUTH_PREFIX + accessToken)
                 }
-                clientBuilder.register(authFilter)
-        }
+                builder.register(authFilter)
+            }
 
-        return clientBuilder
+            return builder
+        })
     }
 
     UriBuilder serverUri(int serverPort) {
@@ -551,7 +535,7 @@ trait ContainerTrait {
     }
 
     ResteasyWebTarget getClientTarget(UriBuilder serverUri, String accessToken) {
-        createClient(accessToken).build().target(serverUri)
+        createClient(accessToken).target(serverUri)
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm) {

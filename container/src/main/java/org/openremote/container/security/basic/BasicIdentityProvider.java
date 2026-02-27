@@ -20,16 +20,10 @@
 package org.openremote.container.security.basic;
 
 import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
-import io.undertow.servlet.api.AuthMethodConfig;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.LoginConfig;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
 import jakarta.security.enterprise.AuthenticationException;
+import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
@@ -39,7 +33,6 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
@@ -74,7 +67,7 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
     }
 
     @Override
-    public void secureDeployment(ServletContext servletContext) {
+    public FilterRegistration.Dynamic secureDeployment(ServletContext servletContext) {
        throw new UnsupportedOperationException("Basic authentication is not supported for servlet deployments");
     }
 

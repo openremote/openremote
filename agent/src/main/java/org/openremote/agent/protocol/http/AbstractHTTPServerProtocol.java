@@ -98,7 +98,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
           null,
           Stream.of(
              List.of((Object)new RealmInjectorFilter(agent.getRealm())), // Need this as realm is in the context path of the deployment
-             getStandardProviders(devMode, 0),
+             getStandardProviders(devMode),
              getApiSingletons()).flatMap(Collection::stream).toList());
 
         deploy(application);

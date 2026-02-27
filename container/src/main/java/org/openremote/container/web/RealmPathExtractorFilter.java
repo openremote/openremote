@@ -19,62 +19,127 @@
  */
 package org.openremote.container.web;
 
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
-import jakarta.ws.rs.container.PreMatching;
-import jakarta.ws.rs.core.PathSegment;
-import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.core.UriInfo;
-import jakarta.ws.rs.ext.Provider;
-import org.openremote.model.Constants;
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 /**
- * A JAX-RS filter that removes the realm from the full request path at the specified path segment index and adds it as
- * a {@link org.openremote.model.Constants#REALM_PARAM_NAME} request header. If the
+ * A servlet {@link Filter} that removes the realm from the full request path at the specified path segment index and
+ * adds it as a {@link org.openremote.model.Constants#REALM_PARAM_NAME} request header. If the
  * {@link org.openremote.model.Constants#REALM_PARAM_NAME} header is already set, this filter does nothing.
  */
-@Provider
-@PreMatching
-public class RealmPathExtractorFilter implements ContainerRequestFilter {
+public class RealmPathExtractorFilter implements Filter {
 
-    protected final int realmPathIndex;
+    private final int realmPathIndex;
 
-   public RealmPathExtractorFilter(int realmPathIndex) {
-      this.realmPathIndex = realmPathIndex;
-   }
+    public RealmPathExtractorFilter(int realmPathIndex) {
+        this.realmPathIndex = realmPathIndex;
+    }
 
-   @Override
-   public void filter(ContainerRequestContext requestContext) throws IOException {
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
 
-      // Do nothing if the realm header is already set
-      if (requestContext.getHeaders().containsKey(Constants.REALM_PARAM_NAME)) {
-         return;
-      }
+        if (!(request instanceof HttpServletRequest req) || !(response instanceof HttpServletResponse)) {
+            chain.doFilter(request, response);
+            return;
+        }
 
-      UriInfo uriInfo = requestContext.getUriInfo();
-      List<PathSegment> pathSegments = uriInfo.getPathSegments();
+        // Do nothing if header already present
+        if (req.getHeader(REALM_PARAM_NAME) != null) {
+            chain.doFilter(request, response);
+            return;
+        }
 
-      if (pathSegments != null && pathSegments.size() > realmPathIndex) {
-         String realm = pathSegments.get(realmPathIndex).getPath();
-         requestContext.getHeaders().add(Constants.REALM_PARAM_NAME, realm);
+        String requestUri = req.getRequestURI(); // includes contextPath
+        String contextPath = Optional.ofNullable(req.getContextPath()).orElse("");
+        String pathWithinApp = requestUri.startsWith(contextPath) ? requestUri.substring(contextPath.length()) : requestUri;
 
-         // Build new URI with the realm segment removed
-         UriBuilder uriBuilder = uriInfo.getBaseUriBuilder();
-         for (int i = 0; i < pathSegments.size(); i++) {
-            if (i != realmPathIndex) {
-               uriBuilder.path(pathSegments.get(i).getPath());
+        // Split into non-empty segments
+        List<String> segments = new ArrayList<>();
+        for (String s : pathWithinApp.split("/")) {
+            if (!s.isEmpty()) segments.add(s);
+        }
+
+        if (segments.size() <= realmPathIndex) {
+            // Not enough segments to extract realm; just continue
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String realm = segments.get(realmPathIndex);
+
+        // Build a rewritten path with the realm segment removed
+        StringBuilder rewrittenPath = new StringBuilder();
+        rewrittenPath.append(contextPath);
+        for (int i = 0; i < segments.size(); i++) {
+            if (i == realmPathIndex) continue;
+            rewrittenPath.append("/").append(segments.get(i));
+        }
+        if (rewrittenPath.isEmpty()) {
+            rewrittenPath.append("/");
+        }
+
+        HttpServletRequestWrapper wrapped = new HttpServletRequestWrapper(req) {
+
+            @Override
+            public String getHeader(String name) {
+                if (REALM_PARAM_NAME.equalsIgnoreCase(name)) {
+                    return realm;
+                }
+                return super.getHeader(name);
             }
-         }
 
-         uriBuilder.replaceQuery(uriInfo.getRequestUri().getRawQuery());
-         uriBuilder.fragment(uriInfo.getRequestUri().getFragment());
-         URI newUri = uriBuilder.build();
+            @Override
+            public Enumeration<String> getHeaders(String name) {
+                if (REALM_PARAM_NAME.equalsIgnoreCase(name)) {
+                    return Collections.enumeration(List.of(realm));
+                }
+                return super.getHeaders(name);
+            }
 
-         requestContext.setRequestUri(newUri);
-      }
-   }
+            @Override
+            public Enumeration<String> getHeaderNames() {
+                Set<String> names = new LinkedHashSet<>();
+                Enumeration<String> e = super.getHeaderNames();
+                while (e.hasMoreElements()) {
+                    names.add(e.nextElement());
+                }
+                // Ensure it exists even if missing originally
+                names.add(REALM_PARAM_NAME);
+                return Collections.enumeration(names);
+            }
+
+            @Override
+            public String getRequestURI() {
+                return rewrittenPath.toString();
+            }
+
+            @Override
+            public StringBuffer getRequestURL() {
+                // Rebuild from original URL but swap path. Keep scheme/host/port.
+                StringBuffer original = super.getRequestURL();
+                try {
+                    URL url = new URL(original.toString());
+                    int port = url.getPort();
+                    String authority = port == -1 ? url.getHost() : (url.getHost() + ":" + port);
+                    return new StringBuffer(url.getProtocol() + "://" + authority + getRequestURI());
+                } catch (MalformedURLException ex) {
+                    // Fallback: best-effort
+                    return new StringBuffer(original.substring(0, original.indexOf(super.getRequestURI())) + getRequestURI());
+                }
+            }
+        };
+
+        chain.doFilter(wrapped, response);
+    }
 }

@@ -1,34 +1,36 @@
     package org.openremote.manager.mqtt;
 
-import jakarta.security.enterprise.AuthenticationException;
-import jakarta.ws.rs.client.Client;
-import org.apache.activemq.artemis.core.config.WildcardConfiguration;
-import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
-import org.apache.activemq.artemis.core.security.CheckType;
-import org.apache.activemq.artemis.core.security.Role;
-import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
-import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
-import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
-import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
-import org.keycloak.KeycloakSecurityContext;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.OIDCTokenResponse;
-import org.openremote.container.security.TokenPrincipal;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.manager.security.RemotingConnectionPrincipal;
-import org.openremote.model.protocol.mqtt.Topic;
-import org.openremote.model.syslog.SyslogCategory;
+    import jakarta.security.enterprise.AuthenticationException;
+    import jakarta.ws.rs.client.Client;
+    import org.apache.activemq.artemis.core.config.WildcardConfiguration;
+    import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
+    import org.apache.activemq.artemis.core.security.CheckType;
+    import org.apache.activemq.artemis.core.security.Role;
+    import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+    import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
+    import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
+    import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
+    import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
+    import org.openremote.container.security.IdentityProvider;
+    import org.openremote.container.security.IdentityService;
+    import org.openremote.container.security.OIDCTokenResponse;
+    import org.openremote.container.security.TokenPrincipal;
+    import org.openremote.manager.security.RemotingConnectionPrincipal;
+    import org.openremote.model.protocol.mqtt.Topic;
+    import org.openremote.model.syslog.SyslogCategory;
 
-import javax.security.auth.Subject;
-import java.security.Principal;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+    import javax.security.auth.Subject;
+    import java.security.Principal;
+    import java.util.Set;
+    import java.util.concurrent.ExecutionException;
+    import java.util.concurrent.ExecutorService;
+    import java.util.concurrent.TimeUnit;
+    import java.util.concurrent.TimeoutException;
+    import java.util.logging.Level;
+    import java.util.logging.Logger;
 
-import static org.openremote.container.web.WebTargetBuilder.createClient;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+    import static org.openremote.container.web.WebTargetBuilder.createClient;
+    import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 
     /**
  * An {@link ActiveMQSecurityManager5} implementation that authenticates the user by either retrieving an access token
@@ -39,11 +41,13 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
     public static final String ANONYMOUS_USERNAME = "anonymous";
     protected static final int CONNECTION_POOL_SIZE = 50;
     protected static final long CONNECTION_TIMEOUT_MILLIS = 10000;
+    protected final MQTTBrokerService brokerService;
     protected final ExecutorService executorService;
     protected final IdentityService identityService;
     protected final Client client;
 
-    public ActiveMQORSecurityManager(ExecutorService executorService, IdentityService identityService) {
+    public ActiveMQORSecurityManager(MQTTBrokerService brokerService, ExecutorService executorService, IdentityService identityService) {
+        this.brokerService = brokerService;
         this.executorService = executorService;
         this.identityService = identityService;
         client = createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLIS, null);
@@ -130,7 +134,7 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
                 return false;
             }
 
-            KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
+            TokenPrincipal tokenPrincipal = IdentityProvider.getTokenPrincipal(subject);
             String topicClientID = MQTTHandler.topicClientID(topic);
 
             if (topicClientID == null) {
@@ -156,9 +160,9 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
                     boolean result;
 
                     if (isWrite) {
-                        result = handler.checkCanPublish(connection, securityContext, topic);
+                        result = handler.checkCanPublish(connection, tokenPrincipal, topic);
                     } else {
-                        result = handler.checkCanSubscribe(connection, securityContext, topic);
+                        result = handler.checkCanSubscribe(connection, tokenPrincipal, topic);
                     }
                     if (result) {
                         LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));

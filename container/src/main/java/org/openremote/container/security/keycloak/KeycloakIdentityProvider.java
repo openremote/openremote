@@ -206,11 +206,10 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     @Override
-    public void secureDeployment(ServletContext servletContext) {
+    public FilterRegistration.Dynamic secureDeployment(ServletContext servletContext) {
         JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(tokenVerifier);
         FilterRegistration.Dynamic registration = servletContext.addFilter(JWTAuthenticationFilter.NAME, jwtFilter);
-        registration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),false,"/*");
-        registration.setAsyncSupported(true);
+        return registration;
     }
 
     protected TokenService getTokenService() {
