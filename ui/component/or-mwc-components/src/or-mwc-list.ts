@@ -61,6 +61,14 @@ export type ListGroupItem = {
 };
 
 export function createListGroup(lists: ListGroupItem[]) {
+    /**
+     * <or-vaadin-list-box>
+     *             ${lists.map(list => html`
+     *                 <b><or-translate value=${list.heading}></or-translate></b>
+     *                 ${list.list}
+     *             `)}
+     *         </or-vaadin-list-box>
+     */
     return html`
         <div class="mdc-list-group">
             ${lists.map((list) => {

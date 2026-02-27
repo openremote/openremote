@@ -443,13 +443,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <or-translate slot="label" value="filter.assetTypeLabel"></or-translate>
             </or-vaadin-combo-box>
         `;
-        // return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
     }
-
-    /*protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
-        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
-    }*/
-
 
     protected atLeastOneNodeToBeShown(): boolean {
         let atLeastOne: boolean = false;

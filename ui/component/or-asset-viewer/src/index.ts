@@ -888,7 +888,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
                             if (hostElement && hostElement.shadowRoot) {
                                 const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
                                 if (pathField) {
-                                    pathField.value = names.join(" > ");
+                                    pathField.setAttribute("value", names.join(" > "));
                                 }
                             }
                         }
@@ -906,7 +906,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
     }
 
     return html`
-        <or-vaadin-input id="property-${property}" type=${type} .value=${value}
+        <or-vaadin-input id="property-${property}" type=${type} value=${value}
                          ?readonly=${itemConfig.readonly !== undefined ? itemConfig.readonly : true}
                          label=${ifDefined(itemConfig.label)}
         ></or-vaadin-input>

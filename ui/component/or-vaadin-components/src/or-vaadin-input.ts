@@ -139,6 +139,7 @@ export class OrVaadinInput extends LitElement {
 
     firstUpdated(_changedProps: PropertyValues) {
         for (const name of this.getAttributeNames()) {
+            // console.debug(`firstUpdated for ${name} (${typeof this.getAttribute(name)}) to`, this.getAttribute(name));
             this._applyAttribute(name, this.getAttribute(name), this._elem);
         }
         return super.firstUpdated(_changedProps);
@@ -188,6 +189,7 @@ export class OrVaadinInput extends LitElement {
             mutations
                 .filter(mutation => mutation.type === "attributes" && mutation.attributeName)
                 .forEach(mutation => {
+                    // console.debug(`_onAttributeChange for ${mutation.attributeName} (${typeof this.getAttribute(mutation.attributeName!)})`, this.getAttribute(mutation.attributeName!));
                     this._applyAttribute(mutation.attributeName!, this.getAttribute(mutation.attributeName!), this._elem);
                 });
         });
@@ -200,6 +202,7 @@ export class OrVaadinInput extends LitElement {
      * @protected
      */
     protected _onPropertyChange(name: string, newValue?: any) {
+        // console.debug(`_onPropertyChange for ${name} (${typeof newValue}) to`, newValue);
         newValue ??= (this as Record<string, unknown>)[String(name)];
         this._applyAttribute(name, JSON.stringify(newValue), this._elem);
     }
