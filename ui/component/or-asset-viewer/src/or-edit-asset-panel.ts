@@ -1,23 +1,23 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until.js";
-import {customElement, property, state} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
+import {customElement, property} from "lit/decorators.js";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {type ValueInputProviderOptions, getValueHolderInputTemplateProvider} from "@openremote/or-vaadin-components/value-input-provider";
 import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
-import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
+import {DefaultColor5, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
 import "./or-add-attribute-panel";
 import {getField, getPanel, getPropertyTemplate} from "./index";
-import {
-    OrAddAttributePanelAttributeChangedEvent,
-} from "./or-add-attribute-panel";
+import {OrAddAttributePanelAttributeChangedEvent} from "./or-add-attribute-panel";
 import {panelStyles} from "./style";
-import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
-import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
-import {createRef, ref, Ref } from "lit/directives/ref.js";
+import {OrAssetTree, UiAssetTreeNode} from "@openremote/or-asset-tree";
+import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
+import {createRef, ref, Ref} from "lit/directives/ref.js";
+import {when} from "lit/directives/when.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -31,7 +31,7 @@ const style = css`
 
     #parent-edit-wrapper {
         display: flex;
-        align-items: center;
+        align-items: end;
     }
     
     #parent-edit-wrapper > #property-parentId {
@@ -98,7 +98,7 @@ const style = css`
     .attribute-meta-row.expanded  .meta-item-container {
         transition: max-height 0.5s ease-in-out;
     }
-    .meta-item-container or-mwc-input {
+    .meta-item-container or-mwc-input, .meta-item-container or-vaadin-input {
         width: 100%;
     }
     .meta-item-wrapper {
@@ -302,7 +302,11 @@ export class OrEditAssetPanel extends LitElement {
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="type"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="value"></or-translate></th>
-                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col" style="padding-right:8px;"><or-mwc-input style="float:right;" .type="${InputType.BUTTON}" .label="${i18next.t("expandAll")}" @or-mwc-input-changed="${expandAllToggle}"></or-mwc-input></th>
+                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col" style="padding-right:8px;">
+                                <or-vaadin-button style="float: right;" @click=${expandAllToggle}>
+                                    <or-translate value="expandAll"></or-translate>
+                                </or-vaadin-button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
@@ -310,7 +314,10 @@ export class OrEditAssetPanel extends LitElement {
                         <tr class="mdc-data-table__row">
                             <td colspan="4">
                                 <div class="item-add-attribute">
-                                    <or-mwc-input .type="${InputType.BUTTON}" label="addAttribute" icon="plus" @or-mwc-input-changed="${() => this._addAttribute()}"></or-mwc-input>
+                                    <or-vaadin-button @click=${() => this._addAttribute()}>
+                                        <or-icon slot="prefix" icon="plus"></or-icon>
+                                        <or-translate value="addAttribute"></or-translate>
+                                    </or-vaadin-button>
                                 </div>
                             </td>
                         </tr>
@@ -367,7 +374,12 @@ export class OrEditAssetPanel extends LitElement {
                                         disableWrite disableSubscribe disableButton compact 
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${deleteAttribute}">` : ``}</td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">
+                    ${when(canDelete, () => html`
+                        <or-vaadin-button theme="icon" @click=${deleteAttribute}>
+                            <or-icon icon="delete"></or-icon>
+                        </or-vaadin-button>
+                    `)}
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
@@ -377,7 +389,10 @@ export class OrEditAssetPanel extends LitElement {
                                 ${metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.template)}
                             </div>
                             <div class="item-add">
-                                <or-mwc-input .type="${InputType.BUTTON}" label="addMetaItems" icon="plus" @or-mwc-input-changed="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                                <or-vaadin-button @click=${() => this._addMetaItems(attribute)}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="addMetaItems"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                     </div>                     
@@ -413,8 +428,8 @@ export class OrEditAssetPanel extends LitElement {
         this._onModified();
     }
 
-    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail | undefined) {
-        metaItem.value = detail ? detail.value : undefined;
+    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, value: any) {
+        metaItem.value = value ?? undefined;
         attribute.meta![metaItem.name!] = metaItem.value;
         this._onModified();
     }
@@ -432,14 +447,14 @@ export class OrEditAssetPanel extends LitElement {
 
         if (!valueDescriptor) {
             console.log("Couldn't find value descriptor for meta item so falling back to simple JSON input: " + metaItem.name);
-            content = html`<or-mwc-input @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onMetaItemModified(attribute, metaItem, ev.detail)}" .type="${InputType.JSON}" .value="${metaItem.value}"></or-mwc-input>`;
+            content = html`<or-mwc-input @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onMetaItemModified(attribute, metaItem, ev.detail.value)}" .type="${InputType.JSON}" .value="${metaItem.value}"></or-mwc-input>`;
         } else {
             const options: ValueInputProviderOptions = {
                 label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
                 resizeVertical: true
             };
-            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
-            let provider = jsonFormsInputTemplateProvider(standardInputProvider)(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (value: any) => this._onMetaItemModified(attribute, metaItem, value), options);
+            let provider = jsonFormsInputTemplateProvider(standardInputProvider)(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail?.value), options);
 
             if (!provider) {
                 provider = standardInputProvider;
@@ -691,7 +706,9 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <div id="parent-edit-wrapper">
                 ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: true, label: i18next.t("parent")})}
-                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined label="edit" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
+                <or-vaadin-button id="change-parent-btn" @click=${openDialog}>
+                    <or-translate value="edit"></or-translate>
+                </or-vaadin-button>
             </div>
         `;
     }

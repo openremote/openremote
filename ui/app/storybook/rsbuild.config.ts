@@ -48,6 +48,7 @@ export default defineConfig({
             "@openremote/or-translate": "../../component/or-translate/src",
             "@openremote/or-tree-menu": "../../component/or-tree-menu/src",
             "@openremote/or-vaadin-components": "../../component/or-vaadin-components/src",
+            "@openremote/theme": "../../component/theme/src",
             "@openremote/util": "../../util"
         },
         // Enable symlinks resolution for workspace packages

@@ -32,6 +32,7 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },

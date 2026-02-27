@@ -13,6 +13,7 @@ import {
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-list-box";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -213,6 +214,7 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("agents"),
+                    // list: html`${agentItems.map(agent => html`${agent.value}`)}`
                     list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
                 }
             );
@@ -221,6 +223,7 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("assets"),
+                    // list: html`${assetItems.map(asset => html`${asset.value}`)}`
                     list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
                 }
             );
