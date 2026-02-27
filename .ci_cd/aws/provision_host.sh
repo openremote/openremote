@@ -234,7 +234,9 @@ EOF
 
   # Look for EFS mount target in caller account for the same availability zone ID (no costs if within same AZ) - Don't use name as name to IDs vary between accounts
   EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='or-map-efs'].FileSystemId" --output text)
-  EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?AvailabilityZoneId=='$SUBNET_AZ'].IpAddress" --output text)
+  # Find the caller account's public subnet in the same AZ (using consistent AvailabilityZoneId) then look up EFS mount target by SubnetId
+  EFS_SUBNET=$(aws ec2 describe-subnets --filters "Name=availabilityZoneId,Values=$SUBNET_AZ" "Name=tag:Name,Values=or-subnet-public-*" --query "Subnets[0].SubnetId" --output text 2>/dev/null)
+  EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?SubnetId=='$EFS_SUBNET'].IpAddress" --output text)
   
   # Get role to be assumed by DLM
   ROLE_ARN="arn:aws:iam::$AWS_ACCOUNT_ID:role/$AWS_ROLE_NAME-$AWS_REGION"
