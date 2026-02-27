@@ -475,10 +475,13 @@ public abstract class WebService implements ContainerService {
         corsRegistration.setAsyncSupported(true);
         getCORSConfiguration(corsOverride).forEach((k, v) -> corsRegistration.setInitParameter(k.toString(), v.toString()));
 
-        // The realm extraction from path
-        FilterRegistration.Dynamic realmExtractorRegistration = ctx.addFilter(RealmPathExtractorFilter.class.getSimpleName(), RealmPathExtractorFilter.class);
-        realmExtractorRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
-        realmExtractorRegistration.setAsyncSupported(true);
+        if (realmIndex != null) {
+            // The realm extraction from path
+            RealmPathExtractorFilter realmPathExtractorFilter = new RealmPathExtractorFilter(realmIndex);
+            FilterRegistration.Dynamic realmExtractorRegistration = ctx.addFilter(RealmPathExtractorFilter.class.getSimpleName(), realmPathExtractorFilter);
+            realmExtractorRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+            realmExtractorRegistration.setAsyncSupported(true);
+        }
 
         // Then logging
         FilterRegistration.Dynamic loggingRegistration = ctx.addFilter(LoggingFilter.class.getSimpleName(), LoggingFilter.class);
