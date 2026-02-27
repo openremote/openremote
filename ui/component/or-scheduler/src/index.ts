@@ -202,7 +202,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 const fromToTemplate = html`<span>&nbsp;${template}</span>`;
                 const monthNames = Object.values(MONTHS).map(i18next.t) as string[];
                 const orderISO = Object.values(WEEKDAYS).map(i18next.t) as string[];
-                const dayNames = [orderISO.pop()!, ...orderISO];
+                const dayNames = [orderISO.pop()!, ...orderISO]; // Must start with Sunday
                 const rule = this._rrule!.toText((id) => i18next.t(`rrule.${id}`), { dayNames, monthNames, tokens: {} });
                 return html`<span class="time-label"><span>${rule}</span>${fromToTemplate}</span>`;
             }
