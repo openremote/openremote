@@ -81,7 +81,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
             throw new WebApplicationException(NOT_FOUND);
         }
 
-        EntityTag etag = new EntityTag(result.hash());
+        EntityTag etag = new EntityTag(result.hash(), true);
 
         Response.ResponseBuilder builder = request.evaluatePreconditions(etag);
         if (builder != null) {
