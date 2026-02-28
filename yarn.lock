@@ -904,6 +904,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@maplibre/geojson-vt@npm:^5.0.4":
+  version: 5.0.4
+  resolution: "@maplibre/geojson-vt@npm:5.0.4"
+  checksum: 10c0/74cf4e1ee0fee23b6a6946b03eeb01ae6fc55e8490cea80c1184387fae3be14dab8383c203d12b05687a1b33fc9b9b9796808c873ed5c9deef82c247bd49e5b3
+  languageName: node
+  linkType: hard
+
 "@maplibre/maplibre-gl-geocoder@npm:^1.5.0":
   version: 1.5.0
   resolution: "@maplibre/maplibre-gl-geocoder@npm:1.5.0"
@@ -937,12 +944,40 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@maplibre/maplibre-gl-style-spec@npm:^24.4.1":
+  version: 24.6.0
+  resolution: "@maplibre/maplibre-gl-style-spec@npm:24.6.0"
+  dependencies:
+    "@mapbox/jsonlint-lines-primitives": "npm:~2.0.2"
+    "@mapbox/unitbezier": "npm:^0.0.1"
+    json-stringify-pretty-compact: "npm:^4.0.0"
+    minimist: "npm:^1.2.8"
+    quickselect: "npm:^3.0.0"
+    rw: "npm:^1.3.3"
+    tinyqueue: "npm:^3.0.0"
+  bin:
+    gl-style-format: dist/gl-style-format.mjs
+    gl-style-migrate: dist/gl-style-migrate.mjs
+    gl-style-validate: dist/gl-style-validate.mjs
+  checksum: 10c0/d24c138a3e1887372dbde07550ce2ee7e7abd4002b38e1fce5c2dcfce4312fdde7409d3a3a519f968bf1875f04adefd771337414d19b76de94160fde1ecd7d57
+  languageName: node
+  linkType: hard
+
 "@maplibre/mlt@npm:^1.1.0":
   version: 1.1.0
   resolution: "@maplibre/mlt@npm:1.1.0"
   dependencies:
     "@mapbox/point-geometry": "npm:^1.1.0"
   checksum: 10c0/ede425839f1d08832b08476a946ee75868b0267c39f87566ba43ffc0fac733827f5ca122ede84ec97a4c833ad801ebd4e051acecea072b7440131736ce395364
+  languageName: node
+  linkType: hard
+
+"@maplibre/mlt@npm:^1.1.6":
+  version: 1.1.6
+  resolution: "@maplibre/mlt@npm:1.1.6"
+  dependencies:
+    "@mapbox/point-geometry": "npm:^1.1.0"
+  checksum: 10c0/6a33b0dfa378d75075c4262f7a10835749d20ed3fbaecc0ee6e7cf3f604946b03378f30a7cc08e41f97f2ee84bfca603bdd89168733cf3ca8510ec347ba53ecb
   languageName: node
   linkType: hard
 
@@ -958,6 +993,21 @@ __metadata:
     pbf: "npm:^4.0.1"
     supercluster: "npm:^8.0.1"
   checksum: 10c0/d3c84adabb9dc93ff72ea6ab8c17900479f09e4d473f34ccae1f8e22d29f814d288f529f0d85959545bc4d7021675e056f7f558e758f705a4cb060b1f75f0aff
+  languageName: node
+  linkType: hard
+
+"@maplibre/vt-pbf@npm:^4.2.1":
+  version: 4.3.0
+  resolution: "@maplibre/vt-pbf@npm:4.3.0"
+  dependencies:
+    "@mapbox/point-geometry": "npm:^1.1.0"
+    "@mapbox/vector-tile": "npm:^2.0.4"
+    "@maplibre/geojson-vt": "npm:^5.0.4"
+    "@types/geojson": "npm:^7946.0.16"
+    "@types/supercluster": "npm:^7.1.3"
+    pbf: "npm:^4.0.1"
+    supercluster: "npm:^8.0.1"
+  checksum: 10c0/0164f793237ef30a90301e176ca2eefa833f2aa0201bc87a558e1db6f75ab598a7e2746c745e4d8a61a270dcc248d03aaeef1d2297c0defec25c0c16c7c6b777
   languageName: node
   linkType: hard
 
@@ -2071,7 +2121,7 @@ __metadata:
     lit: "npm:^3.3.1"
     lit-html: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
-    maplibre-gl: "npm:^5.12.0"
+    maplibre-gl: "npm:^5.19.0"
   languageName: unknown
   linkType: soft
 
@@ -8555,6 +8605,36 @@ __metadata:
     supercluster: "npm:^8.0.1"
     tinyqueue: "npm:^3.0.0"
   checksum: 10c0/ee1a36aa53c06aa35fea46bc9aaa517d6d83f51f119a20f9948c0da5871ffea0cc6d260f3b7e4454133d88da1def1e47369f5afc632dbc12f6dbf2e603ca4ef9
+  languageName: node
+  linkType: hard
+
+"maplibre-gl@npm:^5.19.0":
+  version: 5.19.0
+  resolution: "maplibre-gl@npm:5.19.0"
+  dependencies:
+    "@mapbox/geojson-rewind": "npm:^0.5.2"
+    "@mapbox/jsonlint-lines-primitives": "npm:^2.0.2"
+    "@mapbox/point-geometry": "npm:^1.1.0"
+    "@mapbox/tiny-sdf": "npm:^2.0.7"
+    "@mapbox/unitbezier": "npm:^0.0.1"
+    "@mapbox/vector-tile": "npm:^2.0.4"
+    "@mapbox/whoots-js": "npm:^3.1.0"
+    "@maplibre/geojson-vt": "npm:^5.0.4"
+    "@maplibre/maplibre-gl-style-spec": "npm:^24.4.1"
+    "@maplibre/mlt": "npm:^1.1.6"
+    "@maplibre/vt-pbf": "npm:^4.2.1"
+    "@types/geojson": "npm:^7946.0.16"
+    "@types/supercluster": "npm:^7.1.3"
+    earcut: "npm:^3.0.2"
+    gl-matrix: "npm:^3.4.4"
+    kdbush: "npm:^4.0.2"
+    murmurhash-js: "npm:^1.0.0"
+    pbf: "npm:^4.0.1"
+    potpack: "npm:^2.1.0"
+    quickselect: "npm:^3.0.0"
+    supercluster: "npm:^8.0.1"
+    tinyqueue: "npm:^3.0.0"
+  checksum: 10c0/5b380c9e8b9abefb46df38b00c2dac49a1b5354bc639df3a3368cbac0103929b79722371a5d8c083e5788ee32920d9ddf93ffd07b0a677a9ddcc928e8c0d186c
   languageName: node
   linkType: hard
 
