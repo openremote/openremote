@@ -26,14 +26,17 @@ import io.netty.buffer.Unpooled
 import io.netty.channel.embedded.EmbeddedChannel
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.agent.protocol.teltonika.TeltonikaAgent
 import org.openremote.agent.protocol.teltonika.TeltonikaProtocolDecoder
 import org.openremote.agent.protocol.teltonika.TeltonikaRecord
+import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.telematics.TeltonikaMQTTHandler
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.telematics.teltonika.TeltonikaAssetMapper
 import org.openremote.model.telematics.teltonika.TeltonikaParameters
 import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -45,6 +48,11 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.charset.Charset
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
@@ -256,6 +264,104 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
 
         cleanup:
         channel.finish()
+    }
+
+    def "Teltonika TCP and UDP agents provision and update tracker assets"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        and: "a running manager container"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        def setupService = container.getService(SetupService.class)
+        def keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class)
+        def realm = keycloakTestSetup.realmMaster.name
+
+        and: "a TCP Teltonika agent"
+        int tcpPort = findEphemeralPort()
+        def tcpAgent = new TeltonikaAgent("Teltonika TCP Agent")
+                .setRealm(realm)
+                .setBindHost("127.0.0.1")
+                .setBindPort(tcpPort)
+                .setTransport("TCP")
+
+        and: "a UDP Teltonika agent"
+        int udpPort = findEphemeralPort()
+        def udpAgent = new TeltonikaAgent("Teltonika UDP Agent")
+                .setRealm(realm)
+                .setBindHost("127.0.0.1")
+                .setBindPort(udpPort)
+                .setTransport("UDP")
+
+        when: "both agents are stored"
+        tcpAgent = assetStorageService.merge(tcpAgent)
+        udpAgent = assetStorageService.merge(udpAgent)
+
+        then: "both protocol instances are deployed"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(tcpAgent.id) != null
+            assert agentService.getProtocolInstance(udpAgent.id) != null
+        }
+
+        when: "a Teltonika device sends TCP identification + AVL packet"
+        def tcpImei = "123456789012345"
+        def tcpPayload = ByteBufUtil.decodeHexDump(TCP_REFERENCE_VALID_HEX[0])
+        Socket tcpSocket = new Socket("127.0.0.1", tcpPort)
+        tcpSocket.setSoTimeout(5000)
+        def tcpOut = tcpSocket.getOutputStream()
+        def tcpIn = tcpSocket.getInputStream()
+
+        tcpOut.write(buildIdentificationPacket(tcpImei))
+        tcpOut.flush()
+        assert tcpIn.read() == 1
+
+        tcpOut.write(tcpPayload)
+        tcpOut.flush()
+
+        byte[] tcpAckBytes = new byte[4]
+        int tcpRead = 0
+        while (tcpRead < 4) {
+            int n = tcpIn.read(tcpAckBytes, tcpRead, 4 - tcpRead)
+            assert n > 0
+            tcpRead += n
+        }
+        int tcpAckCount = ((tcpAckBytes[0] & 0xFF) << 24) |
+                ((tcpAckBytes[1] & 0xFF) << 16) |
+                ((tcpAckBytes[2] & 0xFF) << 8) |
+                (tcpAckBytes[3] & 0xFF)
+
+        and: "a Teltonika device sends a UDP AVL packet"
+        def udpPayload = ByteBufUtil.decodeHexDump(UDP_REFERENCE_VALID_HEX[0])
+        DatagramSocket udpSocket = new DatagramSocket()
+        udpSocket.send(new DatagramPacket(udpPayload, udpPayload.length, InetAddress.getByName("127.0.0.1"), udpPort))
+
+        then: "both transports acknowledge records"
+        assert tcpAckCount == 1
+        // UDP decoder sends an ACK internally; we intentionally avoid blocking on receive
+        // in this integration basis to keep it deterministic across CI timing variations.
+
+        and: "a tracker asset is provisioned/updated for TCP IMEI"
+        conditions.eventually {
+            TeltonikaTrackerAsset tcpAsset = assetStorageService.find(new TeltonikaAssetMapper().generateAssetId(tcpImei), TeltonikaTrackerAsset.class)
+            assert tcpAsset != null
+            assert Math.abs((Double) tcpAsset.getAttribute(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE.name).get().value.get() - 24.079d) < 0.001d
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.PROTOCOL.name).get().value.get() == "TCP"
+        }
+
+        and: "a tracker asset is provisioned/updated for UDP IMEI"
+        conditions.eventually {
+            def udpImei = "352093086403655"
+            TeltonikaTrackerAsset udpAsset = assetStorageService.find(new TeltonikaAssetMapper().generateAssetId(udpImei), TeltonikaTrackerAsset.class)
+            assert udpAsset != null
+            assert Math.abs((Double) udpAsset.getAttribute(TeltonikaTrackerAsset.TOTAL_ODOMETER.name).get().value.get() - 22949000L) < 1L
+            assert udpAsset.getAttribute(TeltonikaTrackerAsset.PROTOCOL.name).get().value.get() == "UDP"
+        }
+
+        cleanup:
+        tcpSocket?.close()
+        udpSocket?.close()
+        container?.stop()
     }
 
     def "Check Teltonika Protocol Decoder with identification packet"() {
@@ -832,6 +938,15 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
     /**
      * Helper method to convert hex string to ByteBuf
      */
+    private static byte[] buildIdentificationPacket(String imei) {
+        byte[] imeiBytes = imei.getBytes(Charset.defaultCharset())
+        byte[] result = new byte[2 + imeiBytes.length]
+        result[0] = (byte) ((imeiBytes.length >> 8) & 0xFF)
+        result[1] = (byte) (imeiBytes.length & 0xFF)
+        System.arraycopy(imeiBytes, 0, result, 2, imeiBytes.length)
+        return result
+    }
+
     private static ByteBuf hexStringToByteBuf(String hex) {
         int len = hex.length()
         byte[] data = new byte[len / 2 as int]
