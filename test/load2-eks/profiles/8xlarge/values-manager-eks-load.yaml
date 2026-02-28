@@ -42,13 +42,13 @@ or:
     - name: OR_SETUP_ASSETS_WITH_LOCATIONS
       value: "0"
     - name: OR_SETUP_LOCATION_CLUSTERS
-      value: "0"
+      value: "5"
     - name: OR_SETUP_LOCATION_MAIN_CENTER
-      value: "0,0"
+      value: "4.469444,51.925"
     - name: OR_SETUP_LOCATION_CENTER_DISTANCE
-      value: "0"
+      value: "3000"
     - name: OR_SETUP_LOCATION_ASSET_RADIUS
-      value: "0"
+      value: "500"
     - name: OR_SETUP_STORE_DATA_POINTS
       value: "false"
     - name: OR_JAVA_OPTS

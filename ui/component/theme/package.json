@@ -2,11 +2,13 @@
   "name": "@openremote/theme",
   "version": "1.14.0-snapshot",
   "description": "CSS themes for OpenRemote components",
-  "main": "src/index.css",
-  "module": "src/index.css",
+  "main": "src/index.js",
   "types": "src/index.d.ts",
   "exports": {
-    ".": "./src/index.css",
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
     "./*.css": "./src/*.css",
     "./*": "./*"
   },
@@ -17,7 +19,7 @@
   "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@vaadin/vaadin-lumo-styles": "~25.0.1"
+    "@vaadin/vaadin-lumo-styles": "~25.0.3"
   },
   "publishConfig": {
     "access": "public"

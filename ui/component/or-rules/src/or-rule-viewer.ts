@@ -40,19 +40,18 @@ import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
-import { OrSchedulerChangedEvent, RulePartKey } from "@openremote/or-scheduler";
+import { INTUITIVE_NOT_APPLICABLE, OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
 
 const DISABLED_RRULE_PARTS = [
-    'interval',
-    'bymonth',
-    'byweekno',
-    'byyearday',
-    'bymonthday',
-    'byhour',
-    'byminute',
-    'bysecond',
-    'count',
-] as RulePartKey[]
+    "interval",
+    "bymonth",
+    "byweekno",
+    "byyearday",
+    "byhour",
+    "byminute",
+    "bysecond",
+    "count",
+] as RRulePartKeys[];
 
 // language=CSS
 export const style = css`
@@ -67,6 +66,7 @@ export const style = css`
     or-scheduler {
         margin-left: 10px;
         margin-right: 20px;
+        max-width: 400px;
     }
 
     .wrapper {
@@ -263,7 +263,9 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             id="rule-header-validity"
                             header="scheduleRuleActivity"
                             defaultEventTypeLabel="validityAlways"
+                            disableNegativeByPartValues
                             .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+                            .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
                             .schedule="${this.ruleset?.meta?.validity}"
                             @or-scheduler-changed="${this._onSchedulerChanged}"
                         ></or-scheduler>
@@ -304,7 +306,8 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         if (this.ruleset) {
             this.ruleset.meta ??= {};
             this.ruleset.meta.validity = e?.detail.value;
-            this.requestUpdate("ruleset");
+            this.modified = true;
+            this.requestUpdate();
         }
     }
 
