@@ -78,7 +78,6 @@ signing {
 }
 
 tasks.register('generateSources', Copy) {
-    duplicatesStrategy = 'include'
     // Copy Swagger UI resources from the WebJars dependency
     from zipTree(configurations.sources.singleFile).matching {
         include "META-INF/resources/webjars/swagger-ui/$swaggeruiVersion/*"
