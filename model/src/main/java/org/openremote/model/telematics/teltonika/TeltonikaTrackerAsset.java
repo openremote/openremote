@@ -22,7 +22,7 @@ public class TeltonikaTrackerAsset extends Asset<TeltonikaTrackerAsset> {
     public static final AttributeDescriptor<Integer> SATELLITES = new AttributeDescriptor<>("satellites", TeltonikaParameters.SATELLITES).withOptional(true);
     public static final AttributeDescriptor<Integer> SPEED_SATELLITE = new AttributeDescriptor<>("speedSatellite", TeltonikaParameters.SPEED_SATELLITE).withOptional(true);
     public static final AttributeDescriptor<Integer> EVENT_TRIGGERED = new AttributeDescriptor<>("eventTriggered", TeltonikaParameters.EVENT_TRIGGERED).withOptional(true);
-    public static final AttributeDescriptor<Long> TIMESTAMP = new AttributeDescriptor<>("timestamp", TeltonikaParameters.TIMESTAMP).withOptional(true);
+    public static final AttributeDescriptor<Long> TIMESTAMP = new AttributeDescriptor<>("timestamp", ValueType.TIMESTAMP).withOptional(true);
     public static final AttributeDescriptor<GeoJSONPoint> GPS_LOCATION = new AttributeDescriptor<>("gpsLocation", TeltonikaParameters.LOCATION).withOptional(true);
     public static final AttributeDescriptor<Integer> SPEED = new AttributeDescriptor<>("speed", TeltonikaParameters.SPEED).withOptional(true);
 

@@ -9,6 +9,7 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -68,8 +69,7 @@ public class TeltonikaAttributeResolver {
         value.getBytes(value.readerIndex(), copy, value.readableBytes());
         try {
             Object parsedValue = descriptor.hasFixedLength() ? descriptor.parse(copy) : descriptor.parse(copy, copy.readableBytes());
-            return createDescriptorAttribute(descriptor, parsedValue, timestamp)
-                    .orElseGet(() -> createFallbackTypedAttribute(normalizeAttributeName(parameterId), parsedValue, timestamp));
+            return createKnownTypedAttribute(descriptor, parsedValue, timestamp);
         } catch (Exception e) {
             String rawHex = ByteBufUtil.hexDump(value, value.readerIndex(), value.readableBytes()).toUpperCase();
             throw new IllegalStateException(
@@ -89,8 +89,7 @@ public class TeltonikaAttributeResolver {
             ByteBuf binary = convertJsonValueToBinary(rawValue, descriptor);
             try {
                 Object parsedValue = descriptor.hasFixedLength() ? descriptor.parse(binary) : descriptor.parse(binary, binary.readableBytes());
-                return createDescriptorAttribute(descriptor, parsedValue, timestamp)
-                        .orElseGet(() -> createFallbackTypedAttribute(normalizeAttributeName(parameterId), parsedValue, timestamp));
+                return createKnownTypedAttribute(descriptor, parsedValue, timestamp);
             } finally {
                 binary.release();
             }
@@ -104,16 +103,49 @@ public class TeltonikaAttributeResolver {
         }
     }
 
+    private Attribute<?> createKnownTypedAttribute(TeltonikaParameter<?> descriptor, Object value, long timestamp) {
+        Optional<Attribute<?>> descriptorAttribute = createDescriptorAttribute(descriptor, value, timestamp);
+        if (descriptorAttribute.isPresent()) {
+            return descriptorAttribute.get();
+        }
+
+        String attributeName = descriptor.getDisplayName()
+                .map(TeltonikaAttributeResolver::toAttributeName)
+                .orElseGet(() -> normalizeAttributeName(descriptor.getId()));
+        return createFallbackTypedAttribute(attributeName, value, timestamp);
+    }
+
     @SuppressWarnings("unchecked")
     private Optional<Attribute<?>> createDescriptorAttribute(TeltonikaParameter<?> descriptor, Object value, long timestamp) {
         Optional<AttributeDescriptor<Object>> attributeDescriptor = (Optional<AttributeDescriptor<Object>>) (Optional<?>)
                 parameterRegistry.findMatchingAttributeDescriptor(TeltonikaTrackerAsset.class, descriptor);
 
-        if (attributeDescriptor.isPresent()) {
-            return Optional.of(new Attribute<>(attributeDescriptor.get(), value, timestamp));
+        return attributeDescriptor.map(descriptorMatch -> new Attribute<>(descriptorMatch, value, timestamp));
+    }
+
+    public static String toAttributeName(String displayName) {
+        String normalized = displayName == null ? "" : displayName.trim();
+        if (normalized.isEmpty()) {
+            return "teltonika";
         }
 
-        return Optional.empty();
+        String[] parts = normalized
+                .replaceAll("[^A-Za-z0-9]+", " ")
+                .trim()
+                .split("\\s+");
+
+        if (parts.length == 0) {
+            return "teltonika";
+        }
+
+        StringBuilder builder = new StringBuilder(parts[0].toLowerCase(Locale.ROOT));
+        for (int i = 1; i < parts.length; i++) {
+            String part = parts[i].toLowerCase(Locale.ROOT);
+            if (!part.isEmpty()) {
+                builder.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            }
+        }
+        return builder.toString();
     }
 
     private Optional<TeltonikaParameter<?>> findDescriptor(String rawId) {

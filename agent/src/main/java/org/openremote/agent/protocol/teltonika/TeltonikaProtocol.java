@@ -5,31 +5,27 @@ import io.netty.channel.socket.SocketChannel;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.io.IOServer;
 import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.telematics.core.DeviceMessage;
-import org.openremote.model.telematics.teltonika.TeltonikaAssetMapper;
+import org.openremote.model.telematics.core.TelematicsMessagePublisher;
+import org.openremote.model.telematics.protocol.MessageContext;
 import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Teltonika AVL Server";
+    private static final String VENDOR_ID = "teltonika";
 
     private static final Logger LOG = Logger.getLogger(TeltonikaProtocol.class.getName());
-
-    private final TeltonikaAssetMapper assetMapper = new TeltonikaAssetMapper();
 
     private TeltonikaTcpServer tcpServer;
     private TeltonikaUdpServer udpServer;
@@ -39,6 +35,8 @@ public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultA
     private Consumer<ConnectionStatus> udpStatusConsumer;
     private ConnectionStatus tcpStatus = ConnectionStatus.DISCONNECTED;
     private ConnectionStatus udpStatus = ConnectionStatus.DISCONNECTED;
+
+    private TelematicsMessagePublisher telematicsMessagePublisher;
 
     public TeltonikaProtocol(TeltonikaAgent agent) {
         super(agent);
@@ -58,6 +56,8 @@ public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultA
 
     @Override
     protected void doStart(Container container) {
+        this.telematicsMessagePublisher = container.getService(TelematicsMessagePublisher.class);
+
         int port = agent.getBindPort().orElseThrow(() ->
                 new IllegalArgumentException("Missing or invalid attribute: " + TeltonikaAgent.BIND_PORT.getName()));
 
@@ -104,6 +104,7 @@ public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultA
             udpStatus = ConnectionStatus.DISCONNECTED;
         }
 
+        telematicsMessagePublisher = null;
         refreshAggregatedStatus();
     }
 
@@ -149,21 +150,19 @@ public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultA
         }
 
         DeviceMessage message = toDeviceMessage(record);
-        TeltonikaTrackerAsset asset = getOrCreateAsset(record.getImei());
-        applyMessage(asset, message);
+        telematicsMessagePublisher.submitMessage(
+                VENDOR_ID,
+                agent.getRealm(),
+                toTransport(record),
+                record.getCodecName(),
+                message
+        );
     }
 
     private DeviceMessage toDeviceMessage(TeltonikaRecord record) {
         Map<String, Attribute<?>> byName = new LinkedHashMap<>();
 
         record.getAttributes().values().forEach(attr -> byName.put(attr.getName(), attr));
-
-        if (record.getLocation() != null) {
-            byName.put(TeltonikaTrackerAsset.GPS_LOCATION.getName(),
-                    new Attribute<>(TeltonikaTrackerAsset.GPS_LOCATION, record.getLocation(), record.getTimestamp()));
-            byName.put(Asset.LOCATION.getName(),
-                    new Attribute<>(Asset.LOCATION, record.getLocation(), record.getTimestamp()));
-        }
 
         byName.put(TeltonikaTrackerAsset.TIMESTAMP.getName(),
                 new Attribute<>(TeltonikaTrackerAsset.TIMESTAMP, record.getTimestamp(), record.getTimestamp()));
@@ -184,29 +183,16 @@ public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultA
                 .build();
     }
 
-    private TeltonikaTrackerAsset getOrCreateAsset(String imei) {
-        String assetId = assetMapper.generateAssetId(imei);
-        if (assetService.findAsset(assetId) instanceof TeltonikaTrackerAsset existing) {
-            return existing;
+    private MessageContext.Transport toTransport(TeltonikaRecord record) {
+        if (record.getTransport() == null) {
+            throw new IllegalStateException("TeltonikaRecord's Transport is null");
         }
-
-        TeltonikaTrackerAsset created = assetMapper.createAsset(imei, agent.getRealm());
-        created.setParentId(agent.getId());
-        created.setProtocol(recordTransportLabel());
-        return assetService.mergeAsset(created);
-    }
-
-    private void applyMessage(TeltonikaTrackerAsset asset, DeviceMessage message) {
-        List<Attribute<?>> newlyCreated = assetMapper.applyAttributes(asset, message);
-        assetService.mergeAsset(asset);
-
-        for (Attribute<?> attribute : message.getAttributes()) {
-            boolean isNew = newlyCreated.stream().anyMatch(a -> Objects.equals(a.getName(), attribute.getName()));
-            if (isNew || attribute.getValue().isEmpty()) {
-                continue;
-            }
-            sendAttributeEvent(new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue().get()));
-        }
+        return switch (record.getTransport().toUpperCase()) {
+            case "UDP" -> MessageContext.Transport.UDP;
+            case "TCP" -> MessageContext.Transport.TCP;
+            case "MQTT" -> MessageContext.Transport.MQTT;
+            default -> throw new IllegalArgumentException("Unknown transport " + record.getTransport());
+        };
     }
 
     private TransportMode getTransportMode() {
@@ -258,14 +244,6 @@ public class TeltonikaProtocol extends AbstractProtocol<TeltonikaAgent, DefaultA
             return ConnectionStatus.DISCONNECTING;
         }
         return ConnectionStatus.DISCONNECTED;
-    }
-
-    private String recordTransportLabel() {
-        return switch (getTransportMode()) {
-            case TCP -> "TCP";
-            case UDP -> "UDP";
-            case BOTH -> "TCP+UDP";
-        };
     }
 
     private enum TransportMode {

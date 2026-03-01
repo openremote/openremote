@@ -19,7 +19,7 @@ public class TeltonikaAgent extends Agent<TeltonikaAgent, TeltonikaProtocol, Def
     public static final AttributeDescriptor<String> TRANSPORT =
             new AttributeDescriptor<>("transport", ValueType.TEXT)
                     .withConstraints(new ValueConstraint.AllowedValues("TCP", "UDP", "BOTH"))
-                    .withOptional(true);
+                    .withOptional(false);
 
     public static final AttributeDescriptor<Integer> BIND_PORT = Agent.BIND_PORT.withOptional(false);
 

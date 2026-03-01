@@ -183,6 +183,8 @@ class TeltonikaMQTTHandlerCommandTest extends Specification implements ManagerCo
             Attribute<?> resolved = resolver.resolveJson(entry.key.toString(), entry.value, timestamp)
             expectedValues.put(resolved.name, resolved.value.orElse(null))
         }
+        expectedValues["location"] = expectedValues.remove("gpsLocation")
+
 
         when: "client connects and subscribes"
         client.connect()

@@ -35,8 +35,10 @@ import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.telematics.TeltonikaMQTTHandler
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.telematics.TeltonikaVendor
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.telematics.teltonika.TeltonikaAssetMapper
+import org.openremote.model.telematics.teltonika.TeltonikaAttributeResolver
 import org.openremote.model.telematics.teltonika.TeltonikaParameters
 import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -44,6 +46,7 @@ import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -58,7 +61,6 @@ import java.util.function.Consumer
 
 class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
 
-    @spock.lang.Ignore
     def "Check MQTT client"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 20, delay: 0.1)
@@ -186,7 +188,6 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
 
         when: "a new message comes in"
         def jsonNode = ValueUtil.JSON.readTree(payload)
-        ((ObjectNode) jsonNode.get("state").get("reported")).put("67", 23456)
         def modifiedPayload = ValueUtil.JSON.writeValueAsString(jsonNode)
         client.sendMessage(new MQTTMessage<String>(subscriptions[0], modifiedPayload))
 
@@ -194,13 +195,77 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         conditions.eventually {
             TeltonikaTrackerAsset asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(imei), TeltonikaTrackerAsset.class);
 
-            assert asset.getAttributes().get(TeltonikaTrackerAsset.BATTERY_VOLTAGE).get().getValue().get() == 23.456
+            assert asset.getAttributes().get(TeltonikaTrackerAsset.BATTERY_VOLTAGE).get().getValue().get() == 3.466
 
         }
 
         cleanup:
         container.stop();
 
+    }
+
+    @Ignore("Manual profiling test: intentionally infinite")
+    def "Manual load - publish same Teltonika MQTT packet every 100ms"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 20, delay: 0.1)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def setupService = container.getService(SetupService.class)
+        def keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class)
+
+        and: "a MQTT client and Teltonika data topic"
+        def clientId = "teltonika-load-" + System.currentTimeMillis()
+        def host = "localhost"
+        def port = 1883
+        def secure = false
+        def imei = "123456789012346"
+        def topic = "${keycloakTestSetup.realmMaster.name}/${clientId}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_TOKEN}/${imei}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString()
+        def payload = '{"state":{"reported":{"11":893116211,"67":3466,"ts":1782290930000,"latlng":"51.91912473595176,4.484142852286654","10836":1234}}}'
+
+        def client = new MQTT_IOClient(
+                clientId,
+                host,
+                port,
+                secure,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null
+        )
+        client.setResubscribeIfSessionPresent(false)
+
+        when: "client connects"
+        client.connect()
+
+        then: "client is connected"
+        conditions.eventually {
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        when: "the same payload is published every 100ms"
+        long durationMs = 60 * 1000 // 1 minute
+        long startedAt = System.currentTimeMillis()
+        long sent = 0
+        while (!Thread.currentThread().isInterrupted() &&
+                (durationMs <= 0 || (System.currentTimeMillis() - startedAt) < durationMs)) {
+            client.sendMessage(new MQTTMessage<String>(topic, payload))
+            sent++
+            if (sent % 100 == 0) {
+                LOG.info("Manual Teltonika load test sent " + sent + " packets")
+            }
+            sleep(100)
+        }
+
+        then: "loop runs until duration elapses or externally interrupted"
+        true
+
+        cleanup:
+        try {
+            client?.disconnect()
+        } catch (Exception ignored) {
+        }
+        container?.stop()
     }
 
     def "Check Teltonika Protocol Decoder with UDP mode"() {
@@ -264,6 +329,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
 
         cleanup:
         channel.finish()
+        container.stop()
     }
 
     def "Teltonika TCP and UDP agents provision and update tracker assets"() {
@@ -331,6 +397,23 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
                 ((tcpAckBytes[2] & 0xFF) << 8) |
                 (tcpAckBytes[3] & 0xFF)
 
+        and: "the same TCP device sends a Codec8E packet"
+        def tcpCodec8ePayload = ByteBufUtil.decodeHexDump(TCP_REFERENCE_VALID_HEX[4])
+        tcpOut.write(tcpCodec8ePayload)
+        tcpOut.flush()
+
+        byte[] tcpCodec8eAckBytes = new byte[4]
+        int tcpCodec8eRead = 0
+        while (tcpCodec8eRead < 4) {
+            int n = tcpIn.read(tcpCodec8eAckBytes, tcpCodec8eRead, 4 - tcpCodec8eRead)
+            assert n > 0
+            tcpCodec8eRead += n
+        }
+        int tcpCodec8eAckCount = ((tcpCodec8eAckBytes[0] & 0xFF) << 24) |
+                ((tcpCodec8eAckBytes[1] & 0xFF) << 16) |
+                ((tcpCodec8eAckBytes[2] & 0xFF) << 8) |
+                (tcpCodec8eAckBytes[3] & 0xFF)
+
         and: "a Teltonika device sends a UDP AVL packet"
         def udpPayload = ByteBufUtil.decodeHexDump(UDP_REFERENCE_VALID_HEX[0])
         DatagramSocket udpSocket = new DatagramSocket()
@@ -338,6 +421,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
 
         then: "both transports acknowledge records"
         assert tcpAckCount == 1
+        assert tcpCodec8eAckCount == 1
         // UDP decoder sends an ACK internally; we intentionally avoid blocking on receive
         // in this integration basis to keep it deterministic across CI timing variations.
 
@@ -345,8 +429,9 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
         conditions.eventually {
             TeltonikaTrackerAsset tcpAsset = assetStorageService.find(new TeltonikaAssetMapper().generateAssetId(tcpImei), TeltonikaTrackerAsset.class)
             assert tcpAsset != null
-            assert Math.abs((Double) tcpAsset.getAttribute(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE.name).get().value.get() - 24.079d) < 0.001d
-            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.PROTOCOL.name).get().value.get() == "TCP"
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.AXIS_X.getName()).get().getValue().get() == 29
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.ICCID_1.getName()).get().getValue().get() == "000000003544C87A"
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.PROTOCOL.getName()).get().getValue().get() == "TCP"
         }
 
         and: "a tracker asset is provisioned/updated for UDP IMEI"
@@ -673,7 +758,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
             assert attr.getTimestamp().get() == record1.timestamp
         }
         record1.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
-        record1.getAttributes().get("teltonika_3").get().getValue().get() == false
+        record1.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_INPUT_3.getDisplayName().orElseThrow())).get().getValue().get() == false
         // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
         !record1.getAttributes().containsKey(TeltonikaTrackerAsset.ICCID_1.getName())
         Math.abs((Double) record1.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
@@ -685,7 +770,7 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
             assert attr.getTimestamp().get() == record2.timestamp
         }
         record2.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
-        record2.getAttributes().get("teltonika_3").get().getValue().get() == false
+        record1.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_INPUT_3.getDisplayName().orElseThrow())).get().getValue().get() == false
         // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
         !record2.getAttributes().containsKey(TeltonikaParameters.ICCID1)
         Math.abs((Double) record2.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
@@ -724,8 +809,8 @@ class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerCo
             assert attr.getTimestamp().get() == record.timestamp
         }
         record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
-        record.getAttributes().get("teltonika_3").get().getValue().get() == false
-        record.getAttributes().get("teltonika_180").get().getValue().get() == false
+        record.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_INPUT_3.getDisplayName().orElseThrow())).get().getValue().get() == false
+        record.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_OUTPUT_2.getDisplayName().orElseThrow())).get().getValue().get() == false
         record.getAttributes().get(TeltonikaTrackerAsset.IGNITION).get().getValue().get() == true
         Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 4.378) < 0.001
 

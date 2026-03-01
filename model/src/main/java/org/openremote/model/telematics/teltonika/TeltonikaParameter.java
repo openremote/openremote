@@ -5,6 +5,8 @@ import jakarta.persistence.Transient;
 import org.openremote.model.telematics.parameter.ParameterParser;
 import org.openremote.model.telematics.parameter.ParseableValueDescriptor;
 import org.openremote.model.value.ValueConstraint;
+import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.ValueFormat;
 
 import java.util.Optional;
 
@@ -39,6 +41,12 @@ public class TeltonikaParameter<T> extends ParseableValueDescriptor<T> {
 
     private TeltonikaParameter(Builder<T> builder) {
         super(VENDOR_PREFIX + "_" + builder.id, builder.type, builder.byteLength, builder.parser, builder.constraints);
+        if (builder.valueFormat != null) {
+            this.format = builder.valueFormat;
+        }
+        if (builder.valueUnits != null) {
+            super.units = builder.valueUnits;
+        }
         this.id = builder.id;
         this.displayName = builder.displayName;
         this.description = builder.description;
@@ -106,12 +114,33 @@ public class TeltonikaParameter<T> extends ParseableValueDescriptor<T> {
         return new Builder<>();
     }
 
+    /**
+     * Creates a builder initialized from an existing {@link ValueDescriptor} and parser.
+     * Useful when reusing predefined {@link org.openremote.model.value.ValueType} descriptors
+     * (constraints/format/units) while adding protocol parsing details.
+     */
+    public static <T> Builder<T> builder(ValueDescriptor<T> valueDescriptor, ParameterParser<T> parser) {
+        return TeltonikaParameter.<T>builder()
+                .valueDescriptor(valueDescriptor)
+                .parser(parser);
+    }
+
+    /**
+     * Creates a builder initialized from an existing {@link ValueDescriptor}, fixed byte length and parser.
+     */
+    public static <T> Builder<T> builder(ValueDescriptor<T> valueDescriptor, int byteLength, ParameterParser<T> parser) {
+        return TeltonikaParameter.<T>builder(valueDescriptor, parser)
+                .byteLength(byteLength);
+    }
+
     public static class Builder<T> {
         private String id;
         private Class<T> type;
         private int byteLength = -1;
         private ParameterParser<T> parser;
         private ValueConstraint[] constraints = new ValueConstraint[0];
+        private ValueFormat valueFormat;
+        private String[] valueUnits;
         private String displayName;
         private String description;
         private String units;
@@ -133,6 +162,21 @@ public class TeltonikaParameter<T> extends ParseableValueDescriptor<T> {
 
         public Builder<T> type(Class<T> type) {
             this.type = type;
+            return this;
+        }
+
+        /**
+         * Reuse an existing value descriptor (type/constraints/format/units) and keep only parser/byte-length vendor-specific.
+         */
+        public Builder<T> valueDescriptor(ValueDescriptor<T> valueDescriptor) {
+            this.type = valueDescriptor.getType();
+            ValueConstraint[] descriptorConstraints = valueDescriptor.getConstraints();
+            this.constraints = descriptorConstraints != null ? descriptorConstraints : new ValueConstraint[0];
+            this.valueFormat = valueDescriptor.getFormat();
+            this.valueUnits = valueDescriptor.getUnits();
+            if (this.units == null && valueDescriptor.getUnits() != null && valueDescriptor.getUnits().length > 0) {
+                this.units = valueDescriptor.getUnits()[0];
+            }
             return this;
         }
 
@@ -163,6 +207,7 @@ public class TeltonikaParameter<T> extends ParseableValueDescriptor<T> {
 
         public Builder<T> units(String units) {
             this.units = units;
+            this.valueUnits = units != null ? new String[] {units} : null;
             return this;
         }
 

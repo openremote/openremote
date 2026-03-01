@@ -3,6 +3,7 @@ package org.openremote.model.telematics.teltonika;
 import io.netty.buffer.ByteBuf;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.telematics.parameter.StandardParsers;
+import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
@@ -5910,9 +5911,10 @@ public final class TeltonikaParameters {
             .displayName("Event Triggered")
             .build();
 
-    public static final TeltonikaParameter<Long> TIMESTAMP = TeltonikaParameter.<Long>builder()
-            .id("ts").type(Long.class).parser((buf, len) -> parseLongFromUtf8(buf, len))
-            .displayName("Timestamp")
+    public static final TeltonikaParameter<Long> TIMESTAMP = TeltonikaParameter
+            .builder(ValueType.TIMESTAMP, (buf, len) -> parseLongFromUtf8(buf, len))
+            .id("ts")
+            .displayName("Last updated on")
             .build();
 
     public static final TeltonikaParameter<GeoJSONPoint> LOCATION = TeltonikaParameter.<GeoJSONPoint>builder()

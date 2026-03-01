@@ -307,7 +307,7 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
             if ((locationMask & 0x01) != 0) {
                 double latitude = buf.readFloat();
                 double longitude = buf.readFloat();
-                record.setLocation(new GeoJSONPoint(longitude, latitude));
+                addAttribute(attributes, TeltonikaParameters.LOCATION, new GeoJSONPoint(longitude, latitude), record.getTimestamp());
             }
 
             if ((locationMask & 0x02) != 0) {
@@ -347,7 +347,7 @@ public class TeltonikaProtocolDecoder extends ByteToMessageDecoder {
         // GPS position
         double longitude = buf.readInt() / 10000000.0;
         double latitude = buf.readInt() / 10000000.0;
-        record.setLocation(new GeoJSONPoint(longitude, latitude));
+        addAttribute(attributes, TeltonikaParameters.LOCATION, new GeoJSONPoint(longitude, latitude), record.getTimestamp());
 
         // Altitude
         int altitude = buf.readShort();

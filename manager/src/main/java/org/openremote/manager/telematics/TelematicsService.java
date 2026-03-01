@@ -9,6 +9,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.telematics.session.DeviceConnection;
 import org.openremote.model.telematics.core.DeviceMessage;
+import org.openremote.model.telematics.core.TelematicsMessagePublisher;
 import org.openremote.model.telematics.core.TelematicsMessageHandler;
 import org.openremote.model.telematics.core.TelematicsMessageEnvelope;
 import org.openremote.model.telematics.protocol.MessageContext;
@@ -26,7 +27,7 @@ import java.util.logging.Logger;
 /**
  * Central telematics runtime registry and message processing service.
  */
-public class TelematicsService extends RouteBuilder implements ContainerService {
+public class TelematicsService extends RouteBuilder implements ContainerService, TelematicsMessagePublisher {
 
     private static final Logger LOG = Logger.getLogger(TelematicsService.class.getName());
 

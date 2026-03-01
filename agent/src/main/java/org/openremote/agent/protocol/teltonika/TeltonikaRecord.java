@@ -17,7 +17,6 @@ public class TeltonikaRecord {
 
     private String imei;
     private long timestamp;
-    private GeoJSONPoint location;
     private boolean valid;
     private AttributeMap attributes;
     private int globalMask; // For GH3000 codec
@@ -46,14 +45,6 @@ public class TeltonikaRecord {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public GeoJSONPoint getLocation() {
-        return location;
-    }
-
-    public void setLocation(GeoJSONPoint location) {
-        this.location = location;
     }
 
     public boolean isValid() {
@@ -109,7 +100,6 @@ public class TeltonikaRecord {
         return "TeltonikaRecord{" +
                 "imei='" + imei + '\'' +
                 ", timestamp=" + timestamp +
-                ", location=" + location +
                 ", valid=" + valid +
                 ", codecName='" + codecName + '\'' +
                 ", protocolId='" + protocolId + '\'' +
