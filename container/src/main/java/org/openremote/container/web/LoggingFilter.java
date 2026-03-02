@@ -165,7 +165,7 @@ public class LoggingFilter implements Filter {
         Throwable thrown = null;
 
         try {
-            chain.doFilter(request, wrapped);
+            chain.doFilter(request, effectiveResponse);
         } catch (Throwable t) {
             thrown = t;
             // Ensure status is at least 500 if nothing was set

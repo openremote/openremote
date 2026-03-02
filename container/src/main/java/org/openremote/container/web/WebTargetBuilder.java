@@ -21,7 +21,9 @@ package org.openremote.container.web;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.client.*;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
@@ -35,7 +37,6 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +53,7 @@ import java.util.logging.Logger;
  */
 public class WebTargetBuilder {
 
-    protected static final Logger LOG = Logger.getLogger(WebTargetBuilder.class.getName());
+    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.AGENT, WebTargetBuilder.class.getName());
     protected static final int CONNECTION_POOL_SIZE = 10;
     protected static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
     protected static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;

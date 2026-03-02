@@ -502,7 +502,8 @@ trait ContainerTrait {
     }
 
     ResteasyClient createClient(String accessToken) {
-        WebTargetBuilder.createClient(Container.EXECUTOR, 1, 10000, { builder ->
+        // Use a long timeout to make debugging a bit easier
+        WebTargetBuilder.createClient(Container.EXECUTOR, 1, 120000, { builder ->
             if (accessToken != null) {
                 ClientRequestFilter authFilter = {context ->
                     (context as ClientRequestContext).getHeaders().putSingle(HttpHeaders.AUTHORIZATION, RequestParams.BEARER_AUTH_PREFIX + accessToken)

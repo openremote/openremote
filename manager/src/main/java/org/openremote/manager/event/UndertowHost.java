@@ -93,8 +93,6 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
             new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
         );
 
-        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-        deployment.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(container.isDevMode()));
         webService.deploy(deployment, false);
 
         // Caller expects a CamelWebSocketHandler instance

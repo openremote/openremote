@@ -1,5 +1,6 @@
 package org.openremote.container.security;
 
+import jakarta.security.enterprise.AuthenticationException;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -68,8 +69,8 @@ public class JWTAuthenticationFilter implements Filter {
 
             chain.doFilter(authenticatedRequest, response);
 
-        } catch (Exception e) {
-            httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+        } catch (AuthenticationException e) {
+            throw new ServletException("Authentication has failed", e);
         }
     }
 }

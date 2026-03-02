@@ -158,7 +158,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .build();
         }
 
-        tokenVerifier = new TokenVerifierImpl(keycloakServiceUri.toString());
+        tokenVerifier = new TokenVerifierImpl(keycloakServiceUri.build().toString());
     }
 
     @Override

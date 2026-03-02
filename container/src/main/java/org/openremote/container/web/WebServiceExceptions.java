@@ -22,6 +22,7 @@ package org.openremote.container.web;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.ExceptionHandler;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 
 import jakarta.persistence.OptimisticLockException;
@@ -101,25 +102,25 @@ public class WebServiceExceptions {
         }
     }
 
-    public static class RootUndertowExceptionHandler implements HttpHandler {
-
+    public static class RootUndertowExceptionHandler extends io.undertow.server.handlers.ExceptionHandler {
         final protected boolean devMode;
-        final protected HttpHandler nextHandler;
 
-        public RootUndertowExceptionHandler(boolean devMode, HttpHandler nextHandler) {
+        public RootUndertowExceptionHandler(boolean devMode, HttpHandler next) {
+            super(next);
             this.devMode = devMode;
-            this.nextHandler = nextHandler;
-        }
+            addExceptionHandler(Throwable.class, (HttpServerExchange exchange) -> {
+                // Get the exception that was thrown
+                Throwable throwable = exchange.getAttachment(io.undertow.server.handlers.ExceptionHandler.THROWABLE);
 
-        @Override
-        public void handleRequest(HttpServerExchange exchange) throws Exception {
-            try {
-                if (nextHandler == null)
-                    throw new IllegalStateException("This Undertow handler must wrap another handler");
-                nextHandler.handleRequest(exchange);
-            } catch (Throwable t) {
-                handleUndertowException(devMode, "Undertow Root Dispatch", false, exchange, t);
-            }
+                LOG.log(Level.SEVERE, "Captured uncaught exception in Undertow chain:", throwable);
+
+                // 3. Send a clean response to the client
+                if (!exchange.isResponseStarted()) {
+                    exchange.setStatusCode(500);
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                    exchange.getResponseSender().send("Internal Server Error");
+                }
+            });
         }
     }
 
@@ -131,25 +132,22 @@ public class WebServiceExceptions {
         }
 
         @Override
-        public boolean handleThrowable(HttpServerExchange exchange,
-                                       ServletRequest request,
-                                       ServletResponse response,
-                                       Throwable throwable) {
+        public boolean handleThrowable(HttpServerExchange exchange, ServletRequest request, ServletResponse response, Throwable throwable) {
+            LOG.log(Level.SEVERE, "Servlet exception captured deployment=" +
+                    request.getServletContext().getServletContextName() throwable);
 
-            // We handle the exception (return true), so we must send correct status to browser
+            // 3. Send a clean response to the client
             if (!exchange.isResponseStarted()) {
-                // The only exceptions we receive here should be unexpected server errors
                 exchange.setStatusCode(500);
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.getResponseSender().send("Internal Server Error");
             }
 
-            handleUndertowException(devMode, "Undertow Servlet Dispatch", response.isCommitted(), exchange, throwable);
             return true;
         }
     }
 
     public static Response handleResteasyException(boolean devMode, String origin, Request request, UriInfo uriInfo, Throwable throwable) {
-
-        logException(throwable, origin, request.getMethod() + " " + uriInfo.getRequestUri());
 
         int statusCode = 500;
 
@@ -186,8 +184,6 @@ public class WebServiceExceptions {
 
     public static void handleUndertowException(boolean devMode, String origin, boolean logOnly, HttpServerExchange exchange, Throwable throwable) {
 
-        logException(throwable, origin, exchange.toString());
-
         if (!logOnly && exchange.isResponseChannelAvailable()) {
             exchange.getResponseHeaders().put(
                 HttpString.tryFromString(HttpHeaders.CONTENT_TYPE), "text/plain"
@@ -219,51 +215,6 @@ public class WebServiceExceptions {
         Response.Status status = Response.Status.fromStatusCode(statusCode);
         return "Request failed with HTTP error status: "
             + statusCode
-            + (status != null ? " " + status.getReasonPhrase() : "")
-            + "\n\n"
-            + "Please contact the help desk.";
-    }
-
-    public static void logException(Throwable throwable, String origin, String info) {
-        // Ignore dropped connection errors
-        if ("java.io.IOException: Broken pipe".equals(getRootCause(throwable).toString()))
-            return;
-        if ("java.io.IOException: Connection reset by peer".equals(getRootCause(throwable).toString()))
-            return;
-
-        if (throwable instanceof WebApplicationException) {
-            int statusCode = ((WebApplicationException) throwable).getResponse().getStatus();
-            if (statusCode == 404) {
-                // Don't stack trace 404s just want request uri
-                LOG.log(Level.FINE, "Web service exception (404) in '" + origin + "' for '" + info + "'");
-                return;
-            } else if (statusCode >= 200 && statusCode < 300) {
-                LOG.log(Level.FINE, "Web service response ("+statusCode+") in '" + origin + "' for '" + info + "'");
-                return;
-            }
-        }
-
-        if (LOG.isLoggable(Level.FINE)) {
-            LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'" + " type = " + throwable.getClass().getSimpleName() + ", message=" + throwable.getMessage(), throwable);
-        } else {
-            LOG.log(Level.INFO, "Web service exception in '" + origin + "' for '" + info + "', root cause: " + getRootCause(throwable));
-        }
-    }
-
-    public static Throwable getRootCause(Throwable throwable) {
-        Throwable last;
-        do {
-            last = throwable;
-            throwable = getCause(throwable);
-        }
-        while (throwable != null);
-        return last;
-    }
-
-    public static Throwable getCause(Throwable throwable) {
-        // Prevent endless loop when t == t.getCause()
-        if (throwable != null && throwable.getCause() != null && throwable != throwable.getCause())
-            return throwable.getCause();
-        return null;
+            + (status != null ? " " + status.getReasonPhrase() : "");
     }
 }

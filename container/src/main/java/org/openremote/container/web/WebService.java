@@ -275,7 +275,6 @@ public abstract class WebService implements ContainerService {
     }
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
-
         HttpHandler handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, pathHandler);
 
         if (getBoolean(container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {

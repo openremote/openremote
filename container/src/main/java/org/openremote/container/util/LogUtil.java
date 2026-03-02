@@ -55,6 +55,9 @@ public class LogUtil {
 
     public static void initialiseJUL() throws ExceptionInInitializerError {
 
+        // Force JBOSS logging to JUL
+        System.setProperty("org.jboss.logging.provider", "jdk");
+
         // Ensure the standard logging directory exists as JUL FileHandler will not create it
         String loggingDir = System.getenv(OR_LOGGING_DIR);
         Path loggingDirPath;
