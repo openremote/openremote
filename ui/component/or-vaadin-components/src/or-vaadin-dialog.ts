@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { Dialog } from "@vaadin/dialog";
-import { OrVaadinComponent } from "./util";
-import { customElement } from "lit/decorators.js";
-import { css, LitElement } from "lit";
+import {Dialog} from "@vaadin/dialog";
+import {OrVaadinComponent} from "./util";
+import {customElement} from "lit/decorators.js";
+import {type LitElement, css} from "lit";
 
 /**
  * Vaadin uses custom directives for rendering the dialog content.
@@ -39,7 +39,8 @@ export {
 type WithLit<T> = T & typeof LitElement;
 
 @customElement("or-vaadin-dialog")
-export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
+export class OrVaadinDialog extends (Dialog as new () => Dialog & LitElement) implements OrVaadinComponent {
+
     static get styles() {
         return [
             (Dialog as WithLit<typeof Dialog>).styles,
@@ -55,7 +56,7 @@ export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
                 ::part(content) {
                     padding: 0 var(--lumo-space-l);
                 }
-            `,
+            `
         ];
     }
 

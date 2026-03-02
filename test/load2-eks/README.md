@@ -16,14 +16,23 @@ The profile is selected by setting the OR_PROFILE environment variable in the `e
 
 This folder contains a different setup than load1 and includes different test scenarios.  
 
-The setup is controlled by 2 parameters:
+The setup is controlled by the following parameters:
 - OR_SETUP_USERS: the number of accounts to create
 - OR_SETUP_ASSETS: the number of light assets to create in each account
+- OR_SETUP_ASSETS_WITH_LOCATIONS: number of assets (per account) that will be assigned a location
+- OR_SETUP_LOCATION_CLUSTERS: number of clusters to divide location-enabled assets into
+- OR_SETUP_LOCATION_MAIN_CENTER: main center point in "lon,lat" format (e.g. "4.470175,51.923464")
+- OR_SETUP_LOCATION_CENTER_DISTANCE: distance in meters between cluster centers
+- OR_SETUP_LOCATION_ASSET_RADIUS: max radius in meters for random asset locations around each cluster center
 
 The setup creates:
 - OR_SETUP_USERS standard user account
 - In each account, 1 Building asset
 - As child of each Building asset, OR_SETUP_ASSETS Light assets
+- OR_SETUP_ASSETS_WITH_LOCATIONS of those Light assets will have a location set.  
+All locations are distributed in OR_SETUP_LOCATION_CLUSTERS clusters.  
+The clusters' centers are arranged in a hex grid pattern around OR_SETUP_LOCATION_MAIN_CENTER.  
+Within each cluster, the locations are random within a OR_SETUP_LOCATION_CENTER_DISTANCE radius from the cluster center.
 - OR_SETUP_USERS restricted service users, linked to the corresponding Building asset,
 with appropriate permission to push attribute values
 
