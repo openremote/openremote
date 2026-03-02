@@ -20,7 +20,7 @@
 import {customElement} from "lit/decorators.js";
 import {TextArea} from "@vaadin/text-area";
 import {OrVaadinComponent} from "./util";
-import {LitElement} from "lit";
+import {type LitElement} from "lit";
 
 @customElement("or-vaadin-text-area")
 export class OrVaadinTextArea extends (TextArea as new () => TextArea & LitElement) implements OrVaadinComponent {
