@@ -73,7 +73,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
 
     // Init the schedule field with the default value
     if (!Object.keys(props.data).length) {
-        props.handleChange(props.path, defaultEvent);
+        return props.handleChange(props.path, defaultEvent);
     }
 
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
