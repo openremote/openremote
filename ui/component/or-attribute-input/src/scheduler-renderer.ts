@@ -63,16 +63,17 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     const start = now - millisSinceStartOfDay;
     const end = start + dayInMillis;
     const defaultEvent = { start, end, recurrence: "FREQ=DAILY" };
-
-    let initialEvent: CalendarEvent;
-    const datapoint = state.core?.data?.replayData?.findLast((p: { timestamp?: number }) => p?.timestamp);
-    if (datapoint) {
-        initialEvent = { ...defaultEvent, end: start + datapoint.timestamp * 1000 }
+    // Resolve the end date by finding the maximum timestamp
+    const timestamps: { timestamp: number }[] = state.core?.data?.replayData
+        ?.filter((o: { timestamp?: number }) => typeof o?.timestamp === "number") ?? [];
+    const maxTimestamp = timestamps.reduce((max, o) => o.timestamp > max ? o.timestamp : max, 0);
+    if (maxTimestamp) {
+        defaultEvent.end = start + maxTimestamp * 1000;
     }
 
     // Init the schedule field with the default value
     if (!Object.keys(props.data).length) {
-        props.handleChange(props.path, initialEvent! ?? defaultEvent);
+        props.handleChange(props.path, defaultEvent);
     }
 
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
