@@ -15,7 +15,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
-    "test": "npx tsc -b && npx playwright test",
+    "test": "npx tsc -b && npx playwright test --ui",
     "prepack": "npx rspack"
   },
   "author": "OpenRemote",
