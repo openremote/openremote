@@ -2176,6 +2176,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/or-vaadin-components": "workspace:*"
     "@types/geojson": "npm:^7946.0.7"
     "@types/lodash.debounce": "npm:^4"
     lit: "npm:^3.3.1"
