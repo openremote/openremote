@@ -319,7 +319,7 @@ public abstract class WebService implements ContainerService {
        );
 
        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
        deploy(deploymentInfo, false);
    }
 
@@ -368,7 +368,7 @@ public abstract class WebService implements ContainerService {
        );
 
        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
        deploy(deploymentInfo, false);
    }
 
@@ -432,7 +432,7 @@ public abstract class WebService implements ContainerService {
        );
 
        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
        deploy(deploymentInfo, true);
    }
 

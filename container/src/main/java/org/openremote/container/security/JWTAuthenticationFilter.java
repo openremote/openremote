@@ -5,6 +5,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.NotAuthorizedException;
 import org.openremote.model.Constants;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -70,7 +71,7 @@ public class JWTAuthenticationFilter implements Filter {
             chain.doFilter(authenticatedRequest, response);
 
         } catch (AuthenticationException e) {
-            throw new ServletException("Authentication has failed", e);
+            throw new NotAuthorizedException("Authentication has failed", e);
         }
     }
 }
