@@ -110,7 +110,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     }
 
     /**
-     * Resolves the timestamp seconds of the last (max) {@link SimulatorReplayDatapoint}s.
+     * Resolves the timestamp seconds of the last (max) {@link SimulatorReplayDatapoint}.
      * @param rd The {@link SimulatorReplayDatapoint}s to find the latest timestamp of.
      * @return The last (max) {@link SimulatorReplayDatapoint#timestamp} seconds.
      * If the resolved time is 0 an empty value is returned instead.

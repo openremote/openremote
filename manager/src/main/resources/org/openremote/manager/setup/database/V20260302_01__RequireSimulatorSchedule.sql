@@ -22,7 +22,7 @@ SET attributes = (
 -- FROM asset, jsonb_each(attributes)
 -- WHERE value -> 'meta' -> 'agentLink' ->> 'type' = 'SimulatorAgentLink';
 
--- ##### Use the following to check the schedules that are present on all agent links #####
+-- ##### Use the following to check the schedules that are present on SimulatorAgentLinks #####
 --
 -- SELECT
 --     id AS asset_id,

@@ -236,7 +236,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 12, "test"),
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 24, "test")
                 ).setSchedule(new SimulatorProtocol.Schedule(
-                        // We manually set the schedule so it starts when we want as AgentLinks don't have access to the timer service
+                        // We manually set the schedule so it starts when we want, as AgentLinks don't have access to the timer service
                         LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
                 ))))
         )
@@ -522,7 +522,7 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 2, "test"),
                 ).setSchedule(new SimulatorProtocol.Schedule(
-                        // We manually set the schedule so it starts when we want as AgentLinks don't have access to the timer service
+                        // We manually set the schedule so it starts when we want, as AgentLinks don't have access to the timer service
                         LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
                 ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
