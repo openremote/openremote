@@ -213,7 +213,7 @@ public class WebTargetBuilder {
                     clientResponseContext.setEntityStream(new ByteArrayInputStream(bytes)); // allow RESTEasy to read it later
                     body = new String(bytes, StandardCharsets.UTF_8);
                 }
-                LOG.log(Level.FINEST, "Received {0} response from {1} with body: {2}", new Object[]{status, clientRequestContext.getUri(), body});
+                LOG.log(Level.FINEST, "Received {0} response from {1} with body: {2}", new Object[]{status, clientRequestContext.getUri().getPath(), body});
             });
         }
 

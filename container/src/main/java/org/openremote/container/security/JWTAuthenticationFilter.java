@@ -71,7 +71,7 @@ public class JWTAuthenticationFilter implements Filter {
             chain.doFilter(authenticatedRequest, response);
 
         } catch (AuthenticationException e) {
-            throw new NotAuthorizedException("Authentication has failed", e);
+            throw new NotAuthorizedException("Authentication has failed: " + e.getMessage(), e);
         }
     }
 }

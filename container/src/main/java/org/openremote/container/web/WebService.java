@@ -258,8 +258,7 @@ public abstract class WebService implements ContainerService {
     public static List<Object> getStandardProviders(boolean devMode) {
 
         return Lists.newArrayList(
-           new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
-           new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
+           new WebServiceExceptions.JAXRSExceptionMapper(devMode),
            new JacksonConfig(),
            new ClientErrorExceptionHandler()
         );

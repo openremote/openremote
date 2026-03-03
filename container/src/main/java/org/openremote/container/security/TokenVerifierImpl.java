@@ -12,12 +12,15 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import jakarta.security.enterprise.AuthenticationException;
 import org.openremote.model.Constants;
+import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 public class TokenVerifierImpl implements TokenVerifier {
+    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.API, TokenVerifierImpl.class.getName());
     private final KeyResolver keyResolverService;
 
     public TokenVerifierImpl(String keycloakUrl) {
@@ -73,7 +76,9 @@ public class TokenVerifierImpl implements TokenVerifier {
         try {
             jwtProcessor.process(token, null);
         } catch (Exception e) {
-            throw new AuthenticationException("Invalid token: " + e.getMessage());
+            String msg = "Invalid token: " + e.getMessage();
+            LOG.info(msg);
+            throw new AuthenticationException(msg);
         }
         return principalRef.get();
     }

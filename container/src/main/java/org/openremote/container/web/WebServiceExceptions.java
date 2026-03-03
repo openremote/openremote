@@ -56,10 +56,10 @@ public class WebServiceExceptions {
     /**
      * The mapper handles JAX-RS exceptions
      */
-    public static class DefaultResteasyExceptionMapper implements ExceptionMapper<Throwable> {
+    public static class JAXRSExceptionMapper implements ExceptionMapper<Throwable> {
         final protected boolean devMode;
 
-        public DefaultResteasyExceptionMapper(boolean devMode) {
+        public JAXRSExceptionMapper(boolean devMode) {
             this.devMode = devMode;
         }
 
@@ -81,13 +81,12 @@ public class WebServiceExceptions {
             addExceptionHandler(Throwable.class, (HttpServerExchange exchange) -> {
                 // Get the exception that was thrown
                 Throwable throwable = exchange.getAttachment(io.undertow.server.handlers.ExceptionHandler.THROWABLE);
-
-                LOG.log(Level.SEVERE, "Captured uncaught exception in Undertow chain:", throwable);
+                logException(devMode, "Undertow", Level.SEVERE, throwable);
 
                 // 3. Send a clean response to the client
                 if (!exchange.isResponseStarted()) {
                     exchange.setStatusCode(500);
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
                     exchange.getResponseSender().send(devMode ? renderDevModeError(500, throwable) : renderProductionError(500, throwable));
                 }
             });
@@ -124,11 +123,11 @@ public class WebServiceExceptions {
                 status = webApplicationException.getResponse().getStatus();
             }
 
-            LOG.log(Level.SEVERE, "Captured error (Status " + status + "):", effectiveException);
+            logException(devMode, "Servlet", Level.WARNING, effectiveException);
 
             if (!exchange.isResponseStarted()) {
                 exchange.setStatusCode(status);
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
                 exchange.getResponseSender().send(devMode ?
                         renderDevModeError(status, effectiveException) :
                         renderProductionError(status, effectiveException));
@@ -156,27 +155,25 @@ public class WebServiceExceptions {
         if (effectiveException instanceof WebApplicationException webApplicationException) {
             Response response = webApplicationException.getResponse();
 
-            // If the exception already has a body (entity), return it as is
-            if (response.hasEntity()) {
-                return webApplicationException.getResponse();
-            }
-
             switch (response.getStatusInfo().getFamily()) {
                 case CLIENT_ERROR:
-                    logException();
                     status = response.getStatus();
                     break;
                 case SERVER_ERROR:
-                    logException();
                     status = response.getStatus();
                     break;
                 default:
+                    logException(devMode, "JAX-RS", Level.FINEST, effectiveException);
                     // If it's not a client or server error, it's not really an "exception" to
                     // be handled but a status that should be returned to the client
                     return response;
             }
         }
+
         try {
+            Level level = status >= 500 ? Level.SEVERE : status >= 400 ? Level.FINER : Level.FINEST;
+            logException(devMode, "JAX-RS", level, effectiveException);
+
             if (devMode) {
                 return Response.status(status).entity(renderDevModeError(status, effectiveException)).type(TEXT_PLAIN_TYPE).build();
             } else {
@@ -188,9 +185,14 @@ public class WebServiceExceptions {
         }
     }
 
-    public static void logException(String source, Level level, Throwable t) {
-
-
+    public static void logException(boolean devMode, String source, Level level, Throwable t) {
+        if (LOG.isLoggable(level)) {
+            if (devMode || level.intValue() > Level.INFO.intValue()) {
+                LOG.log(level, "HTTP " + source + ": " + t.getMessage(), t);
+            } else {
+                LOG.log(level, "HTTP " + source + ": " + t.getMessage());
+            }
+        }
     }
 
     public static String renderDevModeError(int statusCode, Throwable t) {
