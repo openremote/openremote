@@ -78,7 +78,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
             LocalDateTime start = LocalDateTime.now();
             LocalDateTime end = getReplayData()
                     .flatMap(this::getLastReplayDatapointSeconds).map(start::plusSeconds).orElse(start.plusDays(1));
-            this.schedule = new SimulatorProtocol.Schedule(start, end, "FREQ=DAILY");
+            this.schedule = new SimulatorProtocol.Schedule(start, end, null);
         }
     }
 
