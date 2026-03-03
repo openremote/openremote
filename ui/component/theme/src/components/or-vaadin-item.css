@@ -19,8 +19,16 @@
  */
 @import "@vaadin/vaadin-lumo-styles/components/item.css";
 
+@media lumo_components_item-internal {
+    :host {
+        [part="content"] {
+            overflow: hidden;
+        }
+    }
+}
+
 :root::before,
 :host::before {
     --_lumo-vaadin-item-inject: 1;
-    --_lumo-vaadin-item-inject-modules: lumo_components_item;
+    --_lumo-vaadin-item-inject-modules: lumo_components_item, lumo_components_item-internal;
 }

@@ -13,7 +13,10 @@ import {
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {ifDefined} from "lit/directives/if-defined.js";
+import {styleMap} from "lit/directives/style-map.js";
 import "@openremote/or-vaadin-components/or-vaadin-list-box";
+import "@openremote/or-vaadin-components/or-vaadin-item";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -210,23 +213,33 @@ export class OrAddAssetDialog extends LitElement {
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
         const lists: ListGroupItem[] = [];
+
+        const getListTemplate = (items: ListItem[], isAgent = false) => html`
+            <or-vaadin-list-box id="${isAgent ? "agent-list" : "asset-list"}" @selected-changed=${(ev: CustomEvent) => this.onTypeChanged(isAgent, items[ev.detail.value])}>
+                ${items.map(item => html`
+                    <or-vaadin-item style=${styleMap(item.styleMap ?? {})}>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <or-icon icon=${ifDefined(item.icon)}></or-icon>
+                            <span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                                ${item.text ?? item.value ?? html`<or-translate value="unknown"></or-translate>`}
+                            </span>
+                        </div>
+                    </or-vaadin-item>
+                `)}
+            </or-vaadin-list-box>
+        `;
+
         if (agentItems.length > 0) {
-            lists.push(
-                {
-                    heading: i18next.t("agents"),
-                    // list: html`${agentItems.map(agent => html`${agent.value}`)}`
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
-                }
-            );
+            lists.push({
+                heading: i18next.t("agents"),
+                list: getListTemplate(agentItems, true)
+            });
         }
         if (assetItems.length > 0) {
-            lists.push(
-                {
-                    heading: i18next.t("assets"),
-                    // list: html`${assetItems.map(asset => html`${asset.value}`)}`
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
-                }
-            );
+            lists.push({
+                heading: i18next.t("assets"),
+                list: getListTemplate(assetItems, false)
+            });
         }
 
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
