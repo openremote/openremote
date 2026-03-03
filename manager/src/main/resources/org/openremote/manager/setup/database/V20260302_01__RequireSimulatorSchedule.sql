@@ -1,6 +1,3 @@
-WITH constants AS (
-    SELECT (floor(extract(epoch from now()) * 1000 / 86400000) * 86400000)::bigint AS day_start
-)
 UPDATE asset
 SET attributes = (
     SELECT jsonb_object_agg(key, CASE
@@ -8,14 +5,13 @@ SET attributes = (
         AND NOT (value -> 'meta' -> 'agentLink' ? 'schedule')
         THEN jsonb_set(value, '{meta, agentLink, schedule}',
             jsonb_build_object(
-                'end', c.day_start + 86400000,
-                'start', c.day_start,
+                -- Start of the day the migration ran
+                'start', (floor(extract(epoch from now()) * 1000 / 86400000) * 86400000)::bigint,
                 'recurrence', 'FREQ=DAILY'
             )
         ) ELSE value
     END) FROM jsonb_each(attributes)
-) FROM constants c
-WHERE attributes @? '$.* ? (@.meta.agentLink.type == "SimulatorAgentLink" && !exists(@.meta.agentLink.schedule))';
+) WHERE attributes @? '$.* ? (@.meta.agentLink.type == "SimulatorAgentLink" && !exists(@.meta.agentLink.schedule))';
 
 -- ##### Use the following to check whether all demo setup SimulatorAgentLinks have a schedule after migrating #####
 --
