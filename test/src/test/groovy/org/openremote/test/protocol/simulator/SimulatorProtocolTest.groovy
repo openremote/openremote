@@ -189,8 +189,6 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "with a 1 day period"
         def start = schedule.getStart()
-        println(schedule.getStart())
-        println(schedule.getEnd())
         schedule.getEnd() == start.plusDays(1)
 
         and: "nothing happens"
@@ -223,8 +221,6 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
 
         and: "with a 23 hour period"
         def start = schedule.getStart()
-        println(schedule.getStart())
-        println(schedule.getEnd())
         schedule.getEnd() == start.plusHours(23)
     }
 
