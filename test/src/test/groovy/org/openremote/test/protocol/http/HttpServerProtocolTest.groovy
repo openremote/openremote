@@ -296,7 +296,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         when: "a test HTTP server agent with a test deployment is created"
         def agent = new HTTPServerTestAgent("Test agent")

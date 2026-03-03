@@ -33,20 +33,20 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessTokenString).proxy(AssetResource.class)
         /* ############################################## READ ####################################### */
 
         and: "user access tokens"
-        def testUserAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "testuser1", "testuser1").token
+        def testUserAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "testuser1", "testuser1")
         def testUser1Token = identityService.verify(MASTER_REALM, testUserAccessToken)
 
-        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2").token
+        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2")
         def testUser2Token = identityService.verify(keycloakTestSetup.realmBuilding.name, testUserAccessToken)
 
-        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser3", "testuser3").token
+        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser3", "testuser3")
         def testUser3Token = identityService.verify(keycloakTestSetup.realmBuilding.name, testUserAccessToken)
 
         expect: "some users to be restricted"

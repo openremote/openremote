@@ -17,10 +17,10 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.BOOLEAN
 import static org.openremote.model.value.ValueType.NUMBER
@@ -41,7 +41,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -226,7 +226,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -386,7 +386,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
-        ).token
+        )
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
@@ -522,7 +522,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)

@@ -35,6 +35,7 @@ import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
+import org.openremote.container.web.WebService
 import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -558,20 +559,30 @@ trait ContainerTrait {
         return port
     }
 
-    AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
-        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenService()
-                .grantToken(realm, new OAuthPasswordGrant(null, clientId, null, null, username, password).asMultivaluedMap())
+    String authenticate(Container container, String realm, String clientId, String username, String password) {
+        container.getService(WebService.class).getBearerToken(
+                new OAuthPasswordGrant(
+                        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenUri(realm).toString(),
+                        clientId,
+                        null,
+                        null,
+                        username,
+                        password)).get(10, TimeUnit.SECONDS)
     }
 
-    AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
-        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenService()
-                .grantToken(realm, new OAuthClientCredentialsGrant(null, clientId, clientSecret, null).asMultivaluedMap())
+    String authenticate(Container container, String realm, String clientId, String clientSecret) {
+        container.getService(WebService.class).getBearerToken(
+                new OAuthClientCredentialsGrant(
+                        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenUri(realm).toString(),
+                        clientId,
+                        clientSecret,
+                        null)).get(10, TimeUnit.SECONDS)
     }
 
     /**
      * Makes a call to a remote OpenRemote manager to retrieve an access token for a given user
      * */
-    AccessTokenResponse authenticate(boolean secure,
+    String authenticate(boolean secure,
                                      String host,
                                      String realm,
                                      String clientId,
@@ -587,7 +598,7 @@ trait ContainerTrait {
         return keycloak.grantToken(
             realm,
             new OAuthPasswordGrant(null, clientId, null, null, username, password)
-                    .asMultivaluedMap())
+                    .asMultivaluedMap()).token
     }
 
     ProducerTemplate getMessageProducerTemplate(Container container) {

@@ -91,7 +91,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
         adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
@@ -110,7 +110,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser4",
                 "testuser4",
-        ).token
+        )
 
         superAdminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, superAdminAccessToken).proxy(AlarmResource.class)
 

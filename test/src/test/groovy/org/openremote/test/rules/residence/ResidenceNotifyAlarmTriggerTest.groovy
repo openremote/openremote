@@ -128,7 +128,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "the notification and console resources"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), realm, accessToken).proxy(ConsoleResource.class)

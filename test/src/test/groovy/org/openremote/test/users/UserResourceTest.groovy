@@ -79,7 +79,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
             getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         def regularMasterAccessToken = authenticate(
             container,
@@ -87,7 +87,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-        ).token
+        )
 
         def regularBuildingAccessToken = authenticate(
             container,
@@ -95,7 +95,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
-        ).token
+        )
 
         def adminBuildingAccessToken = authenticate(
             container,
@@ -103,7 +103,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser4",
             "testuser4"
-        ).token
+        )
 
         adminUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(UserResource.class)
         regularUserMasterResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, regularMasterAccessToken).proxy(UserResource.class)
@@ -373,7 +373,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "newPassword"
-        ).token
+        )
         testUser2BuildingAccessToken != null
     }
 

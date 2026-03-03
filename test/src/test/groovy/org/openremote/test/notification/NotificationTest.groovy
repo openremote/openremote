@@ -90,21 +90,21 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
         def testuser2AccessToken = authenticate(
                 container,
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
-        ).token
+        )
         def testuser3AccessToken = authenticate(
                 container,
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "an authenticated superuser"
         def adminAccessToken = authenticate(
@@ -113,7 +113,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         def notification = new Notification("TestAction",
                 new PushNotificationMessage("Test Action",
@@ -747,7 +747,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         def notification = new Notification(
                 "MultiLanguageAction",
@@ -837,7 +837,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "their language is updated to dutch"
         def testuser1 = identityService.getIdentityProvider().getUserByUsername(MASTER_REALM, "testuser1")

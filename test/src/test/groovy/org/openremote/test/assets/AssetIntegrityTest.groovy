@@ -42,7 +42,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def serverUri = serverUri(serverPort)
@@ -187,7 +187,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def serverUri = serverUri(serverPort)

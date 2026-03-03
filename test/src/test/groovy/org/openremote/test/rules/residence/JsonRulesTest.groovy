@@ -214,7 +214,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "another user authenticates"
         def accessToken2 = authenticate(
@@ -223,7 +223,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "building",
                 "building"
-        ).token
+        )
 
         and: "a console is registered by the first user"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)

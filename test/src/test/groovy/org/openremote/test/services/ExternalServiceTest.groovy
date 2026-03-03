@@ -37,7 +37,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         // building service user for single tenant logic
         def buildingServiceUserAccessToken = authenticate(
@@ -45,14 +45,14 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser.username,
                 keycloakTestSetup.serviceUser.secret
-        ).token
+        )
 
         def buildingServiceUser2AccessToken = authenticate(
                 container,
                 keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser2.username,
                 keycloakTestSetup.serviceUser2.secret
-        ).token
+        )
 
         // master service user for multi-tenant logic
         def superServiceUserAccessToken = authenticate(
@@ -60,7 +60,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 MASTER_REALM,
                 keycloakTestSetup.superServiceUser.username,
                 keycloakTestSetup.superServiceUser.secret
-        ).token
+        )
 
         then: "the users have been authenticated and the tokens are retrieved"
         conditions.eventually {

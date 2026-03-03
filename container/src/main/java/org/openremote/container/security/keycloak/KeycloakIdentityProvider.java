@@ -24,15 +24,16 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import jakarta.security.enterprise.AuthenticationException;
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.token.TokenService;
 import org.openremote.container.security.*;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
@@ -46,7 +47,10 @@ import org.openremote.model.util.TextUtil;
 import javax.security.auth.Subject;
 import java.net.URI;
 import java.security.Principal;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -58,6 +62,10 @@ import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
+
+    public record DiscoveryResult (
+        String issuer
+    ) {}
 
     // We use this client ID to access Keycloak because by default it allows obtaining
     // an access token from authentication directly, which gives us full access to import/delete
@@ -72,11 +80,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         "security-admin-console");
 
     public static final String OR_KEYCLOAK_HOST = "OR_KEYCLOAK_HOST";
-    public static final String OR_KEYCLOAK_HOST_DEFAULT = "127.0.0.1"; // Bug in keycloak default hostname provider means localhost causes problems with dev-proxy profile
+    public static final String OR_KEYCLOAK_HOST_DEFAULT = "localhost";
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
     public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
+    public static final String OIDC_CONFIG_PATH = "/realms/master/.well-known/openid-configuration";
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
     public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
@@ -158,7 +167,26 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .build();
         }
 
-        tokenVerifier = new TokenVerifierImpl(keycloakServiceUri.build().toString());
+        // Get public URL of keycloak from the keycloak server
+        LOG.info("Getting public URL of keycloak from the keycloak server");
+        WebTarget webTarget = new WebTargetBuilder(WebTargetBuilder.getClient(), keycloakServiceUri.build()).build();
+        DiscoveryResult result;
+        try (Response response = webTarget.request(MediaType.APPLICATION_JSON_TYPE).accept(MediaType.APPLICATION_JSON_TYPE).get()) {
+
+            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                String body = "<unreadable>";
+                try {
+                    body = response.readEntity(String.class);
+                } catch (Exception ignore) {}
+
+                LOG.severe("OIDC discovery failed falling back to service URI for issuer: HTTP " + response.getStatus() + " body=" + body);
+            }
+
+            result = response.readEntity(DiscoveryResult.class);
+        }
+
+        String keycloakPublicUrl = result != null ? result.issuer() : keycloakServiceUri.build().toString();
+        tokenVerifier = new TokenVerifierImpl(keycloakServiceUri.build().toString(), keycloakPublicUrl);
     }
 
     @Override
@@ -210,10 +238,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         JWTAuthenticationFilter jwtFilter = new JWTAuthenticationFilter(tokenVerifier);
         FilterRegistration.Dynamic registration = servletContext.addFilter(JWTAuthenticationFilter.NAME, jwtFilter);
         return registration;
-    }
-
-    protected TokenService getTokenService() {
-        return keycloakTarget.proxy(TokenService.class);
     }
 
     protected ReactiveTokenService getReactiveTokenService() {

@@ -40,7 +40,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the ruleset resource"
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
@@ -387,7 +387,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "the ruleset resource"
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
@@ -662,7 +662,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
-        ).token
+        )
 
         and: "the ruleset resource"
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(RulesResource.class)
@@ -806,7 +806,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "the ruleset resource"
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(RulesResource.class)

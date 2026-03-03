@@ -41,7 +41,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "a test client target set"
         clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)

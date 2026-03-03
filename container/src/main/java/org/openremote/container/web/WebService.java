@@ -560,7 +560,7 @@ public abstract class WebService implements ContainerService {
 
             try {
                 OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
-                String authHeaderValue = oAuthFilter.getAuthHeader();
+                String authHeaderValue = oAuthFilter.getAccessToken();
                 if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                     throw new RuntimeException("Returned access token is null");
                 }

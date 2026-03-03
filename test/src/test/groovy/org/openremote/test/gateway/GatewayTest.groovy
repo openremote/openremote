@@ -116,7 +116,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             managerTestSetup.realmBuildingName,
             gateway.getClientId().orElse(""),
             gateway.getClientSecret().orElse("")
-        ).token
+        )
         def assetResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(AssetResource.class)
 
         and: "the realm assets are requested"
@@ -785,7 +785,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
 
         and: "the gateway client resource"
@@ -1187,7 +1187,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the gateway client resource"
         def gatewayClientResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(GatewayClientResource.class)
@@ -1333,7 +1333,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
         def gatewayResource = getClientApiTarget(serverUri((isCentralInstanceSecure), centralInstanceHostname, centralInstancePort), MASTER_REALM, accessToken).proxy(GatewayServiceResource.class)
 
         when: "a new gateway client connection is created to connect to the central instance"
@@ -1408,20 +1408,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         * */
         and: "We request a new admin token from the tunnel URL"
 
-        def x = authenticate(true,
+        def token = authenticate(true,
                 centralManagerTunnelInfo.id + "." + centralManagerTunnelInfo.hostname,
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT))
-
-        then: "the request should be successful"
-
-        assert x.error == null
-
-        and: "Response contains a valid access token"
-
-        assert x.getExpiresIn() > 0
 
         when: "We request the info endpoint of the currently running manager"
 

@@ -218,7 +218,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 "smartcity",
                 "smartcity"
-        ).token
+        )
         def response = null
 
         when: "exporting with a malicious attribute name via REST API"
