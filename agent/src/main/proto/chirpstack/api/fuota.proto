@@ -1,0 +1,408 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "FuotaProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "common/common.proto";
+import "api/multicast_group.proto";
+
+// FuotaService is the service providing API methods for FUOTA deployments.
+service FuotaService {
+  // Create the given FUOTA deployment.
+  rpc CreateDeployment(CreateFuotaDeploymentRequest) returns (CreateFuotaDeploymentResponse) {}
+
+  // Get the FUOTA deployment for the given ID.
+  rpc GetDeployment(GetFuotaDeploymentRequest) returns (GetFuotaDeploymentResponse) {}
+
+  // Update the given FUOTA deployment.
+  rpc UpdateDeployment(UpdateFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+
+  // Delete the FUOTA deployment for the given ID.
+  rpc DeleteDeployment(DeleteFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+
+  // Start the FUOTA deployment.
+  rpc StartDeployment(StartFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+
+  // List the FUOTA deployments.
+  rpc ListDeployments(ListFuotaDeploymentsRequest) returns (ListFuotaDeploymentsResponse) {}
+
+  // Add the given DevEUIs to the FUOTA deployment.
+  rpc AddDevices(AddDevicesToFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+
+  // Remove the given DevEUIs from the FUOTA deployment.
+  rpc RemoveDevices(RemoveDevicesFromFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+
+  // List FUOTA Deployment devices.
+  rpc ListDevices(ListFuotaDeploymentDevicesRequest) returns (ListFuotaDeploymentDevicesResponse) {}
+
+  // Add the given Gateway IDs to the FUOTA deployment.
+  // By default, ChirpStack will automatically select the minimum amount of
+  // gateways needed to cover all devices within the multicast-group. Setting
+  // the gateways manually overrides this behaviour.
+  rpc AddGateways(AddGatewaysToFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+  
+  // List the gateways added to the FUOTA deployment.
+  rpc ListGateways(ListFuotaDeploymentGatewaysRequest) returns (ListFuotaDeploymentGatewaysResponse) {}
+
+  // Remove the given Gateway IDs from the FUOTA deployment.
+  rpc RemoveGateways(RemoveGatewaysFromFuotaDeploymentRequest) returns (google.protobuf.Empty) {}
+  // GetLogs returns the logs for the FUOTA deployment.
+
+  // List jobs for the given FUOTA deployment.
+  rpc ListJobs(ListFuotaDeploymentJobsRequest) returns (ListFuotaDeploymentJobsResponse) {}
+}
+
+enum RequestFragmentationSessionStatus {
+  // Do not request the fragmentation-session status.
+  NO_REQUEST = 0;
+
+  // Enqueue the fragmentation-session status request command directly after
+  // enqueueing the fragmentation-session fragments. This is the recommended
+  // option for Class-A devices as the status request will stay in the
+  // downlink queue until the device sends its next uplink.
+  AFTER_FRAGMENT_ENQUEUE = 1;
+
+  // Enqueue the fragmentation-session status request after the multicast
+  // session-timeout. This is the recommended option for Class-B and -C
+  // devices as selecting AFTER_FRAGMENT_ENQUEUE will likely cause the NS
+  // to schedule the downlink frame during the FUOTA multicast-session.
+  AFTER_SESSION_TIMEOUT = 2;
+
+}
+
+message FuotaDeployment {
+  // Deployment ID.
+  // This value is automatically set on create.
+  string id = 1;
+
+  // Application ID.
+  string application_id = 2;
+
+  // Device-profile ID.
+  string device_profile_id = 3;
+
+  // Deployment name.
+  string name = 4;
+
+  // Multicast-group type.
+  MulticastGroupType multicast_group_type = 5;
+
+  // Multicast-group scheduling type (Class-C only).
+  MulticastGroupSchedulingType multicast_class_c_scheduling_type = 6;
+
+  // Multicast data-rate.
+  uint32 multicast_dr = 7;
+
+  // Multicast ping-slot period (Class-B only).
+  // Valid options are: 0 - 7.
+  //
+  // Number of ping-slots per beacon-period:
+  // pingNb = 2^(7-periodicity)
+  //
+  // Periodicity: 0 = 128 ping-slots per beacon period = ~ every 1 sec
+  // Periodicity: 7 = 1 ping-slot per beacon period = ~ every 128 sec
+  uint32 multicast_class_b_ping_slot_periodicity = 8;
+
+  // Multicast frequency (Hz).
+  uint32 multicast_frequency = 9;
+
+  // Multicast timeout.
+  // This defines the timeout of the multicast-session.
+  // Please refer to the Remote Multicast Setup specification as this field
+  // has a different meaning for Class-B and Class-C groups.
+  uint32 multicast_timeout = 10;
+
+  // Calculate multicast timeout.
+  // If set to true, ChirpStack will calculate the multicast-timeout.
+  bool calculate_multicast_timeout = 11;
+
+  // The number of times ChirpStack will retry an unicast command
+  // before it considers it to be failed.
+  uint32 unicast_max_retry_count = 12;
+
+  // Fragmentation size.
+  // This defines the size of each payload fragment. Please refer to the
+  // Regional Parameters specification for the maximum payload sizes
+  // per data-rate and region.
+  uint32 fragmentation_fragment_size = 13;
+
+  // Calculate fragmentation size.
+  // If set to true, ChirpStack will calculate the fragmentation size.
+  bool calculate_fragmentation_fragment_size = 14;
+
+  // Fragmentation redundancy percentage.
+  // The number represents the percentage (0 - 100) of redundant messages
+  // to send.
+  uint32 fragmentation_redundancy_percentage = 15;
+
+  // Fragmentation session index.
+  uint32 fragmentation_session_index = 16;
+
+  // Fragmentation matrix.
+  uint32 fragmentation_matrix = 17;
+
+  // Block ack delay.
+  uint32 fragmentation_block_ack_delay = 18;
+
+  // Descriptor (4 bytes).
+  bytes fragmentation_descriptor = 19;
+
+  // Request fragmentation session status.
+  RequestFragmentationSessionStatus request_fragmentation_session_status = 20;
+
+  // Payload.
+  // The FUOTA payload to send.
+  bytes payload = 21;
+
+  // Set device tags on complete.
+  map<string, string> on_complete_set_device_tags = 22;
+}
+
+message FuotaDeploymentListItem {
+  // ID.
+  string id = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Updated at timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+
+  // Started at timestamp.
+  google.protobuf.Timestamp started_at = 4;
+
+  // Completed at timestamp.
+  google.protobuf.Timestamp completed_at = 5;
+
+  // Name.
+  string name = 6;
+}
+
+message FuotaDeploymentDeviceListItem {
+  // ID.
+  string fuota_deployment_id = 1;
+
+  // DevEUI.
+  string dev_eui = 2;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 3;
+
+  // Completed at timestamp.
+  google.protobuf.Timestamp completed_at = 4;
+
+  // McGroupSetup completed at timestamp.
+  google.protobuf.Timestamp mc_group_setup_completed_at = 5;
+
+  // McSession completed at timestamp.
+  google.protobuf.Timestamp mc_session_completed_at = 6;
+
+  // FragSessionSetup completed at timestamp.
+  google.protobuf.Timestamp frag_session_setup_completed_at = 7;
+
+  // FragStatus completed at timestamp.
+  google.protobuf.Timestamp frag_status_completed_at = 8;
+
+  // Error message.
+  string error_msg = 9;
+}
+
+message FuotaDeploymentGatewayListItem {
+  // ID.
+  string fuota_deployment_id = 1;
+
+  // Gateway ID.
+  string gateway_id = 2;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message CreateFuotaDeploymentRequest {
+  // Deployment.
+  FuotaDeployment deployment = 1;
+}
+
+message CreateFuotaDeploymentResponse {
+  // ID of the created deployment.
+  string id = 1;
+}
+
+message GetFuotaDeploymentRequest {
+  // FUOTA Deployment ID.
+  string id = 1;
+}
+
+message GetFuotaDeploymentResponse {
+  // FUOTA Deployment.
+  FuotaDeployment deployment = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Updated at timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+
+  // Started at timestamp.
+  google.protobuf.Timestamp started_at = 4;
+
+  // Completed at timestamp.
+  google.protobuf.Timestamp completed_at = 5;
+}
+
+message UpdateFuotaDeploymentRequest {
+  // Deployment.
+  FuotaDeployment deployment = 1;
+}
+
+message DeleteFuotaDeploymentRequest {
+  // FUOTA deployment ID.
+  string id = 1;
+}
+
+message StartFuotaDeploymentRequest {
+  // FUOTA deployment ID.
+  string id = 1;
+}
+
+message ListFuotaDeploymentsRequest {
+  // Max number of FUOTA deployments to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // Application ID to list the FUOTA Deployments for.
+  // This filter is mandatory.
+  string application_id = 3;
+}
+
+message ListFuotaDeploymentsResponse {
+  // Total number of FUOTA Deployments.
+  uint32 total_count = 1;
+
+  // Result-test.
+  repeated FuotaDeploymentListItem result = 2;
+}
+
+message AddDevicesToFuotaDeploymentRequest {
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 1;
+
+  // DevEUIs.
+  // Note that the DevEUIs must share the same device-profile as assigned to
+  // the FUOTA Deployment.
+  repeated string dev_euis = 2;
+}
+
+message RemoveDevicesFromFuotaDeploymentRequest {
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 1;
+
+  // DevEUIs.
+  repeated string dev_euis = 2;
+}
+
+message ListFuotaDeploymentDevicesRequest {
+  // Max number of devices to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 3;
+}
+
+message ListFuotaDeploymentDevicesResponse {
+  // Total number of devices.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated FuotaDeploymentDeviceListItem result = 2;
+}
+
+message AddGatewaysToFuotaDeploymentRequest {
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 1;
+
+  // Gateway IDs.
+  // Note that the Gateways must be under the same tenant as the FUOTA Deployment.
+  repeated string gateway_ids = 2;
+}
+
+message RemoveGatewaysFromFuotaDeploymentRequest {
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 1;
+
+  // Gateway IDs.
+  repeated string gateway_ids = 2;
+}
+
+message ListFuotaDeploymentGatewaysRequest {
+  // Max number of gateways to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 3;
+}
+
+message ListFuotaDeploymentGatewaysResponse {
+  // Total number of gateways.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated FuotaDeploymentGatewayListItem result = 2;
+}
+
+message ListFuotaDeploymentJobsRequest {
+  // FUOTA Deployment ID.
+  string fuota_deployment_id = 1;
+}
+
+message ListFuotaDeploymentJobsResponse {
+  // Jobs.
+  repeated FuotaDeploymentJob jobs = 1;
+}
+
+message FuotaDeploymentJob {
+  // Job identifier.
+  string job = 1;
+
+  // Created at.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Completed at.
+  google.protobuf.Timestamp completed_at = 3;
+
+  // Max. retry count.
+  uint32 max_retry_count = 4;
+
+  // Attempt count.
+  uint32 attempt_count = 5;
+
+  // Scheduler run after.
+  google.protobuf.Timestamp scheduler_run_after = 6;
+
+  // Warning message.
+  string warning_msg = 7;
+
+  // Error message.
+  string error_msg = 8;
+}
