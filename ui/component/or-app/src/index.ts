@@ -182,6 +182,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
         document.addEventListener("visibilitychange", this._onVisibilityChanged);
         this.stateChanged(this.getState());
+        const OriginalWS = WebSocket;
+        window.WebSocket = function (url: string | URL, protocols?: string | string[]) {
+            return ((window as any).ws = new OriginalWS(url, protocols));
+        } as any;
     }
 
     disconnectedCallback() {

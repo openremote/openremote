@@ -409,6 +409,45 @@ export class PageMap extends Page<MapStateKeyed> {
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this._onMapClick);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
+
+        const centerLon = 4.310436;
+        const centerLat = 51.961354;
+        const radius = 0.003; // Adjust this for circle size (approx. degrees)
+        const speed = 0.05;   // How much the angle changes per update (in radians)
+        const interval = 500; // Update every 100ms
+
+        let angle = 0;
+
+        const moveInCircle = setInterval(() => {
+            // 1. Calculate new coordinates
+            const newLon = centerLon + radius * Math.cos(angle);
+            const newLat = centerLat + radius * Math.sin(angle);
+
+            // 2. Construct the message
+            const message = `EVENT:${JSON.stringify({
+                eventType: "attribute",
+                ref: { id: "29ztI1P1kkwTJnLeMdsFL4", name: "location" },
+                value: {
+                    "coordinates": [newLon, newLat],
+                    "type": "Point"
+                }
+            })}`;
+
+            // 3. Send via WebSocket
+            if ((window as any)?.ws?.readyState === (window as any)?.ws?.OPEN) {
+                (window as any).ws.send(message);
+            } else {
+                console.warn("WebSocket is not open. Stopping interval.");
+                clearInterval(moveInCircle);
+            }
+
+            // 4. Increment angle for the next frame
+            angle += speed;
+
+            // Optional: Keep angle within 0 - 2π to prevent overflow over long periods
+            if (angle > Math.PI * 2) angle -= Math.PI * 2;
+
+        }, interval);
     }
 
     public disconnectedCallback() {
