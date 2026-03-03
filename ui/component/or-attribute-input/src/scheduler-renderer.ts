@@ -31,8 +31,9 @@ import {
     isObjectControl,
     schemaMatches,
 } from "@openremote/or-json-forms";
-import "@openremote/or-scheduler";
+import { CalendarEvent } from "@openremote/model";
 import { Frequency, RRulePartKeys, OrSchedulerChangedEvent, INTUITIVE_NOT_APPLICABLE } from "@openremote/or-scheduler";
+import "@openremote/or-scheduler";
 
 const DISABLED_FREQUENCIES = [
     // Disallowed as we cannot guarantee second accuracy in the SimulatorProtocol
@@ -56,18 +57,23 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     };
 
     // Match default replay schedule (when schedule isn't defined)
-    const now = Date.now()
-    const dayInMillis = 86400_000
-    const millisSinceStartOfDay = now % dayInMillis
-    const defaultEvent = {
-        start: now - millisSinceStartOfDay,
-        end: now - millisSinceStartOfDay + dayInMillis,
-        recurrence: "FREQ=DAILY"
+    const now = Date.now();
+    const dayInMillis = 86400_000;
+    const millisSinceStartOfDay = now % dayInMillis;
+    const start = now - millisSinceStartOfDay;
+    const end = start + dayInMillis;
+    const defaultEvent = { start, end, recurrence: "FREQ=DAILY" };
+    // Resolve the end date by finding the maximum timestamp
+    const timestamps: { timestamp: number }[] = state.core?.data?.replayData
+        ?.filter((o: { timestamp?: number }) => typeof o?.timestamp === "number") ?? [];
+    const maxTimestamp = timestamps.reduce((max, o) => o.timestamp > max ? o.timestamp : max, 0);
+    if (maxTimestamp) {
+        defaultEvent.end = start + maxTimestamp * 1000;
     }
 
     // Init the schedule field with the default value
     if (!Object.keys(props.data).length) {
-        props.handleChange(props.path, defaultEvent);
+        return props.handleChange(props.path, defaultEvent);
     }
 
     const onSchedulerChanged = (event: OrSchedulerChangedEvent | undefined) => {
