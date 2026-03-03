@@ -467,13 +467,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         /**
-         * Calculates the remaining offset delay in milliseconds relative to the current time.
+         * Calculates the remaining datapoint offset delay in milliseconds relative to the current time.
          *
-         * @param offset The offset from the current occurrence in seconds.
+         * @param offset The datapoint offset in seconds.
          * @param timeSinceOccurrenceStart The time since the occurrence started in milliseconds.
-         * @return The remaining offset delay in milliseconds relative to the current time.
+         * @return The remaining datapoint offset delay in milliseconds relative to the current time.
          * <p>
-         * If the recurrence rule has ended returns {@code null} instead.
+         * If the recurrence rule has ended returns {@link OptionalLong#empty()} instead.
          */
         public OptionalLong getDelay(long offset, long timeSinceOccurrenceStart) {
             long offsetInMillis = offset * 1000;
@@ -492,7 +492,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
          * @param timeSinceOccurrenceStart The time since the occurrence started in milliseconds.
          * @return The delay in milliseconds until the next occurrence.
          * <p>
-         * If the recurrence rule has ended returns {@code null} instead.
+         * If the recurrence rule has ended returns {@link OptionalLong#empty()} instead.
          */
         public OptionalLong getTimeUntilNextOccurrence(long timeSinceOccurrenceStart) {
             if (recurrence != null) {
