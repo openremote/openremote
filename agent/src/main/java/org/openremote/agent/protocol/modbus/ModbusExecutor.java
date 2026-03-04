@@ -73,6 +73,11 @@ public class ModbusExecutor<F extends ModbusFrame> {
             LOG.info(callback.getProtocolName() + " - Initializing deviceConfig with default configuration for agent: " + callback.getModbusAgent().getName());
             ModbusAgent.DeviceConfigMap defaultConfig = new ModbusAgent.DeviceConfigMap();
             defaultConfig.put("default", ModbusAgent.ModbusDeviceConfig.createDefault());
+            // Set in-memory so it's immediately available (publishAttributeEvent is async)
+            callback.getModbusAgent().addOrReplaceAttributes(
+                new Attribute<>(ModbusAgent.DEVICE_CONFIG, defaultConfig)
+            );
+            // Also persist via event
             callback.publishAttributeEvent(new AttributeEvent(callback.getModbusAgent().getId(), ModbusAgent.DEVICE_CONFIG, defaultConfig));
         }
     }
