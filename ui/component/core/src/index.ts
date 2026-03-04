@@ -984,6 +984,7 @@ export class Manager implements EventProviderFactory {
         const tokenRefreshed = await this._keycloak!.updateToken(20);
         console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
         if (tokenRefreshed) {
+            console.debug("New token:", this.getKeycloakToken());
             this._onAuthenticated();
         }
         return tokenRefreshed;
@@ -1098,10 +1099,15 @@ export class Manager implements EventProviderFactory {
             }
 
             // Check events
-            const eventsOffline = this.events && this.events.status === EventProviderStatus.CONNECTING;
-            console.debug("If event provider offline then attempting reconnect: offline=" + eventsOffline);
+            const isEventsOffline = () => this.events?.status === EventProviderStatus.CONNECTING;
+            console.debug("If event provider offline then attempting reconnect: offline=" + isEventsOffline());
             // Force reconnect attempt now if needed
-            return !eventsOffline || await this.events?.connect();
+            if(isEventsOffline()) {
+                // TODO: Remove this temporary console statement
+                console.debug("Offline, attempting to reconnect using auth header:", this.getAuthorizationHeader());
+                await this.events?.connect();
+            }
+            return !isEventsOffline();
         };
 
         const connected = await tryReconnect();
