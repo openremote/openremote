@@ -1199,6 +1199,9 @@
               },
               "updateOnWrite": {
                 "description": "Don't expect a response from the protocol just update the attribute immediately on write"
+              },
+              "writeValueFilters": {
+                "description": "Similar to valueFilter but will be applied to outgoing values allowing for inverse filtering."
               }
             }
           }
