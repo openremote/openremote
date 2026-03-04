@@ -1,4 +1,4 @@
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -17,6 +17,7 @@ import "@openremote/or-vaadin-components/or-vaadin-item";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import {OrVaadinListBox} from "@openremote/or-vaadin-components/or-vaadin-list-box";
+import { when } from "lit/directives/when.js";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -209,10 +210,11 @@ export class OrAddAssetDialog extends LitElement {
 
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
-        const lists: ListGroupItem[] = [];
 
-        const getListTemplate = (items: ListItem[], isAgent = false) => html`
-            <or-vaadin-list-box id="${isAgent ? "agent-list" : "asset-list"}" @selected-changed=${(ev: CustomEvent) => this.onTypeChanged(isAgent, items[ev.detail.value])}>
+        const getListTemplate = (items: ListItem[], isAgent = false): TemplateResult => html`
+            <or-vaadin-list-box id="${isAgent ? "agent-list" : "asset-list"}" style="padding: var(--lumo-space-s) 0;"
+                                @selected-changed=${(ev: CustomEvent) => this.onTypeChanged(isAgent, items[ev.detail.value])}>
+                <b style="padding: 0 var(--lumo-space-s);"><or-translate value=${isAgent ? "agents" : "assets"}></or-translate></b>
                 ${items.map(item => html`
                     <or-vaadin-item style=${styleMap(item.styleMap ?? {})}>
                         <div style="display: flex; align-items: center; gap: 8px;">
@@ -226,26 +228,15 @@ export class OrAddAssetDialog extends LitElement {
             </or-vaadin-list-box>
         `;
 
-        if (agentItems.length > 0) {
-            lists.push({
-                heading: i18next.t("agents"),
-                list: getListTemplate(agentItems, true)
-            });
-        }
-        if (assetItems.length > 0) {
-            lists.push({
-                heading: i18next.t("assets"),
-                list: getListTemplate(assetItems, false)
-            });
-        }
-
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
         return html`
             <div class="col" style="height: 100%;">
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
-                        ${createListGroup(lists)}
+                        ${when(agentItems.length > 0, () => getListTemplate(agentItems, true))}
+                        <hr />
+                        ${when(assetItems.length > 0, () => getListTemplate(assetItems, false))}
                     </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
@@ -315,14 +306,17 @@ export class OrAddAssetDialog extends LitElement {
                         <div class="heading">${i18next.t("optional_attributes")}</div>
                         <or-vaadin-checkbox-group theme="vertical" .value=${this.selectedAttributes.map(attr => attr.name)}>
                             ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
-                                .map(attribute => html`
+                                .map(attribute => {
+                                    console.debug("Selected?", this.selectedAttributes?.find(x => x.name === attribute.name));
+                                    return html`
                                     <or-vaadin-checkbox value=${attribute.name} label=${Util.getAttributeLabel(undefined, attribute, undefined, true)}
-                                                        @change=${(ev: Event) => (ev.currentTarget as OrVaadinCheckbox).checked 
-                                                                ? this.selectedAttributes.push(attribute) 
-                                                                : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s.name === attribute.name), 1)
+                                                        @change=${(ev: Event) => (ev.currentTarget as OrVaadinCheckbox).checked
+                                            ? this.selectedAttributes.push(attribute)
+                                            : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s.name === attribute.name), 1)
                                     }>
                                     </or-vaadin-checkbox>
-                                `)}
+                                `
+                                })}
                         </or-vaadin-checkbox-group>
                     </div>
                 `} 
