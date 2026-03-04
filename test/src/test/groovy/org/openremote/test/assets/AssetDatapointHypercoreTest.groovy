@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
+import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_WEEKS
 
 class AssetDatapointHypercoreTest extends Specification implements ManagerContainerTrait {
 
@@ -29,8 +30,10 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 30, delay: 1)
 
-        and: "the container is started"
-        def container = startContainer(defaultConfig(), defaultServices())
+        and: "the container is started with a 4-week retention period"
+        def config = defaultConfig()
+        config.put(OR_DATA_POINTS_MAX_AGE_WEEKS, "4")
+        def container = startContainer(config, defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
@@ -173,7 +176,7 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
 
         println "Purge completed in ${deleteDuration} seconds"
 
-        then: "less data points should exist"
+        then: "data points beyond the 4-week retention window should be purged via drop_chunks"
         conditions.eventually {
             def countAfterPurge = 0
             attributeNames.each { attributeName ->
@@ -186,7 +189,9 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
             println "Deleted ${deletedCount} datapoints"
             println "Deletion rate: ${String.format('%.0f', deletedCount / deleteDuration)} datapoints/second"
 
-            assert countAfterPurge <= countBeforePurge
+            // With 365 days of data and 4-week (28-day) retention, most data should be purged
+            assert countAfterPurge < countBeforePurge
+            assert deletedCount > 0
         }
 
         when: "storage usage is measured after deletion"

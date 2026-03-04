@@ -12,24 +12,17 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 
 import java.io.*;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -45,28 +38,30 @@ import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.TreeSet;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
- * Store and retrieve datapoints for asset attributes and periodically purge data points based on
- * {@link MetaItemType#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
- * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
- * days.
+ * Store and retrieve datapoints for asset attributes and periodically purge data points using
+ * TimescaleDB's {@code drop_chunks()} with week-based retention aligned to 7-day chunk intervals.
+ * Retention defaults to {@value #OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT} weeks (~2 years).
  */
 public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
+    public static final String OR_DATA_POINTS_MAX_AGE_WEEKS = "OR_DATA_POINTS_MAX_AGE_WEEKS";
+    public static final int OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT = 105;
+    /** @deprecated Use {@link #OR_DATA_POINTS_MAX_AGE_WEEKS} instead. If set, value is converted to weeks (rounded up). */
+    @Deprecated
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
+    /** @deprecated Use {@link #OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT} instead. */
+    @Deprecated
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-    protected int maxDatapointAgeDays;
+    protected int maxDatapointAgeWeeks;
     protected int datapointExportLimit;
 
     @Override
@@ -82,12 +77,20 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             )
         );
 
-        maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
-
-        if (maxDatapointAgeDays <= 0) {
-            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+        if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_WEEKS)) {
+            maxDatapointAgeWeeks = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_WEEKS, OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT);
+        } else if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_DAYS)) {
+            int days = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
+            maxDatapointAgeWeeks = (int) Math.ceil(days / 7.0);
+            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " is deprecated, use " + OR_DATA_POINTS_MAX_AGE_WEEKS + " instead. Converted " + days + " days to " + maxDatapointAgeWeeks + " weeks.");
         } else {
-            LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
+            maxDatapointAgeWeeks = OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT;
+        }
+
+        if (maxDatapointAgeWeeks <= 0) {
+            LOG.warning(OR_DATA_POINTS_MAX_AGE_WEEKS + " value is not valid, data points won't be auto purged");
+        } else {
+            LOG.log(Level.INFO, "Data point purge retention = " + maxDatapointAgeWeeks + " weeks");
         }
 
         datapointExportLimit = getInteger(container.getConfig(), OR_DATA_POINTS_EXPORT_LIMIT, OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT);
@@ -101,7 +104,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
     @Override
     public void start(Container container) throws Exception {
-        if (maxDatapointAgeDays > 0) {
+        if (maxDatapointAgeWeeks > 0) {
             dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::purgeDataPoints,
                 getFirstPurgeMillis(timerService.getNow()),
@@ -149,207 +152,38 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected void purgeDataPoints() {
-        LOG.info("Running data points purge daily task");
+        LOG.info("Running data points purge task");
 
         try {
-            // Get list of attributes that have custom durations
-            List<Asset<?>> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .attributes(
-                        new AttributePredicate().meta(
-                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                        )));
-
-            List<Pair<String, Attribute<?>>> attributes = assets.stream()
-                .map(asset -> asset
-                    .getAttributes().stream()
-                    .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
-                    .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
-                    .collect(toList()))
-                .flatMap(List::stream)
-                .collect(toList());
-
-            // Calculate the default purge cutoff date
-            Instant defaultCutoff = timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS);
-
-            // Try to use TimescaleDB drop_chunks for efficient purging of whole chunks
-            // This avoids decompression overhead on compressed/hypercore chunks
-            boolean usedDropChunks = tryDropChunks(defaultCutoff, attributes);
-
-            if (!usedDropChunks) {
-                // Fallback to DELETE for non-TimescaleDB or if drop_chunks failed
-                LOG.fine("Purging data points of attributes that use default max age days of " + maxDatapointAgeDays + " using DELETE");
-                persistenceService.doTransaction(em -> em.createQuery(
-                    "delete from AssetDatapoint dp " +
-                        "where dp.timestamp < :dt" + buildWhereClause(attributes, true)
-                ).setParameter("dt", Date.from(defaultCutoff)).executeUpdate());
-            }
-
-            if (!attributes.isEmpty()) {
-                // Purge data points that have specific age constraints
-                // These must use DELETE as they are attribute-specific and cannot use drop_chunks
-                Map<Integer, List<Pair<String, Attribute<?>>>> ageAttributeRefMap = attributes.stream()
-                    .collect(groupingBy(attributeRef ->
-                        attributeRef.value
-                            .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
-                            .orElse(maxDatapointAgeDays)));
-
-                ageAttributeRefMap.forEach((age, attrs) -> {
-                    LOG.fine("Purging data points of " + attrs.size() + " attributes that use a max age of " + age);
-
-                    try {
-                        persistenceService.doTransaction(em -> em.createQuery(
-                            "delete from AssetDatapoint dp " +
-                                "where dp.timestamp < :dt" + buildWhereClause(attrs, false)
-                        ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(age, DAYS))).executeUpdate());
-                    } catch (Exception e) {
-                        LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen", e);
-                    }
-                });
-            }
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to run data points purge", e);
-        }
-    }
-
-    protected String buildWhereClause(List<Pair<String, Attribute<?>>> attributes, boolean negate) {
-
-        if (attributes.isEmpty()) {
-            return "";
-        }
-
-        String whereStr = attributes.stream()
-            .map(attributeRef -> "('" + attributeRef.key + "','" + attributeRef.value.getName() + "')")
-            .collect(Collectors.joining(","));
-
-        return " and (dp.assetId, dp.attributeName) " + (negate ? "not " : "") + "in (" + whereStr + ")";
-    }
-
-    /**
-     * Attempts to use TimescaleDB's drop_chunks() function for efficient purging of whole chunks.
-     * This avoids the decompression overhead that occurs when using DELETE on compressed/hypercore chunks.
-     * <p>
-     * The strategy is:
-     * 1. If custom retention attributes exist, adjust the drop cutoff to the longest (max) custom
-     *    retention period, since drop_chunks cannot filter by entity_id/attribute_name
-     * 2. Query chunk metadata to find chunks that are entirely before the adjusted cutoff
-     * 3. Use drop_chunks() to remove those chunks instantly (no decompression needed)
-     * 4. For the partial chunk spanning the cutoff, use DELETE for non-custom-retention data only
-     *
-     * @param defaultCutoff The cutoff instant for the default retention policy
-     * @param customRetentionAttributes Attributes with custom DATA_POINTS_MAX_AGE_DAYS that are
-     *                                  excluded from chunk-level drops and handled separately
-     * @return true if drop_chunks was used successfully, false if fallback to DELETE is needed
-     */
-    protected boolean tryDropChunks(Instant defaultCutoff, List<Pair<String, Attribute<?>>> customRetentionAttributes) {
-        try {
-            return persistenceService.doReturningTransaction(em -> {
-                // First check if this is a TimescaleDB hypertable
+            persistenceService.doTransaction(em -> {
+                // Check if asset_datapoint is a TimescaleDB hypertable
                 String checkHypertableQuery =
                     "SELECT COUNT(*) FROM timescaledb_information.hypertables " +
                     "WHERE hypertable_name = 'asset_datapoint'";
 
                 Number hypertableCount = (Number) em.createNativeQuery(checkHypertableQuery).getSingleResult();
                 if (hypertableCount.intValue() == 0) {
-                    LOG.fine("asset_datapoint is not a TimescaleDB hypertable, using DELETE fallback");
-                    return false;
+                    LOG.warning("asset_datapoint is not a TimescaleDB hypertable, skipping purge. " +
+                        "TimescaleDB with hypercore is required for data point storage.");
+                    return;
                 }
 
-                // Get chunk information to understand the time ranges
-                // We need to find the oldest chunk that ends AFTER the cutoff (partial chunk)
-                String chunkInfoQuery =
-                    "SELECT chunk_name, range_start, range_end " +
-                    "FROM timescaledb_information.chunks " +
-                    "WHERE hypertable_name = 'asset_datapoint' " +
-                    "ORDER BY range_start ASC";
+                // Compute cutoff from week-based retention
+                Instant cutoff = timerService.getNow().minus(Duration.ofDays((long) maxDatapointAgeWeeks * 7));
+                Timestamp cutoffTimestamp = Timestamp.from(cutoff);
 
-                @SuppressWarnings("unchecked")
-                List<Object[]> chunks = em.createNativeQuery(chunkInfoQuery).getResultList();
+                LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + maxDatapointAgeWeeks + " weeks retention)");
 
-                if (chunks.isEmpty()) {
-                    LOG.fine("No chunks found for asset_datapoint hypertable");
-                    return true; // Nothing to purge
-                }
-
-                // Determine the final cutoff for drop_chunks
-                Instant dropCutoff = defaultCutoff;
-
-                // If there are attributes with custom retention, we cannot use drop_chunks for the whole table
-                // because drop_chunks doesn't support filtering by entity_id/attribute_name
-                if (!customRetentionAttributes.isEmpty()) {
-                    // Find the maximum custom retention age
-                    int maxCustomAge = customRetentionAttributes.stream()
-                        .mapToInt(attr -> attr.value.getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS).orElse(Integer.MAX_VALUE))
-                        .max()
-                        .orElse(Integer.MAX_VALUE);
-
-                    // We can only safely drop chunks that are older than ALL retention periods
-                    Instant safeDropCutoff = timerService.getNow().truncatedTo(DAYS).minus(maxCustomAge, DAYS);
-                    if (safeDropCutoff.isBefore(defaultCutoff)) {
-                        dropCutoff = safeDropCutoff;
-                        LOG.info("Using safe drop cutoff of " + dropCutoff + " due to custom retention attributes");
-                    }
-                }
-
-                Timestamp cutoffTimestamp = Timestamp.from(dropCutoff);
-                Instant oldestChunkRangeEnd = null;
-                int chunksToDropCount = 0;
-
-                // Find chunks that are entirely before the cutoff
-                for (Object[] chunk : chunks) {
-                    Instant rangeEndInstant = toInstant(chunk[2]);
-                    if (rangeEndInstant.isBefore(dropCutoff) || rangeEndInstant.equals(dropCutoff)) {
-                        chunksToDropCount++;
-                    } else {
-                        // This chunk spans the cutoff or is after it
-                        if (oldestChunkRangeEnd == null) {
-                            oldestChunkRangeEnd = toInstant(chunk[1]);
-                        }
-                    }
-                }
-
-                if (chunksToDropCount == 0) {
-                    LOG.fine("No complete chunks to drop, all data is within retention period or in partial chunks");
-                    // Still need to handle partial chunk with DELETE
-                    if (oldestChunkRangeEnd != null && oldestChunkRangeEnd.isBefore(defaultCutoff)) {
-                        LOG.fine("Deleting data from partial chunk using DELETE");
-                        em.createQuery(
-                            "delete from AssetDatapoint dp where dp.timestamp < :dt" +
-                            buildWhereClause(customRetentionAttributes, true)
-                        ).setParameter("dt", Date.from(defaultCutoff)).executeUpdate();
-                    }
-                    return true;
-                }
-
-                // Use drop_chunks to efficiently remove whole chunks
-                // This is instant and doesn't require decompression
-                LOG.info("Dropping " + chunksToDropCount + " chunks older than " + cutoffTimestamp);
-
-                // Use public.drop_chunks with explicit casts - TimescaleDB requires timestamp without time zone
                 String dropChunksQuery = String.format(
                     "SELECT public.drop_chunks('asset_datapoint', older_than => '%s'::timestamp)",
-                        cutoffTimestamp.toLocalDateTime().toString()
+                    cutoffTimestamp.toLocalDateTime().toString()
                 );
                 em.createNativeQuery(dropChunksQuery).getResultList();
 
-                // Handle the partial chunk (if any) with DELETE for data between chunk start and cutoff
-                // This is a smaller DELETE that only affects one chunk
-                if (oldestChunkRangeEnd != null && oldestChunkRangeEnd.isBefore(defaultCutoff)) {
-                    LOG.fine("Deleting remaining data from partial chunk between " + oldestChunkRangeEnd + " and " + defaultCutoff);
-                    em.createQuery(
-                        "delete from AssetDatapoint dp where dp.timestamp >= :chunkStart and dp.timestamp < :cutoff" +
-                        buildWhereClause(customRetentionAttributes, true)
-                    ).setParameter("chunkStart", Date.from(oldestChunkRangeEnd))
-                     .setParameter("cutoff", Date.from(defaultCutoff))
-                     .executeUpdate();
-                }
-
-                LOG.info("Successfully purged data points using TimescaleDB drop_chunks");
-                return true;
+                LOG.info("Successfully purged data points using drop_chunks");
             });
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to use TimescaleDB drop_chunks, falling back to DELETE", e);
-            return false;
+            LOG.log(Level.SEVERE, "Failed to run data points purge", e);
         }
     }
 
@@ -570,14 +404,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected record ExportQuery(String query, Map<Integer, Object> parameters) {
-    }
-
-    // TimescaleDB chunk metadata (range_start/range_end) returns OffsetDateTime or Instant
-    // depending on the TimescaleDB version
-    private static Instant toInstant(Object temporal) {
-        if (temporal instanceof Instant i) return i;
-        if (temporal instanceof OffsetDateTime odt) return odt.toInstant();
-        throw new IllegalArgumentException("Unsupported temporal type: " + temporal.getClass());
     }
 
     private static String validateAssetId(String assetId) {
