@@ -25,7 +25,9 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -75,7 +77,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         this.timezone = timezone;
 
         if (schedule == null) {
-            LocalDateTime start = LocalDateTime.now();
+            LocalDateTime start = LocalDate.now(ZoneId.of("UTC")).atStartOfDay();
             LocalDateTime end = getReplayData()
                     .flatMap(this::getLastReplayDatapointSeconds).map(start::plusSeconds).orElse(start.plusDays(1));
             this.schedule = new SimulatorProtocol.Schedule(start, end, null);
