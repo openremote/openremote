@@ -1,7 +1,6 @@
 package org.openremote.manager.datapoint;
 
 import org.hibernate.Session;
-import org.hibernate.exception.GenericJDBCException;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.OutdatedAttributeEvent;
@@ -208,14 +207,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     }
                 });
             }
-        } catch (GenericJDBCException e) {
-            if (e.getSQLException().getSQLState().equals("53400") && e.getSQLException().getMessage().contains("tuple decompression limit exceeded by operation")) {
-                LOG.log(Level.SEVERE, "Failed to run data points purge", e);
-            } else {
-                LOG.log(Level.WARNING, "Failed to run data points purge", e);
-            }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to run data points purge", e);
+            LOG.log(Level.SEVERE, "Failed to run data points purge", e);
         }
     }
 
@@ -304,14 +297,13 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
                 // Find chunks that are entirely before the cutoff
                 for (Object[] chunk : chunks) {
-                    // TimescaleDB returns OffsetDateTime for range_start/range_end
-                    Instant rangeEndInstant = ((OffsetDateTime) chunk[2]).toInstant();
+                    Instant rangeEndInstant = toInstant(chunk[2]);
                     if (rangeEndInstant.isBefore(dropCutoff) || rangeEndInstant.equals(dropCutoff)) {
                         chunksToDropCount++;
                     } else {
                         // This chunk spans the cutoff or is after it
                         if (oldestChunkRangeEnd == null) {
-                            oldestChunkRangeEnd = ((OffsetDateTime) chunk[1]).toInstant();
+                            oldestChunkRangeEnd = toInstant(chunk[1]);
                         }
                     }
                 }
@@ -578,6 +570,14 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected record ExportQuery(String query, Map<Integer, Object> parameters) {
+    }
+
+    // TimescaleDB chunk metadata (range_start/range_end) returns OffsetDateTime or Instant
+    // depending on the TimescaleDB version
+    private static Instant toInstant(Object temporal) {
+        if (temporal instanceof Instant i) return i;
+        if (temporal instanceof OffsetDateTime odt) return odt.toInstant();
+        throw new IllegalArgumentException("Unsupported temporal type: " + temporal.getClass());
     }
 
     private static String validateAssetId(String assetId) {

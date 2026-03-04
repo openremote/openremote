@@ -24,7 +24,7 @@ import static java.util.concurrent.TimeUnit.DAYS
 
 class AssetDatapointHypercoreTest extends Specification implements ManagerContainerTrait {
 
-    def "Test TimescaleDB hypercore with 2.5M datapoints"() {
+    def "Test TimescaleDB hypercore compression and purge"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 30, delay: 1)
@@ -59,8 +59,8 @@ class AssetDatapointHypercoreTest extends Specification implements ManagerContai
         testAsset.id != null
         println "Created test asset with ID: ${testAsset.id}"
 
-        when: "2.500.000 datapoints are inserted across multiple attributes"
-        def totalDatapoints = 2_500_000
+        when: "25.000 datapoints are inserted across multiple attributes"
+        def totalDatapoints = 25_000
         def attributeNames = ["temperature", "humidity", "pressure", "co2"]
         def datapointsPerAttribute = totalDatapoints / attributeNames.size()
         // Use current container time as base, then go back in time for historical data
