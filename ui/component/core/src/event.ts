@@ -111,17 +111,21 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public connect(): Promise<boolean> {
+        console.debug("Attempting to connect to events:", this.endpointUrl);
         if (this._reconnectTimer) {
+            console.debug("Clearing events reconnect timeout...");
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
         }
         if (this._status === EventProviderStatus.CONNECTED) {
+            console.debug("Already connected to events!");
             return Promise.resolve(true);
         }
 
         this._disconnectRequested = false;
 
         if (this._connectingDeferred) {
+            console.warn("Already connecting to events, continuing the previous one.");
             return this._connectingDeferred.promise;
         }
 
@@ -207,6 +211,7 @@ abstract class EventProviderImpl implements EventProvider {
                 }
             },
             (reason) => {
+                console.error(reason);
                 if (this._pendingSubscription) {
                     const subscription = this._pendingSubscription;
                     this._pendingSubscription = null;
@@ -610,6 +615,9 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         if (manager.authenticated) {
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
+            console.debug("Connecting to URL using authorization:", authorisedUrl);
+        } else {
+            console.debug("Connecting to URL anonymously:", authorisedUrl);
         }
 
         this._webSocket = new WebSocket(authorisedUrl);
@@ -661,10 +669,10 @@ export class WebSocketEventProvider extends EventProviderImpl {
             } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
                 const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
                 const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
+                console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                 const deferred = this._subscribeDeferred;
                 this._subscribeDeferred = null;
                 if (deferred) {
-                    console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                     deferred.reject("Unauthorized");
                 }
             } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {
