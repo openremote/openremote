@@ -31,7 +31,6 @@ import {
     isObjectControl,
     schemaMatches,
 } from "@openremote/or-json-forms";
-import { CalendarEvent } from "@openremote/model";
 import { Frequency, RRulePartKeys, OrSchedulerChangedEvent, INTUITIVE_NOT_APPLICABLE } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
 
