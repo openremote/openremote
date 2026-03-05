@@ -217,7 +217,6 @@ export class PageMap extends Page<MapStateKeyed> {
     shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("_assets")) {
             this._updateMarkers();
-            this._map?.reload();
         }
         return super.shouldUpdate(_changedProperties);
     }
@@ -291,10 +290,23 @@ export class PageMap extends Page<MapStateKeyed> {
             if (response.data) {
                 const assets = response.data;
 
-                this._store.dispatch(setAssets(assets));
+                // this._store.dispatch(setAssets(assets));
+                this._assets = assets;
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
+                    console.log("Asset event received:", event);
+                    const index = assets.findIndex(a => a.id === event.asset.id);
+
+                    switch (event.cause) {
+                        case "UPDATE":
+                            // if (index !== -1) assets.splice(index, 1);
+                            console.log("ASSET UPDATE: ", index)
+                            break;
+                        case "DELETE": if (index !== -1) this._map.addAsset(event.asset); break;
+                        case "CREATE":
+                            break;
+                    }
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -305,6 +317,10 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
+                    // console.log("Attribute event received:", event);
+                    if (attrsOfInterest.includes(event.ref.name)) {
+                        this._map.updateAttribute(event.ref.id, event.value);
+                    }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
 
@@ -345,9 +361,7 @@ export class PageMap extends Page<MapStateKeyed> {
           }
 
           this.unsubscribeAssets();
-          this.subscribeAssets(realm).then(async () => {
-              await this._map?.reload();
-          });
+          this.subscribeAssets(realm);
           this._map?.refresh();
       }
     )
@@ -385,6 +399,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected render() {
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
+        // console.log("RENDER", this._currentAsset)
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
@@ -446,18 +461,16 @@ export class PageMap extends Page<MapStateKeyed> {
         if (this._map) {
             this._excludedTypes = e.detail;
             this._updateMarkers();
-            this._map.reload();
         }
     }
 
     protected _updateMarkers() {
         if (this._map) {
             this._assetTypes = [];
-            this._map.cleanUpAssetMarkers();
             this._assets.forEach((asset: Asset) => {
                 if (MapUtil.isAssetWithLocation(asset)) {
                     if (!this._excludedTypes.includes(asset.type)) {
-                        this._map.addAssetMarker(asset)
+                        this._map.addAsset(asset)
                     }
                     if (!this._assetTypes.includes(asset.type)) {
                         this._assetTypes.push(asset.type);

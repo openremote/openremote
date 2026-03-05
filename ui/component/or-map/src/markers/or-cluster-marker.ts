@@ -128,7 +128,7 @@ export class OrClusterMarker extends LitElement {
 
     protected async onClick() {
         if (this.lng && this.lat) {
-            const zoom = await this._map.getSource<GeoJSONSource>('mapPoints')!.getClusterExpansionZoom(this._clusterId!);
+            const zoom = await this._map.getSource<GeoJSONSource>("assets")!.getClusterExpansionZoom(this._clusterId!);
             // Pass `this` down as event data so the marker can be cleared programmatically
             this._map.easeTo({ center: [this.lng, this.lat], zoom }, { marker: this });
         }
