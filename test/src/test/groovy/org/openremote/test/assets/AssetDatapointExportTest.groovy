@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
@@ -19,7 +20,6 @@ import spock.util.concurrent.PollingConditions
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.zip.ZipInputStream
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 

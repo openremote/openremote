@@ -69,11 +69,14 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should fail validation and return a validation report indicating the failure(s)"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
-        def report = ex.response.readEntity(ViolationReport)
-        report != null
-        report.propertyViolations.size() == 1
-        report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            def report =  r.readEntity(ViolationReport)
+            assert report != null
+            assert report.propertyViolations.size() == 1
+            assert report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
+
+        }
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -117,7 +120,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a new realm"
         testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
@@ -125,7 +131,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is created with a non existent realm"
         newTestAsset.setId(null)
@@ -134,7 +143,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a non-existent parent"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -143,7 +155,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with itself as a parent"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -152,7 +167,9 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+    assert r.status == 403
+}
 
         when: "an asset is updated with a parent in a different realm"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -161,14 +178,19 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+    assert r.status == 403
+}
 
         when: "an asset is deleted but has children"
         assetResource.delete(null, [managerTestSetup.apartment1Id])
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 
     def "Test writing attributes with timestamps"() {

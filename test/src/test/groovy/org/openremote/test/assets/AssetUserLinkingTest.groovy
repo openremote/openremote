@@ -119,14 +119,20 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
         then: "an error response should be returned"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the realm doesn't exist"
         assetResource.getUserAssetLinks(null, "doesnotexist", keycloakTestSetup.testuser3Id, null)
 
         then: "an error response should be returned"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "all user assets are retrieved of a realm and user"
         userAssetLinks = assetResource.getUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, null, managerTestSetup.apartment1Id)

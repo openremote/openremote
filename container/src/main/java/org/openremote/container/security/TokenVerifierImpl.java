@@ -6,12 +6,15 @@ import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.proc.*;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
+import com.nimbusds.jwt.proc.JWTProcessor;
 import jakarta.security.enterprise.AuthenticationException;
 import org.openremote.model.Constants;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.Collections;
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,10 +26,6 @@ public class TokenVerifierImpl implements TokenVerifier {
     // The public URL of the keycloak server (must match the issuer in the generated tokens)
     protected final String keycloakPublicUrl;
     protected final Map<String, JWTProcessor<SecurityContext>> processorCache = new ConcurrentHashMap<>();
-
-    public TokenVerifierImpl(String keycloakUrl) {
-        this(keycloakUrl, keycloakUrl);
-    }
 
     public TokenVerifierImpl(String keycloakUrl, String keycloakPublicUrl) {
         keyResolverService = new KeyResolver(keycloakUrl);
@@ -43,20 +42,40 @@ public class TokenVerifierImpl implements TokenVerifier {
         // 1. Get the JWK source for the realm from our service
         JWKSource<SecurityContext> keySource = keyResolverService.getJwkSource(realm);
 
-        // 2. Create a JWT processor
-        ConfigurableJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();
-
         // 3. Configure the processor with a key selector for the appropriate JWS algorithm (e.g., RS256)
         // The key selector will use the JWK source to find the right public key by 'kid'
         JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, keySource);
-        jwtProcessor.setJWSKeySelector(keySelector);
+        processor.setJWSKeySelector(keySelector);
 
-        // Uses DefaultJWTClaimsVerifier to verify exp, not before, issuer and audience
-        jwtProcessor.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier<>(new JWTClaimsSet.Builder()
-                .issuer(keyResolverService.getKeycloakBaseUrl() + "/realms/" + realm)
-                .audience(Constants.KEYCLOAK_CLIENT_ID)
-                .build(), Collections.emptySet()));
+        final String expectedIssuer = keycloakPublicUrl + "/realms/" + realm;
+        final String expectedClientId = Constants.KEYCLOAK_CLIENT_ID;
 
+        JWTClaimsSetVerifier<SecurityContext> verifier = (claims, context) -> {
+            // 1) issuer check (keep/remove depending on your policy)
+            if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
+                throw new BadJWTException("Invalid token issuer");
+            }
+
+            // Keycloak uses azp to store client ID by default but we support aud for non keycloak auth servers
+            String azp = null;
+            try {
+                azp = claims.getStringClaim("azp");
+            } catch (ParseException ignored) {}
+
+            if (azp != null && !azp.isBlank()) {
+                if (!expectedClientId.equals(azp)) {
+                    throw new BadJWTException("Invalid token azp (authorized party)");
+                }
+                return;
+            }
+
+            // Fall back to aud
+            if (claims.getAudience() == null || !claims.getAudience().contains(expectedClientId)) {
+                throw new BadJWTException("Invalid token audience");
+            }
+        };
+
+        processor.setJWTClaimsSetVerifier(verifier);
         return processor;
     }
 

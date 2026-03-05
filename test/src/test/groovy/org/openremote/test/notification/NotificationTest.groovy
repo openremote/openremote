@@ -200,7 +200,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to true"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
@@ -209,7 +212,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
         notificationIds.size() == 3
 
         when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to false"
@@ -228,7 +234,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a restricted user sends a push notification to another user in the same realm"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
@@ -236,14 +245,20 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "an anonymous user sends a push notification to a user"
         anonymousNotificationResource.sendNotification(null, notification)
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the admin user sends a push notification to the console assets in building realm"
         notificationIds.clear()
@@ -268,7 +283,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a regular user sends a push notification to the console assets in the same realm"
         notificationIds.clear()
@@ -302,7 +320,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a restricted user sends a push notification to some consoles linked to them and some not linked to them"
         notificationIds.clear()
@@ -314,7 +335,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         and: "no new notifications should have been sent"
         notificationIds.size() == 0
@@ -363,7 +387,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "a bad request exception should be thrown"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         and: "the notification should be recorded in the DB with the exception set as the error"
         conditions.eventually {
@@ -418,7 +445,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a regular user marks a console notification for their own console as delivered"
         testuser3NotificationResource.notificationDelivered(null, testuser3Console1.id, notifications.find {n -> n.targetId == testuser3Console1.id}.id)
@@ -434,7 +464,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "access should be forbidden"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "an anonymous user marks a console notification for their own console as delivered"
         notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id)
@@ -450,14 +482,20 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a restricted user tries to remove notifications"
         testuser3NotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, null, null, realm, null, null)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "the admin user removes notifications by timestamp and the notifications are retrieved again"
         notifications = adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null).reverse(true)
@@ -494,7 +532,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "request should not be allowed"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         // -----------------------------------------------
         //    Check notification repeat frequency

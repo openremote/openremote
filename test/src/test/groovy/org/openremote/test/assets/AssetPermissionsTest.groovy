@@ -167,7 +167,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the asset should not be found"
         WebApplicationException ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
 
         when: "an asset is deleted in a foreign realm"
         assetResource.delete(null, [managerTestSetup.apartment2LivingroomId])
@@ -175,7 +178,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the asset should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
 
         when: "an asset attribute is written in the authenticated realm"
         assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
@@ -189,16 +195,24 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "an non-existent assets attribute is written in the authenticated realm"
-        def response = assetResource.writeAttributeValue(null, "doesnotexist", BuildingAsset.STREET.name, '"Teststreet 123"')
+        assetResource.writeAttributeValue(null, "doesnotexist", BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "the attribute should be not found"
-        response.status == 404
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
 
         when: "an non-existent attribute is written in the authenticated realm"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, "doesnotexist", '"Teststreet 123"')
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, "doesnotexist", '"Teststreet 123"')
 
         then: "the attribute should be not found"
-        response.status == 404
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
 
         when: "an asset attribute is written in a foreign realm"
         assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 456"')
@@ -302,7 +316,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         /* ############################################## WRITE ####################################### */
 
@@ -332,7 +349,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a new parent in a foreign realm"
         testAsset.setParentId(managerTestSetup.smartBuildingId)
@@ -340,7 +360,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is deleted in the authenticated realm"
         assetResource.delete(null, [managerTestSetup.thingId])
@@ -348,14 +371,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the asset should not be found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
 
         when: "an asset is deleted in a foreign realm"
         assetResource.delete(null, [managerTestSetup.apartment2LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset attribute is written in the authenticated realm"
         assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
@@ -367,10 +396,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "an asset attribute is written in a foreign realm"
-        def response = assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 456"')
+        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 456"')
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
     }
 
     def "Access assets as testuser2"() {
@@ -450,7 +483,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         /* ############################################## WRITE ####################################### */
 
@@ -461,7 +497,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is made a root asset in the authenticated realm"
         testAsset = assetResource.get(null, managerTestSetup.apartment1Id)
@@ -470,7 +509,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is created in the authenticated realm"
         testAsset = new RoomAsset("Test Room")
@@ -479,33 +521,49 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is deleted in the authenticated realm"
         assetResource.delete(null, [managerTestSetup.apartment2LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is deleted in a foreign realm"
         assetResource.delete(null, [managerTestSetup.thingId])
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset attribute is written in the authenticated realm"
-        def response = assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 123"')
+        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset attribute is written in a foreign realm"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 456"')
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 456"')
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
     }
 
     def "Access assets as restricted testuser3"() {
@@ -626,7 +684,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a user asset is retrieved by ID in the authenticated realm"
         apartment1Livingroom = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
@@ -654,7 +714,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "all linked assets of the user are retrieved"
         assets = assetResource.queryAssets(null, null)
@@ -671,7 +733,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset is made a root asset in the authenticated realm"
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
@@ -716,57 +780,81 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset is deleted in the authenticated realm"
         assetResource.delete(null, [managerTestSetup.apartment1LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset is deleted in a foreign realm"
         assetResource.delete(null, [managerTestSetup.thingId])
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a private asset attribute is written on a user asset"
-        def response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "lightSwitch", false)
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "lightSwitch", false)
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an attribute is written on a non-existent user asset"
-        response = assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", false)
+        assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", false)
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an non-existent attribute is written on a user asset"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "doesnotexist", '"foo"')
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "doesnotexist", '"foo"')
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset attribute is written on a non-user asset"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment3LivingroomId, "lightSwitch", false)
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment3LivingroomId, "lightSwitch", false)
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset attribute is written in a foreign realm"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a non-writable attribute value is written on a user asset"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "presenceDetected", true)
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "presenceDetected", true)
 
         then: "access should be forbidden"
-        response.status == 403
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a non-writable attribute value is updated on a user asset"
         testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)

@@ -90,7 +90,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the endpoint should return 200"
-        response.status == 200
+        response.withCloseable { r ->
+            assert r.status == 200
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -117,10 +120,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "both apps are returned"
-        response.status == 200
-        def appList = parse(response.readEntity(String.class)).orElse([])
-        appList.contains("appBuiltin")
-        appList.contains("appCustom")
+        response.withCloseable { r ->
+            assert r.status == 200
+            def appList = parse(r.readEntity(String.class)).orElse("") as String
+            appList.contains("appBuiltin")
+            appList.contains("appCustom")
+        }
 
         cleanup:
         if (response != null) {
@@ -151,7 +156,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the response includes the app info"
-        response.status == 200
+        response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
         def infoMap = parse(response.readEntity(String.class)).orElse([:])
         infoMap.containsKey("appInfo")
 
@@ -374,7 +382,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the result should be bad request"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a console registers with an id that doesn't exist"
         def unusedId = UniqueIdentifierGenerator.generateId("UnusedConsoleId")
@@ -409,7 +420,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the result should be bad request"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a console is registered anonymously"
         consoleRegistration.id = null
@@ -500,7 +514,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "the result should be forbidden"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "a console's location is updated to be at the Smart Building"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, SMART_BUILDING_LOCATION)
@@ -586,7 +602,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "the result should be a forbidden request"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "the geofences of testUser3Console2 are retrieved"
         geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console2.id)

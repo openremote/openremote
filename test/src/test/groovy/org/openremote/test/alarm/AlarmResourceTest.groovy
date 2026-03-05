@@ -240,7 +240,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         where:
         title                | content               | severity     | status
@@ -255,7 +258,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
     }
 
     // Get alarms as admin
@@ -285,14 +291,20 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when:
         regularUserResource.getAlarm(null, 1L)
 
         then:
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
     }
 
     // Update alarm as admin
@@ -345,7 +357,11 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         adminResource.updateAlarm(null, null, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.OPEN))
 
         then:
-        NullPointerException ex = thrown()
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 405
+            return true
+        }
     }
 
     // Update alarm without write:alarm role
@@ -357,7 +373,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         where:
         title           | content               | severity        | status
@@ -374,7 +393,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
     }
 
     // Delete alarms without write:alarm role
@@ -387,7 +409,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
     }
 
     // Delete empty or null alarms
@@ -396,21 +421,31 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         adminResource.removeAlarm(null, null)
 
         then:
-        NullPointerException npe = thrown()
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 405
+            return true
+        }
 
         when:
         adminResource.removeAlarms(null, [])
 
         then:
-        WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.removeAlarms(null, [null])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 
     // Delete invalid alarms
@@ -420,14 +455,20 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.removeAlarms(null, [-1L, 0L, 1L])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 
     // Delete non-exising alarms
@@ -437,14 +478,20 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
 
         when:
         adminResource.removeAlarms(null, [1L, 2L, 3L])
 
         then:
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        }
     }
 
     // Delete one alarm as admin
@@ -574,7 +621,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
     }
 
     // Creating invalid alarm links
@@ -585,21 +635,30 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.setAssetLinks(null, [null])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.setAssetLinks(null, [new AlarmAssetLink(null, null, null)])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
 
         when:
@@ -607,27 +666,39 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, -1L, null)])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm.id, null)])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when:
         adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm.id, "")])
 
         then:
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 }

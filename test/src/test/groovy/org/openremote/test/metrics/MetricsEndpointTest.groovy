@@ -28,16 +28,16 @@ class MetricsEndpointTest extends Specification implements ManagerContainerTrait
         def response = requestTarget.request().get()
 
         then: "the response should contain metrics data"
-        response.getStatus() == 200
-        def responseStr = response.readEntity(String.class)
-        responseStr.contains("executor_pool_core_threads{name=\"ContainerExecutor\"}")
-
-        and: "JVM related metrics are present"
-        responseStr.contains("jvm_info")
-        responseStr.contains("jvm_buffer_")
-        responseStr.contains("jvm_gc_")
-        responseStr.contains("jvm_memory_")
-        responseStr.contains("jvm_threads_")
+        response.withCloseable { r ->
+            def responseStr = r.readEntity(String.class)
+            assert responseStr.contains("executor_pool_core_threads{name=\"ContainerExecutor\"}")
+            assert responseStr.contains("jvm_info")
+            assert responseStr.contains("jvm_buffer_")
+            assert responseStr.contains("jvm_gc_")
+            assert responseStr.contains("jvm_memory_")
+            assert responseStr.contains("jvm_threads_")
+            assert r.status == 200
+        }
 
         cleanup: "clean up"
         if (response != null) {

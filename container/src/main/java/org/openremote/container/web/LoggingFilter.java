@@ -178,6 +178,15 @@ public class LoggingFilter implements Filter {
             int status = effectiveResponse.getStatus();
 
             if (traceEnabled || status >= 400 || thrown != null) {
+
+                System.Logger.Level level = (status >= 500 || thrown != null)
+                        ? System.Logger.Level.WARNING
+                        : status >= 400 ? System.Logger.Level.TRACE : System.Logger.Level.DEBUG;
+
+                if (!LOG.isLoggable(level)) {
+                    return;
+                }
+
                 String method = req.getMethod();
                 String requestPathAndQuery = req.getRequestURI() + (req.getQueryString() != null ? "?" + req.getQueryString() : "");
                 String requestRealm = req.getHeader(Constants.REALM_PARAM_NAME);
@@ -214,10 +223,6 @@ public class LoggingFilter implements Filter {
                                 + (traceEnabled ? ", body=" + body : "")
                                 + (thrown != null ? ", exception=" + thrown.getClass().getName() + ": " + thrown.getMessage() : "")
                                 + "}";
-
-                System.Logger.Level level = (status >= 500 || thrown != null)
-                        ? System.Logger.Level.ERROR
-                        : status >= 400 ? System.Logger.Level.WARNING : System.Logger.Level.TRACE;
 
                 LOG.log(level, message);
             }

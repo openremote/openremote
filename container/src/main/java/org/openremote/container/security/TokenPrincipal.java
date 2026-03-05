@@ -5,7 +5,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import java.security.Principal;
 import java.text.ParseException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TokenPrincipal implements Principal, AuthContext {
 
@@ -20,10 +19,8 @@ public class TokenPrincipal implements Principal, AuthContext {
     @SuppressWarnings("unchecked")
     public TokenPrincipal(JWTClaimsSet claimsSet) throws Exception {
         this.claimsSet = claimsSet;
-        this.resourceRoles = Optional.ofNullable(claimsSet.getJSONObjectClaim(RESOURCE_ACCESS_CLAIM))
-                .map(map -> map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                        entry -> (List<String>)entry.getValue()))).orElse(Collections.emptyMap());
-        this.realmRoles = Optional.ofNullable(claimsSet.getStringListClaim(REALM_ACCESS_CLAIM)).orElse(Collections.emptyList());
+        this.resourceRoles = parseResourceAccessRoles(claimsSet);
+        this.realmRoles = parseRealmRoles(claimsSet);
     }
 
     @Override
@@ -98,5 +95,48 @@ public class TokenPrincipal implements Principal, AuthContext {
     @Override
     public boolean hasResourceRole(String role, String resource) {
         return isUserInResourceRole(role, resource);
+    }
+
+    protected static Map<String, List<String>> parseResourceAccessRoles(JWTClaimsSet claimsSet) throws ParseException {
+        Map<String, Object> resourceAccess = claimsSet.getJSONObjectClaim(RESOURCE_ACCESS_CLAIM);
+        if (resourceAccess == null || resourceAccess.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, List<String>> out = new HashMap<>(resourceAccess.size());
+        for (Map.Entry<String, Object> e : resourceAccess.entrySet()) {
+            String resource = e.getKey();
+            Object value = e.getValue();
+
+            if (!(value instanceof Map<?, ?> resourceObj)) {
+                continue; // unexpected shape
+            }
+
+            out.put(resource, extractStringList(resourceObj.get("roles")));
+        }
+        return out;
+    }
+
+    protected static List<String> parseRealmRoles(JWTClaimsSet claimsSet) throws ParseException {
+        Map<String, Object> realmAccess = claimsSet.getJSONObjectClaim(REALM_ACCESS_CLAIM);
+        if (realmAccess == null || realmAccess.isEmpty()) {
+            // Non-keycloak fallback: allow "roles" claim if you support it elsewhere
+            List<String> rolesFallback = claimsSet.getStringListClaim("roles");
+            return rolesFallback != null ? rolesFallback : Collections.emptyList();
+        }
+        return extractStringList(realmAccess.get("roles"));
+    }
+
+    protected static List<String> extractStringList(Object rolesValue) {
+        if (!(rolesValue instanceof List<?> list) || list.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> out = new ArrayList<>(list.size());
+        for (Object o : list) {
+            if (o == null) continue;
+            // Be tolerant: JSON libs sometimes deliver non-String primitives
+            out.add(String.valueOf(o));
+        }
+        return out;
     }
 }

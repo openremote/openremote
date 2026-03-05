@@ -123,7 +123,8 @@ public class WebServiceExceptions {
                 status = webApplicationException.getResponse().getStatus();
             }
 
-            logException(devMode, "Servlet", Level.WARNING, effectiveException);
+            // We don't log here as the LoggingFilter will do that
+            //logException(devMode, "Servlet", Level.WARNING, effectiveException);
 
             if (!exchange.isResponseStarted()) {
                 exchange.setStatusCode(status);

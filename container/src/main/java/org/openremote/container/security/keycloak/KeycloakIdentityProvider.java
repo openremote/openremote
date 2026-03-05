@@ -168,25 +168,10 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         // Get public URL of keycloak from the keycloak server
-        LOG.info("Getting public URL of keycloak from the keycloak server");
-        WebTarget webTarget = new WebTargetBuilder(WebTargetBuilder.getClient(), keycloakServiceUri.build()).build();
-        DiscoveryResult result;
-        try (Response response = webTarget.request(MediaType.APPLICATION_JSON_TYPE).accept(MediaType.APPLICATION_JSON_TYPE).get()) {
-
-            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                String body = "<unreadable>";
-                try {
-                    body = response.readEntity(String.class);
-                } catch (Exception ignore) {}
-
-                LOG.severe("OIDC discovery failed falling back to service URI for issuer: HTTP " + response.getStatus() + " body=" + body);
-            }
-
-            result = response.readEntity(DiscoveryResult.class);
-        }
-
-        String keycloakPublicUrl = result != null ? result.issuer() : keycloakServiceUri.build().toString();
-        tokenVerifier = new TokenVerifierImpl(keycloakServiceUri.build().toString(), keycloakPublicUrl);
+        String keycloakPublicUrl = getKeycloakPublicUrl();
+        tokenVerifier = new TokenVerifierImpl(
+                keycloakServiceUri.build().toString(),
+                keycloakPublicUrl != null ? keycloakPublicUrl : keycloakServiceUri.build().toString());
     }
 
     @Override
@@ -382,5 +367,30 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     @Override
     public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
         return tokenVerifier.verify(realm, accessToken);
+    }
+
+    protected String getKeycloakPublicUrl() {
+        WebTarget webTarget = new WebTargetBuilder(
+                WebTargetBuilder.getClient(),
+                keycloakServiceUri.build()).build().path(OIDC_CONFIG_PATH);
+
+        LOG.info("Getting public URL of keycloak from the keycloak OIDC discovery endpoint: " + webTarget.getUri());
+        DiscoveryResult result;
+        try (Response response = webTarget.request(MediaType.APPLICATION_JSON_TYPE).accept(MediaType.APPLICATION_JSON_TYPE).get()) {
+
+            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                String body = "<unreadable>";
+                try {
+                    body = response.readEntity(String.class);
+                } catch (Exception ignore) {}
+
+                LOG.severe("OIDC discovery failed: HTTP " + response.getStatus() + " body=" + body);
+            }
+
+            result = response.readEntity(DiscoveryResult.class);
+        }
+
+        // We want the base public URI not the master specific one
+        return result != null ? result.issuer().replace("/realms/master", "") : keycloakServiceUri.build().toString();
     }
 }

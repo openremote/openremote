@@ -138,7 +138,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         WebApplicationException ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -152,7 +155,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         when: "a realm ruleset is created in the authenticated realm"
         def realmRuleset = new RealmRuleset(MASTER_REALM, "Test realm definition", GROOVY, "SomeRulesCode")
@@ -205,7 +211,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a realm ruleset is updated with an invalid id"
         realmRuleset.realm = MASTER_REALM
@@ -214,14 +223,20 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a non-existent realm ruleset is updated"
         rulesetResource.updateRealmRuleset(null, 1234567890l, realmRuleset)
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         when: "a realm ruleset is deleted"
         rulesetResource.deleteRealmRuleset(null, rulesetId)
@@ -229,7 +244,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -311,7 +329,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "an asset ruleset is updated with an invalid id"
         assetRuleset.assetId = managerTestSetup.smartOfficeId
@@ -320,14 +341,20 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a non-existent asset ruleset is updated"
         rulesetResource.updateAssetRuleset(null, 1234567890l, assetRuleset)
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         when: "an asset ruleset is deleted"
         rulesetResource.deleteAssetRuleset(null, rulesetId)
@@ -335,7 +362,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -404,7 +434,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "some realm rules are retrieved"
         def ruleDefinitions = rulesetResource.getRealmRulesets(null, keycloakTestSetup.realmMaster.name, null, false)
@@ -418,14 +451,20 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "some asset rules in a non-authenticated realm are retrieved"
         rulesetResource.getAssetRulesets(null, managerTestSetup.apartment2Id, null, false)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         /* ############################################## WRITE ####################################### */
 
@@ -435,21 +474,30 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a global rule is updated"
         rulesetResource.updateGlobalRuleset(null, 1234567890l, ruleDefinition)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a global rule is deleted"
         rulesetResource.deleteGlobalRuleset(null, 1234567890l)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "a realm ruleset is created in the authenticated realm"
         def realmRuleset = new RealmRuleset(MASTER_REALM, "Test realm definition", Ruleset.Lang.JSON, "SomeRulesCode")
@@ -502,7 +550,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a realm ruleset is updated with an invalid id"
         realmRuleset.realm = keycloakTestSetup.realmMaster.name
@@ -511,14 +562,20 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a non-existent realm ruleset is updated"
         rulesetResource.updateRealmRuleset(null, 1234567890l, realmRuleset)
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+            return true
+        } 404
 
         when: "a realm ruleset is deleted"
         rulesetResource.deleteRealmRuleset(null, rulesetId)
@@ -526,7 +583,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -540,7 +599,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is created in a non-authenticated realm"
         realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", JAVASCRIPT, "SomeRulesCode")
@@ -548,7 +609,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset ruleset is created in the authenticated realm"
         def assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
@@ -601,7 +664,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+        }
 
         when: "an asset ruleset is updated with an invalid id"
         assetRuleset.assetId = managerTestSetup.smartOfficeId
@@ -610,14 +675,18 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+        }
 
         when: "a non-existent asset ruleset is updated"
         rulesetResource.updateAssetRuleset(null, 1234567890l, assetRuleset)
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         when: "an asset ruleset is deleted"
         rulesetResource.deleteAssetRuleset(null, rulesetId)
@@ -625,7 +694,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         and: "the ruleset should reach the engine"
         conditions.eventually {
@@ -638,7 +709,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
             }
 
@@ -679,14 +752,18 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "some realm rules in a non-authenticated realm are retrieved"
         rulesetResource.getRealmRulesets(null, keycloakTestSetup.realmMaster.name, null, false)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "some realm rules in the authenticated realm are retrieved by user without rules read role"
         def rulesets = rulesetResource.getRealmRulesets(null, keycloakTestSetup.realmBuilding.name, null, false)
@@ -708,21 +785,27 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a global rule is updated"
         rulesetResource.updateGlobalRuleset(null, 1234567890l, ruleDefinition)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a global rule is deleted"
         rulesetResource.deleteGlobalRuleset(null, 1234567890l)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is created in the authenticated realm"
         def realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", GROOVY, "SomeRulesCode")
@@ -730,21 +813,27 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is updated"
         rulesetResource.updateRealmRuleset(null, 1234567890l, realmRuleset)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is deleted"
         rulesetResource.deleteRealmRuleset(null, 1234567890l)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is created in a non-authenticated realm"
         realmRuleset = new RealmRuleset(keycloakTestSetup.realmCity.name, "Test realm definition", GROOVY, "SomeRulesCode")
@@ -752,7 +841,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is created in the authenticated realm"
         def assetRuleset = new AssetRuleset(keycloakTestSetup.realmBuilding.name, "Test asset definition", GROOVY, "SomeRulesCode")
@@ -760,21 +851,27 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is updated"
         rulesetResource.updateAssetRuleset(null, 1234567890l, assetRuleset)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is deleted"
         rulesetResource.deleteAssetRuleset(null, 1234567890l)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is created in a non-authenticated realm"
         assetRuleset = new AssetRuleset(keycloakTestSetup.realmCity.name, "Test asset definition", GROOVY, "SomeRulesCode")
@@ -782,7 +879,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
             }
 
@@ -823,14 +922,18 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "some realm rules in a non-authenticated realm are retrieved"
         rulesetResource.getRealmRulesets(null, keycloakTestSetup.realmMaster.name, null, false)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "some realm rules in the authenticated realm are retrieved by the restricted user"
         def rulesets = rulesetResource.getRealmRulesets(null, keycloakTestSetup.realmBuilding.name, null, false)
@@ -859,21 +962,27 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a global rule is updated"
         rulesetResource.updateGlobalRuleset(null, 1234567890l, ruleDefinition)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a global rule is deleted"
         rulesetResource.deleteGlobalRuleset(null, 1234567890l)
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is created in the authenticated realm"
         def realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", GROOVY, "SomeRulesCode")
@@ -881,14 +990,18 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "a realm ruleset is updated"
         rulesetResource.updateRealmRuleset(null, 1234567890l, realmRuleset)
 
         then: "result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         when: "a realm ruleset is deleted"
         rulesetResource.deleteRealmRuleset(null, 1234567890l)
@@ -896,7 +1009,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         when: "a realm ruleset is created in a non-authenticated realm"
         realmRuleset = new RealmRuleset(keycloakTestSetup.realmCity.name, "Test realm definition", JAVASCRIPT, "SomeRulesCode")
@@ -904,7 +1019,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset ruleset is created in the authenticated realm"
         def assetRuleset = new AssetRuleset(
@@ -960,7 +1077,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+        }
 
         when: "an asset ruleset is updated with a changed invalid asset ID"
         assetRuleset.assetId = "thisdoesnotexist"
@@ -968,7 +1087,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+        }
 
         when: "an asset ruleset is updated with an invalid id"
         assetRuleset.assetId = managerTestSetup.apartment1Id
@@ -977,14 +1098,18 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+        }
 
         when: "a non-existent asset ruleset is updated"
         rulesetResource.updateAssetRuleset(null, 1234567890l, assetRuleset)
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         when: "an asset ruleset is deleted"
         rulesetResource.deleteAssetRuleset(null, rulesetId)
@@ -992,7 +1117,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "the result should be not found"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.withCloseable { r ->
+            assert r.status == 404
+        } 404
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -1005,7 +1132,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
         when: "an asset ruleset is created in a non-authenticated realm"
         assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
@@ -1013,7 +1142,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         then: "access should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+        }
 
             }
 }
