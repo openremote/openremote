@@ -125,12 +125,13 @@ abstract class EventProviderImpl implements EventProvider {
         this._disconnectRequested = false;
 
         if (this._connectingDeferred) {
-            if(!force) {
+            if(force) {
+                console.warn("Already connecting to events; force stopping the previous attempt, and starting a new one.");
+                this.disconnect(); // disconnect() will cause this connect() function to be recalled upon reconnecting
+            } else {
                 console.warn("Already connecting to events, continuing the previous one.");
-                return this._connectingDeferred.promise;
             }
-            console.warn("Already connecting to events; force stopping the previous attempt, and starting a new one.");
-            this.disconnect();
+            return this._connectingDeferred.promise;
         }
 
         this._onStatusChanged(EventProviderStatus.CONNECTING);
