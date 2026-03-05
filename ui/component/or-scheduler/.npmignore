@@ -2,6 +2,7 @@ build/
 build.gradle
 test/
 src/
+stories/
 webpack.config.js
 rspack.config.js
 tsconfig.json

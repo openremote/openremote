@@ -20,8 +20,9 @@
 import {customElement} from "lit/decorators.js";
 import {Checkbox} from "@vaadin/checkbox";
 import {OrVaadinComponent} from "./util";
+import {type LitElement} from "lit";
 
 @customElement("or-vaadin-checkbox")
-export class OrVaadinCheckbox extends Checkbox implements OrVaadinComponent {
+export class OrVaadinCheckbox extends (Checkbox as new () => Checkbox & LitElement) implements OrVaadinComponent {
 
 }

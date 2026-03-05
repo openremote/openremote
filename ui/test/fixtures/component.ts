@@ -87,6 +87,10 @@ export class CtShared extends Shared {
         }, resources);
     }
 
+    async translate(message: string) {
+        return this.page.evaluate(async (m) => window._i18next.t(m), message);
+    }
+
     /**
      * Register assets to the window object to be resolved by components
      * subscribed to the `manager` instance from `@openremote/core`.

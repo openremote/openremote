@@ -1,26 +1,47 @@
 package org.openremote.test.assets
 
+import io.netty.channel.ChannelHandler
+import io.netty.handler.codec.string.StringDecoder
+import io.netty.handler.codec.string.StringEncoder
+import io.netty.util.CharsetUtil
+import org.apache.http.client.utils.URIBuilder
+import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
+import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
+import org.openremote.manager.event.ClientEventService
+import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.auth.OAuthPasswordGrant
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent
 import org.openremote.model.datapoint.AssetPredictedDatapointResource
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
+import org.openremote.model.event.TriggeredEventSubscription
+import org.openremote.model.event.shared.EventSubscription
+import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.event.shared.UnauthorizedEventSubscription
+import org.openremote.model.security.ClientRole
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
@@ -30,6 +51,57 @@ import static org.openremote.setup.integration.ManagerTestSetup.thingLightToggle
 import static spock.util.matcher.HamcrestMatchers.closeTo
 
 class AssetDatapointTest extends Specification implements ManagerContainerTrait {
+
+    protected static <T> T messageFromString(String message) {
+        try {
+            def isSubscription = message.startsWith(EventSubscription.SUBSCRIBED_MESSAGE_PREFIX)
+            def isTriggered = !isSubscription && message.startsWith(TriggeredEventSubscription.MESSAGE_PREFIX)
+            def isUnauthorized = !isSubscription && !isTriggered && message.startsWith(UnauthorizedEventSubscription.MESSAGE_PREFIX)
+            message = message.substring(message.indexOf(":") + 1)
+            return ValueUtil.JSON.readValue(message,
+                isSubscription ? EventSubscription.class : isTriggered ? TriggeredEventSubscription.class : isUnauthorized ? UnauthorizedEventSubscription.class : SharedEvent.class)
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to parse message")
+        }
+    }
+
+    protected static String messageToString(String prefix, Object message) {
+        try {
+            String str = ValueUtil.asJSON(message).orElse(null)
+            return prefix + str
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to serialise message")
+        }
+    }
+
+    protected WebsocketIOClient<String> createPredictedDatapointWebsocketClient(
+        int serverPort,
+        String websocketRealm,
+        String authRealm,
+        String username,
+        String password
+    ) {
+        def client = new WebsocketIOClient<String>(
+            new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$websocketRealm").build(),
+            null,
+            new OAuthPasswordGrant(
+                "http://127.0.0.1:$serverPort/auth/realms/$authRealm/protocol/openid-connect/token",
+                KEYCLOAK_CLIENT_ID,
+                null,
+                null,
+                username,
+                password
+            )
+        )
+        client.setEncoderDecoderProvider({
+            [
+                new StringEncoder(CharsetUtil.UTF_8),
+                new StringDecoder(CharsetUtil.UTF_8),
+                new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)
+            ].toArray(new ChannelHandler[0])
+        })
+        return client
+    }
 
     def "Test number and toggle attribute storage, retrieval and purging"() {
 
@@ -44,6 +116,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def clientEventService = container.getService(ClientEventService.class)
 
         and: "the clock is stopped for testing purposes and advanced to the next hour"
         stopPseudoClock()
@@ -381,7 +454,14 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert datapoints.isEmpty()
         }
 
-        when: "predicted data points are added"
+        when: "we subscribe to predicted data points events"
+        List<AssetPredictedDatapointEvent> predictedEvents = new CopyOnWriteArrayList<>()
+        Consumer<AssetPredictedDatapointEvent> predictedEventConsumer = { event ->
+            predictedEvents.add(event)
+        }
+        clientEventService.addSubscription(AssetPredictedDatapointEvent.class, null, predictedEventConsumer)
+
+        and: "predicted data points are added"
         predictedDatapointResource.writePredictedDatapoints(null, managerTestSetup.thingId, "light1PowerConsumption",
             [
                 new ValueDatapoint<>(getClockTimeOf(container)+60000, 10d),
@@ -406,6 +486,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         assert predictedData.size() == 5
         assert predictedData.any {it.value == 20d}
 
+        and: "an event should be published for predicted datapoints"
+        conditions.eventually {
+            assert predictedEvents.any {
+                it.ref.id == managerTestSetup.thingId &&
+                    it.ref.name == "light1PowerConsumption"
+            }
+            assert predictedEvents.any {
+                it.ref.id == managerTestSetup.thingId &&
+                    it.ref.name == thingLightToggleAttributeName
+            }
+        }
+
         when: "the predicted data is purged and then retrieved"
         assetPredictedDatapointService.purgeValues(managerTestSetup.thingId, "light1PowerConsumption")
         predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
@@ -413,11 +505,359 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "no predicted data should remain for this attribute"
         assert predictedData.isEmpty()
 
+        and: "an event should be published"
+        conditions.eventually {
+            assert predictedEvents.any {
+                it.ref.id == managerTestSetup.thingId &&
+                    it.ref.name == "light1PowerConsumption"
+            }
+        }
+
         when: "other predicted data is retrieved"
         predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
 
         then: "predicted data should remain for this attribute"
         assert predictedData.size() == 5
         assert predictedData.count {it.value == false} == 2
+    }
+
+    def "Test predicted datapoint change events are received via websocket API"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "the manager container and test setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+        and: "an authenticated predicted datapoint API client"
+        def accessToken = authenticate(
+            container,
+            MASTER_REALM,
+            KEYCLOAK_CLIENT_ID,
+            "testuser1",
+            "testuser1"
+        ).token
+        def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
+
+        and: "a websocket client authenticated in the same realm"
+        def client = new WebsocketIOClient<String>(
+            new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=master").build(),
+            null,
+            new OAuthPasswordGrant(
+                "http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
+                KEYCLOAK_CLIENT_ID,
+                null,
+                null,
+                "testuser1",
+                "testuser1"
+            )
+        )
+        client.setEncoderDecoderProvider({
+            [
+                new StringEncoder(CharsetUtil.UTF_8),
+                new StringDecoder(CharsetUtil.UTF_8),
+                new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)
+            ].toArray(new ChannelHandler[0])
+        })
+
+        and: "message and connection listeners are configured"
+        def connectionStatus = client.getConnectionStatus()
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        client.addMessageConsumer(message -> receivedMessages.add(messageFromString(message)))
+        client.addConnectionStatusConsumer(status -> connectionStatus = status)
+
+        when: "the websocket client connects and subscribes to predicted datapoint events"
+        client.connect()
+
+        then: "the websocket should be connected"
+        conditions.eventually {
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        when: "the predicted datapoint event subscription is sent"
+        client.sendMessage(messageToString(
+            EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+            new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-datapoints")
+        ))
+
+        then: "the server should confirm subscription"
+        conditions.eventually {
+            assert receivedMessages.any {
+                it instanceof EventSubscription &&
+                    it.subscriptionId == "predicted-datapoints"
+            }
+        }
+
+        when: "a predicted datapoint change is written"
+        receivedMessages.clear()
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.thingId,
+            "light1PowerConsumption",
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 42d)] as ValueDatapoint<?>[]
+        )
+
+        then: "the websocket subscription should receive the corresponding triggered event"
+        conditions.eventually {
+            assert receivedMessages.any {
+                it instanceof TriggeredEventSubscription &&
+                    it.subscriptionId == "predicted-datapoints" &&
+                    it.events.any { event ->
+                        event instanceof AssetPredictedDatapointEvent &&
+                            event.ref.id == managerTestSetup.thingId &&
+                            event.ref.name == "light1PowerConsumption"
+                    }
+            }
+        }
+
+        cleanup: "the websocket client is disconnected"
+        if (client != null) {
+            client.disconnect()
+        }
+    }
+
+    def "Test predicted datapoint websocket subscription is denied without READ_ASSETS role"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "the manager container and setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def identityService = container.getService(ManagerIdentityService.class)
+
+        and: "a regular building user has READ_ASSETS removed"
+        identityService.getIdentityProvider().updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser2Id,
+            KEYCLOAK_CLIENT_ID,
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value
+        )
+
+        and: "a websocket client authenticated as that user"
+        def client = createPredictedDatapointWebsocketClient(serverPort, "building", "building", "testuser2", "testuser2")
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        client.addMessageConsumer(message -> receivedMessages.add(messageFromString(message)))
+
+        when: "the websocket client connects and subscribes to predicted datapoint events"
+        client.connect()
+        conditions.eventually {
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        client.sendMessage(messageToString(
+            EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+            new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-no-read-assets")
+        ))
+
+        then: "the server should reject subscription"
+        conditions.eventually {
+            assert receivedMessages.any {
+                it instanceof UnauthorizedEventSubscription &&
+                    it.subscription.subscriptionId == "predicted-no-read-assets"
+            }
+        }
+
+        cleanup: "the websocket client is disconnected and original roles are restored"
+        identityService.getIdentityProvider().updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser2Id,
+            KEYCLOAK_CLIENT_ID,
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value,
+            ClientRole.READ_ASSETS.value
+        )
+        if (client != null) {
+            client.disconnect()
+        }
+    }
+
+    def "Test predicted datapoint websocket subscription is denied for a different realm"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "the manager container is available"
+        def container = startContainer(defaultConfig(), defaultServices())
+
+        and: "a building realm websocket client requests subscriptions in master realm"
+        def client = createPredictedDatapointWebsocketClient(serverPort, "master", "building", "testuser2", "testuser2")
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        client.addMessageConsumer(message -> receivedMessages.add(messageFromString(message)))
+
+        when: "the websocket client connects and subscribes to predicted datapoint events"
+        client.connect()
+
+        then: "the websocket session should never be established in a realm where the user does not belong"
+        assert client.connectionStatus != ConnectionStatus.CONNECTED
+        assert receivedMessages.isEmpty()
+
+        cleanup: "the websocket client is disconnected"
+        if (client != null) {
+            client.disconnect()
+        }
+    }
+
+    def "Test restricted user does not receive predicted datapoint events for unlinked assets"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "the manager container and setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+        and: "a building realm predicted datapoint API client"
+        def accessToken = authenticate(
+            container,
+            "building",
+            KEYCLOAK_CLIENT_ID,
+            "testuser2",
+            "testuser2"
+        ).token
+        def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
+
+        and: "a restricted websocket client in the same realm"
+        def client = createPredictedDatapointWebsocketClient(serverPort, "building", "building", "testuser3", "testuser3")
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        client.addMessageConsumer(message -> receivedMessages.add(messageFromString(message)))
+
+        when: "the websocket client connects and subscribes to predicted datapoint events"
+        client.connect()
+        conditions.eventually {
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        client.sendMessage(messageToString(
+            EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+            new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-restricted-unlinked")
+        ))
+
+        and: "a predicted datapoint update is written on a linked and restricted attribute"
+        receivedMessages.clear()
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment1LivingroomId,
+            "targetTemperature",
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 22d)] as ValueDatapoint<?>[]
+        )
+
+        then: "the restricted user should receive the linked attribute event"
+        conditions.eventually {
+            assert receivedMessages.any {
+                it instanceof TriggeredEventSubscription &&
+                    it.subscriptionId == "predicted-restricted-unlinked" &&
+                    it.events.any { event ->
+                        event instanceof AssetPredictedDatapointEvent &&
+                            event.ref.id == managerTestSetup.apartment1LivingroomId &&
+                            event.ref.name == "targetTemperature"
+                    }
+            }
+        }
+
+        when: "a predicted datapoint update is written on an unlinked asset"
+        receivedMessages.clear()
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment2LivingroomId,
+            "targetTemperature",
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 21d)] as ValueDatapoint<?>[]
+        )
+
+        then: "no triggered event should be received by the restricted user"
+        assert receivedMessages.every {
+            !(it instanceof TriggeredEventSubscription) || it.subscriptionId != "predicted-restricted-unlinked"
+        }
+
+        cleanup: "the websocket client is disconnected"
+        if (client != null) {
+            client.disconnect()
+        }
+    }
+
+    def "Test restricted user does not receive predicted datapoint events for non-restricted attributes"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "the manager container and setup are available"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+
+        and: "a non-restricted attribute exists on an asset linked to the restricted user"
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id, true)
+        apartment1.getAttributes().addOrReplace(new Attribute<>("predictedNonRestricted", ValueType.NUMBER, 0d))
+        assetStorageService.merge(apartment1)
+
+        and: "a building realm predicted datapoint API client"
+        def accessToken = authenticate(
+            container,
+            "building",
+            KEYCLOAK_CLIENT_ID,
+            "testuser2",
+            "testuser2"
+        ).token
+        def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
+
+        and: "a restricted websocket client in the same realm"
+        def client = createPredictedDatapointWebsocketClient(serverPort, "building", "building", "testuser3", "testuser3")
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        client.addMessageConsumer(message -> receivedMessages.add(messageFromString(message)))
+
+        when: "the websocket client connects and subscribes to predicted datapoint events"
+        client.connect()
+        conditions.eventually {
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        client.sendMessage(messageToString(
+            EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+            new EventSubscription(AssetPredictedDatapointEvent.class, null, "predicted-restricted-attr")
+        ))
+
+        and: "a predicted datapoint update is written on a linked restricted attribute"
+        receivedMessages.clear()
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment1LivingroomId,
+            "targetTemperature",
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 19d)] as ValueDatapoint<?>[]
+        )
+
+        then: "the restricted user should receive the restricted attribute event"
+        conditions.eventually {
+            assert receivedMessages.any {
+                it instanceof TriggeredEventSubscription &&
+                    it.subscriptionId == "predicted-restricted-attr" &&
+                    it.events.any { event ->
+                        event instanceof AssetPredictedDatapointEvent &&
+                            event.ref.id == managerTestSetup.apartment1LivingroomId &&
+                            event.ref.name == "targetTemperature"
+                    }
+            }
+        }
+
+        when: "a predicted datapoint update is written on a non-restricted attribute"
+        receivedMessages.clear()
+        predictedDatapointResource.writePredictedDatapoints(
+            null,
+            managerTestSetup.apartment1Id,
+            "predictedNonRestricted",
+            [new ValueDatapoint<>(getClockTimeOf(container) + 60000, 10d)] as ValueDatapoint<?>[]
+        )
+
+        then: "no triggered event should be received by the restricted user"
+        assert receivedMessages.every {
+            !(it instanceof TriggeredEventSubscription) || it.subscriptionId != "predicted-restricted-attr"
+        }
+
+        cleanup: "the websocket client is disconnected"
+        if (client != null) {
+            client.disconnect()
+        }
     }
 }

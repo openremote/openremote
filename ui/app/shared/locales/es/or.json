@@ -406,7 +406,7 @@
   "planPeriod": "Planear una ocurrencia",
   "planRecurrence": "Planear una ocurrencia repetida",
   "activeFromTo": "Activo desde {{start}} a {{end}}",
-  "fromTo": "Desde {{start}} a {{end}}",
+  "fromTo": "desde {{start}} a {{end}}",
   "fromToDays": "De {{start}} a {{days}} días después {{end}}",
   "forDays": "por {{days}} dias",
   "scheduleRuleActivity": "Programar Actividad de la regla",

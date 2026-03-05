@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import {setCustomElementsManifest, type Meta, type StoryObj } from "@storybook/web-components";
-import {getStorybookHelpers} from "@wc-toolkit/storybook-helpers";
+import {getORStorybookHelpers} from "../../storybook-utils";
 import customElements from "../custom-elements.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 import {html} from "lit";
@@ -26,14 +26,14 @@ import {dialogFooterRenderer, dialogHeaderRenderer, dialogRenderer, OrVaadinDial
 import manager from "@openremote/core";
 import "../src/or-vaadin-button";
 import "../src/or-vaadin-dialog";
-import "../src/or-vaadin-numberfield";
+import "../src/or-vaadin-number-field";
 import "@openremote/or-map";
 
 const tagName = "or-vaadin-dialog";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
-const { events, args, argTypes, template } = getStorybookHelpers(tagName);
+const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
     title: "Playground/or-vaadin-components/dialog",
@@ -82,7 +82,7 @@ export const MapExample: Story = {
             <or-vaadin-dialog header-title="Configure area" ${dialogFooterRenderer(footer)}>
                 <div>
                     <or-map style="aspect-ratio: 1/1;"></or-map>
-                    <or-vaadin-numberfield label="Radius (min. 100m)" min="100" value="100"></or-vaadin-numberfield>
+                    <or-vaadin-number-field label="Radius (min. 100m)" min="100" value="100"></or-vaadin-number-field>
                 </div>
             </or-vaadin-dialog>
             <or-vaadin-button @click="${() => (document.querySelector('or-vaadin-dialog') as OrVaadinDialog).open()}">Show dialog</or-vaadin-button>
