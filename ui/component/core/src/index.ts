@@ -1103,9 +1103,8 @@ export class Manager implements EventProviderFactory {
             console.debug("If event provider offline then attempting reconnect: offline=" + isEventsOffline());
             // Force reconnect attempt now if needed
             if(isEventsOffline()) {
-                // TODO: Remove this temporary console statement
-                console.debug("Offline, attempting to reconnect using auth header:", this.getAuthorizationHeader());
-                await this.events?.connect();
+                console.debug("Event provider offline, attempting to reconnect using auth token:", this.getKeycloakToken());
+                await this.events?.connect(true);
             }
             return !isEventsOffline();
         };

@@ -24,7 +24,7 @@ export enum EventProviderStatus {
 export interface EventProvider {
     status: EventProviderStatus;
 
-    connect(): Promise<boolean>;
+    connect(force?: boolean): Promise<boolean>;
 
     disconnect(): void;
 
@@ -110,7 +110,7 @@ abstract class EventProviderImpl implements EventProvider {
         arrayRemove(this._statusCallbacks, callback);
     }
 
-    public connect(): Promise<boolean> {
+    public connect(force = false): Promise<boolean> {
         console.debug("Attempting to connect to events:", this.endpointUrl);
         if (this._reconnectTimer) {
             console.debug("Clearing events reconnect timeout...");
@@ -125,8 +125,12 @@ abstract class EventProviderImpl implements EventProvider {
         this._disconnectRequested = false;
 
         if (this._connectingDeferred) {
-            console.warn("Already connecting to events, continuing the previous one.");
-            return this._connectingDeferred.promise;
+            if(!force) {
+                console.warn("Already connecting to events, continuing the previous one.");
+                return this._connectingDeferred.promise;
+            }
+            console.warn("Already connecting to events; force stopping the previous attempt, and starting a new one.");
+            this.disconnect();
         }
 
         this._onStatusChanged(EventProviderStatus.CONNECTING);
@@ -136,7 +140,6 @@ abstract class EventProviderImpl implements EventProvider {
         this._doConnect().then((connected: boolean) => {
             if (this._connectingDeferred) {
                 const deferred = this._connectingDeferred;
-                this._connectingDeferred = null;
 
                 if (connected) {
                     console.debug("Connected to event service: " + this.endpointUrl);
@@ -153,6 +156,8 @@ abstract class EventProviderImpl implements EventProvider {
 
                 deferred.resolve(connected);
             }
+        }).finally(() => {
+            this._connectingDeferred = null;
         });
 
         return this._connectingDeferred.promise;
@@ -632,18 +637,19 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onerror = (err) => {
+            console.error("Event provider error:", err);
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
                 deferred.resolve(false);
             } else {
-                console.debug("Event provider error");
                 // Could have inconsistent state so disconnect and let consumers decide what to do and when to reconnect
                 this._beforeDisconnect();
             }
         };
 
         this._webSocket!.onclose = () => {
+            console.warn("The WebSocket connection of the event provider has been closed.");
             this._webSocket = undefined;
 
             if (this._connectDeferred) {
