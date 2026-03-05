@@ -1199,7 +1199,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         boolean isSuperUser = authContext != null && authContext.isSuperUser();
-        boolean isUsersRealm = isSuperUser || authContext == null;
+        boolean isUsersRealm = isSuperUser || authContext == null || authContext.isRealmAccessibleByUser(realm.getName());
+
         return isSuperUser || (isUsersRealm && realm.isActive(timerService.getCurrentTimeMillis()));
     }
 

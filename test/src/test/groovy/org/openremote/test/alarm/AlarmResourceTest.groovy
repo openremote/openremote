@@ -352,14 +352,14 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     }
 
     @Unroll
-    def "should not update an alarm with id 'null'"() {
+    def "should not update an alarm with id 0"() {
         when:
-        adminResource.updateAlarm(null, null, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.OPEN))
+        adminResource.updateAlarm(null, 0, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.OPEN))
 
         then:
         WebApplicationException ex = thrown()
         ex.response.withCloseable { r ->
-            assert r.status == 405
+            assert r.status == 404
             return true
         }
     }
@@ -418,12 +418,12 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     // Delete empty or null alarms
     def "should not delete null or empty alarms"() {
         when:
-        adminResource.removeAlarm(null, null)
+        adminResource.removeAlarm(null, 0)
 
         then:
         WebApplicationException ex = thrown()
         ex.response.withCloseable { r ->
-            assert r.status == 405
+            assert r.status == 404
             return true
         }
 

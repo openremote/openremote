@@ -55,12 +55,13 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static org.openremote.model.syslog.SyslogCategory.API;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.ValueUtil.JSON;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
-    private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(API, AssetDatapointResourceImpl.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
 
     protected final AssetStorageService assetStorageService;
@@ -198,7 +199,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 }
 
                 if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                    DATA_EXPORT_LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
+                    LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
 

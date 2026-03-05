@@ -21,6 +21,7 @@ package org.openremote.container.security;
 
 import org.openremote.model.Constants;
 import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
 
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
@@ -56,4 +57,15 @@ public interface AuthContext {
     boolean hasRealmRole(String role);
 
     boolean hasResourceRole(String role, String resource);
+
+    default boolean hasResourceRoleOrIsSuperUser(String role, String resource) {
+        return hasResourceRole(role, resource) || isSuperUser();
+    }
+
+    /**
+     * @return <code>true</code> if the user is authenticated in the same realm or if the user is the superuser (admin).
+     */
+    default boolean isRealmAccessibleByUser(String realm) {
+        return !TextUtil.isNullOrEmpty(realm) && (isSuperUser() || realm.equals(getAuthenticatedRealmName()));
+    }
 }
