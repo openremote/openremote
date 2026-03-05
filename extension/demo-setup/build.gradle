@@ -86,3 +86,10 @@ tasks.register('installDist', Copy) {
     from jar.archiveFile
     into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
 }
+
+tasks.register("run", JavaExec) {
+    environment("OR_SETUP_TYPE", "demo")
+    mainClass = 'org.openremote.manager.Main'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
+}
