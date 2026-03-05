@@ -66,6 +66,7 @@ export const style = css`
     or-scheduler {
         margin-left: 10px;
         margin-right: 20px;
+        max-width: 400px;
     }
 
     .wrapper {
