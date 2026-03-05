@@ -13,6 +13,10 @@ import {AttributeMarkerColoursRange, MapMarkerColours} from "../markers/or-map-m
 import { Util } from "@openremote/core";
 import { AssetWithLocation } from "..";
 
+export function metersToPixelsAtMaxZoom(meters: number, latitude: number) {
+    return meters / 0.075 / Math.cos(latitude * Math.PI / 180);
+}
+
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
         return;

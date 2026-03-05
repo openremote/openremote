@@ -1,8 +1,7 @@
 import manager, {EventCallback} from "@openremote/core";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {IControl, LngLat, LngLatBoundsLike, LngLatLike, GeolocateControl} from "maplibre-gl";
-import {ClusterConfig, MapWidget} from "./mapwidget";
+import {IControl, LngLat, LngLatLike, GeolocateControl} from "maplibre-gl";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
@@ -17,43 +16,22 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
-import { Asset, Attribute, GeoJsonConfig, GeoJSONPoint, WellknownAttributes } from "@openremote/model";
+import { GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
+import { AssetMap } from "./asset-map";
 import { CenterControl } from "./controls/center";
+import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail, MapGeocoderEventDetail } from "./types";
 
 // Re-exports
-export {Util, LngLatLike, LngLat, ClusterConfig};
+export {Util, LngLatLike, LngLat};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export * from "./markers/or-cluster-marker";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";
+export type * from "./types";
 
-export interface AssetWithLocation extends Asset {
-    attributes: { [index: string]: Attribute<any> } & {
-        [WellknownAttributes.LOCATION]: Attribute<GeoJSONPoint>
-    };
-}
-
-export interface ViewSettings {
-    center: LngLatLike;
-    bounds?: LngLatBoundsLike | null;
-    zoom: number;
-    maxZoom: number;
-    minZoom: number;
-    boxZoom: boolean;
-    geocodeUrl: string;
-    geoJson?: GeoJsonConfig
-}
-
-export interface MapEventDetail {
-    lngLat: LngLat;
-    doubleClick: boolean;
-}
-export interface MapGeocoderEventDetail {
-    geocode: any;
-}
 export class OrMapLoadedEvent extends CustomEvent<void> {
 
     public static readonly NAME = "or-map-loaded";
@@ -135,8 +113,6 @@ declare global {
         [OrMapMarkersChangedEvent.NAME]: OrMapMarkersChangedEvent;
     }
 }
-
-export type ControlPosition = "top-right" | "top-left" | "bottom-right" | "bottom-left";
 
 export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
@@ -361,7 +337,7 @@ export class OrMap extends LitElement {
     public controls?: (IControl | [IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
-    protected _map?: MapWidget;
+    protected _map?: AssetMap;
     protected _loaded: boolean = false;
 
     protected _resizeObserver?: ResizeObserver;
@@ -385,10 +361,6 @@ export class OrMap extends LitElement {
 
     public cleanUpAssetMarkers(): void {
         this._map?.cleanUpAssetMarkers();
-    }
-
-    public async reload() {
-        await this._map?.load();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -449,7 +421,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
+            this._map = new AssetMap(this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls)

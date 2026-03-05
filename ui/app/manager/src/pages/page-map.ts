@@ -294,7 +294,18 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._store.dispatch(setAssets(assets));
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
-                    this._store.dispatch(assetEventReceived(event));
+                    console.log("Asset event received:", event);
+                    const index = assets.findIndex(a => a.id === event.asset.id);
+                    
+
+                    switch (event.cause) {
+                        case "UPDATE":
+                            // if (index !== -1) assets.splice(index, 1);
+                            break;
+                        case "DELETE": if (index !== -1) this._map.addAssetMarker(event.asset); break;
+                        case "CREATE":
+                            break;
+                    }
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -305,7 +316,8 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
-                    this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
+                    console.log("Attribute event received:", event);
+                    // this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -505,4 +517,6 @@ export class PageMap extends Page<MapStateKeyed> {
             });
         }
     }
+  
+    
 }
