@@ -1,0 +1,375 @@
+# Query Exporter Configuration for OpenRemote PostgreSQL Monitoring
+# Documentation: https://github.com/albertodonato/query-exporter/blob/main/docs/configuration.rst
+#
+# Environment Variables:
+# - TABLE_BLOAT_THRESHOLD: Table bloat ratio threshold for alerting (default: 1.2 = 20% bloat)
+# - INDEX_BLOAT_THRESHOLD: Index bloat ratio threshold for alerting (default: 1.5 = 50% bloat)
+#   Set these in docker-compose or deployment environment to adjust sensitivity
+
+databases:
+  openremote:
+    dsn:
+      dialect: postgresql
+      user: !env POSTGRES_USER
+      password: !env POSTGRES_PASSWORD
+      host: !env POSTGRES_HOST
+      port: !env POSTGRES_PORT
+      database: !env POSTGRES_DB
+    labels:
+      instance: openremote
+
+metrics:
+  # 1. Table bloat metrics
+  pg_table_bloat_count:
+    type: gauge
+    description: Number of tables with bloat ratio exceeding threshold (>20%)
+    
+  pg_table_bloat_ratio:
+    type: gauge
+    description: Bloat ratio per table (percentage of wasted space)
+    labels: [schema_name, table_name, index_name, bloat_type]
+    
+  pg_table_bloat_bytes:
+    type: gauge
+    description: Estimated bloat size in bytes per table/index
+    labels: [schema_name, table_name, index_name, bloat_type]
+    
+  pg_table_bloat_wasted_mb:
+    type: gauge
+    description: Estimated wasted space in MB per table/index
+    labels: [schema_name, table_name, index_name, bloat_type]
+
+  # 2. Autovacuum workers metric
+  pg_autovacuum_workers_active:
+    type: gauge
+    description: Number of currently active autovacuum workers
+    
+  pg_autovacuum_workers_max:
+    type: gauge
+    description: Maximum number of autovacuum workers configured
+    
+  pg_autovacuum_running:
+    type: gauge
+    description: Autovacuum processes currently running with details
+    labels: [db, table_schema, table_name, phase]
+
+  # 3. Datapoint query execution time metric
+  pg_datapoint_query_duration_seconds:
+    type: histogram
+    description: Execution time of datapoint queries for the attribute with most data points
+    buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
+    labels: [entity_id, attribute_name]
+    
+  pg_datapoint_count:
+    type: gauge
+    description: Total number of datapoints for the top attribute
+    labels: [entity_id, attribute_name]
+
+  # Additional useful metrics
+  pg_database_size_megabytes:
+    type: gauge
+    description: Total size of the database in megabytes
+    
+  pg_connections_active:
+    type: gauge
+    description: Number of active database connections
+    
+  pg_connections_idle:
+    type: gauge
+    description: Number of idle database connections
+
+  pg_locks_count:
+    type: gauge
+    description: Number of locks by lock type
+    labels: [lock_type]
+
+queries:
+  # Query 1: Count of tables with bloat
+  table_bloat_count:
+    interval: 300  # Run every 5 minutes
+    databases: [openremote]
+    metrics: [pg_table_bloat_count]
+    parameters:
+      - table_bloat_threshold: !env TABLE_BLOAT_THRESHOLD
+        index_bloat_threshold: !env INDEX_BLOAT_THRESHOLD
+    sql: |
+      WITH constants AS (
+        SELECT current_setting('block_size')::numeric AS bs,
+          23 AS hdr,
+          4 AS ma
+      ),
+      bloat_info AS (
+        SELECT
+          sml.schemaname,
+          sml.tablename,
+          ROUND((CASE WHEN sml.otta=0 THEN 0.0 ELSE sml.table_relpages::float/sml.otta END)::numeric,1) AS table_bloat,
+          ROUND((CASE WHEN sml.iotta=0 OR sml.ipages=0 THEN 0.0 ELSE sml.ipages::float/sml.iotta END)::numeric,1) AS index_bloat
+        FROM (
+          SELECT
+            rs.schemaname, 
+            rs.tablename, 
+            cc.relpages AS table_relpages,
+            CEIL((cc.reltuples*((rs.datahdr+const.ma-
+              (CASE WHEN rs.datahdr%const.ma=0 THEN const.ma ELSE rs.datahdr%const.ma END))+rs.nullhdr2+4))/(const.bs-20::float)) AS otta,
+            COALESCE(c2.relpages,0) AS ipages,
+            COALESCE(CEIL((c2.reltuples*(rs.datahdr-12))/(const.bs-20::float)),0) AS iotta
+          FROM (
+            SELECT
+              foo.ma, foo.bs, foo.schemaname, foo.tablename,
+              (foo.datawidth+(foo.hdr+foo.ma-(CASE WHEN foo.hdr%foo.ma=0 THEN foo.ma ELSE foo.hdr%foo.ma END)))::numeric AS datahdr,
+              (foo.maxfracsum*(foo.nullhdr+foo.ma-(CASE WHEN foo.nullhdr%foo.ma=0 THEN foo.ma ELSE foo.nullhdr%foo.ma END))) AS nullhdr2
+            FROM (
+              SELECT
+                s.schemaname, s.tablename, const.hdr, const.ma, const.bs,
+                SUM((1-s.null_frac)*s.avg_width) AS datawidth,
+                MAX(s.null_frac) AS maxfracsum,
+                const.hdr+(SELECT 1+count(*)/8 FROM pg_stats s2 WHERE s2.null_frac<>0 AND s2.schemaname = s.schemaname AND s2.tablename = s.tablename) AS nullhdr
+              FROM pg_stats s, constants const
+              GROUP BY 1,2,3,4,5
+            ) AS foo
+          ) AS rs
+          JOIN pg_namespace nn ON nn.nspname = rs.schemaname
+          JOIN pg_class cc ON cc.relname = rs.tablename AND cc.relnamespace = nn.oid
+          LEFT JOIN pg_index i ON indrelid = cc.oid
+          LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid,
+          constants const
+          WHERE rs.schemaname NOT LIKE 'pg_%' AND rs.schemaname != 'information_schema'
+        ) AS sml, constants const
+      )
+      SELECT COUNT(DISTINCT (schemaname, tablename)) AS pg_table_bloat_count
+      FROM bloat_info
+      WHERE table_bloat > :table_bloat_threshold OR index_bloat > :index_bloat_threshold;
+
+  # Query 1: Count of tables with bloat (simplified - just counts distinct tables from bloat_details)
+  # Query 2: Detailed table and index bloat information
+  table_bloat_details:
+    interval: 300  # Run every 5 minutes
+    databases: [openremote]
+    metrics: [pg_table_bloat_ratio, pg_table_bloat_bytes, pg_table_bloat_wasted_mb]
+    parameters:
+      - table_bloat_threshold: !env TABLE_BLOAT_THRESHOLD
+        index_bloat_threshold: !env INDEX_BLOAT_THRESHOLD
+    sql: |
+      WITH constants AS (
+        SELECT current_setting('block_size')::numeric AS bs,
+          -- Tuple header size in bytes (23 bytes for PostgreSQL 14+)
+          23 AS hdr,
+          -- Memory alignment in bytes, we only run on Linux containers, so this is always 4
+          4 AS ma
+      ),
+      bloat_info AS (
+        SELECT
+          current_database() as dbname,
+          sml.schemaname,
+          sml.tablename, 
+          sml.iname,
+          ROUND((CASE WHEN sml.otta=0 THEN 0.0 ELSE sml.table_relpages::float/sml.otta END)::numeric,1) AS table_bloat,
+          CASE WHEN sml.table_relpages < sml.otta THEN 0 ELSE const.bs*(sml.table_relpages-sml.otta)::BIGINT END AS wastedbytes,
+          ROUND((CASE WHEN sml.iotta=0 OR sml.ipages=0 THEN 0.0 ELSE sml.ipages::float/sml.iotta END)::numeric,1) AS index_bloat,
+          CASE WHEN sml.ipages < sml.iotta THEN 0 ELSE const.bs*(sml.ipages-sml.iotta) END AS wastedibytes,
+          sml.table_relpages,
+          sml.otta,
+          sml.ipages,
+          sml.iotta
+        FROM (
+          SELECT
+            rs.schemaname, 
+            rs.tablename, 
+            cc.reltuples, 
+            cc.relpages AS table_relpages, 
+            const.bs,
+            -- Optimal table pages: +4 for item pointer, bs-20 for page header overhead
+            CEIL((cc.reltuples*((rs.datahdr+const.ma-
+              (CASE WHEN rs.datahdr%const.ma=0 THEN const.ma ELSE rs.datahdr%const.ma END))+rs.nullhdr2+4))/(const.bs-20::float)) AS otta,
+            COALESCE(c2.relname,'?') AS iname, 
+            COALESCE(c2.reltuples,0) AS ituples, 
+            COALESCE(c2.relpages,0) AS ipages,
+            -- Optimal index pages: datahdr-12 for index header, bs-20 for page header
+            COALESCE(CEIL((c2.reltuples*(rs.datahdr-12))/(const.bs-20::float)),0) AS iotta
+          FROM (
+            SELECT
+              foo.ma, 
+              foo.bs, 
+              foo.schemaname, 
+              foo.tablename,
+              (foo.datawidth+(foo.hdr+foo.ma-(CASE WHEN foo.hdr%foo.ma=0 THEN foo.ma ELSE foo.hdr%foo.ma END)))::numeric AS datahdr,
+              (foo.maxfracsum*(foo.nullhdr+foo.ma-(CASE WHEN foo.nullhdr%foo.ma=0 THEN foo.ma ELSE foo.nullhdr%foo.ma END))) AS nullhdr2
+            FROM (
+              SELECT
+                s.schemaname, 
+                s.tablename, 
+                const.hdr, 
+                const.ma, 
+                const.bs,
+                SUM((1-s.null_frac)*s.avg_width) AS datawidth,
+                MAX(s.null_frac) AS maxfracsum,
+                const.hdr+(
+                  -- Null bitmap size: count/8 converts bits to bytes, +1 for bitmap header
+                  SELECT 1+count(*)/8
+                  FROM pg_stats s2
+                  WHERE s2.null_frac<>0 AND s2.schemaname = s.schemaname AND s2.tablename = s.tablename
+                ) AS nullhdr
+              FROM pg_stats s, constants const
+              GROUP BY 1,2,3,4,5
+            ) AS foo
+          ) AS rs
+          JOIN pg_namespace nn ON nn.nspname = rs.schemaname
+          JOIN pg_class cc ON cc.relname = rs.tablename AND cc.relnamespace = nn.oid
+          LEFT JOIN pg_index i ON indrelid = cc.oid
+          LEFT JOIN pg_class c2 ON c2.oid = i.indexrelid,
+          constants const
+          WHERE rs.schemaname NOT LIKE 'pg_%' 
+            AND rs.schemaname != 'information_schema'
+        ) AS sml, constants const
+        WHERE (sml.table_relpages - sml.otta) > 0  -- Only show tables with bloat
+      )
+      -- Table bloat
+      SELECT 
+        bi.schemaname AS schema_name,
+        bi.tablename AS table_name,
+        'N/A' AS index_name,
+        bi.table_bloat AS pg_table_bloat_ratio,
+        bi.wastedbytes AS pg_table_bloat_bytes,
+        -- Convert bytes to MB: 1048576 = 1024*1024 bytes per megabyte
+        ROUND((bi.wastedbytes / 1048576.0)::numeric, 2) AS pg_table_bloat_wasted_mb,
+        'table' AS bloat_type
+      FROM bloat_info bi
+      WHERE bi.iname = '?' AND bi.wastedbytes > 0 AND bi.table_bloat > :table_bloat_threshold
+      
+      UNION ALL
+      
+      -- Index bloat
+      SELECT 
+        bi.schemaname AS schema_name,
+        bi.tablename AS table_name,
+        bi.iname AS index_name,
+        bi.index_bloat AS pg_table_bloat_ratio,
+        bi.wastedibytes AS pg_table_bloat_bytes,
+        -- Convert bytes to MB: 1048576 = 1024*1024 bytes per megabyte
+        ROUND((bi.wastedibytes / 1048576.0)::numeric, 2) AS pg_table_bloat_wasted_mb,
+        'index' AS bloat_type
+      FROM bloat_info bi
+      WHERE bi.iname != '?' AND bi.wastedibytes > 0 AND bi.index_bloat > :index_bloat_threshold
+      
+      ORDER BY pg_table_bloat_bytes DESC
+      LIMIT 50;  -- Return only top 50 most bloated objects
+
+  # Query 3: Autovacuum workers - active count
+  autovacuum_workers_active:
+    interval: 30  # Run every 30 seconds
+    databases: [openremote]
+    metrics: [pg_autovacuum_workers_active]
+    sql: |
+      SELECT COUNT(*) AS pg_autovacuum_workers_active
+      FROM pg_stat_activity
+      WHERE query LIKE 'autovacuum:%'
+        AND state = 'active';
+
+  # Query 4: Autovacuum workers - max configured
+  autovacuum_workers_max:
+    interval: 60  # Run every minute
+    databases: [openremote]
+    metrics: [pg_autovacuum_workers_max]
+    sql: |
+      SELECT setting::integer AS pg_autovacuum_workers_max
+      FROM pg_settings
+      WHERE name = 'autovacuum_max_workers';
+
+  # Query 5: Autovacuum running processes with details
+  autovacuum_running_details:
+    interval: 30  # Run every 30 seconds
+    databases: [openremote]
+    metrics: [pg_autovacuum_running]
+    sql: |
+      SELECT
+        a.datname AS db,
+        COALESCE(n.nspname, 'unknown') AS table_schema,
+        COALESCE(c.relname, 'unknown') AS table_name,
+        CASE 
+          WHEN a.query LIKE '%to prevent wraparound%' THEN 'wraparound'
+          WHEN a.query LIKE '%to analyze%' THEN 'analyze'
+          ELSE 'vacuum'
+        END AS phase,
+        1 AS pg_autovacuum_running
+      FROM pg_stat_activity a
+      JOIN pg_stat_progress_vacuum pv ON pv.pid = a.pid
+      LEFT JOIN pg_class c ON c.oid = pv.relid
+      LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE a.query LIKE 'autovacuum:%'
+        AND a.state = 'active';
+
+  # Query 6: Datapoint query execution time for attribute with most data points
+  datapoint_query_performance:
+    interval: 86400  # Run once a day
+    databases: [openremote]
+    metrics: [pg_datapoint_query_duration_seconds, pg_datapoint_count]
+    sql: |
+      WITH top_attribute AS (
+        SELECT 
+          entity_id,
+          attribute_name,
+          COUNT(*) as datapoint_count
+        FROM openremote.asset_datapoint
+        GROUP BY entity_id, attribute_name
+        ORDER BY datapoint_count DESC
+        LIMIT 1
+      ),
+      timed_query AS (
+        SELECT
+          ta.entity_id,
+          ta.attribute_name,
+          ta.datapoint_count,
+          EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) as duration
+        FROM top_attribute ta
+        CROSS JOIN LATERAL (
+          SELECT clock_timestamp() as query_start
+        ) qs
+        CROSS JOIN LATERAL (
+          SELECT timestamp, value
+          FROM openremote.asset_datapoint
+          WHERE entity_id = ta.entity_id
+            AND attribute_name = ta.attribute_name
+          ORDER BY timestamp DESC
+        ) dp
+        LIMIT 1
+      )
+      SELECT
+        entity_id,
+        attribute_name,
+        duration AS pg_datapoint_query_duration_seconds,
+        datapoint_count AS pg_datapoint_count
+      FROM timed_query;
+
+  # Query 7: Database size
+  database_size:
+    interval: 300  # Run every 5 minutes
+    databases: [openremote]
+    metrics: [pg_database_size_megabytes]
+    sql: |
+      -- Convert bytes to MB: 1048576 = 1024*1024 bytes per megabyte
+      SELECT ROUND((pg_database_size(current_database()) / 1048576.0)::numeric, 2) AS pg_database_size_megabytes;
+
+  # Query 8: Connection statistics
+  connection_stats:
+    interval: 30  # Run every 30 seconds
+    databases: [openremote]
+    metrics: [pg_connections_active, pg_connections_idle]
+    sql: |
+      SELECT
+        COUNT(*) FILTER (WHERE state = 'active') AS pg_connections_active,
+        COUNT(*) FILTER (WHERE state = 'idle') AS pg_connections_idle
+      FROM pg_stat_activity
+      WHERE datname = current_database();
+
+  # Query 9: Lock statistics
+  lock_stats:
+    interval: 30  # Run every 30 seconds
+    databases: [openremote]
+    metrics: [pg_locks_count]
+    sql: |
+      SELECT
+        mode AS lock_type,
+        COUNT(*) AS pg_locks_count
+      FROM pg_locks
+      WHERE database = (SELECT oid FROM pg_database WHERE datname = current_database())
+      GROUP BY mode;
