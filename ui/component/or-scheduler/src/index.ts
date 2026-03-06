@@ -162,13 +162,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _ends: keyof typeof RRULE_ENDS = "never";
 
     @state()
+    protected _eventType: EventTypes = EventTypes.default;
+
+    @state()
     protected _rrule?: RRule;
 
     @query("#scheduler")
     protected _dialog!: OrVaadinDialog;
 
     protected _byRRuleParts?: RRulePartKeys[];
-    protected _eventType: EventTypes = EventTypes.default;
     protected _until = moment().toDate();
 
     protected get _scheduleWithOffset(): CalendarEvent | undefined {
@@ -242,11 +244,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
             }
 
-            const schedule = this._scheduleWithOffset;
-            if (schedule?.start && schedule?.end) {
-                this._eventType = schedule.recurrence ? EventTypes.recurrence : EventTypes.period;
-            } else {
+            if (!changedProps.has("_eventType") && Util.objectsEqual(this.schedule, this.defaultSchedule)) {
                 this._eventType = EventTypes.default;
+            } else {
+                this._eventType = this.schedule?.recurrence ? EventTypes.recurrence : EventTypes.period;
             }
         }
 
