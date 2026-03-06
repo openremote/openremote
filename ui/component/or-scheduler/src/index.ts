@@ -181,7 +181,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected get _timeLabel(): TemplateResult | undefined {
         if (this._eventType === EventTypes.default) {
-            return html`<or-translate value="${this.defaultEventTypeLabel}"></or-translate>`;
+            return html`<or-translate value="${this.defaultEventTypeLabel}" .options="${this._getDefaultMessageOptions()}"></or-translate>`;
         }
 
         if (this._scheduleWithOffset) {
@@ -391,6 +391,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
     }
 
+    protected _getDefaultMessageOptions(): { date: string, time: string } {
+        return {
+            date: moment.utc(this.defaultSchedule?.start).format("YYYY-MM-DD"),
+            time: moment.utc(this.defaultSchedule?.start).format("HH:mm")
+        };
+    }
+
     protected render() {
         return html`
             <or-vaadin-button style="max-width: 100%" @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
@@ -424,7 +431,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected _getDialogContent(): TemplateResult {
         const eventTypes = [
-            { value: "default", label: i18next.t(this.defaultEventTypeLabel) },
+            { value: "default", label: i18next.t(this.defaultEventTypeLabel, this._getDefaultMessageOptions()) },
             { value: "period", label: i18next.t("planPeriod") },
             { value: "recurrence", label: i18next.t("planRecurrence") },
         ];

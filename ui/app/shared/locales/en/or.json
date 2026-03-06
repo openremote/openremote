@@ -636,7 +636,7 @@
   "scheduleActivity": "Schedule Activity",
   "scheduleRuleActivity": "Schedule Rule Activity",
   "scheduleSimulatorActivity": "Simulator Replay Schedule",
-  "defaultSimulatorSchedule": "Every day from 00:00",
+  "defaultSimulatorSchedule": "Replay today at {{time}}",
   "schedule": {
     "count_one": "occurrence",
     "count_other": "occurrences",

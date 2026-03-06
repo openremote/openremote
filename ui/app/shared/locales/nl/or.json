@@ -633,7 +633,7 @@
   "scheduleActivity": "Planner",
   "scheduleRuleActivity": "Regelplanner",
   "scheduleSimulatorActivity": "Simulator Replay Schema",
-  "defaultSimulatorSchedule": "Elke dag vanaf 00:00",
+  "defaultSimulatorSchedule": "Afspelen vandaag vanaf {{time}}",
   "schedule": {
     "count_one": "herhaling",
     "count_other": "herhalingen",
