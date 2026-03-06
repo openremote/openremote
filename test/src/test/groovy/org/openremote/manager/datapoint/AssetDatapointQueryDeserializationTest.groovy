@@ -1,12 +1,13 @@
 package org.openremote.manager.datapoint
 
-import com.fasterxml.jackson.databind.JsonMappingException
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.datapoint.query.AssetDatapointQuery
 import org.openremote.model.util.ValueUtil
 import spock.lang.Specification
 
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 
 class AssetDatapointQueryDeserializationTest extends Specification {
 
@@ -29,7 +30,7 @@ class AssetDatapointQueryDeserializationTest extends Specification {
         query.toTime == LocalDateTime.of(2026, 2, 12, 1, 0, 0, 0)
     }
 
-    def "AssetDatapointQuery deserializes fromTime with Z by dropping timezone info"() {
+    def "AssetDatapointQuery deserializes fromTime with Z and converts to server timezone"() {
         given:
         def json = '''
             {
@@ -44,12 +45,15 @@ class AssetDatapointQueryDeserializationTest extends Specification {
 
         then:
         query instanceof AssetDatapointAllQuery
-        // LocalDateTime has no zone; current mapper behavior accepts "Z" and keeps wall-clock time.
-        query.fromTime == LocalDateTime.of(2026, 2, 12, 0, 0, 0, 0)
-        query.toTime == LocalDateTime.of(2026, 2, 12, 1, 0, 0, 0)
+        query.fromTime == OffsetDateTime.parse("2026-02-12T00:00:00.000Z")
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
+        query.toTime == OffsetDateTime.parse("2026-02-12T01:00:00.000Z")
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
     }
 
-    def "AssetDatapointQuery fails deserialization for fromTime with explicit numeric offset"() {
+    def "AssetDatapointQuery deserializes fromTime with explicit numeric offset and converts to server timezone"() {
         given:
         def json = '''
             {
@@ -60,10 +64,15 @@ class AssetDatapointQueryDeserializationTest extends Specification {
         '''
 
         when:
-        ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
+        AssetDatapointQuery query = ValueUtil.JSON.readValue(json, AssetDatapointQuery.class)
 
         then:
-        JsonMappingException ex = thrown()
-        ex.message.contains("+02:00")
+        query instanceof AssetDatapointAllQuery
+        query.fromTime == OffsetDateTime.parse("2026-02-12T00:00:00.000+02:00")
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
+        query.toTime == OffsetDateTime.parse("2026-02-12T01:00:00.000+02:00")
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime()
     }
 }
