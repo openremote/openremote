@@ -177,7 +177,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         from(WEBSOCKET_URI)
             .routeId("ClientInbound-Websocket")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-            .threads().executorService(executorService) // Ensure processing is not done on the WebService I/O threads
             .choice()
             .when(header(UndertowConstants.EVENT_TYPE))
             .process(exchange -> {
@@ -269,8 +268,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 }
             })
             .stop()
-            .endChoice()
-            .end()
+            .otherwise()
+            .threads().executorService(executorService) // Ensure processing is not done on the WebService I/O threads
             .process(exchange -> {
                 WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
                 AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
