@@ -663,17 +663,20 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div style="display: flex; gap: 8px">
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
-                            @change="${this._onPartChange("start", "value")}" label="${i18next.t("from")}"> </or-vaadin-date-picker>
+                            @change="${this._onPartChange("start", "value")}" label="${i18next.t("from")}" .max="${moment(calendar.end).format("YYYY-MM-DD")}">
+                        </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
-                            @change="${this._onPartChange("start-time", "value")}">
+                            @change="${this._onPartChange("start-time", "value")}"
+                            .max="${moment(calendar.end).isSameOrBefore(moment(calendar.start), "day") && moment(calendar.end).format("HH:mm")}">
                         </or-vaadin-time-picker>
                     </div>
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
-                            @change="${this._onPartChange("end", "value")}" label="${i18next.t("to")}">
+                            @change="${this._onPartChange("end", "value")}" label="${i18next.t("to")}" .min="${moment(calendar.start).format("YYYY-MM-DD")}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
-                            @change="${this._onPartChange("end-time", "value")}">
+                            @change="${this._onPartChange("end-time", "value")}"
+                            .min="${moment(calendar.end).isSameOrBefore(moment(calendar.start), "day") && moment(calendar.start).format("HH:mm")}">
                         </or-vaadin-time-picker>
                     </div>
                 </div>
