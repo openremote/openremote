@@ -82,6 +82,13 @@ public class TokenVerifierImpl implements TokenVerifier {
     @Override
     public TokenPrincipal verify(String realm, String token) throws AuthenticationException {
 
+        if (realm == null || realm.isBlank()) {
+            throw new AuthenticationException("Invalid token");
+        }
+        if (token == null || token.isBlank()) {
+            throw new AuthenticationException("Invalid token");
+        }
+
         JWTProcessor<SecurityContext> jwtProcessor = getJwtProcessor(realm);
         JWTClaimsSet claimsSet;
         TokenPrincipal principal;

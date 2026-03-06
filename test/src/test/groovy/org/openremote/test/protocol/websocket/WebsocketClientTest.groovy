@@ -156,14 +156,14 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "we call connect on the clients"
         client.connect()
-//        client2.connect()
+        client2.connect()
 
         then: "the clients status should become CONNECTED"
         conditions.eventually {
             assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
-//            assert client2.connectionStatus == ConnectionStatus.CONNECTED
-//            assert connectionStatus2 == ConnectionStatus.CONNECTED
+            assert client2.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatus2 == ConnectionStatus.CONNECTED
         }
 
         when: "we subscribe to attribute events produced by the server"
