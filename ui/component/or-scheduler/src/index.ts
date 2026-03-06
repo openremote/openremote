@@ -237,6 +237,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(changedProps: PropertyValues) {
+        // Follow the default schedule to supply a default end time if not provided
+        if (this.schedule && !this.schedule.end && this.defaultSchedule?.end) {
+            this.schedule = { ...this.schedule, end: this.defaultSchedule.end };
+        }
+
         if (changedProps.has("schedule")) {
             if (this._scheduleWithOffset?.recurrence) {
                 this._rrule = RRule.fromString(this._scheduleWithOffset.recurrence);
