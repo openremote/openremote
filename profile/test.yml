@@ -1,6 +1,6 @@
 # OpenRemote v3
 #
-# Profile for doing UI development work.
+# Profile for running tests.
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
@@ -8,46 +8,46 @@ volumes:
   manager-data:
 
 services:
-
-  keycloak:
+  keycloak-test:
     extends:
       file: deploy.yml
       service: keycloak
-    #volumes:
-    #   Map custom themes
-    #  - ../deployment:/deployment
-    # Access directly if needed on localhost
     ports:
-      - "8081:8080"
+      - "8889:8080"
     depends_on:
-      postgresql:
+      postgresql-test:
         condition: service_healthy
     environment:
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
       # Prevent theme caching during dev
       KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      KC_DB_URL_HOST: 'postgresql-test'
 
-  postgresql:
+  # A database using tmpfs for faster test runs.
+  postgresql-test:
     extends:
       file: deploy.yml
       service: postgresql
     volumes:
       - manager-data:/storage
-    # Access directly if needed on localhost
     ports:
-      - "5432:5432"
+      - "54321:5432"
+    tmpfs:
+      - /var/lib/postgresql/data:uid=70,gid=70
 
-  manager:
+  manager-test:
     extends:
       file: deploy.yml
       service: manager
     image: openremote/manager:${MANAGER_VERSION:-develop}
+    profiles: [ui]
     build:
       context: ../manager/build/install/manager/
       dockerfile: Dockerfile
     depends_on:
-      postgresql:
+      postgresql-test:
         condition: service_healthy
     volumes:
       - manager-data:/storage
@@ -55,4 +55,4 @@ services:
       OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-true}
       OR_DEV_MODE: ${OR_DEV_MODE:-true}
     ports:
-      - "8080:8080"
+      - "8888:8080"

@@ -711,7 +711,7 @@ jobs:
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
         run: |
-          composeProfile='profile/dev-testing.yml'
+          composeProfile='profile/test.yml'
 
           # Make temp dir and set mask to 777 as docker seems to run as root
           mkdir -p tmp
@@ -817,14 +817,14 @@ jobs:
         # .ci_cd/host_init/healthy.sh is missing initially for custom projects .ci_cd/host_init/healthy.sh
         if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
-          composeProfile='profile/dev-ui.yml'
+          composeProfile='profile/test.yml'
 
           if [ $IS_MAIN_REPO == 'false' ]; then
             composeProfile="openremote/$composeProfile"
           fi
 
           # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=$MANAGER_TAG docker compose --profile ui -f $composeProfile up -d --no-build
 
           # Wait for services to be healthy
           bash .ci_cd/host_init/healthy.sh profile
