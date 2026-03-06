@@ -1103,8 +1103,14 @@ export class Manager implements EventProviderFactory {
             console.debug("If event provider offline then attempting reconnect: offline=" + !isEventsOnline());
 
             // When token refreshed, we force disconnect the websocket
-            if(tokenRefreshed && isEventsOnline()) {
-                this.events?.disconnect();
+            if(tokenRefreshed) {
+                console.debug("Token refreshed! Shall we reconnect the event provider? Status is:", this.events?.status);
+                if(isEventsOnline()) {
+                    console.warn("Token refreshed during reconnect phase, so disconnecting the event provider.");
+                    this.events?.disconnect();
+                } else {
+                    console.debug("No event provider disconnect was necessary.");
+                }
             }
 
             // Do websocket reconnect attempt if needed
