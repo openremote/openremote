@@ -160,6 +160,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // TODO; Add an ConsoleProvider that listens to background/foreground changes, and dispatch the respective OREvent. This will improve responsiveness of logic attached to it.
     // For example used for triggering reconnecting logic once the UI becomes visible again.
     protected _handleVisibilityChange(ev: Event) {
+        console.debug("App visibility changed to", document.visibilityState);
 
         if(document.visibilityState === "visible") {
             this._store.dispatch((setVisibility(true)));
@@ -168,9 +169,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
             // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
             if(manager.console?.isMobile && this._offline) {
+                console.debug("Mobile is offline, starting timer before showing 'you are offline' screen.");
                 this._startOfflineFallbackTimer(true);
             }
-            // Always try reconnecting (just in case we are disconnected)
+            // Always try reconnecting the event provider (just in case we are disconnected)
             manager.reconnect();
         } else {
             this._store.dispatch((setVisibility(false)));
