@@ -162,13 +162,15 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     protected _ends: keyof typeof RRULE_ENDS = "never";
 
     @state()
+    protected _eventType: EventTypes = EventTypes.default;
+
+    @state()
     protected _rrule?: RRule;
 
     @query("#scheduler")
     protected _dialog!: OrVaadinDialog;
 
     protected _byRRuleParts?: RRulePartKeys[];
-    protected _eventType: EventTypes = EventTypes.default;
     protected _until = moment().toDate();
 
     protected get _scheduleWithOffset(): CalendarEvent | undefined {
@@ -181,7 +183,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected get _timeLabel(): TemplateResult | undefined {
         if (this._eventType === EventTypes.default) {
-            return html`<or-translate value="${this.defaultEventTypeLabel}"></or-translate>`;
+            return html`<or-translate value="${this.defaultEventTypeLabel}" .options="${this._getDefaultMessageOptions()}"></or-translate>`;
         }
 
         if (this._scheduleWithOffset) {
@@ -219,10 +221,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         super.connectedCallback();
 
         const schedule = this._scheduleWithOffset;
-        if (schedule?.start && schedule?.end) {
-            const { start, end } = schedule;
-            this.isAllDay = this._calculateIsAllDay(start, end);
-        }
+        this.isAllDay = this._checkIsAllDay(schedule?.start, schedule?.end);
 
         if (schedule?.recurrence) {
             const origOptions = RRule.fromString(schedule.recurrence).origOptions;
@@ -235,6 +234,11 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(changedProps: PropertyValues) {
+        // Follow the default schedule to supply a default end time if not provided
+        if (this.schedule && !this.schedule.end && this.defaultSchedule?.end) {
+            this.schedule = { ...this.schedule, end: this.defaultSchedule.end };
+        }
+
         if (changedProps.has("schedule")) {
             if (this._scheduleWithOffset?.recurrence) {
                 this._rrule = RRule.fromString(this._scheduleWithOffset.recurrence);
@@ -242,11 +246,10 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 this._rrule = RRule.fromString(this.defaultSchedule.recurrence);
             }
 
-            const schedule = this._scheduleWithOffset;
-            if (schedule?.start && schedule?.end) {
-                this._eventType = schedule.recurrence ? EventTypes.recurrence : EventTypes.period;
-            } else {
+            if (!changedProps.has("_eventType") && Util.objectsEqual(this.schedule, this.defaultSchedule)) {
                 this._eventType = EventTypes.default;
+            } else {
+                this._eventType = this.schedule?.recurrence ? EventTypes.recurrence : EventTypes.period;
             }
         }
 
@@ -259,10 +262,19 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return super.shouldUpdate(changedProps);
     }
 
-    protected _calculateIsAllDay(startInMillis: number, endInMillis: number): boolean {
+    protected _checkIsAllDay(startInMillis?: number, endInMillis?: number): boolean {
+        if (!startInMillis || !endInMillis) return false;
         const start = moment(startInMillis);
         const end = moment(endInMillis);
         return start.isSame(start.clone().startOf("day")) && end.isSame(end.clone().endOf("day"));
+    }
+
+    protected _setIsAllDay() {
+        if (this.isAllDay && this.schedule?.start && this.schedule?.end) {
+            const start = moment.utc(this.schedule.start).startOf("day").valueOf();
+            const end = moment.utc(this.schedule.end).endOf("day").valueOf();
+            this.schedule = { ...this.schedule, start, end };
+        }
     }
 
     /**
@@ -391,6 +403,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         }
     }
 
+    protected _getDefaultMessageOptions(): { date: string, time: string } {
+        return {
+            date: moment.utc(this.defaultSchedule?.start).format("YYYY-MM-DD"),
+            time: moment.utc(this.defaultSchedule?.start).format("HH:mm")
+        };
+    }
+
     protected render() {
         return html`
             <or-vaadin-button style="max-width: 100%" @click="${() => this._dialog!.open()}">${this._timeLabel}</or-vaadin-button>
@@ -424,7 +443,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
     protected _getDialogContent(): TemplateResult {
         const eventTypes = [
-            { value: "default", label: i18next.t(this.defaultEventTypeLabel) },
+            { value: "default", label: i18next.t(this.defaultEventTypeLabel, this._getDefaultMessageOptions()) },
             { value: "period", label: i18next.t("planPeriod") },
             { value: "recurrence", label: i18next.t("planRecurrence") },
         ];
@@ -521,6 +540,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected _onSave() {
+        this._setIsAllDay();
         this.dispatchEvent(new OrSchedulerChangedEvent(this.schedule ?? this.defaultSchedule));
         this._dialog!.close();
     }
@@ -646,17 +666,20 @@ export class OrScheduler extends translate(i18next)(LitElement) {
                 <div style="display: flex; gap: 8px">
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.start).format("YYYY-MM-DD")}"
-                            @change="${this._onPartChange("start", "value")}" label="${i18next.t("from")}"> </or-vaadin-date-picker>
+                            @change="${this._onPartChange("start", "value")}" label="${i18next.t("from")}" .max="${moment(calendar.end).format("YYYY-MM-DD")}">
+                        </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.start).format("HH:mm")}"
-                            @change="${this._onPartChange("start-time", "value")}">
+                            @change="${this._onPartChange("start-time", "value")}"
+                            .max="${moment(calendar.end).isSameOrBefore(moment(calendar.start), "day") && moment(calendar.end).format("HH:mm")}">
                         </or-vaadin-time-picker>
                     </div>
                     <div class="period">
                         <or-vaadin-date-picker style="text-transform: capitalize" ?combined="${!this.isAllDay}" .value="${moment(calendar.end).format("YYYY-MM-DD")}"
-                            @change="${this._onPartChange("end", "value")}" label="${i18next.t("to")}">
+                            @change="${this._onPartChange("end", "value")}" label="${i18next.t("to")}" .min="${moment(calendar.start).format("YYYY-MM-DD")}">
                         </or-vaadin-date-picker>
                         <or-vaadin-time-picker style="margin-top: auto" ?hidden=${this.isAllDay} .value="${moment(calendar.end).format("HH:mm")}"
-                            @change="${this._onPartChange("end-time", "value")}">
+                            @change="${this._onPartChange("end-time", "value")}"
+                            .min="${moment(calendar.end).isSameOrBefore(moment(calendar.start), "day") && moment(calendar.start).format("HH:mm")}">
                         </or-vaadin-time-picker>
                     </div>
                 </div>

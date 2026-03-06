@@ -23,6 +23,7 @@ import org.openremote.agent.protocol.http.HTTPAgent;
 import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
+import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.extension.demosetup.model.HarvestRobotAsset;
 import org.openremote.extension.demosetup.model.HarvestRobotAsset.OperationMode;
 import org.openremote.extension.demosetup.model.HarvestRobotAsset.VegetableType;
@@ -94,6 +95,10 @@ public class ManagerDemoSetup extends ManagerSetup {
 
     public ManagerDemoSetup(Container container) {
         super(container);
+    }
+
+    private static SimulatorProtocol.Schedule createDailySchedule() {
+        return new SimulatorProtocol.Schedule(null, null, "FREQ=DAILY");
     }
 
     private static int getRandomNumberInRange(int min, int max) {
@@ -245,7 +250,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                 assetAttribute.addMeta(
                     new MetaItem<>(
                         MetaItemType.AGENT_LINK,
-                        new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                        new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                             new SimulatorReplayDatapoint[]{
                                 new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 23),
                                 new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 21),
@@ -286,7 +291,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -351,7 +356,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 7),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 8),
@@ -390,7 +395,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -454,7 +459,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                 new MetaItem<>(
                         MetaItemType.AGENT_LINK,
-                        new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                        new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                             new SimulatorReplayDatapoint[] {
                                 new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0),
                                 new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -501,7 +506,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         charger1Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER).addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -542,7 +547,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             .addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 5),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -583,7 +588,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             .addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -624,7 +629,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             .addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 3),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -679,7 +684,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 6),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 5),
@@ -732,7 +737,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 16),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 16),
@@ -771,7 +776,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[] {
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0),
@@ -906,7 +911,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                 assetAttribute.addMeta(
                         new MetaItem<>(
                                 MetaItemType.AGENT_LINK,
-                                new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                                new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[] {
                                         new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), getRandomNumberInRange(80,90)),
                                         new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), getRandomNumberInRange(75,90)),
@@ -953,7 +958,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                 assetAttribute.addMeta(
                         new MetaItem<>(
                                 MetaItemType.AGENT_LINK,
-                                new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                                new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[] {
                                         new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 12.2),
                                         new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 12.1),
@@ -988,7 +993,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                 assetAttribute.addMeta(
                         new MetaItem<>(
                                 MetaItemType.AGENT_LINK,
-                                new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                                new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                         new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), getRandomNumberInRange(110, 120)),
                                         new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), getRandomNumberInRange(110, 120)),
@@ -1053,7 +1058,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[]{
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 34),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 37),
@@ -1101,7 +1106,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[]{
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 31),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 24),
@@ -1149,7 +1154,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[]{
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 25),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 23),
@@ -1212,7 +1217,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[]{
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0.2),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0.3),
@@ -1254,7 +1259,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                 new SimulatorReplayDatapoint[]{
                                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), 0.3),
                                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), 0.2),
@@ -1289,7 +1294,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
 
         MicrophoneAsset microphone1Asset = createDemoMicrophoneAsset("Microphone South", assetAreaStation, new GeoJSONPoint(4.470362, 51.923201), () ->
-            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                 new SimulatorReplayDatapoint[] {
                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), getRandomNumberInRange(50,60)),
                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), getRandomNumberInRange(45,50)),
@@ -1323,7 +1328,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         microphone1Asset = assetStorageService.merge(microphone1Asset);
 
         MicrophoneAsset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () -> 
-            new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+            new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                 new SimulatorReplayDatapoint[] {
                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), getRandomNumberInRange(50,60)),
                     new SimulatorReplayDatapoint(midnight.plusHours(1).get(SECOND_OF_DAY), getRandomNumberInRange(45,50)),
@@ -1434,7 +1439,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                 new MetaItem<>(
                     MetaItemType.AGENT_LINK,
-                    new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                    new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                         new SimulatorReplayDatapoint[]{
                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 187),
                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 7),
@@ -1481,7 +1486,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                 new MetaItem<>(
                     MetaItemType.AGENT_LINK,
-                    new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
+                    new SimulatorAgentLink(smartcitySimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                         new SimulatorReplayDatapoint[]{
                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), new GeoJSONPoint(4.482669, 51.916436)),
                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(5).get(SECOND_OF_DAY), new GeoJSONPoint(4.483362, 51.911897)),
@@ -1784,7 +1789,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 814),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 814),
@@ -1831,7 +1836,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 2),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 2),
@@ -1885,7 +1890,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 1000),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 995),
@@ -1932,7 +1937,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 10),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 10.5),
@@ -1985,7 +1990,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 1200),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 1193),
@@ -2032,7 +2037,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 12),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 12.5),
@@ -2085,7 +2090,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 1210),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 1190),
@@ -2132,7 +2137,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 13),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 13.5),
@@ -2186,7 +2191,7 @@ public class ManagerDemoSetup extends ManagerSetup {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             MetaItemType.AGENT_LINK,
-                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setReplayData(
+                            new SimulatorAgentLink(manufacturerSimulatorAgentId).setSchedule(createDailySchedule()).setReplayData(
                                     new SimulatorReplayDatapoint[]{
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).get(SECOND_OF_DAY), 2),
                                             new SimulatorReplayDatapoint(midnight.plusHours(6).plusMinutes(30).get(SECOND_OF_DAY), 5),
