@@ -19,6 +19,8 @@ import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Ut
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import {type OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {
     AgentDescriptor,
     Asset,
@@ -45,7 +47,8 @@ import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {progressCircular} from "@openremote/or-mwc-components/style";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
@@ -576,12 +579,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         const options = historyAttrs.map((attr) => {
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
-            return [attr.name, label];
-            }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
+            return { value: attr.name, label: label };
+            }).sort(Util.sortByString((item) => item.label ?? item.value));
 
         let attrTemplate = html`
                 <div id="attribute-picker">
-                    <or-mwc-input .checkAssetWrite="${false}" .label="${i18next.t("attribute")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-mwc-input>
+                    <or-vaadin-select .items=${options} @change=${(ev: Event) => attributeChanged((ev.currentTarget as OrVaadinSelect).value)}>
+                        <or-translate slot="label" value="attribute"></or-translate>
+                    </or-vaadin-select>
                 </div>`;
 
         return html`
@@ -593,7 +598,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    z-index: 1;
                }
                
-               #attribute-picker > or-mwc-input {
+               #attribute-picker > or-vaadin-select {
                    width: 250px;
                }
                 
@@ -883,7 +888,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
                             if (hostElement && hostElement.shadowRoot) {
                                 const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
                                 if (pathField) {
-                                    pathField.value = names.join(" > ");
+                                    pathField.setAttribute("value", names.join(" > "));
                                 }
                             }
                         }
@@ -900,7 +905,12 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             break;
     }
 
-    return html`<or-mwc-input id="property-${property}" .type="${type}" dense .value="${value}" .readonly="${itemConfig.readonly !== undefined ? itemConfig.readonly : true}" .label="${itemConfig.label}"></or-mwc-input>`;
+    return html`
+        <or-vaadin-input id="property-${property}" type=${type} value=${value}
+                         ?readonly=${itemConfig.readonly !== undefined ? itemConfig.readonly : true}
+                         label=${ifDefined(itemConfig.label)}
+        ></or-vaadin-input>
+    `;
 }
 
 export function getField(name: string, itemConfig?: InfoPanelItemConfig, content?: TemplateResult): TemplateResult {
@@ -1383,17 +1393,27 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
-                        ${editMode 
-                                ? html`
-                                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {asset!.name = e.detail.value; this._assetInfo!.modified = true; this._doValidation();}}"></or-mwc-input>
-                                `
-                                : html`<span>${asset.name}</span>`}
+                        ${when(editMode, () => html`
+                            <or-vaadin-text-field minlength="1" maxlength="1023" value=${asset.name} @change=${(ev: CustomEvent) => {asset!.name = (ev.currentTarget as OrVaadinTextField).value; this._assetInfo!.modified = true; this._doValidation();}}>
+                                <or-translate slot="label" value="name"></or-translate>
+                            </or-vaadin-text-field>
+                        `, () => html`
+                            <span>${asset.name}</span>
+                        `)}
                     </div>
                     <div id="right-wrapper" class="mobileHidden">
                         ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
-                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" label="save" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
-                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" .disabled="${!this._assetInfo.asset.id}" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("viewAsset") : i18next.t("editAsset")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
-                        `: ``}
+                        ${when(editMode, () => html`
+                            <or-vaadin-button id="save-btn" theme="primary" ?disabled=${!this.isModified()} @click=${() => this._onSaveClicked()}>
+                                <or-translate value="save"></or-translate>
+                            </or-vaadin-button>
+                        `)}
+                        ${when(!this._isReadonly(), () => html`
+                            <or-vaadin-button id="edit-btn" ?disabled=${!this._assetInfo?.asset.id} @click=${() => this._onEditToggleClicked(!this.editMode)}>
+                                <or-icon slot="prefix" icon=${this.editMode ? "eye" : "pencil"}></or-icon>
+                                <or-translate value=${this.editMode ? "viewAsset" : "editAsset"}></or-translate>
+                            </or-vaadin-button>
+                        `)}
                     </div>
                 </div>
                 ${content}

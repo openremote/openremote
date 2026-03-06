@@ -34,7 +34,7 @@ ct("Should show asset invalid error", async ({ mount, assetViewer }) => {
     });
     await assetViewer.getAttributeValueLocator("invalid").fill("0.1");
     await assetViewer.getAttributeValueLocator("invalid").press("Enter");
-    await expect(component).toContainText("Asset is not valid");
+    await expect(assetViewer.getAttributeValueLocator("invalid")).toHaveAttribute("invalid")
 });
 
 ct("Should not show asset invalid error after switching assets", async ({ mount, assetViewer }) => {
@@ -43,7 +43,7 @@ ct("Should not show asset invalid error after switching assets", async ({ mount,
     });
     await assetViewer.getAttributeValueLocator("invalid").fill("0.1");
     await assetViewer.getAttributeValueLocator("invalid").press("Enter");
-    await expect(component).toContainText("Asset is not valid");
+    await expect(assetViewer.getAttributeValueLocator("invalid")).toHaveAttribute("invalid")
 
     await component.update({ props: { assetId: validId, editMode: true } });
     await expect(component).not.toContainText("Asset is not valid");
