@@ -24,7 +24,7 @@ export enum EventProviderStatus {
 export interface EventProvider {
     status: EventProviderStatus;
 
-    connect(force?: boolean): Promise<boolean>;
+    connect(): Promise<boolean>;
 
     disconnect(): void;
 
@@ -110,7 +110,7 @@ abstract class EventProviderImpl implements EventProvider {
         arrayRemove(this._statusCallbacks, callback);
     }
 
-    public connect(force = false): Promise<boolean> {
+    public connect(): Promise<boolean> {
         console.debug("Attempting to connect to events:", this.endpointUrl);
         if (this._reconnectTimer) {
             console.debug("Clearing events reconnect timeout...");
@@ -125,12 +125,7 @@ abstract class EventProviderImpl implements EventProvider {
         this._disconnectRequested = false;
 
         if (this._connectingDeferred) {
-            if(force) {
-                console.warn("Already connecting to events; force stopping the previous attempt, and starting a new one.");
-                this.disconnect(); // disconnect() will cause this connect() function to be recalled upon reconnecting
-            } else {
-                console.warn("Already connecting to events, continuing the previous one.");
-            }
+            console.warn("Already connecting to events, continuing the previous one.");
             return this._connectingDeferred.promise;
         }
 

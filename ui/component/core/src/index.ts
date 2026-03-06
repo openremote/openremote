@@ -1076,8 +1076,9 @@ export class Manager implements EventProviderFactory {
 
             // Check if access token can be refreshed
             console.debug("Checking keycloak access token");
+            let tokenRefreshed = false;
             try {
-                await this._updateKeycloakAccessToken();
+                tokenRefreshed = await this._updateKeycloakAccessToken();
             } catch (e) {
                 console.error("Could not update Keycloak access token, attempting again using offline token...", e);
                 // Try and use offline token if it is available
@@ -1088,7 +1089,7 @@ export class Manager implements EventProviderFactory {
                 }
 
                 try {
-                    await this._updateKeycloakAccessToken();
+                    tokenRefreshed = await this._updateKeycloakAccessToken();
                 } catch (e) {
                     console.debug("Cannot update access token so sending to login");
                     this.login();
@@ -1098,13 +1099,18 @@ export class Manager implements EventProviderFactory {
                 return true;
             }
 
+            // When token refreshed, we force reconnect the websocket
+            if(tokenRefreshed) {
+                this.events?.disconnect();
+            }
+
             // Check events
-            const isEventsOffline = () => this.events?.status === EventProviderStatus.CONNECTING;
+            const isEventsOffline = () => this.events?.status !== EventProviderStatus.CONNECTED;
             console.debug("If event provider offline then attempting reconnect: offline=" + isEventsOffline());
             // Force reconnect attempt now if needed
             if(isEventsOffline()) {
                 console.debug("Event provider offline, attempting to reconnect using auth token:", this.getKeycloakToken());
-                await this.events?.connect(true);
+                await this.events?.connect();
             }
             return !isEventsOffline();
         };
