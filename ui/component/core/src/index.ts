@@ -6,16 +6,7 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {
-    AssetModelUtil,
-    Auth,
-    ConsoleAppConfig,
-    EventProviderType,
-    ManagerConfig,
-    Role,
-    User,
-    UsernamePassword
-} from "@openremote/model";
+import {AssetModelUtil, Auth, ConsoleAppConfig, EventProviderType, ManagerConfig, User, UsernamePassword} from "@openremote/model";
 import * as Util from "./util";
 import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
 import Keycloak from 'keycloak-js';
@@ -1124,13 +1115,19 @@ export class Manager implements EventProviderFactory {
 
         // When token refreshed, we force disconnect the websocket
         if(tokenRefreshed) {
-            console.debug("Token refreshed! Shall we reconnect the event provider? Status is:", this.events?.status);
+            console.debug("Access token was refreshed! Stopping any ongoing connection attempt. Status is:", this.events?.status);
+            if(this.events?.status === EventProviderStatus.CONNECTING) {
+                this.events?.disconnect();
+            }
+
+            // TODO: Only disconnect events when WebSocket is CONNECTED, or always stop any connect attempt?
+            /*console.debug("Token refreshed! Shall we reconnect the event provider? Status is:", this.events?.status);
             if(isEventsOnline()) {
                 console.warn("Token refreshed during reconnect phase, so disconnecting the event provider.");
                 this.events?.disconnect();
             } else {
                 console.debug("No event provider disconnect was necessary.");
-            }
+            }*/
         }
 
         // Do websocket reconnect attempt if needed

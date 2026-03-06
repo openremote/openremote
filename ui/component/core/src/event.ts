@@ -543,6 +543,7 @@ abstract class EventProviderImpl implements EventProvider {
             this._pendingSubscription = null;
         }
 
+        // TODO: Might need to disable this, as a disconnect potentially means that the token is expired. Handling reconnect in `core` makes more sense to me.
         this._onStatusChanged(EventProviderStatus.CONNECTING);
         this._scheduleReconnect();
     }
@@ -624,7 +625,8 @@ export class WebSocketEventProvider extends EventProviderImpl {
         this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
 
-        this._webSocket!.onopen = () => {
+        this._webSocket!.onopen = (ev) => {
+            console.debug("Event provider connection opened", ev);
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
