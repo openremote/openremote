@@ -1096,23 +1096,23 @@ export class Manager implements EventProviderFactory {
                     return;
                 }
                 console.debug("Keycloak access token is valid");
-                return true;
-            }
-
-            // When token refreshed, we force reconnect the websocket
-            if(tokenRefreshed) {
-                this.events?.disconnect();
             }
 
             // Check events
-            const isEventsOffline = () => this.events?.status !== EventProviderStatus.CONNECTED;
-            console.debug("If event provider offline then attempting reconnect: offline=" + isEventsOffline());
-            // Force reconnect attempt now if needed
-            if(isEventsOffline()) {
+            const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
+            console.debug("If event provider offline then attempting reconnect: offline=" + !isEventsOnline());
+
+            // When token refreshed, we force disconnect the websocket
+            if(tokenRefreshed && isEventsOnline()) {
+                this.events?.disconnect();
+            }
+
+            // Do websocket reconnect attempt if needed
+            if(!isEventsOnline()) {
                 console.debug("Event provider offline, attempting to reconnect using auth token:", this.getKeycloakToken());
                 await this.events?.connect();
             }
-            return !isEventsOffline();
+            return !isEventsOnline();
         };
 
         const connected = await tryReconnect();
