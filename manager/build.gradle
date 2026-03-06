@@ -190,9 +190,7 @@ dependencies {
 }
 
 tasks.named("run", JavaExec) {
-    def combinedClasspath = sourceSets.main.runtimeClasspath
     if (System.getenv("OR_SETUP_TYPE") == "demo") {
-        combinedClasspath += configurations.demoExtension
+        classpath += configurations.demoExtension
     }
-    classpath = combinedClasspath
 }
