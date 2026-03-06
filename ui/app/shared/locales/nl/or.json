@@ -1194,6 +1194,9 @@
               },
               "updateOnWrite": {
                 "description": "Verwacht geen reactie van het protocol; het werkt de attribuut onmiddellijk bij tijdens schrijven."
+              },
+              "writeValueFilters": {
+                "description": ""
               }
             }
           }
