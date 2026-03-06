@@ -18,7 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.openremote.agent.protocol.modbus;
-
 import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.Agent;
@@ -26,7 +25,7 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 
 @Entity
-public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtocol>{
+public class ModbusTcpAgent extends ModbusAgent<ModbusTcpAgent, ModbusTcpProtocol> {
 
     public static final AgentDescriptor<ModbusTcpAgent, ModbusTcpProtocol, ModbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
             ModbusTcpAgent.class, ModbusTcpProtocol.class, ModbusAgentLink.class
