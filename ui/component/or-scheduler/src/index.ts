@@ -220,14 +220,14 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     connectedCallback() {
         super.connectedCallback();
 
-        const schedule = this._scheduleWithOffset;
-        if (schedule?.start && schedule?.end) {
-            const { start, end } = schedule;
-            this.isAllDay = this._calculateIsAllDay(start, end);
+        const schedule = this._applyTimezoneOffset(this.schedule ?? this.defaultSchedule, this.timezoneOffset);
+        if (schedule?.start && schedule?.start) {
+            const start = moment(schedule?.start), end = moment(schedule?.end);
+            this.isAllDay = start.isSame(start.clone().startOf("day")) && end.isSame(end.clone().endOf("day"));
         }
 
-        if (schedule?.recurrence) {
-            const origOptions = RRule.fromString(schedule.recurrence).origOptions;
+        if (this.schedule?.recurrence) {
+            const origOptions = RRule.fromString(this.schedule.recurrence).origOptions;
             if (origOptions.until) {
                 this._until = moment(origOptions.until).toDate();
             } else if (origOptions.count) {
@@ -260,10 +260,13 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return super.shouldUpdate(changedProps);
     }
 
-    protected _calculateIsAllDay(startInMillis: number, endInMillis: number): boolean {
-        const start = moment(startInMillis);
-        const end = moment(endInMillis);
-        return start.isSame(start.clone().startOf("day")) && end.isSame(end.clone().endOf("day"));
+    protected _setAllDay() {
+        const schedule = this._scheduleWithOffset;
+        if (this.isAllDay && this._eventType !== EventTypes.default) {
+            const start = moment(schedule?.start).startOf("day").valueOf();
+            const end = moment(schedule?.end).endOf("day").valueOf();
+            this._scheduleWithOffset = { ...schedule, start, end };
+        }
     }
 
     /**
@@ -529,6 +532,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
     }
 
     protected _onSave() {
+        this._setAllDay();
         this.dispatchEvent(new OrSchedulerChangedEvent(this.schedule ?? this.defaultSchedule));
         this._dialog!.close();
     }
