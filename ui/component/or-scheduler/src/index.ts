@@ -221,10 +221,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         super.connectedCallback();
 
         const schedule = this._scheduleWithOffset;
-        if (schedule?.start && schedule?.end) {
-            const { start, end } = schedule;
-            this.isAllDay = this._checkIsAllDay(start, end);
-        }
+        this.isAllDay = this._checkIsAllDay(schedule?.start, schedule?.end);
 
         if (schedule?.recurrence) {
             const origOptions = RRule.fromString(schedule.recurrence).origOptions;
@@ -265,7 +262,8 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         return super.shouldUpdate(changedProps);
     }
 
-    protected _checkIsAllDay(startInMillis: number, endInMillis: number): boolean {
+    protected _checkIsAllDay(startInMillis?: number, endInMillis?: number): boolean {
+        if (!startInMillis || !endInMillis) return false;
         const start = moment(startInMillis);
         const end = moment(endInMillis);
         return start.isSame(start.clone().startOf("day")) && end.isSame(end.clone().endOf("day"));
