@@ -191,6 +191,7 @@ jobs:
           ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
           submodules: recursive
           fetch-depth: 200
+          lfs: 'true'
 
       # Check which files have changed to only run appropriate tests and checks
       - name: Backend files changed

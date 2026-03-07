@@ -20,16 +20,45 @@
 import {Dialog} from "@vaadin/dialog";
 import {OrVaadinComponent} from "./util";
 import {customElement} from "lit/decorators.js";
+import {type LitElement, css} from "lit";
 
 /**
  * Vaadin uses custom directives for rendering the dialog content.
  * https://lit.dev/docs/templates/custom-directives/
  * https://vaadin.com/docs/latest/components/dialog/
  */
-export {dialogHeaderRenderer, DialogHeaderRendererDirective, dialogRenderer, DialogRendererDirective, dialogFooterRenderer, DialogFooterRendererDirective} from "@vaadin/dialog/lit.js";
+export {
+    dialogHeaderRenderer,
+    DialogHeaderRendererDirective,
+    dialogRenderer,
+    DialogRendererDirective,
+    dialogFooterRenderer,
+    DialogFooterRendererDirective,
+} from "@vaadin/dialog/lit.js";
+
+type WithLit<T> = T & typeof LitElement;
 
 @customElement("or-vaadin-dialog")
-export class OrVaadinDialog extends Dialog implements OrVaadinComponent {
+export class OrVaadinDialog extends (Dialog as new () => Dialog & LitElement) implements OrVaadinComponent {
+
+    static get styles() {
+        return [
+            (Dialog as WithLit<typeof Dialog>).styles,
+            css`
+                ::part(header),
+                ::part(content) {
+                    background-color: var(--lumo-contrast-5pct);
+                }
+                ::part(header),
+                ::part(footer) {
+                    padding: var(--lumo-space-l);
+                }
+                ::part(content) {
+                    padding: 0 var(--lumo-space-l);
+                }
+            `
+        ];
+    }
 
     public open() {
         this.setAttribute("opened", "true");
