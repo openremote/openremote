@@ -18,8 +18,9 @@ deployment/manager/fcm.json
 .project/
 .project
 .idea/
-.vscode/
+.vscode/*
 !.vscode/launch.json
+!.vscode/tasks.json
 .sts4-cache/
 .local/
 .DS_*

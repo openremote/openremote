@@ -35,6 +35,7 @@
     }
   },
   "remoteEnv": {
-    "GRADLE_USER_HOME": "/root/.gradle"
+    "GRADLE_USER_HOME": "/root/.gradle",
+    "OPENREMOTE_DEVCONTAINER_TASKS": "true"
   }
 }
