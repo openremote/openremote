@@ -84,7 +84,6 @@ tasks.register('clean') {
     }
 }
 
-
 buildscript {
     repositories {
         mavenCentral()
@@ -204,4 +203,13 @@ tasks.register('npmTest') {
 }
 tasks.named('test') {
     finalizedBy tasks.named('npmTest')
+}
+
+def devcontainerTasksEnabled = providers.gradleProperty('openremote.devcontainer.tasks')
+        .orElse(providers.environmentVariable('OPENREMOTE_DEVCONTAINER_TASKS'))
+        .map { ['1', 'true', 'yes', 'on'].contains(it.toString().toLowerCase()) }
+        .orElse(false)
+
+if (devcontainerTasksEnabled.get()) {
+    apply from: "$rootDir/gradle/devcontainer-run.gradle"
 }

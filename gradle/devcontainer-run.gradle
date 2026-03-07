@@ -1,0 +1,159 @@
+tasks.register('startInfra', Exec) {
+    group = 'application'
+    description = 'Starts development infrastructure (PostgreSQL, Keycloak)'
+    commandLine 'docker', 'compose', '-f', 'profile/dev-testing.yml', 'up', '-d', '--wait'
+}
+
+tasks.register('stopInfra', Exec) {
+    group = 'application'
+    description = 'Stops development infrastructure'
+    commandLine 'docker', 'compose', '-f', 'profile/dev-testing.yml', 'down'
+}
+
+tasks.register('buildUI') {
+    group = 'application'
+    description = 'Builds the manager UI'
+    dependsOn ':ui:app:manager:npmBuild'
+}
+
+ext.managerRunEnvDefaults = [
+        OR_DB_HOST           : 'localhost',
+        OR_KEYCLOAK_HOST     : 'localhost',
+        OR_LOG_CONSOLE_FORMAT: 'simple',
+]
+
+ext.managerRunProfiles = [
+        demo : [
+                setupName      : 'Demo Setup',
+                sourceSets     : [[projectPath: ':manager', sourceSet: 'main'], [projectPath: ':extension:demo-setup', sourceSet: 'main'], [projectPath: ':extension:energy', sourceSet: 'main']],
+                env            : [OR_SETUP_TYPE: 'demo'],
+                debugPort      : 5005,
+                defaultTaskName: 'runDemo',
+        ],
+        test : [
+                setupName      : 'Test Setup',
+                sourceSets     : [[projectPath: ':manager', sourceSet: 'main'], [projectPath: ':setup', sourceSet: 'integration']],
+                env            : [:],
+                debugPort      : 5006,
+                defaultTaskName: 'runTest',
+        ],
+        empty: [
+                setupName      : 'Empty',
+                sourceSets     : [[projectPath: ':manager', sourceSet: 'main']],
+                env            : [:],
+                debugPort      : 5007,
+                defaultTaskName: 'runManager',
+        ],
+        load1: [
+                setupName : 'Load1 Setup',
+                sourceSets: [[projectPath: ':manager', sourceSet: 'main'], [projectPath: ':setup', sourceSet: 'load1']],
+                env       : [:],
+                debugPort : 5008,
+        ],
+        load2: [
+                setupName : 'Load2 Setup',
+                sourceSets: [[projectPath: ':manager', sourceSet: 'main'], [projectPath: ':setup', sourceSet: 'load2']],
+                env       : [:],
+                debugPort : 5009,
+        ],
+]
+
+def resolveRunEnvValue = { String key, String defaultValue = null ->
+    providers.gradleProperty(key)
+            .orElse(providers.environmentVariable(key))
+            .orElse(defaultValue != null ? providers.provider { defaultValue } : providers.provider { '' })
+            .get()
+}
+
+def applyManagerRunEnv = { JavaExec task, Map<String, String> overrides ->
+    def keys = (managerRunEnvDefaults.keySet() + overrides.keySet()).toSet()
+    def envMap = [:]
+    keys.each { key ->
+        envMap[key] = resolveRunEnvValue(key as String, overrides[key] ?: managerRunEnvDefaults[key])
+    }
+    task.environment(envMap)
+}
+
+def sourceSetClassesTaskPath = { String projectPath, String sourceSetName ->
+    sourceSetName == 'main' ? "${projectPath}:classes" : "${projectPath}:${sourceSetName}Classes"
+}
+
+def managerRunTaskName = { String profileName ->
+    "runManager${profileName.capitalize()}"
+}
+
+def managerDebugTaskName = { String profileName ->
+    "debugManager${profileName.capitalize()}"
+}
+
+def managerProjectRef = project(':manager')
+
+managerRunProfiles.each { profileName, profile ->
+    def runTaskName = managerRunTaskName(profileName as String)
+    def debugTaskName = managerDebugTaskName(profileName as String)
+    def managerRunTaskPath = ":manager:${runTaskName}"
+    def managerDebugTaskPath = ":manager:${debugTaskName}"
+
+    managerProjectRef.tasks.register(runTaskName, JavaExec) {
+        group = 'application'
+        description = "Runs OpenRemote Manager with ${profile.setupName}"
+        dependsOn(profile.sourceSets.collect { sourceSetClassesTaskPath(it.projectPath as String, it.sourceSet as String) })
+        mainClass = 'org.openremote.manager.Main'
+        workingDir = rootProject.projectDir
+
+        def runtimeClasspath = managerProjectRef.sourceSets.main.runtimeClasspath
+        def profileOutputs = files(profile.sourceSets
+                .findAll { !(it.projectPath == ':manager' && it.sourceSet == 'main') }
+                .collect { sourceSetRef ->
+                    project(sourceSetRef.projectPath as String).sourceSets.getByName(sourceSetRef.sourceSet as String).output
+                })
+        classpath = runtimeClasspath + profileOutputs
+
+        standardInput = System.in
+        standardOutput = System.out
+        errorOutput = System.err
+        applyManagerRunEnv(delegate as JavaExec, profile.env as Map<String, String>)
+    }
+
+    managerProjectRef.tasks.register(debugTaskName, JavaExec) {
+        group = 'application'
+        description = "Runs OpenRemote Manager with ${profile.setupName} and waiting JVM debugger"
+        dependsOn(profile.sourceSets.collect { sourceSetClassesTaskPath(it.projectPath as String, it.sourceSet as String) })
+        mainClass = 'org.openremote.manager.Main'
+        workingDir = rootProject.projectDir
+
+        def runtimeClasspath = managerProjectRef.sourceSets.main.runtimeClasspath
+        def profileOutputs = files(profile.sourceSets
+                .findAll { !(it.projectPath == ':manager' && it.sourceSet == 'main') }
+                .collect { sourceSetRef ->
+                    project(sourceSetRef.projectPath as String).sourceSets.getByName(sourceSetRef.sourceSet as String).output
+                })
+        classpath = runtimeClasspath + profileOutputs
+
+        standardInput = System.in
+        standardOutput = System.out
+        errorOutput = System.err
+        jvmArgs "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=${resolveRunEnvValue('OR_DEBUG_PORT', profile.debugPort.toString())}"
+        applyManagerRunEnv(delegate as JavaExec, profile.env as Map<String, String>)
+    }
+
+    tasks.register(runTaskName) {
+        group = 'application'
+        description = "Runs OpenRemote Manager with ${profile.setupName}"
+        dependsOn(managerRunTaskPath)
+    }
+
+    tasks.register(debugTaskName) {
+        group = 'application'
+        description = "Runs OpenRemote Manager with ${profile.setupName} and waiting JVM debugger"
+        dependsOn(managerDebugTaskPath)
+    }
+
+    if (profile.defaultTaskName) {
+        tasks.register(profile.defaultTaskName as String) {
+            group = 'application'
+            description = "Alias for ${runTaskName}"
+            dependsOn(runTaskName)
+        }
+    }
+}
