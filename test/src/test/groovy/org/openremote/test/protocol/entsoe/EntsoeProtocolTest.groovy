@@ -48,6 +48,8 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.NUMBER
 
 class EntsoeProtocolTest extends Specification implements ManagerContainerTrait {
+    private static final String DATASET_START = "2026-02-16T23:00:00.000Z"
+    private static final String BEFORE_DATASET_START = "2026-02-16T22:00:00.000Z"
 
     @Shared
     Map<String, Integer> requestCountByZone = [:].withDefault { 0 }
@@ -223,6 +225,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         }
 
         def container = startContainer(defaultConfig(), defaultServices())
+        setPseudoClock(BEFORE_DATASET_START)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def agentService = container.getService(AgentService.class)
@@ -271,7 +274,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert datapoints.size() == 4
 
             def asc = datapoints.sort { it.timestamp }
-            def start = Instant.parse("2026-02-16T23:00:00Z").toEpochMilli()
+            def start = Instant.parse(DATASET_START).toEpochMilli()
             def step = 15 * 60 * 1000L
 
             assert asc[0].timestamp == start
@@ -283,6 +286,81 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert (asc[1].value as BigDecimal).compareTo(69.79G) == 0
             assert (asc[2].value as BigDecimal).compareTo(65.84G) == 0
             assert (asc[3].value as BigDecimal).compareTo(65.05G) == 0
+        }
+
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
+        if (EntsoeProtocol.client.get() != null) {
+            EntsoeProtocol.client.set(null)
+        }
+    }
+
+    def "ENTSO-E integration test filters out points in the past when clock is mid-period"() {
+        given: "the container environment is started with clock in the middle of the dataset period"
+        requestCountByZone.clear()
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        EntsoeProtocol.initClient()
+
+        if (!EntsoeProtocol.client.get().configuration.isRegistered(mockServer)) {
+            EntsoeProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        def container = startContainer(defaultConfig(), defaultServices())
+        setPseudoClock("2026-02-16T23:20:00.000Z")
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
+
+        when: "an ENTSO-E agent and linked attribute are created"
+        agent = new EntsoeAgent("ENTSO-E Agent")
+                .setRealm(MASTER_REALM)
+                .setSecurityToken("test-token")
+        agent = assetStorageService.merge(agent)
+
+        def entsoeLink = new EntsoeAgentLink(agent.id)
+        entsoeLink.setZone("10YBE----------2")
+
+        asset = new ThingAsset("Energy Price Asset")
+                .setRealm(MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<>("energyPrice", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, entsoeLink))
+                )
+        asset = assetStorageService.merge(asset)
+
+        def attributeRef = new AttributeRef(asset.id, "energyPrice")
+        def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+
+        then: "the protocol is connected and attribute linked"
+        conditions.eventually {
+            assert protocol != null
+            assert agentService.getAgent(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.getLinkedAttributes().containsKey(attributeRef)
+        }
+
+        when: "a polling update is triggered"
+        protocol.updateAllLinkedAttributes()
+
+        then: "only datapoints after the cutoff time are stored"
+        conditions.eventually {
+            List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef).sort { it.timestamp }
+            assert datapoints.size() == 2
+
+            def start = Instant.parse(DATASET_START).toEpochMilli()
+            def step = 15 * 60 * 1000L
+
+            assert datapoints[0].timestamp == start + (2 * step)
+            assert datapoints[1].timestamp == start + (3 * step)
+            assert (datapoints[0].value as BigDecimal).compareTo(65.84G) == 0
+            assert (datapoints[1].value as BigDecimal).compareTo(65.05G) == 0
         }
 
         cleanup: "remove created assets and mock client"
@@ -309,6 +387,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         }
 
         def container = startContainer(defaultConfig(), defaultServices())
+        setPseudoClock(BEFORE_DATASET_START)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def agentService = container.getService(AgentService.class)
@@ -400,6 +479,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         }
 
         def container = startContainer(defaultConfig(), defaultServices())
+        setPseudoClock(BEFORE_DATASET_START)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def agentService = container.getService(AgentService.class)
