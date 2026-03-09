@@ -20,15 +20,19 @@
 package org.openremote.test.protocol.http
 
 import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.Priorities
 import jakarta.ws.rs.client.ClientRequestContext
 import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.*
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
+import org.jboss.resteasy.client.jaxrs.internal.ClientWebTarget
 import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPProtocol
 import org.openremote.container.timer.TimerService
+import org.openremote.container.web.OAuthFilter
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -65,19 +69,12 @@ import static org.openremote.model.value.ValueType.*
 class HttpClientProtocolTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    def mockServer = new ClientRequestFilter() {
-
-        private boolean supportsRefresh
-        private int accessTokenCount
-        private int refreshTokenCount
-        private String accessToken = null
-        private String refreshToken = null
-        private int pollCountFast = 0
-        private int pollCountSlow = 0
-        private boolean putRequestWithHeadersCalled = false
-        private int successCount = 0
-        private int failureCount = 0
-        private String dynamicPathParam = ""
+    def mockAuthServer = new ClientRequestFilter() {
+        boolean supportsRefresh
+        int accessTokenCount
+        int refreshTokenCount
+        String refreshToken = null
+        String accessToken = null
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
@@ -90,8 +87,8 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     if (authHeader != null) {
                         def usernameAndPassword = BasicAuthHelper.parseHeader(authHeader)
                         if (usernameAndPassword != null
-                            && usernameAndPassword[0] == "testuser"
-                            && usernameAndPassword[1] == "password1") {
+                                && usernameAndPassword[0] == "testuser"
+                                && usernameAndPassword[1] == "password1") {
                             requestContext.abortWith(Response.ok().build())
                             return
                         }
@@ -101,11 +98,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     // OAuth token request extract the grant info
                     def grant = ((Form) requestContext.getEntity()).asMap()
                     if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "password"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                        && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_USERNAME) == "testuser"
-                        && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_PASSWORD) == "password") {
+                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
+                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
+                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
+                            && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_USERNAME) == "testuser"
+                            && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_PASSWORD) == "password") {
                         accessToken = "accesstoken" + accessTokenCount++
                         def response = new OAuthServerResponse()
                         response.accessToken = accessToken
@@ -119,14 +116,14 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         }
 
                         requestContext.abortWith(
-                            Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
+                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
                         )
                         return
                     } else if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "refresh_token"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                        && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
+                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
+                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
+                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
+                            && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
                         refreshTokenCount++
                         accessToken = "accesstoken" + accessTokenCount++
                         refreshToken = "refreshtoken" + accessTokenCount
@@ -137,20 +134,34 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         response.tokenType = "Bearer"
 
                         requestContext.abortWith(
-                            Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
+                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
                         )
                         return
                     }
                     break
-                default:
-                    // Check access token is valid
-                    def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
-                    def accessToken = authHeader == null ? null : authHeader.substring(7)
-                    if (accessToken == null || this.accessToken == null || accessToken != this.accessToken) {
-                        requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
-                        return
-                    }
-                    break
+            }
+        }
+    }
+    @Shared
+    def mockServer = new ClientRequestFilter() {
+        private int pollCountFast = 0
+        private int pollCountSlow = 0
+        private boolean putRequestWithHeadersCalled = false
+        private int successCount = 0
+        private int failureCount = 0
+        private String dynamicPathParam = ""
+
+        @Override
+        void filter(ClientRequestContext requestContext) throws IOException {
+            def requestUri = requestContext.uri
+            def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+
+            // Check access token is valid
+            def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
+            def accessToken = authHeader == null ? null : authHeader.substring(7)
+            if (accessToken == null || mockAuthServer.accessToken == null || accessToken != mockAuthServer.accessToken) {
+                requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
+                return
             }
 
             switch (requestPath) {
@@ -271,11 +282,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
     }
 
     def cleanup() {
-        mockServer.supportsRefresh = false
-        mockServer.accessToken = null
-        mockServer.refreshToken = null
-        mockServer.accessTokenCount = 0
-        mockServer.refreshTokenCount = 0
+        mockAuthServer.supportsRefresh = false
+        mockAuthServer.accessToken = null
+        mockAuthServer.refreshToken = null
+        mockAuthServer.accessTokenCount = 0
+        mockAuthServer.refreshTokenCount = 0
         mockServer.pollCountSlow = 0
         mockServer.pollCountFast = 0
         mockServer.successCount = 0
@@ -297,13 +308,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
 
-        when: "the web target builder is configured to use the mock server"
-        HTTPProtocol.initClient()
-        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
-            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
-        }
-
-        and: "a HTTP client agent is created"
+        when: "a HTTP client agent is created"
         HTTPAgent agent = new HTTPAgent("Test agent")
             .setRealm(Constants.MASTER_REALM)
             .setBaseURI("https://mockapi")
@@ -332,7 +337,16 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
         }
 
-        when: "an asset is created with attributes linked to the agent"
+        when: "the mock filters are registered on the protocol instance client to mock auth and requests"
+        def protocolInstance = agentService.getProtocolInstance(agent.id) as HTTPProtocol
+        // Hacky way of injecting OAuth mock filter into the OAuth filter
+        ((OAuthFilter)((ClientWebTarget)protocolInstance.webTarget).getConfiguration().getInstances()
+                .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer, Priorities.AUTHENTICATION-1)
+        // Register the request mock filter on the web target with lower priority than auth
+        protocolInstance.webTarget.register(mockServer, Priorities.AUTHENTICATION+1)
+        protocolInstance.requestMap.values().forEach {it.requestTarget.register(mockServer)}
+
+        and: "an asset is created with attributes linked to the agent"
         def asset = new ThingAsset("Test Asset")
             .setParent(agent)
             .addOrReplaceAttributes(

@@ -92,6 +92,7 @@ public class OAuthFilter implements ClientRequestFilter {
                     // Maybe the refresh token is not valid so do full auth
                     LOG.finest("OAuth token refresh failed, trying a full authentication");
                     authServerResponse = null;
+                    response.close();
                     updateToken();
                     return;
                 }

@@ -28,6 +28,7 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import org.apache.http.client.utils.URIBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.specimpl.BuiltResponse;
 import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
@@ -66,7 +67,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebTargetBuilder.addHeaders;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -317,10 +317,9 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         Optional<OAuthGrant> oAuthGrant = agent.getOAuthGrant();
         Optional<UsernamePassword> usernameAndPassword = agent.getUsernamePassword();
         boolean followRedirects = agent.getFollowRedirects().orElse(false);
-        Integer readTimeout = agent.getRequestTimeoutMillis().orElse(null);
 
         WebTargetBuilder webTargetBuilder = new WebTargetBuilder(
-                createClient(executorService, 1, Optional.ofNullable(readTimeout).orElse(DEFAULT_READ_TIMEOUT_MILLIS).longValue(), null),
+                createClient(),
                 uri);
 
         if (oAuthGrant.isPresent()) {
@@ -614,4 +613,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
+    protected ResteasyClient createClient() {
+        Integer readTimeout = agent.getRequestTimeoutMillis().orElse(null);
+        return WebTargetBuilder.createClient(executorService, 1, Optional.ofNullable(readTimeout).orElse(DEFAULT_READ_TIMEOUT_MILLIS).longValue(), null);
+    }
 }

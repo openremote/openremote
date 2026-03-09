@@ -82,13 +82,12 @@ public class TokenVerifierImpl implements TokenVerifier {
             } catch (ParseException ignored) {}
 
             if (azp != null && !azp.isBlank()) {
-                if (!expectedClientId.equals(azp)) {
-                    throw new BadJWTException("Invalid token azp (authorized party)");
+                if (expectedClientId.equals(azp)) {
+                    return;
                 }
-                return;
             }
 
-            // Fall back to aud
+            // Fall back to aud - service users put the client in the aud claim not the azp claim
             if (claims.getAudience() == null || !claims.getAudience().contains(expectedClientId)) {
                 throw new BadJWTException("Invalid token audience");
             }
