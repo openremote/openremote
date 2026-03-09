@@ -316,7 +316,7 @@ message MACParameters {
   }];
   // Data rate index of the class B ping slot.
   // This field is deprecated, use ping_slot_data_rate_index_value instead.
-  DataRateIndex ping_slot_data_rate_index_legacy = 17 [deprecated = true]; //@Rainer
+  DataRateIndex ping_slot_data_rate_index_legacy = 17 [deprecated = true];
   // Frequency of the class B beacon (Hz).
   uint64 beacon_frequency = 18 [(validate.rules).uint64 = {
     lte: 0,
