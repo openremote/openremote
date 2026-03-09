@@ -183,8 +183,45 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
             protocol.linkedAttributes.get(attributeRef) == attribute
         }
 
+        and: "has schedule"
+        def schedule = agent.getAgentLink(attribute).schedule
+        schedule != null
+
+        and: "with a 1 day period"
+        def start = schedule.getStart()
+        schedule.getEnd() == start.plusDays(1)
+
         and: "nothing happens"
         assetDatapointService.getDatapoints(attributeRef).size() == 0
+    }
+
+    def "Check Simulator Agent protocol follows replay data end"() {
+        when: "nothing is configured"
+        def replayData = new SimulatorReplayDatapoint[] {
+            new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
+            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 23, "test"),
+            new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 12, "test")
+        }
+        asset.addOrReplaceAttributes(new Attribute<>("test1", ValueType.TEXT).addMeta(
+                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId(), replayData, null, null))
+        ))
+        asset = assetStorageService.merge(asset)
+        def attribute = asset.getAttribute("test1").get()
+        def attributeRef = new AttributeRef(asset.getId(), attribute.getName())
+
+        then: "the agent status should become CONNECTED and the attribute linked to the protocol"
+        conditions.eventually {
+            assetStorageService.find(agent.getId(), Agent.class).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            protocol.linkedAttributes.get(attributeRef) == attribute
+        }
+
+        and: "has schedule"
+        def schedule = agent.getAgentLink(attribute).schedule
+        schedule != null
+
+        and: "with a 23 hour period"
+        def start = schedule.getStart()
+        schedule.getEnd() == start.plusHours(23)
     }
 
     def "Check Simulator Agent protocol with replay"() {
@@ -193,7 +230,11 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 .addMeta(new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 12, "test"),
-                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 24, "test"))))
+                        new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 24, "test")
+                ).setSchedule(new SimulatorProtocol.Schedule(
+                        // We manually set the schedule so it starts when we want, as AgentLinks don't have access to the timer service
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
+                ))))
         )
         asset = assetStorageService.merge(asset)
         def attribute = asset.getAttribute("test2").get()
@@ -476,7 +517,10 @@ class SimulatorProtocolTest extends Specification implements ManagerContainerTra
                 new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()).setReplayData(
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS, "test"),
                         new SimulatorReplayDatapoint(HOUR_IN_SECONDS * 2, "test"),
-                )),
+                ).setSchedule(new SimulatorProtocol.Schedule(
+                        // We manually set the schedule so it starts when we want, as AgentLinks don't have access to the timer service
+                        LocalDateTime.ofInstant(Instant.parse("1970-01-01T00:00:00.000Z"), ZoneOffset.UTC), null, "FREQ=DAILY"
+                ))),
                 new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true))
         )
         asset = assetStorageService.merge(asset)
