@@ -586,11 +586,6 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             assert mockServer.successCount == 1
         }
-
-        cleanup: "remove mock"
-        if (HTTPProtocol.client.get() != null) {
-            HTTPProtocol.client.set(null)
-        }
     }
 
     def "Check HTTP client dynamic time feature"() {

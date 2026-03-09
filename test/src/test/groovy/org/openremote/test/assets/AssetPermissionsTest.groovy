@@ -718,6 +718,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "all linked assets of the user are retrieved"
@@ -737,6 +738,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an asset is made a root asset in the authenticated realm"
@@ -784,6 +786,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an asset is deleted in the authenticated realm"
@@ -793,6 +796,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an asset is deleted in a foreign realm"
@@ -802,6 +806,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "a private asset attribute is written on a user asset"
@@ -811,6 +816,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an attribute is written on a non-existent user asset"
@@ -820,6 +826,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an non-existent attribute is written on a user asset"
@@ -829,6 +836,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an asset attribute is written on a non-user asset"
@@ -838,6 +846,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "an asset attribute is written in a foreign realm"
@@ -847,6 +856,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "a non-writable attribute value is written on a user asset"
@@ -856,6 +866,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "a non-writable attribute value is updated on a user asset"

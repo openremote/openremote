@@ -68,7 +68,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the endpoint should return 404"
-        response.status == 404
+        response.withCloseable {r ->
+            assert r.status == 404
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -158,16 +161,13 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the response includes the app info"
         response.withCloseable { r ->
-            assert r.status == 404
+            assert r.status == 200
+            Map infoMap = parse(response.readEntity(String.class)).orElse([:])
+            infoMap.containsKey("appInfo")
             return true
         }
-        def infoMap = parse(response.readEntity(String.class)).orElse([:])
-        infoMap.containsKey("appInfo")
 
         cleanup:
-        if (response != null) {
-            response.close()
-        }
         Files.deleteIfExists(appDir.resolve("info.json"))
         Files.deleteIfExists(appDir)
         Files.deleteIfExists(customDocRoot)

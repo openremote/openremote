@@ -90,7 +90,7 @@ public class AppResourceImpl extends WebResource implements AppResource {
     public Object getConsoleConfig(RequestParams requestParams) {
         Path consoleAppDocRoot = consoleAppService.getConsoleAppDocRoot();
         if (consoleAppDocRoot == null || !Files.isDirectory(consoleAppDocRoot)) {
-            return new WebApplicationException(Response
+            throw new WebApplicationException(Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(String.format("%s is not a directory", consoleAppDocRoot))
                     .type(MediaType.APPLICATION_JSON_TYPE)
@@ -98,7 +98,7 @@ public class AppResourceImpl extends WebResource implements AppResource {
         }
 
         if (!Files.exists(consoleAppDocRoot.resolve("console_config.json"))) {
-            return new WebApplicationException(Response
+            throw new WebApplicationException(Response
                     .status(Response.Status.NOT_FOUND)
                     .build());
         }
