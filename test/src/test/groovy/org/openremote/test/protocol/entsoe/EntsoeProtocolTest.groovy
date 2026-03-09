@@ -50,6 +50,9 @@ import static org.openremote.model.value.ValueType.NUMBER
 class EntsoeProtocolTest extends Specification implements ManagerContainerTrait {
 
     @Shared
+    Map<String, Integer> requestCountByZone = [:].withDefault { 0 }
+
+    @Shared
     def mockServer = new ClientRequestFilter() {
 
         @Override
@@ -154,6 +157,47 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
   </TimeSeries>
 </Publication_MarketDocument>
 '''
+                } else if (zone == "10YERR----------X") {
+                    requestCountByZone[zone] = requestCountByZone[zone] + 1
+
+                    if (requestCountByZone[zone] == 1) {
+                        content = '''<?xml version="1.0" encoding="utf-8"?>
+<Publication_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3">
+  <period.timeInterval>
+    <start>2026-02-16T23:00Z</start>
+    <end>2026-02-17T23:00Z</end>
+  </period.timeInterval>
+  <TimeSeries>
+    <Period>
+      <timeInterval>
+        <start>2026-02-16T23:00Z</start>
+        <end>2026-02-17T23:00Z</end>
+      </timeInterval>
+      <resolution>PT15M</resolution>
+      <Point>
+        <position>1</position>
+        <price.amount>91.11</price.amount>
+      </Point>
+      <Point>
+        <position>2</position>
+        <price.amount>92.22</price.amount>
+      </Point>
+      <Point>
+        <position>3</position>
+        <price.amount>93.33</price.amount>
+      </Point>
+      <Point>
+        <position>4</position>
+        <price.amount>94.44</price.amount>
+      </Point>
+    </Period>
+  </TimeSeries>
+</Publication_MarketDocument>
+'''
+                    } else {
+                        requestContext.abortWith(Response.status(500).build())
+                        return
+                    }
                 } else {
                     requestContext.abortWith(Response.serverError().build())
                     return
@@ -169,6 +213,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
     def "ENTSO-E integration test writes predicted datapoints from publication document"() {
         given: "the container environment is started"
+        requestCountByZone.clear()
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         EntsoeProtocol.initClient()
@@ -209,6 +254,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
         def attributeRef = new AttributeRef(asset.id, "energyPrice")
         def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+        List<List> firstSnapshot = null
 
         and: "the attribute is linked by protocol"
         conditions.eventually {
@@ -246,6 +292,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
     def "ENTSO-E integration test writes predicted datapoints for 2 linked attributes with different zones"() {
         given: "the container environment is started"
+        requestCountByZone.clear()
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         EntsoeProtocol.initClient()
@@ -318,6 +365,87 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert (nlDatapoints[1].value as BigDecimal).compareTo(82.22G) == 0
             assert (nlDatapoints[2].value as BigDecimal).compareTo(83.33G) == 0
             assert (nlDatapoints[3].value as BigDecimal).compareTo(84.44G) == 0
+        }
+
+        cleanup: "remove mock client"
+        if (EntsoeProtocol.client.get() != null) {
+            EntsoeProtocol.client.set(null)
+        }
+    }
+
+    def "ENTSO-E integration test keeps existing predicted datapoints when subsequent poll fetch fails"() {
+        given: "the container environment is started"
+        requestCountByZone.clear()
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        EntsoeProtocol.initClient()
+
+        if (!EntsoeProtocol.client.get().configuration.isRegistered(mockServer)) {
+            EntsoeProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def agentService = container.getService(AgentService.class)
+
+        when: "an ENTSO-E agent is created"
+        def agent = new EntsoeAgent("ENTSO-E Agent")
+                .setRealm(MASTER_REALM)
+                .setSecurityToken("test-token")
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created and connected"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((EntsoeProtocol) agentService.getProtocolInstance(agent.id)) != null
+            assert agentService.getAgent(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        when: "an attribute is linked to a zone that fails after first successful fetch"
+        def errLink = new EntsoeAgentLink(agent.id)
+        errLink.setZone("10YERR----------X")
+
+        def asset = new ThingAsset("Error On Second Poll Asset")
+                .setRealm(MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<>("energyPrice", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, errLink))
+                )
+        asset = assetStorageService.merge(asset)
+
+        def attributeRef = new AttributeRef(asset.id, "energyPrice")
+        def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+
+        and: "the attribute is linked by protocol"
+        conditions.eventually {
+            assert protocol.getLinkedAttributes().containsKey(attributeRef)
+        }
+
+        and: "first poll succeeds"
+        protocol.updateAllLinkedAttributes()
+
+        then: "predicted datapoints are written"
+        def firstSnapshot
+        conditions.eventually {
+            List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef).sort { it.timestamp }
+            assert datapoints.size() == 4
+            assert (datapoints[0].value as BigDecimal).compareTo(91.11G) == 0
+            assert (datapoints[1].value as BigDecimal).compareTo(92.22G) == 0
+            assert (datapoints[2].value as BigDecimal).compareTo(93.33G) == 0
+            assert (datapoints[3].value as BigDecimal).compareTo(94.44G) == 0
+            firstSnapshot = datapoints.collect { [it.timestamp, (it.value as BigDecimal)] }
+        }
+
+        when: "next poll cycle fetch fails"
+        protocol.updateAllLinkedAttributes()
+
+        then: "existing predicted datapoints remain available"
+        conditions.eventually {
+            List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef).sort { it.timestamp }
+            assert datapoints.size() == 4
+            assert firstSnapshot != null
+            assert datapoints.collect { [it.timestamp, (it.value as BigDecimal)] } == firstSnapshot
         }
 
         cleanup: "remove mock client"
