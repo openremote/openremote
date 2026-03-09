@@ -360,16 +360,20 @@ export class OrScheduler extends translate(i18next)(LitElement) {
         const value = event.target.value;
         this._eventType = value;
 
+        const fallback = moment().startOf("day");
         if (value === EventTypes.default) {
-            this.schedule = this.defaultSchedule; // Default is not local time
+            this.schedule = {
+                start: this.defaultSchedule?.start ?? fallback.valueOf() - this.timezoneOffset,
+                end: this.defaultSchedule?.end ?? fallback.endOf("day").valueOf() - this.timezoneOffset
+            };
             const recurrence = this.defaultSchedule?.recurrence;
             this._rrule = recurrence ? RRule.fromString(recurrence) : undefined;
             return;
         }
 
         const schedule = {
-            start: this._scheduleWithOffset?.start ?? moment().startOf("day").toDate().getTime(),
-            end: this._scheduleWithOffset?.end ?? moment().startOf("day").endOf("day").toDate().getTime()
+            start: this._scheduleWithOffset?.start ?? fallback.valueOf(),
+            end: this._scheduleWithOffset?.end ?? fallback.endOf("day").valueOf()
         };
         if (value === EventTypes.period) {
             this._scheduleWithOffset = schedule;
