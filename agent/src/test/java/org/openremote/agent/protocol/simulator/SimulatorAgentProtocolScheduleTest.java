@@ -172,15 +172,15 @@ public class SimulatorAgentProtocolScheduleTest {
 
             long now = start.toEpochMilli();
             long timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:01:39.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:01:40.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(3600 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(3600 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
         }
 
         @Test
@@ -190,15 +190,15 @@ public class SimulatorAgentProtocolScheduleTest {
 
             long now = Instant.parse("2000-01-01T00:00:00.000Z").toEpochMilli();
             long timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(DAY + 100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(DAY + 100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(DAY + 40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(DAY + 40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(DAY - 20 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(DAY - 20 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
         }
 
         @Test
@@ -208,35 +208,35 @@ public class SimulatorAgentProtocolScheduleTest {
 
             long now = Instant.parse("2000-01-01T00:00:00.000Z").toEpochMilli();
             long timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(3580 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(3580 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T01:00:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T01:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T01:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(3580 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(3580 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T02:00:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T02:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             // UNTIL will continue to return positive delays if now < UNTIL + offset, so we use another check to end it
             assertTrue(schedule.isAfterScheduleEnd(Instant.parse("2000-01-01T03:00:00.001Z").toEpochMilli())); // TODO: fix
@@ -244,11 +244,11 @@ public class SimulatorAgentProtocolScheduleTest {
             // The datapoint won't be replayed after the 3rd occurrence so the delay is negative
             now = Instant.parse("2000-01-01T02:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(-20 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(-20 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T03:00:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(-3500 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(-3500 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
         }
 
 
@@ -259,44 +259,44 @@ public class SimulatorAgentProtocolScheduleTest {
 
             long now = Instant.parse("2000-01-01T00:00:00.000Z").toEpochMilli();
             long timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T00:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(3580 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(3580 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T01:00:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T01:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T01:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(3580 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(3580 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T02:00:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(100 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(100 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T02:01:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(40 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(40 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             // The datapoint won't be replayed after the 3rd occurrence so the delay is negative
             now = Instant.parse("2000-01-01T02:02:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(-20 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(-20 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
 
             now = Instant.parse("2000-01-01T03:00:00.000Z").toEpochMilli();
             timeSinceOccurrenceStarted = now - schedule.tryAdvanceActive(now, 0);
-            assertEquals(-3500 * SECOND, SimulatorProtocol.Schedule.getDelay(100, timeSinceOccurrenceStarted, schedule).getAsLong());
+            assertEquals(-3500 * SECOND, schedule.getDelay(100, timeSinceOccurrenceStarted).getAsLong());
         }
     }
 }
