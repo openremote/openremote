@@ -44,12 +44,22 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
 
     protected String port;
     protected int baudRate;
+    protected int dataBits;
+    protected JSerialCommChannelConfig.Stopbits stopBits;
+    protected JSerialCommChannelConfig.Paritybit parity;
     public static int DEFAULT_BAUD_RATE = 38400;
 
     public SerialIOClient(String port, Integer baudRate) {
+        this(port, baudRate, 8, STOPBITS_1, NONE);
+    }
+
+    public SerialIOClient(String port, Integer baudRate, int dataBits, JSerialCommChannelConfig.Stopbits stopBits, JSerialCommChannelConfig.Paritybit parity) {
         TextUtil.requireNonNullAndNonEmpty(port);
         this.port = port;
         this.baudRate = baudRate == null ? DEFAULT_BAUD_RATE : baudRate;
+        this.dataBits = dataBits;
+        this.stopBits = stopBits;
+        this.parity = parity;
     }
 
     @Override
@@ -79,8 +89,8 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(BAUD_RATE, baudRate);
-        bootstrap.option(DATA_BITS, 8);
-        bootstrap.option(STOP_BITS, STOPBITS_1);
-        bootstrap.option(PARITY_BIT, NONE);
+        bootstrap.option(DATA_BITS, dataBits);
+        bootstrap.option(STOP_BITS, stopBits);
+        bootstrap.option(PARITY_BIT, parity);
     }
 }
