@@ -226,9 +226,11 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
 
         when: "an ENTSO-E agent is created"
-        def agent = new EntsoeAgent("ENTSO-E Agent")
+        agent = new EntsoeAgent("ENTSO-E Agent")
                 .setRealm(MASTER_REALM)
                 .setSecurityToken("test-token")
         agent = assetStorageService.merge(agent)
@@ -244,7 +246,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         def entsoeLink = new EntsoeAgentLink(agent.id)
         entsoeLink.setZone("10YBE----------2")
 
-        def asset = new ThingAsset("Energy Price Asset")
+        asset = new ThingAsset("Energy Price Asset")
                 .setRealm(MASTER_REALM)
                 .addOrReplaceAttributes(
                         new Attribute<>("energyPrice", NUMBER)
@@ -254,7 +256,6 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
         def attributeRef = new AttributeRef(asset.id, "energyPrice")
         def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
-        List<List> firstSnapshot = null
 
         and: "the attribute is linked by protocol"
         conditions.eventually {
@@ -284,7 +285,13 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert (asc[3].value as BigDecimal).compareTo(65.05G) == 0
         }
 
-        cleanup: "remove mock client"
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
         if (EntsoeProtocol.client.get() != null) {
             EntsoeProtocol.client.set(null)
         }
@@ -305,9 +312,11 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
 
         when: "an ENTSO-E agent is created"
-        def agent = new EntsoeAgent("ENTSO-E Agent")
+        agent = new EntsoeAgent("ENTSO-E Agent")
                 .setRealm(MASTER_REALM)
                 .setSecurityToken("test-token")
         agent = assetStorageService.merge(agent)
@@ -325,7 +334,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         def nlLink = new EntsoeAgentLink(agent.id)
         nlLink.setZone("10YNL----------L")
 
-        def asset = new ThingAsset("Multi Zone Energy Price Asset")
+        asset = new ThingAsset("Multi Zone Energy Price Asset")
                 .setRealm(MASTER_REALM)
                 .addOrReplaceAttributes(
                         new Attribute<>("energyPriceBe", NUMBER)
@@ -367,7 +376,13 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert (nlDatapoints[3].value as BigDecimal).compareTo(84.44G) == 0
         }
 
-        cleanup: "remove mock client"
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
         if (EntsoeProtocol.client.get() != null) {
             EntsoeProtocol.client.set(null)
         }
@@ -388,9 +403,11 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
 
         when: "an ENTSO-E agent is created"
-        def agent = new EntsoeAgent("ENTSO-E Agent")
+        agent = new EntsoeAgent("ENTSO-E Agent")
                 .setRealm(MASTER_REALM)
                 .setSecurityToken("test-token")
         agent = assetStorageService.merge(agent)
@@ -406,7 +423,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         def errLink = new EntsoeAgentLink(agent.id)
         errLink.setZone("10YERR----------X")
 
-        def asset = new ThingAsset("Error On Second Poll Asset")
+        asset = new ThingAsset("Error On Second Poll Asset")
                 .setRealm(MASTER_REALM)
                 .addOrReplaceAttributes(
                         new Attribute<>("energyPrice", NUMBER)
@@ -448,7 +465,13 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert datapoints.collect { [it.timestamp, (it.value as BigDecimal)] } == firstSnapshot
         }
 
-        cleanup: "remove mock client"
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
         if (EntsoeProtocol.client.get() != null) {
             EntsoeProtocol.client.set(null)
         }
