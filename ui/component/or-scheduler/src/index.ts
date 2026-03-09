@@ -195,9 +195,9 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
                 let template: TemplateResult = html``;
                 if (this.isAllDay && diff > 0) {
-                    template = html`<or-translate value="forDays" .options="${{ days: diff }}"></or-translate>`;
+                    template = html`<or-translate value="forDays" .options="${{ days: diff, count: diff }}"></or-translate>`;
                 } else if (diff > 0) {
-                    template = html`<or-translate value="fromToDays" .options="${{ ...fromTo, days: diff }}"></or-translate>`;
+                    template = html`<or-translate value="fromToDays" .options="${{ ...fromTo, days: diff, count: diff }}"></or-translate>`;
                 } else if (diff === 0) {
                     template = html`<or-translate value="fromTo" .options="${fromTo}"></or-translate>`;
                 }
