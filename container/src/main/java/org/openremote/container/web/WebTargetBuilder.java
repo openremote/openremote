@@ -21,9 +21,11 @@ package org.openremote.container.web;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
@@ -206,10 +208,12 @@ public class WebTargetBuilder {
                 int status = clientResponseContext.getStatus();
                 if (status < 400) return;
 
+                byte[] bytes = null;
                 String body = "<no body>";
+
                 if (clientResponseContext.hasEntity()) {
                     InputStream is = clientResponseContext.getEntityStream();
-                    byte[] bytes = is.readAllBytes();
+                    bytes = is.readAllBytes();
                     clientResponseContext.setEntityStream(new ByteArrayInputStream(bytes)); // allow RESTEasy to read it later
                     body = new String(bytes, StandardCharsets.UTF_8);
                 }

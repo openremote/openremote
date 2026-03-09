@@ -64,7 +64,6 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.addOrReplaceAttributes(
             new Attribute<>("illegal- Attribute:name&&&", ValueType.TEXT)
         )
-
         assetResource.update(null, testAsset.getId(), testAsset)
 
         then: "the request should fail validation and return a validation report indicating the failure(s)"
@@ -75,7 +74,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
             assert report != null
             assert report.propertyViolations.size() == 1
             assert report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
-
+            return true
         }
 
         when: "an asset is stored with a non-empty attribute value"
@@ -168,8 +167,9 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the request should be forbidden"
         ex = thrown()
         ex.response.withCloseable { r ->
-    assert r.status == 403
-}
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a parent in a different realm"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -179,8 +179,9 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the request should be forbidden"
         ex = thrown()
         ex.response.withCloseable { r ->
-    assert r.status == 403
-}
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is deleted but has children"
         assetResource.delete(null, [managerTestSetup.apartment1Id])

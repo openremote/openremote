@@ -141,7 +141,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
-        } 404
+        }
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -158,7 +158,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
-        } 404
+        }
 
         when: "a realm ruleset is created in the authenticated realm"
         def realmRuleset = new RealmRuleset(MASTER_REALM, "Test realm definition", GROOVY, "SomeRulesCode")
@@ -236,7 +236,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
-        } 404
+        }
 
         when: "a realm ruleset is deleted"
         rulesetResource.deleteRealmRuleset(null, rulesetId)
@@ -247,7 +247,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
-        } 404
+        }
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
@@ -354,7 +354,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
-        } 404
+        }
 
         when: "an asset ruleset is deleted"
         rulesetResource.deleteAssetRuleset(null, rulesetId)
@@ -365,7 +365,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
-        } 404
+        }
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {

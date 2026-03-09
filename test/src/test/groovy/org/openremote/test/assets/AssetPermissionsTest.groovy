@@ -563,6 +563,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
     }
 
@@ -686,6 +687,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         WebApplicationException ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            return true
         }
 
         when: "a user asset is retrieved by ID in the authenticated realm"

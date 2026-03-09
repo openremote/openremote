@@ -125,6 +125,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             def appList = parse(r.readEntity(String.class)).orElse("") as String
             appList.contains("appBuiltin")
             appList.contains("appCustom")
+            return true
         }
 
         cleanup:

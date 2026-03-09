@@ -37,6 +37,7 @@ class MetricsEndpointTest extends Specification implements ManagerContainerTrait
             assert responseStr.contains("jvm_memory_")
             assert responseStr.contains("jvm_threads_")
             assert r.status == 200
+            return true
         }
 
         cleanup: "clean up"
