@@ -59,6 +59,8 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
+            // We want the call to take at least 1ms or we get issues with attribute events being ignored as outdated
+            Thread.sleep(1)
             def requestUri = requestContext.uri
 
             if (requestUri.host == "web-api.tp.entsoe.eu" && requestUri.path == "/api") {
