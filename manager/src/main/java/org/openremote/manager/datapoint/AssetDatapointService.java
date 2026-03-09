@@ -67,7 +67,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-    private static final Pattern ASSET_ID_PATTERN = Pattern.compile(Constants.ASSET_ID_REGEXP);
+
     protected int maxDatapointAgeDays;
     protected int datapointExportLimit;
 
@@ -438,7 +438,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     private static String validateAssetId(String assetId) {
-        if (assetId == null || !ASSET_ID_PATTERN.matcher(assetId).matches()) {
+        if (assetId == null || !Asset.matchesAssetIdPattern(assetId)) {
             throw new IllegalArgumentException("Invalid asset id");
         }
         return assetId;
