@@ -219,6 +219,7 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
 
     protected List<ValueDatapoint<?>> buildPredictedDatapoints(PublicationMarketDocument document) {
         List<ValueDatapoint<?>> values = new ArrayList<>();
+        long nowMillis = timerService.getCurrentTimeMillis();
         if (document.getTimeSeries() == null || document.getTimeSeries().isEmpty()) {
             return values;
         }
@@ -253,7 +254,9 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
                         long timestamp = start
                                 .plus(resolution.multipliedBy(point.getPosition() - 1L))
                                 .toEpochMilli();
-                        values.add(new ValueDatapoint<>(timestamp, point.getPriceAmount()));
+                        if (timestamp >= nowMillis) {
+                            values.add(new ValueDatapoint<>(timestamp, point.getPriceAmount()));
+                        }
                     });
         }
 
