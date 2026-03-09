@@ -24,6 +24,7 @@ import "./or-vaadin-checkbox";
 import "./or-vaadin-number-field";
 import "./or-vaadin-password-field";
 import "./or-vaadin-select";
+import "./or-vaadin-slider";
 import "./or-vaadin-text-field";
 import "./or-vaadin-text-area";
 
@@ -60,6 +61,7 @@ export class OrVaadinInput extends LitElement {
         customElements.get("or-vaadin-number-field"),
         customElements.get("or-vaadin-password-field"),
         customElements.get("or-vaadin-select"),
+        customElements.get("or-vaadin-slider"),
         customElements.get("or-vaadin-text-area"),
         customElements.get("or-vaadin-text-field")
     ];
@@ -74,6 +76,7 @@ export class OrVaadinInput extends LitElement {
         [InputType.CHECKBOX, OrVaadinInput.getCheckboxTemplate],
         [InputType.NUMBER, OrVaadinInput.getNumberFieldTemplate],
         [InputType.PASSWORD, OrVaadinInput.getPasswordFieldTemplate],
+        [InputType.RANGE, OrVaadinInput.getSliderTemplate],
         [InputType.SELECT, OrVaadinInput.getSelectTemplate],
         [InputType.TEXT, OrVaadinInput.getTextFieldTemplate],
         [InputType.TEXTAREA, OrVaadinInput.getTextAreaTemplate]
@@ -261,6 +264,10 @@ export class OrVaadinInput extends LitElement {
 
     public static getSelectTemplate(onChange?: (e: Event) => void) {
         return html`<or-vaadin-select id="elem" @change=${onChange}></or-vaadin-select>`;
+    }
+
+    public static getSliderTemplate(onChange?: (e: Event) => void) {
+        return html`<or-vaadin-slider id="elem" @change=${onChange}></or-vaadin-slider>`
     }
 
     public static getTextAreaTemplate(onChange?: (e: Event) => void) {
