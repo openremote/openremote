@@ -30,7 +30,7 @@ const tagName = "or-scheduler";
 type Story = StoryObj;
 setCustomElementsManifest(customElements);
 
-const { events, args, argTypes, template } = getStorybookHelpers(tagName);
+const { events, args, argTypes, template } = getORStorybookHelpers(tagName);
 
 const meta: Meta = {
     title: "Playground/or-scheduler",
