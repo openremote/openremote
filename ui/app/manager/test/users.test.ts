@@ -95,7 +95,7 @@ test(`Verify gateway service user is read-only`, async ({ page, manager, usersPa
   await manager.goToRealmStartPage("master");
   await manager.switchToRealmByRealmPicker("smartcity");
   await manager.navigateToTab("Assets");
-  await assetsPage.addAsset("GatewayAsset", "TestGateway");
+  await assetsPage.addAsset("Gateway Asset", "TestGateway");
   await page.waitForURL("**/assets/**");
   const clientIdInput = page.locator(`#field-clientId input`);
   await expect(clientIdInput).not.toHaveValue("", { timeout: 15000 });
