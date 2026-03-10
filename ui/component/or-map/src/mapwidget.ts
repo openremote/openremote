@@ -358,8 +358,6 @@ export class MapWidget {
         }
 
         this._initLongPressEvent();
-        this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
-        this._loaded = true;
         this.createBoundaryBox()
     }
 
@@ -572,7 +570,6 @@ export class MapWidget {
     protected _updateMarkerElement(marker: OrMapMarker, doAdd: boolean) {
         let mGl = this._markers.get(marker);
         if (mGl) {
-            console.log("DELETING EXISTING MARKER")
             marker._actualMarkerElement = undefined;
             this._removeMarkerClickHandler(marker, mGl.getElement());
             mGl.remove();

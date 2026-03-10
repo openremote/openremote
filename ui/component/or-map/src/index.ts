@@ -353,10 +353,16 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
-    public addAsset(asset: Asset) {
-        if (isAssetWithLocation(asset)) {
-            this._map?.addAsset(asset);
-        }
+    public async addAsset(asset: AssetWithLocation) {
+        await this._map?.addAsset(asset);
+    }
+
+    public async addAssets(assets: AssetWithLocation[]) {
+        await this._map?.addAssets(assets);
+    }
+
+    public clearAssets() {
+        this._map?.clearAssets();
     }
 
     public updateAttribute(id: string, value: any) {

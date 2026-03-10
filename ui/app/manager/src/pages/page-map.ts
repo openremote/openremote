@@ -12,7 +12,8 @@ import {
     OrMapGeocoderChangeEvent,
     MapMarkerAssetConfig,
     OrMapMarkersChangedEvent,
-    OrMapLegendEvent
+    OrMapLegendEvent,
+    OrMapLoadedEvent
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -32,7 +33,7 @@ import {GenericAxiosResponse} from "@openremote/rest";
 import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
 
 export interface MapState {
-    assets: Asset[];
+    assets: AssetWithLocation[];
     currentAssetId: string;
 }
 
@@ -56,10 +57,8 @@ const pageMapSlice = createSlice({
 
                 const asset = action.payload.asset;
                 if (MapUtil.isAssetWithLocation(asset)) {
-                    return {
-                        ...state,
-                        assets: [...state.assets, action.payload.asset]
-                    };
+                    const assets = [...state.assets, asset];
+                    return { ...state, assets };
                 }
             }
 
@@ -94,10 +93,9 @@ const pageMapSlice = createSlice({
             return state;
         },
         setAssets(state, action: PayloadAction<Asset[]>) {
-            return {
-                ...state,
-                assets: action.payload
-            };
+            const assets = action.payload.filter(MapUtil.isAssetWithLocation);
+            
+            return { ...state, assets };
         }
     }
 });
@@ -196,10 +194,13 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _map?: OrMap;
 
     @state()
-    protected _assets: Asset[] = [];
+    protected _assets: AssetWithLocation[] = [];
 
     @state()
-    protected _currentAsset?: Asset;
+    protected _currentAsset?: AssetWithLocation;
+
+    @state()
+    protected _excludedTypes?: string[] = [];
 
     @state()
     protected _assetsOnScreen: AssetWithLocation[] = [];
@@ -211,14 +212,8 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assetSubscriptionId: string;
     protected _attributeSubscriptionId: string;
 
-    protected _assetTypes: string[] = [];
-    protected _excludedTypes: string[] = [];
-
-    shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("_assets")) {
-            this._updateMarkers();
-        }
-        return super.shouldUpdate(_changedProperties);
+    protected get _assetTypes(): string[] {
+        return this._assets.map(a => a.type);
     }
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
@@ -290,23 +285,23 @@ export class PageMap extends Page<MapStateKeyed> {
             if (response.data) {
                 const assets = response.data;
 
-                // this._store.dispatch(setAssets(assets));
-                this._assets = assets;
+                this._store.dispatch(setAssets(assets));
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
-                    this._store.dispatch(assetEventReceived(event));
+                    const action = this._store.dispatch(assetEventReceived(event));
+                    // action.
                     console.log("Asset event received:", event);
                     const index = assets.findIndex(a => a.id === event.asset.id);
 
-                    switch (event.cause) {
-                        case "UPDATE":
-                            // if (index !== -1) assets.splice(index, 1);
-                            console.log("ASSET UPDATE: ", index)
-                            break;
-                        case "DELETE": if (index !== -1) this._map.addAsset(event.asset); break;
-                        case "CREATE":
-                            break;
-                    }
+                    // switch (event.cause) {
+                    //     case "UPDATE":
+                    //         // if (index !== -1) assets.splice(index, 1);
+                    //         console.log("ASSET UPDATE: ", index)
+                    //         break;
+                    //     case "DELETE": if (index !== -1) this._map.addAsset(event.asset); break;
+                    //     case "CREATE":
+                    //         break;
+                    // }
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -319,7 +314,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
                     // console.log("Attribute event received:", event);
                     if (attrsOfInterest.includes(event.ref.name)) {
-                        this._map.updateAttribute(event.ref.id, event.value);
+                        this._map?.updateAttribute(event.ref.id, event.value);
                     }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
@@ -352,17 +347,10 @@ export class PageMap extends Page<MapStateKeyed> {
     protected getRealmState = createSelector(
       [this._realmSelector],
       async (realm) => {
-          if (this._assets.length > 0) {
-              // Clear existing assets
-              this._assets = [];
-          }
-          if (this._excludedTypes.length > 0) {
-              this._excludedTypes = [];
-          }
-
           this.unsubscribeAssets();
           this.subscribeAssets(realm);
           this._map?.refresh();
+          this._map?.clearAssets();
       }
     )
 
@@ -398,8 +386,8 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
+        // console.log(this._assetsOnScreen)
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
-        // console.log("RENDER", this._currentAsset)
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
@@ -413,7 +401,7 @@ export class PageMap extends Page<MapStateKeyed> {
                         return pointB.coordinates[1] - pointA.coordinates[1];
                     }
                 }).map(asset => html`
-                    <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
+                    <or-map-marker-asset assetId=${asset.id} ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                 `)}
             </or-map>
         `;
@@ -424,6 +412,10 @@ export class PageMap extends Page<MapStateKeyed> {
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this._onMapClick);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
+        this.addEventListener(OrMapLoadedEvent.NAME, async () => {
+            console.log("ADD ASSET", this._assets)
+            await this._map?.addAssets(this._assets)
+        });
     }
 
     public disconnectedCallback() {
@@ -439,6 +431,14 @@ export class PageMap extends Page<MapStateKeyed> {
         this._currentAsset = this._getCurrentAsset(state);
         this.getRealmState(state);
     }
+
+    // shouldUpdate(_changedProperties: PropertyValues): boolean {
+    //     if (_changedProperties.has("_assets") && !this._assetsOnScreen.length) {
+    //         console.log("ADD ASSET", this._assets)
+    //         this._map?.addAssets(this._assets)
+    //     }
+    //     return super.shouldUpdate(_changedProperties);
+    // }
 
     protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {
         const asset = (e.detail.marker as OrMapMarkerAsset).asset;
@@ -460,23 +460,20 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
         if (this._map) {
             this._excludedTypes = e.detail;
-            this._updateMarkers();
+            // this._updateMarkers();
         }
     }
 
-    protected _updateMarkers() {
-        if (this._map) {
-            this._assetTypes = [];
-            this._assets.forEach((asset: Asset) => {
-                if (MapUtil.isAssetWithLocation(asset)) {
-                    if (!this._excludedTypes.includes(asset.type)) {
-                        this._map.addAsset(asset)
-                    }
-                    if (!this._assetTypes.includes(asset.type)) {
-                        this._assetTypes.push(asset.type);
-                    }
-                }
-            });
-        }
-    }
+    // protected _updateMarkers() {
+    //     if (this._map) {
+    //         this._map.clearAssets();
+    //         this._assets.forEach((asset: Asset) => {
+    //             if (MapUtil.isAssetWithLocation(asset)) {
+    //                 if (!this._excludedTypes.includes(asset.type)) {
+    //                     this._map.addAsset(asset)
+    //                 }
+    //             }
+    //         });
+    //     }
+    // }
 }

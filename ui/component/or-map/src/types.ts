@@ -1,9 +1,12 @@
-import { Asset, Attribute, GeoJsonConfig, GeoJSONPoint, WellknownAttributes } from "@openremote/model";
+import { Asset, Attribute, GeoJsonConfig, WellknownAttributes } from "@openremote/model";
 import { LngLat, LngLatBoundsLike, LngLatLike } from "maplibre-gl";
+import { Point } from "geojson";
+
+type MandatoryAttribute<T> = Attribute<T> & { value: T };
 
 export interface AssetWithLocation extends Asset {
     attributes: { [index: string]: Attribute<any> } & {
-        [WellknownAttributes.LOCATION]: Attribute<GeoJSONPoint>;
+        [WellknownAttributes.LOCATION]: MandatoryAttribute<Point>;
     };
 }
 
