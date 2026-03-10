@@ -32,7 +32,7 @@
     import static org.openremote.container.web.WebTargetBuilder.createClient;
     import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 
-    /**
+/**
  * An {@link ActiveMQSecurityManager5} implementation that authenticates the user by either retrieving an access token
  * on behalf of the service user or validating the supplied access token
  */

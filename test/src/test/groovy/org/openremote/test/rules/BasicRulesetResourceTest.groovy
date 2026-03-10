@@ -585,6 +585,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         and: "the ruleset should be removed from the engine"
@@ -601,6 +602,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is created in a non-authenticated realm"
@@ -611,6 +613,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "an asset ruleset is created in the authenticated realm"
@@ -666,6 +669,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 400
+            true
         }
 
         when: "an asset ruleset is updated with an invalid id"
@@ -677,6 +681,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 400
+            true
         }
 
         when: "a non-existent asset ruleset is updated"
@@ -686,6 +691,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         when: "an asset ruleset is deleted"
@@ -696,6 +702,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         and: "the ruleset should reach the engine"
@@ -711,9 +718,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
-
-            }
+    }
 
     def "Access rules as testuser2"() {
 
@@ -754,6 +761,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         WebApplicationException ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "some realm rules in a non-authenticated realm are retrieved"
@@ -763,6 +771,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "some realm rules in the authenticated realm are retrieved by user without rules read role"
@@ -787,6 +796,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a global rule is updated"
@@ -796,6 +806,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a global rule is deleted"
@@ -805,6 +816,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is created in the authenticated realm"
@@ -815,6 +827,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is updated"
@@ -824,6 +837,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is deleted"
@@ -833,6 +847,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is created in a non-authenticated realm"
@@ -843,6 +858,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is created in the authenticated realm"
@@ -853,6 +869,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is updated"
@@ -862,6 +879,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is deleted"
@@ -871,6 +889,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is created in a non-authenticated realm"
@@ -881,9 +900,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
-            }
+    }
 
     def "Access rules as testuser3"() {
 
@@ -924,6 +944,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         WebApplicationException ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "some realm rules in a non-authenticated realm are retrieved"
@@ -933,6 +954,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "some realm rules in the authenticated realm are retrieved by the restricted user"
@@ -964,6 +986,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a global rule is updated"
@@ -973,6 +996,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a global rule is deleted"
@@ -982,6 +1006,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is created in the authenticated realm"
@@ -992,6 +1017,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "a realm ruleset is updated"
@@ -1001,6 +1027,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         when: "a realm ruleset is deleted"
@@ -1011,6 +1038,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         when: "a realm ruleset is created in a non-authenticated realm"
@@ -1021,6 +1049,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "an asset ruleset is created in the authenticated realm"
@@ -1079,6 +1108,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 400
+            true
         }
 
         when: "an asset ruleset is updated with a changed invalid asset ID"
@@ -1089,6 +1119,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 400
+            true
         }
 
         when: "an asset ruleset is updated with an invalid id"
@@ -1100,6 +1131,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 400
+            true
         }
 
         when: "a non-existent asset ruleset is updated"
@@ -1109,6 +1141,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         when: "an asset ruleset is deleted"
@@ -1119,6 +1152,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
+            true
         }
 
         and: "the ruleset should be removed from the engine"
@@ -1134,6 +1168,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
         when: "an asset ruleset is created in a non-authenticated realm"
@@ -1144,6 +1179,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 403
+            true
         }
 
     }
