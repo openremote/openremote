@@ -116,9 +116,9 @@ public abstract class AbstractModbusProtocol<T extends AbstractModbusProtocol<T,
             LOG.fine("Created IO client '" + client.getClientUri() + "' for protocol: " + this);
             client.connect();
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to create IO client for protocol: " + this, e);
+            LOG.warning(getProtocolName() + " - Failed to start: " + e.getMessage());
             setConnectionStatus(ConnectionStatus.ERROR);
-            throw e;
+            return;
         }
 
         // Initialize deviceConfig if empty
