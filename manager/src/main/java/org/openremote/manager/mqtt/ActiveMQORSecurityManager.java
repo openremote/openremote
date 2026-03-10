@@ -94,7 +94,8 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
                 CONNECTION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             TokenPrincipal tokenPrincipal = identityService.verify(realm, oidcTokenResponse.getToken());
             Principal connectionPrincipal = new RemotingConnectionPrincipal(remotingConnection);
-            Subject subject = new Subject(true, Set.of(tokenPrincipal, connectionPrincipal), Set.of(), Set.of());
+            UserPrincipal userPrincipal = new UserPrincipal(tokenPrincipal.getName());
+            Subject subject = new Subject(true, Set.of(tokenPrincipal, connectionPrincipal, userPrincipal), Set.of(), Set.of());
 
             // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
             remotingConnection.setSubject(subject);

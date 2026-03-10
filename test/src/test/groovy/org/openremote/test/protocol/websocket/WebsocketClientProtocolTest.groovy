@@ -21,6 +21,7 @@ package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.*
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -56,6 +57,7 @@ import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 
+import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -77,6 +79,10 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         void filter(ClientRequestContext requestContext) throws IOException {
             def requestUri = requestContext.uri
             def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+
+           if (!requestPath.contains("mockapi")) {
+              return
+           }
 
             // Check auth header is present
             def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
@@ -130,11 +136,10 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def clientEventService = container.getService(ClientEventService.class)
 
-        when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
-        WebsocketAgentProtocol.initClient()
-        if (!WebsocketAgentProtocol.resteasyClient.get().configuration.isRegistered(mockServer)) {
-            WebsocketAgentProtocol.resteasyClient.get().register(mockServer, Integer.MAX_VALUE)
-        }
+        and: "the built in JAX-RS client is injected with the mock server filter"
+        def originalClient = WebTargetBuilder.getClient()
+        WebTargetBuilder.BUILT_IN_CLIENT.set(null)
+        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
 
         and: "a Websocket client agent is created to connect to this tests manager"
         def agent = new WebsocketAgent("Test agent")
@@ -166,7 +171,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 ] as WebsocketSubscription[]
             )
 
-        and: "the agent is added to the asset service"
+        when: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should authenticate and the agent status should become CONNECTED"
@@ -308,8 +313,9 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         }
 
         cleanup: "remove mock"
-        if (WebsocketAgentProtocol.resteasyClient.get() != null) {
-            WebsocketAgentProtocol.resteasyClient.set(null)
+        if (originalClient != null) {
+           WebTargetBuilder.BUILT_IN_CLIENT.get().close()
+           WebTargetBuilder.BUILT_IN_CLIENT.set(originalClient)
         }
     }
 }
