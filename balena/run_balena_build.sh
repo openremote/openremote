@@ -49,7 +49,7 @@ fi
 
 # Push to balena with no cache or run docker-compose up if dry-run
 if [ "$DRY_RUN" = true ]; then
-    docker compose build --no-cache && docker-compose -f ./docker-compose.yml -p openremote up --force-recreate -d
+    docker compose build --no-cache && docker compose -f ./docker-compose.yml -p openremote up --force-recreate -d
 else
     balena push "$BALENA_FLEET_SLUG" --nocache
 fi
