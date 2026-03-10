@@ -374,6 +374,11 @@ export class OrMapMarker extends LitElement {
             const container = this.parentElement.shadowRoot?.querySelector("#map");
             const styles = (this.constructor as any).styles;
 
+            let styleElem = container?.querySelector("style");
+            if (!styleElem) {
+                styleElem = document.createElement("style");
+            }
+
             let stylesArr: CSSResult[] = [];
             if (container && styles) {
                 if (!Array.isArray(styles)) {
@@ -383,7 +388,6 @@ export class OrMapMarker extends LitElement {
                 }
 
                 stylesArr.forEach((styleItem) => {
-                    const styleElem = document.createElement("style");
                     styleElem.textContent = String(styleItem);
                     if (container.children.length > 0) {
                         container.insertBefore(styleElem, container.children[0]);
