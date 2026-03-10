@@ -57,6 +57,7 @@ public abstract class OAuthGrant implements Serializable {
     String scope;
 
     protected OAuthGrant(String tokenEndpointUri, String grantType, String clientId, String clientSecret, String scope) {
+        requireNonNullAndNonEmpty(tokenEndpointUri);
         requireNonNullAndNonEmpty(grantType);
         requireNonNullAndNonEmpty(clientId);
         this.grantType = grantType;

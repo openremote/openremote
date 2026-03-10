@@ -24,7 +24,6 @@ import jakarta.ws.rs.Priorities
 import jakarta.ws.rs.client.ClientRequestContext
 import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.*
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.jboss.resteasy.client.jaxrs.internal.ClientWebTarget
 import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
@@ -80,6 +79,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         void filter(ClientRequestContext requestContext) throws IOException {
             def requestUri = requestContext.uri
             def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+            getLOG().info("MOCK AUTH FILTER: $requestPath")
 
             switch (requestPath) {
                 case "https://mockapi/basicauth":
@@ -87,8 +87,8 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     if (authHeader != null) {
                         def usernameAndPassword = BasicAuthHelper.parseHeader(authHeader)
                         if (usernameAndPassword != null
-                                && usernameAndPassword[0] == "testuser"
-                                && usernameAndPassword[1] == "password1") {
+                            && usernameAndPassword[0] == "testuser"
+                            && usernameAndPassword[1] == "password1") {
                             requestContext.abortWith(Response.ok().build())
                             return
                         }
@@ -98,11 +98,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     // OAuth token request extract the grant info
                     def grant = ((Form) requestContext.getEntity()).asMap()
                     if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "password"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                            && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_USERNAME) == "testuser"
-                            && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_PASSWORD) == "password") {
+                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
+                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
+                        && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
+                        && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_USERNAME) == "testuser"
+                        && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_PASSWORD) == "password") {
                         accessToken = "accesstoken" + accessTokenCount++
                         def response = new OAuthServerResponse()
                         response.accessToken = accessToken
@@ -116,14 +116,14 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         }
 
                         requestContext.abortWith(
-                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
+                            Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
                         )
                         return
                     } else if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "refresh_token"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                            && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
+                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
+                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
+                        && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
+                        && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
                         refreshTokenCount++
                         accessToken = "accesstoken" + accessTokenCount++
                         refreshToken = "refreshtoken" + accessTokenCount
@@ -134,7 +134,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         response.tokenType = "Bearer"
 
                         requestContext.abortWith(
-                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
+                            Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
                         )
                         return
                     }
@@ -155,11 +155,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         void filter(ClientRequestContext requestContext) throws IOException {
             def requestUri = requestContext.uri
             def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+            getLOG().info("MOCK SERVER FILTER: $requestPath")
 
             // Check access token is valid
             def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
             def accessToken = authHeader == null ? null : authHeader.substring(7)
             if (accessToken == null || mockAuthServer.accessToken == null || accessToken != mockAuthServer.accessToken) {
+                getLOG().info("MOCK SERVER FILTER NO AUTH")
                 requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
                 return
             }
@@ -227,7 +229,6 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     failureCount++
                     requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
                     return
-
                 case "https://mockapi/redirect":
                     requestContext.abortWith(Response.temporaryRedirect(new URI("https://redirected.mockapi/get_success_200")).build())
                     return
@@ -275,6 +276,8 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                             return
                         }
                     }
+                default:
+                  getLOG().info("Unsupported request URI: $requestPath")
             }
 
             requestContext.abortWith(Response.serverError().build())
@@ -339,12 +342,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
 
         when: "the mock filters are registered on the protocol instance client to mock auth and requests"
         def protocolInstance = agentService.getProtocolInstance(agent.id) as HTTPProtocol
-        // Hacky way of injecting OAuth mock filter into the OAuth filter
+        // Need the auth mock filter on the auth filter's web target
         ((OAuthFilter)((ClientWebTarget)protocolInstance.webTarget).getConfiguration().getInstances()
-                .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer, Priorities.AUTHENTICATION-1)
-        // Register the request mock filter on the web target with lower priority than auth
-        protocolInstance.webTarget.register(mockServer, Priorities.AUTHENTICATION+1)
-        protocolInstance.requestMap.values().forEach {it.requestTarget.register(mockServer)}
+                .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer)
+        // Need the mock filter on the main web target with lower priority than other filters
+        protocolInstance.webTarget.register(mockServer, Integer.MAX_VALUE)
 
         and: "an asset is created with attributes linked to the agent"
         def asset = new ThingAsset("Test Asset")
@@ -451,7 +453,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
 
         then: "new request maps should be created in the HTTP client protocol for the linked attributes"
         conditions.eventually {
-            assert ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 6
+            assert protocolInstance.requestMap.size() == 6
         }
 
         and: "the polling attributes should be polling the server"
@@ -529,7 +531,18 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert agentService.getAgent(agent4.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        when: "attributes are linked to these agents"
+        when: "mock filters are registered"
+        ((OAuthFilter)((ClientWebTarget)((HTTPProtocol)agentService.getProtocolInstance(agent2.id)).webTarget).getConfiguration().getInstances()
+           .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent2.id)).webTarget.register(mockServer, Priorities.USER)
+        ((OAuthFilter)((ClientWebTarget)((HTTPProtocol)agentService.getProtocolInstance(agent3.id)).webTarget).getConfiguration().getInstances()
+           .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent3.id)).webTarget.register(mockServer, Priorities.USER)
+        ((OAuthFilter)((ClientWebTarget)((HTTPProtocol)agentService.getProtocolInstance(agent4.id)).webTarget).getConfiguration().getInstances()
+           .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent4.id)).webTarget.register(mockServer, Priorities.USER)
+
+        and: "attributes are linked to these agents"
         def asset2 = new ThingAsset("Test Asset 2")
             .setRealm(Constants.MASTER_REALM)
             .addOrReplaceAttributes(
@@ -617,16 +630,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def agentService = container.getService(AgentService.class)
         def timerService = container.getService(TimerService.class)
 
-
-
-        when: "the web target builder is configured to use the mock server"
-        HTTPProtocol.initClient()
-        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
-            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
-        }
-
-
-        and: "a HTTP client agent is created"
+        when: "a HTTP client agent is created"
         HTTPAgent agent = new HTTPAgent("Test agent")
                 .setRealm(Constants.MASTER_REALM)
                 .setBaseURI("https://mockapi")
@@ -639,18 +643,21 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                 "password")
                 )
                 .setFollowRedirects(true)
-
-        and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should authenticate and the connection status should become CONNECTED"
         conditions.eventually {
             agent = assetStorageService.find(agent.id, HTTPAgent.class)
             assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolInstance(agent.id) != null
         }
 
+        when: "the mock filters are added"
+        ((OAuthFilter)((ClientWebTarget)((HTTPProtocol)agentService.getProtocolInstance(agent.id)).webTarget).getConfiguration().getInstances()
+           .find {it instanceof OAuthFilter}).authTarget.register(mockAuthServer)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).webTarget.register(mockServer, Integer.MAX_VALUE)
 
-        when: "An asset is created"
+        and: "An asset is created"
         def asset = new ThingAsset("Test Asset")
                 .setParent(agent)
                 .addOrReplaceAttributes(

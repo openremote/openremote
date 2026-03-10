@@ -27,14 +27,15 @@ import java.io.IOException;
 
 /**
  * A security filter that will check if the request is authenticated and that the user has any of the specified roles
- * by calling {@link HttpServletRequest#isUserInRole} for each {@link #allowedRoles} until one of them is true.
+ * by calling {@link HttpServletRequest#isUserInRole} for each {@link #rolesAllowed} until one of them is true. To be
+ * used by non JAX-RS servlet deployments to mimic {@link jakarta.annotation.security.RolesAllowed}
  */
-public class SecurityFilter implements Filter {
+public class SecurityServletFilter implements Filter {
 
-    final protected String[] allowedRoles;
+    final protected String[] rolesAllowed;
 
-    public SecurityFilter(String[] allowedRoles) {
-        this.allowedRoles = allowedRoles;
+    public SecurityServletFilter(String[] rolesAllowed) {
+        this.rolesAllowed = rolesAllowed;
     }
 
     @Override
@@ -44,7 +45,7 @@ public class SecurityFilter implements Filter {
         HttpServletResponse res = (HttpServletResponse) response;
 
         boolean userHasRole = false;
-        for (String allowedRole : allowedRoles) {
+        for (String allowedRole : rolesAllowed) {
             if (req.isUserInRole(allowedRole)) {
                 userHasRole = true;
                 break;

@@ -23,7 +23,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 
-import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Objects;

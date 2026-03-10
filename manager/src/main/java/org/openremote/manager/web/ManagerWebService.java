@@ -139,7 +139,7 @@ public class ManagerWebService extends WebService {
         }
 
         // Deploy static app files unsecured
-        deployFileServlet("/", "App Files", resourceSources.toArray(ResourceSource[]::new), null, null,null);
+        deployFileServlet("/", "App Files", resourceSources.toArray(ResourceSource[]::new), null, null, null);
     }
 
     protected Object getOpenApiResource() {

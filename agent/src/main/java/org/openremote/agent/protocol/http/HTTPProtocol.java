@@ -318,9 +318,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         Optional<UsernamePassword> usernameAndPassword = agent.getUsernamePassword();
         boolean followRedirects = agent.getFollowRedirects().orElse(false);
 
-        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(
-                createClient(),
-                uri);
+        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(createClient(), uri);
 
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");

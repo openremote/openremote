@@ -298,8 +298,8 @@ public abstract class WebService implements ContainerService {
            Class<? extends ServletContainerInitializer> servletContainerInitializerClass,
            String deploymentPath,
            String deploymentName,
-           boolean secure,
            Integer realmIndex,
+           boolean secure,
            CORSConfig corsOverride) throws IllegalArgumentException {
        DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
@@ -308,9 +308,8 @@ public abstract class WebService implements ContainerService {
                .addServletContainerInitializer(new ServletContainerInitializerInfo(servletContainerInitializerClass, null))
                .setClassLoader(this.getClass().getClassLoader());
 
-       ServletContainerInitializer containerInitializer = (c, ctx) -> {
-           configureServlet(ctx, secure, realmIndex, corsOverride);
-       };
+       ServletContainerInitializer containerInitializer = (c, ctx) ->
+          configureServlet(ctx, secure, realmIndex, corsOverride);
 
        InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
        deploymentInfo.addServletContainerInitializer(
@@ -329,8 +328,7 @@ public abstract class WebService implements ContainerService {
            Integer realmIndex,
            boolean secure,
            CORSConfig corsOverride) throws IllegalArgumentException {
-
-        ServletContextListener jaxRsListener = new ServletContextListener() {
+       ServletContextListener jaxRsListener = new ServletContextListener() {
            @Override
            public void contextInitialized(ServletContextEvent sce) {
                ServletContext ctx = sce.getServletContext();
@@ -349,21 +347,20 @@ public abstract class WebService implements ContainerService {
            }
        };
        Class<? extends EventListener> listenerClass = jaxRsListener.getClass();
-       InstanceFactory<? extends EventListener> listenerFactory = new ImmediateInstanceFactory<>(jaxRsListener);
+       InstanceFactory<? extends EventListener> factory = new ImmediateInstanceFactory<>(jaxRsListener);
 
        DeploymentInfo deploymentInfo = Servlets.deployment()
                .setDeploymentName(deploymentName)
                .setContextPath(deploymentPath)
-               .addListeners(Servlets.listener(listenerClass, listenerFactory))
+               .addListeners(Servlets.listener(listenerClass, factory))
                .setClassLoader(this.getClass().getClassLoader());
 
-       ServletContainerInitializer containerInitializer = (c, ctx) -> {
-           configureServlet(ctx, secure, realmIndex, corsOverride);
-       };
+       ServletContainerInitializer containerInitializer = (c, ctx) ->
+          configureServlet(ctx, secure, realmIndex, corsOverride);
 
-       InstanceFactory<ServletContainerInitializer> factory = new ImmediateInstanceFactory<>(containerInitializer);
+       InstanceFactory<ServletContainerInitializer> initFactory = new ImmediateInstanceFactory<>(containerInitializer);
        deploymentInfo.addServletContainerInitializer(
-               new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
+               new ServletContainerInitializerInfo(containerInitializer.getClass(), initFactory, Collections.emptySet())
        );
 
        // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
@@ -413,8 +410,8 @@ public abstract class WebService implements ContainerService {
 
            // Add a security filter to mimic JAX-RS @RolesAllowed annotation for file serving
            if (allowedRoles != null && allowedRoles.length > 0) {
-               Filter securityFilter = new SecurityFilter(allowedRoles);
-               FilterRegistration.Dynamic securityRegistration = ctx.addFilter(SecurityFilter.class.getSimpleName(), securityFilter);
+               Filter securityFilter = new SecurityServletFilter(allowedRoles);
+               FilterRegistration.Dynamic securityRegistration = ctx.addFilter(SecurityServletFilter.class.getSimpleName(), securityFilter);
                securityRegistration.setAsyncSupported(true);
                securityRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
            }

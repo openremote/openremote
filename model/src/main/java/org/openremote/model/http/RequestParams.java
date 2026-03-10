@@ -45,12 +45,6 @@ public class RequestParams {
     @Context
     public UriInfo uriInfo;
 
-    public String getBearerAuth() {
-        if (authorization == null || !authorization.startsWith(BEARER_AUTH_PREFIX))
-            return null;
-        return getBearerAuth(authorization);
-    }
-
     public URI getExternalSchemeHostAndPort() {
         return getExternalBaseUriBuilder().replacePath("").build();
     }

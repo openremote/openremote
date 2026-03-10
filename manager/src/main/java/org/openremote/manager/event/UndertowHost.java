@@ -21,6 +21,7 @@ package org.openremote.manager.event;
 
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
+import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
 import org.apache.camel.component.undertow.UndertowConsumer;
@@ -65,9 +66,13 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         }
 
        WebService webService = container.getService(WebService.class);
-        String path = registrationInfo.getUri().getPath();
-        webService.deploy(path, handler);
-
+       String path = registrationInfo.getUri().getPath();
+       deployment = Servlets.deployment()
+          .setDeploymentName(DEPLOYMENT_NAME)
+          .setContextPath(path)
+          .setClassLoader(getClass().getClassLoader())
+          .addInitialHandlerChainWrapper(h -> handler);
+        webService.deploy(deployment, false);
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;
         return handler;

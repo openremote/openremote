@@ -72,10 +72,10 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);
     public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
-    protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
     protected List<Runnable> protocolConnectedTasks;
     protected Map<AttributeRef, Runnable> attributeConnectedTasks;
     protected Map<String, List<String>> clientHeaders;
+    protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
     protected WebService webService;
 
     public WebsocketAgentProtocol(WebsocketAgent agent) {
