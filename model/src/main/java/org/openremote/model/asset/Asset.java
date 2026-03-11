@@ -234,6 +234,8 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
 
+    private static final java.util.regex.Pattern ASSET_ID_PATTERN = java.util.regex.Pattern.compile(Constants.ASSET_ID_REGEXP);
+
     /**
      * The purpose of this is to provide {@link org.openremote.model.attribute.Attribute.AttributeDeserializer} access
      * to the asset type so the {@link AttributeDescriptor} can be looked up to control value deserialization; this
@@ -631,5 +633,15 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Override
     public int hashCode() {
         return Objects.hash(id, version, createdOn, name, accessPublicRead, parentId, realm, type, Arrays.hashCode(path), attributes);
+    }
+
+    /**
+     * Indicates if the given string matches the pattern for an Asset id.
+     *
+     * @param assetId String to validate. Must not be null or will throw a NullPointerException
+     * @return true if matches Asset id pattern, false otherwise.
+     */
+    public static boolean matchesAssetIdPattern(String assetId) {
+        return ASSET_ID_PATTERN.matcher(assetId).matches();
     }
 }
