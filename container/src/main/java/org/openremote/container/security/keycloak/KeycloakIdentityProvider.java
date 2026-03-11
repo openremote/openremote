@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -357,11 +358,21 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) {
-        return getReactiveTokenService().grantToken(
-            realm,
-            new OAuthClientCredentialsGrant(null, clientId, clientSecret, null).asMultivaluedMap())
-                .thenApply(OIDCTokenResponse::create)
-                .toCompletableFuture();
+       return getReactiveTokenService().grantToken(
+             realm,
+             new OAuthClientCredentialsGrant(null, clientId, clientSecret, null).asMultivaluedMap())
+          .toCompletableFuture()
+          .exceptionallyCompose(ex -> {
+             Throwable cause = (ex instanceof CompletionException) ? ex.getCause() : ex;
+
+             if (!(cause instanceof AuthenticationException)) {
+                return CompletableFuture.failedFuture(new AuthenticationException(cause));
+             }
+
+             return CompletableFuture.failedFuture(cause);
+          })
+          .thenApply(OIDCTokenResponse::create)
+          .toCompletableFuture();
     }
 
     @Override

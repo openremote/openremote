@@ -1,6 +1,7 @@
     package org.openremote.manager.mqtt;
 
     import jakarta.security.enterprise.AuthenticationException;
+    import jakarta.ws.rs.NotAuthorizedException;
     import jakarta.ws.rs.client.Client;
     import org.apache.activemq.artemis.core.config.WildcardConfiguration;
     import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
@@ -22,10 +23,7 @@
     import javax.security.auth.Subject;
     import java.security.Principal;
     import java.util.Set;
-    import java.util.concurrent.ExecutionException;
-    import java.util.concurrent.ExecutorService;
-    import java.util.concurrent.TimeUnit;
-    import java.util.concurrent.TimeoutException;
+    import java.util.concurrent.*;
     import java.util.logging.Level;
     import java.util.logging.Logger;
 
@@ -74,10 +72,11 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
                     Set.of());
         }
 
+        String realm = null;
+
         try {
             // TODO: Add support for bearer token authentication https://github.com/openremote/openremote/issues/2534
             // Login service user
-            String realm = null;
             if (user != null) {
                 int delimIndex = user.indexOf(':');
                 if (delimIndex > 0) {
@@ -87,7 +86,8 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
             }
 
             if (realm == null) {
-                throw new IllegalArgumentException("Invalid user format: " + user);
+               LOG.info("Invalid user format: " + user);
+               return null;
             }
 
             OIDCTokenResponse oidcTokenResponse = identityService.authenticate(realm, user, password).get(
@@ -102,7 +102,9 @@ public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
 
             return subject;
         } catch (InterruptedException | TimeoutException | ExecutionException | AuthenticationException e) {
-            throw new RuntimeException(e);
+            Throwable cause = (e instanceof ExecutionException) ? e.getCause() : e;
+            LOG.info("Failed to authenticate user: realm=" + realm + ", username=" + user + ", exception=" + cause.getMessage());
+            return null;
         }
     }
 

@@ -46,6 +46,7 @@ public interface IdentityProvider extends TokenVerifier {
 
     /**
      * Retrieves a bearer token for the given realm, client id and client secret using this {@link IdentityProvider}.
+     * Only {@link jakarta.security.enterprise.AuthenticationException} should be thrown.
      */
     CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret);
 

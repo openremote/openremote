@@ -117,6 +117,6 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
 
     @Override
     public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) {
-        return CompletableFuture.failedFuture(new UnsupportedOperationException("This provider does not support bearer tokens"));
+        return CompletableFuture.failedFuture(new AuthenticationException("This provider does not support bearer tokens"));
     }
 }
