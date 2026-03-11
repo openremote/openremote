@@ -177,7 +177,9 @@ public abstract class AbstractModbusProtocol<T extends AbstractModbusProtocol<T,
                 String groupKey = agent.getId() + "_" + agentLink.getUnitId() + "_" + agentLink.getReadMemoryArea() + "_" + agentLink.getRequestInterval();
 
                 batchGroups.computeIfAbsent(groupKey, k -> new ConcurrentHashMap<>()).put(ref, agentLink);
-                cachedBatches.remove(groupKey); // Invalidate cache
+                synchronized (cachedBatches) {
+                    cachedBatches.remove(groupKey); // Invalidate cache
+                }
 
                 // Only schedule task if one doesn't exist yet for this group
                 if (!batchReadIntervalTasks.containsKey(groupKey)) {
@@ -220,12 +222,16 @@ public abstract class AbstractModbusProtocol<T extends AbstractModbusProtocol<T,
             Map<AttributeRef, ModbusAgentLink> group = batchGroups.get(groupKey);
             if (group != null) {
                 group.remove(attributeRef);
-                cachedBatches.remove(groupKey); // Invalidate cache
+                synchronized (cachedBatches) {
+                    cachedBatches.remove(groupKey); // Invalidate cache
+                }
 
                 // If group is empty, cancel batch task
                 if (group.isEmpty()) {
                     batchGroups.remove(groupKey);
-                    cachedBatches.remove(groupKey);
+                    synchronized (cachedBatches) {
+                        cachedBatches.remove(groupKey);
+                    }
                     ScheduledFuture<?> task = batchReadIntervalTasks.remove(groupKey);
                     if (task != null) {
                         task.cancel(false);
