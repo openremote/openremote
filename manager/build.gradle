@@ -180,3 +180,17 @@ publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
+
+configurations {
+    demoExtension
+}
+
+dependencies {
+    demoExtension project(":extension:demo-setup")
+}
+
+tasks.named("run", JavaExec) {
+    if (System.getenv("OR_SETUP_TYPE") == "demo") {
+        classpath += configurations.demoExtension
+    }
+}
