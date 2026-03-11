@@ -24,7 +24,6 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -49,8 +48,7 @@ public class StatusResourceImpl implements StatusResource {
 
         serverInfo = Map.of(
             "version", version,
-            "authServerUrl", authServerUrl,
-            "valueDescriptorSchemaHashes", ValueUtil.getValueDescriptorSchemaHashes()
+            "authServerUrl", authServerUrl
         );
 
         LOG.info("Starting OpenRemote version: v"+version);
