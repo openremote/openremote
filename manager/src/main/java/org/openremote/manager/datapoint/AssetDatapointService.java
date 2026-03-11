@@ -88,7 +88,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
 
         if (maxDatapointAgeWeeks <= 0) {
-            LOG.warning(OR_DATA_POINTS_MAX_AGE_WEEKS + " value is not valid, data points won't be auto purged");
+            LOG.warning("Data point purge disabled");
         } else {
             LOG.log(Level.INFO, "Data point purge retention = " + maxDatapointAgeWeeks + " weeks");
         }
@@ -168,11 +168,29 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     return;
                 }
 
-                // Compute cutoff from week-based retention
-                Instant cutoff = timerService.getNow().minus(Duration.ofDays((long) maxDatapointAgeWeeks * 7));
+                // Find the maximum custom retention across all attributes with DATA_POINTS_MAX_AGE_DAYS meta
+                int effectiveRetentionWeeks = maxDatapointAgeWeeks;
+                Number maxCustomDays = (Number) em.createNativeQuery(
+                    "SELECT MAX((attr_val->'meta'->>'dataPointsMaxAgeDays')::integer) " +
+                    "FROM asset, jsonb_each(asset.attributes) AS a(attr_key, attr_val) " +
+                    "WHERE attr_val->'meta' ? 'dataPointsMaxAgeDays'"
+                ).getSingleResult();
+
+                if (maxCustomDays != null) {
+                    int customRetentionWeeks = (int) Math.ceil(maxCustomDays.intValue() / 7.0);
+                    effectiveRetentionWeeks = Math.max(effectiveRetentionWeeks, customRetentionWeeks);
+                    if (customRetentionWeeks > maxDatapointAgeWeeks) {
+                        LOG.info("Custom attribute retention (" + maxCustomDays.intValue() + " days / " +
+                            customRetentionWeeks + " weeks) exceeds system default (" + maxDatapointAgeWeeks +
+                            " weeks), using " + effectiveRetentionWeeks + " weeks");
+                    }
+                }
+
+                // Compute cutoff from effective retention
+                Instant cutoff = timerService.getNow().minus(Duration.ofDays((long) effectiveRetentionWeeks * 7));
                 Timestamp cutoffTimestamp = Timestamp.from(cutoff);
 
-                LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + maxDatapointAgeWeeks + " weeks retention)");
+                LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + effectiveRetentionWeeks + " weeks retention)");
 
                 String dropChunksQuery = String.format(
                     "SELECT public.drop_chunks('asset_datapoint', older_than => '%s'::timestamp)",

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import static java.util.concurrent.TimeUnit.DAYS
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_WEEKS
 
-class AssetDatapointHypercoreTest extends Specification implements ManagerContainerTrait {
+class AssetDatapointPurgeTest extends Specification implements ManagerContainerTrait {
 
     def "Test TimescaleDB hypercore compression and purge"() {
 
