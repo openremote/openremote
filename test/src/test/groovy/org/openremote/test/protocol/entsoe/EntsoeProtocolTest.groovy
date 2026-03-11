@@ -202,6 +202,17 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
                         requestContext.abortWith(Response.status(500).build())
                         return
                     }
+                } else if (zone == "10YNODATA-----A") {
+                    content = '''<?xml version="1.0" encoding="UTF-8"?>
+<Acknowledgement_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-1:acknowledgementdocument:7:0">
+  <mRID>0985f391-49af-4</mRID>
+  <createdDateTime>2026-03-11T06:29:10Z</createdDateTime>
+  <Reason>
+    <code>999</code>
+    <text>No matching data found for Data item ENERGY_PRICES [12.1.D].</text>
+  </Reason>
+</Acknowledgement_MarketDocument>
+'''
                 } else {
                     requestContext.abortWith(Response.serverError().build())
                     return
@@ -545,6 +556,79 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             assert datapoints.size() == 4
             assert firstSnapshot != null
             assert datapoints.collect { [it.timestamp, (it.value as BigDecimal)] } == firstSnapshot
+        }
+
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
+        if (EntsoeProtocol.client.get() != null) {
+            EntsoeProtocol.client.set(null)
+        }
+    }
+
+    def "ENTSO-E integration test handles no-data acknowledgement response cleanly"() {
+        given: "the container environment is started"
+        requestCountByZone.clear()
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        EntsoeProtocol.initClient()
+
+        if (!EntsoeProtocol.client.get().configuration.isRegistered(mockServer)) {
+            EntsoeProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        def container = startContainer(defaultConfig(), defaultServices())
+        setPseudoClock(BEFORE_DATASET_START)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
+
+        when: "an ENTSO-E agent is created"
+        agent = new EntsoeAgent("ENTSO-E Agent")
+                .setRealm(MASTER_REALM)
+                .setSecurityToken("test-token")
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created and connected"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((EntsoeProtocol) agentService.getProtocolInstance(agent.id)) != null
+            assert agentService.getAgent(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        when: "an attribute is linked to a zone that returns no-data acknowledgement"
+        def noDataLink = new EntsoeAgentLink(agent.id)
+        noDataLink.setZone("10YNODATA-----A")
+
+        asset = new ThingAsset("No Data Zone Asset")
+                .setRealm(MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<>("energyPrice", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, noDataLink))
+                )
+        asset = assetStorageService.merge(asset)
+
+        def attributeRef = new AttributeRef(asset.id, "energyPrice")
+        def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+
+        and: "the attribute is linked by protocol"
+        conditions.eventually {
+            assert protocol.getLinkedAttributes().containsKey(attributeRef)
+        }
+
+        and: "a polling update is triggered"
+        protocol.updateAllLinkedAttributes()
+
+        then: "no predicted datapoints are written and no exception escapes"
+        conditions.eventually {
+            List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
+            assert datapoints.isEmpty()
         }
 
         cleanup: "remove created assets and mock client"

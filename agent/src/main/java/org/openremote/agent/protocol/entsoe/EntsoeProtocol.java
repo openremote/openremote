@@ -1,5 +1,7 @@
 package org.openremote.agent.protocol.entsoe;
 
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Unmarshaller;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
@@ -19,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -42,6 +48,9 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
             .toFormatter();
     public static final String PROTOCOL_DISPLAY_NAME = "ENTSO-E";
     private static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
+    private static final JAXBContext PUBLICATION_MARKET_DOCUMENT_CONTEXT = createPublicationMarketDocumentContext();
+    private static final ThreadLocal<Unmarshaller> PUBLICATION_UNMARSHALLER = ThreadLocal.withInitial(EntsoeProtocol::createPublicationUnmarshaller);
+    private static final ThreadLocal<XMLInputFactory> XML_INPUT_FACTORY = ThreadLocal.withInitial(XMLInputFactory::newFactory);
 
     // Initial delay to allow system to populate agent links
     private static final int INITIAL_POLLING_DELAY_MILLIS = 3000; // 3 seconds
@@ -203,7 +212,21 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
     protected PublicationMarketDocument fetchPricingInformation(String apiUrl) {
         try (Response response = client.get().target(apiUrl).request(javax.ws.rs.core.MediaType.APPLICATION_XML).get()) {
             if (response.getStatus() == 200) {
-                return response.readEntity(PublicationMarketDocument.class);
+                String responseXml = response.readEntity(String.class);
+                EntsoeXmlMeta xmlMeta = parseEntsoeXmlMeta(responseXml);
+
+                if ("Publication_MarketDocument".equals(xmlMeta.rootElement)) {
+                    return (PublicationMarketDocument) PUBLICATION_UNMARSHALLER.get().unmarshal(new StringReader(responseXml));
+                }
+
+                if ("Acknowledgement_MarketDocument".equals(xmlMeta.rootElement)) {
+                    String reason = xmlMeta.reasonText != null ? xmlMeta.reasonText : "no reason provided";
+                    LOG.info("No ENTSO-E pricing data available: " + reason);
+                    return null;
+                }
+
+                LOG.warning("Unsupported ENTSO-E response XML root element: " + xmlMeta.rootElement);
+                return null;
             } else if (response.getStatus() == 401) {
                 LOG.warning("API request was unauthorized, either the security token is invalid or does not provide access to the API");
                 return null;
@@ -214,6 +237,74 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
         } catch (Exception e) {
             LOG.log(Level.WARNING, e, () -> "Failed to fetch pricing data");
             return null;
+        }
+    }
+
+    protected static JAXBContext createPublicationMarketDocumentContext() {
+        try {
+            return JAXBContext.newInstance(PublicationMarketDocument.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialise PublicationMarketDocument JAXB context", e);
+        }
+    }
+
+    protected static Unmarshaller createPublicationUnmarshaller() {
+        try {
+            return PUBLICATION_MARKET_DOCUMENT_CONTEXT.createUnmarshaller();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialise PublicationMarketDocument unmarshaller", e);
+        }
+    }
+
+    protected EntsoeXmlMeta parseEntsoeXmlMeta(String xml) throws Exception {
+        XMLStreamReader reader = XML_INPUT_FACTORY.get().createXMLStreamReader(new StringReader(xml));
+        String rootElement = null;
+        String reasonText = null;
+        boolean inReason = false;
+        boolean inReasonText = false;
+
+        try {
+            while (reader.hasNext()) {
+                int event = reader.next();
+
+                if (event == XMLStreamConstants.START_ELEMENT) {
+                    String localName = reader.getLocalName();
+                    if (rootElement == null) {
+                        rootElement = localName;
+                    }
+                    if ("Reason".equals(localName)) {
+                        inReason = true;
+                    } else if (inReason && "text".equals(localName)) {
+                        inReasonText = true;
+                    }
+                } else if (event == XMLStreamConstants.CHARACTERS && inReasonText) {
+                    String text = reader.getText();
+                    if (text != null && !text.isBlank()) {
+                        reasonText = reasonText == null ? text.trim() : reasonText + text.trim();
+                    }
+                } else if (event == XMLStreamConstants.END_ELEMENT) {
+                    String localName = reader.getLocalName();
+                    if ("text".equals(localName)) {
+                        inReasonText = false;
+                    } else if ("Reason".equals(localName)) {
+                        inReason = false;
+                    }
+                }
+            }
+        } finally {
+            reader.close();
+        }
+
+        return new EntsoeXmlMeta(rootElement, reasonText);
+    }
+
+    protected static class EntsoeXmlMeta {
+        protected final String rootElement;
+        protected final String reasonText;
+
+        protected EntsoeXmlMeta(String rootElement, String reasonText) {
+            this.rootElement = rootElement;
+            this.reasonText = reasonText;
         }
     }
 
