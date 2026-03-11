@@ -79,10 +79,7 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
             return;
         }
 
-        // Schedule the polling task
-        int pollingMillis = agent.getPollingMillis().orElse(DEFAULT_POLLING_MILLIS);
-        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(this::updateAllLinkedAttributes, INITIAL_POLLING_DELAY_MILLIS, pollingMillis,
-                TimeUnit.MILLISECONDS);
+        restartPollingWithInitialDelay();
 
         setConnectionStatus(ConnectionStatus.CONNECTED);
     }
@@ -97,20 +94,36 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, EntsoeAgentLink agentLink) throws RuntimeException {
-
-        // TODO: I suppose we still sometimes need to do something, if an attribute is just added, we don't want to wait 1h for it to get data
-
-        // Do nothing
+        LOG.info("ENTSOE doLinkAttribute " + attribute.getName() + " " + attribute.getValue());
+        restartPollingWithInitialDelay();
     }
 
     @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, EntsoeAgentLink agentLink) {
-        // Do nothing
+        // Do nothing, attributes that have been unlinked will not be processed anymore when we next trigger
+    }
+
+    protected synchronized void restartPollingWithInitialDelay() {
+        if (scheduledExecutorService == null) {
+            return;
+        }
+
+        if (pollingFuture != null) {
+            pollingFuture.cancel(false);
+        }
+
+        int pollingMillis = agent.getPollingMillis().orElse(DEFAULT_POLLING_MILLIS);
+        pollingFuture = scheduledExecutorService.scheduleAtFixedRate(
+                this::updateAllLinkedAttributes,
+                INITIAL_POLLING_DELAY_MILLIS,
+                pollingMillis,
+                TimeUnit.MILLISECONDS
+        );
     }
 
     @Override
     protected void doLinkedAttributeWrite(EntsoeAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        // Do nothing
+        // Do nothing, we're not interested in that information
     }
 
     @Override
