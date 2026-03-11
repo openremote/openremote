@@ -30,6 +30,7 @@ import java.sql.Timestamp;
 import java.time.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -156,24 +157,28 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         try {
             persistenceService.doTransaction(em -> {
-                // Check if asset_datapoint is a TimescaleDB hypertable
-                String checkHypertableQuery =
-                    "SELECT COUNT(*) FROM timescaledb_information.hypertables " +
-                    "WHERE hypertable_name = 'asset_datapoint'";
+                // Get the schema-qualified hypertable name
+                @SuppressWarnings("unchecked")
+                List<String> hypertables = em.createNativeQuery(
+                    "SELECT hypertable_schema || '.' || hypertable_name " +
+                    "FROM timescaledb_information.hypertables " +
+                    "WHERE hypertable_name = 'asset_datapoint'", String.class
+                ).getResultList();
 
-                Number hypertableCount = (Number) em.createNativeQuery(checkHypertableQuery).getSingleResult();
-                if (hypertableCount.intValue() == 0) {
+                if (hypertables.isEmpty()) {
                     LOG.warning("asset_datapoint is not a TimescaleDB hypertable, skipping purge. " +
                         "TimescaleDB with hypercore is required for data point storage.");
                     return;
                 }
+
+                String qualifiedTableName = hypertables.getFirst();
 
                 // Find the maximum custom retention across all attributes with DATA_POINTS_MAX_AGE_DAYS meta
                 int effectiveRetentionWeeks = maxDatapointAgeWeeks;
                 Number maxCustomDays = (Number) em.createNativeQuery(
                     "SELECT MAX((attr_val->'meta'->>'dataPointsMaxAgeDays')::integer) " +
                     "FROM asset, jsonb_each(asset.attributes) AS a(attr_key, attr_val) " +
-                    "WHERE attr_val->'meta' ? 'dataPointsMaxAgeDays'"
+                    "WHERE jsonb_exists(attr_val->'meta', 'dataPointsMaxAgeDays')"
                 ).getSingleResult();
 
                 if (maxCustomDays != null) {
@@ -193,8 +198,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + effectiveRetentionWeeks + " weeks retention)");
 
                 String dropChunksQuery = String.format(
-                    "SELECT public.drop_chunks('asset_datapoint', older_than => '%s'::timestamp)",
-                    cutoffTimestamp.toLocalDateTime().toString()
+                    "SELECT public.drop_chunks('%s', older_than => '%s'::timestamp)",
+                    qualifiedTableName, cutoffTimestamp.toLocalDateTime().toString()
                 );
                 em.createNativeQuery(dropChunksQuery).getResultList();
 
