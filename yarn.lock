@@ -1743,7 +1743,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
-    axios: "npm:1.13.2"
+    axios: "npm:1.13.6"
     i18next: "npm:^21.5.3"
     i18next-http-backend: "npm:^1.3.1"
     keycloak-js: "npm:^25.0.1"
@@ -1886,7 +1886,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    axios: "npm:1.13.2"
+    axios: "npm:1.13.6"
     i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
   languageName: unknown
@@ -2099,7 +2099,7 @@ __metadata:
     "@openremote/or-components": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    axios: "npm:1.13.2"
+    axios: "npm:1.13.6"
     http-link-header: "npm:^1.1.3"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
@@ -2271,7 +2271,7 @@ __metadata:
   resolution: "@openremote/rest@workspace:ui/component/rest"
   dependencies:
     "@types/qs": "npm:^6.9.7"
-    axios: "npm:1.13.2"
+    axios: "npm:1.13.6"
     qs: "npm:^6.8.0"
   languageName: unknown
   linkType: soft
@@ -4871,14 +4871,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:1.13.2":
-  version: 1.13.2
-  resolution: "axios@npm:1.13.2"
+"axios@npm:1.13.6":
+  version: 1.13.6
+  resolution: "axios@npm:1.13.6"
   dependencies:
-    follow-redirects: "npm:^1.15.6"
-    form-data: "npm:^4.0.4"
+    follow-redirects: "npm:^1.15.11"
+    form-data: "npm:^4.0.5"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/e8a42e37e5568ae9c7a28c348db0e8cf3e43d06fcbef73f0048669edfe4f71219664da7b6cc991b0c0f01c28a48f037c515263cb79be1f1ae8ff034cd813867b
+  checksum: 10c0/51fb5af055c3b85662fa97df17d986ae2c37d13bf86d50b6bb36b6b3a2dec6966a1d3a14ab3774b71707b155ae3597ed9b7babdf1a1a863d1a31840cb8e7ec71
   languageName: node
   linkType: hard
 
@@ -7015,7 +7015,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.15.6":
+"follow-redirects@npm:^1.15.11":
   version: 1.15.11
   resolution: "follow-redirects@npm:1.15.11"
   peerDependenciesMeta:
@@ -7043,7 +7043,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"form-data@npm:^4.0.4":
+"form-data@npm:^4.0.5":
   version: 4.0.5
   resolution: "form-data@npm:4.0.5"
   dependencies:
