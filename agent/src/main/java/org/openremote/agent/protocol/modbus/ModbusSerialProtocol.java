@@ -69,7 +69,7 @@ public class ModbusSerialProtocol extends AbstractModbusProtocol<ModbusSerialPro
         return () -> new ChannelHandler[] {
             new ModbusRTUEncoder(),
             new ModbusRTUDecoder(),
-            new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusSerialFrame.class, (AbstractNettyIOClient<ModbusSerialFrame, ?>) client)
+            new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusSerialFrame.class, client)
         };
     }
 

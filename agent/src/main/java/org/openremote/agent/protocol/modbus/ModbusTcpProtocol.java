@@ -67,7 +67,7 @@ public class ModbusTcpProtocol extends AbstractModbusProtocol<ModbusTcpProtocol,
             new ReadTimeoutHandler(30, TimeUnit.SECONDS),
             new ModbusTcpEncoder(),
             new ModbusTcpDecoder(),
-            new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusTcpFrame.class, (AbstractNettyIOClient<ModbusTcpFrame, ?>) client)
+            new AbstractNettyIOClient.MessageToMessageDecoder<>(ModbusTcpFrame.class, client)
         };
     }
 

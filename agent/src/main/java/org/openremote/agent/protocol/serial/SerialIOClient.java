@@ -40,7 +40,7 @@ import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
-public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDeviceAddress> {
+public class SerialIOClient<T> extends AbstractNettyIOClient<T> {
 
     protected String port;
     protected int baudRate;
