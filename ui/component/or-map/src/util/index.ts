@@ -157,7 +157,7 @@ export function isWebglSupported() {
 }
 
 export function isAssetWithLocation(asset: Asset): asset is AssetWithLocation {
-    if (!asset.attributes) return false;
-    const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-    return !!attr.value?.coordinates && (!attr.meta || !(WellknownMetaItems.SHOWONDASHBOARD in attr.meta) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr));
+    if (!asset?.attributes) return false;
+    const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint> | undefined;
+    return !!attr?.value?.coordinates && (!attr.meta || !(WellknownMetaItems.SHOWONDASHBOARD in attr.meta) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr));
 }

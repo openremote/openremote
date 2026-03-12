@@ -62,7 +62,9 @@ const rootReducer = combineReducers({
 type RootState = ReturnType<typeof rootReducer>;
 
 export const store = configureStore({
-    reducer: rootReducer
+    reducer: rootReducer,
+    // Disable for development (usually always disabled in production) to improve performance
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });
 
 const orApp = new OrApp(store);

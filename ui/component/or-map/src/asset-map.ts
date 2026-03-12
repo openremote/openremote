@@ -1,20 +1,25 @@
-import { GeoJSONFeature, GeoJSONSource, MapSourceDataEvent, Marker } from "maplibre-gl";
-import { Feature, FeatureCollection, Point } from "geojson";
+import { GeoJSONFeature, GeoJSONSource, LngLatLike, MapSourceDataEvent, Marker } from "maplibre-gl";
+import { Feature, Point } from "geojson";
 import { AssetWithLocation, ClusterConfig } from "./types";
 import { MapWidget } from "./mapwidget";
 import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 import { getMarkerIconAndColorFromAssetType } from "./util";
-import { OrMapLoadedEvent, OrMapMarkersChangedEvent } from ".";
+import { OrMapLoadedEvent, OrMapMarker, OrMapMarkersChangedEvent } from ".";
 
 type MissingAsset = AssetWithLocation & { id: string; type: string };
 
 /**
  * @todo consider using `this._map.setGlobalStateProperty`
  * @todo look at https://maplibre.org/maplibre-style-spec/expressions/#accumulated
+ * 1. page --> component --> compute assets in view --> dispatch event
+ * 2. page receives event --> creates map markers inside the map element's HTML body
+ * 3. map receives event from markers || map sees slotted marker was added --> adds markers as maplibre marker to the maplibre-gl map
  */
 export class AssetMap extends MapWidget {
+    private static _clusterProperty = "assetType";
+
     protected _assets: Record<string, AssetWithLocation> = {};
-    protected _assetTypeColors: any = {};
+    protected _assetTypeColors: Record<string, string> = {};
     protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
     protected _cachedClusters: Record<string, Marker> = {};
     protected _clustersOnScreen: Record<string, Marker> = {};
@@ -67,29 +72,31 @@ export class AssetMap extends MapWidget {
      * Use {@link addAssets} instead if adding multiple assets.
      * @param asset The asset to add
      */
-    public async addAsset(asset: AssetWithLocation) {
+    public addAsset(asset: AssetWithLocation) {
         if (!this._source) return;
-        const { features } = (await this._source?.getData()) as FeatureCollection<Point>;
+        const features = this._map!.querySourceFeatures("assets");
 
         if (!this._hasRequired(asset) || this._isMissing(asset, features)) {
             return;
         }
 
         if (!(asset.type in this._assetTypeColors)) {
-            this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color;
+            this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string; // TODO: test with marker config
+            this._source.workerOptions.clusterProperties = this._getClusterProperties();
         }
 
+        console.log(asset);
         this._assets[asset.id] = asset;
-        this._source?.updateData({ add: [AssetMap._assetToFeature(asset)] });
+        this._source.updateData({ add: [AssetMap._assetToFeature(asset)] });
     }
 
     /**
      * Add multiple assets as (asset) feature to the map. Optimized for adding mutliple assets at once.
      * @param assets The assets to add
      */
-    public async addAssets(assets: AssetWithLocation[]) {
+    public addAssets(assets: AssetWithLocation[]) {
         if (!this._source) return;
-        const { features } = (await this._source?.getData()) as FeatureCollection<Point>;
+        const features = this._map!.querySourceFeatures("assets");
 
         let missing = assets.filter(this._hasRequired);
         if (features?.length) {
@@ -102,18 +109,19 @@ export class AssetMap extends MapWidget {
 
         for (const asset of missing) {
             if (!(asset.type in this._assetTypeColors)) {
-                this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color;
+                this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string; // TODO: test with marker config
             }
             this._assets[asset.id] = asset;
         }
-        this._source.workerOptions.clusterProperties = Object.fromEntries(
-            Object.keys(this._assetTypeColors).map((t) => AssetMap._getClusterPropertyExpression("assetType", t))
-        );
+        this._source.workerOptions.clusterProperties = this._getClusterProperties();
 
-        // console.log(this._assetTypeColors, missing.map(AssetMap._assetToFeature));
         this._source.updateData({
             add: missing.map(AssetMap._assetToFeature),
         });
+    }
+
+    public removeAsset(id: string) {
+        this._source?.updateData({ remove: [id] });
     }
 
     public clearAssets() {
@@ -122,7 +130,6 @@ export class AssetMap extends MapWidget {
 
     public updateAttribute(id: string, value: any) {
         this._source?.updateData({ update: [{ id, newGeometry: value }] });
-        // console.log(id, value);
     }
 
     /**
@@ -151,43 +158,34 @@ export class AssetMap extends MapWidget {
             this._map.removeSource("assets");
         }
 
-        this._map.addSource("assets", {
-            type: "geojson",
-            cluster: this._clusterConfig?.cluster ?? true,
-            clusterRadius: this._clusterConfig?.clusterRadius ?? 180,
-            clusterMaxZoom: this._clusterConfig?.clusterMaxZoom ?? 17,
-            clusterProperties: Object.fromEntries(
-                Object.keys(this._assetTypeColors).map((t) => [
-                    t,
-                    ["+", ["case", ["==", ["get", "assetType"], t], 1, 0]],
-                ])
-            ),
-            promoteId: "id", // Promote the id property as feature id
-            data: { type: "FeatureCollection", features: [] },
-        });
-
-        if (!this._map.getLayer("unclustered-point")) {
-            this._map.addLayer({
+        this._map
+            .addSource("assets", {
+                type: "geojson",
+                cluster: this._clusterConfig?.cluster ?? true,
+                clusterRadius: this._clusterConfig?.clusterRadius ?? 180,
+                clusterMaxZoom: this._clusterConfig?.clusterMaxZoom ?? 17,
+                clusterProperties: this._getClusterProperties(),
+                promoteId: "id", // Promote the id property as feature id
+                data: { type: "FeatureCollection", features: [] }, // TODO: consider preloading data to avoid tile cache misses
+            })
+            .addLayer({
                 id: "unclustered-point",
                 type: "circle",
                 source: "assets",
                 filter: ["!", ["has", "point_count"]],
-                // paint: { "circle-radius": 0 },
+                paint: { "circle-radius": 0 },
             });
-        }
 
         this._source = this._map.getSource("assets") as GeoJSONSource;
 
         this._map.on("data", this._onData);
 
-        console.log("Map loaded");
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
     }
 
     protected _updateMarkers() {
         if (!this._map) return;
-
         const features = this._map.querySourceFeatures("assets");
         const newAssets = this._updateAssets(features);
         this._updateClusters(features);
@@ -197,27 +195,18 @@ export class AssetMap extends MapWidget {
     private _updateAssets(features: GeoJSONFeature[]) {
         const newAssets: Record<string, AssetWithLocation> = {};
 
-        // const d = features.reduceRight((p: GeoJSONFeature[], c) => !p.find(f => f.properties.id === c.properties.id) ? [...p, c] : p, []);
-        // console.log(d)
+        // TODO: check for duplicate features
         for (const feature of features) {
             if (!feature.properties.id) continue;
             const id = feature.properties.id as string;
-            // const [lon, lat] = (feature.geometry as Point).coordinates;
-            // // console.log((feature.geometry as Point).coordinates)
-            // // console.log(this._markers.get(id))
-            // // console.log(this._markers.get(id)?._element)
-            // // this._markers.get(id)?.setLngLat(geometry.coordinates as LngLatLike)
-
-            // const marker = this._markers.get(id);
-            // // console.log("UPDATE MARKER", marker instanceof OrMapMarker, marker?._element instanceof OrMapMarker)
-            // if (marker instanceof OrMapMarker && marker.hasPosition()) {
-            //     if (marker._actualMarkerElement) {
-            //         marker.lng = lon;
-            //         marker.lat = lat;
-            //         marker.requestUpdate();
-            //         this._updateMarkerPosition(marker); // Prefer geometry position?
-            //     }
-            // }
+            const [lon, lat] = (feature.geometry as Point).coordinates;
+            const marker = this._markersOR.get(id);
+            if (marker instanceof OrMapMarker) {
+                this._markersGL.get(marker)?.setLngLat([lon, lat]);
+                marker.lng = lon;
+                marker.lat = lat; // WHY DOES IT TELEPORT  BACK?
+                // this._updateMarkerPosition(marker); // Prefer geometry position?
+            }
             newAssets[id] = this._assets[id];
         }
 
@@ -226,6 +215,7 @@ export class AssetMap extends MapWidget {
         }
 
         this._assetsOnScreen = newAssets;
+        // console.log(this._assetsOnScreen);
         return Object.values(this._assetsOnScreen);
     }
 
@@ -277,30 +267,19 @@ export class AssetMap extends MapWidget {
         return !features?.some((f) => f.properties?.id === asset.id);
     }
 
-    private _createClusterGeoJSON() {
-        const clusterProperties = Object.fromEntries(
-            Object.keys(this._assetTypeColors).map((t) => AssetMap._getClusterPropertyExpression("assetType", t))
-        );
-        return {
-            type: "geojson",
-            cluster: this._clusterConfig?.cluster ?? true,
-            clusterRadius: this._clusterConfig?.clusterRadius ?? 180,
-            clusterMaxZoom: this._clusterConfig?.clusterMaxZoom ?? 17,
-            clusterProperties,
-            promoteId: "id", // Promote the id property as feature id
-            data: { type: "FeatureCollection", features: [] },
-        };
+    private _getClusterProperties() {
+        return Object.fromEntries(Object.keys(this._assetTypeColors).map(AssetMap._getClusterPropertyExpression));
     }
 
-    private static _getClusterPropertyExpression(key: string, value: string) {
-        return [value, ["+", ["case", ["==", ["get", key], value], 1, 0]]];
+    private static _getClusterPropertyExpression(value: string) {
+        return [value, ["+", ["case", ["==", ["get", AssetMap._clusterProperty], value], 1, 0]]];
     }
 
-    private static _assetToFeature({ id, type: assetType, name, attributes }: MissingAsset): Feature {
+    private static _assetToFeature({ id, type, name, attributes }: MissingAsset): Feature {
         return {
             type: "Feature",
             geometry: attributes.location.value,
-            properties: { id, name, assetType },
+            properties: { id, name, [AssetMap._clusterProperty]: type },
         };
     }
 }

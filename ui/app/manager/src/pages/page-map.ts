@@ -33,7 +33,8 @@ import {GenericAxiosResponse} from "@openremote/rest";
 import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
 
 export interface MapState {
-    assets: AssetWithLocation[];
+    locatedAssets: AssetWithLocation[];
+    unlocatedAssets: Asset[];
     currentAssetId: string;
 }
 
@@ -42,7 +43,8 @@ export interface MapStateKeyed extends AppStateKeyed {
 }
 
 const INITIAL_STATE: MapState = {
-    assets: [],
+    locatedAssets: [],
+    unlocatedAssets: [],
     currentAssetId: undefined
 };
 
@@ -51,51 +53,70 @@ const pageMapSlice = createSlice({
     initialState: INITIAL_STATE,
     reducers: {
         assetEventReceived(state: MapState, action: PayloadAction<AssetEvent>) {
-
             if (action.payload.cause === AssetEventCause.CREATE) {
-                // Update and delete handled by attribute handler
-
-                const asset = action.payload.asset;
-                if (MapUtil.isAssetWithLocation(asset)) {
-                    const assets = [...state.assets, asset];
-                    return { ...state, assets };
+                if (MapUtil.isAssetWithLocation(action.payload.asset)) {
+                    state.locatedAssets.push(action.payload.asset);
+                } else {
+                    state.unlocatedAssets.push(action.payload.asset);
+                }
+            } else if (action.payload.cause === AssetEventCause.DELETE) {
+                const index = state.locatedAssets.findIndex(asset => asset.id === action.payload.asset.id);
+                if (index > -1) state.locatedAssets.splice(index, 1);
+                else {
+                    const index = state.unlocatedAssets.findIndex(asset => asset.id === action.payload.asset.id);
+                    if (index > -1) state.unlocatedAssets.splice(index, 1);
                 }
             }
-
             return state;
         },
         attributeEventReceived(state: MapState, action: PayloadAction<[string[], AttributeEvent]>) {
-            const assets = state.assets;
             const attrsOfInterest = action.payload[0];
             const attrEvent = action.payload[1];
             const attrName = attrEvent.ref.name;
-            const assetId = attrEvent.ref.id;
-            const index = assets.findIndex((asst) => asst.id === assetId);
-            const asset = index >= 0 ? assets[index] : null;
-
-            if (!asset) {
-                return state;
-            }
-
-            if (attrName === WellknownAttributes.LOCATION && attrEvent.deleted) {
-                return {
-                    ...state,
-                    assets: [...assets.splice(index, 1)]
-                };
-            }
 
             // Only react if attribute is an attribute of interest
             if (!attrsOfInterest.includes(attrName)) {
                 return;
             }
 
-            assets[index] = Util.updateAsset({...asset}, attrEvent);
+            const locatedAssets = state.locatedAssets;
+            const unlocatedAssets = state.unlocatedAssets;
+            const assetId = attrEvent.ref.id;
+
+            const located = locatedAssets.findIndex((a) => a.id === assetId);
+            if (located > -1) {
+                const asset = Util.updateAsset({ ...locatedAssets[located] }, attrEvent);
+                if (MapUtil.isAssetWithLocation(asset)) {
+                    locatedAssets[located] = asset;
+                } else {
+                    locatedAssets.splice(located, 1);
+                    unlocatedAssets.push(asset);
+                }
+            } else {
+                const unlocated = unlocatedAssets.findIndex((a) => a.id === assetId);
+                if (unlocated > -1) {
+                    const asset = Util.updateAsset({ ...unlocatedAssets[unlocated] }, attrEvent);
+                    if (MapUtil.isAssetWithLocation(asset)) {
+                        unlocatedAssets.splice(unlocated, 1);
+                        locatedAssets.push(asset);
+                    } else {
+                        unlocatedAssets[unlocated] = asset;
+                    }
+                }
+            }
+
             return state;
         },
         setAssets(state, action: PayloadAction<Asset[]>) {
-            const assets = action.payload.filter(MapUtil.isAssetWithLocation);
-            
-            return { ...state, assets };
+            const locatedAssets = [], unlocatedAssets = [];
+            for (const asset of action.payload) {
+                if (MapUtil.isAssetWithLocation(asset)) {
+                    locatedAssets.push(asset);
+                } else {
+                    unlocatedAssets.push(asset);
+                }
+            }
+            return { ...state, locatedAssets, unlocatedAssets };
         }
     }
 });
@@ -197,7 +218,10 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assets: AssetWithLocation[] = [];
 
     @state()
-    protected _currentAsset?: AssetWithLocation;
+    protected _currentAsset?: Asset;
+
+    @state()
+    protected _assetTypes: string[] = [];
 
     @state()
     protected _excludedTypes?: string[] = [];
@@ -205,16 +229,13 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _assetsOnScreen: AssetWithLocation[] = [];
 
-    protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
+    protected _locatedAssetSelector = (state: MapStateKeyed) => state.map.locatedAssets;
+    protected _unlocatedAssetSelector = (state: MapStateKeyed) => state.map.unlocatedAssets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
 
     protected _assetSubscriptionId: string;
     protected _attributeSubscriptionId: string;
-
-    protected get _assetTypes(): string[] {
-        return this._assets.map(a => a.type);
-    }
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -288,20 +309,8 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._store.dispatch(setAssets(assets));
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
-                    const action = this._store.dispatch(assetEventReceived(event));
-                    // action.
-                    console.log("Asset event received:", event);
-                    const index = assets.findIndex(a => a.id === event.asset.id);
-
-                    // switch (event.cause) {
-                    //     case "UPDATE":
-                    //         // if (index !== -1) assets.splice(index, 1);
-                    //         console.log("ASSET UPDATE: ", index)
-                    //         break;
-                    //     case "DELETE": if (index !== -1) this._map.addAsset(event.asset); break;
-                    //     case "CREATE":
-                    //         break;
-                    // }
+                    this._store.dispatch(assetEventReceived(event));
+                    this._updateAsset(event.asset, event.cause === "DELETE");
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -312,11 +321,21 @@ export class PageMap extends Page<MapStateKeyed> {
                 this._assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
-                    // console.log("Attribute event received:", event);
-                    if (attrsOfInterest.includes(event.ref.name)) {
-                        this._map?.updateAttribute(event.ref.id, event.value);
+                    const interested = attrsOfInterest.includes(event.ref.name);
+                    let asset: Asset;
+                    if (interested) {
+                        const assets = this._unlocatedAssetSelector(this.getState());
+                        const asset = assets.find(asset => asset.id === event.ref.id);
+                        // Check if the asset already had a location
+                        if (!asset) {
+                            this._updateAttribute(event.ref.id, event.value);
+                        }
                     }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
+                    // Add the asset if it wasn't already present
+                    if (interested && asset) {
+                        this._updateAsset(this._assets.find(asset => asset.id === event.ref.id))
+                    }
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -342,6 +361,7 @@ export class PageMap extends Page<MapStateKeyed> {
             manager.events.unsubscribe(this._attributeSubscriptionId);
             this._attributeSubscriptionId = undefined;
         }
+        this._map?.clearAssets();
     };
 
     protected getRealmState = createSelector(
@@ -350,18 +370,17 @@ export class PageMap extends Page<MapStateKeyed> {
           this.unsubscribeAssets();
           this.subscribeAssets(realm);
           this._map?.refresh();
-          this._map?.clearAssets();
       }
     )
 
     protected _getMapAssets = createSelector(
-      [this._assetSelector],
+      [this._locatedAssetSelector],
       (assets) => {
           return assets;
       });
 
     protected _getCurrentAsset = createSelector(
-      [this._assetSelector, this._paramsSelector],
+      [this._locatedAssetSelector, this._paramsSelector],
       (assets, params) => {
           const currentId = params ? params.id : undefined;
 
@@ -385,8 +404,21 @@ export class PageMap extends Page<MapStateKeyed> {
         this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this._onLoadAssetEvent);
     }
 
+    shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (_changedProperties.has('_assets')) {
+            const newTypes = [];
+            for (const { type } of this._assets) {
+                if (!newTypes.includes(type)) newTypes.push(type);
+            }
+            this._assetTypes = newTypes;
+            if (!_changedProperties.get("_assets")?.length) {
+                this._map?.addAssets(this._assets);
+            }
+        }
+        return super.shouldUpdate(_changedProperties);
+    }
+
     protected render() {
-        // console.log(this._assetsOnScreen)
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
@@ -401,7 +433,7 @@ export class PageMap extends Page<MapStateKeyed> {
                         return pointB.coordinates[1] - pointA.coordinates[1];
                     }
                 }).map(asset => html`
-                    <or-map-marker-asset assetId=${asset.id} ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
+                    <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                 `)}
             </or-map>
         `;
@@ -412,10 +444,7 @@ export class PageMap extends Page<MapStateKeyed> {
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this._onMapClick);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
-        this.addEventListener(OrMapLoadedEvent.NAME, async () => {
-            console.log("ADD ASSET", this._assets)
-            await this._map?.addAssets(this._assets)
-        });
+        this.addEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
     }
 
     public disconnectedCallback() {
@@ -423,6 +452,7 @@ export class PageMap extends Page<MapStateKeyed> {
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this._onMapClick);
         this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
+        this.removeEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.unsubscribeAssets();
     }
 
@@ -431,14 +461,6 @@ export class PageMap extends Page<MapStateKeyed> {
         this._currentAsset = this._getCurrentAsset(state);
         this.getRealmState(state);
     }
-
-    // shouldUpdate(_changedProperties: PropertyValues): boolean {
-    //     if (_changedProperties.has("_assets") && !this._assetsOnScreen.length) {
-    //         console.log("ADD ASSET", this._assets)
-    //         this._map?.addAssets(this._assets)
-    //     }
-    //     return super.shouldUpdate(_changedProperties);
-    // }
 
     protected _onMapMarkerClick(e: OrMapMarkerClickedEvent) {
         const asset = (e.detail.marker as OrMapMarkerAsset).asset;
@@ -457,23 +479,36 @@ export class PageMap extends Page<MapStateKeyed> {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
     }
 
+    protected _onMapLoaded(e: OrMapLoadedEvent) {
+        this._map?.addAssets(this._assets);
+    }
+
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
         if (this._map) {
             this._excludedTypes = e.detail;
-            // this._updateMarkers();
+            this._map.clearAssets();
+            this._map.addAssets(this._assets.filter(asset => !this._excludedTypes.includes(asset.type)));
         }
     }
 
-    // protected _updateMarkers() {
-    //     if (this._map) {
-    //         this._map.clearAssets();
-    //         this._assets.forEach((asset: Asset) => {
-    //             if (MapUtil.isAssetWithLocation(asset)) {
-    //                 if (!this._excludedTypes.includes(asset.type)) {
-    //                     this._map.addAsset(asset)
-    //                 }
-    //             }
-    //         });
-    //     }
-    // }
+    protected _updateAsset(asset: Asset, remove?: boolean) {
+        if (remove) {
+            this._map?.removeAsset(asset.id);
+        } else if (MapUtil.isAssetWithLocation(asset)) {
+            this._map?.addAsset(asset);
+        }
+    }
+
+    /**
+     * @todo We rely on the fact that all assets are retrieved. Instead we should consider requesting missing asset state when they receive a update.
+     * @param id 
+     * @param value 
+     */
+    protected _updateAttribute(id: string, value: unknown) {
+        if (value) {
+            this._map?.updateAttribute(id, value);
+        } else {
+            this._map?.removeAsset(id);
+        }
+    }
 }

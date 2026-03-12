@@ -196,16 +196,13 @@ export class MapWidget extends OrAssetWidget {
             }
             this.markers[assetType!] = marker;
         }
-        console.log(this.widgetConfig)
         // Load the markers onto the map
         if (this._map) {
-            // this._map.cleanUpAssetMarkers();
+            this._map.clearAssets();
             const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
-            this.loadedAssets
-                .filter(asset => MapUtil.isAssetWithLocation(asset) && (!assetType || asset.type === assetType))
-                .forEach((asset: Asset) => this._map!.addAsset(asset as AssetWithLocation));
-
-            // this._map?.reload();
+            const assets = this.loadedAssets.filter(asset => !assetType || asset.type === assetType).filter(MapUtil.isAssetWithLocation);
+            console.log(this.loadedAssets, assets)
+            this._map.addAssets(assets);
         }
     }
 }
