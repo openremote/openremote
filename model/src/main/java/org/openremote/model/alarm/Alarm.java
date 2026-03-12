@@ -81,7 +81,6 @@ public class Alarm {
         this.realm = realm;
     }
 
-    @JsonCreator
     public Alarm() {
 
     }
