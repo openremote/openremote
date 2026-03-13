@@ -21,7 +21,6 @@ import {
     ControlPosition,
     OrMapClickedEvent,
     OrMapGeocoderChangeEvent,
-    OrMapLoadedEvent,
     OrMapLongPressEvent,
     OrMapMarkerAsset,
     ViewSettings,

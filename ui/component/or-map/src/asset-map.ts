@@ -90,7 +90,6 @@ export class AssetMap extends BaseMap {
             this._source.workerOptions.clusterProperties = this._getClusterProperties();
         }
 
-        console.log(asset);
         this._assets[asset.id] = asset;
         this._source.updateData({ add: [AssetMap._assetToFeature(asset)] });
     }
@@ -218,7 +217,6 @@ export class AssetMap extends BaseMap {
         }
 
         this._assetsOnScreen = newAssets;
-        // console.log(this._assetsOnScreen);
         return Object.values(this._assetsOnScreen);
     }
 
