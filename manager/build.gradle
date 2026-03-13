@@ -34,13 +34,13 @@ dependencies {
         }
     }
 
-    implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
+    implementation("org.apache.artemis:artemis-mqtt-protocol:$artemisVersion") {
         exclude group: "org.osgi"
         exclude group: "org.jboss.logmanager"
     }
 
     // Needed for reference in tests
-    api("org.apache.activemq:artemis-server:$activeMQVersion") {
+    api("org.apache.artemis:artemis-server:$artemisVersion") {
         exclude group: "org.osgi"
         exclude group: "org.jboss.logmanager"
     }
@@ -180,3 +180,17 @@ publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
+
+configurations {
+    demoExtension
+}
+
+dependencies {
+    demoExtension project(":extension:demo-setup")
+}
+
+tasks.named("run", JavaExec) {
+    if (System.getenv("OR_SETUP_TYPE") == "demo") {
+        classpath += configurations.demoExtension
+    }
+}
