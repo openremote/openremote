@@ -36,7 +36,7 @@ const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/mapl
 
 let pkey: string | null;
 
-export class MapWidget {
+export class BaseMap {
     protected _map?: MapGL;
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;

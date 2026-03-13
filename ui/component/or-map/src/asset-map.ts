@@ -1,7 +1,7 @@
 import { AddLayerObject, GeoJSONFeature, GeoJSONSource, MapSourceDataEvent, Marker } from "maplibre-gl";
 import { Feature, Point } from "geojson";
 import { AssetWithLocation, ClusterConfig } from "./types";
-import { MapWidget } from "./mapwidget";
+import { BaseMap } from "./base-map";
 import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import { OrMapLoadedEvent, OrMapMarker, OrMapMarkersChangedEvent } from ".";
@@ -15,7 +15,7 @@ type MissingAsset = AssetWithLocation & { id: string; type: string };
  * 2. page receives event --> creates map markers inside the map element's HTML body
  * 3. map receives event from markers || map sees slotted marker was added --> adds markers as maplibre marker to the maplibre-gl map
  */
-export class AssetMap extends MapWidget {
+export class AssetMap extends BaseMap {
     private static _clusterProperty = "assetType";
 
     protected _assets: Record<string, AssetWithLocation> = {};
