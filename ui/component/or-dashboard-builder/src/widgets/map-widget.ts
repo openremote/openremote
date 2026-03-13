@@ -6,7 +6,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import {MapSettings} from "../settings/map-settings";
 import {AssetWidgetConfig} from "../util/widget-config";
 import {Asset, AssetDescriptor} from "@openremote/model";
-import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig} from "@openremote/or-map";
+import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig, OrMapLoadedEvent} from "@openremote/or-map";
 import {map} from "lit/directives/map.js";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -87,6 +87,7 @@ export class MapWidget extends OrAssetWidget {
     }
 
     connectedCallback() {
+        this.addEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         return super.connectedCallback();
     }
@@ -98,6 +99,14 @@ export class MapWidget extends OrAssetWidget {
 
     refreshContent(force: boolean): void {
         this._loadAssets();
+    }
+
+    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (_changedProperties.has("loadedAssets")) {
+            // Load the markers onto the map
+            this._map?.clearAssets();
+        }
+        return super.shouldUpdate(_changedProperties);
     }
 
     protected updated(changedProps: PropertyValues) {
@@ -153,6 +162,12 @@ export class MapWidget extends OrAssetWidget {
         `;
     }
 
+    protected _onMapLoaded(e: OrMapLoadedEvent) {
+        const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
+        const assets = this.loadedAssets.filter(asset => !assetType || asset.type === assetType).filter(MapUtil.isAssetWithLocation);
+        this._map?.addAssets(assets);
+    }
+
     protected _onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
         this._assetsOnScreen = e.detail;
     }
@@ -195,14 +210,6 @@ export class MapWidget extends OrAssetWidget {
                 }
             }
             this.markers[assetType!] = marker;
-        }
-        // Load the markers onto the map
-        if (this._map) {
-            this._map.clearAssets();
-            const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
-            const assets = this.loadedAssets.filter(asset => !assetType || asset.type === assetType).filter(MapUtil.isAssetWithLocation);
-            console.log(this.loadedAssets, assets)
-            this._map.addAssets(assets);
         }
     }
 }
