@@ -500,6 +500,11 @@ export class PageMap extends Page<MapStateKeyed> {
         }
     }
 
+    /**
+     * Adds the provided asset in the map, or removes the asset if specified.
+     * @param asset The asset to add
+     * @param remove Whether to remove the asset
+     */
     protected _updateAsset(asset: Asset, remove?: boolean) {
         if (remove) {
             this._map?.removeAssets([asset.id]);
@@ -509,9 +514,9 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     /**
-     * @todo We rely on the fact that all assets are retrieved. Instead we should consider requesting missing asset state when they receive a update.
-     * @param id 
-     * @param value 
+     * Updates the specified asset attribute in the map, or removes the asset if the value is falsy.
+     * @param id The id of the asset to update
+     * @param value The new value for the attribute
      */
     protected _updateAttribute(id: string, value: unknown) {
         if (value) {

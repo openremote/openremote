@@ -9,11 +9,16 @@ import { OrMapLoadedEvent, OrMapMarker, OrMapMarkersChangedEvent } from ".";
 type MissingAsset = AssetWithLocation & { id: string; type: string };
 
 /**
- * @todo consider using `this._map.setGlobalStateProperty`
- * @todo look at https://maplibre.org/maplibre-style-spec/expressions/#accumulated
- * 1. page --> component --> compute assets in view --> dispatch event
- * 2. page receives event --> creates map markers inside the map element's HTML body
- * 3. map receives event from markers || map sees slotted marker was added --> adds markers as maplibre marker to the maplibre-gl map
+ * The main component that handles how assets are displayed on the map.
+ *
+ * Currently, the standard flow to display assets as markers on the map goes as follows:
+ *
+ * 1. The map page adds assets --> the {@link AssetMap}, which computes assets in view --> Then dispatches {@link OrMapMarkersChangedEvent}
+ * 2. The map page receives the event --> Renders the received assets as {@link OrMapMarkerAsset} by including them inside the map element's HTML body
+ * 3. The map component then receives either an event from the {@link OrMapMarkerAsset}
+ * or when the map component sees a slotted marker was added --> Which adds markers as maplibre marker to the maplibre-gl map.
+ *
+ * @todo consider using `this._map.setGlobalStateProperty` for static cluster property
  */
 export class AssetMap extends BaseMap {
     private static _clusterProperty = "assetType";
@@ -91,7 +96,7 @@ export class AssetMap extends BaseMap {
     }
 
     /**
-     * Add multiple assets as (asset) feature to the map. Optimized for adding mutliple assets at once.
+     * Add multiple assets as (asset) features to the map. Optimized for adding mutliple assets at once.
      * @param assets The assets to add
      */
     public addAssets(assets: AssetWithLocation[]) {
