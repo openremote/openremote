@@ -63,7 +63,7 @@ type RootState = ReturnType<typeof rootReducer>;
 
 export const store = configureStore({
     reducer: rootReducer,
-    // Disable for development (usually always disabled in production) to improve performance
+    // Disable for development to improve performance (usually always disabled in production)
     middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });
 

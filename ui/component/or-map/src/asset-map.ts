@@ -1,4 +1,4 @@
-import { GeoJSONFeature, GeoJSONSource, LngLatLike, MapSourceDataEvent, Marker } from "maplibre-gl";
+import { AddLayerObject, GeoJSONFeature, GeoJSONSource, MapSourceDataEvent, Marker } from "maplibre-gl";
 import { Feature, Point } from "geojson";
 import { AssetWithLocation, ClusterConfig } from "./types";
 import { MapWidget } from "./mapwidget";
@@ -146,17 +146,21 @@ export class AssetMap extends MapWidget {
         }
 
         if (this._map.getSource("assets")) {
-            if (this._map.getLayer("unclustered-point")) {
-                this._map.removeLayer("unclustered-point");
+            if (this._map.getLayer("asset")) {
+                this._map.removeLayer("asset");
             }
-            if (this._map.getLayer("clusters")) {
-                this._map.removeLayer("clusters");
-            }
-            if (this._map.getLayer("cluster-count")) {
-                this._map.removeLayer("cluster-count");
+            if (this._map.getLayer("cluster")) {
+                this._map.removeLayer("cluster");
             }
             this._map.removeSource("assets");
         }
+
+        const invisibleLayer: AddLayerObject = {
+            id: "invisible",
+            type: "circle",
+            source: "assets",
+            paint: { "circle-radius": 0 },
+        };
 
         this._map
             .addSource("assets", {
@@ -168,13 +172,8 @@ export class AssetMap extends MapWidget {
                 promoteId: "id", // Promote the id property as feature id
                 data: { type: "FeatureCollection", features: [] }, // TODO: consider preloading data to avoid tile cache misses
             })
-            .addLayer({
-                id: "unclustered-point",
-                type: "circle",
-                source: "assets",
-                filter: ["!", ["has", "point_count"]],
-                paint: { "circle-radius": 0 },
-            });
+            .addLayer({ ...invisibleLayer, id: "asset", filter: ["has", "point_count"] })
+            .addLayer({ ...invisibleLayer, id: "cluster", filter: ["!", ["has", "point_count"]] });
 
         this._source = this._map.getSource("assets") as GeoJSONSource;
 
@@ -186,7 +185,7 @@ export class AssetMap extends MapWidget {
 
     protected _updateMarkers() {
         if (!this._map) return;
-        const features = this._map.querySourceFeatures("assets");
+        const features = this._map.queryRenderedFeatures({ layers: ["asset", "cluster"] });
         const newAssets = this._updateAssets(features);
         this._updateClusters(features);
         this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(newAssets));
@@ -204,8 +203,7 @@ export class AssetMap extends MapWidget {
             if (marker instanceof OrMapMarker) {
                 this._markersGL.get(marker)?.setLngLat([lon, lat]);
                 marker.lng = lon;
-                marker.lat = lat; // WHY DOES IT TELEPORT  BACK?
-                // this._updateMarkerPosition(marker); // Prefer geometry position?
+                marker.lat = lat; // TODO: find what is causing markers to glitch
             }
             newAssets[id] = this._assets[id];
         }

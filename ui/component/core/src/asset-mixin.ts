@@ -86,7 +86,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public _onEventsConnect() {
-            // this._addEventSubscriptions();
+            this._addEventSubscriptions();
             this.onEventsConnect();
         }
 

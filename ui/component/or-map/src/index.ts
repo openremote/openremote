@@ -365,10 +365,7 @@ export class OrMap extends LitElement {
         this._map?.removeAssets(ids);
     }
 
-    public clearAssets(waitForCompletion?: boolean): Promise<void> | void {
-        if (waitForCompletion) {
-            return this._map?.clearAssets(waitForCompletion);
-        }
+    public clearAssets(): Promise<void> | void {
         this._map?.clearAssets();
     }
 
