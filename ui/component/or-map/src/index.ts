@@ -361,11 +361,14 @@ export class OrMap extends LitElement {
         this._map?.addAssets(assets);
     }
 
-    public removeAsset(id: string) {
-        this._map?.removeAsset(id);
+    public removeAssets(ids: string[]) {
+        this._map?.removeAssets(ids);
     }
 
-    public clearAssets() {
+    public clearAssets(waitForCompletion?: boolean): Promise<void> | void {
+        if (waitForCompletion) {
+            return this._map?.clearAssets(waitForCompletion);
+        }
         this._map?.clearAssets();
     }
 

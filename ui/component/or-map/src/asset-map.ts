@@ -120,8 +120,8 @@ export class AssetMap extends MapWidget {
         });
     }
 
-    public removeAsset(id: string) {
-        this._source?.updateData({ remove: [id] });
+    public removeAssets(ids: string[]) {
+        this._source?.updateData({ remove: ids });
     }
 
     public clearAssets() {

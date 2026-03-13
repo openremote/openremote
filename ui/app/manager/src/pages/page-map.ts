@@ -486,14 +486,23 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
         if (this._map) {
             this._excludedTypes = e.detail;
-            this._map.clearAssets();
-            this._map.addAssets(this._assets.filter(asset => !this._excludedTypes.includes(asset.type)));
+            const assetsToAdd = [];
+            const idsToRemove = [];
+            for (const asset of this._assets) {
+                if (this._excludedTypes.includes(asset.type)) {
+                    idsToRemove.push(asset.id);
+                } else {
+                    assetsToAdd.push(asset);
+                }
+            }
+            this._map.removeAssets(idsToRemove);
+            this._map.addAssets(assetsToAdd);
         }
     }
 
     protected _updateAsset(asset: Asset, remove?: boolean) {
         if (remove) {
-            this._map?.removeAsset(asset.id);
+            this._map?.removeAssets([asset.id]);
         } else if (MapUtil.isAssetWithLocation(asset)) {
             this._map?.addAsset(asset);
         }
@@ -508,7 +517,7 @@ export class PageMap extends Page<MapStateKeyed> {
         if (value) {
             this._map?.updateAttribute(id, value);
         } else {
-            this._map?.removeAsset(id);
+            this._map?.removeAssets([id]);
         }
     }
 }
