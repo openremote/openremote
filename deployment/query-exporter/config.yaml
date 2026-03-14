@@ -19,6 +19,53 @@ databases:
       instance: openremote
 
 metrics:
+  pg_cache_hit_percentage:
+    type: gauge
+    description: What percentage of data is being served instantly from RAM versus being slowly read from disk. You want this as high as possible
+
+  pg_connection_state:
+    type: gauge
+    description: Count of connections in each state (active, idle or idle in transaction states), database is either under heavy load or your application is leaking connections
+    labels: [state]
+
+  pg_asset_hot_update_percent:
+    type: gauge
+    description: Asset table percentage of updates that are HOT updates indicates good fillfactor
+
+  pg_asset_dead_tuple_percentage:
+    type: gauge
+    description: Asset table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
+
+  pg_asset_last_autovacuum_hours:
+    type: gauge
+    description: Asset table hours since last auto vacuum run successfully
+
+  pg_asset_last_autoanalyze_hours:
+    type: gauge
+    description: Asset table hours since last auto analyze run successfully
+
+  pg_datapoint_table_size:
+    type: gauge
+    description: Asset datapoint table size in MB
+
+  pg_datapoint_chunk_count:
+    type: gauge
+    description: Asset datapoint table hypertable chunk count
+
+  pg_datapoint_chunk_start_weeks:
+    type: gauge
+    description: Asset datapoint table oldest hypertable chunk in weeks
+
+  pg_datapoint_chunk_end_weeks:
+    type: gauge
+    description: Asset datapoint table newest hypertable chunk in weeks
+
+  pg_datapoint_chunks_not_analyzed:
+    type: gauge
+    description: Asset datapoint table hypertable chunks not yet analyzed
+
+
+
   # 1. Table bloat metrics
   pg_table_bloat_count:
     type: gauge
@@ -84,6 +131,91 @@ metrics:
     labels: [lock_type]
 
 queries:
+  cache_hit_ratio:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_cache_hit_percentage]
+    sql: |
+      SELECT 
+        sum(heap_blks_read) as disk_reads,
+        sum(heap_blks_hit)  as memory_hits,
+        ROUND(sum(heap_blks_hit)::numeric / (sum(heap_blks_hit) + sum(heap_blks_read) + 0.001) * 100, 2) as pg_cache_hit_percentage
+        FROM pg_statio_user_tables;
+
+  connection_state:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_connection_state]
+    sql: |
+      SELECT 
+        state,
+        count(*) as connection_count
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+        GROUP BY state
+        ORDER BY connection_count DESC;
+
+  asset_tuples:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_asset_hot_update_percent, pg_asset_dead_tuple_percentage, pg_asset_last_autovacuum_hours, pg_asset_last_autoanalyze_hours]
+    sql: |
+      SELECT
+        CASE
+        WHEN n_tup_upd > 0
+        THEN ROUND((n_tup_hot_upd::numeric / n_tup_upd) * 100, 2)
+        ELSE 0.00
+        END AS pg_asset_hot_update_percent,
+        -- Calculate the percentage of the table that is dead space
+        ROUND((n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0)) * 100, 2) AS pg_asset_tuple_dead_percentage,
+        -- Calculate hours since last autovacuum
+        ROUND((EXTRACT(EPOCH FROM (now() - last_autovacuum)) / 3600.0)::numeric, 1) AS pg_asset_last_autovacuum_hours,
+        -- Calculate hours since last autoanalyze
+        ROUND((EXTRACT(EPOCH FROM (now() - last_autoanalyze)) / 3600.0)::numeric, 1) AS pg_asset_last_autoanalyze_hours
+        FROM pg_stat_user_tables
+        WHERE relname = 'asset';
+
+  datapoint_table_size:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_connection_state]
+    sql: |
+      SELECT
+        hypertable_name,
+        ROUND((hypertable_size(format('%I.%I', hypertable_schema, hypertable_name)::regclass) / 1048576.0)::numeric, 2) AS pg_datapoint_table_size
+        FROM timescaledb_information.hypertables
+        WHERE hypertable_name = 'asset_datapoint';
+
+  datapoint_chunks:
+    interval: 86400 # Daily
+    databases: [openremote]
+    metrics: [pg_datapoint_chunk_count, pg_datapoint_chunk_start_weeks, pg_datapoint_chunk_end_weeks]
+    sql: |
+      SELECT
+        hypertable_name,
+        count(*) AS pg_datapoint_chunk_count,
+        -- Extract total seconds, divide by seconds in a week (60 * 60 * 24 * 7), and round
+        ROUND((EXTRACT(EPOCH FROM (now() - min(range_start::timestamptz))) / 604800.0)::numeric, 1) AS pg_datapoint_chunk_start_weeks,
+        ROUND((EXTRACT(EPOCH FROM (now() - max(range_end::timestamptz))) / 604800.0)::numeric, 1) AS pg_datapoint_chunk_end_weeks
+        FROM timescaledb_information.chunks
+        WHERE hypertable_name = 'asset_datapoint'
+        GROUP BY hypertable_name;
+      
+  datapoint_autoanalyze:
+    interval: 86400 # Daily
+    databases: [openremote]
+    metrics: [pg_datapoint_chunks_not_analyzed]
+    sql: |
+      SELECT 
+        count(*) AS pg_datapoint_chunks_not_analyzed
+        FROM pg_stat_user_tables
+        WHERE relname LIKE '_hyper_%'
+        AND last_autoanalyze IS NULL
+        AND last_analyze IS NULL
+        AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
+      
+      
+
   # Query 1: Count of tables with bloat
   table_bloat_count:
     interval: 300  # Run every 5 minutes
@@ -234,7 +366,7 @@ queries:
         ROUND((bi.wastedbytes / 1048576.0)::numeric, 2) AS pg_table_bloat_wasted_mb,
         'table' AS bloat_type
       FROM bloat_info bi
-      WHERE bi.iname = '?' AND bi.wastedbytes > 0 AND bi.table_bloat > :table_bloat_threshold
+      WHERE bi.iname = '?' AND bi.wastedbytes > 0 AND bi.table_bloat > 1.5
       
       UNION ALL
       
@@ -249,7 +381,7 @@ queries:
         ROUND((bi.wastedibytes / 1048576.0)::numeric, 2) AS pg_table_bloat_wasted_mb,
         'index' AS bloat_type
       FROM bloat_info bi
-      WHERE bi.iname != '?' AND bi.wastedibytes > 0 AND bi.index_bloat > :index_bloat_threshold
+      WHERE bi.iname != '?' AND bi.wastedibytes > 0 AND bi.index_bloat > 1.5
       
       ORDER BY pg_table_bloat_bytes DESC
       LIMIT 50;  -- Return only top 50 most bloated objects
