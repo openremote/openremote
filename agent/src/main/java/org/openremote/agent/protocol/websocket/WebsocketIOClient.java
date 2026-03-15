@@ -63,7 +63,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * For custom decoders, the initial message type is of type {@link String}.
  * For custom encoders, the final message type must be of type {@link String}.
  */
-public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
+public class WebsocketIOClient<T> extends AbstractNettyIOClient<T> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
     protected static ResteasyClient client;
