@@ -64,6 +64,11 @@ metrics:
     type: gauge
     description: Asset datapoint table hypertable chunks not yet analyzed
 
+  pg_background_errors:
+    type: counter
+    description: Count of errors in background worker processes
+
+
 
 
   # 1. Table bloat metrics
@@ -193,8 +198,15 @@ queries:
         AND last_autoanalyze IS NULL
         AND last_analyze IS NULL
         AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
-      
-      
+
+  background_errors:
+    interval: 3600
+    databases: [openremote]
+    metrics: [pg_background_errors]
+    sql: |
+      SELECT
+        SUM(total_failures) AS pg_background_errors
+        FROM timescaledb_information.job_stats;
 
   # Query 1: Count of tables with bloat
   table_bloat_count:
