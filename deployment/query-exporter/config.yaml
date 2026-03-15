@@ -86,27 +86,7 @@ metrics:
     description: Estimated wasted space in MB per table/index
     labels: [schema_name, table_name, index_name, bloat_type]
 
-  # 2. Autovacuum workers metric
-  pg_autovacuum_workers_active:
-    type: gauge
-    description: Number of currently active autovacuum workers
-    
-  pg_autovacuum_workers_max:
-    type: gauge
-    description: Maximum number of autovacuum workers configured
-    
-  pg_autovacuum_running:
-    type: gauge
-    description: Autovacuum processes currently running with details
-    labels: [db, table_schema, table_name, phase]
 
-  # 3. Datapoint query execution time metric
-  pg_datapoint_query_duration_seconds:
-    type: histogram
-    description: Execution time of datapoint queries for the attribute with most data points
-    buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
-    labels: [entity_id, attribute_name]
-    
   pg_datapoint_count:
     type: gauge
     description: Total number of datapoints for the top attribute
