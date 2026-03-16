@@ -206,7 +206,7 @@ export class AssetMap extends BaseMap {
 
     protected _updateMarkers() {
         if (!this._map) return;
-        const features = this._map.queryRenderedFeatures({ layers: ["asset", "cluster"] });
+        const features = this._map.querySourceFeatures("assets");
         const newAssets = this._updateAssets(features);
         this._updateClusters(features);
         this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(newAssets));
@@ -215,7 +215,6 @@ export class AssetMap extends BaseMap {
     private _updateAssets(features: GeoJSONFeature[]) {
         const newAssets: Record<string, AssetWithLocation> = {};
 
-        // TODO: check for duplicate features
         for (const feature of features) {
             if (!feature.properties.id) continue;
             const id = feature.properties.id as string;
