@@ -225,7 +225,8 @@ public class ManagerTestSetup extends ManagerSetup {
             ));
         apartment1.getAttribute(BuildingAsset.STREET).get().addOrReplaceMeta(
                 new MetaItem<>(ACCESS_PUBLIC_WRITE, false),
-                new MetaItem<>(ACCESS_PUBLIC_READ, false)
+                new MetaItem<>(ACCESS_PUBLIC_READ, false),
+                new MetaItem<>(ACCESS_RESTRICTED_READ)
         );
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();

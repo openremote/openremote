@@ -30,10 +30,13 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -198,6 +201,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         AttributeEvent.class,
                         null,
                         "attributes2")))
+        client3.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+                new EventSubscription(
+                        AttributeEvent.class,
+                        null,
+                        "attributes3")))
 
         and: "we subscribe to asset events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
@@ -224,13 +232,15 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert receivedMessages2.size() == 2
             assert receivedMessages2.any {it instanceof EventSubscription && it.subscriptionId == "attributes2"}
             assert receivedMessages2.any {it instanceof EventSubscription && it.subscriptionId == "assets2"}
-            assert receivedMessages3.size() == 1
+            assert receivedMessages3.size() == 2
+            assert receivedMessages3.any {it instanceof EventSubscription && it.subscriptionId == "attributes3"}
             assert receivedMessages3.any {it instanceof EventSubscription && it.subscriptionId == "assets3"}
         }
 
         when: "apartment 1 living room temp changes"
         receivedMessages.clear()
         receivedMessages2.clear()
+        receivedMessages3.clear()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5))
 
         then: "the testuser3 client receives the event"
@@ -247,6 +257,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         then: "the building user should not have received the event"
         conditions.eventually {
             assert receivedMessages2.isEmpty()
+        }
+
+        and: "the anonymous user should not have received the event"
+        conditions.eventually {
+            assert receivedMessages3.isEmpty()
         }
 
         when: "apartment 2 living room temp changes"
@@ -279,28 +294,85 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         new MetaItem<>(MetaItemType.ACCESS_PUBLIC_READ, false)
                 )
         )
+        apartment1Livingroom.getAttribute(Asset.NOTES).get().addOrReplaceMeta(
+                new MetaItem<>(MetaItemType.ACCESS_PUBLIC_READ)
+        )
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom)
 
         then: "the testuser3 client should be notified with only accessible attributes"
         conditions.eventually {
-            assert receivedMessages.size() == 1
-            assert receivedMessages.get(0) instanceof TriggeredEventSubscription
-            assert (receivedMessages.get(0) as TriggeredEventSubscription).subscriptionId == "assets"
-            assert (receivedMessages.get(0) as TriggeredEventSubscription).events.size() == 1
-            assert (receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) instanceof AssetEvent
-            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).id == managerTestSetup.apartment1LivingroomId
-            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.size() == 8
-            assert !((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.contains("testAttribute")
+            assert receivedMessages.size() == 2
+            def attrSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets"} as TriggeredEventSubscription<AssetEvent>
+            assert attrSub != null
+            assert assetSub != null
+            assert attrSub.events.size() == 1
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert assetSub.events.get(0).attributeNames.size() == 8
+            assert !assetSub.events.get(0).attributeNames.contains("testAttribute")
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert attrSub.events.get(0).name == Asset.NOTES.name
         }
 
         and: "the anonymous client should be notified with only accessible attributes"
         conditions.eventually {
-            assert receivedMessages3.size() == 1
-            assert (receivedMessages3.get(0) as TriggeredEventSubscription).subscriptionId == "assets3"
-            assert (receivedMessages3.get(0) as TriggeredEventSubscription).events.size() == 1
-            assert (receivedMessages3.get(0) as TriggeredEventSubscription).events.get(0) instanceof AssetEvent
-            assert ((receivedMessages3.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).id == managerTestSetup.apartment1LivingroomId
-            assert ((receivedMessages3.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.size() == 0
+            assert receivedMessages3.size() == 2
+            def attrSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes3"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets3"} as TriggeredEventSubscription<AssetEvent>
+            assert attrSub != null
+            assert assetSub != null
+            assert attrSub.events.size() == 1
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert assetSub.events.get(0).attributeNames.size() == 1
+            assert assetSub.events.get(0).attributeNames.contains(Asset.NOTES.name)
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert attrSub.events.get(0).name == Asset.NOTES.name
+        }
+
+        and: "the building user should not have received the event"
+        assert receivedMessages2.isEmpty()
+
+        when: "apartment 1 asset is modified"
+        receivedMessages.clear()
+        receivedMessages2.clear()
+        receivedMessages3.clear()
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id)
+        apartment1.getAttribute(Asset.LOCATION).get().setValue(new GeoJSONPoint(10, 10))
+        apartment1.getAttribute(BuildingAsset.STREET).get().setValue("Test Street")
+        apartment1 = assetStorageService.merge(apartment1)
+
+        then: "the testuser3 client should be notified with only accessible attributes"
+        conditions.eventually {
+            assert receivedMessages.size() == 2
+            def attrSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets"} as TriggeredEventSubscription<AssetEvent>
+            assert attrSub != null
+            assert assetSub != null
+            assert attrSub.events.size() == 1
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert assetSub.events.get(0).attributeNames.size() == 1
+            assert assetSub.events.get(0).attributeNames.contains(BuildingAsset.STREET.name)
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert attrSub.events.get(0).name == BuildingAsset.STREET.name
+        }
+
+        then: "the anonymous client should be notified with only accessible attributes"
+        conditions.eventually {
+            assert receivedMessages3.size() == 2
+            def attrSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes3"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets3"} as TriggeredEventSubscription<AssetEvent>
+            assert attrSub != null
+            assert assetSub != null
+            assert attrSub.events.size() == 1
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert assetSub.events.get(0).attributeNames.size() == 1
+            assert assetSub.events.get(0).attributeNames.contains(Asset.LOCATION.name)
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert attrSub.events.get(0).name == BuildingAsset.LOCATION.name
         }
 
         and: "the building user should not have received the event"
