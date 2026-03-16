@@ -30,6 +30,11 @@ public class GatewayAssetSyncRule {
      */
     public Map<String, MetaMap> addAttributeMeta;
 
+    /**
+     * If set, overrides the {@link org.openremote.model.asset.Asset#accessPublicRead} value on the asset before syncing.
+     */
+    public Boolean accessPublicRead;
+
     public List<String> getExcludeAttributes() {
         return excludeAttributes;
     }
@@ -57,16 +62,25 @@ public class GatewayAssetSyncRule {
         return this;
     }
 
+    public Boolean getAccessPublicRead() {
+        return accessPublicRead;
+    }
+
+    public GatewayAssetSyncRule setAccessPublicRead(Boolean accessPublicRead) {
+        this.accessPublicRead = accessPublicRead;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GatewayAssetSyncRule that = (GatewayAssetSyncRule) o;
-        return Objects.equals(excludeAttributes, that.excludeAttributes) && Objects.equals(excludeAttributeMeta, that.excludeAttributeMeta) && Objects.equals(addAttributeMeta, that.addAttributeMeta);
+        return Objects.equals(excludeAttributes, that.excludeAttributes) && Objects.equals(excludeAttributeMeta, that.excludeAttributeMeta) && Objects.equals(addAttributeMeta, that.addAttributeMeta) && Objects.equals(accessPublicRead, that.accessPublicRead);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(excludeAttributes, excludeAttributeMeta, addAttributeMeta);
+        return Objects.hash(excludeAttributes, excludeAttributeMeta, addAttributeMeta, accessPublicRead);
     }
 }

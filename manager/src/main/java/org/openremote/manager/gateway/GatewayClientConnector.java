@@ -738,6 +738,10 @@ public class GatewayClientConnector implements AutoCloseable {
             return asset;
         }
 
+        if (syncRule.accessPublicRead != null) {
+            asset.setAccessPublicRead(syncRule.accessPublicRead);
+        }
+
         List<Attribute<?>> attributes = asset.getAttributes().stream()
                 .filter(it -> syncRule.excludeAttributes == null || !syncRule.excludeAttributes.contains(it.getName()))
                 .peek(attribute -> applySyncRuleToMeta(attribute.getName(), attribute.getMeta(), syncRule)).toList();
