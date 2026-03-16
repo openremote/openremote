@@ -326,13 +326,14 @@ export class PageMap extends Page<MapStateKeyed> {
                     if (interested) {
                         const assets = this._unlocatedAssetSelector(this.getState());
                         const asset = assets.find(asset => asset.id === event.ref.id);
-                        // Check if the asset already had a location
+                        // Update the attribute if the asset already has a location
+                        // assuming the asset is in the located asset state
                         if (!asset) {
-                            this._updateAttribute(event.ref.id, event.value);
+                            this._map.updateAttribute(event);
                         }
                     }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
-                    // Add the asset if it wasn't already present
+                    // Add the asset after map state has been updated
                     if (interested && asset) {
                         this._updateAsset(this._assets.find(asset => asset.id === event.ref.id))
                     }
@@ -361,7 +362,7 @@ export class PageMap extends Page<MapStateKeyed> {
             manager.events.unsubscribe(this._attributeSubscriptionId);
             this._attributeSubscriptionId = undefined;
         }
-        this._map?.clearAssets();
+        this._map?.removeAllAssets();
     };
 
     protected getRealmState = createSelector(
@@ -510,19 +511,6 @@ export class PageMap extends Page<MapStateKeyed> {
             this._map?.removeAssets([asset.id]);
         } else if (MapUtil.isAssetWithLocation(asset)) {
             this._map?.addAsset(asset);
-        }
-    }
-
-    /**
-     * Updates the specified asset attribute in the map, or removes the asset if the value is falsy.
-     * @param id The id of the asset to update
-     * @param value The new value for the attribute
-     */
-    protected _updateAttribute(id: string, value: unknown) {
-        if (value) {
-            this._map?.updateAttribute(id, value);
-        } else {
-            this._map?.removeAssets([id]);
         }
     }
 }

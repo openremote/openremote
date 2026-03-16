@@ -13,10 +13,10 @@ import {
     ValueInputTemplateFunction
 } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {getMarkerIconAndColorFromAssetType, isAssetWithLocation} from "./util";
+import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
-import { Asset, GeoJsonConfig } from "@openremote/model";
+import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
 import { CenterControl } from "./controls/center";
@@ -361,16 +361,16 @@ export class OrMap extends LitElement {
         this._map?.addAssets(assets);
     }
 
+    public updateAttribute(event: AttributeEvent) {
+        this._map?.updateAttribute(event)
+    }
+
     public removeAssets(ids: string[]) {
         this._map?.removeAssets(ids);
     }
 
-    public clearAssets(): Promise<void> | void {
-        this._map?.clearAssets();
-    }
-
-    public updateAttribute(id: string, value: any) {
-        this._map?.updateAttribute(id, value)
+    public removeAllAssets(): Promise<void> | void {
+        this._map?.removeAllAssets();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {

@@ -22,7 +22,6 @@ import {
     OrMapClickedEvent,
     OrMapGeocoderChangeEvent,
     OrMapLongPressEvent,
-    OrMapMarkerAsset,
     ViewSettings,
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
@@ -40,8 +39,7 @@ export class BaseMap {
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;
     protected _loaded = false;
-    protected _markersGL: Map<OrMapMarker, Marker> = new Map();
-    protected _markersOR: Map<string, OrMapMarker> = new Map();
+    protected _markers: Map<OrMapMarker, Marker> = new Map();
     protected _geoJsonConfig?: GeoJsonConfig;
     protected _geoJsonSources: string[] = [];
     protected _geoJsonLayers: Map<string, any> = new Map();
@@ -563,20 +561,17 @@ export class BaseMap {
     }
 
     protected _updateMarkerPosition(marker: OrMapMarker) {
-        this._markersGL.get(marker)?.setLngLat([marker.lng!, marker.lat!]);
+        this._markers.get(marker)?.setLngLat([marker.lng!, marker.lat!]);
         this._createMarkerRadius(marker);
     }
 
     protected _updateMarkerElement(marker: OrMapMarker, doAdd: boolean) {
-        let mGl = this._markersGL.get(marker);
+        let mGl = this._markers.get(marker);
         if (mGl) {
             marker._actualMarkerElement = undefined;
             this._removeMarkerClickHandler(marker, mGl.getElement());
             mGl.remove();
-            this._markersGL.delete(marker);
-            if (marker instanceof OrMapMarkerAsset && marker.asset?.id) {
-                this._markersOR.delete(marker.asset.id);
-            }
+            this._markers.delete(marker);
         }
 
         if (doAdd) {
@@ -590,10 +585,7 @@ export class BaseMap {
                     .setLngLat([marker.lng!, marker.lat!])
                     .addTo(this._map!);
 
-                this._markersGL.set(marker, mGl);
-                if (marker instanceof OrMapMarkerAsset && marker.asset?.id) {
-                    this._markersOR.set(marker.asset.id, marker);
-                }
+                this._markers.set(marker, mGl);
 
                 marker._actualMarkerElement = mGl.getElement() as HTMLDivElement;
 

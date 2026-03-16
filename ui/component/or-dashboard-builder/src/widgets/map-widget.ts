@@ -104,7 +104,7 @@ export class MapWidget extends OrAssetWidget {
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("loadedAssets")) {
             // Load the markers onto the map
-            this._map?.clearAssets();
+            this._map?.removeAllAssets();
         }
         return super.shouldUpdate(_changedProperties);
     }

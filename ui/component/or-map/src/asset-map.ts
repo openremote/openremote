@@ -4,7 +4,9 @@ import { AssetWithLocation, ClusterConfig } from "./types";
 import { BaseMap } from "./base-map";
 import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 import { getMarkerIconAndColorFromAssetType } from "./util";
-import { OrMapLoadedEvent, OrMapMarker, OrMapMarkersChangedEvent } from ".";
+import { OrMapLoadedEvent, OrMapMarkersChangedEvent } from ".";
+import { Util } from "@openremote/core";
+import { AttributeEvent } from "@openremote/model";
 
 type MissingAsset = AssetWithLocation & { id: string; type: string };
 
@@ -124,16 +126,31 @@ export class AssetMap extends BaseMap {
         });
     }
 
+    public updateAttribute(event: AttributeEvent) {
+        const id = event?.ref?.id;
+
+        if (!this._source || !id || !this._assets[id]) return;
+
+        if (!event.value) {
+            delete this._assets[id];
+            this._source?.updateData({ remove: [id] });
+            return;
+        }
+
+        const asset = (this._assets[id] = Util.updateAsset(structuredClone(this._assets[id]), event));
+        const newGeometry = asset.attributes.location.value;
+        const newProperties = Object.entries(AssetMap._assetToFeature(asset as MissingAsset).properties).map(
+            ([key, value]) => ({ key, value })
+        );
+        this._source?.updateData({ update: [{ id, newGeometry, addOrUpdateProperties: newProperties }] });
+    }
+
     public removeAssets(ids: string[]) {
         this._source?.updateData({ remove: ids });
     }
 
-    public clearAssets() {
+    public removeAllAssets() {
         this._source?.updateData({ removeAll: true });
-    }
-
-    public updateAttribute(id: string, value: any) {
-        this._source?.updateData({ update: [{ id, newGeometry: value }] });
     }
 
     /**
@@ -202,13 +219,6 @@ export class AssetMap extends BaseMap {
         for (const feature of features) {
             if (!feature.properties.id) continue;
             const id = feature.properties.id as string;
-            const [lon, lat] = (feature.geometry as Point).coordinates;
-            const marker = this._markersOR.get(id);
-            if (marker instanceof OrMapMarker) {
-                this._markersGL.get(marker)?.setLngLat([lon, lat]);
-                marker.lng = lon;
-                marker.lat = lat; // TODO: find what is causing markers to glitch
-            }
             newAssets[id] = this._assets[id];
         }
 
@@ -276,7 +286,12 @@ export class AssetMap extends BaseMap {
         return [value, ["+", ["case", ["==", ["get", AssetMap._clusterProperty], value], 1, 0]]];
     }
 
-    private static _assetToFeature({ id, type, name, attributes }: MissingAsset): Feature {
+    private static _assetToFeature({
+        id,
+        type,
+        name,
+        attributes,
+    }: MissingAsset): Feature<Point, { id: string; name?: string; [AssetMap._clusterProperty]: string }> {
         return {
             type: "Feature",
             geometry: attributes.location.value,
