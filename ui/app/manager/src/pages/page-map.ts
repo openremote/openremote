@@ -310,7 +310,14 @@ export class PageMap extends Page<MapStateKeyed> {
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
-                    this._updateAsset(event.asset, event.cause === "DELETE");
+                    switch (event.cause) {
+                        case "DELETE": this._map?.removeAssets([event.asset.id]); break;
+                        case "CREATE":
+                            if (MapUtil.isAssetWithLocation(event.asset)) {
+                                this._map?.addAsset(event.asset);
+                            }
+                            break;
+                    }
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -325,7 +332,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     let asset: Asset;
                     if (interested) {
                         const assets = this._unlocatedAssetSelector(this.getState());
-                        const asset = assets.find(asset => asset.id === event.ref.id);
+                        asset = assets.find(asset => asset.id === event.ref.id);
                         // Update the attribute if the asset already has a location
                         // assuming the asset is in the located asset state
                         if (!asset) {
@@ -335,7 +342,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                     // Add the asset after map state has been updated
                     if (interested && asset) {
-                        this._updateAsset(this._assets.find(asset => asset.id === event.ref.id))
+                        this._map?.addAsset(this._assets.find(asset => asset.id === event.ref.id));
                     }
                 });
 
@@ -498,19 +505,6 @@ export class PageMap extends Page<MapStateKeyed> {
             }
             this._map.removeAssets(idsToRemove);
             this._map.addAssets(assetsToAdd);
-        }
-    }
-
-    /**
-     * Adds the provided asset in the map, or removes the asset if specified.
-     * @param asset The asset to add
-     * @param remove Whether to remove the asset
-     */
-    protected _updateAsset(asset: Asset, remove?: boolean) {
-        if (remove) {
-            this._map?.removeAssets([asset.id]);
-        } else if (MapUtil.isAssetWithLocation(asset)) {
-            this._map?.addAsset(asset);
         }
     }
 }
