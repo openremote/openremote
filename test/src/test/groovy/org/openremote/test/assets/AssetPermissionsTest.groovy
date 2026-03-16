@@ -858,5 +858,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert writeResults.size() == 2
         assert writeResults.find {it.ref.id == managerTestSetup.apartment1Id && it.ref.name == Asset.LOCATION.name}.failure == null
         assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.INSUFFICIENT_ACCESS
+
+        when: "an attribute with public write=false is written to anonymously"
+        def response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1Id, BuildingAsset.STREET.name, '"Should fail"')
+
+        then: "the request should fail"
+        response.withCloseable { r ->
+            assert r.status == 403
+            true
+        }
     }
 }

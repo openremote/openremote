@@ -223,6 +223,10 @@ public class ManagerTestSetup extends ManagerSetup {
                 new MetaItem<>(ACCESS_PUBLIC_READ),
                 new MetaItem<>(ACCESS_PUBLIC_WRITE)
             ));
+        apartment1.getAttribute(BuildingAsset.STREET).get().addOrReplaceMeta(
+                new MetaItem<>(ACCESS_PUBLIC_WRITE, false),
+                new MetaItem<>(ACCESS_PUBLIC_READ, false)
+        );
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -234,6 +238,7 @@ public class ManagerTestSetup extends ManagerSetup {
         /* ############################ ROOMS ############################## */
 
         RoomAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room 1");
+        apartment1Livingroom.setAccessPublicRead(true);
         apartment1Livingroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
                 new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                 new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
