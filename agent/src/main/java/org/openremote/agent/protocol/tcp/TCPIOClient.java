@@ -38,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
-public class TCPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
+public class TCPIOClient<T> extends AbstractNettyIOClient<T> {
 
     protected String host;
     protected int port;
