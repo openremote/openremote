@@ -237,37 +237,37 @@ export class AssetMap extends BaseMap {
         for (const feature of features) {
             if (!feature.properties.cluster) continue;
             const id: number = feature.properties.cluster_id;
-            const geometry = feature.geometry as Point;
-            const [lng, lat] = geometry.coordinates;
+            let marker = this._cachedClusters[id] ?? this._getClusterMarker(feature).addTo(this._map!);
 
-            let marker = this._cachedClusters[id];
-            if (!marker) {
-                const slices: Slice[] = Object.entries(feature.properties)
-                    .filter(([k]) => k in this._assetTypeColors)
-                    .map(([type, count]) => [type, this._assetTypeColors[type], count]);
-
-                marker = this._cachedClusters[id] = new Marker({
-                    element: new OrClusterMarker(slices, id, lng, lat, this._map!),
-                }).setLngLat([lng, lat]);
+            // Invalidate the cached cluster marker if the slices don't match
+            if (marker._element instanceof OrClusterMarker && !marker._element.slicesMatch(feature.properties)) {
+                marker.remove();
+                marker = this._getClusterMarker(feature).addTo(this._map!);
             }
             newClusters[id] = marker;
-
+            // Add the new cluster marker if it's not already on screen
             if (!this._clustersOnScreen[id]) marker.addTo(this._map!);
         }
 
         // Cleanup clusters that should no longer be on screen
         for (const id in this._clustersOnScreen) {
-            const marker = newClusters[id];
-            if (!marker || this._hasAllAssetTypes(marker._element)) {
-                this._clustersOnScreen[id]?.remove();
-            }
+            if (!newClusters[id]) this._clustersOnScreen[id]?.remove();
         }
-
         this._clustersOnScreen = newClusters;
     }
 
-    private _hasAllAssetTypes(element: HTMLElement): boolean {
-        return element instanceof OrClusterMarker && !element.hasTypes(Object.keys(this._assetTypeColors));
+    private _getClusterMarker(feature: GeoJSONFeature) {
+        const id: number = feature.properties.cluster_id;
+        const geometry = feature.geometry as Point;
+        const [lng, lat] = geometry.coordinates;
+
+        const slices: Slice[] = Object.entries(feature.properties)
+            .filter(([k]) => k in this._assetTypeColors)
+            .map(([type, count]) => [type, this._assetTypeColors[type], count]);
+
+        return (this._cachedClusters[id] = new Marker({
+            element: new OrClusterMarker(slices, id, lng, lat, this._map!),
+        }).setLngLat([lng, lat]));
     }
 
     private _hasRequired(asset: AssetWithLocation): asset is MissingAsset {
