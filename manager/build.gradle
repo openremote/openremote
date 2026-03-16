@@ -190,7 +190,15 @@ dependencies {
 }
 
 tasks.named("run", JavaExec) {
-    if (System.getenv("OR_SETUP_TYPE") == "demo") {
+    def setupType = System.getenv("OR_SETUP_TYPE")
+    if (setupType != null) {
         classpath += configurations.demoExtension
+        classpath += files({
+            def setupProject = project(':setup')
+            def targetSourceSet = setupProject.sourceSets.findByName(setupType)
+            if (targetSourceSet != null) {
+                return targetSourceSet.runtimeClasspath
+            }
+        })
     }
 }
