@@ -375,8 +375,12 @@ export class PageMap extends Page<MapStateKeyed> {
     protected getRealmState = createSelector(
       [this._realmSelector],
       async (realm) => {
+          this._excludedTypes = [];
           this.unsubscribeAssets();
-          this.subscribeAssets(realm);
+          this.subscribeAssets(realm).then(() => {
+              this._map?.removeAllAssets();
+              this._map?.addAssets(this._assets);
+          });
           this._map?.refresh();
       }
     )
@@ -431,7 +435,7 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
+            ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" .excludedTypes="${this._excludedTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
 
             <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assetsOnScreen.sort((a,b) => {
