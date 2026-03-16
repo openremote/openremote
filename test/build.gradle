@@ -19,7 +19,8 @@ dependencies {
     api 'org.spockframework:spock-core'
 
     // optional dependencies for using Spock
-    testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
+    testImplementation "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
+    testImplementation "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion" // for runtime class redefinition
     testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion" // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
     testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
