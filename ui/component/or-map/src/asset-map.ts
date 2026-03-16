@@ -83,7 +83,7 @@ export class AssetMap extends BaseMap {
         if (!this._source) return;
         const features = this._map!.querySourceFeatures("assets");
 
-        if (!this._hasRequired(asset) || this._isMissing(asset, features)) {
+        if (!this._hasRequired(asset) || !this._isMissing(asset, features)) {
             return;
         }
 
