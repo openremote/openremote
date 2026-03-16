@@ -23,16 +23,27 @@ metrics:
     type: gauge
     description: What percentage of data is being served instantly from RAM versus being slowly read from disk. You want this as high as possible
 
-  pg_connection_state:
+  pg_connections_limit:
     type: gauge
-    description: Count of connections in each state (active, idle or idle in transaction states), database is either under heavy load or your application is leaking connections
-    labels: [state]
+    description: Count of connections max limit
+
+  pg_connections_used:
+    type: gauge
+    description: Count of connections in use
+
+  pg_connections_free:
+    type: gauge
+    description: Count of connections available
+
+  pg_connections_stuck:
+    type: gauge
+    description: Count of connections with state of idle in transaction
 
   pg_asset_hot_update_percent:
     type: gauge
     description: Asset table percentage of updates that are HOT updates indicates good fillfactor
 
-  pg_asset_dead_tuple_percentage:
+  pg_asset_dead_tuple_percent:
     type: gauge
     description: Asset table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
 
@@ -122,28 +133,28 @@ queries:
     metrics: [pg_cache_hit_percentage]
     sql: |
       SELECT 
-        sum(heap_blks_read) as disk_reads,
-        sum(heap_blks_hit)  as memory_hits,
         ROUND(sum(heap_blks_hit)::numeric / (sum(heap_blks_hit) + sum(heap_blks_read) + 0.001) * 100, 2) as pg_cache_hit_percentage
         FROM pg_statio_user_tables;
 
   connection_state:
-    interval: 3600 # Hourly
+    interval: 300 # 5 Mins
     databases: [openremote]
-    metrics: [pg_connection_state]
+    metrics: [pg_connections_limit, pg_connections_used, pg_connections_free, pg_connections_stuck]
     sql: |
-      SELECT 
-        state,
-        count(*) as connection_count
-        FROM pg_stat_activity
-        WHERE datname = current_database()
-        GROUP BY state
-        ORDER BY connection_count DESC;
+      SELECT
+        max_conn.max_limit as pg_connections_limit,
+        active.total_used as pg_connections_used,
+        (max_conn.max_limit - active.total_used) AS pg_connections_free,
+        idle_xact.idle_in_xact_count as pg_connections_stuck
+        FROM
+        (SELECT current_setting('max_connections')::int AS max_limit) max_conn,
+        (SELECT count(*) AS total_used FROM pg_stat_activity) active,
+        (SELECT count(*) AS idle_in_xact_count FROM pg_stat_activity WHERE state = 'idle in transaction') idle_xact;
 
   asset_tuples:
     interval: 3600 # Hourly
     databases: [openremote]
-    metrics: [pg_asset_hot_update_percent, pg_asset_dead_tuple_percentage, pg_asset_last_autovacuum_hours, pg_asset_last_autoanalyze_hours]
+    metrics: [pg_asset_hot_update_percent, pg_asset_dead_tuple_percent, pg_asset_last_autovacuum_hours, pg_asset_last_autoanalyze_hours]
     sql: |
       SELECT
         CASE
@@ -152,7 +163,7 @@ queries:
         ELSE 0.00
         END AS pg_asset_hot_update_percent,
         -- Calculate the percentage of the table that is dead space
-        ROUND((n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0)) * 100, 2) AS pg_asset_tuple_dead_percentage,
+        ROUND((n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0)) * 100, 2) AS pg_asset_dead_tuple_percent,
         -- Calculate hours since last autovacuum
         ROUND((EXTRACT(EPOCH FROM (now() - last_autovacuum)) / 3600.0)::numeric, 1) AS pg_asset_last_autovacuum_hours,
         -- Calculate hours since last autoanalyze
@@ -163,7 +174,7 @@ queries:
   datapoint_table_size:
     interval: 3600 # Hourly
     databases: [openremote]
-    metrics: [pg_connection_state]
+    metrics: [pg_datapoint_table_size]
     sql: |
       SELECT
         hypertable_name,
@@ -200,7 +211,7 @@ queries:
         AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
 
   background_errors:
-    interval: 3600
+    interval: 3600 # Hourly
     databases: [openremote]
     metrics: [pg_background_errors]
     sql: |
@@ -208,9 +219,13 @@ queries:
         SUM(total_failures) AS pg_background_errors
         FROM timescaledb_information.job_stats;
 
+
+
+
+
   # Query 1: Count of tables with bloat
   table_bloat_count:
-    interval: 300  # Run every 5 minutes
+    interval: 300  # 5 minutes
     databases: [openremote]
     metrics: [pg_table_bloat_count]
     parameters:
