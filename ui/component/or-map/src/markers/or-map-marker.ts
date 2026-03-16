@@ -191,6 +191,8 @@ export class OrMapMarker extends LitElement {
     @query("slot")
     protected _slot?: HTMLSlotElement;
 
+    protected _map?: OrMap;
+
     public get markerContainer(): HTMLDivElement | undefined {
         if (this._actualMarkerElement) {
             return this._actualMarkerElement.firstElementChild as HTMLDivElement;
@@ -409,11 +411,12 @@ export class OrMapMarker extends LitElement {
     connectedCallback(): void {
         super.connectedCallback();
         this._applyMapMarkerStyles();
+        this._map = this.parentElement as OrMap;
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         // Safely cleanup markers once removed from the DOM
-        this._actualMarkerElement?.parentElement?.removeChild(this._actualMarkerElement);
+        this._map?._removeMarker(this);
     }
 }
