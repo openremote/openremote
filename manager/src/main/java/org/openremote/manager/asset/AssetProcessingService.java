@@ -190,8 +190,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
                 }
             } else {
-                // Check attribute has public write flag for anonymous write
-                if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
+                // Check attribute has public write flag set to true for anonymous write
+                if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_WRITE).orElse(false)) {
                     LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '" + attributeEvent.getRef() + "': username=null");
                     return false;
                 }
