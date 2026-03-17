@@ -23,6 +23,7 @@ import jakarta.ws.rs.client.ClientRequestContext
 import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import jakarta.validation.Validation
 import org.openremote.agent.protocol.entsoe.EntsoeAgent
 import org.openremote.agent.protocol.entsoe.EntsoeAgentLink
 import org.openremote.agent.protocol.entsoe.EntsoeProtocol
@@ -53,6 +54,8 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
     @Shared
     Map<String, Integer> requestCountByZone = [:].withDefault { 0 }
+    @Shared
+    def validator = Validation.buildDefaultValidatorFactory().validator
 
     @Shared
     def mockServer = new ClientRequestFilter() {
@@ -161,7 +164,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
   </TimeSeries>
 </Publication_MarketDocument>
 '''
-                } else if (zone == "10YERR----------X") {
+                } else if (zone == "10YER----------X") {
                     requestCountByZone[zone] = requestCountByZone[zone] + 1
 
                     if (requestCountByZone[zone] == 1) {
@@ -202,7 +205,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
                         requestContext.abortWith(Response.status(500).build())
                         return
                     }
-                } else if (zone == "10YNODATA-----A") {
+                } else if (zone == "10YNDATA-------A") {
                     content = '''<?xml version="1.0" encoding="UTF-8"?>
 <Acknowledgement_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-1:acknowledgementdocument:7:0">
   <mRID>0985f391-49af-4</mRID>
@@ -514,7 +517,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
         when: "an attribute is linked to a zone that fails after first successful fetch"
         def errLink = new EntsoeAgentLink(agent.id)
-        errLink.setZone("10YERR----------X")
+        errLink.setZone("10YER----------X")
 
         asset = new ThingAsset("Error On Second Poll Asset")
                 .setRealm(MASTER_REALM)
@@ -604,7 +607,7 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
 
         when: "an attribute is linked to a zone that returns no-data acknowledgement"
         def noDataLink = new EntsoeAgentLink(agent.id)
-        noDataLink.setZone("10YNODATA-----A")
+        noDataLink.setZone("10YNDATA-------A")
 
         asset = new ThingAsset("No Data Zone Asset")
                 .setRealm(MASTER_REALM)
@@ -641,5 +644,26 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         if (EntsoeProtocol.client.get() != null) {
             EntsoeProtocol.client.set(null)
         }
+    }
+
+    def "ENTSO-E agent link validates zone against EIC regex pattern"() {
+        given: "an ENTSO-E agent link"
+        def link = new EntsoeAgentLink("agent-id")
+
+        expect: "zone validation follows the EIC regex"
+        link.setZone(zoneId)
+        validator.validate(link).isEmpty() == valid
+
+        where:
+        zoneId               || valid
+        "10YBE----------2"   || true
+        "10YNL----------L"   || true
+        "10YGAP---------G"   || true
+        "1YBE----------2"    || false
+        "10yBE----------2"   || false
+        "10YBE----------"    || false
+        "10YBE----------22"  || false
+        "10YBE_____-----2"   || false
+        "10YNDATA-------A"   || true
     }
 }
