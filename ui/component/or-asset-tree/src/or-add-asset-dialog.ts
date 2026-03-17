@@ -13,6 +13,8 @@ import {
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import debounce from "lodash.debounce";
+
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -65,6 +67,9 @@ export class OrAddAssetDialog extends LitElement {
     @property({attribute: false})
     selectedChildAssetType: string = "";
 
+    @state()
+    private typeFilter: string = "";
+
     public name: string = "New Asset";
 
     @query("#name-input")
@@ -78,6 +83,9 @@ export class OrAddAssetDialog extends LitElement {
 
     @query("#parent-asset-list")
     protected parentAssetList?: OrMwcList;
+
+    @query("#filter-input")
+    private _filterInput!: OrMwcInput;
 
     public static get styles() {
         // language=CSS
@@ -208,12 +216,21 @@ export class OrAddAssetDialog extends LitElement {
 
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
+
+        const filteredAgentItems = agentItems.filter(item =>
+            (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase())
+        );
+
+        const filteredAssetItems = assetItems.filter(item =>
+            (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase())
+        );
+
         const lists: ListGroupItem[] = [];
         if (agentItems.length > 0) {
             lists.push(
                 {
                     heading: i18next.t("agents"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${filteredAgentItems}" id="agent-list"></or-mwc-list>`
                 }
             );
         }
@@ -221,7 +238,7 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("assets"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${filteredAssetItems}" id="asset-list"></or-mwc-list>`
                 }
             );
         }
@@ -231,9 +248,29 @@ export class OrAddAssetDialog extends LitElement {
         return html`
             <div class="col" style="height: 100%;">
                 <form id="mdc-dialog-form-add" class="row">
-                    <div id="type-list" class="col">
-                        ${createListGroup(lists)}
+                    <div id="type-list-container" class="col" style="display: flex; flex-direction: column; width: 260px; border-right: 1px solid var(--or-app-color5);">
+                        <!-- Filter input fixed at top -->
+                        <div id="filter-bar" style="flex-shrink: 0; padding: 8px;">
+                            <or-mwc-input
+                                id="filterInput"
+                                style="width: 100%;"
+                                .type="${InputType.TEXT}"
+                                placeholder="${i18next.t("filter.filter")}..."
+                                compact
+                                outlined
+                                @input="${debounce(() => {
+                                    this.typeFilter = this._filterInput.nativeValue ?? "";
+                                }, 200)}"
+                            ></or-mwc-input>
+                        </div>
+
+                        <!-- Scrollable list -->
+                        <div id="type-list" style="flex: 1; overflow: auto;">
+                            ${createListGroup(lists)}
+                        </div>
                     </div>
+
+                
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
                         ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
