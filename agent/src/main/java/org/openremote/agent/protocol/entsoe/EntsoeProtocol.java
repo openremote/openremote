@@ -123,7 +123,9 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
 
     @Override
     protected void doLinkedAttributeWrite(EntsoeAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        // Do nothing, we're not interested in that information
+        // If some external source wants to write the current value of the attribute, we're OK with that
+        // and relay the event with AgentService as source so it goes through.
+        assetService.sendAttributeEvent(event);
     }
 
     @Override
