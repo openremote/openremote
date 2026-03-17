@@ -216,6 +216,36 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
   </Reason>
 </Acknowledgement_MarketDocument>
 '''
+                } else if (zone == "10YGAP---------G") {
+                    content = '''<?xml version="1.0" encoding="utf-8"?>
+<Publication_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3">
+  <period.timeInterval>
+    <start>2026-02-16T23:00Z</start>
+    <end>2026-02-17T23:00Z</end>
+  </period.timeInterval>
+  <TimeSeries>
+    <Period>
+      <timeInterval>
+        <start>2026-02-16T23:00Z</start>
+        <end>2026-02-17T23:00Z</end>
+      </timeInterval>
+      <resolution>PT15M</resolution>
+      <Point>
+        <position>1</position>
+        <price.amount>81.11</price.amount>
+      </Point>
+      <Point>
+        <position>2</position>
+        <price.amount>82.22</price.amount>
+      </Point>
+      <Point>
+        <position>4</position>
+        <price.amount>84.44</price.amount>
+      </Point>
+    </Period>
+  </TimeSeries>
+</Publication_MarketDocument>
+'''
                 } else {
                     requestContext.abortWith(Response.serverError().build())
                     return
@@ -632,6 +662,85 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         conditions.eventually {
             List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef)
             assert datapoints.isEmpty()
+        }
+
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
+        if (EntsoeProtocol.client.get() != null) {
+            EntsoeProtocol.client.set(null)
+        }
+    }
+
+    def "ENTSO-E integration test keeps position timing when intermediate point is missing"() {
+        given: "the container environment is started"
+        requestCountByZone.clear()
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        EntsoeProtocol.initClient()
+
+        if (!EntsoeProtocol.client.get().configuration.isRegistered(mockServer)) {
+            EntsoeProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        def container = startContainer(defaultConfig(), defaultServices())
+        setPseudoClock(BEFORE_DATASET_START)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
+        def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
+
+        when: "an ENTSO-E agent and linked attribute are created for a zone with a missing point position"
+        agent = new EntsoeAgent("ENTSO-E Agent")
+                .setRealm(MASTER_REALM)
+                .setSecurityToken("test-token")
+        agent = assetStorageService.merge(agent)
+
+        def gapLink = new EntsoeAgentLink(agent.id)
+        gapLink.setZone("10YGAP---------G")
+
+        asset = new ThingAsset("Gap Position Asset")
+                .setRealm(MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<>("energyPrice", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, gapLink))
+                )
+        asset = assetStorageService.merge(asset)
+
+        def attributeRef = new AttributeRef(asset.id, "energyPrice")
+        def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+
+        then: "the protocol is connected and attribute linked"
+        conditions.eventually {
+            assert protocol != null
+            assert agentService.getAgent(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert protocol.getLinkedAttributes().containsKey(attributeRef)
+        }
+
+        when: "a polling update is triggered"
+        protocol.updateAllLinkedAttributes()
+
+        then: "only provided points are stored and their timestamps follow position offsets"
+        conditions.eventually {
+            List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef).sort { it.timestamp }
+            assert datapoints.size() == 3
+
+            def start = Instant.parse(DATASET_START).toEpochMilli()
+            def step = 15 * 60 * 1000L
+
+            assert datapoints[0].timestamp == start
+            assert datapoints[1].timestamp == start + step
+            assert datapoints[2].timestamp == start + (3 * step)
+            assert datapoints[2].timestamp - datapoints[1].timestamp == 2 * step
+
+            assert (datapoints[0].value as BigDecimal).compareTo(81.11G) == 0
+            assert (datapoints[1].value as BigDecimal).compareTo(82.22G) == 0
+            assert (datapoints[2].value as BigDecimal).compareTo(84.44G) == 0
         }
 
         cleanup: "remove created assets and mock client"
