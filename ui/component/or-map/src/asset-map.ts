@@ -131,7 +131,7 @@ export class AssetMap extends BaseMap {
 
         if (!this._source || !id || !this._assets[id]) return;
 
-        if (!event.value) {
+        if (event.value == null) {
             delete this._assets[id];
             this._source?.updateData({ remove: [id] });
             return;
