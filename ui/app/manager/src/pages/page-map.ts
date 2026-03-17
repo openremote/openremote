@@ -224,7 +224,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assetTypes: string[] = [];
 
     @state()
-    protected _excludedTypes?: string[] = [];
+    protected _excludedTypes: string[] = [];
 
     @state()
     protected _assetsOnScreen: AssetWithLocation[] = [];
@@ -307,6 +307,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 const assets = response.data;
 
                 this._store.dispatch(setAssets(assets));
+                this._map?.addAssets(this._assets);
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
@@ -377,10 +378,7 @@ export class PageMap extends Page<MapStateKeyed> {
       async (realm) => {
           this._excludedTypes = [];
           this.unsubscribeAssets();
-          this.subscribeAssets(realm).then(() => {
-              this._map?.removeAllAssets();
-              this._map?.addAssets(this._assets);
-          });
+          this.subscribeAssets(realm);
           this._map?.refresh();
       }
     )
@@ -423,9 +421,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 if (!newTypes.includes(type)) newTypes.push(type);
             }
             this._assetTypes = newTypes;
-            if (!_changedProperties.get("_assets")?.length) {
-                this._map?.addAssets(this._assets);
-            }
+
         }
         return super.shouldUpdate(_changedProperties);
     }
