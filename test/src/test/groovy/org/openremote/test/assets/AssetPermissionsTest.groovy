@@ -543,7 +543,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.parentId == managerTestSetup.smartBuildingId
         apartment1.path[0] == managerTestSetup.smartBuildingId
         apartment1.path[1] == managerTestSetup.apartment1Id
-        apartment1.attributes.size() == 7
+        apartment1.attributes.size() == 8
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId
@@ -691,14 +691,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the update should be ignored"
         assert testAsset.getParentId() == managerTestSetup.apartment1Id
 
-        when: "an asset is made public"
+        when: "an asset is made private"
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
-        testAsset.setAccessPublicRead(true)
+        testAsset.setAccessPublicRead(false)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
-        assert !testAsset.isAccessPublicRead()
+        assert testAsset.isAccessPublicRead()
 
         when: "an asset is renamed"
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
@@ -827,8 +827,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.queryAssets(null, new AssetQuery().recursive(true))
 
         then: "only public assets should be returned"
-        assets.size() == 2
+        assets.size() == 3
         assets.find {it.id == managerTestSetup.apartment1Id } != null
+        assets.find {it.id == managerTestSetup.apartment1LivingroomId } != null
         assets.find {it.id == managerTestSetup.apartment2LivingroomId } != null
 
         when: "the public assets are retrieved"
@@ -836,16 +837,18 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
 
         then: "the public assets should be retrieved"
-        assert assets.size() == 2
+        assert assets.size() == 3
         assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment1LivingroomId} != null
         assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
 
         when: "the public assets are retrieved without a query"
         assets = assetResource.queryAssets(null, null)
 
         then: "the public assets should be retrieved"
-        assert assets.size() == 2
+        assert assets.size() == 3
         assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment1LivingroomId} != null
         assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
 
         when: "an attribute with public write is written to and another with only public read"
