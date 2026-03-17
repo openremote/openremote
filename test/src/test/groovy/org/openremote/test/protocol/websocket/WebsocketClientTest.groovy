@@ -149,7 +149,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         and: "we add callback consumers to the clients"
         def connectionStatus = client.getConnectionStatus()
         def connectionStatus2 = client2.getConnectionStatus()
-        def connectionStatus3 = client2.getConnectionStatus()
+        def connectionStatus3 = client3.getConnectionStatus()
         List<Object> receivedMessages = new CopyOnWriteArrayList<>()
         List<Object> receivedMessages2 = new CopyOnWriteArrayList<>()
         List<Object> receivedMessages3 = new CopyOnWriteArrayList<>()
