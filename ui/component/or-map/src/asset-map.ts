@@ -218,7 +218,7 @@ export class AssetMap extends BaseMap {
         for (const feature of features) {
             if (!feature.properties.id) continue;
             const id = feature.properties.id as string;
-            newAssets[id] = this._assets[id];
+            if (this._assets[id]) newAssets[id] = this._assets[id];
         }
 
         for (const id in this._assetsOnScreen) {
@@ -270,7 +270,7 @@ export class AssetMap extends BaseMap {
     }
 
     private _hasRequired(asset: AssetWithLocation): asset is MissingAsset {
-        return Boolean(asset.id && asset.type);
+        return Boolean(asset?.id && asset?.type);
     }
 
     private _isMissing(asset: MissingAsset, features: Feature[]) {
