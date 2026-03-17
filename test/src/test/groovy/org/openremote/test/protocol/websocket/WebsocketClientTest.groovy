@@ -304,13 +304,13 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert receivedMessages.size() == 2
             def attrSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes"} as TriggeredEventSubscription<AttributeEvent>
             def assetSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets"} as TriggeredEventSubscription<AssetEvent>
-            assert attrSub != null
             assert assetSub != null
-            assert attrSub.events.size() == 1
             assert assetSub.events.size() == 1
             assert assetSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
             assert assetSub.events.get(0).attributeNames.size() == 8
             assert !assetSub.events.get(0).attributeNames.contains("testAttribute")
+            assert attrSub != null
+            assert attrSub.events.size() == 1
             assert attrSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
             assert attrSub.events.get(0).name == Asset.NOTES.name
         }
@@ -320,13 +320,13 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert receivedMessages3.size() == 2
             def attrSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes3"} as TriggeredEventSubscription<AttributeEvent>
             def assetSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets3"} as TriggeredEventSubscription<AssetEvent>
-            assert attrSub != null
             assert assetSub != null
-            assert attrSub.events.size() == 1
             assert assetSub.events.size() == 1
             assert assetSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
             assert assetSub.events.get(0).attributeNames.size() == 1
             assert assetSub.events.get(0).attributeNames.contains(Asset.NOTES.name)
+            assert attrSub != null
+            assert attrSub.events.size() == 1
             assert attrSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
             assert attrSub.events.get(0).name == Asset.NOTES.name
         }
@@ -349,18 +349,18 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             def attr1Sub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes" && it.events.any {((AttributeEvent)it).ref.name==BuildingAsset.STREET.name}} as TriggeredEventSubscription<AttributeEvent>
             def attr2Sub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes" && it.events.any {((AttributeEvent)it).ref.name==Asset.LOCATION.name}} as TriggeredEventSubscription<AttributeEvent>
             def assetSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets"} as TriggeredEventSubscription<AssetEvent>
-            assert attr1Sub != null
-            assert attr2Sub != null
             assert assetSub != null
-            assert attr1Sub.events.size() == 1
-            assert attr2Sub.events.size() == 1
             assert assetSub.events.size() == 1
             assert assetSub.events.get(0).id == managerTestSetup.apartment1Id
             assert assetSub.events.get(0).attributeNames.size() == 8
             assert assetSub.events.get(0).attributeNames.contains(BuildingAsset.STREET.name)
+            assert attr1Sub != null
+            assert attr1Sub.events.size() == 1
             assert attr1Sub.events.get(0).id == managerTestSetup.apartment1Id
-            assert attr2Sub.events.get(0).id == managerTestSetup.apartment1Id
             assert attr1Sub.events.get(0).name == BuildingAsset.STREET.name
+            assert attr2Sub != null
+            assert attr2Sub.events.size() == 1
+            assert attr2Sub.events.get(0).id == managerTestSetup.apartment1Id
             assert attr2Sub.events.get(0).name == Asset.LOCATION.name
         }
 
@@ -369,13 +369,13 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert receivedMessages3.size() == 2
             def attrSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes3"} as TriggeredEventSubscription<AttributeEvent>
             def assetSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets3"} as TriggeredEventSubscription<AssetEvent>
-            assert attrSub != null
             assert assetSub != null
-            assert attrSub.events.size() == 1
             assert assetSub.events.size() == 1
             assert assetSub.events.get(0).id == managerTestSetup.apartment1Id
             assert assetSub.events.get(0).attributeNames.size() == 1
             assert assetSub.events.get(0).attributeNames.contains(Asset.LOCATION.name)
+            assert attrSub != null
+            assert attrSub.events.size() == 1
             assert attrSub.events.get(0).id == managerTestSetup.apartment1Id
             assert attrSub.events.get(0).name == BuildingAsset.LOCATION.name
         }
