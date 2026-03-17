@@ -421,7 +421,6 @@ export class PageMap extends Page<MapStateKeyed> {
                 if (!newTypes.includes(type)) newTypes.push(type);
             }
             this._assetTypes = newTypes;
-
         }
         return super.shouldUpdate(_changedProperties);
     }
