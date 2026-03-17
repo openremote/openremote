@@ -369,7 +369,7 @@ export class OrMap extends LitElement {
         this._map?.removeAssets(ids);
     }
 
-    public removeAllAssets(): Promise<void> | void {
+    public removeAllAssets(): void {
         this._map?.removeAllAssets();
     }
 
