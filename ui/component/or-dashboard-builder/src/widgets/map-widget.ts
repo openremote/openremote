@@ -101,14 +101,6 @@ export class MapWidget extends OrAssetWidget {
         this._loadAssets();
     }
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("loadedAssets")) {
-            // Load the markers onto the map
-            this._map?.removeAllAssets();
-        }
-        return super.shouldUpdate(_changedProperties);
-    }
-
     protected updated(changedProps: PropertyValues) {
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             this._loadAssets();
