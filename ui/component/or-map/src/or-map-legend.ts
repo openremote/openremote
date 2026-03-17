@@ -78,7 +78,7 @@ export class OrMapLegend extends LitElement {
                 <div id="legend-content" hidden>
                     <ul>
                         ${this.assetTypes.map(
-                            (assetType) => html` <li id="asset-legend" data-asset-type="${assetType}" style="display: flex;">
+                            (assetType) => html`<li id="asset-legend" data-asset-type="${assetType}" style="display: flex;">
                                 <or-icon
                                     icon="${this._assetTypesInfo[assetType].icon}"
                                     style="color: #${this._assetTypesInfo[assetType].color}"
@@ -93,6 +93,7 @@ export class OrMapLegend extends LitElement {
                                         } else {
                                             this.excludedTypes.push(assetType);
                                         }
+                                        this.requestUpdate();
                                         this.dispatchEvent(new OrMapLegendEvent(this.excludedTypes));
                                     }}"
                                 ></or-mwc-input>
