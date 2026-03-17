@@ -14,6 +14,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -94,7 +95,9 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, EntsoeAgentLink agentLink) throws RuntimeException {
-        LOG.info("ENTSOE doLinkAttribute " + attribute.getName() + " " + attribute.getValue());
+        if (!attribute.getType().getType().isAssignableFrom(BigDecimal.class) && !attribute.getType().getType().isAssignableFrom(Double.class)) {
+            LOG.warning("Linked attribute " + attribute.getName() + " of asset " + assetId + " not of supported type. Predicted data points will still be generated but inconsistent behaviour could occur.");
+        }
         restartPollingWithInitialDelay();
     }
 
