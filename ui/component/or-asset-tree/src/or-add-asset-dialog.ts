@@ -11,7 +11,7 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
+import {DefaultColor2, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import debounce from "lodash.debounce";
 
@@ -156,6 +156,13 @@ export class OrAddAssetDialog extends LitElement {
                 display: flex;
                 align-items: center;
                 position: relative;
+                padding: 7px 7px 7px 7px;
+                background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)}))
+
+            }
+            
+            #filterInput{
+                width: 100%;
             }
 
             #type-list {
@@ -169,7 +176,7 @@ export class OrAddAssetDialog extends LitElement {
                 display: flex;
                 flex-direction: column; 
                 width: 260px; 
-                border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});"
+                border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
 
             #type-title {
                 display: flex;
