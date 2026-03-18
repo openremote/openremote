@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * A sync rule lists any {@link org.openremote.model.attribute.Attribute}s and/or
  * {@link org.openremote.model.attribute.MetaItem}s that should be removed and/or added  from/to a given asset type
- * before it is sent to the central instance
+ * before it is sent to the central instance as well as configuring the accessPublicRead flag of the asset.
  */
 public class GatewayAssetSyncRule {
     /**
@@ -29,6 +29,11 @@ public class GatewayAssetSyncRule {
      * matching attribute before syncing.
      */
     public Map<String, MetaMap> addAttributeMeta;
+
+    /**
+     * Override the accessPublicRead flag of the asset; if not set then the value is taken from the asset itself.
+     */
+    public Boolean accessPublicRead;
 
     public List<String> getExcludeAttributes() {
         return excludeAttributes;
@@ -54,6 +59,15 @@ public class GatewayAssetSyncRule {
 
     public GatewayAssetSyncRule setAddAttributeMeta(Map<String, MetaMap> addAttributeMeta) {
         this.addAttributeMeta = addAttributeMeta;
+        return this;
+    }
+
+    public Boolean getAccessPublicRead() {
+        return accessPublicRead;
+    }
+
+    public GatewayAssetSyncRule setAccessPublicRead(Boolean accessPublicRead) {
+        this.accessPublicRead = accessPublicRead;
         return this;
     }
 
