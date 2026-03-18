@@ -25,7 +25,7 @@ type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
 export class AssetMap extends BaseMap {
     private static _clusterProperty = "assetType";
 
-    protected _assets: Record<string, AssetWithLocation> = {};
+    protected _assets: Record<string, AssetWithLocation | null> = {};
     protected _assetTypeColors: Record<string, string> = {};
     protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
     protected _cachedClusters: Record<string, Marker> = {};
@@ -132,7 +132,7 @@ export class AssetMap extends BaseMap {
         if (!this._source || !id || !this._assets[id]) return;
 
         if (event.value == null) {
-            delete this._assets[id];
+            this._assets[id] = null;
             this._source?.updateData({ remove: [id] });
             return;
         }
@@ -146,10 +146,12 @@ export class AssetMap extends BaseMap {
     }
 
     public removeAssets(ids: string[]) {
+        for (const id of ids) this._assets[id] = null;
         this._source?.updateData({ remove: ids });
     }
 
     public removeAllAssets() {
+        this._assets = {};
         this._source?.updateData({ removeAll: true });
     }
 
