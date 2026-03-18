@@ -194,8 +194,8 @@ export class AssetMap extends BaseMap {
                 promoteId: "id", // Promote the id property as feature id
                 data: { type: "FeatureCollection", features: [] }, // TODO: consider preloading data to avoid tile cache misses
             })
-            .addLayer({ ...baseLayer, id: "asset", filter: ["has", "point_count"] })
-            .addLayer({ ...baseLayer, id: "cluster", filter: ["!", ["has", "point_count"]] });
+            .addLayer({ ...baseLayer, id: "cluster", filter: ["has", "point_count"] })
+            .addLayer({ ...baseLayer, id: "asset", filter: ["!", ["has", "point_count"]] });
 
         this._source = this._map.getSource("assets") as GeoJSONSource;
 
