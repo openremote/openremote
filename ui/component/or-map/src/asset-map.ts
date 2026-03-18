@@ -8,7 +8,7 @@ import { OrMapLoadedEvent, OrMapMarkersChangedEvent } from ".";
 import { Util } from "@openremote/core";
 import { AttributeEvent } from "@openremote/model";
 
-type MissingAsset = AssetWithLocation & { id: string; type: string };
+type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
 
 /**
  * The main component that handles how assets are displayed on the map.
@@ -139,7 +139,7 @@ export class AssetMap extends BaseMap {
 
         const asset = (this._assets[id] = Util.updateAsset(structuredClone(this._assets[id]), event));
         const newGeometry = asset.attributes.location.value;
-        const newProperties = Object.entries(AssetMap._assetToFeature(asset as MissingAsset).properties).map(
+        const newProperties = Object.entries(AssetMap._assetToFeature(asset as IdentifiableAsset).properties).map(
             ([key, value]) => ({ key, value })
         );
         this._source?.updateData({ update: [{ id, newGeometry, addOrUpdateProperties: newProperties }] });
@@ -269,11 +269,11 @@ export class AssetMap extends BaseMap {
         }).setLngLat([lng, lat]));
     }
 
-    private _hasRequired(asset: AssetWithLocation): asset is MissingAsset {
+    private _hasRequired(asset: AssetWithLocation): asset is IdentifiableAsset {
         return Boolean(asset?.id && asset?.type);
     }
 
-    private _isMissing(asset: MissingAsset, features: Feature[]) {
+    private _isMissing(asset: IdentifiableAsset, features: Feature[]) {
         return !features?.some((f) => f.properties?.id === asset.id);
     }
 
@@ -290,7 +290,7 @@ export class AssetMap extends BaseMap {
         type,
         name,
         attributes,
-    }: MissingAsset): Feature<Point, { id: string; name?: string; [AssetMap._clusterProperty]: string }> {
+    }: IdentifiableAsset): Feature<Point, { id: string; name?: string; [AssetMap._clusterProperty]: string }> {
         return {
             type: "Feature",
             geometry: attributes.location.value,
