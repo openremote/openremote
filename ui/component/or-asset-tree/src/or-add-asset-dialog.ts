@@ -152,13 +152,9 @@ export class OrAddAssetDialog extends LitElement {
                 font-size: 16px;
             }
 
-            #type-list-filter{
-                display: flex;
-                align-items: center;
-                position: relative;
-                padding: 7px 7px 7px 7px;
+            #type-list-filter {
+                padding: 7px;
                 background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)}))
-
             }
             
             #filterInput{
