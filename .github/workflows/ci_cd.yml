@@ -271,7 +271,7 @@ jobs:
 
       - name: Check UI dependencies
         if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
-        run: npx knip -c ui/knip.jsonc
+        run: npx knip@5.88.0 -c ui/knip.jsonc
 
       - name: Check deployment build.gradle
         id: check_deployment_gradle
