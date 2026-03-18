@@ -50,13 +50,21 @@ public class V20250916_01__AddServiceRoles extends BaseJavaMigration {
     @Override
     public void migrate(Context context) throws Exception {
 
+        // Get the Keycloak port value from system properties for tests
+        int keycloakPort = Integer.parseInt(System.getProperty(
+                KeycloakIdentityProvider.OR_KEYCLOAK_PORT,
+                System.getenv().getOrDefault(
+                        KeycloakIdentityProvider.OR_KEYCLOAK_PORT,
+                        String.valueOf(KeycloakIdentityProvider.OR_KEYCLOAK_PORT_DEFAULT)
+                )
+        ));
+
         // Build the keycloak URL
         UriBuilder uriBuilder = UriBuilder.fromPath("/")
                 .scheme("http")
                 .host(System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_HOST,
                         KeycloakIdentityProvider.OR_KEYCLOAK_HOST_DEFAULT))
-                .port(Integer.parseInt(System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_PORT,
-                        String.valueOf(KeycloakIdentityProvider.OR_KEYCLOAK_PORT_DEFAULT))));
+                .port(keycloakPort);
 
         String path = System.getenv().getOrDefault(KeycloakIdentityProvider.OR_KEYCLOAK_PATH,
                 KeycloakIdentityProvider.OR_KEYCLOAK_PATH_DEFAULT);
