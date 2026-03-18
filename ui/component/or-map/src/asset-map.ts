@@ -1,4 +1,4 @@
-import { AddLayerObject, GeoJSONFeature, GeoJSONSource, MapSourceDataEvent, Marker } from "maplibre-gl";
+import { CircleLayerSpecification, GeoJSONFeature, GeoJSONSource, MapSourceDataEvent, Marker } from "maplibre-gl";
 import { Feature, Point } from "geojson";
 import { AssetWithLocation, ClusterConfig } from "./types";
 import { BaseMap } from "./base-map";
@@ -176,8 +176,7 @@ export class AssetMap extends BaseMap {
             this._map.removeSource("assets");
         }
 
-        const invisibleLayer: AddLayerObject = {
-            id: "invisible",
+        const baseLayer: Omit<CircleLayerSpecification, "id"> = {
             type: "circle",
             source: "assets",
             paint: { "circle-radius": 0 },
@@ -193,8 +192,8 @@ export class AssetMap extends BaseMap {
                 promoteId: "id", // Promote the id property as feature id
                 data: { type: "FeatureCollection", features: [] }, // TODO: consider preloading data to avoid tile cache misses
             })
-            .addLayer({ ...invisibleLayer, id: "asset", filter: ["has", "point_count"] })
-            .addLayer({ ...invisibleLayer, id: "cluster", filter: ["!", ["has", "point_count"]] });
+            .addLayer({ ...baseLayer, id: "asset", filter: ["has", "point_count"] })
+            .addLayer({ ...baseLayer, id: "cluster", filter: ["!", ["has", "point_count"]] });
 
         this._source = this._map.getSource("assets") as GeoJSONSource;
 
