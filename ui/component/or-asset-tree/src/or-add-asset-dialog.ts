@@ -165,11 +165,12 @@ export class OrAddAssetDialog extends LitElement {
                 text-transform: capitalize;
             }
 
-            #type-list-container{
+            #type-list-container {
                 display: flex;
-                flex-direction: column; 
-                width: 260px; 
+                flex-direction: column;
+                width: 260px;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+            }
 
             #type-title {
                 display: flex;
