@@ -153,16 +153,7 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
     }
 
     protected void updatePricingInformation(AttributeRef attributeRefs, Attribute attribute) {
-        /*
-        LOG.log(Level.FINE, () -> "Updating pricing information data for asset: " + assetId);
-
-        Asset<?> asset = assetService.findAsset(assetId);
-        if (asset == null) {
-            LOG.log(Level.WARNING, () -> "Asset not found for asset: " + assetId);
-            return;
-        }
-
-         */
+        LOG.fine("Updating pricing information data for attribute " + attribute.getName());
 
         EntsoeAgentLink agentLink = agent.getAgentLink(attribute);
 
@@ -207,7 +198,6 @@ public class EntsoeProtocol extends AbstractProtocol<EntsoeAgent, EntsoeAgentLin
      */
     protected boolean healthCheck() {
         String apiUrl = buildApiUrl("10YBE----------2");
-        LOG.info("API URL: " + apiUrl);
         try (Response response = client.get().target(apiUrl).request(javax.ws.rs.core.MediaType.APPLICATION_XML).get()) {
             if (response.getStatus() != 200) {
                 LOG.warning("Health check failed with status: " + response.getStatus());
