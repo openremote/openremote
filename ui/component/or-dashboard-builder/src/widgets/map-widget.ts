@@ -93,6 +93,7 @@ export class MapWidget extends OrAssetWidget {
     }
 
     disconnectedCallback() {
+        this.removeEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         return super.disconnectedCallback();
     }
