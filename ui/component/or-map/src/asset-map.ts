@@ -97,7 +97,7 @@ export class AssetMap extends BaseMap {
     }
 
     /**
-     * Add multiple assets as (asset) features to the map. Optimized for adding mutliple assets at once.
+     * Add multiple assets as (asset) features to the map. Optimized for adding multiple assets at once.
      * @param assets The assets to add
      */
     public addAssets(assets: AssetWithLocation[]) {
