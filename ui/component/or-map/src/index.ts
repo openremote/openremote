@@ -488,6 +488,10 @@ export class OrMap extends LitElement {
         }
     }
 
+    public _removeMarker(marker: OrMapMarker) {
+        this._map?.removeMarker(marker);
+    }
+
     protected _onMarkerChangedEvent(evt: OrMapMarkerChangedEvent) {
         if (this._map) {
             this._map.onMarkerChanged(evt.detail.marker, evt.detail.property);

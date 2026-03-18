@@ -610,27 +610,32 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     }
 
     @Unroll
-    def "Get valueDescriptor schema for #name"(String name, Class<?> clazz) {
+    def "Get valueDescriptor schema and hash for #name"(String name, Class<?> clazz, String hash) {
         given: "required services are setup"
         def assetModelService = container.getService(AssetModelService.class)
 
         when: "we ask to generate a schema for #clazz"
-        def schema = assetModelService.getValueDescriptorSchema(name)
-        def expected = ValueUtil.getSchema(clazz)
+        def result = assetModelService.getValueDescriptorSchema(name)
+        def expected = ValueUtil.getSchema(clazz).toString()
 
         then: "the schema to be the same"
-        Objects.equals(schema, expected)
+        Objects.equals(result.schema(), expected)
+
+        and: "the hash to be the same"
+        if (!hash.empty) {
+            Objects.equals(result.hash(), hash)
+        }
 
         where:
-        name                    | clazz
-        "text"                  | String
-        "text[]"                | String[]
-        "text[][]"              | String[][]
-        "agentLink"             | AgentLink
-        "attributeLink"         | AttributeLink
-        "valueConstraint[]"     | ValueConstraint[]
-        "forecastConfiguration" | ForecastConfiguration
-        "valueFormat"           | ValueFormat
+        name                    | clazz                 | hash
+        "text"                  | String                | "04818E8A57A9EBA38CA5457DA1907FEF"
+        "text[]"                | String[]              | "A843B49121780A9A4DCA0FB5604CDA1B"
+        "text[][]"              | String[][]            | "2FD46740DD360941363BDA6D7F2D9EF2"
+        "agentLink"             | AgentLink             | "" // These are likely to change
+        "attributeLink"         | AttributeLink         | "" // so we skip them.
+        "valueConstraint[]"     | ValueConstraint[]     | ""
+        "forecastConfiguration" | ForecastConfiguration | ""
+        "valueFormat"           | ValueFormat           | ""
     }
 
     def "Get unknown valueDescriptor schema"() {

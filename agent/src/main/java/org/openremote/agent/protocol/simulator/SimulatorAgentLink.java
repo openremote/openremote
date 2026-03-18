@@ -19,10 +19,16 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.TimeZone;
 
@@ -35,10 +41,6 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored.")
     protected SimulatorReplayDatapoint[] replayData;
 
-    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
-    @JsonSchemaFormat("timezone")
-    protected TimeZone timezone;
-
     @JsonSchemaTitle("Schedule")
     @JsonSchemaDescription("Overwrites the possible dataset length and when it is replayed." +
         " The dataset can be scheduled to stop based on the UNTIL rule part" +
@@ -49,12 +51,37 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
 
+    @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
+    @JsonSchemaFormat("timezone")
+    protected TimeZone timezone;
+
     // For Hydrators
     protected SimulatorAgentLink() {
     }
 
     public SimulatorAgentLink(String id) {
+        this(id, null, null, null);
+    }
+
+    @JsonCreator
+    public SimulatorAgentLink(
+            @JsonProperty("id") String id,
+            @JsonProperty("replayData") SimulatorReplayDatapoint[] replayData,
+            @JsonProperty("schedule") SimulatorProtocol.Schedule schedule,
+            @JsonProperty("timezone") TimeZone timezone
+    ){
         super(id);
+
+        this.replayData = replayData;
+        this.schedule = schedule;
+        this.timezone = timezone;
+
+        if (schedule == null) {
+            LocalDateTime start = LocalDate.now(ZoneId.of("UTC")).atStartOfDay();
+            LocalDateTime end = getReplayData()
+                    .flatMap(this::getLastReplayDatapointSeconds).map(start::plusSeconds).orElse(start.plusDays(1));
+            this.schedule = new SimulatorProtocol.Schedule(start, end, null);
+        }
     }
 
     public Optional<SimulatorReplayDatapoint[]> getReplayData() {
@@ -66,8 +93,8 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         return this;
     }
 
-    public Optional<SimulatorProtocol.Schedule> getSchedule() {
-        return Optional.ofNullable(schedule);
+    public SimulatorProtocol.Schedule getSchedule() {
+        return schedule;
     }
 
     public SimulatorAgentLink setSchedule(SimulatorProtocol.Schedule schedule) {
@@ -82,5 +109,17 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     public SimulatorAgentLink setTimezone(TimeZone timezone) {
         this.timezone = timezone;
         return this;
+    }
+
+    /**
+     * Resolves the timestamp seconds of the last (max) {@link SimulatorReplayDatapoint}.
+     * @param rd The {@link SimulatorReplayDatapoint}s to find the latest timestamp of.
+     * @return The last (max) {@link SimulatorReplayDatapoint#timestamp} seconds.
+     * If the resolved time is 0 an empty value is returned instead.
+     */
+    private Optional<Long> getLastReplayDatapointSeconds(SimulatorReplayDatapoint[] rd) {
+        long time = Arrays.stream(rd).map(d -> d.timestamp).reduce(0L, Long::max);
+        if (time == 0) return Optional.empty();
+        return Optional.of(time);
     }
 }
