@@ -337,7 +337,7 @@ export class PageMap extends Page<MapStateKeyed> {
                         // Update the attribute if the asset already has a location
                         // assuming the asset is in the located asset state
                         if (!asset) {
-                            this._map.updateAttribute(event);
+                            this._map?.updateAttribute(event);
                         }
                     }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
