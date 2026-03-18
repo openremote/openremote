@@ -19,11 +19,11 @@
  */
 package org.openremote.test.protocol.entsoe
 
+import jakarta.validation.Validation
 import jakarta.ws.rs.client.ClientRequestContext
 import jakarta.ws.rs.client.ClientRequestFilter
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import jakarta.validation.Validation
 import org.openremote.agent.protocol.entsoe.EntsoeAgent
 import org.openremote.agent.protocol.entsoe.EntsoeAgentLink
 import org.openremote.agent.protocol.entsoe.EntsoeProtocol
@@ -41,8 +41,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.io.IOException
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -56,6 +58,8 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
     Map<String, Integer> requestCountByZone = [:].withDefault { 0 }
     @Shared
     def validator = Validation.buildDefaultValidatorFactory().validator
+    @Shared
+    List<Map<String, String>> requestLog = Collections.synchronizedList(new ArrayList<>())
 
     @Shared
     def mockServer = new ClientRequestFilter() {
@@ -67,10 +71,19 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
             def requestUri = requestContext.uri
 
             if (requestUri.host == "web-api.tp.entsoe.eu" && requestUri.path == "/api") {
-                def zone = requestUri.query?.split("&")
-                        ?.find { it.startsWith("in_Domain=") }
-                        ?.split("=")
-                        ?.with { it.size() > 1 ? it[1] : null }
+                def queryParams = [:]
+                requestUri.query?.split("&")?.each { pair ->
+                    def parts = pair.split("=", 2)
+                    if (parts.length == 2) {
+                        queryParams[parts[0]] = parts[1]
+                    }
+                }
+                def zone = queryParams["in_Domain"]
+                requestLog.add([
+                        zone       : queryParams["in_Domain"],
+                        periodStart: queryParams["periodStart"],
+                        periodEnd  : queryParams["periodEnd"]
+                ])
 
                 def content
                 if (zone == "10YBE----------2") {
@@ -774,5 +787,100 @@ class EntsoeProtocolTest extends Specification implements ManagerContainerTrait 
         "10YBE----------22"  || false
         "10YBE_____-----2"   || false
         "10YNDATA-------A"   || true
+    }
+
+    def "ENTSO-E integration test updates requested period range when clock advances by one day"() {
+        given: "the container environment is started"
+        requestCountByZone.clear()
+        requestLog.clear()
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def periodFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm").withZone(ZoneId.of("UTC"))
+
+        EntsoeProtocol.initClient()
+
+        if (!EntsoeProtocol.client.get().configuration.isRegistered(mockServer)) {
+            EntsoeProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        EntsoeAgent agent = null
+        ThingAsset asset = null
+
+        when: "an ENTSO-E agent is created"
+        agent = new EntsoeAgent("ENTSO-E Agent")
+                .setRealm(MASTER_REALM)
+                .setSecurityToken("test-token")
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol instance for the agent should be created and connected"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) != null
+            assert ((EntsoeProtocol) agentService.getProtocolInstance(agent.id)) != null
+            assert agentService.getAgent(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        when: "an asset attribute is linked to the ENTSO-E agent"
+        def link = new EntsoeAgentLink(agent.id)
+        link.setZone("10YBE----------2")
+
+        asset = new ThingAsset("Time Range Asset")
+                .setRealm(MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<>("energyPrice", NUMBER)
+                                .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, link))
+                )
+        asset = assetStorageService.merge(asset)
+
+        def attributeRef = new AttributeRef(asset.id, "energyPrice")
+        def protocol = (EntsoeProtocol) agentService.getProtocolInstance(agent.id)
+
+        and: "the attribute is linked by protocol"
+        conditions.eventually {
+            assert protocol.getLinkedAttributes().containsKey(attributeRef)
+        }
+
+        and: "an update is triggered at the fixed time"
+        stopPseudoClock()
+        setPseudoClock("2026-02-10T10:15:00.000Z")
+        def fixedNow = Instant.parse("2026-02-10T10:15:00.000Z")
+        requestLog.clear()
+        protocol.updateAllLinkedAttributes()
+
+        then: "request periodStart/periodEnd use the fixed clock time"
+        conditions.eventually {
+            assert requestLog.any {
+                it.zone == "10YBE----------2" &&
+                        it.periodStart == periodFormatter.format(fixedNow) &&
+                        it.periodEnd == periodFormatter.format(fixedNow.plus(1, java.time.temporal.ChronoUnit.DAYS))
+            }
+        }
+
+        when: "clock advances by one day and another update is triggered"
+        advancePseudoClock(1, TimeUnit.DAYS, container)
+        def nextNow = fixedNow.plus(1, java.time.temporal.ChronoUnit.DAYS)
+        requestLog.clear()
+        protocol.updateAllLinkedAttributes()
+
+        then: "request periodStart/periodEnd are shifted by one day"
+        conditions.eventually {
+            assert requestLog.any {
+                it.zone == "10YBE----------2" &&
+                        it.periodStart == periodFormatter.format(nextNow) &&
+                        it.periodEnd == periodFormatter.format(nextNow.plus(1, java.time.temporal.ChronoUnit.DAYS))
+            }
+        }
+
+        cleanup: "remove created assets and mock client"
+        if (asset?.id) {
+            assetStorageService.delete([asset.id])
+        }
+        if (agent?.id) {
+            assetStorageService.delete([agent.id])
+        }
+        if (EntsoeProtocol.client.get() != null) {
+            EntsoeProtocol.client.set(null)
+        }
     }
 }
