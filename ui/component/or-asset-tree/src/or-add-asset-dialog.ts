@@ -162,8 +162,6 @@ export class OrAddAssetDialog extends LitElement {
             }
 
             #type-list {
-                flex: 1;
-                width: 260px;
                 overflow: auto;
                 text-transform: capitalize;
             }
