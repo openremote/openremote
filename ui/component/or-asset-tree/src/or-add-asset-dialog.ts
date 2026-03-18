@@ -230,13 +230,9 @@ export class OrAddAssetDialog extends LitElement {
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
 
-         const filteredAgentItems = agentItems.filter(item =>
-            (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase())
-        );
-
-        const filteredAssetItems = assetItems.filter(item =>
-            (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase())
-        );
+        const searchProvider = (item: ListItem) => (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase());
+        const filteredAgentItems = agentItems.filter(searchProvider);
+        const filteredAssetItems = assetItems.filter(searchProvider);
 
 
         const lists: ListGroupItem[] = [];
