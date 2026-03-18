@@ -17,14 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { customElement } from "lit/decorators.js";
-import { DateTimePicker } from "@vaadin/date-time-picker";
-import { OrVaadinComponent } from "./util";
+@import "@vaadin/vaadin-lumo-styles/components/list-box.css";
 
-@customElement("or-vaadin-date-time-picker")
-export class OrVaadinDateTimePicker extends DateTimePicker implements OrVaadinComponent {
-
-    public static getLocalizedISOString(d?: Date) {
-        return d && new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    }
+:root::before,
+:host::before {
+    --_lumo-vaadin-list-box-inject: 1;
+    --_lumo-vaadin-list-box-inject-modules: lumo_components_list-box;
 }

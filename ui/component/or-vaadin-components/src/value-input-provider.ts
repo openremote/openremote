@@ -102,7 +102,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
-    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && !format?.asSlider && !format?.asOnOff);
+    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && !format?.asOnOff);
 
     // Determine input type
     if (!inputType) {

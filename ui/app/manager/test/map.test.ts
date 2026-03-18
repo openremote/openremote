@@ -55,7 +55,7 @@ test.describe("Map markers", () => {
     await expect(page.locator("or-map").locator(".marker-container")).toBeVisible();
 
     await page.getByRole("button", { name: "Modify" }).click();
-    await page.locator("or-mwc-input[icon=crosshairs-gps]").click();
+    await page.locator("or-icon[icon=crosshairs-gps]").click();
     await expect(page.locator("or-map").locator(".marker-container")).toBeVisible();
   });
 

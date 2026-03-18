@@ -18,17 +18,18 @@ import {customElement, property, query} from "lit/decorators.js";
 import {i18next, translate} from "@openremote/or-translate"
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {type OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {isAxiosError} from "@openremote/rest";
 import {styleMap} from "lit/directives/style-map.js";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, LineChart, CanvasRenderer, UniversalTransition]);
 
@@ -147,13 +148,6 @@ const style = css`
         height: 100%;
         flex-direction: column;
     }
-       
-    .button-icon {
-        align-self: center;
-        padding: 10px;
-        cursor: pointer;
-    }
-
 
     #msg {
         height: 100%;
@@ -184,15 +178,20 @@ const style = css`
         max-width: 100%;
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: end;
+        gap: 5px;
     }
     
     #ending-controls > * {
         padding: 0 3px;
     }
     
+    #ending-controls > or-vaadin-date-time-picker::part(label) {
+        padding-bottom: 0.5em;
+    }
+    
     #ending-date {
-        width: 220px;
+        width: 280px;
         padding-left: 5px;
     }
     
@@ -308,7 +307,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         if (!this.toTimestamp) {
-            this.toTimestamp = new Date();
+            this.toTimestamp = this._getDefaultDate();
             return false;
         }
 
@@ -335,16 +334,29 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
         const disabled = !this._type;
+        const periodOptions = this._getPeriodOptions().map(o => ({value: o, label: i18next.t(o)}));
 
         return html`
             <div id="container">
                 <div id="controls">
-                    <or-mwc-input id="time-picker" .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-mwc-input>
+                    <or-vaadin-select id="time-picker" value=${this.period} .items=${periodOptions} ?disabled=${disabled}
+                                      @change=${(ev: CustomEvent) => this.period = (ev.currentTarget as OrVaadinSelect).value as any}>
+                        <or-translate slot="label" value="timeframe"></or-translate>
+                    </or-vaadin-select>
                     <div id="ending-controls">
-                        <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.toTimestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) =>  this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.toTimestamp!, false, 0)}"></or-icon>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.toTimestamp!, true, 0)}"></or-icon>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-icon>
+                        <or-vaadin-date-time-picker id="ending-date" value=${ifDefined(OrVaadinDateTimePicker.getLocalizedISOString(this.toTimestamp))}
+                                                    @change=${(ev: CustomEvent) => this._updateTimestamp(new Date((ev.currentTarget as OrVaadinDateTimePicker).value))}>
+                            <or-translate slot="label" value="ending"></or-translate>
+                        </or-vaadin-date-time-picker>
+                        <or-vaadin-button class="button-icon" theme="icon" ?disabled=${disabled} @click=${() => this._updateTimestamp(this.toTimestamp!, false, 0)}>
+                            <or-icon icon="chevron-left"></or-icon>
+                        </or-vaadin-button>
+                        <or-vaadin-button theme="icon" ?disabled=${disabled} @click=${() => this._updateTimestamp(this.toTimestamp!, true, 0)}>
+                            <or-icon icon="chevron-right"></or-icon>
+                        </or-vaadin-button>
+                        <or-vaadin-button theme="icon" ?disabled=${disabled} @click=${() => this._updateTimestamp(this._getDefaultDate())}>
+                            <or-icon icon="chevron-double-right"></or-icon>
+                        </or-vaadin-button>
                     </div>
                 </div>
                 
@@ -890,6 +902,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 showSymbol: data.length <= 30
             }]
         });
+    }
+
+    protected _getDefaultDate() {
+        const date = new Date();
+        date.setHours(date.getHours() + 1, 0, 0, 0); // Round to the end of the hour
+        return date;
     }
     
 }

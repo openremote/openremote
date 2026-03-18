@@ -6,6 +6,7 @@ import {ClusterConfig, MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
+import "@openremote/or-vaadin-components/or-vaadin-text-field"
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
@@ -20,6 +21,7 @@ import debounce from "lodash.debounce";
 import { Asset, Attribute, GeoJsonConfig, GeoJSONPoint, WellknownAttributes } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { CenterControl } from "./controls/center";
+import { ifDefined } from "lit-html/directives/if-defined.js";
 
 // Re-exports
 export {Util, LngLatLike, LngLat, ClusterConfig};
@@ -284,8 +286,12 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     }
                 </style>
                 <div id="geo-json-point-input-compact-wrapper">
-                    <or-mwc-input style="width: auto;" .comfortable="${comfortable}" .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}"></or-mwc-input>
-                    <or-mwc-input style="width: auto;" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @or-mwc-input-changed="${onClick}"></or-mwc-input>
+                    <or-vaadin-text-field style="width: auto;" value=${ifDefined(centerStr)} pattern=${CoordinatesRegexPattern}
+                                         @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}">
+                    </or-vaadin-text-field>
+                    <or-vaadin-button theme="icon" @click=${onClick}>
+                        <or-icon icon="crosshairs-gps"></or-icon>
+                    </or-vaadin-button>
                 </div>
             `;
         }

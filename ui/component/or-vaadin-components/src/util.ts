@@ -78,7 +78,7 @@ export function inputTypeSupportsSendButton(inputType: InputType): boolean {
 }
 
 export function inputTypeSupportsHelperText(inputType: InputType) {
-    return inputTypeSupportsSendButton(inputType) || inputType === InputType.SELECT;
+    return inputTypeSupportsSendButton(inputType) || inputType === InputType.SELECT || inputType === InputType.RANGE;
 }
 
 export function inputTypeSupportsLabel(inputType: InputType) {
