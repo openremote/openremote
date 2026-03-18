@@ -70,7 +70,6 @@ export class OrAddAssetDialog extends LitElement {
     @property({type: String})
     private typeFilter: string = "";
 
-
     public name: string = "New Asset";
 
     @query("#name-input")
