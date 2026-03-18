@@ -129,7 +129,7 @@ export class OrAddAssetDialog extends LitElement {
             
             #mdc-dialog-form-add {
                 display: flex;
-                height: 100%;
+                height: 600px;
                 max-height: 600px;
                 width: 1000px;
             }
