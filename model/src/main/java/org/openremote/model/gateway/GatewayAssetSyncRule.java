@@ -76,11 +76,14 @@ public class GatewayAssetSyncRule {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GatewayAssetSyncRule that = (GatewayAssetSyncRule) o;
-        return Objects.equals(excludeAttributes, that.excludeAttributes) && Objects.equals(excludeAttributeMeta, that.excludeAttributeMeta) && Objects.equals(addAttributeMeta, that.addAttributeMeta);
+        return Objects.equals(accessPublicRead, that.accessPublicRead)
+            && Objects.equals(excludeAttributes, that.excludeAttributes)
+            && Objects.equals(excludeAttributeMeta, that.excludeAttributeMeta)
+            && Objects.equals(addAttributeMeta, that.addAttributeMeta);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(excludeAttributes, excludeAttributeMeta, addAttributeMeta);
+        return Objects.hash(accessPublicRead, excludeAttributes, excludeAttributeMeta, addAttributeMeta);
     }
 }
