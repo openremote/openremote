@@ -20,6 +20,7 @@ import org.openremote.manager.gateway.*
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.system.VersionInfo
 import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -65,8 +66,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
 
-@Ignore
-// TODO: Reinstate GatewayTests and have a test for each supported version of the gateway API
+// TODO: Add tests for each supported version of the gateway API
 class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Gateway asset provisioning and local manager logic test"() {
@@ -141,7 +141,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def connectionStatus = gatewayClient.getConnectionStatus()
         List<String> clientReceivedMessages = []
         gatewayClient.addMessageConsumer({
-            message -> clientReceivedMessages.add(message)
+            message -> clientReceivedMessages.add(message as String)
         })
         gatewayClient.addConnectionStatusConsumer({
             status -> connectionStatus = status
@@ -162,19 +162,15 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
         }
 
-        and: "the server should have sent an asset read request"
+        and: "the server should have sent an init start message"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
-            def request = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
-            assert request.messageID == GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL
-            assert request.assetQuery != null
-            assert request.assetQuery.recursive
+            def request = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayInitStartEvent.class)
+            assert request.version == VersionInfo.getGatewayApiVersion()
+            assert request.activeTunnels == null
         }
 
-        when: "the previously received messages are cleared"
-        clientReceivedMessages.clear()
-
-        and: "the gateway client assets are defined"
+        when: "the gateway client assets are defined"
         List<String> agentAssetIds = []
         List<HTTPAgent> agentAssets = []
         List<String> assetIds = []
@@ -253,11 +249,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         String messageId = null
         ReadAssetsEvent readAssetsEvent = null
         conditions.eventually {
-            assert clientReceivedMessages.size() == 1
-            assert clientReceivedMessages.get(0).contains("read-assets")
-            readAssetsEvent = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            def readEventStr = clientReceivedMessages.find {it.contains("read-assets") && it.contains(GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0")}
+            assert readEventStr != null
+            readAssetsEvent = ValueUtil.JSON.readValue(readEventStr.substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
             messageId = readAssetsEvent.messageID
-            assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0"
+            assert readAssetsEvent.messageID == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0"
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.ids != null
             assert readAssetsEvent.assetQuery.ids.length == GatewayConnector.SYNC_ASSET_BATCH_SIZE
@@ -316,11 +312,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "the central manager should have requested the full loading of the second batch of assets"
         conditions.eventually {
-            assert clientReceivedMessages.size() == 2
-            assert clientReceivedMessages.get(1).contains("read-assets")
-            readAssetsEvent = ValueUtil.JSON.readValue(clientReceivedMessages[1].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            def readEventStr = clientReceivedMessages.find {it.contains("read-assets") && it.contains(GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + GatewayConnector.SYNC_ASSET_BATCH_SIZE)}
+            assert readEventStr != null
+            readAssetsEvent = ValueUtil.JSON.readValue(readEventStr.substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
             messageId = readAssetsEvent.messageID
-            assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + GatewayConnector.SYNC_ASSET_BATCH_SIZE
+            assert readAssetsEvent.messageID == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + GatewayConnector.SYNC_ASSET_BATCH_SIZE
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.ids != null
             assert readAssetsEvent.assetQuery.ids.length == agentAssetIds.size() + assetIds.size() - GatewayConnector.SYNC_ASSET_BATCH_SIZE
@@ -334,23 +330,15 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         readAssetsReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway connector initial sync should be completed"
+        then: "the central manager should have requested the capabilities of the gateway"
         conditions.eventually {
-            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
-            assert gatewayConnector.isConnected()
-            assert !gatewayConnector.isInitialSyncInProgress()
-        }
-
-        and: "the central manager should have requested the capabilities of the gateway"
-        conditions.eventually {
-            assert clientReceivedMessages.size() == 3
-            assert clientReceivedMessages.get(2).contains(GatewayCapabilitiesRequestEvent.TYPE)
-            def gatewayCapabilitiesRequest = ValueUtil.JSON.readValue(clientReceivedMessages[2].substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayCapabilitiesRequestEvent.class)
+            def capabilitiesEventStr = clientReceivedMessages.find {it.contains(GatewayCapabilitiesRequestEvent.TYPE)}
+            def gatewayCapabilitiesRequest = ValueUtil.JSON.readValue(capabilitiesEventStr.substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayCapabilitiesRequestEvent.class)
             messageId = gatewayCapabilitiesRequest.messageID
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, false, null)
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(VersionInfo.getGatewayApiVersion(), true)
         capabilitiesReplyEvent.setMessageID(messageId)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
@@ -360,6 +348,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayConnector.isConnected()
             assert !gatewayConnector.isInitialSyncInProgress()
             assert gatewayConnector.isTunnellingSupported()
+        }
+
+        and: "the central manager should have responded to indicate sync is done"
+        conditions.eventually {
+            def initDoneEventStr = clientReceivedMessages.find {it.contains(GatewayInitDoneEvent.TYPE)}
+            def gatewayInitDoneEvent = ValueUtil.JSON.readValue(initDoneEventStr.substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayInitDoneEvent.class)
         }
 
         and: "the gateway client should now be CONNECTED"
@@ -713,8 +707,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "The Gateway also sends a Gateway Capabilities response indicating tunnelling is supported"
-        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true, true, null)
         capabilitiesReplyEvent.setMessageID(messageId)
+        capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(VersionInfo.getGatewayApiVersion(), true)
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
 
@@ -830,7 +824,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         then: "the gateway client should become connected"
         conditions.eventually {
-            assert gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName) != null
+            assert gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName) != null
         }
 
         and: "the gateway asset connection status should become CONNECTED"
@@ -848,8 +842,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "the gateway client is abruptly disconnected"
         // Overwrite the client connection status to prevent reconnection
-        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).connectionStatus = ConnectionStatus.DISCONNECTED
-        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).channel.close()
+        gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName).client.connectionStatus = ConnectionStatus.DISCONNECTED
+        gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName).client.channel.close()
 
         then: "the gateway asset connection status should become DISCONNECTED"
         conditions.eventually {
@@ -858,7 +852,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the connection is reestablished"
-        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).connect()
+        gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName).client.connect()
 
         then: "the gateway asset connection status should become CONNECTED"
         conditions.eventually {
@@ -921,7 +915,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 null
         )
         msgEvent.asset.type = "CustomBuildingAsset"
-        gatewayClientService.sendCentralManagerMessage(gatewayConnection.getLocalRealm(), gatewayClientService.messageToString(SharedEvent.MESSAGE_PREFIX, msgEvent))
+        gatewayClientService.connectionRealmMap.get(gatewayConnection.getLocalRealm()).sendCentralManagerMessage(msgEvent)
 
         then: "it should be added to the central instance as a thing asset"
         conditions.eventually {
@@ -994,13 +988,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 // Ignore any other attribute
                 new GatewayAttributeFilter().setSkipAlways(true)
         ])
-        def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
+        def oldConnector = gatewayClientService.connectionRealmMap.get(gatewayConnection.getLocalRealm())
         gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
 
         then: "the gateway connection IO client should have been replaced and synchronisation should be complete"
         conditions.eventually {
-            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
-            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
+            assert gatewayClientService.connectionRealmMap.get(gatewayConnection.getLocalRealm()) != null
+            assert gatewayClientService.connectionRealmMap.get(gatewayConnection.getLocalRealm()) != oldConnector
             GatewayConnector connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
             assert connector != null
             assert !connector.initialSyncInProgress
@@ -1250,7 +1244,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                                 ])
                         ]).setExcludeAttributes([
                                 LightAsset.COLOUR_RGB.name
-                        ])
+                        ]).setAccessPublicRead(false)
                 ] as Map<String, GatewayAssetSyncRule>,
                 false
         )
@@ -1258,7 +1252,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         then: "the gateway client should become connected"
         conditions.eventually {
-            assert gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName) != null
+            assert gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName) != null
         }
 
         and: "the gateway asset connection status should become CONNECTED"
@@ -1288,6 +1282,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredLight.getAttributes().get(LightAsset.ON_OFF).flatMap { it.getMetaItem(FORMAT) }.flatMap { it.getValue() }.map {it.asPressedReleased}.orElse(false) == ValueFormat.BOOLEAN_AS_PRESSED_RELEASED().asPressedReleased
             assert !mirroredLight.getAttribute(LightAsset.COLOUR_RGB).isPresent()
             assert mirroredLight.getAttribute(Asset.NOTES).isPresent()
+            assert !mirroredLight.isAccessPublicRead()
         }
     }
 
@@ -1355,7 +1350,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         then: "the gateway client should become connected"
         conditions.eventually {
-            assert gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName) != null
+            assert gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName) != null
         }
 
         and: "the gateway connection status should become CONNECTED"
@@ -1364,7 +1359,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "Tunnelling is supported in this gateway"
-        assert gatewayClientService.gatewayTunnelFactory != null
+        assert gatewayClientService.connectionRealmMap.get(managerTestSetup.realmCityName).tunnelFactory != null
 
         when: "We suspend the thread to allow the tunnel to settle"
         Thread.sleep(5000)

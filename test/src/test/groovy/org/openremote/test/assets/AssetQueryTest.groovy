@@ -165,7 +165,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         apartment1.createdOn != null
         apartment1.parentId == managerTestSetup.smartBuildingId
         apartment1.realm == managerTestSetup.realmBuildingName
-        apartment1.getAttributes().size() == 7
+        apartment1.getAttributes().size() == 8
         apartment1.getAttribute("ventilationAuto").isPresent()
         apartment1.getAttribute("ventilationLevel").isPresent()
         apartment1.getAttribute("alarmEnabled").isPresent()
