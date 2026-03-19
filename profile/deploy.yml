@@ -485,9 +485,9 @@ services:
       # Config file should be at: /deployment/query-exporter/config.yaml
         - deployment-data:/deployment
     ports:
-      - "9560:9560" # Metrics endpoint
-      # Uncomment to expose on private network:
-      # - "${PRIVATE_IP:-127.0.0.1}:9560:9560"
+      - "127.0.0.1:8406:9560" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8406:8404" # Allows to also expose metrics on a given IP address,
+      # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:
       TZ: ${TZ:-Europe/Amsterdam}
       # Database connection settings (matches postgresql service)
@@ -497,9 +497,6 @@ services:
       POSTGRES_DB: ${OR_DB_NAME:-openremote}
       POSTGRES_USER: ${OR_DB_USER:-postgres}
       POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
-      # Bloat detection thresholds
-      TABLE_BLOAT_THRESHOLD: ${TABLE_BLOAT_THRESHOLD:-1.2}  # 1.2 = 20% table bloat
-      INDEX_BLOAT_THRESHOLD: ${INDEX_BLOAT_THRESHOLD:-1.5}  # 1.5 = 50% index bloat
       QE_CONFIG: /deployment/query-exporter/config.yaml
 
   # Map tile server
