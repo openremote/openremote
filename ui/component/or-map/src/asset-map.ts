@@ -15,10 +15,10 @@ type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
  *
  * Currently, the standard flow to display assets as markers on the map goes as follows:
  *
- * 1. The map page adds assets --> the {@link AssetMap}, which computes assets in view --> Then dispatches {@link OrMapMarkersChangedEvent}
- * 2. The map page receives the event --> Renders the received assets as {@link OrMapMarkerAsset} by including them inside the map element's HTML body
- * 3. The map component then receives either an event from the {@link OrMapMarkerAsset}
- * or when the map component sees a slotted marker was added --> Which adds markers as maplibre marker to the maplibre-gl map.
+ * 1. The map page adds assets to the {@link AssetMap}, which computes assets in view and then dispatches {@link OrMapMarkersChangedEvent}.
+ * 2. The map page receives the event, renders the received assets as {@link OrMapMarkerAsset} by including them inside the map element's HTML body.
+ * 3. The map component then receives either an event from the {@link OrMapMarkerAsset},
+ * or when the map component sees a slotted {@link OrMapMarker} was added. From there the {@link OrMapMarker}s are passed to the {@link BaseMap} to be assigned to a MapLibre marker.
  *
  * @todo consider using `this._map.setGlobalStateProperty` for static cluster property
  */
