@@ -237,7 +237,7 @@ export class AssetMap extends BaseMap {
         for (const feature of features) {
             if (!feature.properties.cluster) continue;
             const id: number = feature.properties.cluster_id;
-            let marker = this._cachedClusters[id] ?? this._getClusterMarker(feature).addTo(this._map!);
+            let marker = this._cachedClusters[id] ?? this._getClusterMarker(feature);
             // Invalidate the cached cluster marker if the type counts don't match
             // If a new type is added, the marker will have a different cluster_id
             if (marker._element instanceof OrClusterMarker && !marker._element.slicesMatch(feature.properties)) {
