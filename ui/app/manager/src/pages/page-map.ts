@@ -330,7 +330,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
                     const interested = attrsOfInterest.includes(event.ref.name);
-                    let asset: Asset;
+                    let asset: Asset | undefined;
                     if (interested) {
                         const assets = this._unlocatedAssetSelector(this.getState());
                         asset = assets.find(asset => asset.id === event.ref.id);
