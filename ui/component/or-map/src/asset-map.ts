@@ -11,7 +11,7 @@ import { AttributeEvent, WellknownAttributes } from "@openremote/model";
 type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
 
 /**
- * The main component that handles how assets are displayed on the map.
+ * This class handles where to display asset markers and clusters on the map.
  *
  * Currently, the standard flow to display assets as markers on the map goes as follows:
  *
@@ -37,7 +37,7 @@ export class AssetMap extends BaseMap {
     protected _onMoveEnd = (e: any) => {
         // Ensure marker updates happen after the frame
         requestAnimationFrame(() => {
-            // On WebKit browsers the clicked marker may not be removed,
+            // The clicked marker may not be removed,
             // if the camera zoom level is directly between 2 levels
             if (e.marker instanceof OrClusterMarker) {
                 this._clustersOnScreen[e.marker._clusterId]?.remove();
@@ -88,7 +88,7 @@ export class AssetMap extends BaseMap {
         }
 
         if (!(asset.type in this._assetTypeColors)) {
-            this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string; // TODO: test with marker config
+            this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
             this._source.workerOptions.clusterProperties = this._getClusterProperties();
         }
 
@@ -115,7 +115,7 @@ export class AssetMap extends BaseMap {
 
         for (const asset of missing) {
             if (!(asset.type in this._assetTypeColors)) {
-                this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string; // TODO: test with marker config
+                this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
             }
             this._assets[asset.id] = asset;
         }
@@ -238,8 +238,8 @@ export class AssetMap extends BaseMap {
             if (!feature.properties.cluster) continue;
             const id: number = feature.properties.cluster_id;
             let marker = this._cachedClusters[id] ?? this._getClusterMarker(feature).addTo(this._map!);
-
-            // Invalidate the cached cluster marker if the slices don't match
+            // Invalidate the cached cluster marker if the type counts don't match
+            // If a new type is added, the marker will have a different cluster_id
             if (marker._element instanceof OrClusterMarker && !marker._element.slicesMatch(feature.properties)) {
                 marker.remove();
                 marker = this._getClusterMarker(feature).addTo(this._map!);

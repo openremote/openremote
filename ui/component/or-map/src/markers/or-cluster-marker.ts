@@ -34,6 +34,9 @@ export class OrClusterMarker extends LitElement {
 
     /**
      * Checks that all slices match the accumulated cluster properties
+     *
+     * Note: This method assumes the slices contain the same types as `counts`. If not,
+     * a new cluster marker should be created.
      * @param counts A record of the accumulated cluster properties to check
      * @returns Whether the slices have the same counts as the accumulated properties
      */
