@@ -6,7 +6,7 @@ import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import { OrMapLoadedEvent, OrMapMarkersChangedEvent } from ".";
 import { Util } from "@openremote/core";
-import { AttributeEvent } from "@openremote/model";
+import { AttributeEvent, WellknownAttributes } from "@openremote/model";
 
 type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
 
@@ -131,7 +131,7 @@ export class AssetMap extends BaseMap {
 
         if (!this._source || !id || !this._assets[id]) return;
 
-        if (event.value == null) {
+        if (event.value == null && event.ref?.name === WellknownAttributes.LOCATION) {
             this._assets[id] = null;
             this._source?.updateData({ remove: [id] });
             return;
