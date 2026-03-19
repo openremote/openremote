@@ -138,7 +138,7 @@ public final class ProtocolUtil {
         valRef.set(ignoreAndConvertedValue.value);
 
         if (valRef.get() == null) {
-            return new Pair<>(false, null);
+            return new Pair<>(true, null);
         }
 
         // built in value conversion
