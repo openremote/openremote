@@ -969,7 +969,7 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
 /**
  * Immutable update of an asset using the supplied attribute event
  */
-export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
+export function updateAsset<T extends Asset>(asset: T, event: AttributeEvent): T {
 
     const attributeName = event.ref!.name!;
 

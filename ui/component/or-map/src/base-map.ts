@@ -1,3 +1,4 @@
+import { GeoJsonConfig } from "@openremote/model";
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl, {
     AddLayerObject,
@@ -12,43 +13,28 @@ import maplibregl, {
     NavigationControl,
     StyleSpecification,
     GeoJSONSourceSpecification,
-    MapSourceDataEvent,
 } from "maplibre-gl";
-import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
+import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import debounce from "lodash.debounce";
 import {
     ControlPosition,
     OrMapClickedEvent,
     OrMapGeocoderChangeEvent,
-    OrMapLoadedEvent,
     OrMapLongPressEvent,
     ViewSettings,
-    OrMapMarkersChangedEvent,
-    AssetWithLocation,
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
-import { getLngLat, getMarkerIconAndColorFromAssetType, isWebglSupported } from "./util";
-import { Asset, GeoJsonConfig } from "@openremote/model";
-import { Feature, FeatureCollection, Geometry } from "geojson";
+import { getLngLat, isWebglSupported, metersToPixelsAtMaxZoom } from "./util";
 import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
-import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
+import { Feature, FeatureCollection } from "geojson";
 
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
 
-export interface ClusterConfig {
-    cluster: boolean,
-    clusterRadius: number,
-    /** Until what zoom level cluster markers are shown */
-    clusterMaxZoom: number
-}
-
-const metersToPixelsAtMaxZoom = (meters: number, latitude: number) => meters / 0.075 / Math.cos(latitude * Math.PI / 180);
-
 let pkey: string | null;
 
-export class MapWidget {
+export class BaseMap {
     protected _map?: MapGL;
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;
@@ -67,46 +53,15 @@ export class MapWidget {
     protected _controls?: (IControl | [IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
-    protected _clusterConfig?: ClusterConfig;
-    protected _pointsMap: any = {
-        type: "FeatureCollection",
-        features: []
-    };
 
-    protected _assetTypeColors: any = {};
-    protected _cachedMarkers: Record<string, Marker> = {};
-    protected _markersOnScreen: Record<string, Marker> = {};
-    protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
-
-    constructor(styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true, clusterConfig?: ClusterConfig) {
+    constructor(styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
         this._showGeoCodingControl = showGeoCodingControl;
         this._showBoundaryBox = showBoundaryBox;
         this._useZoomControls = useZoomControls;
         this._showGeoJson = showGeoJson;
-        this._clusterConfig = clusterConfig;
     }
-
-    protected _onMove = () => this._updateMarkers();
-    protected _onMoveEnd = (e: any) => {
-        // Ensure marker updates happen after the frame
-        requestAnimationFrame(() => {
-            // On WebKit browsers the clicked marker may not be removed,
-            // if the camera zoom level is directly between 2 levels
-            if (e.marker instanceof OrClusterMarker) {
-                this._clearMarker(e.marker._clusterId);
-            }
-            this._updateMarkers();
-        });
-    };
-    protected _onData = (e: MapSourceDataEvent) => {
-        if (this._map && e.isSourceLoaded && e.sourceId === "mapPoints") {
-            this._map.on('move', this._onMove);
-            this._map.on('moveend', this._onMoveEnd);
-            this._updateMarkers();
-        }
-    };
 
     public setCenter(center?: LngLatLike): this {
         this._center = getLngLat(center);
@@ -401,10 +356,6 @@ export class MapWidget {
         }
 
         this._initLongPressEvent();
-        this._map.on("load", async () => await this.load());
-
-        this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
-        this._loaded = true;
         this.createBoundaryBox()
     }
 
@@ -414,50 +365,6 @@ export class MapWidget {
                 this._map.once('style.load', resolve);
             }
         });
-    }
-
-    /**
-     * Load map sources, layers and events
-     */
-    public async load() {
-        if (!this._map || !this._loaded) {
-            console.warn("MapLibre Map not initialized!");
-            return;
-        }
-
-        if (this._map.getSource('mapPoints')) {
-            if (this._map.getLayer('unclustered-point')) {
-                this._map.removeLayer('unclustered-point');
-            }
-            if (this._map.getLayer('clusters')) {
-                this._map.removeLayer('clusters');
-            }
-            if (this._map.getLayer('cluster-count')) {
-                this._map.removeLayer('cluster-count');
-            }
-            this._map.removeSource('mapPoints');
-        }
-
-        this._map.addSource('mapPoints', {
-            'type': 'geojson',
-            'cluster': this._clusterConfig?.cluster ?? true,
-            'clusterRadius': this._clusterConfig?.clusterRadius ?? 180,
-            'clusterMaxZoom': this._clusterConfig?.clusterMaxZoom ?? 17,
-            'data': this._pointsMap,
-            'clusterProperties': Object.fromEntries(Object.keys(this._assetTypeColors).map(t => [t,["+", ["case", ["==", ["get", "assetType"], t], 1, 0]]]))
-        });
-
-        if (!this._map.getLayer('unclustered-point')) {
-            this._map.addLayer({
-                id: 'unclustered-point',
-                type: 'circle',
-                source: 'mapPoints',
-                filter: ['!', ['has', 'point_count']],
-                paint: { 'circle-radius': 0 }
-            });
-        }
-
-        this._map.on("data", this._onData);
     }
 
     // Clean up of internal resources associated with the map.
@@ -624,96 +531,6 @@ export class MapWidget {
         if (marker.hasPosition()) {
             this._updateMarkerElement(marker, true);
         }
-    }
-
-    protected _clearMarker(id: string) {
-        this._markersOnScreen[id].remove();
-        delete this._assetsOnScreen[id];
-    }
-
-    protected _updateMarkers() {
-        if (!this._map) return;
-
-        const newMarkers: Record<string, Marker> = {};
-        const features = this._map.querySourceFeatures('mapPoints');
-
-        // Asset markers
-        for (const feature of features) {
-            if (!feature.properties.id) continue;
-            const id: string = feature.properties.id;
-            const geometry = feature.geometry as Geometry & { coordinates: LngLatLike };
-            const coords = geometry.coordinates;
-
-            let marker = this._cachedMarkers[id]
-            if (!marker) { 
-                const placeholder = document.createElement("div");
-                marker = this._cachedMarkers[id] = new Marker({ element: placeholder }).setLngLat(coords);
-            }
-            newMarkers[id] = marker;
-
-            if (!this._markersOnScreen[id]) {
-                marker.addTo(this._map);
-                this._assetsOnScreen[id] = JSON.parse(feature.properties.asset);
-            };
-        }
-
-        // Cluster markers
-        for (const feature of features) {
-            if (!feature.properties.cluster) continue;
-            const id: number = feature.properties.cluster_id;
-            const geometry = feature.geometry as Geometry & { coordinates: [number, number] };
-            const [lng, lat] = geometry.coordinates;
-
-            let marker = this._cachedMarkers[id];
-            if (!marker) {
-                const slices: Slice[] = Object.entries(feature.properties)
-                    .filter(([k]) => this._assetTypeColors.hasOwnProperty(k))
-                    .map(([type, count]) => [type, this._assetTypeColors[type], count]);
-
-                marker = this._cachedMarkers[id] = new Marker({
-                    element: new OrClusterMarker(slices, id, lng, lat, this._map),
-                }).setLngLat([lng, lat]);
-            }
-            newMarkers[id] = marker;
-
-            if (!this._markersOnScreen[id]) marker.addTo(this._map);
-        }
-
-        for (const id in this._markersOnScreen) {
-            const marker = newMarkers[id];
-            if (!marker
-              || marker._element instanceof OrClusterMarker && !marker._element.hasTypes(Object.keys(this._assetTypeColors))
-            ) {
-                this._clearMarker(id);
-            }
-        }
-        this._markersOnScreen = newMarkers;
-        this._mapContainer.dispatchEvent(new OrMapMarkersChangedEvent(Object.values(this._assetsOnScreen)));
-    }
-
-    public addAssetMarker(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {
-        this._assetTypeColors[assetType] = getMarkerIconAndColorFromAssetType(assetType)?.color;
-        this._pointsMap.features.push({
-            type: 'Feature',
-            properties: {
-                name: assetName,
-                id: assetId,
-                assetType: assetType,
-                asset: asset
-            },
-            geometry: {
-                type: "Point",
-                coordinates: [ long, lat ]
-            }
-        });
-    }
-
-    public cleanUpAssetMarkers(): void {
-        this._assetTypeColors = {};
-        this._pointsMap = {
-            type: "FeatureCollection",
-            features: []
-        };
     }
 
     public removeMarker(marker: OrMapMarker) {
