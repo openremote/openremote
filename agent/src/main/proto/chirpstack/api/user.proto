@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "UserProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+
+// UserService is the service providing API methods for managing users.
+service UserService {
+    // Create a new user.
+    rpc Create(CreateUserRequest) returns (CreateUserResponse) {
+        option(google.api.http) = {
+            post: "/api/users"
+            body: "*"
+        };
+    }
+
+    // Get the user for the given ID.
+    rpc Get(GetUserRequest) returns (GetUserResponse) {
+        option(google.api.http) = {
+            get: "/api/users/{id}"
+        };
+    }
+
+    // Update the given user.
+    rpc Update(UpdateUserRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            put: "/api/users/{user.id}"
+            body: "*"
+        };
+    }
+
+    // Delete the user with the given ID.
+    rpc Delete(DeleteUserRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            delete: "/api/users/{id}"
+        };
+    }
+
+    // Get the list of users.
+    rpc List(ListUsersRequest) returns (ListUsersResponse) {
+        option(google.api.http) = {
+            get: "/api/users"
+        };
+    }
+
+    // Update the password for the given user.
+    rpc UpdatePassword(UpdateUserPasswordRequest) returns (google.protobuf.Empty) {
+        option(google.api.http) = {
+            post: "/api/users/{user_id}/password"
+            body: "*"
+        };
+    }
+}
+
+message User {
+	// User ID (UUID).
+	// Will be set automatically on create.
+	string id = 1;
+
+	// Set to true to make the user a global administrator.
+	bool is_admin = 4;
+
+	// Set to false to disable the user.
+	bool is_active = 5;
+
+	// E-mail of the user.
+	string email = 6;
+
+	// Optional note to store with the user.
+	string note = 7;
+}
+
+message UserListItem {
+    // User ID (UUID).
+    string id = 1;
+
+	// Created at timestamp.
+	google.protobuf.Timestamp created_at = 2;
+
+	// Last update timestamp.
+	google.protobuf.Timestamp updated_at = 3;
+
+	// Email of the user.
+	string email = 4;
+
+	// Set to true to make the user a global administrator.
+	bool is_admin = 5;
+
+	// Set to false to disable the user.
+	bool is_active = 6;
+}
+
+message UserTenant {
+    // Tenant ID.
+    string tenant_id = 1;
+
+	// User is admin within the context of the tenant.
+    // There is no need to set the is_device_admin and is_gateway_admin flags.
+	bool is_admin = 2;
+
+    // User is able to modify device related resources (applications,
+    // device-profiles, devices, multicast-groups).
+    bool is_device_admin = 3;
+
+    // User is able to modify gateways.
+    bool is_gateway_admin = 4;
+}
+
+message CreateUserRequest {
+    // User object to create.
+    User user = 1;
+
+    // Password to set for the user.
+    string password = 2;
+
+    // Add the user to the following tenants.
+    repeated UserTenant tenants = 3;
+}
+
+message CreateUserResponse {
+    // User ID.
+    string id = 1;
+}
+
+message GetUserRequest {
+    // User ID.
+    string id = 1;
+}
+
+message GetUserResponse {
+    // User object.
+    User user = 1;
+
+	// Created at timestamp.
+	google.protobuf.Timestamp created_at = 2;
+
+	// Last update timestamp.
+	google.protobuf.Timestamp updated_at = 3;
+}
+
+message UpdateUserRequest {
+    // User object.
+    User user = 1;
+}
+
+message DeleteUserRequest {
+    // User ID.
+    string id = 1;
+}
+
+message ListUsersRequest {
+    // Max number of tenants to return in the result-set.
+    // If not set, it will be treated as 0, and the response will only return the total_count.
+    uint32 limit = 1;
+
+    // Offset in the result-set (for pagination).
+    uint32 offset = 2;
+}
+
+message ListUsersResponse {
+    // Total number of users.
+    uint32 total_count = 1;
+
+    // Result-set.
+    repeated UserListItem result = 2;
+}
+
+message UpdateUserPasswordRequest {
+    // User ID.
+    string user_id = 1;
+
+    // Password to set.
+    string password = 2;
+}

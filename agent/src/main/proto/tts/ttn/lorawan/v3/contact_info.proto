@@ -1,0 +1,102 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+enum ContactType {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "CONTACT_TYPE"
+  };
+
+  CONTACT_TYPE_OTHER = 0;
+  CONTACT_TYPE_ABUSE = 1;
+  CONTACT_TYPE_BILLING = 2;
+  CONTACT_TYPE_TECHNICAL = 3;
+}
+
+enum ContactMethod {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "CONTACT_METHOD"
+  };
+
+  CONTACT_METHOD_OTHER = 0;
+  CONTACT_METHOD_EMAIL = 1;
+  CONTACT_METHOD_PHONE = 2;
+}
+
+message ContactInfo {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ContactType contact_type = 1 [(validate.rules).enum.defined_only = true];
+  ContactMethod contact_method = 2 [(validate.rules).enum.defined_only = true];
+  string value = 3 [(validate.rules).string.max_len = 256];
+  bool public = 4;
+  google.protobuf.Timestamp validated_at = 5;
+}
+
+message ContactInfoValidation {
+  string id = 1 [(validate.rules).string = {
+    max_len: 64,
+    min_len: 1
+  }];
+  string token = 2 [(validate.rules).string = {
+    max_len: 64,
+    min_len: 1
+  }];
+  EntityIdentifiers entity = 3;
+  repeated ContactInfo contact_info = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// The ContactInfoRegistry service, exposed by the Identity Server, is used for
+// validating contact information of registered entities.
+//
+// The actual contact information can be managed with the different registry services:
+// ApplicationRegistry, ClientRegistry, GatewayRegistry, OrganizationRegistry and UserRegistry.
+service ContactInfoRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "DEPRECATED: Validate contact information of registered entities."};
+  // Request validation for the non-validated contact info for the given entity.
+  rpc RequestValidation(EntityIdentifiers) returns (ContactInfoValidation) {
+    option (google.api.http) = {
+      post: "/contact_info/validation"
+      body: "*"
+    };
+  }
+  // Validate confirms a contact info validation.
+  rpc Validate(ContactInfoValidation) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      patch: "/contact_info/validation"
+      body: "*"
+    };
+  }
+}
