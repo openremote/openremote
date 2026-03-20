@@ -314,7 +314,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     switch (event.cause) {
                         case "DELETE": this._map?.removeAssets([event.asset.id]); break;
                         case "CREATE":
-                            if (MapUtil.isAssetWithLocation(event.asset)) {
+                            if (MapUtil.isAssetWithLocation(event.asset) && !this._excludedTypes.includes(event.asset?.type)) {
                                 this._map?.addAsset(event.asset);
                             }
                             break;
@@ -342,7 +342,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                     // Add the asset after map state has been updated
-                    if (interested && asset) {
+                    if (interested && asset && !this._excludedTypes.includes(asset.type)) {
                         this._map?.addAsset(this._assets.find(asset => asset.id === event.ref.id));
                     }
                 });
