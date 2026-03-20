@@ -111,17 +111,21 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public connect(): Promise<boolean> {
+        console.debug("Attempting to connect to events:", this.endpointUrl);
         if (this._reconnectTimer) {
+            console.debug("Clearing events reconnect timeout...");
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
         }
         if (this._status === EventProviderStatus.CONNECTED) {
+            console.debug("Already connected to events!");
             return Promise.resolve(true);
         }
 
         this._disconnectRequested = false;
 
         if (this._connectingDeferred) {
+            console.warn("Already connecting to events, continuing the previous one.");
             return this._connectingDeferred.promise;
         }
 
@@ -132,7 +136,6 @@ abstract class EventProviderImpl implements EventProvider {
         this._doConnect().then((connected: boolean) => {
             if (this._connectingDeferred) {
                 const deferred = this._connectingDeferred;
-                this._connectingDeferred = null;
 
                 if (connected) {
                     console.debug("Connected to event service: " + this.endpointUrl);
@@ -149,6 +152,8 @@ abstract class EventProviderImpl implements EventProvider {
 
                 deferred.resolve(connected);
             }
+        }).finally(() => {
+            this._connectingDeferred = null;
         });
 
         return this._connectingDeferred.promise;
@@ -207,6 +212,7 @@ abstract class EventProviderImpl implements EventProvider {
                 }
             },
             (reason) => {
+                console.error(reason);
                 if (this._pendingSubscription) {
                     const subscription = this._pendingSubscription;
                     this._pendingSubscription = null;
@@ -537,6 +543,7 @@ abstract class EventProviderImpl implements EventProvider {
             this._pendingSubscription = null;
         }
 
+        // TODO: Might need to disable this, as a disconnect potentially means that the token is expired. Handling reconnect in `core` makes more sense to me.
         this._onStatusChanged(EventProviderStatus.CONNECTING);
         this._scheduleReconnect();
     }
@@ -610,12 +617,16 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         if (manager.authenticated) {
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
+            console.debug("Connecting to URL using authorization:", authorisedUrl);
+        } else {
+            console.debug("Connecting to URL anonymously:", authorisedUrl);
         }
 
         this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
 
-        this._webSocket!.onopen = () => {
+        this._webSocket!.onopen = (ev) => {
+            console.debug("Event provider connection opened", ev);
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
@@ -624,18 +635,19 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onerror = (err) => {
+            console.error("Event provider error:", err);
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
                 deferred.resolve(false);
             } else {
-                console.debug("Event provider error");
                 // Could have inconsistent state so disconnect and let consumers decide what to do and when to reconnect
                 this._beforeDisconnect();
             }
         };
 
         this._webSocket!.onclose = () => {
+            console.warn("The WebSocket connection of the event provider has been closed.");
             this._webSocket = undefined;
 
             if (this._connectDeferred) {
@@ -661,10 +673,10 @@ export class WebSocketEventProvider extends EventProviderImpl {
             } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
                 const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
                 const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
+                console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                 const deferred = this._subscribeDeferred;
                 this._subscribeDeferred = null;
                 if (deferred) {
-                    console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                     deferred.reject("Unauthorized");
                 }
             } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {
