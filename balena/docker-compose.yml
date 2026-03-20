@@ -1,3 +1,6 @@
+# Balena CLI requires this version, see: https://github.com/balena-io/balena-cli/issues/2314
+version: '2.4'
+
 volumes:
   proxy-data:
   postgresql-data:
