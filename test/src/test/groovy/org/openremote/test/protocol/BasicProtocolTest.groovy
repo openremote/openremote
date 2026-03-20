@@ -53,7 +53,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
         Map<String, Integer> protocolExpectedLinkedAttributeCount = [:]
-        protocolExpectedLinkedAttributeCount["mockAgent1"] = 6
+        protocolExpectedLinkedAttributeCount["mockAgent1"] = 8
         protocolExpectedLinkedAttributeCount["mockAgent2"] = 2
         protocolExpectedLinkedAttributeCount["mockAgent3"] = 2
         protocolExpectedLinkedAttributeCount['mockConfig4'] = 2
@@ -219,7 +219,43 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 ] as ValueFilter[]
                             )
                         )
-            )
+            ),
+            new Attribute<>("readWriteMath", NUMBER)
+                .addOrReplaceMeta(
+                    new MetaItem<>(
+                        AGENT_LINK,
+                        new MockAgentLink(mockAgent1.id)
+                            .setRequiredValue("true")
+                            .setValueFilters(
+                                [
+                                    new MathExpressionValueFilter("x*10")
+                                ] as ValueFilter[]
+                            )
+                            .setWriteValueFilters(
+                                [
+                                    new MathExpressionValueFilter("x/10")
+                                ] as ValueFilter[]
+                            )
+                    )
+                ),
+            new Attribute<>("readWriteRegex", NUMBER)
+                .addOrReplaceMeta(
+                    new MetaItem<>(
+                        AGENT_LINK,
+                        new MockAgentLink(mockAgent1.id)
+                            .setRequiredValue("true")
+                            .setValueFilters(
+                                [
+                                    new RegexValueFilter(Pattern.compile("temp=(\\d+)")).setMatchGroup(1)
+                                ] as ValueFilter[]
+                            )
+                            .setWriteValueFilters(
+                                [
+                                    new RegexValueFilter(Pattern.compile("^(\\d+)\$")).setMatchGroup(1)
+                                ] as ValueFilter[]
+                            )
+                    )
+                )
         )
 
         mockThing = assetStorageService.merge(mockThing)
@@ -227,7 +263,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the mock thing to be fully deployed in the correct order"
         conditions.eventually {
             assert agentService.getProtocolInstance(mockAgent1.id) != null
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.size() == 8
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.size() == 10
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(0) == "START"
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(1).startsWith("LINK_ATTRIBUTE")
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(2).startsWith("LINK_ATTRIBUTE")
@@ -236,6 +272,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(5).startsWith("LINK_ATTRIBUTE")
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(6).startsWith("LINK_ATTRIBUTE")
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(7).startsWith("LINK_ATTRIBUTE")
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(8).startsWith("LINK_ATTRIBUTE")
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(9).startsWith("LINK_ATTRIBUTE")
             assert agentService.getProtocolInstance(mockAgent1.id).linkedAttributes.size() == protocolExpectedLinkedAttributeCount["mockAgent1"]
         }
 
@@ -411,6 +449,49 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.id, true)
             assert !mockThing.getAttribute("filterRegexSubstring").get().getValue().isPresent()
+        }
+
+        when: "a sensor value is received on the read/write math attribute (inbound: x*10)"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "readWriteMath"), 25, null)
+
+        then: "the inbound value filter should multiply by 10"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
+            assert mockThing.getAttribute("readWriteMath").get().getValue(Double.class).orElse(0d) == 250d
+        }
+
+        when: "the same attribute is written to by the user (outbound: x/10)"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.clear()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteProcessedValues.clear()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateSensor = false
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.id, "readWriteMath", 250d))
+
+        then: "the outbound write value filter should divide by 10 before reaching the protocol"
+        conditions.eventually {
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.size() == 1
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).name == "readWriteMath"
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteProcessedValues.get(0) == 25.0d
+        }
+
+        when: "a sensor value is received on the read/write regex attribute (inbound: extract number from temp=N)"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateSensor = true
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "readWriteRegex"), "temp=42", null)
+
+        then: "the inbound value filter should extract the number"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
+            assert mockThing.getAttribute("readWriteRegex").get().getValue(Double.class).orElse(0d) == 42d
+        }
+
+        when: "the same attribute is written with a non-numeric value (outbound regex won't match)"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.clear()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteProcessedValues.clear()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateSensor = false
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.id, "readWriteRegex", "not a number"))
+
+        then: "the write should be suppressed because the outbound filter produced null"
+        new PollingConditions(timeout: 3, initialDelay: 1).eventually {
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.size() == 0
         }
     }
 }
