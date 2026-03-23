@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.TimeUtil;
 
 import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
@@ -40,6 +41,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
+    @JsonSchemaTypeRemap(type = String.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     protected TimeUtil.ExtendedPeriodAndDuration pastPeriod;
     @NotNull
@@ -48,6 +50,7 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
     @NotNull
     @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = TimeUtil.PeriodAndDurationConverter.class)
+    @JsonSchemaTypeRemap(type = String.class)
     // TODO: consider @JsonSchemaFormat("duration") requires new or-mwc-input type
     protected TimeUtil.ExtendedPeriodAndDuration forecastPeriod;
     @NotNull

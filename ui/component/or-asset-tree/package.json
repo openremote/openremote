@@ -1,13 +1,16 @@
 {
   "name": "@openremote/or-asset-tree",
-  "version": "1.8.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote Asset Tree",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js"
+    "./*": "./lib/*.js",
+    "./jsx": {
+      "types": "./custom-elements-jsx.d.ts"
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
@@ -24,12 +27,12 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "@openremote/rest": "workspace:*",
     "lit": "^3.3.1",
-    "moment": "^2.29.4"
+    "lodash.debounce": "^4.0.8",
+    "qs": "^6.8.0"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@types/lodash.debounce": "^4"
   },
   "publishConfig": {
     "access": "public"

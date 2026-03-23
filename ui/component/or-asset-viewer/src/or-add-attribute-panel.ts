@@ -1,7 +1,7 @@
 import {html, LitElement, css, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, AssetModelUtil} from "@openremote/model";
 import {Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";

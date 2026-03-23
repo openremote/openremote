@@ -22,6 +22,7 @@ package org.openremote.manager.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.ServerErrorException;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -59,18 +60,13 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectNode getSettingsJs(RequestParams requestParams) {
-        return mapService.getMapSettingsJs(
-            getAuthenticatedRealmName(),
-            requestParams.getExternalSchemeHostAndPort()
-        );
-    }
-
-    @Override
-    public byte[] getTile(int zoom, int column, int row) {
+    public Response getTile(int zoom, int column, int row) {
         byte[] tile = mapService.getMapTile(zoom, column, row);
         if (tile != null) {
-            return tile;
+            return Response.ok(tile)
+                    // Tell the browser the content is already GZIPPED
+                    .header(HttpHeaders.CONTENT_ENCODING, "gzip")
+                    .build();
         } else {
             throw new WebApplicationException(Response.Status.NO_CONTENT);
         }
@@ -78,6 +74,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public ObjectNode uploadMap(RequestParams requestParams, String filename) {
+        // Starting with Resteasy 6.2.15.Final, request.getContentLength() returns -1 if Content-Length header is not set
         if (request.getContentLength() > mapService.customMapLimit) {
             throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
         }

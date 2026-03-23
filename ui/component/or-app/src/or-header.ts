@@ -21,6 +21,7 @@ import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
+import {when} from "lit/directives/when.js";
 
 
 export {DEFAULT_LANGUAGES, Languages}
@@ -61,7 +62,7 @@ function hasRequiredRole(option: HeaderItem): boolean {
         return option.roles.some((r) => manager.hasRole(r));
     }
 
-    if (Util.isFunction(option.roles)) {
+    if (typeof option.roles === "function") {
         return (option.roles as () => boolean)();
     }
 
@@ -419,7 +420,7 @@ export class OrHeader extends LitElement {
                         <div id="desktop-left">
                             ${mainItems ? mainItems.filter(hasRequiredRole).map((headerItem) => {
                                 return html`
-                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
                             }) : ``}
                         </div>
@@ -450,7 +451,7 @@ export class OrHeader extends LitElement {
                         <nav id="drawer-list">
                             ${mainItems ? mainItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
                                 return html`
-                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
                             }) : ``}
                         </nav>
@@ -460,7 +461,7 @@ export class OrHeader extends LitElement {
                         <div id="mobile-bottom" class="${mainItems.length > 0 ? 'mobile-bottom-border' : ''}">
                             ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
                                 return html`
-                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
                             })}
                         </div>` : ``}
@@ -474,12 +475,12 @@ export class OrHeader extends LitElement {
         const currentRealm = this.realms.find((t) => t.name === this.realm);
 
         let realmTemplate = html`
-            <div id="realm-picker">
-                ${this.realms.length > 1 ? html`
+            ${when(this.realms?.length > 1, () => html`
+                <div id="realm-picker">
                     <span>${currentRealm ? currentRealm.displayName : ""}</span>
                     <or-icon icon="chevron-down"></or-icon>
-                ` : ``}
-            </div>
+                </div>
+            `)}
         `;
 
         if (manager.isSuperUser()) {
@@ -519,16 +520,25 @@ export class OrHeader extends LitElement {
         }
     }
 
-    protected _onHeaderItemSelect(headerItem: HeaderItem) {
+    protected _onHeaderItemSelect(headerItem: HeaderItem, e?: MouseEvent) {
         if (headerItem.action) {
+            e?.preventDefault();
             headerItem.action();
-        } else if (headerItem.href) {
+            return;
+        }
+        // If not triggered by a MouseEvent, we should navigate manually instead of using <a href="">
+        if (!e && headerItem.href) {
             if (headerItem.absolute) {
-                window.location.href = headerItem.href;
+                globalThis.location.assign(headerItem.href);
             } else {
                 router.navigate(headerItem.href);
             }
         }
+    }
+
+    protected _getHeaderHref({ href, absolute }: HeaderItem): string {
+        if (!href) return "#";
+        return absolute ? href : `#/${href}`;
     }
 
     protected _closeDrawer() {

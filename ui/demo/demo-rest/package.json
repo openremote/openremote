@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-rest",
-  "version": "1.8.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "Demo",
   "private": true,
   "scripts": {
@@ -8,19 +8,18 @@
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack --mode production",
-    "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
+    "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/rest": "workspace:*",
-    "lit": "^3.3.1"
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "lit-html": "^3.3.1"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*",
-    "@rspack/cli": "^1.1.3",
-    "@rspack/core": "^1.1.3",
-    "typescript": "^5.3.3"
+    "@openremote/util": "workspace:*"
   }
 }

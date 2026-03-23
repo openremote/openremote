@@ -30,9 +30,14 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -49,7 +54,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
@@ -129,11 +134,25 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             ].toArray(new ChannelHandler[0])
         })
 
+        and: "another Websocket client with no credentials"
+        def client3 = new WebsocketIOClient<String>(
+                new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=building").build(),
+                null, null)
+        client3.setEncoderDecoderProvider({
+            [
+                    new StringEncoder(CharsetUtil.UTF_8),
+                    new StringDecoder(CharsetUtil.UTF_8),
+                    new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client3)
+            ].toArray(new ChannelHandler[0])
+        })
+
         and: "we add callback consumers to the clients"
         def connectionStatus = client.getConnectionStatus()
         def connectionStatus2 = client2.getConnectionStatus()
+        def connectionStatus3 = client3.getConnectionStatus()
         List<Object> receivedMessages = new CopyOnWriteArrayList<>()
         List<Object> receivedMessages2 = new CopyOnWriteArrayList<>()
+        List<Object> receivedMessages3 = new CopyOnWriteArrayList<>()
         client.addMessageConsumer({
             message -> receivedMessages.add(messageFromString(message))
         })
@@ -146,6 +165,12 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         client2.addConnectionStatusConsumer({
             status -> connectionStatus2 = status
         })
+        client3.addMessageConsumer({
+            message -> receivedMessages3.add(messageFromString(message))
+        })
+        client3.addConnectionStatusConsumer({
+            status -> connectionStatus3 = status
+        })
 
         and: "the system settles down"
         noEventProcessedIn(assetProcessingService, 500)
@@ -153,6 +178,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         when: "we call connect on the clients"
         client.connect()
         client2.connect()
+        client3.connect()
 
         then: "the clients status should become CONNECTED"
         conditions.eventually {
@@ -160,6 +186,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert connectionStatus == ConnectionStatus.CONNECTED
             assert client2.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus2 == ConnectionStatus.CONNECTED
+            assert client3.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatus3 == ConnectionStatus.CONNECTED
         }
 
         when: "we subscribe to attribute events produced by the server"
@@ -173,6 +201,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         AttributeEvent.class,
                         null,
                         "attributes2")))
+        client3.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+                new EventSubscription(
+                        AttributeEvent.class,
+                        null,
+                        "attributes3")))
 
         and: "we subscribe to asset events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
@@ -185,6 +218,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         AssetEvent.class,
                         null,
                         "assets2")))
+        client3.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
+                new EventSubscription(
+                        AssetEvent.class,
+                        null,
+                        "assets3")))
 
         then: "the server should confirm the subscriptions"
         conditions.eventually {
@@ -194,11 +232,15 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert receivedMessages2.size() == 2
             assert receivedMessages2.any {it instanceof EventSubscription && it.subscriptionId == "attributes2"}
             assert receivedMessages2.any {it instanceof EventSubscription && it.subscriptionId == "assets2"}
+            assert receivedMessages3.size() == 2
+            assert receivedMessages3.any {it instanceof EventSubscription && it.subscriptionId == "attributes3"}
+            assert receivedMessages3.any {it instanceof EventSubscription && it.subscriptionId == "assets3"}
         }
 
         when: "apartment 1 living room temp changes"
         receivedMessages.clear()
         receivedMessages2.clear()
+        receivedMessages3.clear()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5))
 
         then: "the testuser3 client receives the event"
@@ -215,6 +257,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         then: "the building user should not have received the event"
         conditions.eventually {
             assert receivedMessages2.isEmpty()
+        }
+
+        and: "the anonymous user should not have received the event"
+        conditions.eventually {
+            assert receivedMessages3.isEmpty()
         }
 
         when: "apartment 2 living room temp changes"
@@ -239,25 +286,101 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         when: "apartment 1 living room asset is modified"
         receivedMessages.clear()
         receivedMessages2.clear()
+        receivedMessages3.clear()
         def apartment1Livingroom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
         apartment1Livingroom.addAttributes(
-                new Attribute<>("testAttribute", ValueType.BOOLEAN)
+                new Attribute<>("testAttribute", ValueType.BOOLEAN).addOrReplaceMeta(
+                        new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ, false),
+                        new MetaItem<>(MetaItemType.ACCESS_PUBLIC_READ, false)
+                )
+        )
+        apartment1Livingroom.getAttribute(Asset.NOTES).get().addOrReplaceMeta(
+                new MetaItem<>(MetaItemType.ACCESS_PUBLIC_READ)
         )
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom)
 
         then: "the testuser3 client should be notified with only accessible attributes"
         conditions.eventually {
-            assert receivedMessages.size() == 1
-            assert receivedMessages.get(0) instanceof TriggeredEventSubscription
-            assert (receivedMessages.get(0) as TriggeredEventSubscription).subscriptionId == "assets"
-            assert (receivedMessages.get(0) as TriggeredEventSubscription).events.size() == 1
-            assert (receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) instanceof AssetEvent
-            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).id == managerTestSetup.apartment1LivingroomId
-            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.size() == 8
-            assert !((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.contains("testAttribute")
+            assert receivedMessages.size() == 2
+            def attrSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets"} as TriggeredEventSubscription<AssetEvent>
+            assert assetSub != null
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert assetSub.events.get(0).attributeNames.size() == 8
+            assert !assetSub.events.get(0).attributeNames.contains("testAttribute")
+            assert attrSub != null
+            assert attrSub.events.size() == 1
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert attrSub.events.get(0).name == Asset.NOTES.name
         }
 
-        then: "the building user should not have received the event"
+        and: "the anonymous client should be notified with only accessible attributes"
+        conditions.eventually {
+            assert receivedMessages3.size() == 2
+            def attrSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes3"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets3"} as TriggeredEventSubscription<AssetEvent>
+            assert assetSub != null
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert assetSub.events.get(0).attributeNames.size() == 1
+            assert assetSub.events.get(0).attributeNames.contains(Asset.NOTES.name)
+            assert attrSub != null
+            assert attrSub.events.size() == 1
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1LivingroomId
+            assert attrSub.events.get(0).name == Asset.NOTES.name
+        }
+
+        and: "the building user should not have received the event"
+        assert receivedMessages2.isEmpty()
+
+        when: "apartment 1 asset is modified"
+        receivedMessages.clear()
+        receivedMessages2.clear()
+        receivedMessages3.clear()
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id)
+        apartment1.getAttribute(Asset.LOCATION).get().setValue(new GeoJSONPoint(10, 10))
+        apartment1.getAttribute(BuildingAsset.STREET).get().setValue("Test Street")
+        apartment1 = assetStorageService.merge(apartment1)
+
+        then: "the testuser3 client should be notified with only accessible attributes"
+        conditions.eventually {
+            assert receivedMessages.size() == 3
+            def attr1Sub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes" && it.events.any {((AttributeEvent)it).ref.name==BuildingAsset.STREET.name}} as TriggeredEventSubscription<AttributeEvent>
+            def attr2Sub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes" && it.events.any {((AttributeEvent)it).ref.name==Asset.LOCATION.name}} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets"} as TriggeredEventSubscription<AssetEvent>
+            assert assetSub != null
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert assetSub.events.get(0).attributeNames.size() == 8
+            assert assetSub.events.get(0).attributeNames.contains(BuildingAsset.STREET.name)
+            assert attr1Sub != null
+            assert attr1Sub.events.size() == 1
+            assert attr1Sub.events.get(0).id == managerTestSetup.apartment1Id
+            assert attr1Sub.events.get(0).name == BuildingAsset.STREET.name
+            assert attr2Sub != null
+            assert attr2Sub.events.size() == 1
+            assert attr2Sub.events.get(0).id == managerTestSetup.apartment1Id
+            assert attr2Sub.events.get(0).name == Asset.LOCATION.name
+        }
+
+        then: "the anonymous client should be notified with only accessible attributes"
+        conditions.eventually {
+            assert receivedMessages3.size() == 2
+            def attrSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "attributes3"} as TriggeredEventSubscription<AttributeEvent>
+            def assetSub = receivedMessages3.find{it instanceof TriggeredEventSubscription && it.subscriptionId == "assets3"} as TriggeredEventSubscription<AssetEvent>
+            assert assetSub != null
+            assert assetSub.events.size() == 1
+            assert assetSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert assetSub.events.get(0).attributeNames.size() == 1
+            assert assetSub.events.get(0).attributeNames.contains(Asset.LOCATION.name)
+            assert attrSub != null
+            assert attrSub.events.size() == 1
+            assert attrSub.events.get(0).id == managerTestSetup.apartment1Id
+            assert attrSub.events.get(0).name == BuildingAsset.LOCATION.name
+        }
+
+        and: "the building user should not have received the event"
         assert receivedMessages2.isEmpty()
 
         cleanup: "the server should be stopped"
@@ -266,6 +389,9 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         }
         if (client2 != null) {
             client2.disconnect()
+        }
+        if (client3 != null) {
+            client3.disconnect()
         }
     }
 

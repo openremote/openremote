@@ -93,6 +93,9 @@ const styles = css`
 `;
 
 /**
+ * A component for displaying a hierarchical, tree-like structure of elements.
+ * Common use cases are visualizing parent-child relationships, or for grouping elements together.
+ *
  * @event {OrTreeSelectEvent} or-tree-select - Triggers upon selecting a node, and dispatches a list of the nodes selected.
  * @event {OrTreeDragEvent} or-tree-drag - Triggers upon dragging a node to a new group, and dispatches a list of dragged nodes, the group node, and the updated list of all nodes.
  */

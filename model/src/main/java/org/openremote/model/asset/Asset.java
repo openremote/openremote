@@ -56,6 +56,7 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -221,10 +222,9 @@ import static jakarta.persistence.DiscriminatorType.STRING;
  */
 // @formatter:on
 @Entity
-@Table(name = "ASSET")
+@Table(name = "ASSET", check = @CheckConstraint(constraint = "ID != PARENT_ID"))
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
-@Check(constraints = "ID != PARENT_ID")
 @JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = ThingAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
 @AssetValid
@@ -233,6 +233,8 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
+
+    private static final java.util.regex.Pattern ASSET_ID_PATTERN = java.util.regex.Pattern.compile(Constants.ASSET_ID_REGEXP);
 
     /**
      * The purpose of this is to provide {@link org.openremote.model.attribute.Attribute.AttributeDeserializer} access
@@ -292,10 +294,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "VERSION", nullable = false)
     protected long version;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn;
+    protected Instant createdOn;
 
     @NotBlank(message = "{Asset.name.NotBlank}")
     @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
@@ -359,11 +360,11 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return (T) this;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public T setCreatedOn(Date createdOn) {
+    public T setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return (T) this;
     }
@@ -426,10 +427,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
     /**
-     * NOTE: This is a transient and optional property, set only in database query results.
-     * <p>
-     * The identifiers of all parents representing the path in the tree. The first element is the identifier of this
-     * instance, the last is the root asset without a parent.
+     * The identifiers of all parents representing the path in the tree. The first element is the
+     * root asset without a parent, the last is the identifier of this instance.
      */
     public String[] getPath() {
         return path;
@@ -634,5 +633,15 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Override
     public int hashCode() {
         return Objects.hash(id, version, createdOn, name, accessPublicRead, parentId, realm, type, Arrays.hashCode(path), attributes);
+    }
+
+    /**
+     * Indicates if the given string matches the pattern for an Asset id.
+     *
+     * @param assetId String to validate. Must not be null or will throw a NullPointerException
+     * @return true if matches Asset id pattern, false otherwise.
+     */
+    public static boolean matchesAssetIdPattern(String assetId) {
+        return ASSET_ID_PATTERN.matcher(assetId).matches();
     }
 }

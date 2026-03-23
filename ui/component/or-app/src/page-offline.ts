@@ -3,7 +3,6 @@ import {css, html, TemplateResult} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {AppStateKeyed} from "./app";
 import {Store} from "@reduxjs/toolkit";
-import {i18next} from "@openremote/or-translate";
 import manager, {OREvent} from "@openremote/core";
 import {asyncReplace} from 'lit/directives/async-replace.js';
 import {when} from 'lit/directives/when.js';

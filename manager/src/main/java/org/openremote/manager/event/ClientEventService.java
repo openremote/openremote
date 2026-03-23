@@ -480,8 +480,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
      * Publish an event to interested subscribers
      */
     public <T extends Event> void publishEvent(T event) {
-        // Only publish if service is started
-        if (!started) {
+        // Only publish if service is started and MessageBrokerService is started (route needs to be started)
+        if (!started || !messageBrokerService.isStarted()) {
             return;
         }
 

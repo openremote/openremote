@@ -4,7 +4,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
@@ -356,7 +356,7 @@ export class ChartSettings extends WidgetSettings {
     // we should remove the settings references for the attributes that got removed.
     // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.attributeRefs.includes(ar));
+        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ref => !ev.detail.attributeRefs.some(r => r.id === ref.id && r.name === ref.name));
 
         removedAttributeRefs.forEach(raf => {
             this.removeFromAttributeConfig(raf);
@@ -452,15 +452,6 @@ export class ChartSettings extends WidgetSettings {
     protected openColorPickDialog(attributeRef: AttributeRef) {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
-            let oldColor = this.widgetConfig.attributeColors?.find(x => x[0] === attributeRef)?.[1];
-            if(!oldColor) {
-                const index = this.widgetConfig.attributeRefs?.indexOf(attributeRef);
-                if(index >= 0) {
-                    oldColor = OrChart.DEFAULT_COLORS?.[index];
-                }
-            }
-            // Update value
-            inputElem.value = oldColor ?? "";
 
             // Listen for changes
             inputElem.addEventListener("input", debounce(() => {

@@ -11,6 +11,9 @@ import org.openremote.model.util.TextUtil
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
@@ -76,16 +79,17 @@ trait ManagerContainerTrait extends ContainerTrait {
         withClockOf(container) { it.advanceTime(amount, unit) }
     }
 
+    // Used in custom project tests
+    void setPseudoClock(LocalDate date, LocalTime time, ZoneId zoneId) {
+        withClockOf(container) { it.setTime(date, time, zoneId) }
+    }
+
+    void setPseudoClock(String iso8601Timestamp) {
+        withClockOf(container) { it.setTime(iso8601Timestamp) }
+    }
+
     void stopPseudoClock() {
         withClockOf(container) { it.stop() }
-    }
-
-    void resetPseudoClockAt() {
-        withClockOf(container) { it.reset() }
-    }
-
-    void stopPseudoClockAt(long amount) {
-        withClockOf(container) { it.stopAtTime(amount) }
     }
 
     void startPseudoClock() {

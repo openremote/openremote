@@ -18,31 +18,34 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { expect } from "@openremote/test";
-import {Manager, test, userStatePath} from "./fixtures/manager.js";
+import {adminStatePath, Manager, test, userStatePath} from "./fixtures/manager.js";
 import {batteryAsset, buildingAsset, electricityAsset, parentAssets} from "./fixtures/data/assettree.js";
 import {Asset} from "@openremote/model";
 import type {OrAssetTree} from "@openremote/or-asset-tree";
 
 test.use({ storageState: userStatePath });
 
-function createBatteryAssets(amount: number): Asset[] {
+function createBatteryAssets(amount: number, realm = "smartcity"): Asset[] {
     return Array.from({ length: amount }, (_, i) => ({
         ...batteryAsset,
-        name: `Battery ${i + 1}`
+        name: `Battery ${i + 1}`,
+        realm: realm
     }));
 }
 
-function createElectricityAssets(amount: number): Asset[] {
+function createElectricityAssets(amount: number, realm = "smartcity"): Asset[] {
     return Array.from({ length: amount }, (_, i) => ({
         ...electricityAsset,
-        name: `Electricity meter ${i + 1}`
+        name: `Electricity meter ${i + 1}`,
+        realm: realm
     }));
 }
 
-function createBuildingAssets(amount: number): Asset[] {
+function createBuildingAssets(amount: number, realm = "smartcity"): Asset[] {
     return Array.from({ length: amount }, (_, i) => ({
         ...buildingAsset,
-        name: `Building ${i + 1}`
+        name: `Building ${i + 1}`,
+        realm: realm
     }));
 }
 
@@ -82,9 +85,18 @@ async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
  * @and Tries to navigate through the assets in the system using the asset tree
  * @then The asset list should be complete and should not display any artifacts or visual errors.
  */
-test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage }) => {
+test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage, page }) => {
+
+    // Make sure the count endpoint during page load returns a correct value
+    await page.route("**/asset/count", async (route, request) => {
+        await route.continue();
+        const response = await request.response();
+        expect(response?.status()).toBe(200);
+        expect(await response?.json()).toBeGreaterThanOrEqual(8);
+    });
+
     const batteryAssets = createBatteryAssets(2);
-    const electricityAssets = createElectricityAssets(2)
+    const electricityAssets = createElectricityAssets(2);
     await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
@@ -196,7 +208,10 @@ test(`Load more buttons are shown when there are a lot of assets`, async ({ page
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
     await expect(assetTree.getAssetNodes()).toHaveCount(5); // 2 battery assets + 2 electricity assets + 1 console group
-    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '2')});
+    await page.locator('or-asset-tree').evaluate(tree => {
+        (tree as OrAssetTree).setAttribute('queryLimit', '2');
+        (tree as OrAssetTree).setAttribute('paginationThreshold', '1');
+    });
     await expect(assetTree.getAssetNodes()).toHaveCount(2);
     await page.getByRole('button', { name: "Load More" }).click();
     await expect(assetTree.getAssetNodes()).toHaveCount(4);
@@ -225,7 +240,10 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25); // City 1, City 2, Consoles asset and 25 battery assets
 
     // Limit the number of expanding nodes to 20, and check if the tree is still in tact
-    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '20')});
+    await page.locator('or-asset-tree').evaluate(tree => {
+        (tree as OrAssetTree).setAttribute('queryLimit', '20');
+        (tree as OrAssetTree).setAttribute('paginationThreshold', '1');
+    });
     await expect(assetTree.getAssetNodes()).toHaveCount(3); // City 1, City 2 and Consoles asset
     cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
     await cityAsset1.locator('[data-expandable]').click();
@@ -289,7 +307,10 @@ test(`Load more buttons are shown properly when there is a complex tree`, async 
     // Navigate to the asset tree
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
-    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '2')});
+    await page.locator('or-asset-tree').evaluate(tree => {
+        (tree as OrAssetTree).setAttribute('queryLimit', '2');
+        (tree as OrAssetTree).setAttribute('paginationThreshold', '1')
+    });
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // 2 parent assets (the other console group is hidden because of queryLimit=2)
 
     // Navigate to the 1st building within the first city
@@ -396,6 +417,41 @@ test(`Searching for an asset and removing it keeps the tree and viewer in tact`,
     await expect(assetTree.getSelectedNodes()).toHaveCount(0);
     await expect(assetTree.getAssetNodes()).toHaveCount(0); // Nothing is visible anymore, since there is nothing matching the "Battery 10" text filter.
 })
+
+/**
+ * @given 4 assets are created in the "master" realm
+ * @and 2 assets are created in the "smartcity" realm
+ * @and the assets are visible in the tree (a total of 5)
+ * @when the user switches to the "smartcity" realm using the realm picker
+ * @then the asset tree should show assets from the "smartcity" realm instead, (a total of 3)
+ * @and the asset viewer becomes empty, and doesn't show the old asset from the "master" realm anymore
+ */
+test.describe(() => {
+    test.use({ storageState: adminStatePath });
+
+    test(`Selecting an asset, clears the asset viewer when switching realms`, async ({page, manager, assetsPage, assetTree, assetViewer}) => {
+        const batteryAssets = createBatteryAssets(2, "master");
+        const electricityAssets = createElectricityAssets(2, "master");
+        await manager.setup("master", { assets: [...batteryAssets, ...electricityAssets] });
+        await manager.goToRealmStartPage("master");
+        await assetsPage.goto();
+        await expect(assetTree.getAssetNodes()).toHaveCount(5); // 2 battery assets + 2 electricity assets + 1 console group
+
+        // Select asset
+        await page.click(`text=${electricityAssets[0].name}`); // Clicking "Electricity asset 1"
+        await expect(assetTree.getSelectedNodes()).toHaveCount(1);
+        await expect(assetViewer.getHeaderLocator(electricityAssets[0].name!)).toBeVisible();
+
+        // Create assets for another realm
+        const smartCityAssets = createBatteryAssets(2);
+        await manager.setup("smartcity", { assets: smartCityAssets });
+
+        // Switch realms and expect assets to be visible
+        await manager.switchToRealmByRealmPicker("smartcity");
+        await expect(assetTree.getAssetNodes()).toHaveCount(3); // 2 battery assets + 1 console group
+        await expect(assetViewer.getHeaderLocator(electricityAssets[0].name!)).not.toBeVisible();
+    });
+});
 
 // After each test, clean up all data
 test.afterEach(async ({ manager }) => {

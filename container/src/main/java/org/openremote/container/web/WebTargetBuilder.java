@@ -174,17 +174,6 @@ public class WebTargetBuilder {
 
     public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
 
-        //Create all of this config code in order to deal with expires cookies in responses
-        RequestConfig requestConfig = RequestConfig.custom()
-            .setCookieSpec(CookieSpecs.STANDARD)
-            .setConnectionRequestTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
-            .setConnectTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
-            .setSocketTimeout(Long.valueOf(overrideSocketTimeout).intValue())
-            .build();
-        HttpClient apacheClient = HttpClientBuilder.create()
-            .setDefaultRequestConfig(requestConfig)
-            .build();
-
         ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
             .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)

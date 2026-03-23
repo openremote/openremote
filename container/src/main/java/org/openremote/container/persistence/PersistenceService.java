@@ -79,7 +79,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.util.MapAccess.*;
 
 public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
@@ -117,6 +117,16 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         @Override
         public String getPersistenceProviderClassName() {
             return "org.hibernate.jpa.HibernatePersistenceProvider";
+        }
+
+        @Override
+        public String getScopeAnnotationName() {
+            return null;
+        }
+
+        @Override
+        public List<String> getQualifierAnnotationNames() {
+            return List.of();
         }
 
         @Override

@@ -33,7 +33,6 @@ import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,7 +75,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <b>NOTE: Care must be taken when working with Netty {@link ByteBuf} as Netty uses reference counting to manage their
  * lifecycle. Refer to the Netty documentation for more information.</b>
  */
-public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implements NettyIOClient<T> {
+public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
 
     public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
     public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
@@ -88,10 +87,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      */
     public static class ByteToMessageDecoder<T> extends io.netty.handler.codec.ByteToMessageDecoder {
         protected List<T> messages = new ArrayList<>(1);
-        protected AbstractNettyIOClient<T, ?> client;
+        protected NettyIOClient<T> client;
         protected BiConsumer<ByteBuf, List<T>> decoder;
 
-        public ByteToMessageDecoder(AbstractNettyIOClient<T, ?> client, @NotNull BiConsumer<ByteBuf, List<T>> decoder) {
+        public ByteToMessageDecoder(NettyIOClient<T> client, @NotNull BiConsumer<ByteBuf, List<T>> decoder) {
             this.client = client;
             this.decoder = decoder;
         }
@@ -112,9 +111,9 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      * This is intended to be used at the end of a decoder chain where the previous decoder outputs messages of type &lt;T&gt;.
      */
     public static class MessageToMessageDecoder<T> extends SimpleChannelInboundHandler<T> {
-        protected AbstractNettyIOClient<T,?> client;
+        protected NettyIOClient<T> client;
 
-        public MessageToMessageDecoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client) {
+        public MessageToMessageDecoder(Class<? extends T> typeClazz, NettyIOClient<T> client) {
             super(typeClazz);
             this.client = client;
         }
@@ -129,10 +128,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      * Concrete implementations must provide an encoder to fill the {@link ByteBuf} ready to be sent `over the wire`.
      */
     public static class MessageToByteEncoder<T> extends io.netty.handler.codec.MessageToByteEncoder<T> {
-        protected AbstractNettyIOClient<T, ?> client;
+        protected NettyIOClient<T> client;
         protected BiConsumer<T, ByteBuf> encoder;
 
-        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client, BiConsumer<T, ByteBuf> encoder) {
+        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T> client, BiConsumer<T, ByteBuf> encoder) {
             super(typeClazz);
             this.client = client;
             this.encoder = encoder;
@@ -156,6 +155,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected CompletableFuture<Void> connectRetry;
     protected int connectTimeout = 5000;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
+    protected Supplier<CompletableFuture<Void>> initFutureSupplier;
+    protected CompletableFuture<Void> connectFuture;
 
     protected AbstractNettyIOClient() {
         this.executorService = Container.EXECUTOR;
@@ -175,6 +176,16 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         this.connectTimeout = connectTimeout;
     }
 
+    /**
+     * If set the supplier will be called to provide a future that is chained to the standard {@link #startChannel()}
+     * future to add implementation-specific initialization logic that if fails will still trigger the retry logic with
+     * backoff. Just using the {@link #connectionStatus} and then calling disconnect won't have the same effect as the
+     * retry will not use the backoff logic.
+     */
+    public void setInitFutureSupplier(Supplier<CompletableFuture<Void>> initFutureSupplier) {
+        this.initFutureSupplier = initFutureSupplier;
+    }
+
     protected abstract Class<? extends Channel> getChannelClass();
 
     protected abstract EventLoopGroup getWorkerGroup();
@@ -183,7 +194,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      * Start the actual connection and return a future indicating completion state. Implementors can also
      * add any custom connection logic they require.
      */
-    protected abstract Future<Void> startChannel();
+    protected abstract CompletableFuture<Void> startChannel();
 
     protected void configureChannel() {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, getConnectTimeoutMillis());
@@ -229,22 +240,28 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .onRetryScheduled((execution) ->
                 LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
             .onFailedAttempt((execution) -> {
-                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
+                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + execution.getLastException());
                 doDisconnect();
             })
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
-        connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+        CompletableFuture<Void> future = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+
+            synchronized (this) {
+                if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                    execution.recordResult(null);
+                    return;
+                }
+            }
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
-            // Connection future should timeout so we just wait for it but add additional timeout just in case
-            Future<Void> connectFuture = doConnect();
+            connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
             execution.recordResult(null);
         });
 
-        connectRetry.whenComplete((result, ex) -> {
+        future.whenComplete((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
                 disconnect();
@@ -257,16 +274,44 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 }
             }
         });
+
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                future.cancel(true);
+            } else {
+                connectRetry = future;
+            }
+        }
     }
 
-    protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
-        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+    /**
+     * This just adds a timeout to the connect future (just in case one wasn't added by {@link #startChannel} implementation
+     */
+    protected void waitForConnectFuture(CompletableFuture<Void> connectFuture) throws Exception {
+        connectFuture.orTimeout(getConnectTimeoutMillis(), TimeUnit.MILLISECONDS);
+        // Just wait indefinitely as timeout will complete
+        connectFuture.join();
     }
 
-    protected Future<Void> doConnect() {
-        LOG.info("Establishing connection: " + getClientUri());
+    protected CompletableFuture<Void> doConnect() {
+        LOG.info("Establishing connection with timeout of " + getConnectTimeoutMillis() + "ms: " + getClientUri());
+
         // Start the channel
-        return startChannel();
+        CompletableFuture<Void> startFuture = startChannel();
+
+        if (initFutureSupplier != null) {
+            LOG.finest("Adding init future to connection attempt: " + getClientUri());
+            startFuture = startFuture.thenCompose(connectResult -> initFutureSupplier.get());
+        }
+
+        return startFuture;
+    }
+
+    /**
+     * Simply returns {@link Channel#isActive} but can be overridden as needed
+     */
+    protected boolean isChannelReady() {
+        return channel != null && channel.isActive();
     }
 
     @Override
@@ -279,14 +324,15 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
             LOG.fine("Disconnecting IO client: " + getClientUri());
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
+
+            try {
+                if (connectRetry != null) {
+                    connectRetry.cancel(true);
+                    connectRetry = null;
+                }
+            } catch (Exception ignored) {}
         }
 
-        try {
-            if (connectRetry != null) {
-                connectRetry.cancel(true);
-                connectRetry = null;
-            }
-        } catch (Exception ignored) {}
         doDisconnect();
         try {
             if (workerGroup != null) {
@@ -324,7 +370,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     @Override
     public void sendMessage(T message) {
-        if (channel == null) {
+        LOG.finest("Sending message to server: " + getClientUri());
+
+        if (!isChannelReady()) {
+            LOG.finer("Channel not ready, message not sent: " + getClientUri());
             return;
         }
 
@@ -407,6 +456,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                if (!isChannelReady()) {
+                    if (connectFuture != null) {
+                        connectFuture.completeExceptionally(cause);
+                    }
+                    ctx.close();
+                    return;
+                }
+
                 if (cause instanceof DecoderException decoderException) {
                     onDecodeException(ctx, decoderException);
                 } else if (cause instanceof EncoderException encoderException) {
@@ -440,7 +497,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
     }
 
-    protected void onMessageReceived(T message) {
+    @Override
+    public void onMessageReceived(T message) {
         LOG.finest("Message received notifying consumers: " + getClientUri());
         messageConsumers.forEach(consumer -> {
             try {
@@ -464,17 +522,17 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             return;
         }
         this.connectionStatus = connectionStatus;
-        if (!connectionStatusConsumers.isEmpty()) {
-            LOG.finest("Notifying connection status consumers: count=" + connectionStatusConsumers.size());
-        }
+
+        LOG.finest("Connection status changed notifying consumers: " + connectionStatus);
+
         connectionStatusConsumers.forEach(
-            consumer -> {
-                try {
-                    consumer.accept(connectionStatus);
-                } catch (Exception e) {
-                    LOG.log(Level.INFO, "Connection status change handler threw an exception: " + getClientUri(), e);
-                }
-            });
+        consumer -> {
+            try {
+                consumer.accept(connectionStatus);
+            } catch (Exception e) {
+                LOG.log(Level.INFO, "Connection status change handler threw an exception: " + getClientUri(), e);
+            }
+        });
     }
 
     @Override

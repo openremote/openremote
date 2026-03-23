@@ -7,8 +7,7 @@ import {
 
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 
 import {DialogAction, DialogActionBase, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrRuleFormLocalized} from "../forms/or-rule-form-localized";

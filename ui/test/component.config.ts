@@ -1,5 +1,6 @@
 import { basename, resolve } from "node:path";
 import { defineCtConfig as baseConfig, Project } from ".";
+import { type PlaywrightTestConfig } from "@sand4rt/experimental-ct-web";
 
 const { CI } = process.env;
 
@@ -25,5 +26,5 @@ export const defineCtConfig = (path: string) => {
     },
     /* Configure projects */
     projects: [{ name, testDir: resolve(path, "test"), fullyParallel: true, use: { ct: name } }] as Project[],
-  });
+  } as PlaywrightTestConfig);
 };

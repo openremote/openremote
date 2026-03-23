@@ -339,6 +339,16 @@ public interface AssetResource {
     AssetTree queryAssetTree(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
+     * Retrieve the amount of assets using an {@link AssetQuery}.
+     */
+    @POST
+    @Path("count")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "queryCount", summary = "Counts the amount of assets using a query")
+    Integer queryCount(@BeanParam RequestParams requestParams, AssetQuery query);
+
+    /**
      * Change parent for a set of asset
      */
     @PUT

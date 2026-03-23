@@ -21,9 +21,6 @@ dependencies {
 
     api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 
-    implementation "org.apache.plc4x:plc4j-api:$plc4xVersion"
-    runtimeOnly "org.apache.plc4x:plc4j-driver-modbus:$plc4xVersion"
-
     //IKEA Tradfri agent dependencies
     api "org.eclipse.californium:californium-core:$californiumCoreVersion"
     api "org.eclipse.californium:scandium:$californiumScandiumVersion"
@@ -48,9 +45,17 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+    implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    implementation "io.grpc:grpc-protobuf:$grpcVersion"
+    implementation "io.grpc:grpc-stub:$grpcVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    implementation files("libs/chirpstack-api-4.14.1.jar")
+    implementation files("libs/tts-api-3.34.3.jar")
 }
 
 base {
