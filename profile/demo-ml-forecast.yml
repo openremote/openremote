@@ -117,7 +117,7 @@ services:
     <<: *awslogs
 
   ml-forecast:
-    image: dkleeven/service-ml-forecast:develop
+    image: dkleeven/service-ml-forecast:latest
     restart: always
     environment:
       ML_LOG_LEVEL: INFO
