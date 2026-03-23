@@ -1,0 +1,242 @@
+# Query Exporter Configuration for OpenRemote PostgreSQL Monitoring
+# Documentation: https://github.com/albertodonato/query-exporter/blob/main/docs/configuration.rst
+#
+# Environment Variables:
+# - TABLE_BLOAT_THRESHOLD: Table bloat ratio threshold for alerting (default: 1.2 = 20% bloat)
+# - INDEX_BLOAT_THRESHOLD: Index bloat ratio threshold for alerting (default: 1.5 = 50% bloat)
+#   Set these in docker-compose or deployment environment to adjust sensitivity
+
+databases:
+  openremote:
+    dsn:
+      dialect: postgresql
+      user: !env POSTGRES_USER
+      password: !env POSTGRES_PASSWORD
+      host: !env POSTGRES_HOST
+      port: !env POSTGRES_PORT
+      database: !env POSTGRES_DB
+    labels:
+      instance: openremote
+
+metrics:
+  pg_cache_hit_percentage:
+    type: gauge
+    description: What percentage of data is being served instantly from RAM versus being slowly read from disk. You want this as high as possible
+
+  pg_connections_limit:
+    type: gauge
+    description: Count of connections max limit
+
+  pg_connections_used:
+    type: gauge
+    description: Count of connections in use
+
+  pg_connections_free:
+    type: gauge
+    description: Count of connections available
+
+  pg_connections_stuck:
+    type: gauge
+    description: Count of connections with state of idle in transaction
+
+  pg_hot_update_percent:
+    type: gauge
+    labels: [table_name]
+    description: Asset table percentage of updates that are HOT updates indicates good fillfactor
+
+  pg_dead_tuple_percent:
+    type: gauge
+    labels: [table_name]
+    description: Asset table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
+
+  pg_last_autovacuum_hours:
+    type: gauge
+    labels: [table_name]
+    description: Asset table hours since last auto vacuum run successfully
+
+  pg_last_autoanalyze_hours:
+    type: gauge
+    labels: [table_name]
+    description: Asset table hours since last auto analyze run successfully
+
+  pg_datapoint_raw_data_size:
+    type: gauge
+    description: Asset datapoint table raw uncompressed size in MB
+
+  pg_datapoint_indexes_size:
+    type: gauge
+    description: Asset datapoint table indexes size in MB
+
+  pg_datapoint_toast_size:
+    type: gauge
+    description: Asset datapoint TOAST table size in MB
+
+  pg_datapoint_disk_size:
+    type: gauge
+    description: Asset datapoint table size in MB
+
+  pg_datapoint_chunk_count:
+    type: gauge
+    description: Asset datapoint table hypertable chunk count
+
+  pg_datapoint_uncompressed_chunk_count:
+    type: gauge
+    description: Asset datapoint table hypertable uncompressed chunk count
+
+  pg_datapoint_chunks_needing_compression:
+    type: gauge
+    description: Asset datapoint table hypertable chunks needing compression count
+
+  pg_datapoint_chunk_start_weeks:
+    type: gauge
+    description: Asset datapoint table oldest hypertable chunk in weeks
+
+  pg_datapoint_chunk_end_weeks:
+    type: gauge
+    description: Asset datapoint table newest hypertable chunk in weeks
+
+  pg_datapoint_chunks_not_analyzed:
+    type: gauge
+    description: Asset datapoint table hypertable chunks not yet analyzed
+
+  pg_background_errors:
+    type: counter
+    description: Count of errors in background worker processes
+
+  pg_table_bloat_count:
+    type: gauge
+    description: Number of tables where dead tuples > 30% of live rows
+
+  pg_index_bloat_count:
+    type: gauge
+    description: Number of indexes that are larger than 150% of table size
+    
+
+queries:
+  cache_hit_ratio:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_cache_hit_percentage]
+    sql: |
+      SELECT 
+        ROUND(sum(heap_blks_hit)::numeric / (sum(heap_blks_hit) + sum(heap_blks_read) + 0.001) * 100, 2) as pg_cache_hit_percentage
+        FROM pg_statio_user_tables;
+
+  connection_state:
+    interval: 300 # 5 minutes
+    databases: [openremote]
+    metrics: [pg_connections_limit, pg_connections_used, pg_connections_free, pg_connections_stuck]
+    sql: |
+      SELECT
+        max_conn.max_limit as pg_connections_limit,
+        active.total_used as pg_connections_used,
+        (max_conn.max_limit - active.total_used) AS pg_connections_free,
+        idle_xact.idle_in_xact_count as pg_connections_stuck
+        FROM
+        (SELECT current_setting('max_connections')::int AS max_limit) max_conn,
+        (SELECT count(*) AS total_used FROM pg_stat_activity) active,
+        (SELECT count(*) AS idle_in_xact_count FROM pg_stat_activity WHERE state = 'idle in transaction') idle_xact;
+
+  table_tuples:
+    interval: 300 # 5 minutes
+    databases: [openremote]
+    metrics: [pg_hot_update_percent, pg_dead_tuple_percent, pg_last_autovacuum_hours, pg_last_autoanalyze_hours]
+    sql: |
+      SELECT
+        relname as table_name,
+        CASE
+        WHEN n_tup_upd > 0
+        THEN ROUND((n_tup_hot_upd::numeric / n_tup_upd) * 100, 2)
+        ELSE 0.00
+        END AS pg_hot_update_percent,
+        -- Calculate the percentage of the table that is dead space
+        ROUND((n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0)) * 100, 2) AS pg_dead_tuple_percent,
+        -- Calculate hours since last autovacuum
+        ROUND((EXTRACT(EPOCH FROM (now() - last_autovacuum)) / 3600.0)::numeric, 1) AS pg_last_autovacuum_hours,
+        -- Calculate hours since last autoanalyze
+        ROUND((EXTRACT(EPOCH FROM (now() - last_autoanalyze)) / 3600.0)::numeric, 1) AS pg_last_autoanalyze_hours
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'openremote';
+
+  datapoint_table_size:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_datapoint_raw_data_size, pg_datapoint_indexes_size, pg_datapoint_toast_size, pg_datapoint_disk_size]
+    sql: |
+      SELECT 
+        ROUND(table_bytes / 1048576.0, 0) AS pg_datapoint_raw_data_size,
+        ROUND(index_bytes / 1048576.0, 0) AS pg_datapoint_indexes_size,
+        ROUND(toast_bytes / 1048576.0, 0) AS pg_datapoint_toast_size,
+        ROUND(total_bytes / 1048576.0, 0) AS pg_datapoint_disk_size
+      FROM hypertable_detailed_size('asset_datapoint');
+
+  datapoint_chunks:
+    interval: 86400 # Daily
+    databases: [openremote]
+    metrics: [pg_datapoint_chunk_count, pg_datapoint_uncompressed_chunk_count, pg_datapoint_chunks_needing_compression, pg_datapoint_chunk_start_weeks, pg_datapoint_chunk_end_weeks]
+    sql: |
+      SELECT
+        count(*) AS pg_datapoint_chunk_count,
+        -- Count chunks that are NOT compressed
+        count(*) FILTER (WHERE is_compressed = false) AS pg_datapoint_uncompressed_chunk_count,
+        -- Count chunks older than 7 days (604800 seconds) that are NOT compressed
+        count(*) FILTER (
+        WHERE is_compressed = false
+        AND range_end < (now() - INTERVAL '7 days')
+        ) AS pg_datapoint_chunks_needing_compression,
+        ROUND((EXTRACT(EPOCH FROM (now() - min(range_start::timestamptz))) / 604800.0)::numeric, 1) AS pg_datapoint_chunk_start_weeks,
+        ROUND((EXTRACT(EPOCH FROM (now() - max(range_end::timestamptz))) / 604800.0)::numeric, 1) AS pg_datapoint_chunk_end_weeks
+      FROM timescaledb_information.chunks
+      WHERE hypertable_name = 'asset_datapoint'
+      GROUP BY hypertable_name;
+      
+  datapoint_autoanalyze:
+    interval: 86400 # Daily
+    databases: [openremote]
+    metrics: [pg_datapoint_chunks_not_analyzed]
+    sql: |
+      SELECT 
+        count(*) AS pg_datapoint_chunks_not_analyzed
+        FROM pg_stat_user_tables
+        WHERE relname LIKE '_hyper_%'
+        AND last_autoanalyze IS NULL
+        AND last_analyze IS NULL
+        AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
+
+  background_errors:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_background_errors]
+    sql: |
+      SELECT
+        SUM(total_failures) AS pg_background_errors
+        FROM timescaledb_information.job_stats;
+      
+  table_and_index_bloat:
+    interval: 300 # 5 minutes
+    databases: [openremote]
+    metrics: [pg_table_bloat_count, pg_index_bloat_count]
+    sql: |
+      WITH bloated_tables AS (
+        SELECT count(*) AS tbl_count
+        FROM pg_stat_user_tables
+        WHERE schemaname IN ('openremote', 'public')
+        -- 1. NOISE FILTER: Only look at tables larger than 5MB.
+        AND pg_relation_size(relid) > 5 * 1024 * 1024
+        -- 2. THRESHOLD: Dead tuples are > 30% of live rows.
+        -- (Autovacuum runs at 20%, so 30% means autovacuum is failing to keep up)
+        AND (n_dead_tup::numeric / NULLIF(n_live_tup, 0)) > 0.30
+      ),
+      bloated_indexes AS (
+      SELECT count(*) AS idx_count
+      FROM pg_stat_user_indexes
+      WHERE schemaname IN ('openremote', 'public')
+      -- 1. NOISE FILTER: Only look at indexes larger than 10MB.
+      AND pg_relation_size(indexrelid) > 10 * 1024 * 1024
+      -- 2. ALARM THRESHOLD: Index size is > 150% of the raw table size.
+      -- (Catches severe page-splitting and fragmentation)
+      AND (pg_relation_size(indexrelid)::numeric / GREATEST(pg_relation_size(relid), 1)) > 1.50
+      )
+      SELECT
+      (SELECT tbl_count FROM bloated_tables) AS pg_table_bloat_count,
+      (SELECT idx_count FROM bloated_indexes) AS pg_index_bloat_count;

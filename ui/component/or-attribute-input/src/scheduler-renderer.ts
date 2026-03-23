@@ -31,7 +31,6 @@ import {
     isObjectControl,
     schemaMatches,
 } from "@openremote/or-json-forms";
-import { CalendarEvent } from "@openremote/model";
 import { Frequency, RRulePartKeys, OrSchedulerChangedEvent, INTUITIVE_NOT_APPLICABLE } from "@openremote/or-scheduler";
 import "@openremote/or-scheduler";
 
@@ -62,7 +61,7 @@ const schedulerRenderer = (state: JsonFormsStateContext, props: ControlProps) =>
     const millisSinceStartOfDay = now % dayInMillis;
     const start = now - millisSinceStartOfDay;
     const end = start + dayInMillis;
-    const defaultEvent = { start, end, recurrence: "FREQ=DAILY" };
+    const defaultEvent = { start, end };
     // Resolve the end date by finding the maximum timestamp
     const timestamps: { timestamp: number }[] = state.core?.data?.replayData
         ?.filter((o: { timestamp?: number }) => typeof o?.timestamp === "number") ?? [];

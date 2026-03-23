@@ -11,6 +11,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.TreeSet;
@@ -65,6 +67,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
+
     protected int maxDatapointAgeDays;
     protected int datapointExportLimit;
 
@@ -435,17 +438,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     private static String validateAssetId(String assetId) {
-        if (assetId == null || assetId.length() != 22) {
+        if (assetId == null || !Asset.matchesAssetIdPattern(assetId)) {
             throw new IllegalArgumentException("Invalid asset id");
-        }
-        for (int i = 0; i < assetId.length(); i++) {
-            char c = assetId.charAt(i);
-            boolean isBase62 = (c >= '0' && c <= '9')
-                    || (c >= 'A' && c <= 'Z')
-                    || (c >= 'a' && c <= 'z');
-            if (!isBase62) {
-                throw new IllegalArgumentException("Invalid asset id");
-            }
         }
         return assetId;
     }

@@ -57,7 +57,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     /**
      * Supplies a set of encoders/decoders that convert from/to {@link String} to/from {@link ByteBuf} based on the generic protocol {@link Attribute}s
      */
-    public static Supplier<ChannelHandler[]> getGenericStringEncodersAndDecoders(AbstractNettyIOClient<String, ?> client, IOAgent<?, ?, ?> agent) {
+    public static Supplier<ChannelHandler[]> getGenericStringEncodersAndDecoders(AbstractNettyIOClient<String> client, IOAgent<?, ?, ?> agent) {
 
         boolean hexMode = agent.getMessageConvertHex().orElse(false);
         boolean binaryMode = agent.getMessageConvertBinary().orElse(false);
