@@ -97,7 +97,7 @@ else
   PARAMS="ParameterKey=UserName,ParameterValue='$SMTP_STACK_NAME'"
 
   # Create standard stack resources in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $SMTP_STACK_NAME --template-body file://$SMTP_TEMPLATE_PATH --parameters $PARAMS --output text)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $SMTP_STACK_NAME --template-body file://$SMTP_TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
@@ -249,7 +249,7 @@ EOF
   PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue=$ROLE_ARN"
 
   # Create standard stack resources in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text $ACCOUNT_PROFILE)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
@@ -358,7 +358,7 @@ else
   PARAMS="ParameterKey=Host,ParameterValue='$HOST'"
 
   # Create standard stack resources in specified account in us-east-1 region
-  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$HEALTH_TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE --region us-east-1)
+  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$HEALTH_TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text $ACCOUNT_PROFILE --region us-east-1)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
