@@ -147,7 +147,8 @@ abstract class EventProviderImpl implements EventProvider {
                     }, 0);
                 } else {
                     console.debug("Failed to connect to event service: " + this.endpointUrl);
-                    this._scheduleReconnect();
+                    // TODO: Temporarily disabled this to run this logic inside core.ts, since we also need to handle Keycloak token retrieval.
+                    /*this._scheduleReconnect();*/
                 }
 
                 deferred.resolve(connected);
@@ -544,8 +545,8 @@ abstract class EventProviderImpl implements EventProvider {
         }
 
         // TODO: Might need to disable this, as a disconnect potentially means that the token is expired. Handling reconnect in `core` makes more sense to me.
-        this._onStatusChanged(EventProviderStatus.CONNECTING);
-        this._scheduleReconnect();
+        /*this._onStatusChanged(EventProviderStatus.CONNECTING);
+        this._scheduleReconnect();*/
     }
 
     protected _scheduleReconnect() {
@@ -621,6 +622,11 @@ export class WebSocketEventProvider extends EventProviderImpl {
         } else {
             console.debug("Connecting to URL anonymously:", authorisedUrl);
         }
+
+        /**
+         * TODO: Maybe we should add a step here to retrieve a new Keycloak token?
+         * As in, always request one from the Keycloak JS library, so it will always be valid upon connecting.
+         */
 
         this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
