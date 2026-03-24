@@ -275,12 +275,19 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
             }
         });
 
+        boolean shouldCancel = false;
+
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
-                future.cancel(true);
+                shouldCancel = true;
             } else {
                 connectRetry = future;
             }
+        }
+
+        // Cancel the future OUTSIDE the synchronized block
+        if (shouldCancel) {
+            future.cancel(true);
         }
     }
 
@@ -316,6 +323,8 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
 
     @Override
     public void disconnect() {
+        CompletableFuture<Void> futureToCancel = null;
+
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
                 LOG.finest("Already disconnected or disconnecting: " + getClientUri());
@@ -325,11 +334,16 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
             LOG.fine("Disconnecting IO client: " + getClientUri());
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
 
+            if (connectRetry != null) {
+                futureToCancel = connectRetry;
+                connectRetry = null;
+            }
+        }
+
+        // Cancel the future OUTSIDE the synchronized block
+        if (futureToCancel != null) {
             try {
-                if (connectRetry != null) {
-                    connectRetry.cancel(true);
-                    connectRetry = null;
-                }
+                futureToCancel.cancel(true);
             } catch (Exception ignored) {}
         }
 
