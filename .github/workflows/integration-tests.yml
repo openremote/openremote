@@ -1,0 +1,46 @@
+name: Integration Tests
+on: workflow_call
+
+jobs:
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        with:
+          lfs: true # Enable Git LFS plugin to fetch *.mbtiles
+      - name: Set up JDK 21 and Gradle cache
+        id: setup-jdk
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+      - name: Pull Docker images
+        run: docker compose -f profile/dev-testing.yml pull # Only Keycloak and PostgreSQL for running integration tests
+      - name: Run integration tests
+        timeout-minutes: 20
+        run: |
+          # Integration tests 
+          # Make temp dir and set mask to 777 as docker seems to run as root
+          mkdir -p tmp
+          chmod 777 tmp
+          
+          # Start the stack
+          docker compose -f profile/dev-testing.yml up -d --no-build
+          
+          # Run the tests
+          ./gradlew :test:test
+      - name: Archive integration test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: integration-test-results
+          path: test/build/reports/tests
+      - name: Archive JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-coverage-report
+          path: test/build/reports/jacoco/test/html

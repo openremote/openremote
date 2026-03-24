@@ -1,0 +1,9 @@
+name: Deployment
+on: workflow_call
+
+jobs:
+  aws-deployment:
+    name: 'AWS'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo test

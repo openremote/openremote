@@ -1,0 +1,27 @@
+name: Unit Tests
+on: workflow_call
+
+jobs:
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Set up JDK 21 and Gradle cache
+        id: setup-jdk
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+      - name: Run unit tests
+        timeout-minutes: 20
+        run: ./gradlew test -x :test:test -x npmTest
+      - name: Archive unit test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-unit-test-results
+          path: test/build/reports/tests
+

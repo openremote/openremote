@@ -1,0 +1,50 @@
+name: Docker Manager Image
+on:
+  workflow_call:
+    secrets:
+      DOCKERHUB_USER:
+        required: true
+      DOCKERHUB_PASSWORD:
+        required: true
+
+jobs:
+
+  manager-image:
+    name: Manager image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-manager-build
+          path: manager/build/install/manager
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
+        with:
+          platforms: linux/amd64,linux/aarch64
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+        with:
+          version: latest
+#      - name: Login to DockerHub
+#        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USER }}
+#          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Build manager image
+        run: |
+          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/manager:develop manager/build/install/manager
+          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64 -t openremote/manager:develop-${{ github.sha }} --load manager/build/install/manager
+      - name: Scan manager docker image
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        id: manager-anchore-scan
+        with:
+          image: openremote/manager:develop-${{ github.sha }}
+          fail-build: false
+          severity-cutoff: critical
+      - name: Upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@b8bb9f28b8d3f992092362369c57161b755dea45 # v4.35.0
+        with:
+          sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
+      - name: Inspect Anchore scan SARIF report
+        run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
