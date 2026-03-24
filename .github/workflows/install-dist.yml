@@ -1,0 +1,53 @@
+name: Install Dist
+on: workflow_call
+
+jobs:
+
+  install-dist:
+    name: Install Dist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        with:
+          lfs: true # Enable Git LFS plugin to fetch *.mbtiles
+      - name: Set up JDK 21 and Gradle cache
+        id: setup-jdk
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+      - name: Run Install Dist
+        run: ./gradlew installDist
+      - name: Archive manager build
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-manager-build
+          if-no-files-found: error
+          path: |
+            manager/build/install/manager
+      - name: Archive deployment build
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-deployment-build
+          if-no-files-found: error
+          path: |
+            deployment/build
+      - name: Archive UI build
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-ui-component-build
+          if-no-files-found: error
+          path: |
+            ui/component/**/dist
+            ui/component/**/lib
+            ui/component/model/src/model.ts
+            ui/component/rest/src/restclient.ts
+            ui/component/**/tsconfig.tsbuildinfo
+      - name: Archive MDI Fonts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: mdi-fonts
+          if-no-files-found: error
+          path: |
+            ui/app/shared/fonts/Material Design Icons

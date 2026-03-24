@@ -1,0 +1,31 @@
+name: Docker Deployment Image
+on: workflow_call
+
+jobs:
+
+  deployment-image:
+    name: Deployment image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-deployment-build
+          path: deployment/build
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
+        with:
+          platforms: linux/amd64,linux/aarch64
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+        with:
+          version: latest
+      - name: Build deployment image
+        run: |
+          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/deployment:develop-${{ github.sha }} --output type=oci,dest=or_deployment.tar deployment/build
+      - name: Archive deployment image
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-deployment-image
+          if-no-files-found: error
+          path: or_deployment.tar

@@ -1,0 +1,6 @@
+name: Push Snapshot ECR
+on: workflow_call
+
+jobs:
+  push-snapshot:
+    name:
