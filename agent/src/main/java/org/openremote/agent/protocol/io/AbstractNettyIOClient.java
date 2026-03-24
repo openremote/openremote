@@ -261,7 +261,7 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
             execution.recordResult(null);
         });
 
-        future.whenComplete((result, ex) -> {
+        future.whenCompleteAsync((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
                 disconnect();
@@ -273,21 +273,14 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
                     }
                 }
             }
-        });
-
-        boolean shouldCancel = false;
+        }, executorService);
 
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
-                shouldCancel = true;
+                future.cancel(true);
             } else {
                 connectRetry = future;
             }
-        }
-
-        // Cancel the future OUTSIDE the synchronized block
-        if (shouldCancel) {
-            future.cancel(true);
         }
     }
 
@@ -323,8 +316,6 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
 
     @Override
     public void disconnect() {
-        CompletableFuture<Void> futureToCancel = null;
-
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
                 LOG.finest("Already disconnected or disconnecting: " + getClientUri());
@@ -334,16 +325,11 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
             LOG.fine("Disconnecting IO client: " + getClientUri());
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
 
-            if (connectRetry != null) {
-                futureToCancel = connectRetry;
-                connectRetry = null;
-            }
-        }
-
-        // Cancel the future OUTSIDE the synchronized block
-        if (futureToCancel != null) {
             try {
-                futureToCancel.cancel(true);
+                if (connectRetry != null) {
+                    connectRetry.cancel(true);
+                    connectRetry = null;
+                }
             } catch (Exception ignored) {}
         }
 
