@@ -544,9 +544,12 @@ abstract class EventProviderImpl implements EventProvider {
             this._pendingSubscription = null;
         }
 
-        // TODO: Might need to disable this, as a disconnect potentially means that the token is expired. Handling reconnect in `core` makes more sense to me.
-        /*this._onStatusChanged(EventProviderStatus.CONNECTING);
-        this._scheduleReconnect();*/
+        // ~TODO: Might need to disable this, as a disconnect potentially means that the token is expired. Handling reconnect in `core` makes more sense to me.~
+        // 24-03 16:11 - I don't agree with this anymore, I'm now trying to process everything inside event.ts to see what happens. Preferably I'd remove ALL the reconnect logic from or-app,
+        // and only "trigger a request to check if everything is OK" to the EventProvider alongside the Keycloak token provider. I think it helps if the EventProvider themselves ask for
+        // the necessary details, like an authorization header by calling `manager.retrieveAuthorizationHeader()`.
+        this._onStatusChanged(EventProviderStatus.CONNECTING);
+        this._scheduleReconnect();
     }
 
     protected _scheduleReconnect() {
@@ -616,95 +619,102 @@ export class WebSocketEventProvider extends EventProviderImpl {
     protected _doConnect(): Promise<boolean> {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
-        if (manager.authenticated) {
-            authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
-            console.debug("Connecting to URL using authorization:", authorisedUrl);
-        } else {
-            console.debug("Connecting to URL anonymously:", authorisedUrl);
-        }
+        this._webSocket = new WebSocket(authorisedUrl);
+        this._connectDeferred = new Deferred();
 
         /**
          * TODO: Maybe we should add a step here to retrieve a new Keycloak token?
          * As in, always request one from the Keycloak JS library, so it will always be valid upon connecting.
          */
+        let tokenPromise: Promise<void>;
+        if (manager.authenticated) {
+            tokenPromise = (async () => {
+                authorisedUrl += "&Authorization=" + (await manager.retrieveAuthorizationHeader());
+                console.debug("Connecting to URL using authorization:", authorisedUrl);
+            })();
+        } else {
+            console.debug("Connecting to URL anonymously:", authorisedUrl);
+            tokenPromise = Promise.resolve();
+        }
 
-        this._webSocket = new WebSocket(authorisedUrl);
-        this._connectDeferred = new Deferred();
+        // After retrieving the authorization header...
+        tokenPromise.finally(() => {
 
-        this._webSocket!.onopen = (ev) => {
-            console.debug("Event provider connection opened", ev);
-            if (this._connectDeferred) {
-                const deferred = this._connectDeferred;
-                this._connectDeferred = null;
-                deferred.resolve(true);
-            }
-        };
-
-        this._webSocket!.onerror = (err) => {
-            console.error("Event provider error:", err);
-            if (this._connectDeferred) {
-                const deferred = this._connectDeferred;
-                this._connectDeferred = null;
-                deferred.resolve(false);
-            } else {
-                // Could have inconsistent state so disconnect and let consumers decide what to do and when to reconnect
-                this._beforeDisconnect();
-            }
-        };
-
-        this._webSocket!.onclose = () => {
-            console.warn("The WebSocket connection of the event provider has been closed.");
-            this._webSocket = undefined;
-
-            if (this._connectDeferred) {
-                const deferred = this._connectDeferred;
-                this._connectDeferred = null;
-                deferred.resolve(false);
-            } else {
-                this._beforeDisconnect();
-            }
-        };
-
-        this._webSocket!.onmessage = (e) => {
-            const msg = e.data as string;
-
-            if (msg && msg.startsWith(SUBSCRIBED_MESSAGE_PREFIX)) {
-                const jsonStr = msg.substring(SUBSCRIBED_MESSAGE_PREFIX.length);
-                const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
-                const deferred = this._subscribeDeferred;
-                this._subscribeDeferred = null;
-                if (deferred) {
-                    deferred.resolve(subscription.subscriptionId!);
+            this._webSocket!.onopen = (ev) => {
+                console.debug("Event provider connection opened", ev);
+                if (this._connectDeferred) {
+                    const deferred = this._connectDeferred;
+                    this._connectDeferred = null;
+                    deferred.resolve(true);
                 }
-            } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
-                const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
-                const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
-                console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
-                const deferred = this._subscribeDeferred;
-                this._subscribeDeferred = null;
-                if (deferred) {
-                    deferred.reject("Unauthorized");
+            };
+
+            this._webSocket!.onerror = (err) => {
+                console.error("Event provider error:", err);
+                if (this._connectDeferred) {
+                    const deferred = this._connectDeferred;
+                    this._connectDeferred = null;
+                    deferred.resolve(false);
+                } else {
+                    // Could have inconsistent state so disconnect and let consumers decide what to do and when to reconnect
+                    this._beforeDisconnect();
                 }
-            } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {
-                const str = msg.substring(TRIGGERED_MESSAGE_PREFIX.length);
-                const triggered = JSON.parse(str) as TriggeredEventSubscription<SharedEvent>;
-                if (triggered.events) {
-                    triggered.events.forEach((event) => {
-                        this._onMessageReceived(triggered.subscriptionId!, event);
-                    });
+            };
+
+            this._webSocket!.onclose = () => {
+                console.warn("The WebSocket connection of the event provider has been closed.");
+                this._webSocket = undefined;
+
+                if (this._connectDeferred) {
+                    const deferred = this._connectDeferred;
+                    this._connectDeferred = null;
+                    deferred.resolve(false);
+                } else {
+                    this._beforeDisconnect();
                 }
-            } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
-                const str = msg.substring(EVENT_MESSAGE_PREFIX.length);
-                const event = JSON.parse(str) as SharedEvent;
-                if (event.messageID) {
-                    const deferred = this._repliesDeferred.get(event.messageID!);
-                    this._repliesDeferred.delete(event.messageID!);
+            };
+
+            this._webSocket!.onmessage = (e) => {
+                const msg = e.data as string;
+
+                if (msg && msg.startsWith(SUBSCRIBED_MESSAGE_PREFIX)) {
+                    const jsonStr = msg.substring(SUBSCRIBED_MESSAGE_PREFIX.length);
+                    const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
+                    const deferred = this._subscribeDeferred;
+                    this._subscribeDeferred = null;
                     if (deferred) {
-                        deferred.resolve(event);
+                        deferred.resolve(subscription.subscriptionId!);
+                    }
+                } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
+                    const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
+                    const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
+                    console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
+                    const deferred = this._subscribeDeferred;
+                    this._subscribeDeferred = null;
+                    if (deferred) {
+                        deferred.reject("Unauthorized");
+                    }
+                } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {
+                    const str = msg.substring(TRIGGERED_MESSAGE_PREFIX.length);
+                    const triggered = JSON.parse(str) as TriggeredEventSubscription<SharedEvent>;
+                    if (triggered.events) {
+                        triggered.events.forEach((event) => {
+                            this._onMessageReceived(triggered.subscriptionId!, event);
+                        });
+                    }
+                } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
+                    const str = msg.substring(EVENT_MESSAGE_PREFIX.length);
+                    const event = JSON.parse(str) as SharedEvent;
+                    if (event.messageID) {
+                        const deferred = this._repliesDeferred.get(event.messageID!);
+                        this._repliesDeferred.delete(event.messageID!);
+                        if (deferred) {
+                            deferred.resolve(event);
+                        }
                     }
                 }
-            }
-        };
+            };
+        });
 
         return this._connectDeferred.promise;
     }
