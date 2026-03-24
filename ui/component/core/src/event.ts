@@ -618,8 +618,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
     protected _doConnect(): Promise<boolean> {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
-
-        this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
 
         /**
@@ -639,6 +637,8 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         // After retrieving the authorization header...
         tokenPromise.finally(() => {
+
+            this._webSocket = new WebSocket(authorisedUrl);
 
             this._webSocket!.onopen = (ev) => {
                 console.debug("Event provider connection opened", ev);

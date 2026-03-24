@@ -1068,7 +1068,8 @@ export class Manager implements EventProviderFactory {
      * online.
      */
     // TODO: 24-03 16:19: Removed any "reconnect timer" logic, as I think it's better to handle this inside the EventProvider itself instead.
-    public async tryReconnect(/*reattemptDelayMillis: number = 3000*/) {
+    // TODO: 24-03 17:12: I initially disabled this, but the token refresh relies on this timer. If you'd disconnect from WiFi without this code, it would never retrieve the token anymore.
+    public async tryReconnect(reattemptDelayMillis: number = 3000) {
         console.debug("Checking connection to the Manager...");
 
         if (!this._disconnected) {
@@ -1079,13 +1080,15 @@ export class Manager implements EventProviderFactory {
 
         if (this._reconnectTimer) {
             // TODO: 24-03 16:18: Let's ignore this reconnect attempt if a timer is already busy.
-            console.debug("Reconnect timer already ongoing; continuing that one.");
-            return;
+            // TODO: 24-03 17:30 - Yeah, stupid me, it is REQUIRED to clear the timeout, as the window.setTimeout(() => rerunfunction()) does not clear the reconnect timer, silly ;)
+            /*console.debug("Reconnect timer already ongoing; continuing that one.");
+            return;*/
 
             // TODO: 24-03 16:17: Disabled this "reset reconnect timer logic", to test out if I can handle this inside the EventProvider instead.
-            /*console.debug("Clearing previous reconnect timeout...");
+            // TODO: 24-03 17:30 - Yeah, stupid me, it is REQUIRED to clear the timeout, as the window.setTimeout(() => rerunfunction()) does not clear the reconnect timer, silly ;)
+            // console.debug("Clearing previous reconnect timeout...");
             window.clearTimeout(this._reconnectTimer);
-            this._reconnectTimer = undefined;*/
+            this._reconnectTimer = undefined;
         }
 
         const connected = await this._reconnect();
@@ -1097,10 +1100,10 @@ export class Manager implements EventProviderFactory {
 
         // If failed to connect, schedule another reconnect attempt
         if (!connected) {
-            console.error("Failed to reconnect to the Manager. Waiting for the next reconnect attempt...");
-            /*reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000);
-            console.debug("Scheduling another reconnect attempt in (ms): " + reattemptDelayMillis);
-            this._reconnectTimer = window.setTimeout(() => this.reconnect(reattemptDelayMillis), reattemptDelayMillis);*/
+            // TODO: 24-03 17:12: I initially disabled this, but the token refresh relies on this timer. If you'd disconnect from WiFi without this code, it would never retrieve the token anymore.
+            reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000);
+            console.error(`Failed to reconnect to the Manager. Attempting again in ${reattemptDelayMillis}...`);
+            this._reconnectTimer = window.setTimeout(() => this.tryReconnect(reattemptDelayMillis), reattemptDelayMillis);
             return;
         }
 
@@ -1111,13 +1114,14 @@ export class Manager implements EventProviderFactory {
         console.debug("Reconnecting to the Manager...");
 
         const keycloakOffline = !await this.isKeycloakReachable();
-        console.debug("Is keycloak reachable?", !keycloakOffline)
         if (keycloakOffline) {
+            console.error("Keycloak is not reachable. Reconnect attempt failed.");
             return false;
         }
+        console.debug("Keycloak is reachable.")
 
         // Check if access token can be refreshed
-        console.debug("Checking keycloak access token");
+        console.debug("Checking keycloak access token...");
         let tokenRefreshed = false;
         try {
             tokenRefreshed = await this._updateKeycloakAccessToken();
@@ -1138,10 +1142,18 @@ export class Manager implements EventProviderFactory {
             }
             console.debug("Keycloak access token is valid");
         }
+        console.debug("Keycloak token retrieved successfully. Refreshed:", tokenRefreshed);
 
         // Check events
         const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
         console.debug("If event provider offline then attempting reconnect: offline=" + !isEventsOnline());
+        if(!isEventsOnline()) {
+            console.debug("Event provider offline, attempting to reconnect using latest auth token.");
+            await this.events?.connect();
+        }
+        return isEventsOnline();
+
+        /* ---------------------- */
 
         // TODO: 24-03 16:20, Disabled logic below for testing purposes. As I think it is not necessary, as I've added a "retrieve new token" logic in the EventProvider itself.
         // When token refreshed, we force disconnect the websocket
@@ -1159,14 +1171,14 @@ export class Manager implements EventProviderFactory {
             } else {
                 console.debug("No event provider disconnect was necessary.");
             }*!/
-        }
+        }*/
 
         // Do websocket reconnect attempt if needed
-        if(!isEventsOnline()) {
+        /*if(!isEventsOnline()) {
             console.debug("Event provider offline, attempting to reconnect using latest auth token.");
             await this.events?.connect();
-        }*/
-        return !isEventsOnline();
+        }
+        return !isEventsOnline();*/
     }
 
     /**

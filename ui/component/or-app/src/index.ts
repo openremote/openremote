@@ -173,7 +173,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     this._startOfflineFallbackTimer(true);
                 }
                 // Always try reconnecting the event provider (just in case we are disconnected)
-                manager.reconnect();
+                manager.tryReconnect();
             }, 500);
         } else {
             this._store.dispatch((setVisibility(false)));
