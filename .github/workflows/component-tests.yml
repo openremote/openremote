@@ -1,0 +1,36 @@
+name: UI Component Tests
+on: workflow_call
+
+jobs:
+
+  ui-component-tests:
+    name: UI Component Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: mdi-fonts
+          path: ui/app/shared/fonts/Material Design Icons
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-ui-component-build
+          path: ui/component
+      - name: Set up JDK 21 and Gradle cache
+        id: setup-jdk
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+      - name: Install Playwright browsers
+        run: npx playwright@1.57.0 install --with-deps chromium
+      - name: Run UI component tests
+        timeout-minutes: 20
+        run: ./gradlew -p ui/component npmTest
+      - name: Archive UI component test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-ui-component-test-results
+          path: ui/component/*/component-test-report/**

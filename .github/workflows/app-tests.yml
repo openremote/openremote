@@ -1,0 +1,42 @@
+name: UI App Tests
+on: workflow_call
+
+jobs:
+
+  ui-app-tests:
+    name: UI App Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        with:
+          lfs: true # Enable Git LFS plugin to fetch *.mbtiles
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-manager-image
+          path: .
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-ui-component-build
+          path: ui/component
+      - name: Load manager image
+        run: docker load < or_manager.tar
+      - name: Install Playwright browsers
+        run: npx playwright@1.57.0 install --with-deps chromium
+      - name: Run UI App Tests
+        timeout-minutes: 20
+        run: |
+          # UI App Tests
+          # Start the stack
+          MANAGER_VERSION=develop-${{ github.sha }} docker compose -f profile/dev-ui.yml up -d --no-build
+
+          # Wait for services to be healthy
+          bash .ci_cd/host_init/healthy.sh profile
+
+          # Run the tests
+          ./gradlew -p ui/app/manager npmTest
+      - name: Archive UI app test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-ui-app-test-results
+          path: ui/app/*/app-test-report/**
