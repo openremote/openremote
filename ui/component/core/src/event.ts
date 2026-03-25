@@ -143,7 +143,7 @@ abstract class EventProviderImpl implements EventProvider {
                         this._onConnect();
                     }, 0);
                 } else {
-                    console.warn("Failed to connect to event service: " + this.endpointUrl);
+                    console.debug("Failed to connect to event service: " + this.endpointUrl);
                     this._scheduleReconnect();
                 }
 
