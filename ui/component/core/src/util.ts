@@ -1066,10 +1066,11 @@ export function blobToBase64(blob:Blob) {
 }
 
 /**
- * Generates a 36 character UUID, either using the crypto API,
- * or by using the browser's internal UUID generator (which browsers use for Blob management)
- * https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
+ * Generates a 36 character UUID using the crypto API. https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
+ * As a fallback, in case an unsecure browser context is used, I fall back to the browsers' internal UUID generator.
+ * By generating a temporary internal URL for it (e.g., blob:https://example.com/b282423c-74a4-4f04-8991-893043f25c27), and extracting the last 36 characters.
  */
 export function generateUniqueUUID(): string {
-    return crypto.randomUUID?.() ?? URL.createObjectURL(new Blob([])).slice(-36);
+    return crypto.randomUUID?.() ??
+        (u => { URL.revokeObjectURL(u); return u.slice(-36); })(URL.createObjectURL(new Blob([])));
 }
