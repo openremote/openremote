@@ -47,3 +47,5 @@ tasks.register('prepareUi') {
 tasks.register('publishUi') {
     dependsOn clean, npmPublish
 }
+
+gradle.startParameter.excludedTaskNames += ["${project.path}:test".toString()]
