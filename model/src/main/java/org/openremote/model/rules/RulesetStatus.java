@@ -61,7 +61,7 @@ public enum RulesetStatus {
     PAUSED,
 
     /**
-     * Ruleset is outside of validity period and will nt be valid again.
+     * Ruleset is outside of validity period and will not be valid again.
      */
     EXPIRED,
 

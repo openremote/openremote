@@ -59,7 +59,6 @@
     "reselect": "^4.1.8"
   },
   "devDependencies": {
-    "@openremote/rest": "workspace:*",
     "@openremote/util": "workspace:*",
     "@rsbuild/core": "~1.6.8",
     "@rsdoctor/rspack-plugin": "~1.4.0"

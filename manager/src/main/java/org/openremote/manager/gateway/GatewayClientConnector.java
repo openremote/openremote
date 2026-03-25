@@ -743,6 +743,11 @@ public class GatewayClientConnector implements AutoCloseable {
                 .peek(attribute -> applySyncRuleToMeta(attribute.getName(), attribute.getMeta(), syncRule)).toList();
 
         asset.setAttributes(attributes);
+
+        if (syncRule.accessPublicRead != null) {
+            asset.setAccessPublicRead(syncRule.accessPublicRead);
+        }
+
         return asset;
     }
 

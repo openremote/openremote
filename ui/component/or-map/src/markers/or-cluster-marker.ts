@@ -5,9 +5,9 @@ import { GeoJSONSource, Map } from "maplibre-gl";
 /**
  * Slice of the donut chart for cluster markers
  */
-export type Slice = [type: string, color: string, count: number]
+export type Slice = [type: string, color: string, count: number];
 
-type SliceWithOffset = [...Slice, offset: number]
+type SliceWithOffset = [...Slice, offset: number];
 
 @customElement("or-cluster-marker")
 export class OrClusterMarker extends LitElement {
@@ -33,15 +33,16 @@ export class OrClusterMarker extends LitElement {
     }
 
     /**
-     * Checks that all types exactly match the cluster marker types
-     * @param types The types that must be present
-     * @returns Whether all types are present in the cluster marker
+     * Checks that all slices match the accumulated cluster properties
+     *
+     * Note: This method assumes the slices contain the same types as `counts`. If not,
+     * a new cluster marker should be created.
+     * @param counts A record of the accumulated cluster properties to check
+     * @returns Whether the slices have the same counts as the accumulated properties
      */
-    public hasTypes(types: string[]) {
-        for (const type of types) {
-            if (!this._slices.some(([t]) => t === type)) {
-                return false;
-            }
+    public slicesMatch(counts: Record<string, number>) {
+        for (const [type, , count] of this._slices) {
+            if (counts[type] !== count) return false;
         }
         return true;
     }
@@ -70,7 +71,7 @@ export class OrClusterMarker extends LitElement {
         const isClusterCountlimitSurpassed = total > this._highThreshold
 
         return html`
-            <svg 
+            <svg
                 width="${w}"
                 height="${w}"
                 viewbox="0 0 ${w} ${w}"
@@ -102,7 +103,7 @@ export class OrClusterMarker extends LitElement {
         const a1: number = 2 * Math.PI * (end - 0.25);
         const x0: number = Math.cos(a0);
         const y0: number = Math.sin(a0);
-        const x1: number = Math.cos(a1) 
+        const x1: number = Math.cos(a1);
         const y1: number = Math.sin(a1);
         const largeArc: 1 | 0 = end - start > 0.5 ? 1 : 0;
 
@@ -118,17 +119,17 @@ export class OrClusterMarker extends LitElement {
 
     connectedCallback(): void {
         super.connectedCallback();
-        this.addEventListener("click", this.onClick)
+        this.addEventListener("click", this.onClick);
     }
 
     disconnectedCallback(): void {
-      super.disconnectedCallback();
-      this.removeEventListener("click", this.onClick)
+        super.disconnectedCallback();
+        this.removeEventListener("click", this.onClick);
     }
 
     protected async onClick() {
-        if (this.lng && this.lat) {
-            const zoom = await this._map.getSource<GeoJSONSource>('mapPoints')!.getClusterExpansionZoom(this._clusterId!);
+        if (this.lng != null && this.lat != null) {
+            const zoom = await this._map.getSource<GeoJSONSource>("assets")!.getClusterExpansionZoom(this._clusterId!);
             // Pass `this` down as event data so the marker can be cleared programmatically
             this._map.easeTo({ center: [this.lng, this.lat], zoom }, { marker: this });
         }
