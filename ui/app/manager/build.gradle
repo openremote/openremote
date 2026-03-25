@@ -114,3 +114,5 @@ clean.dependsOn(cleanDist)
 jar.dependsOn(generateSources)
 processResources.dependsOn(generateSources)
 sourcesJar.dependsOn(generateSources)
+
+gradle.startParameter.excludedTaskNames += ["${project.path}:test".toString()]
