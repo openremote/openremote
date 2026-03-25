@@ -4,7 +4,7 @@ import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import '@openremote/or-icon';
 import {style} from './style';
 import {Dashboard} from '@openremote/model';
-import manager from '@openremote/core';
+import manager, {Util} from '@openremote/core';
 import {ListItem} from '@openremote/or-mwc-components/or-mwc-list';
 import '@openremote/or-mwc-components/or-mwc-menu';
 import {showOkCancelDialog} from '@openremote/or-mwc-components/or-mwc-dialog';
@@ -158,7 +158,7 @@ export class OrDashboardTree extends LitElement {
         const newDashboard = JSON.parse(JSON.stringify(dashboard)) as Dashboard;
         newDashboard.displayName = (newDashboard.displayName + " copy");
         if(newDashboard.template) {
-            newDashboard.template.id = crypto.randomUUID();
+            newDashboard.template.id = Util.generateUniqueUUID();
         }
         DashboardService.create(newDashboard, undefined, this.realm).then(d => {
             if (!this.dashboards) {

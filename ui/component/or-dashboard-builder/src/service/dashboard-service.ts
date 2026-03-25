@@ -1,5 +1,5 @@
 import {Dashboard, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
-import manager from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 
 export enum DashboardSizeOption {
@@ -14,7 +14,7 @@ export class DashboardService {
                 realm: realm,
                 displayName: this.getDefaultDisplayName(size),
                 template: {
-                    id: crypto.randomUUID(),
+                    id: Util.generateUniqueUUID(),
                     columns: this.getDefaultColumns(size),
                     maxScreenWidth: this.getDefaultMaxScreenWidth(size),
                     refreshInterval: DashboardRefreshInterval.OFF,
@@ -24,8 +24,8 @@ export class DashboardService {
         } else {
             dashboard.id = undefined;
             if(dashboard.template) {
-                dashboard.template.id = crypto.randomUUID();
-                dashboard.template.widgets?.forEach(w => w.id = crypto.randomUUID());
+                dashboard.template.id = Util.generateUniqueUUID();
+                dashboard.template.widgets?.forEach(w => w.id = Util.generateUniqueUUID());
             }
         }
 

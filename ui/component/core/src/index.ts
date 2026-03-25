@@ -936,7 +936,7 @@ export class Manager implements EventProviderFactory {
 
             if (!authenticated && offlineToken) {
                 try {
-                    console.error("SETTING OFFLINE TOKEN");
+                    console.debug("Reusing offline refresh token from device...");
                     this._keycloak.refreshToken = offlineToken;
                     authenticated = await this._updateKeycloakAccessToken();
                 } catch (e) {

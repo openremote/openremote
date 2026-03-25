@@ -15,7 +15,7 @@ export class WidgetService {
     }
 
     public static async placeNew(widgetTypeId: string, x: number, y: number): Promise<DashboardWidget> {
-        const randomId = crypto.randomUUID() as string;
+        const randomId = Util.generateUniqueUUID();
         const manifest = this.getManifest(widgetTypeId);
         return {
             id: randomId,
