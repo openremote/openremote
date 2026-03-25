@@ -718,7 +718,7 @@ export class OrTreeMenu extends LitElement {
      * @param node - The TreeNode object to cache
      * @param randomId - Optionally you can supply an ID to use for caching
      */
-    protected _setTreeNodeId(node: TreeNode, randomId = Math.random().toString(36).substring(2, 11)): string {
+    protected _setTreeNodeId(node: TreeNode, randomId: string = crypto.randomUUID()): string {
         if(this._treeNodeCache.get(node)) {
             return this._treeNodeCache.get(node)!;
         }
