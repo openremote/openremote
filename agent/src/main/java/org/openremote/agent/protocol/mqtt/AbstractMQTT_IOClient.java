@@ -455,12 +455,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void doReconnect() {
-        doDisconnect();
-        scheduleDoConnect(5000);
+        doDisconnect().whenComplete((unused, throwable) -> {
+          scheduleDoConnect(5000);
+       });
     }
 
     protected Future<Void> doConnect() {
         LOG.info("Establishing connection: " + getClientUri());
+        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
                 .cleanSession(cleanSession)
@@ -504,10 +506,12 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                     });
                 }
             } else if (throwable != null) {
-                if (throwable instanceof CancellationException) {
-                    LOG.info("Connection cancelled uri=" + getClientUri());
-                } else {
-                    LOG.info("Connection failed uri=" + getClientUri() + ", error=" + throwable.getMessage());
+                if (connectionStatus != ConnectionStatus.DISCONNECTED) {
+                   if (throwable instanceof CancellationException) {
+                      LOG.info("Connection cancelled uri=" + getClientUri());
+                   } else {
+                      LOG.info("Connection failed uri=" + getClientUri() + ", error=" + throwable.getMessage());
+                   }
                 }
             }
         });
@@ -567,9 +571,9 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
 
-    protected void doDisconnect() {
+    protected CompletableFuture<Void> doDisconnect() {
         LOG.finest("Performing disconnect: " + getClientUri());
-        client.disconnect().whenComplete((unused, throwable) -> {
+        return client.disconnect().whenComplete((unused, throwable) -> {
             if (throwable != null && !(throwable instanceof MqttClientStateException)) {
                 LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), throwable);
             } else {
@@ -592,11 +596,13 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         long maxDelay = Math.max(delay+1, RECONNECT_DELAY_MAX_MILLIS);
 
         RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
-                .withJitter(Duration.ofMillis(delay))
+                .withJitter(0.25)
                 .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
                 .handle(Exception.class)
-                .onRetryScheduled((execution) ->
-                        LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
+                .onRetryScheduled((execution) -> {
+                        LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri());
+                        onConnectionStatusChanged(ConnectionStatus.WAITING);
+                })
                 .onFailedAttempt((execution) -> {
                     LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
                     doDisconnect();
@@ -609,8 +615,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
             // Connection future should timeout so we just wait for it but add additional timeout just in case
             Future<Void> connectFuture = doConnect();
-            waitForConnectFuture(connectFuture);
-            execution.recordResult(null);
+            try {
+               waitForConnectFuture(connectFuture);
+               execution.recordResult(null);
+            } catch (Exception e) {
+               // CRITICAL: Abort the underlying HiveMQ connection attempt
+               connectFuture.cancel(true);
+               throw e;
+            }
         });
 
         connectRetry.whenComplete((result, ex) -> {
