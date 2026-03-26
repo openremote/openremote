@@ -1,5 +1,3 @@
-buildDir = "dist"
-
 tasks.register("clean") {
     doLast {
         delete "dist"
