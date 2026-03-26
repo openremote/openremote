@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -20,6 +22,7 @@ import java.util.Map;
 
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
+@Execution(ExecutionMode.SAME_THREAD)
 public class JSONSchemaUtilTest {
 
     @BeforeEach
