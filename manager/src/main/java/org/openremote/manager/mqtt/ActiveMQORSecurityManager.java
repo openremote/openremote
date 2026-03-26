@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2026, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,62 +19,53 @@
  */
 package org.openremote.manager.mqtt;
 
+import jakarta.security.enterprise.AuthenticationException;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
-import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.security.CheckType;
 import org.apache.activemq.artemis.core.security.Role;
-import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.adapters.KeycloakDeployment;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.manager.security.AuthorisationService;
-import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
+import org.apache.activemq.artemis.spi.core.security.ActiveMQSecurityManager5;
+import org.apache.activemq.artemis.spi.core.security.jaas.NoCacheLoginException;
+import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
+import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
+import org.openremote.container.security.IdentityProvider;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.OIDCTokenResponse;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.security.auth.Subject;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
+import java.security.Principal;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.apache.activemq.artemis.utils.CertificateUtil.getCertsFromConnection;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
-import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
- * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a
- * dynamic {@link org.keycloak.adapters.KeycloakDeployment} resolver.
- *
- * Unfortunately lots of private methods and fields in super class.
+ * An {@link ActiveMQSecurityManager5} implementation that authenticates the user by either retrieving an access token
+ * on behalf of the service user or validating the supplied access token
  */
-public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
+public class ActiveMQORSecurityManager implements ActiveMQSecurityManager5 {
+    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.API, ActiveMQORSecurityManager.class.getName());
+    public static final String ANONYMOUS_USERNAME = "anonymous";
+    protected static final long TOKEN_TIMEOUT_MILLIS = 10000;
+    protected final MQTTBrokerService brokerService;
+    protected final ExecutorService executorService;
+    protected final IdentityService identityService;
 
-    private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
-    protected AuthorisationService authorisationService;
-    protected MQTTBrokerService brokerService;
-    protected Function<String, KeycloakDeployment> deploymentResolver;
-
-    // Duplicate fields due to being private in super class
-    protected String certificateConfigName;
-    protected String configName;
-    protected SecurityConfiguration config;
-    protected SecurityConfiguration certificateConfig;
-    protected ActiveMQServer server;
-
-    public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
-        super(configurationName, configuration);
-        this.authorisationService = authorisationService;
+    public ActiveMQORSecurityManager(MQTTBrokerService brokerService, ExecutorService executorService, IdentityService identityService) {
         this.brokerService = brokerService;
-        this.deploymentResolver = deploymentResolver;
-        this.configName = configurationName;
-        this.config = configuration;
+        this.executorService = executorService;
+        this.identityService = identityService;
     }
 
     protected static Topic fromAddress(String address, WildcardConfiguration wildcardConfiguration) throws IllegalArgumentException {
@@ -82,61 +73,59 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     }
 
     @Override
-    public Subject authenticate(String user, String password, RemotingConnection remotingConnection, String securityDomain) {
-        try {
-            return remotingConnection.getSubject() != null ? remotingConnection.getSubject() : getAuthenticatedSubject(user, password, remotingConnection, securityDomain);
-        } catch (LoginException e) {
-            return null;
-        }
-    }
+    public Subject authenticate(String user, String password, RemotingConnection remotingConnection, String securityDomain) throws NoCacheLoginException {
 
-    protected Subject getAuthenticatedSubject(String user,
-                                            String password,
-                                            final RemotingConnection remotingConnection,
-                                            final String securityDomain) throws LoginException {
-        LoginContext lc;
-        String realm = null;
-        ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
-        ClassLoader thisLoader = this.getClass().getClassLoader();
-
-        if (user != null) {
-            String[] realmAndUsername = user.split(":");
-            if (realmAndUsername.length == 2) {
-                realm = realmAndUsername[0];
-                user = realmAndUsername[1];
-            }
+        if (remotingConnection.getSubject() != null) {
+            return remotingConnection.getSubject();
         }
 
-        try {
-            if (thisLoader != currentLoader) {
-                Thread.currentThread().setContextClassLoader(thisLoader);
-            }
-            if (securityDomain != null) {
-                lc = new LoginContext(securityDomain, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), null);
-            } else if (certificateConfigName != null && certificateConfigName.length() > 0 && getCertsFromConnection(remotingConnection) != null) {
-                lc = new LoginContext(certificateConfigName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), certificateConfig);
-            } else {
-                lc = new LoginContext(configName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), config);
-            }
-            try {
-                lc.login();
-            } catch (LoginException e) {
-                throw e;
-            }
-            Subject subject = lc.getSubject();
+        Set<Principal> principals = new HashSet<>();
+        // Create a connection principal to track the remoting connection associated with this subject
+        principals.add(new RemotingConnectionPrincipal(remotingConnection));
 
-            if (subject != null) {
-                // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
-                remotingConnection.setSubject(subject);
-                subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
-            }
+        if (password == null) {
+            // Replicate anonymous guest user
+            principals.add(new UserPrincipal(ANONYMOUS_USERNAME));
+            principals.add(new RolePrincipal(ANONYMOUS_USERNAME));
 
-            return subject;
-        } finally {
-            if (thisLoader != currentLoader) {
-                Thread.currentThread().setContextClassLoader(currentLoader);
-            }
+            LOG.finer("Anonymous user authenticated: " + MQTTBrokerService.connectionToString(remotingConnection));
+        } else {
+           String realm = null;
+
+           try {
+              // TODO: Add support for bearer token authentication https://github.com/openremote/openremote/issues/2534
+              // Login service user
+              if (user != null) {
+                 int delimIndex = user.indexOf(':');
+                 if (delimIndex > 0) {
+                    realm = user.substring(0, delimIndex);
+                    user = user.substring(delimIndex + 1);
+                 }
+              }
+
+              if (realm == null) {
+                 LOG.info("Invalid user format: " + user);
+                 return null;
+              }
+
+              OIDCTokenResponse oidcTokenResponse = identityService.authenticate(realm, user, password).get(
+                 TOKEN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+              TokenPrincipal tokenPrincipal = identityService.verify(realm, oidcTokenResponse.getToken());
+              UserPrincipal userPrincipal = new UserPrincipal(tokenPrincipal.getName());
+              principals.add(tokenPrincipal);
+              principals.add(userPrincipal);
+           } catch (InterruptedException | TimeoutException | ExecutionException | AuthenticationException e) {
+              Throwable cause = (e instanceof ExecutionException) ? e.getCause() : e;
+              LOG.info("Failed to authenticate user: realm=" + realm + ", username=" + user + ", exception=" + cause);
+              return null;
+           }
         }
+
+       Subject subject = new Subject(true, principals, Set.of(), Set.of());
+       // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
+       remotingConnection.setSubject(subject);
+
+       return subject;
     }
 
     @Override
@@ -168,7 +157,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             return false;
         }
 
-        KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
+        TokenPrincipal tokenPrincipal = IdentityProvider.getTokenPrincipal(subject);
         String topicClientID = MQTTHandler.topicClientID(topic);
 
         if (topicClientID == null) {
@@ -194,9 +183,9 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 boolean result;
 
                 if (isWrite) {
-                    result = handler.checkCanPublish(connection, securityContext, topic);
+                    result = handler.checkCanPublish(connection, tokenPrincipal, topic);
                 } else {
-                    result = handler.checkCanSubscribe(connection, securityContext, topic);
+                    result = handler.checkCanSubscribe(connection, tokenPrincipal, topic);
                 }
                 if (result) {
                     LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
@@ -211,4 +200,13 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         return false;
     }
 
+    @Override
+    public boolean validateUser(String user, String password) {
+        throw new UnsupportedOperationException("Invoke validateUser(String, String, RemotingConnection, String) instead");
+    }
+
+    @Override
+    public boolean validateUserAndRole(String user, String password, Set<Role> roles, CheckType checkType) {
+        throw new UnsupportedOperationException("Invoke validateUserAndRole(String, String, Set<Role>, CheckType, String, RemotingConnection, String) instead");
+    }
 }

@@ -28,13 +28,13 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.datapoint.AssetPredictedDatapointEvent;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.MetaItemType;
 
@@ -103,7 +103,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
                 });
             }
 
-            return auth.hasResourceRoleOrIsSuperUser(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)
+            return (auth.isSuperUser() || auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))
                 && identityService.getIdentityProvider().isRealmActiveAndAccessible(auth, requestedRealm);
         });
 
