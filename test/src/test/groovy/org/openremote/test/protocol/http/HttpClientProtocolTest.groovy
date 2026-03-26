@@ -83,6 +83,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         void filter(ClientRequestContext requestContext) throws IOException {
             def requestUri = requestContext.uri
             def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+            getLOG().info("MOCK SERVER: $requestPath")
 
             switch (requestPath) {
                 case "https://mockapi/basicauth":
@@ -297,13 +298,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
 
-        when: "the web target builder is configured to use the mock server"
-        HTTPProtocol.initClient()
-        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
-            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
-        }
-
-        and: "a HTTP client agent is created"
+        when: "a HTTP client agent is created"
         HTTPAgent agent = new HTTPAgent("Test agent")
             .setRealm(Constants.MASTER_REALM)
             .setBaseURI("https://mockapi")
@@ -332,7 +327,12 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
         }
 
-        when: "an asset is created with attributes linked to the agent"
+        when: "the mock filter is registered on the protocol instance client to mock auth and requests"
+        def protocolInstance = agentService.getProtocolInstance(agent.id) as HTTPProtocol
+        protocolInstance.client.register(mockServer, Integer.MAX_VALUE)
+        protocolInstance.doStart(getContainer())
+
+        and: "an asset is created with attributes linked to the agent"
         def asset = new ThingAsset("Test Asset")
             .setParent(agent)
             .addOrReplaceAttributes(
@@ -515,7 +515,15 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert agentService.getAgent(agent4.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        when: "attributes are linked to these agents"
+        when: "mock filters are registered"
+        ((HTTPProtocol)agentService.getProtocolInstance(agent2.id)).client.register(mockServer, Integer.MAX_VALUE)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent2.id)).doStart(getContainer())
+        ((HTTPProtocol)agentService.getProtocolInstance(agent3.id)).client.register(mockServer, Integer.MAX_VALUE)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent3.id)).doStart(getContainer())
+        ((HTTPProtocol)agentService.getProtocolInstance(agent4.id)).client.register(mockServer, Integer.MAX_VALUE)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent4.id)).doStart(getContainer())
+
+        and: "attributes are linked to these agents"
         def asset2 = new ThingAsset("Test Asset 2")
             .setRealm(Constants.MASTER_REALM)
             .addOrReplaceAttributes(
@@ -586,11 +594,6 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             assert mockServer.successCount == 1
         }
-
-        cleanup: "remove mock"
-        if (HTTPProtocol.client.get() != null) {
-            HTTPProtocol.client.set(null)
-        }
     }
 
     def "Check HTTP client dynamic time feature"() {
@@ -608,16 +611,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def agentService = container.getService(AgentService.class)
         def timerService = container.getService(TimerService.class)
 
-
-
-        when: "the web target builder is configured to use the mock server"
-        HTTPProtocol.initClient()
-        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
-            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
-        }
-
-
-        and: "a HTTP client agent is created"
+        when: "a HTTP client agent is created"
         HTTPAgent agent = new HTTPAgent("Test agent")
                 .setRealm(Constants.MASTER_REALM)
                 .setBaseURI("https://mockapi")
@@ -630,18 +624,20 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                 "password")
                 )
                 .setFollowRedirects(true)
-
-        and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should authenticate and the connection status should become CONNECTED"
         conditions.eventually {
             agent = assetStorageService.find(agent.id, HTTPAgent.class)
             assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolInstance(agent.id) != null
         }
 
+        when: "the mock filter is added"
+        ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).client.register(mockServer, Integer.MAX_VALUE)
+        ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).doStart(getContainer())
 
-        when: "An asset is created"
+        and: "An asset is created"
         def asset = new ThingAsset("Test Asset")
                 .setParent(agent)
                 .addOrReplaceAttributes(

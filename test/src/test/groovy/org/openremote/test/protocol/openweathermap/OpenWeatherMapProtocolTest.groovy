@@ -19,21 +19,20 @@
  */
 package org.openremote.test.protocol.openweathermap
 
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
 import org.openremote.agent.protocol.openweathermap.OpenWeatherMapAgent
-import org.openremote.agent.protocol.openweathermap.OpenWeatherMapAgentLink
 import org.openremote.agent.protocol.openweathermap.OpenWeatherMapProtocol
-import org.openremote.agent.protocol.openweathermap.OpenWeatherMapProperty
 import org.openremote.agent.protocol.openweathermap.OpenWeatherMapResponse
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
-import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.WeatherAsset
-import org.openremote.model.attribute.Attribute
-import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.attribute.MetaItem
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
@@ -41,10 +40,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
@@ -57,8 +52,13 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
     @Shared
     def mockServer = new ClientRequestFilter() {
 
+        boolean finished = false
+
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
+            if (finished) {
+                return
+            }
             def requestUri = requestContext.uri
 
             switch (requestUri.host) {
@@ -237,13 +237,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
     def "OpenWeatherMap Integration Tests"() {
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-
-        OpenWeatherMapProtocol.initClient()
-
-        if (!OpenWeatherMapProtocol.client.get().configuration.isRegistered(mockServer)) {
-            OpenWeatherMapProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
-        }
-
+        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
         def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
@@ -409,10 +403,7 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(weatherAsset2.id, WeatherAsset.UV_INDEX.name)).size() == 3
         }
 
-        
-        cleanup: "remove mock client"
-        if (OpenWeatherMapProtocol.client.get() != null) {
-            OpenWeatherMapProtocol.client.set(null)
-        }
+        cleanup: "disable mock filter"
+        mockServer.finished = true
     }
 }

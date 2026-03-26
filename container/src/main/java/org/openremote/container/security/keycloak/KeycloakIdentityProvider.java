@@ -32,7 +32,6 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
@@ -43,7 +42,6 @@ import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.web.OAuthFilter;
-import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
@@ -67,7 +65,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
@@ -144,10 +141,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void init(Container container) {
-        if (httpClient != null) {
-            return;
-        }
-
         sessionMaxSeconds = getInteger(container.getConfig(), OR_IDENTITY_SESSION_MAX_MINUTES, OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT) * 60;
         if (sessionMaxSeconds < 60) {
             throw new IllegalArgumentException(OR_IDENTITY_SESSION_MAX_MINUTES + " must be more than 1 minute");
@@ -174,20 +167,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
-
-        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
-                .connectTimeout(
-                    getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
-                    TimeUnit.MILLISECONDS
-                )
-                .readTimeout(
-                    getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-                    TimeUnit.MILLISECONDS
-                )
-                .connectionPoolSize(
-                    getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
-                );
-        httpClient = WebClient.registerDefaults(clientBuilder).build();
 
         keycloakDeploymentCache = createKeycloakDeploymentCache();
 
@@ -258,8 +237,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void stop(Container container) {
-        if (httpClient != null)
-            httpClient.close();
     }
 
     @Override
@@ -354,7 +331,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
 
         URI proxyURI = keycloakServiceUri.build();
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, proxyURI)
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(WebTargetBuilder.getClient(), proxyURI)
             .setOAuthAuthentication(grant);
         keycloakTarget = targetBuilder.build();
         realmsResourcePool.clear();
@@ -393,7 +370,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                     LOG.finest("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
 
                     //KeycloakResource keycloak = getKeycloak();
-                    KeycloakResource keycloak = getTarget(httpClient, keycloakServiceUri.build(), null, null, null).proxy(KeycloakResource.class);
+                    KeycloakResource keycloak = new WebTargetBuilder(WebTargetBuilder.getClient(), keycloakServiceUri.build()).build().proxy(KeycloakResource.class);
 
                     // Can't get adapter for client in another realm
                     AdapterConfig adapterConfig = keycloak.getAdapterConfig(

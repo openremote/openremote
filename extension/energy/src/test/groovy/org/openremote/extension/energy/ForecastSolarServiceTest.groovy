@@ -1,5 +1,6 @@
 package org.openremote.extension.energy
 
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.extension.energy.model.ElectricityProducerSolarAsset
 import org.openremote.extension.energy.manager.ForecastSolarService
 import org.openremote.manager.asset.AssetProcessingService
@@ -31,8 +32,12 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
     @Shared
     def mockServer = new ClientRequestFilter() {
 
+        boolean finished = false
+
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
+            if (finished) return
+
             def requestUri = requestContext.uri
 
             switch (requestUri.host) {
@@ -129,11 +134,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
         config << [(OR_FORECAST_SOLAR_API_KEY): "test-key"]
-
-        ForecastSolarService.initClient()
-        if (!ForecastSolarService.resteasyClient.get().configuration.isRegistered(mockServer)) {
-            ForecastSolarService.resteasyClient.get().register(mockServer, Integer.MAX_VALUE)
-        }
+        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
 
         def container = startContainer(config, defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -207,9 +208,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
             assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
         }
 
-        cleanup: "remove mock"
-        if (ForecastSolarService.resteasyClient.get() != null) {
-            ForecastSolarService.resteasyClient.set(null)
-        }
+        cleanup: "disable mock filter"
+        mockServer.finished = true
     }
 }

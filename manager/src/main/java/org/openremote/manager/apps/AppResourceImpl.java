@@ -56,14 +56,14 @@ public class AppResourceImpl extends WebResource implements AppResource {
     }
 
     @Override
-    public Response getAppInfos(RequestParams requestParams) {
+    public Map<String, Object> getAppInfos(RequestParams requestParams) {
         Path consoleAppDocRoot = consoleAppService.getConsoleAppDocRoot();
         if (consoleAppDocRoot == null || !Files.isDirectory(consoleAppDocRoot)) {
-            return Response
+            throw new WebApplicationException(Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(String.format("%s is not a directory", consoleAppDocRoot))
                     .type(MediaType.APPLICATION_JSON_TYPE)
-                    .build();
+                    .build());
         }
 
         if (consoleAppInfoMap == null) {
@@ -83,24 +83,24 @@ public class AppResourceImpl extends WebResource implements AppResource {
             }
         }
 
-        return Response.ok(consoleAppInfoMap, MediaType.APPLICATION_JSON).build();
+        return consoleAppInfoMap;
     }
 
     @Override
-    public Response getConsoleConfig(RequestParams requestParams) {
+    public Object getConsoleConfig(RequestParams requestParams) {
         Path consoleAppDocRoot = consoleAppService.getConsoleAppDocRoot();
         if (consoleAppDocRoot == null || !Files.isDirectory(consoleAppDocRoot)) {
-            return Response
+            throw new WebApplicationException(Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(String.format("%s is not a directory", consoleAppDocRoot))
                     .type(MediaType.APPLICATION_JSON_TYPE)
-                    .build();
+                    .build());
         }
 
         if (!Files.exists(consoleAppDocRoot.resolve("console_config.json"))) {
-            return Response
+            throw new WebApplicationException(Response
                     .status(Response.Status.NOT_FOUND)
-                    .build();
+                    .build());
         }
 
         if (consoleConfig == null) {
@@ -110,7 +110,7 @@ public class AppResourceImpl extends WebResource implements AppResource {
                 throw new WebApplicationException(e);
             }
         }
-        return Response.ok(consoleConfig, MediaType.APPLICATION_JSON).build();
+        return consoleConfig;
     }
 
     @Deprecated

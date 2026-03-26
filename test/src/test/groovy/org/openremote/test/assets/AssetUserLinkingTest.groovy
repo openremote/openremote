@@ -5,10 +5,10 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAssetLink
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
@@ -36,22 +36,22 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessTokenString).proxy(AssetResource.class)
         /* ############################################## READ ####################################### */
 
         and: "user access tokens"
-        def testUserAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "testuser1", "testuser1").token
+        def testUserAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "testuser1", "testuser1")
         def accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(MASTER_REALM, KEYCLOAK_CLIENT_ID))
         def testUser1Token = new AccessTokenAuthContext(MASTER_REALM, accessToken)
 
-        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2").token
+        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2")
         accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID))
         def testUser2Token = new AccessTokenAuthContext(keycloakTestSetup.realmBuilding.name, accessToken)
 
-        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser3", "testuser3").token
+        testUserAccessToken = authenticate(container, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID, "testuser3", "testuser3")
         accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID))
         def testUser3Token = new AccessTokenAuthContext(keycloakTestSetup.realmBuilding.name, accessToken)
 
@@ -125,14 +125,20 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
         then: "an error response should be returned"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the realm doesn't exist"
         assetResource.getUserAssetLinks(null, "doesnotexist", keycloakTestSetup.testuser3Id, null)
 
         then: "an error response should be returned"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "all user assets are retrieved of a realm and user"
         userAssetLinks = assetResource.getUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, null, managerTestSetup.apartment1Id)

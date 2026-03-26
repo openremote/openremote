@@ -37,7 +37,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         // building service user for single tenant logic
         def buildingServiceUserAccessToken = authenticate(
@@ -45,14 +45,14 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser.username,
                 keycloakTestSetup.serviceUser.secret
-        ).token
+        )
 
         def buildingServiceUser2AccessToken = authenticate(
                 container,
                 keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser2.username,
                 keycloakTestSetup.serviceUser2.secret
-        ).token
+        )
 
         // master service user for multi-tenant logic
         def superServiceUserAccessToken = authenticate(
@@ -60,7 +60,7 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
                 MASTER_REALM,
                 keycloakTestSetup.superServiceUser.username,
                 keycloakTestSetup.superServiceUser.secret
-        ).token
+        )
 
         then: "the users have been authenticated and the tokens are retrieved"
         conditions.eventually {
@@ -125,14 +125,20 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
 
         then: "the heartbeat should be rejected, and a forbidden response received"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.FORBIDDEN.getStatusCode()
+            return true
+        }
 
         when: "another service user tries to de-register the same external service"
         buildingExternalServiceResource2.deregisterService(null, registeredBuildingExternalService.serviceId, registeredBuildingExternalService.instanceId)
 
         then: "the de-registration should be rejected, and a forbidden response received"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.FORBIDDEN.getStatusCode()
+            return true
+        }
 
         when: "the building service user de-registers the external service"
         buildingExternalServiceResource.deregisterService(null, registeredBuildingExternalService.serviceId, registeredBuildingExternalService.instanceId)
@@ -147,14 +153,20 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
 
         then: "the building service user should receive a 404 not found response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.NOT_FOUND.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.NOT_FOUND.getStatusCode()
+            return true
+        }
 
         when: "the building service user tries to retrieve the external services from an inaccessible realm"
         buildingExternalServiceResource.getServices(null, MASTER_REALM)
 
         then: "the building service user should receive a 403 forbidden response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.FORBIDDEN.getStatusCode()
+            return true
+        }
 
         // === Tests related to global service registration and management ===
 
@@ -235,14 +247,20 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
 
         then: "the building service user should receive a 403 forbidden response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.FORBIDDEN.getStatusCode()
+            return true
+        }
 
         when: "the building service user tries to deregister the global external service"
         buildingExternalServiceResource.deregisterService(null, registeredGlobalExternalService.serviceId, registeredGlobalExternalService.instanceId)
 
         then: "the building service user should receive a 403 forbidden response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.FORBIDDEN.getStatusCode()
+            return true
+        }
 
 
         // == Tests related to a regular user trying to interact with external services ===
@@ -268,21 +286,30 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
 
         then: "the regular user should receive a 403 forbidden response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.FORBIDDEN.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.FORBIDDEN.getStatusCode()
+            return true
+        }
 
         when: "the regular user tries to send a heartbeat for an external service"
         regularUserExternalServiceResource.heartbeat(null, registeredBuildingExternalService2.serviceId, registeredBuildingExternalService2.instanceId)
 
         then: "the regular user should receive a 401 unauthorized response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.UNAUTHORIZED.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.UNAUTHORIZED.getStatusCode()
+            return true
+        }
 
         when: "the regular user tries to deregister an external service"
         regularUserExternalServiceResource.deregisterService(null, registeredBuildingExternalService2.serviceId, registeredBuildingExternalService2.instanceId)
 
         then: "the regular user should receive a 401 unauthorized response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.UNAUTHORIZED.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.UNAUTHORIZED.getStatusCode()
+            return true
+        }
 
         when: "the regular user tries to register an external service"
         def regularUserNewService = new ExternalService(
@@ -295,14 +322,20 @@ class ExternalServiceTest extends Specification implements ManagerContainerTrait
 
         then: "the regular user should receive a 401 unauthorized response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.UNAUTHORIZED.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.UNAUTHORIZED.getStatusCode()
+            return true
+        }
 
         when: "the regular user tries to register a global external service"
         regularUserExternalServiceResource.registerGlobalService(null, regularUserNewService)
 
         then: "the regular user should receive a 401 unauthorized response"
         ex = thrown(WebApplicationException)
-        assert ex.response.status == Response.Status.UNAUTHORIZED.getStatusCode()
+        ex.response.withCloseable { r ->
+            assert r.status == Response.Status.UNAUTHORIZED.getStatusCode()
+            return true
+        }
 
 
         // == Additional miscellaneous tests ==

@@ -20,20 +20,15 @@
 
 package org.openremote.manager.setup;
 
+import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.keycloak.KeycloakResource;
-import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import static jakarta.ws.rs.core.Response.Status.Family.REDIRECTION;
@@ -94,29 +89,14 @@ public class KeycloakInitService implements ContainerService {
             keycloakServiceUri.path(keycloakPath);
         }
 
-        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
-            .connectTimeout(
-                getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
-                TimeUnit.MILLISECONDS
-            )
-            .readTimeout(
-                getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-                TimeUnit.MILLISECONDS
-            )
-            .connectionPoolSize(
-                getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
-            );
-        ResteasyClient httpClient = WebClient.registerDefaults(clientBuilder).build();
-
         boolean keycloakAvailable = false;
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
-        ResteasyWebTarget target = targetBuilder.build();
-        KeycloakResource keycloakResource = target.proxy(KeycloakResource.class);
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(WebTargetBuilder.getClient(), keycloakServiceUri.build());
+        WebTarget target = targetBuilder.build();
 
         while (!keycloakAvailable) {
             LOG.info("Connecting to Keycloak server: " + keycloakServiceUri.build());
             try {
-                pingKeycloak(keycloakResource);
+                pingKeycloak(target);
                 keycloakAvailable = true;
 	            LOG.info("Successfully connected to Keycloak server: " + keycloakServiceUri.build());
             } catch (Exception ex) {
@@ -130,20 +110,15 @@ public class KeycloakInitService implements ContainerService {
         }
     }
 
-    protected static void pingKeycloak(KeycloakResource resource) throws Exception {
-        Response response = null;
+    protected static void pingKeycloak(WebTarget target) throws Exception {
 
-        try {
-            response = resource.getWelcomePage();
+        try (Response response = target.path("/realms/master/.well-known/openid-configuration").request().head()) {
             if (response != null &&
-                (response.getStatusInfo().getFamily() == SUCCESSFUL
-                    || response.getStatusInfo().getFamily() == REDIRECTION)) {
+                    (response.getStatusInfo().getFamily() == SUCCESSFUL
+                            || response.getStatusInfo().getFamily() == REDIRECTION)) {
                 return;
             }
             throw new Exception();
-        } finally {
-            if (response != null)
-                response.close();
         }
     }
 }

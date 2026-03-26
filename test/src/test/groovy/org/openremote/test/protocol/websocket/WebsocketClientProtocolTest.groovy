@@ -19,8 +19,15 @@
  */
 package org.openremote.test.protocol.websocket
 
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.HttpHeaders
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.*
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -49,18 +56,11 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import jakarta.ws.rs.HttpMethod
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.HttpHeaders
-import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
-
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.NUMBER
 
@@ -72,11 +72,20 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         private boolean agentSubscriptionDone = false
         private boolean attribute1SubscriptionDone = false
         private boolean attribute2SubscriptionDone = false
+        private boolean finished = false
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
+            if (finished) {
+                return
+            }
+
             def requestUri = requestContext.uri
             def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+
+           if (!requestPath.contains("mockapi")) {
+              return
+           }
 
             // Check auth header is present
             def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
@@ -130,11 +139,8 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def clientEventService = container.getService(ClientEventService.class)
 
-        when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
-        WebsocketAgentProtocol.initClient()
-        if (!WebsocketAgentProtocol.resteasyClient.get().configuration.isRegistered(mockServer)) {
-            WebsocketAgentProtocol.resteasyClient.get().register(mockServer, Integer.MAX_VALUE)
-        }
+        and: "the built in JAX-RS client is injected with the mock server filter"
+        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
 
         and: "a Websocket client agent is created to connect to this tests manager"
         def agent = new WebsocketAgent("Test agent")
@@ -166,7 +172,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 ] as WebsocketSubscription[]
             )
 
-        and: "the agent is added to the asset service"
+        when: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should authenticate and the agent status should become CONNECTED"
@@ -307,9 +313,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             assert asset.getAttribute("readCo2Level").flatMap{it.getValue()}.orElse(null) == 600d
         }
 
-        cleanup: "remove mock"
-        if (WebsocketAgentProtocol.resteasyClient.get() != null) {
-            WebsocketAgentProtocol.resteasyClient.set(null)
-        }
+        cleanup: "disable mock filter"
+        mockServer.finished = true
     }
 }

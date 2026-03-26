@@ -21,10 +21,13 @@ package org.openremote.model.apps;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import org.openremote.model.http.RequestParams;
 
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Response;
+import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -47,7 +50,7 @@ public interface AppResource {
     @Produces(APPLICATION_JSON)
     @Path("info")
     @Operation(operationId = "getAppInfos", summary = "Retrieve the info of the available applications")
-    Response getAppInfos(@BeanParam RequestParams requestParams);
+    Map<String, Object> getAppInfos(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve console app config.
@@ -56,5 +59,5 @@ public interface AppResource {
     @Produces(APPLICATION_JSON)
     @Path("consoleConfig")
     @Operation(operationId = "getConsoleConfig", summary = "Retrieve the console configuration")
-    Response getConsoleConfig(@BeanParam RequestParams requestParams);
+    Object getConsoleConfig(@BeanParam RequestParams requestParams);
 }

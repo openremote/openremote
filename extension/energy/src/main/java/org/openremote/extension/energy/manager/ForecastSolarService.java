@@ -3,10 +3,10 @@ package org.openremote.extension.energy.manager;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.core.Response;
 import org.apache.camel.builder.RouteBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.extension.energy.model.ElectricityProducerSolarAsset;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -29,6 +29,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -37,7 +38,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,10 +45,10 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.model.util.MapAccess.getString;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.container.web.WebTargetBuilder.getClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
+import static org.openremote.model.util.MapAccess.getString;
 
 /**
  * Fills in power forecast from ForecastSolar (https://forecast.solar) for {@link ElectricityProducerSolarAsset}.
@@ -88,7 +88,6 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     protected TimerService timerService;
 
     protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastSolarService.class.getName());
-    protected static final AtomicReference<ResteasyClient> resteasyClient = new AtomicReference<>();
     protected ResteasyWebTarget forecastSolarTarget;
     private String forecastSolarApiKey;
     private final Map<String, ElectricityProducerSolarAsset> electricityProducerSolarAssetMap = new HashMap<>();
@@ -124,10 +123,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             return;
         }
 
-        initClient();
-
-        forecastSolarTarget = resteasyClient.get()
-                .target("https://api.forecast.solar/" + forecastSolarApiKey + "/estimate");
+        forecastSolarTarget = new WebTargetBuilder(getClient(), URI.create("https://api.forecast.solar/" + forecastSolarApiKey + "/estimate")).build();
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
@@ -162,15 +158,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     @Override
     public void stop(Container container) throws Exception {
-        scheduledExecutorService.shutdown();
-    }
-
-    protected static void initClient() {
-        synchronized (resteasyClient) {
-            if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR));
-            }
-        }
+       // empty
     }
 
     protected synchronized void processElectricityProducerSolarAssetAttributeEvent(AttributeEvent attributeEvent) {

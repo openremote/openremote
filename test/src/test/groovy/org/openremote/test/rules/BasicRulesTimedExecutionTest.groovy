@@ -11,6 +11,8 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
+
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_GLOBAL
 
@@ -19,7 +21,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
     RulesEngine globalEngine
 
-    List<String> globalEngineFiredRules = []
+    List<String> globalEngineFiredRules = new CopyOnWriteArrayList<>()
 
     def resetRuleExecutionLoggers() {
         globalEngineFiredRules.clear()

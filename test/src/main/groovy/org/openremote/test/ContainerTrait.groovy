@@ -20,24 +20,22 @@
 package org.openremote.test
 
 import jakarta.persistence.TypedQuery
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
-import org.keycloak.representations.AccessTokenResponse
+import org.keycloak.admin.client.token.TokenService
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.persistence.PersistenceService
-import org.openremote.container.security.ClientCredentialsAuthForm
-import org.openremote.container.security.IdentityService
-import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
-import org.openremote.container.security.keycloak.KeycloakResource
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
-import org.openremote.container.web.WebClient
+import org.openremote.container.web.WebService
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -52,7 +50,10 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.Protocol
+import org.openremote.model.auth.OAuthClientCredentialsGrant
+import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.gateway.GatewayConnection
+import org.openremote.model.http.RequestParams
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.RulesetQuery
 import org.openremote.model.rules.AssetRuleset
@@ -63,19 +64,22 @@ import org.openremote.model.security.User
 import org.openremote.model.util.MapAccess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import spock.lang.Shared
 
-import javax.net.ssl.SSLSession
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import java.util.logging.Handler
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
-import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 trait ContainerTrait {
+
+    @Shared
+    AtomicReference<ResteasyClient> testClient = new AtomicReference<>()
 
     static {
         LogUtil.initialiseJUL()
@@ -478,13 +482,6 @@ trait ContainerTrait {
         def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
         List<User> users = identityProvider.queryUsers()
         return users
-//        List<Pair<User, Pair<Role[], Role[]>>> results = []
-//        users.forEach {user ->
-//            def roles = identityProvider.getUserRoles(user.realm, user.id, Constants.KEYCLOAK_CLIENT_ID)
-//            def realmRoles = identityProvider.getUserRealmRoles(user.realm, user.id)
-//            results.add(new Pair<User, Pair<Role[],Role[]>>(user, new Pair<>(roles, realmRoles)))
-//        }
-//        return results
     }
 
     Container getContainer() {
@@ -502,13 +499,10 @@ trait ContainerTrait {
         container.running
     }
 
-    ResteasyClientBuilder createClient() {
-        ResteasyClientBuilder clientBuilder =
-                new ResteasyClientBuilderImpl()
-                        .connectTimeout(2, SECONDS)
-                        .readTimeout(15, SECONDS)
-                        .connectionPoolSize(10)
-        return WebClient.registerDefaults(clientBuilder)
+    ResteasyClient createClient(String accessToken) {
+        testClient.updateAndGet {it != null ? it :
+                // Use a long timeout to make debugging a bit easier
+                WebTargetBuilder.createClient(Container.EXECUTOR, 1, 120000, null)}
     }
 
     UriBuilder serverUri(int serverPort) {
@@ -525,6 +519,11 @@ trait ContainerTrait {
         try {
             if (container != null) {
                 container.stop()
+                // Clear out the Built in JAX-RS client as the executor service it uses will be aggressively shutdown by Camel
+                WebTargetBuilder.BUILT_IN_CLIENT.getAndUpdate {if (it != null) {
+                    it.close()
+                    return null
+                }}
             }
         } catch (Exception e) {
             LOG.warn("Failed to stop container", e)
@@ -532,27 +531,26 @@ trait ContainerTrait {
     }
 
     ResteasyWebTarget getClientTarget(UriBuilder serverUri, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.build(), accessToken, null, null)
+        def target = createClient(accessToken).target(serverUri)
+        if (accessToken != null) {
+            ClientRequestFilter authFilter = {context ->
+                (context as ClientRequestContext).getHeaders().putSingle(HttpHeaders.AUTHORIZATION, RequestParams.BEARER_AUTH_PREFIX + accessToken)
+            }
+            target.register(authFilter)
+        }
+        return target
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), null, null, null)
+        getClientTarget(serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm), null)
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), accessToken, null, null)
+        getClientTarget(serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm), accessToken)
     }
 
     ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path).build(), accessToken, null, null)
-    }
-
-    ResteasyWebTarget getClientApiTarget(ResteasyClient client, UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), accessToken, null, null)
-    }
-
-    ResteasyWebTarget getClientApiTarget(ResteasyClient client, UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path).build(), accessToken, null, null)
+        getClientTarget(serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path), null)
     }
 
     int findEphemeralPort() {
@@ -562,20 +560,30 @@ trait ContainerTrait {
         return port
     }
 
-    AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
-        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
-                .getAccessToken(realm, new PasswordAuthForm(clientId, username, password))
+    String authenticate(Container container, String realm, String clientId, String username, String password) {
+        container.getService(WebService.class).getBearerToken(
+                new OAuthPasswordGrant(
+                        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenUri(realm).toString(),
+                        clientId,
+                        null,
+                        null,
+                        username,
+                        password)).get(10, TimeUnit.SECONDS)
     }
 
-    AccessTokenResponse authenticate(Container container, String realm, String clientId, String clientSecret) {
-        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
-                .getAccessToken(realm, new ClientCredentialsAuthForm(clientId, clientSecret))
+    String authenticate(Container container, String realm, String clientId, String clientSecret) {
+        container.getService(WebService.class).getBearerToken(
+                new OAuthClientCredentialsGrant(
+                        ((KeycloakIdentityProvider)container.getService(ManagerIdentityService.class).getIdentityProvider()).getTokenUri(realm).toString(),
+                        clientId,
+                        clientSecret,
+                        null)).get(10, TimeUnit.SECONDS)
     }
 
     /**
      * Makes a call to a remote OpenRemote manager to retrieve an access token for a given user
      * */
-    AccessTokenResponse authenticate(boolean secure,
+    String authenticate(boolean secure,
                                      String host,
                                      String realm,
                                      String clientId,
@@ -585,20 +593,13 @@ trait ContainerTrait {
         String scheme   = secure ? "https" : "http"
         String basePath = "/auth"
         String baseUrl  = "${scheme}://${host}${basePath}"
+        ResteasyWebTarget target = new WebTargetBuilder(WebTargetBuilder.getClient(), URI.create(baseUrl)).build()
+        TokenService keycloak = target.proxy(TokenService)
 
-        ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier {String h, SSLSession s -> true }.build()
-        ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
-
-        KeycloakResource keycloak = target.proxy(KeycloakResource)
-
-        try {
-            return keycloak.getAccessToken(
-                    realm,
-                    new PasswordAuthForm(clientId, username, password)
-            )
-        } finally {
-            client.close()
-        }
+        return keycloak.grantToken(
+            realm,
+            new OAuthPasswordGrant(null, clientId, null, null, username, password)
+                    .asMultivaluedMap()).token
     }
 
     ProducerTemplate getMessageProducerTemplate(Container container) {

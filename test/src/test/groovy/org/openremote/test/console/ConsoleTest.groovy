@@ -68,7 +68,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the endpoint should return 404"
-        response.status == 404
+        response.withCloseable {r ->
+            assert r.status == 404
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -90,7 +93,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the endpoint should return 200"
-        response.status == 200
+        response.withCloseable { r ->
+            assert r.status == 200
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -117,10 +123,13 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "both apps are returned"
-        response.status == 200
-        def appList = parse(response.readEntity(String.class)).orElse([])
-        appList.contains("appBuiltin")
-        appList.contains("appCustom")
+        response.withCloseable { r ->
+            assert r.status == 200
+            def appList = parse(r.readEntity(String.class)).orElse("") as String
+            appList.contains("appBuiltin")
+            appList.contains("appCustom")
+            return true
+        }
 
         cleanup:
         if (response != null) {
@@ -151,14 +160,14 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def response = requestTarget.request().get()
 
         then: "the response includes the app info"
-        response.status == 200
-        def infoMap = parse(response.readEntity(String.class)).orElse([:])
-        infoMap.containsKey("appInfo")
+        response.withCloseable { r ->
+            assert r.status == 200
+            Map infoMap = parse(response.readEntity(String.class)).orElse([:])
+            infoMap.containsKey("appInfo")
+            return true
+        }
 
         cleanup:
-        if (response != null) {
-            response.close()
-        }
         Files.deleteIfExists(appDir.resolve("info.json"))
         Files.deleteIfExists(appDir)
         Files.deleteIfExists(customDocRoot)
@@ -232,7 +241,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "authenticated and anonymous console, rules and asset resources"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
@@ -374,7 +383,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the result should be bad request"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a console registers with an id that doesn't exist"
         def unusedId = UniqueIdentifierGenerator.generateId("UnusedConsoleId")
@@ -409,7 +421,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the result should be bad request"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "a console is registered anonymously"
         consoleRegistration.id = null
@@ -500,7 +515,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "the result should be forbidden"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "a console's location is updated to be at the Smart Building"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, SMART_BUILDING_LOCATION)
@@ -586,7 +603,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //
 //        then: "the result should be a forbidden request"
 //        ex = thrown()
-//        ex.response.status == 403
+//        ex.response.withCloseable { r ->
+//            assert r.status == 403
+//        }
 
         when: "the geofences of testUser3Console2 are retrieved"
         geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console2.id)
