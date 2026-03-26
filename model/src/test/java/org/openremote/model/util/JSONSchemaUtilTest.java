@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.json.JSONException;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -22,11 +23,10 @@ import java.util.Map;
 
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
-@Execution(ExecutionMode.SAME_THREAD)
 public class JSONSchemaUtilTest {
 
-    @BeforeEach
-    void setup() {
+    @BeforeAll
+    static void setup() {
         ValueUtil.doInitialise();
     }
 
