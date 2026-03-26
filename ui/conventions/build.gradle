@@ -1,0 +1,15 @@
+plugins {
+    // This is the engine that turns your script files into plugins
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    // Needed to fetch the Gradle API and any other helper plugins
+    gradlePluginPortal()
+}
+
+dependencies {
+    // If you ever want to use external plugins (like a SonarQube or Docker plugin)
+    // inside your conventions, you would declare them here.
+    // implementation 'com.diffplug.spotless:spotless-plugin-gradle:6.25.0'
+}

@@ -1,4 +1,6 @@
 pluginManagement {
+    includeBuild("ui/conventions")
+
     resolutionStrategy {
         eachPlugin {
             if (requested.id.toString() == "io.openremote.com.cherryperry.gradle-file-encrypt") {

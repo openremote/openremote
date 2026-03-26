@@ -1,8 +1,5 @@
-tasks.register('clean') {
-    doLast {
-        delete "dist"
-        delete "lib"
-    }
+plugins {
+    id 'ui-component'
 }
 
 tasks.register('prepareUi') {
