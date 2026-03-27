@@ -314,6 +314,14 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     sendToWebsocketSession(sessionKey, subscription);
 
                     synchronized (websocketSessionSubscriptionConsumers) {
+                        // Check if the session is still alive while holding the lock because ONCLOSE removes from
+                        // sessionChannels before acquiring this lock we guarantee we won't recreate a map entry for a dead session
+                        if (!sessionChannels.containsKey(sessionKey)) {
+                           LOG.log(DEBUG, "Dropping subscription for closed session: " + sessionKey);
+                           exchange.setRouteStop(true);
+                           return;
+                        }
+
                         // Create subscription consumer and track it for future removal requests
                         Consumer<? extends SharedEvent> consumer = ev -> onWebsocketSubscriptionTriggered(sessionKey, subscription, ev);
                         Map<String, Consumer<? extends Event>> subscriptionConsumers = websocketSessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
