@@ -100,7 +100,7 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
                 props.handleChange("", {
                   id: agent.id,
                   type: newAgentDescriptor.agentLinkType,
-                  ...(props.rootSchema?.definitions?.[newAgentDescriptor.agentLinkType ?? ""].default ?? {}),
+                  ...(props.rootSchema?.definitions?.[newAgentDescriptor.agentLinkType ?? ""].default ?? {}), // TODO: should be able to remove this?
                 });
             }
         }

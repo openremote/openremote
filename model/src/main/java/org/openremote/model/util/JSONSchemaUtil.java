@@ -211,6 +211,7 @@ public class JSONSchemaUtil {
             // Remap Byte to type integer, see https://github.com/victools/jsonschema-generator/blob/995a71eaf7a9a05cc2e335f8a7821b4a9019fa1b/CHANGELOG.md?plain=1#L530
             builder.with(new SimpleTypeModule().withIntegerType(Byte.class));
 
+            // TODO: check whether we can set this to false as this does not align with most of our APIs
             // Apply additionalProperties true to all object values that haven't already set additionalProperties
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
                 if (attrs.has("type") && !attrs.has("additionalProperties") && Objects.equals(attrs.get("type").textValue(), "object")) {
@@ -265,6 +266,8 @@ public class JSONSchemaUtil {
                 .withPropertyNameOverrideResolver(jacksonResolvers::getPropertyNameOverrideBasedOnJsonPropertyAnnotation)
                 // Primitive types cannot be null, thus they are always required and handle Jackson required properties
                 .withRequiredCheck((f) -> f.getType().getErasedType().isPrimitive() || jacksonResolvers.getRequiredCheckBasedOnJsonPropertyAnnotation(f))
+                // Explicitly set default to false for primitive booleans
+                .withDefaultResolver(CustomModule::resolveBooleanDefault)
                 // direct class to class mapping through annotations
                 .withTargetTypeOverridesResolver(this::remapFieldType)
                 // remapping using supplier through annotations
@@ -325,19 +328,16 @@ public class JSONSchemaUtil {
 
                     Class<?> rawType = resolvedType.getErasedType();
 
-                    // Custom subtype handling mimicking createSubtypeDefinition referencing subtypes as enum type value
-                    // for polymorphic types
-                    if (rawType.isAnnotationPresent(JsonTypeInfo.class) && rawType.getAnnotation(JsonTypeInfo.class).include() == JsonTypeInfo.As.EXTERNAL_PROPERTY) {
-                        ArrayNode enumTypeArray = definition
-                                .withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
-                                .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
-                                .withArray(context.getKeyword(SchemaKeyword.TAG_ENUM));
-
+                    // This adds a discriminator property to the root of a polymorphic type that should be used to
+                    // determine the subtype, and also adds missing subtype references (in favor of
+                    // com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver.createSubtypeDefinition).
+                    // Note: The "discriminator" property is not part of the standard JSON Schema spec (DRAFT-7)
+                    if (isPolymorphicType(rawType)) {
+                        String discriminator = rawType.getAnnotation(JsonTypeInfo.class).property();
+                        definition.putObject("discriminator").put("propertyName", discriminator);
                         // Removing and adding the `oneOf` property on the schema ensures the definitions are referenced
                         definition.remove(context.getKeyword(SchemaKeyword.TAG_ONEOF));
                         for (ResolvedType subType : subTypes) {
-                            // Add subtype to the enum type array of the abstract class
-                            enumTypeArray.add(subType.getErasedType().getSimpleName());
                             // Add back subtype definitions to `oneOf` property
                             definition.withArray(context.getKeyword(SchemaKeyword.TAG_ONEOF)).add(context.createDefinitionReference(subType));
                         }
@@ -350,8 +350,8 @@ public class JSONSchemaUtil {
                     return new CustomDefinition(definition, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.YES);
             });
 
-            // Set the default keyword for subtypes so AJV in the frontend can tell jsonforms/core to consider the
-            // subtype schema valid
+            // Remove duplicate discriminator "type" keywords and add missing discriminator properties for classes using
+            // JsonTypeInfo.As.EXTERNAL_PROPERTY
             builder.forTypesInGeneral().withTypeAttributeOverride((attrs, typeScope, context) -> {
                 Class<?> erasedType = typeScope.getType().getErasedType();
                 if (erasedType.getSuperclass() == Object.class) {
@@ -471,6 +471,23 @@ public class JSONSchemaUtil {
             return fieldScope.getMember().getDeclaringType().getErasedType().getCanonicalName() + "." + fieldScope.getMember().getName();
         }
 
+        private static Object resolveBooleanDefault(FieldScope field) {
+            if (field.getType().isInstanceOf(boolean.class)) {
+                JsonSchemaDefault annotation = field.getAnnotation(JsonSchemaDefault.class);
+                // If annotation is present, parse the string; otherwise, fallback to false
+                return annotation != null && Boolean.parseBoolean(annotation.value());
+            }
+            // Return null for non-boolean fields so other resolvers can run
+            return null;
+        }
+
+        private static boolean isPolymorphicType(Class<?> clazz) {
+            return clazz.isAnnotationPresent(JsonTypeInfo.class)
+                && (clazz.getAnnotation(JsonTypeInfo.class).include() == JsonTypeInfo.As.PROPERTY ||
+                    clazz.getAnnotation(JsonTypeInfo.class).include() == JsonTypeInfo.As.EXISTING_PROPERTY ||
+                    clazz.getAnnotation(JsonTypeInfo.class).include() == JsonTypeInfo.As.EXTERNAL_PROPERTY);
+        }
+
         private static void setFormat(ObjectNode node, String format) {
             node.put("format", format);
         }
@@ -570,8 +587,7 @@ public class JSONSchemaUtil {
         }
 
         /**
-         * Find and modify the main subtype object under the {@code allOf} keyword of a subtype to add a {@code default}
-         * property alongside the {@code const} discriminator property.
+         * Find and modify the main subtype object of a subtype to add the {@code const} discriminator property.
          * @param attrs The {@link ObjectNode} representation of the subtype
          * @param context The schema generator {@link SchemaGenerationContext}
          */
@@ -584,8 +600,7 @@ public class JSONSchemaUtil {
                         .add(context.getKeyword(SchemaKeyword.TAG_TYPE));
                 attrs.withObject(context.getKeyword(SchemaKeyword.TAG_PROPERTIES))
                         .withObject(context.getKeyword(SchemaKeyword.TAG_TYPE))
-                        .put(context.getKeyword(SchemaKeyword.TAG_CONST), type.getSimpleName())
-                        .put(context.getKeyword(SchemaKeyword.TAG_DEFAULT), type.getSimpleName());
+                        .put(context.getKeyword(SchemaKeyword.TAG_CONST), type.getSimpleName());
                 return;
             }
 
@@ -594,37 +609,49 @@ public class JSONSchemaUtil {
             JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
             if (!(allOfNode instanceof ArrayNode allOf)) {
                 JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
+                if (attrs.has(typeKey)) {
+                    attrs.remove(typeKey);
+                }
                 if (props instanceof ObjectNode propsObj) {
-                    // Remove type property on type property for subtypes to enable definition merging
+                    // Remove the type property on the type property for subtypes to enable definition merging
                     propsObj.remove(typeKey);
-                    // If property is already present on the abstract class,
-                    // the generator creates a duplicate which needs to be removed.
+                    // If the custom type property is already present on the abstract class, the generator creates a
+                    // duplicate which needs to be removed.
                     propsObj.remove(customTypeKey);
                 }
                 return;
             }
-
-            for (JsonNode node : allOf) {
-                JsonNode props = node.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
-                if (!(props instanceof ObjectNode propsObj)) {
+            // TODO: figure out why WebsocketSubscriptionImpl compared to WebsocketHTTPSubscription doesn't add the
+            // discriminator property to the required properties list. The following implementation shouldn't be needed?
+            for (JsonNode n : allOf) {
+                if (!(n instanceof ObjectNode node)) {
                     continue;
                 }
 
-                // Add property indicating the custom discriminator property name
-                if (customTypeKey != null && !customTypeKey.equals(typeKey)) {
-                    attrs.putObject("discriminator").put("propertyName", customTypeKey);
-                    typeKey = customTypeKey;
+                JsonNode props = node.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
+
+                if (!(props instanceof ObjectNode)) {
+                    continue;
                 }
 
-                JsonNode typeNode = propsObj.get(typeKey);
-                if (typeNode instanceof ObjectNode typeProp) {
+                String activeKey;
+                if (props.has(customTypeKey)) activeKey = customTypeKey;
+                else if (props.has(typeKey)) activeKey = typeKey;
+                else return;
 
-                    String constKey = context.getKeyword(SchemaKeyword.TAG_CONST);
-                    String defaultKey = context.getKeyword(SchemaKeyword.TAG_DEFAULT);
-                    if (typeProp.has(constKey) && !typeProp.has(defaultKey)) {
-                        typeProp.put(defaultKey, typeProp.get(constKey).asText());
-                    }
+                String requiredKey = context.getKeyword(SchemaKeyword.TAG_REQUIRED);
+                ArrayNode requiredArr;
+                if (node.has(requiredKey) && node.get(requiredKey).isArray()) {
+                    requiredArr = (ArrayNode) node.get(requiredKey);
+                } else {
+                    requiredArr = node.putArray(requiredKey);
                 }
+
+                for (JsonNode element : requiredArr) {
+                    if (element.asText().equals(activeKey)) return;
+                }
+
+                requiredArr.add(activeKey);
             }
         }
 

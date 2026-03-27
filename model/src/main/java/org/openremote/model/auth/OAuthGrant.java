@@ -22,6 +22,7 @@ package org.openremote.model.auth;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;

@@ -7,8 +7,6 @@ import {
     isControl,
     JsonSchema,
     mapStateToControlProps,
-    mapStateToControlWithDetailProps,
-    mapStateToJsonFormsRendererProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Paths,
@@ -16,7 +14,7 @@ import {
     StatePropsOfControl,
     VerticalLayout
 } from "@jsonforms/core";
-import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {css, html, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {LayoutBaseElement} from "./layout-base-element";
 import {
@@ -34,7 +32,6 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {DefaultColor5} from "@openremote/core";
 import {AdditionalProps} from "../base-element";
 
 // language=CSS
@@ -86,6 +83,22 @@ const style = css`
         margin: 0;
         flex: 1;
     }
+
+    #content-wrapper {
+        overflow: auto;
+    }
+
+    [slot="header"] {
+        display: flex;
+        max-width: 200px;
+        & span {
+            align-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            word-break: break-all;
+        }
+    }
 `;
 
 function isDynamic(schema: JsonSchema): boolean {
@@ -133,7 +146,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         const header = this.minimal ? `` : html`
             <div slot="header">
                 <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
-                ${this.type ? html`<span id="type-label">${this.type}</span>` : ``}
+                ${this.type ? html`<span id="type-label" title="${this.type}">${this.type}</span>` : ``}
             </div>
             <div id="header-description" slot="header-description">
                 <div id="errors">
@@ -316,7 +329,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !selectedOneOf;
                     (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).innerHTML = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
                 };
-                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
+                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema.oneOf, selectedParameter.label, handleChange);
             }
 
             return html`

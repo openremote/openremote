@@ -101,6 +101,8 @@ public class MyJsonForms extends LitElement {
 };
 ```
 
+### Custom renderers
+
 ### Styling
 All styling is done through CSS, the following CSS variables can be used:
 

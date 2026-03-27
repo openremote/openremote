@@ -218,7 +218,7 @@ public class JSONSchemaUtilTest {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "properties": {
-                    "test1": { "type": "boolean" },
+                    "test1": { "type": "boolean", "default": false },
                     "test2": { "type": "integer" },
                     "test3": { "type": "integer" },
                     "test4": { "type": "number" },
@@ -360,7 +360,7 @@ public class JSONSchemaUtilTest {
     static class SubTypeSuperclass extends SubType { }
 
     @Test
-    public void shouldHaveSubtypesWithDefaultTypeProperty() throws JsonProcessingException, JSONException {
+    public void shouldHaveSubtypesWithTypeProperty() throws JsonProcessingException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -371,8 +371,7 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "SubType",
-                                "default": "SubType"
+                                "const": "SubType"
                             }
                         },
                         "required": [
@@ -385,14 +384,16 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "SubTypeSuperclass",
-                                "default": "SubTypeSuperclass"
+                                "const": "SubTypeSuperclass"
                             }
                         },
                         "required": [
                             "type"
                         ]
                     }
+                },
+                "discriminator": {
+                    "propertyName": "type"
                 },
                 "oneOf": [
                     { "$ref": "#/definitions/SubType" },
@@ -431,16 +432,12 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "customType": {
-                                "const": "SubTypeWithCustomProperty",
-                                "default": "SubTypeWithCustomProperty"
+                                "const": "SubTypeWithCustomProperty"
                             }
                         },
                         "required": [
                             "customType"
-                        ],
-                        "discriminator": {
-                            "propertyName": "customType"
-                        }
+                        ]
                     },
                     "SubTypeSuperClassWithCustomProperty": {
                         "title": "Sub Type Super Class With Custom Property",
@@ -448,17 +445,16 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "customType": {
-                                "const": "SubTypeSuperClassWithCustomProperty",
-                                "default": "SubTypeSuperClassWithCustomProperty"
+                                "const": "SubTypeSuperClassWithCustomProperty"
                             }
                         },
                         "required": [
                             "customType"
-                        ],
-                        "discriminator": {
-                            "propertyName": "customType"
-                        }
+                        ]
                     }
+                },
+                "discriminator": {
+                    "propertyName": "customType"
                 },
                 "oneOf": [
                     { "$ref": "#/definitions/SubTypeWithCustomProperty" },
@@ -510,16 +506,12 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "customType": {
-                                "const": "sub",
-                                "default": "sub"
+                                "const": "sub"
                             }
                         },
                         "required": [
                             "customType"
-                        ],
-                        "discriminator": {
-                            "propertyName": "customType"
-                        }
+                        ]
                     },
                     "SubTypeSuperClassWithCustomExistingProperty": {
                         "title": "Sub Type Super Class With Custom Existing Property",
@@ -527,17 +519,16 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "customType": {
-                                "const": "super",
-                                "default": "super"
+                                "const": "super"
                             }
                         },
                         "required": [
                             "customType"
-                        ],
-                        "discriminator": {
-                            "propertyName": "customType"
-                        }
+                        ]
                     }
+                },
+                "discriminator": {
+                    "propertyName": "customType"
                 },
                 "oneOf": [
                     { "$ref": "#/definitions/SubTypeWithCustomExistingProperty" },
@@ -574,8 +565,7 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "ExternalSubType",
-                                "default": "ExternalSubType"
+                                "const": "ExternalSubType"
                             }
                         },
                         "required": [
@@ -588,8 +578,7 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "ExternalSubTypeSuperclass",
-                                "default": "ExternalSubTypeSuperclass"
+                                "const": "ExternalSubTypeSuperclass"
                             }
                         },
                         "required": [
@@ -597,18 +586,13 @@ public class JSONSchemaUtilTest {
                         ]
                     }
                 },
+                "discriminator": {
+                    "propertyName": "type"
+                },
                 "oneOf": [
                     { "$ref": "#/definitions/ExternalSubType" },
                     { "$ref": "#/definitions/ExternalSubTypeSuperclass" }
                 ],
-                "properties": {
-                    "type": {
-                        "enum": [
-                            "ExternalSubType",
-                            "ExternalSubTypeSuperclass"
-                        ]
-                    }
-                },
                 "type": "object",
                 "additionalProperties": true,
                 "title": "External Polymorphic Type"
@@ -637,14 +621,16 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "ResolvedSubType",
-                                "default": "ResolvedSubType"
+                                "const": "ResolvedSubType"
                             }
                         },
                         "required": [
                             "type"
                         ]
                     }
+                },
+                "discriminator": {
+                    "propertyName": "type"
                 },
                 "title": "Reflected Polymorphic Type",
                 "oneOf": [

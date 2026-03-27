@@ -3,6 +3,7 @@ import {customElement, property} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
+import {when} from 'lit/directives/when.js';
 import { i18next, translate } from "@openremote/or-translate";
 import {
     Attribute,
@@ -36,8 +37,8 @@ import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
-import {agentIdRendererRegistryEntry} from "./agent-link-json-forms-renderer";
-import {schedulerRendererRegistryEntry} from "./scheduler-renderer";
+import {agentIdRendererRegistryEntry} from "./renderers/agent-link";
+import {schedulerRendererRegistryEntry} from "./renderers/scheduler";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -146,8 +147,8 @@ async function getSchema(valueDescriptor: ValueDescriptor) {
     return promise;
 }
 
-export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
-    if (Util.isComplexMetaItem(valueDescriptor)) {
+export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, dialog?: boolean) => ValueInputProviderGenerator = (fallback, clear) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+    if (Util.isComplexValueDescriptor(valueDescriptor)) {
         const disabled = !!(options && options.disabled);
         const readonly = !!(options && options.readonly);
         const label = options.label;
@@ -164,13 +165,12 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         const onChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
             if (!initialised) { 
                 return
-            };
-  
+            }
+
             if (!Util.objectsEqual(dataAndErrors.data, prevValue)) {
                 prevValue = dataAndErrors.data;
-                valueChangeNotifier({
-                    value: dataAndErrors.data
-                });
+                const errors = !!dataAndErrors.errors?.length;
+                valueChangeNotifier({ value: dataAndErrors.data, errors });
             }
         };
 
@@ -203,11 +203,23 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                     or-loading-wrapper {
                         width: 100%;
                     }
+                    or-json-forms {
+                        flex: 1;
+                    }
+                    #clear {
+                        width: unset !important;
+                    }
                 </style>
                 <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
                                    .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
-                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>
+                                   .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}">
+                    </or-json-forms>
+                    ${when(clear, () => html`
+                        <or-mwc-input id="clear" outlined .type="${InputType.BUTTON}" icon="backspace" @or-mwc-input-changed="${
+                            () => valueChangeNotifier({ value: null })
+                        }"></or-mwc-input>
+                    `)}
                 </or-loading-wrapper>
             `;
         };
@@ -555,7 +567,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
 
         // Use json forms with fallback to simple input provider
-        const valueChangeHandler = (detail: OrInputChangedEventDetail | undefined) => {
+        const valueChangeHandler = (detail: OrInputChangedEventDetail & { errors?: boolean } | undefined) => {
+            if (detail?.errors) return;
             const value = detail ? detail.value : undefined;
             const updateImmediately = (detail && detail.enterPressed) || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
             this._onInputValueChanged(value, updateImmediately);
@@ -573,7 +586,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
-        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider, true)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
 
         if (!this._templateProvider) {
             this._templateProvider = standardInputProvider;
