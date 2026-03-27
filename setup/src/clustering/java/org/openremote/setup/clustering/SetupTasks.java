@@ -21,28 +21,29 @@ package org.openremote.setup.clustering;
 
 import org.openremote.model.Container;
 import org.openremote.model.setup.Setup;
-import org.openremote.model.setup.SetupTasks;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-/**
- * Demo setup tasks.
- */
-public class ClusteringSetupTasks implements SetupTasks {
-
-    public static final String DEMO_SETUP_TYPE = "clustering";
+public class SetupTasks implements org.openremote.model.setup.SetupTasks {
 
     @Override
     public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
+        int totalCores = Runtime.getRuntime().availableProcessors();
+        int threadCount = Math.max(1, (int) (totalCores * 0.6));
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-        if (DEMO_SETUP_TYPE.equals(setupType)) {
-            return Arrays.asList(
-                new ManagerClusteringSetup(container)
-            );
-        }
-
-        // Do nothing otherwise
-        return null;
+        return Arrays.asList(
+            new ManagerSetup(container, executor),
+            // A hack to allow shutdown of the setup executor
+            new Setup() {
+                @Override
+                public void onStart() throws Exception {
+                    executor.shutdown();
+                }
+            }
+        );
     }
 }
