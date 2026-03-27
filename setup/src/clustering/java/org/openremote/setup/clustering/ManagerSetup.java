@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -49,6 +50,8 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
 
     protected Container container;
     protected Executor executor;
+
+    private final AtomicInteger createdAssets = new AtomicInteger(0);
 
     public ManagerSetup(Container container, Executor executor) {
         super(container);
@@ -68,7 +71,7 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public void onStart() throws Exception {
         super.onStart();
 
-        String defaultTypes = "ThingAsset,LightAsset,RoomAsset,ThermostatAsset";
+        String defaultTypes = "ThingAsset,LightAsset,RoomAsset,ThermostatAsset,ThermostatAsset";
         String types = getString(container.getConfig(), OR_SETUP_ASSET_TYPES, defaultTypes);
         int assetsPerType = getInteger(container.getConfig(), OR_SETUP_ASSETS, 10000);
 
@@ -97,12 +100,16 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
                 executor.execute(() -> {
                     try {
                         createAsset(clazz, i);
+                        createdAssets.incrementAndGet();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 });
             });
         }
+
+        int expectedAssetCount = typesToLoad.length * assetsPerType;
+        if (expectedAssetCount > 1) waitForAssetsToBeCreated(expectedAssetCount);
     }
 
     private void createAsset(Class<? extends Asset> clazz, int i) throws Exception {
@@ -119,5 +126,19 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
 
         asset.setId(UniqueIdentifierGenerator.generateId(name));
         assetStorageService.merge(asset);
+    }
+
+    private void waitForAssetsToBeCreated(int expectedAssetCount) throws Exception {
+        int minAssetsPerSecond = 150;
+        int waitCounter = 0;
+        int waitDuration = 10;
+        int waitLimit = Math.max(waitDuration, expectedAssetCount / minAssetsPerSecond);
+        while (createdAssets.get() < expectedAssetCount) {
+            if (waitCounter * waitDuration > waitLimit) {
+                throw new IllegalStateException("Failed to provision all requested assets in the specified time (" + waitLimit + " seconds).");
+            }
+            waitCounter++;
+            Thread.sleep(waitDuration * 1000);
+        }
     }
 }
