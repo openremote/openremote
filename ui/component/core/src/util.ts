@@ -1070,7 +1070,7 @@ export function blobToBase64(blob:Blob) {
  * As a fallback, in case an insecure browser context is used, we use `getRandomValues` and change it into UUIDv4.
  */
 export function generateUniqueUUID(): string {
-    if (typeof crypto.randomUUID === "function") {
+    if (typeof crypto?.randomUUID === "function") {
         return crypto.randomUUID();
     }
     // Fallback for insecure contexts
