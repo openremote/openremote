@@ -330,6 +330,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
       AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
       String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
 
+      exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
+      exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+
       // Pass to gateway interceptor and abort if it stops the exchange
       if (gatewayInterceptor != null) {
          gatewayInterceptor.accept(exchange);
