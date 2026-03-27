@@ -175,7 +175,7 @@ if [ "$VPCID" == 'None' ]; then
   fi
 
   # Create standard stack resources in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text $ACCOUNT_PROFILE)
 
   # Wait for CloudFormation stack status to be CREATE_*
   echo "Waiting for stack to be created"
@@ -300,7 +300,7 @@ else
   fi
 
   # Create SSM Documents for attaching, detaching and replacing an EBS data volume in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --query 'StackId' --output text $ACCOUNT_PROFILE)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
@@ -348,7 +348,7 @@ else
   fi
 
   # Create dashboard in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --output text $ACCOUNT_PROFILE)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --query 'StackId' --output text $ACCOUNT_PROFILE)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"

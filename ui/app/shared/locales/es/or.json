@@ -590,6 +590,9 @@
               },
               "updateOnWrite": {
                 "description": ""
+              },
+              "writeValueFilters": {
+                "description": ""
               }
             }
           }

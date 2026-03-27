@@ -311,7 +311,8 @@ test.describe("Marker clustering", () => {
     test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
 
     const assetInfos = (await manager.api.AssetModelResource.getAssetInfos()).data;
-    const assets = getAssetsForAllTypes(assetInfos);
+    const bbox = { west: 4.4859, south: 51.9163, east: 4.4864, north: 51.9166 };
+    const assets = getAssetsForAllTypes(assetInfos, { bbox });
 
     await manager.setup("smartcity", { assets });
     await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false } } } })
