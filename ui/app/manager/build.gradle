@@ -78,6 +78,7 @@ tasks.register('npmBuild', Exec) {
 tasks.register('npmTest', Exec) {
     dependsOn getYarnInstallTask(), resolveTask(":ui:test:clean")
     commandLine npmCommand("yarn"), "run", "test"
+    args((findProperty('args')?.toString()?.tokenize()) ?: [])
 }
 
 tasks.register('npmTestUI', Exec) {

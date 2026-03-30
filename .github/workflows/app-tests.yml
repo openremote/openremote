@@ -6,6 +6,11 @@ jobs:
   ui-app-tests:
     name: UI App Tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [ 1, 2, 3, 4 ]
+        shardCount: [ 4 ]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
@@ -33,10 +38,10 @@ jobs:
           bash .ci_cd/host_init/healthy.sh profile
 
           # Run the tests
-          ./gradlew -p ui/app/manager npmTest
+          ./gradlew -p ui/app/manager npmTest -Pargs="--shard=${{ matrix.shardIndex }}/${{ matrix.shardCount }}"
       - name: Archive UI app test results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
-          name: or-ui-app-test-results
+          name: or-ui-app-test-results-${{ matrix.shardIndex }}
           path: ui/app/*/app-test-report/**
