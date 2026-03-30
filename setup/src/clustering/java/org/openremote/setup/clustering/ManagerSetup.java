@@ -22,7 +22,6 @@ package org.openremote.setup.clustering;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
-import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
@@ -33,24 +32,28 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 
-public class ManagerClusteringSetup extends ManagerSetup {
+public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public static final String OR_SETUP_ASSET_TYPES = "OR_SETUP_ASSET_TYPES";
     public static final String OR_SETUP_ASSETS = "OR_SETUP_ASSETS";
 
-    private static final Logger LOG = SyslogCategory.getLogger(DATA, ManagerSetup.class);
+    private static final Logger LOG = SyslogCategory.getLogger(DATA, org.openremote.manager.setup.ManagerSetup.class);
 
     protected Container container;
+    protected Executor executor;
 
-    public ManagerClusteringSetup(Container container) {
+    public ManagerSetup(Container container, Executor executor) {
         super(container);
         this.container = container;
+        this.executor = executor;
     }
 
     private static float getRandomNumberInRange(float min, float max) {
@@ -67,7 +70,7 @@ public class ManagerClusteringSetup extends ManagerSetup {
 
         String defaultTypes = "ThingAsset,LightAsset,RoomAsset,ThermostatAsset";
         String types = getString(container.getConfig(), OR_SETUP_ASSET_TYPES, defaultTypes);
-        int assetsPerType = getInteger(container.getConfig(), OR_SETUP_ASSETS, 100);
+        int assetsPerType = getInteger(container.getConfig(), OR_SETUP_ASSETS, 10000);
 
         Reflections reflections = new Reflections("org.openremote.model.asset.impl");
         Set<Class<? extends Asset>> allAvailableClasses = reflections.getSubTypesOf(Asset.class);
@@ -90,21 +93,31 @@ public class ManagerClusteringSetup extends ManagerSetup {
             // Skip asset types which either can't directly be initialized or are slow to init
             if (clazz.equals(UnknownAsset.class) || clazz.equals(GroupAsset.class) || clazz.equals(GatewayAsset.class)) continue;
 
-            for (int i = 0; i < assetsPerType; i++) {
-                String name = clazz.getSimpleName() + i;
-                Asset<?> asset = clazz.getConstructor(String.class).newInstance(name);
-
-                asset.setRealm("master");
-                asset.getAttributes().addOrReplace(
-                    new Attribute<>(Asset.LOCATION, new GeoJSONPoint(
-                        getRandomNumberInRange(4.24f, 4.51f), // West to East
-                        getRandomNumberInRange(51.89f, 51.99f) // South to North
-                    ))
-                );
-
-                asset.setId(UniqueIdentifierGenerator.generateId(name));
-                assetStorageService.merge(asset);
-            }
+            IntStream.rangeClosed(1, assetsPerType).forEach(i -> {
+                executor.execute(() -> {
+                    try {
+                        createAsset(clazz, i);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            });
         }
+    }
+
+    private void createAsset(Class<? extends Asset> clazz, int i) throws Exception {
+        String name = clazz.getSimpleName() + i;
+        Asset<?> asset = clazz.getConstructor(String.class).newInstance(name);
+
+        asset.setRealm("master");
+        asset.getAttributes().addOrReplace(
+            new Attribute<>(Asset.LOCATION, new GeoJSONPoint(
+                getRandomNumberInRange(4.24f, 4.51f), // West to East
+                getRandomNumberInRange(51.89f, 51.99f) // South to North
+            ))
+        );
+
+        asset.setId(UniqueIdentifierGenerator.generateId(name));
+        assetStorageService.merge(asset);
     }
 }
