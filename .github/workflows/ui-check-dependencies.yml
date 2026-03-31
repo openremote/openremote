@@ -1,0 +1,11 @@
+name: UI Check Dependencies
+on: workflow_call
+
+jobs:
+  ui-check-dependencies:
+    name: UI Check Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Check UI dependencies
+        run: npx knip@5.88.0 -c ui/knip.jsonc
