@@ -169,7 +169,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
                 // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
                 if(manager.console?.isMobile && this._offline) {
-                    console.debug("Mobile is offline, starting timer before showing 'you are offline' screen.");
                     this._startOfflineFallbackTimer(true);
                 }
                 // Always try reconnecting the event provider (just in case we are disconnected)

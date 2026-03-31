@@ -113,7 +113,6 @@ abstract class EventProviderImpl implements EventProvider {
     public connect(): Promise<boolean> {
         console.debug("Attempting to connect to events:", this.endpointUrl);
         if (this._reconnectTimer) {
-            console.debug("Clearing events reconnect timeout...");
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
         }
@@ -147,8 +146,6 @@ abstract class EventProviderImpl implements EventProvider {
                     }, 0);
                 } else {
                     console.debug("Failed to connect to event service: " + this.endpointUrl);
-                    // TODO: Temporarily disabled this to run this logic inside core.ts, since we also need to handle Keycloak token retrieval.
-                    /*this._scheduleReconnect();*/
                 }
 
                 deferred.resolve(connected);
@@ -621,10 +618,8 @@ export class WebSocketEventProvider extends EventProviderImpl {
         if (manager.authenticated) {
             tokenPromise = (async () => {
                 authorisedUrl += "&Authorization=" + (await manager.retrieveAuthorizationHeader());
-                console.debug("Connecting to URL using authorization:", authorisedUrl);
             })();
         } else {
-            console.debug("Connecting to URL anonymously:", authorisedUrl);
             tokenPromise = Promise.resolve();
         }
 
