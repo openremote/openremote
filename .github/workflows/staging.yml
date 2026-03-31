@@ -48,12 +48,12 @@ jobs:
     name: Test
     needs: [detect-changes, install-dist]
     #if: needs.detect-changes.outputs.ui_any_changed == 'true'
-    uses: './.github/workflows/component-tests.yml'
+    uses: './.github/workflows/ui-component-tests.yml'
 
   app-tests:
     name: Test
     needs: [detect-changes, install-dist]
-    uses: './.github/workflows/app-tests.yml'
+    uses: './.github/workflows/ui-app-tests.yml'
 
   docker-manager-image:
     name: Docker
