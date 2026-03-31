@@ -9,25 +9,28 @@ import permissions from "./fixtures/data/permissions";
 
 const { admin, smartcity } = users; 
 
+// Must always run tests in setup sequentially to ensure the "Wait for manager to be healthy"
+// setup test runs first
 setup.describe.configure({ mode: "serial" });
 
-setup(`Login as "admin" user`, async ({ page, manager, context }) => {
-    const { username, password } = admin;
+setup(`Wait for the manager to be healthy`, async ({ manager }) => {
     await expect.poll(async () => {
         const noop = () => null;
-        const token = await manager.getAccessToken("master", username, password).catch(noop);
+        const token = await manager.getAccessToken("master", "admin", "secret").catch(noop);
         const response = await manager.api.StatusResource.getHealthStatus({
-            headers: { "Authorization": "Bearer " + token },
+            headers: { "Authorization": "Bearer " + token }
         }).catch(noop);
         return response?.status;
     }, {
         message: "Manager to become healthy",
         intervals: [5_000, 1_000, 2_000, 5_000],
-        timeout: 60_000,
+        timeout: 60_000
     }).toBe(200);
+});
 
+setup(`Login as "admin" user`, async ({ page, manager, context }) => {
     await manager.goToRealmStartPage("master");
-    await manager.login("admin");
+    await manager.login(admin.username);
     await page.waitForURL("**/manager/**");
     await page.waitForTimeout(2000);
     await context.storageState({ path: adminStatePath });
