@@ -33,7 +33,6 @@ import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,7 +75,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <b>NOTE: Care must be taken when working with Netty {@link ByteBuf} as Netty uses reference counting to manage their
  * lifecycle. Refer to the Netty documentation for more information.</b>
  */
-public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implements NettyIOClient<T> {
+public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
 
     public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
     public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
@@ -88,10 +87,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      */
     public static class ByteToMessageDecoder<T> extends io.netty.handler.codec.ByteToMessageDecoder {
         protected List<T> messages = new ArrayList<>(1);
-        protected AbstractNettyIOClient<T, ?> client;
+        protected NettyIOClient<T> client;
         protected BiConsumer<ByteBuf, List<T>> decoder;
 
-        public ByteToMessageDecoder(AbstractNettyIOClient<T, ?> client, @NotNull BiConsumer<ByteBuf, List<T>> decoder) {
+        public ByteToMessageDecoder(NettyIOClient<T> client, @NotNull BiConsumer<ByteBuf, List<T>> decoder) {
             this.client = client;
             this.decoder = decoder;
         }
@@ -112,9 +111,9 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      * This is intended to be used at the end of a decoder chain where the previous decoder outputs messages of type &lt;T&gt;.
      */
     public static class MessageToMessageDecoder<T> extends SimpleChannelInboundHandler<T> {
-        protected AbstractNettyIOClient<T,?> client;
+        protected NettyIOClient<T> client;
 
-        public MessageToMessageDecoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client) {
+        public MessageToMessageDecoder(Class<? extends T> typeClazz, NettyIOClient<T> client) {
             super(typeClazz);
             this.client = client;
         }
@@ -129,10 +128,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
      * Concrete implementations must provide an encoder to fill the {@link ByteBuf} ready to be sent `over the wire`.
      */
     public static class MessageToByteEncoder<T> extends io.netty.handler.codec.MessageToByteEncoder<T> {
-        protected AbstractNettyIOClient<T, ?> client;
+        protected NettyIOClient<T> client;
         protected BiConsumer<T, ByteBuf> encoder;
 
-        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client, BiConsumer<T, ByteBuf> encoder) {
+        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T> client, BiConsumer<T, ByteBuf> encoder) {
             super(typeClazz);
             this.client = client;
             this.encoder = encoder;
@@ -498,7 +497,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
     }
 
-    protected void onMessageReceived(T message) {
+    @Override
+    public void onMessageReceived(T message) {
         LOG.finest("Message received notifying consumers: " + getClientUri());
         messageConsumers.forEach(consumer -> {
             try {

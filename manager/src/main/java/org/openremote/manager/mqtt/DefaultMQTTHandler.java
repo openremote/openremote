@@ -30,6 +30,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.UserAssetLink;
@@ -41,19 +42,20 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
-import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -158,14 +160,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 return false;
             }
             if (topic.getTokens().length == 4) {
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 3))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
                     LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().length == 5) {
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 3))) {
                     LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
@@ -186,14 +188,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
                     LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 4))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
                     LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().length == 6) {
-                if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
+                if (!Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 4))) {
                     LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
@@ -247,7 +249,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         }
 
         if (isAttributeValueWriteTopic(topic) || isAttributeWriteTopic(topic)) {
-            if (topic.getTokens().length != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
+            if (topic.getTokens().length != 5 || !Asset.matchesAssetIdPattern(topicTokenIndexToString(topic, 4))) {
                 LOG.finer("Invalid publish topic: topic=" + topic + ", connection=" + connectionToString(connection));
                 return false;
             }

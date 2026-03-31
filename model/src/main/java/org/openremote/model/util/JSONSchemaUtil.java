@@ -519,12 +519,12 @@ public class JSONSchemaUtil {
         }
 
         private static class JSONSchemaTitleProvider implements CustomDefinitionProviderV2, TypeAttributeOverrideV2 {
-            private ResolvedType rootType;
+            private final ThreadLocal<ResolvedType> rootType = new ThreadLocal<>();
 
             @Override
             public CustomDefinition provideCustomSchemaDefinition(ResolvedType javaType, SchemaGenerationContext context) {
-                if (this.rootType == null) {
-                    this.rootType = javaType;
+                if (this.rootType.get() == null) {
+                    this.rootType.set(javaType);
                 }
                 return null;
             }
@@ -539,7 +539,7 @@ public class JSONSchemaUtil {
              */
             @Override
             public void overrideTypeAttributes(ObjectNode attrs, TypeScope scope, SchemaGenerationContext context) {
-                if ((this.rootType == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) ||
+                if ((this.rootType.get() == scope.getType() && !attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))) ||
                     (!attrs.has(context.getKeyword(SchemaKeyword.TAG_TITLE))
                     && !scope.getType().isInstanceOf(Map.class)
                     && attrs.has(context.getKeyword(SchemaKeyword.TAG_TYPE))
@@ -561,7 +561,7 @@ public class JSONSchemaUtil {
 
             @Override
             public void resetAfterSchemaGenerationFinished() {
-                this.rootType = null;
+                this.rootType.remove();
             }
         }
 

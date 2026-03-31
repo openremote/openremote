@@ -36,4 +36,10 @@ public interface NettyIOClient<T> extends IOClient<T> {
      * support this then an {@link UnsupportedOperationException} will be thrown, consult the {@link IOClient}'s documentation.
      */
     void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encoderDecoderProvider) throws UnsupportedOperationException;
+
+    /**
+     *
+     * @param message
+     */
+    void onMessageReceived(T message);
 }

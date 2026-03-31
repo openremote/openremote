@@ -13,6 +13,10 @@ import {AttributeMarkerColoursRange, MapMarkerColours} from "../markers/or-map-m
 import { Util } from "@openremote/core";
 import { AssetWithLocation } from "..";
 
+export function metersToPixelsAtMaxZoom(meters: number, latitude: number) {
+    return meters / 0.075 / Math.cos(latitude * Math.PI / 180);
+}
+
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
         return;
@@ -153,7 +157,7 @@ export function isWebglSupported() {
 }
 
 export function isAssetWithLocation(asset: Asset): asset is AssetWithLocation {
-    if (!asset.attributes) return false;
-    const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-    return !!attr.value && (!attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr));
+    if (!asset?.attributes) return false;
+    const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint> | undefined;
+    return !!attr?.value?.coordinates && (!attr.meta || !(WellknownMetaItems.SHOWONDASHBOARD in attr.meta) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr));
 }
