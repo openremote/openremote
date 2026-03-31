@@ -33,14 +33,13 @@ jobs:
 #          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Build manager image
         run: |
-          commitShaShort=$(git rev-parse --short HEAD)
           docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/manager:develop manager/build/install/manager
-          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64 -t openremote/manager:$commitShaShort --load manager/build/install/manager
+          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64 -t openremote/manager:${{ github.sha }} --load manager/build/install/manager
       - name: Scan manager docker image
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         id: manager-anchore-scan
         with:
-          image: openremote/manager:$commitShaShort
+          image: openremote/manager:${{ github.sha }}
           fail-build: false
           severity-cutoff: critical
       - name: Upload Anchore scan SARIF report
