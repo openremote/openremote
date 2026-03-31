@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       PUSH_SNAPSHOT:
-        description: 'Push SNAPSHOT docker image to ECR'
+        description: 'Push snapshot Docker image to AWS ECR'
         type: boolean
 
 jobs:
