@@ -2,76 +2,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "gradle",
-            "name": "Manager (Demo Setup)",
-            "request": "launch",
-            "task": "runManagerDemo",
-            "args": [
-                "-Popenremote.devcontainer.tasks=true"
-            ],
-            "env": {
-                "OR_DB_HOST": "host.docker.internal",
-                "OR_KEYCLOAK_HOST": "host.docker.internal"
-            }
-        },
-        {
-            "type": "gradle",
-            "name": "Manager (Test Setup)",
-            "request": "launch",
-            "task": "runManagerTest",
-            "args": [
-                "-Popenremote.devcontainer.tasks=true"
-            ],
-            "env": {
-                "OR_DB_HOST": "host.docker.internal",
-                "OR_KEYCLOAK_HOST": "host.docker.internal"
-            }
-        },
-        {
-            "type": "gradle",
-            "name": "Manager (Empty)",
-            "request": "launch",
-            "task": "runManagerEmpty",
-            "args": [
-                "-Popenremote.devcontainer.tasks=true"
-            ],
-            "env": {
-                "OR_DB_HOST": "host.docker.internal",
-                "OR_KEYCLOAK_HOST": "host.docker.internal"
-            }
-        },
-        {
-            "type": "gradle",
-            "name": "Manager (Load1 Setup)",
-            "request": "launch",
-            "task": "runManagerLoad1",
-            "args": [
-                "-Popenremote.devcontainer.tasks=true"
-            ],
-            "env": {
-                "OR_DB_HOST": "host.docker.internal",
-                "OR_KEYCLOAK_HOST": "host.docker.internal"
-            }
-        },
-        {
-            "type": "gradle",
-            "name": "Manager (Debug Demo Setup)",
-            "request": "launch",
-            "task": "debugManagerDemo",
-            "args": [
-                "-Popenremote.devcontainer.tasks=true"
-            ],
-            "env": {
-                "OR_DB_HOST": "host.docker.internal",
-                "OR_KEYCLOAK_HOST": "host.docker.internal"
-            }
+            "type": "java",
+            "name": "Manager (Debug Demo Setup, one-click)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "preLaunchTask": "gradle: debug manager (demo, bg)"
         },
         {
             "type": "java",
-            "name": "Attach Manager Debugger (5005)",
+            "name": "Manager (Debug Test Setup, one-click)",
             "request": "attach",
             "hostName": "localhost",
-            "port": 5005
+            "port": 5006,
+            "preLaunchTask": "gradle: debug manager (test, bg)"
         },
         {
             "type": "node",

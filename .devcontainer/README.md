@@ -12,20 +12,18 @@ This devcontainer provides a complete development environment for OpenRemote wit
    - Build the project with `./gradlew clean installDist`
 
 3. **Launch Configurations Available**:
-   - **Manager (Demo Setup)**: Uses `runManagerDemo`
-   - **Manager (Test Setup)**: Uses `runManagerTest`
-   - **Manager (Empty)**: Uses `runManagerEmpty`
-   - **Manager (Load1 Setup)**: Uses `runManagerLoad1`
-   - **Manager (Debug Demo Setup)** + **Attach Manager Debugger (5005)**
+   - **Manager (Debug Demo Setup, one-click)**
+   - **Manager (Debug Test Setup, one-click)**
    - **Manager UI: serve**
 
 ## Development Workflow
 
 ### Backend Development
-1. Use one of the Manager launch configurations from the Run and Debug panel (Ctrl+Shift+D)
-2. The application will connect to the pre-started Docker services
-3. Access the manager at: http://localhost:8080/manager/
-4. Default credentials: `admin` / `secret`
+1. Run one backend task from Terminal → Run Task (for example `gradle: run manager (demo)` or `gradle: debug manager (demo)`)
+2. For one-click debug, start `Manager (Debug Demo Setup, one-click)` or `Manager (Debug Test Setup, one-click)` from Run and Debug (Ctrl+Shift+D)
+3. The application will connect to the pre-started Docker services
+4. Access the manager at: http://localhost:8080/manager/
+5. Default credentials: `admin` / `secret`
 
 ### Frontend Development
 1. Use the "Manager UI: serve" launch configuration, or
@@ -36,7 +34,11 @@ This devcontainer provides a complete development environment for OpenRemote wit
 - **gradle: start infra**: Start required Docker services
 - **gradle: stop infra**: Stop Docker services
 - **gradle: run manager (demo)**: Run Manager in demo mode
+- **gradle: run manager (test)**: Run Manager with test setup
+- **gradle: run manager (empty)**: Run Manager without setup profile
+- **gradle: run manager (load1)**: Run Manager with load1 setup
 - **gradle: debug manager (demo)**: Run Manager in debug mode (port 5005)
+- **gradle: debug manager (test)**: Run Manager in debug mode (port 5006)
 - **gradle: build manager UI**: Build manager UI workspace
 - **npm: serve manager UI**: Start the manager UI development server
 
