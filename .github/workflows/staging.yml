@@ -80,6 +80,7 @@ jobs:
 
   build-snapshot-image:
     name: Build
+    if: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
     needs: [ detect-changes, install-dist ]
     uses: './.github/workflows/build-snapshot-image.yml'
     secrets:
