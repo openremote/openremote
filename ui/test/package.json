@@ -8,7 +8,7 @@
   "exports": {
     ".": "./index.ts",
     "./data": "./fixtures/data.ts",
-    "./app.config": "./app.config.ts",
+    "./app.config": "./app.config.cts",
     "./component.config": "./component.config.ts"
   },
   "files": [

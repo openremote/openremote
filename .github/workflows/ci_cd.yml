@@ -803,7 +803,7 @@ jobs:
 
       - name: Run install playwright browser(s)
         if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium-headless-shell
         timeout-minutes: 20
 
       - name: Run UI component tests
@@ -819,27 +819,18 @@ jobs:
           name: ui-component-test-results
           path: ui/component/*/component-test-report/**
 
-      - name: Run manager docker build command
-        if: steps.manager-docker-command.outputs.value != ''
-        run: |
-          ${{ steps.manager-docker-command.outputs.value }}
-
       - name: Run UI app tests
-        # Skip UI app tests for custom projects until we want to use them there.
-        # .ci_cd/host_init/healthy.sh is missing initially for custom projects .ci_cd/host_init/healthy.sh
+        # Skip UI app tests for custom projects until we want to use them there
         if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
-          composeProfile='profile/dev-ui.yml'
+          composeProfile='profile/dev-testing.yml'
 
           if [ $IS_MAIN_REPO == 'false' ]; then
             composeProfile="openremote/$composeProfile"
           fi
 
           # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Wait for services to be healthy
-          bash .ci_cd/host_init/healthy.sh profile
+          docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
           ${{ steps.test-ui-apps-command.outputs.value }}
@@ -855,6 +846,11 @@ jobs:
         with:
           name: ui-app-test-results
           path: ui/app/*/app-test-report/**
+
+      - name: Run manager docker build command
+        if: steps.manager-docker-command.outputs.value != ''
+        run: |
+          ${{ steps.manager-docker-command.outputs.value }}
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'

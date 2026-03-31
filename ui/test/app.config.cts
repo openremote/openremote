@@ -1,4 +1,5 @@
-import { basename, resolve } from "node:path";
+// These imports are transpiled by TypeScript to CommonJS
+import { basename, resolve, join } from "node:path";
 import { defineConfig as baseConfig, devices, Project } from ".";
 
 const { CI, DEV, managerUrl } = process.env;
@@ -64,6 +65,9 @@ export const defineAppConfig = (path: string) => {
       /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
       trace: "retain-on-failure",
       video: "on",
+    },
+    webServer: {
+      command: `node ${join(__dirname, "manager.cjs")}`
     },
     /* Configure projects */
     projects: [
