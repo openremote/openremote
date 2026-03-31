@@ -1067,8 +1067,6 @@ export class Manager implements EventProviderFactory {
      * Checks keycloak is available and token is valid otherwise will redirect to login; also checks if event bus is
      * online.
      */
-    // TODO: 24-03 16:19: Removed any "reconnect timer" logic, as I think it's better to handle this inside the EventProvider itself instead.
-    // TODO: 24-03 17:12: I initially disabled this, but the token refresh relies on this timer. If you'd disconnect from WiFi without this code, it would never retrieve the token anymore.
     public async tryReconnect(reattemptDelayMillis: number = 3000) {
         console.debug("Checking connection to the Manager...");
 
@@ -1079,14 +1077,6 @@ export class Manager implements EventProviderFactory {
         console.debug("Manager is disconnected!");
 
         if (this._reconnectTimer) {
-            // TODO: 24-03 16:18: Let's ignore this reconnect attempt if a timer is already busy.
-            // TODO: 24-03 17:30 - Yeah, stupid me, it is REQUIRED to clear the timeout, as the window.setTimeout(() => rerunfunction()) does not clear the reconnect timer, silly ;)
-            /*console.debug("Reconnect timer already ongoing; continuing that one.");
-            return;*/
-
-            // TODO: 24-03 16:17: Disabled this "reset reconnect timer logic", to test out if I can handle this inside the EventProvider instead.
-            // TODO: 24-03 17:30 - Yeah, stupid me, it is REQUIRED to clear the timeout, as the window.setTimeout(() => rerunfunction()) does not clear the reconnect timer, silly ;)
-            // console.debug("Clearing previous reconnect timeout...");
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
         }
@@ -1100,7 +1090,6 @@ export class Manager implements EventProviderFactory {
 
         // If failed to connect, schedule another reconnect attempt
         if (!connected) {
-            // TODO: 24-03 17:12: I initially disabled this, but the token refresh relies on this timer. If you'd disconnect from WiFi without this code, it would never retrieve the token anymore.
             reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000);
             console.error(`Failed to reconnect to the Manager. Attempting again in ${reattemptDelayMillis}...`);
             this._reconnectTimer = window.setTimeout(() => this.tryReconnect(reattemptDelayMillis), reattemptDelayMillis);
@@ -1152,33 +1141,6 @@ export class Manager implements EventProviderFactory {
             await this.events?.connect();
         }
         return isEventsOnline();
-
-        /* ---------------------- */
-
-        // TODO: 24-03 16:20, Disabled logic below for testing purposes. As I think it is not necessary, as I've added a "retrieve new token" logic in the EventProvider itself.
-        // When token refreshed, we force disconnect the websocket
-        /*if(tokenRefreshed) {
-            console.debug("Access token was refreshed! Stopping any ongoing connection attempt. Status is:", this.events?.status);
-            if(this.events?.status === EventProviderStatus.CONNECTING) {
-                this.events?.disconnect();
-            }
-
-            // TODO: Only disconnect events when WebSocket is CONNECTED, or always stop any connect attempt?
-            /!*console.debug("Token refreshed! Shall we reconnect the event provider? Status is:", this.events?.status);
-            if(isEventsOnline()) {
-                console.warn("Token refreshed during reconnect phase, so disconnecting the event provider.");
-                this.events?.disconnect();
-            } else {
-                console.debug("No event provider disconnect was necessary.");
-            }*!/
-        }*/
-
-        // Do websocket reconnect attempt if needed
-        /*if(!isEventsOnline()) {
-            console.debug("Event provider offline, attempting to reconnect using latest auth token.");
-            await this.events?.connect();
-        }
-        return !isEventsOnline();*/
     }
 
     /**

@@ -544,10 +544,6 @@ abstract class EventProviderImpl implements EventProvider {
             this._pendingSubscription = null;
         }
 
-        // ~TODO: Might need to disable this, as a disconnect potentially means that the token is expired. Handling reconnect in `core` makes more sense to me.~
-        // 24-03 16:11 - I don't agree with this anymore, I'm now trying to process everything inside event.ts to see what happens. Preferably I'd remove ALL the reconnect logic from or-app,
-        // and only "trigger a request to check if everything is OK" to the EventProvider alongside the Keycloak token provider. I think it helps if the EventProvider themselves ask for
-        // the necessary details, like an authorization header by calling `manager.retrieveAuthorizationHeader()`.
         this._onStatusChanged(EventProviderStatus.CONNECTING);
         this._scheduleReconnect();
     }
@@ -620,10 +616,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
         this._connectDeferred = new Deferred();
 
-        /**
-         * TODO: Maybe we should add a step here to retrieve a new Keycloak token?
-         * As in, always request one from the Keycloak JS library, so it will always be valid upon connecting.
-         */
+        // Await access token retrieval from the Manager if necessary
         let tokenPromise: Promise<void>;
         if (manager.authenticated) {
             tokenPromise = (async () => {
@@ -635,13 +628,12 @@ export class WebSocketEventProvider extends EventProviderImpl {
             tokenPromise = Promise.resolve();
         }
 
-        // After retrieving the authorization header...
+        // After retrieving the authorization header, open the connection.
         tokenPromise.finally(() => {
 
             this._webSocket = new WebSocket(authorisedUrl);
 
             this._webSocket!.onopen = (ev) => {
-                console.debug("Event provider connection opened", ev);
                 if (this._connectDeferred) {
                     const deferred = this._connectDeferred;
                     this._connectDeferred = null;
