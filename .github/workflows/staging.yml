@@ -26,6 +26,12 @@ jobs:
               - '!**/*.yml'
               - '!yarn.lock'
 
+  ui-check-dependencies:
+    name: Lint
+    needs: detect-changes
+    #if: needs.detect-changes.outputs.changed == 'true'
+    uses: './.github/workflows/ui-check-dependencies.yml'
+
   install-dist:
     name: Build
     needs: detect-changes
