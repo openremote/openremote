@@ -17,25 +17,28 @@ jobs:
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
-          name: or-manager-image
-          path: .
+          name: or-manager-build
+          path: manager/build
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: or-ui-component-build
           path: ui/component
-      - name: Load manager image
-        run: docker load < or_manager.tar
       - name: Install Playwright browsers
         run: npx playwright@1.57.0 install --with-deps chromium
+      - name: Set up JDK 21 and gradle cache
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
       - name: Run UI App Tests
         timeout-minutes: 20
         run: |
-          # UI App Tests
-          # Start the stack
-          MANAGER_VERSION=develop-${{ github.sha }} docker compose -f profile/dev-ui.yml up -d --no-build
+          # Make temp dir with 777 mask as docker seems to run as root
+          mkdir -pm 777 tmp
 
-          # Wait for services to be healthy
-          bash .ci_cd/host_init/healthy.sh profile
+          # Start the stack
+          docker compose -f profile/dev-testing.yml up -d --no-build
 
           # Run the tests
           ./gradlew -p ui/app/manager npmTest -Pargs="--shard=${{ matrix.shardIndex }}/${{ matrix.shardCount }}"

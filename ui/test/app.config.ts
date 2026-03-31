@@ -65,6 +65,9 @@ export const defineAppConfig = (path: string) => {
       trace: "retain-on-failure",
       video: "on",
     },
+    webServer: {
+      command: "npm start"
+    },
     /* Configure projects */
     projects: [
       ...createAppSetupAndTeardown(name),
