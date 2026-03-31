@@ -61,22 +61,30 @@ jobs:
     needs: [detect-changes, install-dist]
     uses: './.github/workflows/ui-app-tests.yml'
 
-  docker-manager-image:
-    name: Docker
+  build-manager-image:
+    name: Build
     needs: [detect-changes, install-dist]
-    uses: './.github/workflows/docker-manager-image.yml'
+    uses: './.github/workflows/build-manager-image.yml'
     secrets:
       DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
       DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
 
-  docker-deployment-image:
-    name: Docker
+  build-deployment-image:
+    name: Build
     needs: [ install-dist ]
-    uses: './.github/workflows/docker-deployment-image.yml'
+    uses: './.github/workflows/build-deployment-image.yml'
+
+  build-snapshot-image:
+    name: Build
+    needs: [ detect-changes, install-dist ]
+    uses: './.github/workflows/build-snapshot-image.yml'
+    secrets:
+      AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
+      AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
 
   deployment:
     name: Deployment
-    needs: [ docker-deployment-image ]
+    needs: [ build-deployment-image ]
     uses: './.github/workflows/deployment.yml'
 
 
