@@ -680,10 +680,10 @@ export class WebSocketEventProvider extends EventProviderImpl {
                 } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
                     const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
                     const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
-                    console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                     const deferred = this._subscribeDeferred;
                     this._subscribeDeferred = null;
                     if (deferred) {
+                        console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                         deferred.reject("Unauthorized");
                     }
                 } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {

@@ -1097,13 +1097,12 @@ export class Manager implements EventProviderFactory {
                 console.error("Keycloak is not reachable. Reconnect attempt failed.");
                 return false;
             }
-            console.debug("Keycloak is reachable.")
+            console.debug("Keycloak is reachable.");
 
             // Check if access token can be refreshed
             console.debug("Checking keycloak access token...");
-            let tokenRefreshed = false;
             try {
-                tokenRefreshed = await this._updateKeycloakAccessToken();
+                await this._updateKeycloakAccessToken();
             } catch (e) {
                 console.error("Could not update Keycloak access token, attempting again using offline token...", e);
                 // Try and use offline token if it is available
@@ -1114,18 +1113,16 @@ export class Manager implements EventProviderFactory {
                 }
 
                 try {
-                    tokenRefreshed = await this._updateKeycloakAccessToken();
+                    await this._updateKeycloakAccessToken();
                 } catch (e) {
                     this.login();
                     throw new Error("Cannot update access token so sending to login");
                 }
                 console.debug("Keycloak access token is valid");
             }
-            console.debug("Keycloak token retrieved successfully. Refreshed:", tokenRefreshed);
 
             // Check events
             const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
-            console.debug("If event provider offline then attempting reconnect: offline=" + !isEventsOnline());
             if(!isEventsOnline()) {
                 console.debug("Event provider offline, attempting to reconnect using latest auth token.");
                 await this.events?.connect();
