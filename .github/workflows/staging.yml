@@ -2,6 +2,10 @@ name: Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
+        type: boolean
 
 jobs:
 
@@ -79,7 +83,7 @@ jobs:
     needs: [ detect-changes, install-dist ]
     uses: './.github/workflows/build-snapshot-image.yml'
     secrets:
-      AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
+      AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
       AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
 
   deployment:
