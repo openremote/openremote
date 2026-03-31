@@ -1097,10 +1097,8 @@ export class Manager implements EventProviderFactory {
                 console.error("Keycloak is not reachable. Reconnect attempt failed.");
                 return false;
             }
-            console.debug("Keycloak is reachable.");
 
             // Check if access token can be refreshed
-            console.debug("Checking keycloak access token...");
             try {
                 await this._updateKeycloakAccessToken();
             } catch (e) {
