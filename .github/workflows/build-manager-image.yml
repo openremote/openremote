@@ -40,7 +40,7 @@ jobs:
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         id: manager-anchore-scan
         with:
-          image: openremote/manager:commitShaShort
+          image: openremote/manager:$commitShaShort
           fail-build: false
           severity-cutoff: critical
       - name: Upload Anchore scan SARIF report
