@@ -6,7 +6,15 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {AssetModelUtil, Auth, ConsoleAppConfig, EventProviderType, ManagerConfig, User, UsernamePassword} from "@openremote/model";
+import {
+    AssetModelUtil,
+    Auth,
+    ConsoleAppConfig,
+    EventProviderType,
+    ManagerConfig,
+    User,
+    UsernamePassword
+} from "@openremote/model";
 import * as Util from "./util";
 import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
 import Keycloak from 'keycloak-js';
@@ -1051,7 +1059,7 @@ export class Manager implements EventProviderFactory {
         }
 
         this._emitEvent(OREvent.OFFLINE);
-        this.tryReconnect();
+        this.reconnect();
     }
 
     protected _onReconnected() {
@@ -1067,7 +1075,7 @@ export class Manager implements EventProviderFactory {
      * Checks keycloak is available and token is valid otherwise will redirect to login; also checks if event bus is
      * online.
      */
-    public async tryReconnect(reattemptDelayMillis: number = 3000) {
+    public async reconnect(reattemptDelayMillis: number = 3000) {
         console.debug("Checking connection to the Manager...");
 
         if (!this._disconnected) {
@@ -1081,7 +1089,51 @@ export class Manager implements EventProviderFactory {
             this._reconnectTimer = undefined;
         }
 
-        const connected = await this._reconnect();
+        const tryReconnect = async () => {
+            console.debug("Reconnecting to the Manager...");
+            const keycloakOffline = !await this.isKeycloakReachable();
+
+            if (keycloakOffline) {
+                console.error("Keycloak is not reachable. Reconnect attempt failed.");
+                return false;
+            }
+            console.debug("Keycloak is reachable.")
+
+            // Check if access token can be refreshed
+            console.debug("Checking keycloak access token...");
+            let tokenRefreshed = false;
+            try {
+                tokenRefreshed = await this._updateKeycloakAccessToken();
+            } catch (e) {
+                console.error("Could not update Keycloak access token, attempting again using offline token...", e);
+                // Try and use offline token if it is available
+                const offlineToken = await this._getNativeOfflineRefreshToken();
+                this._keycloak!.refreshToken = offlineToken;
+                if(!offlineToken) {
+                    console.warn("No offline token was found on this device.");
+                }
+
+                try {
+                    tokenRefreshed = await this._updateKeycloakAccessToken();
+                } catch (e) {
+                    this.login();
+                    throw new Error("Cannot update access token so sending to login");
+                }
+                console.debug("Keycloak access token is valid");
+            }
+            console.debug("Keycloak token retrieved successfully. Refreshed:", tokenRefreshed);
+
+            // Check events
+            const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
+            console.debug("If event provider offline then attempting reconnect: offline=" + !isEventsOnline());
+            if(!isEventsOnline()) {
+                console.debug("Event provider offline, attempting to reconnect using latest auth token.");
+                await this.events?.connect();
+            }
+            return isEventsOnline();
+        };
+
+        const connected = await tryReconnect();
 
         if (connected === undefined) {
             // Going back to keycloak login so nothing to do
@@ -1092,55 +1144,11 @@ export class Manager implements EventProviderFactory {
         if (!connected) {
             reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000);
             console.error(`Failed to reconnect to the Manager. Attempting again in ${reattemptDelayMillis}...`);
-            this._reconnectTimer = window.setTimeout(() => this.tryReconnect(reattemptDelayMillis), reattemptDelayMillis);
+            this._reconnectTimer = window.setTimeout(() => this.reconnect(reattemptDelayMillis), reattemptDelayMillis);
             return;
         }
 
         this._onReconnected();
-    }
-
-    protected async _reconnect(): Promise<boolean | undefined> {
-        console.debug("Reconnecting to the Manager...");
-
-        const keycloakOffline = !await this.isKeycloakReachable();
-        if (keycloakOffline) {
-            console.error("Keycloak is not reachable. Reconnect attempt failed.");
-            return false;
-        }
-        console.debug("Keycloak is reachable.")
-
-        // Check if access token can be refreshed
-        console.debug("Checking keycloak access token...");
-        let tokenRefreshed = false;
-        try {
-            tokenRefreshed = await this._updateKeycloakAccessToken();
-        } catch (e) {
-            console.error("Could not update Keycloak access token, attempting again using offline token...", e);
-            // Try and use offline token if it is available
-            const offlineToken = await this._getNativeOfflineRefreshToken();
-            this._keycloak!.refreshToken = offlineToken;
-            if(!offlineToken) {
-                console.warn("No offline token was found on this device.");
-            }
-
-            try {
-                tokenRefreshed = await this._updateKeycloakAccessToken();
-            } catch (e) {
-                this.login();
-                throw new Error("Cannot update access token so sending to login");
-            }
-            console.debug("Keycloak access token is valid");
-        }
-        console.debug("Keycloak token retrieved successfully. Refreshed:", tokenRefreshed);
-
-        // Check events
-        const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
-        console.debug("If event provider offline then attempting reconnect: offline=" + !isEventsOnline());
-        if(!isEventsOnline()) {
-            console.debug("Event provider offline, attempting to reconnect using latest auth token.");
-            await this.events?.connect();
-        }
-        return isEventsOnline();
     }
 
     /**
