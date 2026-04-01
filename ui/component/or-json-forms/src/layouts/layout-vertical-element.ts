@@ -90,7 +90,7 @@ const style = css`
 
     [slot="header"] {
         display: flex;
-        max-width: 200px;
+        min-width: 0; /* Allows slotted element to shrink */
         & span {
             align-content: center;
             overflow: hidden;

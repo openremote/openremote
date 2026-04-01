@@ -92,7 +92,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     }
 
     return html`
-            <div id="wrapper" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
+            <div id="wrapper" style="min-width: 0; width: 100%" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
                 ${content}
                 <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
             </div>
@@ -204,13 +204,15 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, dial
                         width: 100%;
                     }
                     or-json-forms {
-                        flex: 1;
+                        max-width: 100%;
+                        min-width: 0; /**/
                     }
                     #clear {
                         width: unset !important;
                     }
                 </style>
                 <or-loading-wrapper ${ref(loadingWrapper)} .loading="${true}">
+                    <div style="display: flex; width: 100%">
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
                                    .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
                                    .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}">
@@ -220,6 +222,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, dial
                             () => valueChangeNotifier({ value: null })
                         }"></or-mwc-input>
                     `)}
+                    </div>
                 </or-loading-wrapper>
             `;
         };
@@ -285,6 +288,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: flex;
                 flex: 1;
                 flex-direction: column;
+                max-width: 100%;
             }
             
             #wrapper-input {

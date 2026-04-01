@@ -73,6 +73,11 @@ const style = css`
         display: flex;
         flex-direction: row;
         overflow: hidden;
+        min-width: 0; /* TODO: explain */
+    }
+
+    #header-title {
+        min-width: 0; /* TODO: explain */
     }
 
     #header-title, #header-description {

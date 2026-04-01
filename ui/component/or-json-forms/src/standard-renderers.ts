@@ -98,7 +98,7 @@ export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnP
         type: props.type
     };
 
-    const template = html`<or-json-forms-vertical-layout .state="${state}" .props="${contentProps}"></or-json-forms-vertical-layout>`;
+    const template = html`<or-json-forms-vertical-layout style="max-width: 100%" .state="${state}" .props="${contentProps}"></or-json-forms-vertical-layout>`;
     let deleteHandler: undefined | (() => void);
     if (!contentProps.required && contentProps.path) {
         deleteHandler = () => {
