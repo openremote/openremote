@@ -1,0 +1,24 @@
+name: Maven
+on:
+  workflow_call:
+    secrets:
+      MAVEN_SIGNING_PASSWORD:
+        required: true
+      MAVEN_SIGNING_KEY:
+        required: true
+      MAVEN_USERNAME:
+        required: true
+      MAVEN_PASSWORD:
+        required: true
+
+jobs:
+  maven-publish:
+    name: Publish to Maven Central Sonatype
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Publish to Maven Central Sonatype
+        run: ./gradlew publishToSonatype --no-parallel -PsigningKey=${{ secrets.MAVEN_SIGNING_KEY }} -PsigningPassword=${{ secrets.MAVEN_SIGNING_PASSWORD }} -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}"
+      - name: Release to Maven Central Sonatype
+        run: ./gradlew findSonatypeStagingRepository closeAndReleaseSonatypeStagingRepository -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
+
