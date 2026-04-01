@@ -21,6 +21,7 @@ jobs:
       - name: Run integration tests
         timeout-minutes: 20
         run: |
+          # Run Integration Tests
           # Make temp dir with 777 mask as docker seems to run as root
           mkdir -pm 777 tmp
 

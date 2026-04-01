@@ -1,0 +1,12 @@
+name: NPM publish dry run
+on: workflow_call
+
+jobs:
+  npm-dry-run:
+    name: NPM publish dry run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Run NPM publish dry run
+        timeout-minutes: 20
+        run: yarn workspaces foreach --all --no-private --topological npm publish --dry-run

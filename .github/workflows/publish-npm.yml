@@ -1,0 +1,24 @@
+name: NPM
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      NPM_AUTH_TOKEN:
+        required: true
+
+jobs:
+  npm-publish:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Publish to NPM
+        run: |
+          echo 'npmRegistries:' >> .yarnrc.yml
+          echo '"https://registry.yarnpkg.com":' >> .yarnrc.yml
+          echo "npmAuthToken: ${{ secrets.NPM_AUTH_TOKEN }}" >> .yarnrc.yml
+
+          yarn workspaces foreach --all --no-private --topological npm publish --tag ${{ inputs.tag }}
