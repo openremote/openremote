@@ -5,27 +5,17 @@
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
-  "types": "src/index.d.ts",
   "exports": {
     ".": "./lib/index.js",
-    "./*": "./lib/*.js",
-    "./jsx": {
-      "types": "./custom-elements-jsx.d.ts"
-    }
+    "./*": "./lib/*.js"
   },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "lib/*"
-      ]
-    }
-  },
+  "types": "lib/index.d.ts",
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "analyze": "npx cem analyze --config custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
-    "prepack": "npx tsc -b"
+    "prepack": "npx rspack"
   },
   "author": "OpenRemote",
   "repository": "https://github.com/openremote/openremote",
@@ -34,6 +24,9 @@
     "@rive-app/webgl2": "^2.35.4",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
