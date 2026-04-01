@@ -20,7 +20,7 @@ spec:
       protocol: TCP
       name: https
     - port: 8883
-      targetPort: 8883
+      targetPort: {{ .Values.or.mqttPort }}
       protocol: TCP
       name: mqtts
   selector:
