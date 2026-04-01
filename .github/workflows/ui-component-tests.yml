@@ -17,7 +17,6 @@ jobs:
           name: or-ui-component-build
           path: ui/component
       - name: Set up JDK 21 and Gradle cache
-        id: setup-jdk
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:
           distribution: 'temurin'
