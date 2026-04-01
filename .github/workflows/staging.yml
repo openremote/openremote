@@ -36,6 +36,12 @@ jobs:
     #if: needs.detect-changes.outputs.changed == 'true'
     uses: './.github/workflows/ui-check-dependencies.yml'
 
+  ui-check-outdated-translations:
+    name: Lint
+    needs: detect-changes
+    #if: needs.detect-changes.outputs.changed == 'true'
+    uses: './.github/workflows/ui-check-outdated-translations.yml'
+
   install-dist:
     name: Build
     needs: detect-changes
