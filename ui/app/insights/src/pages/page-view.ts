@@ -5,8 +5,8 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import {when} from "lit/directives/when.js";
 import {styleMap} from 'lit/directives/style-map.js';
 import {guard} from "lit/directives/guard.js";
-import {Dashboard, Realm} from "@openremote/model";
-import {registerWidgetTypes} from "@openremote/or-dashboard-builder";
+import {Dashboard, DashboardRefreshInterval, Realm} from "@openremote/model";
+import {registerWidgetTypes, intervalToMillis, OrDashboardPreview} from "@openremote/or-dashboard-builder";
 import manager from "@openremote/core";
 import {DashboardMenu} from "../components/dashboard-menu";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -65,8 +65,13 @@ export class PageView extends Page<AppStateKeyed> {
     @state() // boolean that is put to true if a fresh render should take place. Similar to the one used in or-dashboard-builder.
     private rerenderPending: boolean = false;
 
+    private _refreshTimer?: ReturnType<typeof setInterval>;
+
     @query('#dashboard-menu')
     private dashboardMenu: DashboardMenu;
+
+    @query('or-dashboard-preview')
+    private dashboardPreview?: OrDashboardPreview;
 
     static get styles() {
         return [style];
@@ -110,6 +115,12 @@ export class PageView extends Page<AppStateKeyed> {
         // Update url if properties have changed that are present in the URL
         if(changedProps.has("_selectedId") || changedProps.has("viewDashboardOnly")) {
             this._updateRoute(this._selectedId, !this.viewDashboardOnly, false);
+        }
+
+        // Update refresh timer when the selected dashboard changes
+        if(changedProps.has("_selectedId") || changedProps.has("_loadedDashboards")) {
+            const selected = this._loadedDashboards?.find((d) => d.id === this._selectedId);
+            this._setRefreshTimer(intervalToMillis(selected?.template?.refreshInterval || DashboardRefreshInterval.OFF));
         }
 
         // Clear loadedDashboards when people switch between realms or viewing modes.
@@ -228,7 +239,7 @@ export class PageView extends Page<AppStateKeyed> {
                 `
             })}
             <div style="flex: 1; ${styleMap(pageStyles)}">
-                ${getDashboardHeaderTemplate(!this.viewDashboardOnly, selected, () => this.dashboardMenu?.toggleDrawer(), () => this.rerenderPending = true)}
+                ${getDashboardHeaderTemplate(!this.viewDashboardOnly, selected, () => this.dashboardMenu?.toggleDrawer(), () => this.dashboardPreview?.refreshWidgets())}
                 <div style="flex: 1;">
                     ${guard([this._selectedId, this._loadedDashboards, this.rerenderPending], () => html`
                         ${when(this._selectedId && selected !== undefined, () => html`
@@ -313,6 +324,27 @@ export class PageView extends Page<AppStateKeyed> {
     }
 
 
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._clearRefreshTimer();
+    }
+
+    protected _setRefreshTimer(millis: number | undefined) {
+        this._clearRefreshTimer();
+        if(millis !== undefined) {
+            this._refreshTimer = setInterval(() => {
+                this.dashboardPreview?.refreshWidgets();
+            }, millis);
+        }
+    }
+
+    protected _clearRefreshTimer() {
+        if(this._refreshTimer) {
+            clearInterval(this._refreshTimer);
+            this._refreshTimer = undefined;
+        }
+    }
+
     // Util method for updating URL
     protected _updateRoute(id?: string, showMenu?: boolean, silent: boolean = true) {
         let path = "view";
@@ -329,6 +361,7 @@ export class PageView extends Page<AppStateKeyed> {
 }
 
 function getDashboardHeaderTemplate(showMenu = true, selected?: Dashboard, onopen?: (ev: Event) => void, onrefresh?: (ev: Event) => void): TemplateResult {
+    const refreshInterval = selected?.template?.refreshInterval || DashboardRefreshInterval.OFF;
     return html`
         <div id="fullscreen-header">
             <div id="fullscreen-header-wrapper">
@@ -340,11 +373,13 @@ function getDashboardHeaderTemplate(showMenu = true, selected?: Dashboard, onope
                 <div id="fullscreen-header-title">
                     <span>${selected?.displayName}</span>
                 </div>
-                <div>
-                    <div>
+                <div id="fullscreen-header-actions">
+                    <div id="fullscreen-header-actions-content">
                         <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(selected == null)}" type="${InputType.BUTTON}" icon="refresh"
                                       @or-mwc-input-changed="${onrefresh}"
                         ></or-mwc-input>
+                        <dashboard-refresh-controls .interval="${refreshInterval}" .readonly="${true}"
+                        ></dashboard-refresh-controls>
                     </div>
                 </div>
             </div>

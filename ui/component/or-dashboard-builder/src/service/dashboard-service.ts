@@ -1,5 +1,5 @@
 import {Dashboard, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
-import manager from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 
 export enum DashboardSizeOption {
@@ -9,24 +9,23 @@ export enum DashboardSizeOption {
 export class DashboardService {
 
     public static async create(dashboard?: Dashboard, size: DashboardSizeOption = DashboardSizeOption.DESKTOP, realm: string = manager.displayRealm, post = true): Promise<Dashboard> {
-        const randomId = () => (Math.random() + 1).toString(36).substring(2);
         if(!dashboard) {
             dashboard = {
                 realm: realm,
                 displayName: this.getDefaultDisplayName(size),
                 template: {
-                    id: randomId(),
+                    id: Util.generateUniqueUUID(),
                     columns: this.getDefaultColumns(size),
                     maxScreenWidth: this.getDefaultMaxScreenWidth(size),
                     refreshInterval: DashboardRefreshInterval.OFF,
-                    screenPresets: this.getDefaultScreenPresets(size),
+                    screenPresets: this.getDefaultScreenPresets(size)
                 }
             } as Dashboard;
         } else {
             dashboard.id = undefined;
             if(dashboard.template) {
-                dashboard.template.id = randomId();
-                dashboard.template.widgets?.forEach(w => w.id = randomId());
+                dashboard.template.id = Util.generateUniqueUUID();
+                dashboard.template.widgets?.forEach(w => w.id = Util.generateUniqueUUID());
             }
         }
 

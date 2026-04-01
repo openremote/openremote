@@ -45,7 +45,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
-public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
+public class UDPIOClient<T> extends AbstractNettyIOClient<T> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UDPIOClient.class);
     protected String host;

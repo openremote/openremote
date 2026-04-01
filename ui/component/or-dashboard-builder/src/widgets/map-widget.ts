@@ -6,7 +6,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import {MapSettings} from "../settings/map-settings";
 import {AssetWidgetConfig} from "../util/widget-config";
 import {Asset, AssetDescriptor} from "@openremote/model";
-import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig} from "@openremote/or-map";
+import {LngLatLike, MapMarkerColours, MapMarkerAssetConfig, Util as MapUtil, OrMap, AssetWithLocation, OrMapMarkersChangedEvent, MapMarkerConfig, OrMapLoadedEvent} from "@openremote/or-map";
 import {map} from "lit/directives/map.js";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -87,11 +87,13 @@ export class MapWidget extends OrAssetWidget {
     }
 
     connectedCallback() {
+        this.addEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         return super.connectedCallback();
     }
 
     disconnectedCallback() {
+        this.removeEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
         return super.disconnectedCallback();
     }
@@ -153,6 +155,12 @@ export class MapWidget extends OrAssetWidget {
         `;
     }
 
+    protected _onMapLoaded(e: OrMapLoadedEvent) {
+        const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
+        const assets = this.loadedAssets.filter(asset => !assetType || asset.type === assetType).filter(MapUtil.isAssetWithLocation);
+        this._map?.addAssets(assets);
+    }
+
     protected _onMapMarkersChanged(e: OrMapMarkersChangedEvent) {
         this._assetsOnScreen = e.detail;
     }
@@ -195,16 +203,6 @@ export class MapWidget extends OrAssetWidget {
                 }
             }
             this.markers[assetType!] = marker;
-        }
-        // Load the markers onto the map
-        if (this._map) {
-            this._map.cleanUpAssetMarkers();
-            const assetType = this.widgetConfig.allOfType ? undefined : this.widgetConfig.assetType;
-            this.loadedAssets
-                .filter(asset => MapUtil.isAssetWithLocation(asset) && (!assetType || asset.type === assetType))
-                .forEach((asset: Asset) => this._map!.addAssetMarker(asset as AssetWithLocation));
-
-            this._map?.reload();
         }
     }
 }

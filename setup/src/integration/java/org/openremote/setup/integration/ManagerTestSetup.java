@@ -218,6 +218,11 @@ public class ManagerTestSetup extends ManagerSetup {
                 new MetaItem<>(ACCESS_PUBLIC_READ),
                 new MetaItem<>(ACCESS_PUBLIC_WRITE)
             ));
+        apartment1.getAttribute(BuildingAsset.STREET).get().addOrReplaceMeta(
+                new MetaItem<>(ACCESS_PUBLIC_WRITE, false),
+                new MetaItem<>(ACCESS_PUBLIC_READ, false),
+                new MetaItem<>(ACCESS_RESTRICTED_READ)
+        );
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -229,6 +234,7 @@ public class ManagerTestSetup extends ManagerSetup {
         /* ############################ ROOMS ############################## */
 
         RoomAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room 1");
+        apartment1Livingroom.setAccessPublicRead(true);
         apartment1Livingroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
                 new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                 new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
@@ -581,6 +587,7 @@ public class ManagerTestSetup extends ManagerSetup {
         enviroment1Asset = assetStorageService.merge(enviroment1Asset);
 
         Asset<?> light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.476111, 51.438492));
+        light1Asset.setAccessPublicRead(true);
         light1Asset = assetStorageService.merge(light1Asset);
         light1Id = light1Asset.getId();
 
