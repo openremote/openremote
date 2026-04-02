@@ -25,9 +25,6 @@
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8"
   },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
-  },
   "publishConfig": {
     "access": "public"
   }
