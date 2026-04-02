@@ -92,34 +92,34 @@ jobs:
       AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
       AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
 
-  update-package-json:
-    name: Build
-    needs: detect-changes
-    uses: './.github/workflows/update-package-json.yml'
+#  update-package-json:
+#    name: Build
+#   needs: detect-changes
+#    uses: './.github/workflows/update-package-json.yml'
 
-  publish-maven:
-    name: Publish
-    needs: [ui-check-outdated-translations]
-    uses: './.github/workflows/publish-maven.yml'
-    secrets:
-      MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
-      MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
-      MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
-      MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
+#  publish-maven:
+#    name: Publish
+#    needs: [ui-check-outdated-translations]
+#    uses: './.github/workflows/publish-maven.yml'
+#    secrets:
+#      MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
+#      MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
+#     MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
+#      MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
 
   publish-npm-dry-run:
     name: Publish
     needs: detect-changes
     uses: './.github/workflows/publish-npm-dry-run.yml'
 
-  publish-npm:
-    name: Publish
-    needs: [update-package-json]
-    uses: './.github/workflows/publish-npm.yml'
-    with:
-      tag: ${{ needs.update-package-json.outputs.tag }}
-    secrets:
-      NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
+#  publish-npm:
+#    name: Publish
+#    needs: [update-package-json]
+#    uses: './.github/workflows/publish-npm.yml'
+#    with:
+#      tag: ${{ needs.update-package-json.outputs.tag }}
+#    secrets:
+#      NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
 
   deployment:
     name: Deploy
