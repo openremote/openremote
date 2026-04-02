@@ -29,7 +29,7 @@ import riveWASMResource from "@rive-app/webgl2/rive.wasm";
 RuntimeLoader.setWasmUrl(riveWASMResource);
 
 @customElement("or-rive-renderer")
-export class SxRiveRenderer extends LitElement {
+export class OrRiveRenderer extends LitElement {
 
     static get styles() {
         return [css`
@@ -39,7 +39,7 @@ export class SxRiveRenderer extends LitElement {
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
-                min-height: var(--solyx-size-sm); /* Prevent 0-height collapses */
+                min-height: 2rem; /* Prevent 0-height collapses */
             }
             canvas {
                 display: block;
@@ -73,7 +73,7 @@ export class SxRiveRenderer extends LitElement {
      * By default, the state machine will autoplay.
      */
     @property({type: Array})
-    public stateMachines = ["State Machine 1"];
+    public stateMachines?: string[];
 
     @query("canvas")
     protected _canvas?: HTMLCanvasElement;
@@ -126,6 +126,7 @@ export class SxRiveRenderer extends LitElement {
     disconnectedCallback() {
         this._resizeObserver?.disconnect();
         this._onResize.cancel();
+        this._rive?.deleteRiveRenderer();
         super.disconnectedCallback();
     }
 
@@ -146,6 +147,7 @@ export class SxRiveRenderer extends LitElement {
                     this._rive?.resizeDrawingSurfaceToCanvas();
                     if(this._valueQueue) {
                         this._valueQueue.forEach(func => func());
+                        this._valueQueue = [];
                     }
                 }
             });
