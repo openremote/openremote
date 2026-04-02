@@ -73,11 +73,11 @@ const style = css`
         display: flex;
         flex-direction: row;
         overflow: hidden;
-        min-width: 0; /* TODO: explain */
+        min-width: 0; /* Allows the element to shrink */
     }
 
     #header-title {
-        min-width: 0; /* TODO: explain */
+        min-width: 0; /* Allows the element to shrink */
     }
 
     #header-title, #header-description {

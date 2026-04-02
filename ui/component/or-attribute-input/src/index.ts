@@ -205,7 +205,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, dial
                     }
                     or-json-forms {
                         max-width: 100%;
-                        min-width: 0; /**/
+                        min-width: 0; /* Allows the element to shrink */
                     }
                     #clear {
                         width: unset !important;
