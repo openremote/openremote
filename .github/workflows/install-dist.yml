@@ -32,7 +32,7 @@ jobs:
           if-no-files-found: error
           path: |
             deployment/build
-      - name: Archive UI build
+      - name: Archive UI component build
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: or-ui-component-build
@@ -42,8 +42,7 @@ jobs:
             ui/component/**/lib
             ui/component/model/src/model.ts
             ui/component/rest/src/restclient.ts
-            ui/component/**/tsconfig.tsbuildinfo
-      - name: Archive MDI Fonts
+      - name: Archive MDI fonts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: mdi-fonts
