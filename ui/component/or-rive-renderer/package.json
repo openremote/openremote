@@ -12,7 +12,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
-    "analyze": "npx cem analyze --config custom-elements-manifest.config.mjs",
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "build": "npx tsc -b",
     "test": "npx tsc -b && npx playwright test",
     "prepack": "npx rspack"

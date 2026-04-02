@@ -130,7 +130,7 @@ export class SxRiveRenderer extends LitElement {
     }
 
     updated(changedProps: PropertyValues) {
-        if (!this.url || !this._canvas || !this.stateMachines) {
+        if (!this.url || !this._canvas) {
             console.warn("Could not render Rive animation; some details were missing");
         } else {
             this._rive?.deleteRiveRenderer();
