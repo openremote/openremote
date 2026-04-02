@@ -2169,7 +2169,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-rive-renderer@workspace:ui/component/or-rive-renderer"
   dependencies:
-    "@openremote/util": "workspace:*"
     "@rive-app/webgl2": "npm:^2.35.4"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
