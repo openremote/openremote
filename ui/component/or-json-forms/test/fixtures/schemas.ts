@@ -117,33 +117,31 @@ export const schemas: JsonSchema[] = [
             SubType: {
                 title: "Sub Type",
                 properties: {
-                    type: {
-                        const: "SubType",
-                        default: "SubType"
+                    customType: {
+                        const: "SubType"
                     },
                 },
                 required: [
-                   "type"
+                   "customType"
                 ],
             },
             CustomSubType: {
                 title: "Custom Sub Type",
                 properties: {
                     customType: {
-                        const: "CustomSubType",
-                        default: "CustomSubType"
+                        const: "CustomSubType"
                     }
                 },
                 required: [
                    "customType"
-                ],
-                discriminator: {
-                    propertyName: "customType"
-                }
+                ]
             }
         },
         items: {
             type: "object",
+            discriminator: {
+                propertyName: "customType"
+            },
             oneOf: [
                 { "$ref": "#/definitions/SubType" },
                 { "$ref": "#/definitions/CustomSubType" },
