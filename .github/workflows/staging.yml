@@ -109,7 +109,7 @@ jobs:
 
   publish-npm-dry-run:
     name: Publish
-    needs: detect-changes
+    needs: [install-dist]
     uses: './.github/workflows/publish-npm-dry-run.yml'
 
 #  publish-npm:
