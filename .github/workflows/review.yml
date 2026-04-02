@@ -1,0 +1,26 @@
+name: Review
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  detect-changes:
+    name: Detect whether code changed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Detect changes
+        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
+        with:
+          files_yaml: |
+            ui:
+              - 'ui/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+            backend:
+              - '!.ci_cd/**'
+              - '!deployment/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!yarn.lock'
