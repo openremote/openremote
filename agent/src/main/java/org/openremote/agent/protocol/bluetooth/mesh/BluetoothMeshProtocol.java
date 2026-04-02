@@ -119,7 +119,15 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             }
         }
     };
-    private static final BluetoothCentralManager bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
+    private static BluetoothCentralManager bluetoothCentral;
+    private static synchronized BluetoothCentralManager bluetoothCentral() {
+        if (bluetoothCentral == null) {
+            bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
+        }
+        return bluetoothCentral;
+    }
+
+
     private static final List<BluetoothMeshNetwork> networkList = new LinkedList<>();
     // Not ideal this but will do for now
     private static SequenceNumberPersistencyManager sequenceNumberManager;
@@ -243,7 +251,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
         BluetoothMeshProtocol.initMainThread(scheduledExecutorService);
         meshNetwork = new BluetoothMeshNetwork(
-            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread,
+            BluetoothMeshProtocol.bluetoothCentral(), BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread,
             proxyAddress, sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService, scheduledExecutorService, statusConsumer
         );
         BluetoothMeshProtocol.addNetwork(meshNetwork);

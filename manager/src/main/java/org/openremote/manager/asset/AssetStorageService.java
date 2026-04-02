@@ -1430,10 +1430,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            if (success) {
-                clientEventService.publishEvent(event);
-            }
-
             return success;
 
         } catch (Exception e) {
@@ -1588,7 +1584,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (count) {
             sb.insert(0, "select COUNT(*) FROM (");
-            sb.append(")");
+            sb.append(") AS count_query");
         }
 
         return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);

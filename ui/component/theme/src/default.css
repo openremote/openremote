@@ -17,10 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@import "@vaadin/vaadin-lumo-styles/lumo.css";
+@import "@vaadin/vaadin-lumo-styles/src/props/index.css";
+@import "@vaadin/vaadin-lumo-styles/src/global/index.css";
+@import "components/index.css";
+@import "mixins/index.css";
+
+:where(:root),
+:where(:host) {
+    --vaadin-lumo-theme: 1;
+}
 
 :root[theme~="dark"] {
-
     /* Dark theme - Base colors */
     --or-color-base: hsla(120, 20%, 1%);
     --or-color-base-5pct: hsla(120, 6%, 14%);
@@ -75,7 +82,6 @@
 }
 
 :root {
-
     /* Light theme - Base colors */
     --or-color-base: hsl(0, 0%, 100%);
     --or-color-base-5pct: hsla(118, 10%, 25%, 0.16);
@@ -165,4 +171,11 @@
     --lumo-secondary-text-color: var(--or-color-text-secondary);
     --lumo-tertiary-text-color: var(--or-color-text-tertiary);
     --lumo-disabled-text-color: var(--or-color-text-disabled);
+
+    /* OpenRemote */
+    --lumo-border-radius-m: 0.5em;
+    --lumo-border-radius-l: 0.75em;
+    --vaadin-field-default-width: 100%;
+    --vaadin-button-margin: 0;
+    --lumo-clickable-cursor: pointer;
 }

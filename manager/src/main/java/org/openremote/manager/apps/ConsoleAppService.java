@@ -44,7 +44,6 @@ public class ConsoleAppService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-
         this.timerService = container.getService(TimerService.class);
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
@@ -57,6 +56,7 @@ public class ConsoleAppService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        resolveConsoleAppDocRoot();
     }
 
     @Override
@@ -72,6 +72,30 @@ public class ConsoleAppService implements ContainerService {
             .map(dir -> dir.getFileName().toString())
             .distinct()
             .toArray(String[]::new);
+    }
+
+    public Path getConsoleAppDocRoot() {
+        return resolveConsoleAppDocRoot();
+    }
+
+    private Path resolveConsoleAppDocRoot() {
+        if (consoleAppDocRoot != null) {
+            return consoleAppDocRoot;
+        }
+
+        Path customDocRoot = managerWebService.getCustomAppDocRoot();
+        if (customDocRoot != null && Files.isDirectory(customDocRoot)) {
+            consoleAppDocRoot = customDocRoot;
+            return consoleAppDocRoot;
+        }
+
+        consoleAppDocRoot = managerWebService.getBuiltInAppDocRoot();
+        if (consoleAppDocRoot == null) {
+            LOG.warning("Console app doc root could not be resolved");
+        } else if (!Files.isDirectory(consoleAppDocRoot) && customDocRoot != null) {
+            LOG.warning("Custom app doc root does not exist, falling back to built-in: " + customDocRoot.toAbsolutePath());
+        }
+        return consoleAppDocRoot;
     }
 
     @Override

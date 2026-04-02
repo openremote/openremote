@@ -18,7 +18,20 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import { Frequency as FrequencyValue, Options } from "rrule";
-import { EventTypes } from "./util";
+
+export type ByRRuleParts = Pick<
+    Options,
+    | "bymonth"
+    | "byweekno"
+    | "byyearday"
+    | "bymonthday"
+    | "byweekday"
+    | "byhour"
+    | "byminute"
+    | "bysecond"
+>;
+export type ByRRulePartsKeys = keyof ByRRuleParts;
+export type ByRRuleCombination = Record<keyof typeof FrequencyValue, ByRRulePartsKeys[]>;
 
 /**
  * Supported recurrence rule parts in evaluation order:
@@ -46,22 +59,21 @@ import { EventTypes } from "./util";
  *
  * @see {@link RRule} and {@link https://labix.org/python-dateutil/#head-a65103993a21b717f6702063f3717e6e75b4ba66|python-dateutil}.
  */
-export type RuleParts = Pick<
+export type RRuleParts = Pick<
     Options,
     | "interval"
     | "freq" // Must exist (should default to DAILY?)
-    | "bymonth"
-    | "byweekno"
-    | "byyearday"
-    | "bymonthday"
-    | "byweekday"
-    | "byhour"
-    | "byminute"
-    | "bysecond"
     | "count"
     | "until"
->;
+> & ByRRuleParts;
 
-export type LabeledEventTypes = Record<EventTypes, string>;
-export type RulePartKey = keyof RuleParts;
-export type Frequency = (keyof typeof FrequencyValue);
+export type Frequency = keyof typeof FrequencyValue;
+export type RRulePartKeys = keyof RRuleParts;
+export type PartKeys =
+  | RRulePartKeys
+  | "start"
+  | "start-time"
+  | "end"
+  | "end-time"
+  | "all-day"
+  | "recurrence-ends";

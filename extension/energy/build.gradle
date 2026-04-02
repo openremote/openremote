@@ -68,8 +68,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -89,5 +89,5 @@ signing {
 tasks.register('installDist', Copy) {
     dependsOn resolveTask(":manager:installDist")
     from jar.archiveFile
-    into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
+    into project(":manager").layout.buildDirectory.dir("install/manager/lib")
 }

@@ -813,6 +813,10 @@ export const style = css`
         color: var(--internal-or-rules-list-text-color);
         box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
+
+    or-rule-viewer, or-rule-group-viewer {
+        z-index: 0;
+    }
 `;
 
 @customElement("or-rules")

@@ -76,7 +76,7 @@ export const panelStyle = css`
     }
 
     #type-label {
-        border: 1px solid green;
+        border: 1px solid var(--or-app-color4, green);
         border-radius: 3px;
         padding: 3px;
         margin-left: 10px;

@@ -1,5 +1,5 @@
 import * as Util from "@openremote/core/lib/util";
-import { Asset, AssetInfo, AssetTypeInfo } from "@openremote/model";
+import { Asset, AssetTypeInfo } from "@openremote/model";
 
 export const notes = { name: "notes", type: "text" };
 export const location = { name: "location", type: "GEO_JSONPoint" };
@@ -82,19 +82,20 @@ export const preparedAssetsForInsights: Asset[] = [
         realm: "smartcity",
         attributes: {
             ...commonAttrs,
-            energyLevel: {name: "energyLevel", type: "number", meta: {storeDataPoints: true}},
-            power: {name: "power", type: "number", meta: {storeDataPoints: true}}
-        }
-    }, {
+            energyLevel: { name: "energyLevel", type: "number", meta: { storeDataPoints: true } },
+            power: { name: "power", type: "number", meta: { storeDataPoints: true } },
+        },
+    },
+    {
         name: "Energy Asset 2",
         type: "ThingAsset",
         realm: "smartcity",
         attributes: {
             ...commonAttrs,
-            energyLevel: {name: "energyLevel", type: "number", meta: {storeDataPoints: true}},
-            power: {name: "power", type: "number", meta: {storeDataPoints: true}}
-        }
-    }
+            energyLevel: { name: "energyLevel", type: "number", meta: { storeDataPoints: true } },
+            power: { name: "power", type: "number", meta: { storeDataPoints: true } },
+        },
+    },
 ];
 
 type AssetNames = (typeof assets)[number]["name"];
@@ -165,25 +166,37 @@ const rotterdam: BBox = {
 };
 
 /**
+ * Assigns location at the specified coordinates
+ *
+ * @param asset The asset to assign the location attribute
+ * @param coordinates The `[lng, lat]` coordinate pair to use for the asset location
+ * @default `[4.483890476199264, 51.91547581791727]` (Jufferkade)
+ */
+export function assignLocation(asset: Asset, coordinates = [4.483890476199264, 51.91547581791727]): Asset {
+    asset.attributes ??= {};
+    Object.assign(asset.attributes, {
+        location: {
+            name: "location",
+            type: "GEO_JSONPoint",
+            value: { type: "Point", coordinates },
+            meta: {},
+        },
+    });
+
+    return asset;
+}
+
+/**
  * Assigns a random location within the specified bounding box
  *
  * @param asset The asset to assign the location attribute
  * @param boundingBox The bounding box to add assets within
  * @default {@link rotterdam}
  */
-export function assignLocation(asset: Asset, { south, north, east, west }: BBox = rotterdam): Asset {
+export function assignRandomLocationInArea(asset: Asset, { south, north, east, west }: BBox = rotterdam): Asset {
     const y = randomBetween(south, north);
     const x = randomBetween(east, west);
-
-    Object.assign(asset?.attributes ?? {}, {
-        location: {
-            name: "location",
-            type: "GEO_JSONPoint",
-            value: { type: "Point", coordinates: [x, y] },
-            meta: {},
-        },
-    });
-
+    assignLocation(asset, [x, y]);
     return asset;
 }
 
@@ -202,10 +215,17 @@ export function getAssetAt(assetInfos: AssetTypeInfo[], index = 0): Asset {
     return { type, name: type, attributes };
 }
 
-export function getAssetsForAllTypes(assetInfos: AssetTypeInfo[], options?: { realm?: string, limit?: number, bbox?: BBox }): Asset[] {
-  return Array.from({ length: options?.limit ?? assetInfos.length }).map((_, i) => {
-    return { ...assignLocation(getAssetAt(assetInfos, i), options?.bbox), name: String(i), realm: options?.realm ?? "smartcity" };
-  });
+export function getAssetsForAllTypes(
+    assetInfos: AssetTypeInfo[],
+    options?: { realm?: string; limit?: number; bbox?: BBox }
+): Asset[] {
+    return Array.from({ length: options?.limit ?? assetInfos.length }).map((_, i) => {
+        return {
+            ...assignRandomLocationInArea(getAssetAt(assetInfos, i), options?.bbox),
+            name: String(i),
+            realm: options?.realm ?? "smartcity",
+        };
+    });
 }
 
 export function getAssetTypes(assets: Asset[]) {
@@ -216,8 +236,10 @@ export function getAssetTypeColour(type: string, infos: AssetTypeInfo[]) {
     return infos.find(({ assetDescriptor }) => assetDescriptor?.name === type)?.assetDescriptor?.colour ?? "";
 }
 
+export const getRGBColor = (el: Element): string[] => window.getComputedStyle(el).color.match(/\d+/g)!;
+
 export function rgbToHex(rgb: string[]) {
-    return rgb.map((i) => ("0" + parseInt(i).toString(16)).slice(-2)).join("");
+    return rgb?.map((i) => ("0" + parseInt(i).toString(16)).slice(-2)).join("");
 }
 
 function randomBetween(max: number, min: number) {
