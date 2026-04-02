@@ -94,6 +94,7 @@ export const schemas: JsonSchema[] = [
                 unresolvedBoolean: {
                     title: "Unresolved boolean",
                     type: "boolean",
+                    default: false,
                 },
                 array: {
                     title: "Array",
