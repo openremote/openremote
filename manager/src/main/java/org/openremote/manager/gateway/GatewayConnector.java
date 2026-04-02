@@ -77,6 +77,7 @@ public class GatewayConnector {
     protected boolean disabled;
     protected boolean initialSyncInProgress;
     protected ScheduledFuture<?> syncProcessorFuture;
+    protected ScheduledFuture<?> obsoleteReadFuture;
     protected Future<?> capabilitiesFuture;
     List<String> syncAssetIds;
     protected GatewayAsset gatewayAsset;
@@ -376,9 +377,14 @@ public class GatewayConnector {
     }
 
     synchronized protected void onGatewayEvent(SharedEvent e) {
+        LOG.finest(() -> "Received gateway event: event=" + e + ": " + getGatewayIdString());
         try {
             if (initialSyncInProgress) {
                 if (e instanceof AssetsEvent) {
+                    if (obsoleteReadFuture != null) {
+                        obsoleteReadFuture.cancel(true);
+                        obsoleteReadFuture = null;
+                    }
                     onSyncAssetsResponse((AssetsEvent) e);
                 } else if (e instanceof AttributeEvent) {
                     cachedAttributeEvents.add((AttributeEvent) e);
@@ -415,8 +421,8 @@ public class GatewayConnector {
                 gatewayService.getTunnelSSHPort() > 0 ? gatewayService.getTunnelSSHPort() : null));
 
         // TODO: Remove this once enough time has passed since this commit
-        // We delay so the init start has a chance to
-        Container.SCHEDULED_EXECUTOR.schedule(() -> {
+        // We delay so the init start has a chance to be responded to
+        obsoleteReadFuture = Container.SCHEDULED_EXECUTOR.schedule(() -> {
             // Send old read assets event for older gateway versions
             ReadAssetsEvent event = new ReadAssetsEvent(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).recursive(true));
             event.setMessageID(expectedSyncResponseName);
@@ -471,7 +477,7 @@ public class GatewayConnector {
         String[] requestAssetIds = syncAssetIds.stream().skip(syncIndex).limit(SYNC_ASSET_BATCH_SIZE).toArray(String[]::new);
         expectedSyncResponseName = ASSET_READ_EVENT_NAME_BATCH + syncIndex;
 
-        LOG.fine("Synchronising assets " + syncIndex+1 + "-" + syncIndex + requestAssetIds.length + " of " + syncAssetIds.size() + ": " + getGatewayIdString());
+        LOG.fine("Synchronising assets " + (syncIndex+1) + "-" + (syncIndex + requestAssetIds.length) + " of " + syncAssetIds.size() + ": " + getGatewayIdString());
         ReadAssetsEvent event = new ReadAssetsEvent(
             new AssetQuery()
                 .ids(requestAssetIds)

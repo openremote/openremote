@@ -84,3 +84,10 @@ MANAGER_HOSTNAME: Hostname of the manager to be tested. Default is localhost.
 THREAD_COUNT: Number of parallel accounts that will connect and publish in parallel. Default is 1000.  
 RAMP_RATE: Number of thread to add per second during ramp-up. Default is 50.  
 MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 30000.  
+
+## Multi-proxy test
+
+As part of [Test using multiple HAProxy replicas under EKS · Issue #2568 · openremote/openremote](https://github.com/openremote/openremote/issues/2568),
+a setup terminating TLS at the AWS NLB level and using ACM to manage certificates, while still using HAProxy pod(s) has been implemented.  
+This can be installed using the `eks-setup-load-acm.sh` script.  
+This is really for testing purposes and clarification on how we deploy our stack is required to move further.

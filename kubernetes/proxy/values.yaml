@@ -161,6 +161,9 @@ or:
   # The path prefix used for Keycloak HTTP requests (default not set, example: `/keycloak`)
 #  keycloakPathPrefix:
 
+  # The container binds to this port for handling MQTT(S) requests, must be a non-privileged port (>= 1024) when running inside the cluster
+  mqttPort: 8883
+
   # The container binds to this port for handling HTTP requests, must be a non-privileged port (>= 1024) when running inside the cluster
   httpPort: 8080
   # The container binds to this port for handling HTTPS requests, must be a non-privileged port (>= 1024) when running inside the cluster
