@@ -40,6 +40,7 @@ public class DemoSetupTasks implements SetupTasks {
             return Arrays.asList(
                 new KeycloakDemoSetup(container),
                 new ManagerDemoSetup(container),
+                new RotterdamDispersionSetup(container),
                 new RulesDemoSetup(container),
                 new ManagerDemoAgentSetup(container),
                 new ManagerDemoDashboardSetup(container)
