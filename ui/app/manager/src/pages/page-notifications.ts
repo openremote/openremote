@@ -523,7 +523,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         `;
     }
 
-    protected _renderHeader(writeNotifications) {
+    protected _renderHeader(writeNotifications: boolean) {
         return html`
             <div id="title">
                 <div style="display: flex; align-items: center;">
