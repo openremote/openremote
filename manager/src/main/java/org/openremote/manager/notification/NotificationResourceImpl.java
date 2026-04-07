@@ -20,8 +20,6 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.github.javaparser.utils.Log;
-
 
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
@@ -38,9 +36,7 @@ import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 
-import java.lang.reflect.Array;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
