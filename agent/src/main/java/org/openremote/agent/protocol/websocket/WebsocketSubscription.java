@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.websocket;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.model.util.JSONSchemaUtil.*;
 
 import java.io.Serializable;
 
@@ -35,6 +36,7 @@ import java.io.Serializable;
 )
 public abstract class WebsocketSubscription implements Serializable {
 
+    @JsonSchemaTitle(value = "Body", i18n = false)
     public Object body;
 
     public WebsocketSubscription body(Object body) {
