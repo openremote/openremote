@@ -445,6 +445,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     protected void doReconnect() {
         doDisconnect().whenComplete((unused, throwable) -> {
+           ConnectionStatus currentStatus = connectionStatus.get();
+
+           // Guard against explicit disconnects happening while we were cleaning up
+           if (currentStatus == ConnectionStatus.DISCONNECTING || currentStatus == ConnectionStatus.DISCONNECTED) {
+              LOG.fine("Explicit disconnect detected, aborting delayed reconnect: " + getClientUri());
+              return;
+           }
+
           scheduleDoConnect(5000);
        });
     }
