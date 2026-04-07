@@ -458,8 +458,21 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected Future<Void> doConnect() {
+
+        // 1. Guard against stale execution
+        ConnectionStatus current = connectionStatus.get();
+        if (current == ConnectionStatus.DISCONNECTING || current == ConnectionStatus.DISCONNECTED) {
+            LOG.fine("Aborting stale connection task, explicit disconnect detected: " + getClientUri());
+            CompletableFuture<Void> aborted = new CompletableFuture<>();
+            aborted.cancel(true);
+            return aborted;
+        }
+
         LOG.info("Establishing connection: " + getClientUri());
-        setConnectionStatus(ConnectionStatus.CONNECTING);
+
+        // 2. Safely restore CONNECTING only if we were WAITING (due to retry backoff)
+        // If it was already CONNECTING, this safely ignores the update.
+        checkSetConnectionStatus(ConnectionStatus.WAITING, ConnectionStatus.CONNECTING);
 
         Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
                 .cleanSession(cleanSession)
