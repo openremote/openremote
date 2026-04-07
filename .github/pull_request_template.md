@@ -16,6 +16,7 @@
 - [ ] 1. Acceptance criteria of the linked issue(s) are met
 - [ ] 2. Tests are written and all tests pass
 - [ ] 3. Changes are manually tested by you and the reviewer
+- [ ] 4. Documentation is written or updated
 
 <!-- 
   Thank you for your contribution <3 

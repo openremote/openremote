@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
+import com.github.victools.jsonschema.generator.*;
 import jakarta.persistence.Entity;
 import jakarta.validation.ConstraintValidatorContext;
 import jakarta.validation.ConstraintViolation;
@@ -65,6 +65,9 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -149,6 +152,17 @@ public class ValueUtil {
         }
     }
 
+    // TODO: consider canonicalization based on: https://www.rfc-editor.org/rfc/rfc8785
+    public record SchemaResult(String schema, String hash) {
+        public SchemaResult (String schema) {
+            this(schema, hash(schema));
+        }
+        private static String hash(String schema) {
+            MessageDigest md = MESSAGE_DIGEST_HOLDER.get(); md.reset();
+            return bytesToHexString(md.digest(schema.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
     // Preload the Standard model provider so it takes priority over others
     public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
     public static ObjectMapper JSON = configureObjectMapper(new ObjectMapper());
@@ -158,8 +172,17 @@ public class ValueUtil {
     protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
+    protected static Map<String, SchemaResult> valueDescriptorSchemas = new ConcurrentHashMap<>();
     protected static Validator validator;
-    protected static JsonSchemaGenerator generator;
+    protected static SchemaGenerator generator;
+    private static final ThreadLocal<MessageDigest> MESSAGE_DIGEST_HOLDER = ThreadLocal.withInitial(() -> {
+        try {
+            return MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            LOG.severe("MD5 algorithm not supported");
+            throw new RuntimeException(e);
+        }
+    });
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
@@ -211,7 +234,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, Object.class));
         } catch (Exception e) {
-            LOG.log(Level.INFO, "Failed to parse JSON string: " + jsonString, e);
+            LOG.log(Level.INFO, "Failed to parse JSON string '" + jsonString +"': " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -223,7 +246,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, JSON.constructType(type)));
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to parse JSON", e);
+            LOG.log(Level.WARNING, "Failed to parse JSON: " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -240,7 +263,7 @@ public class ValueUtil {
         try {
             return Optional.of(asJSONOrThrow(object));
         } catch (JsonProcessingException e) {
-            LOG.log(Level.WARNING, "Failed to convert object to JSON string", e);
+            LOG.log(Level.WARNING, "Failed to convert object to JSON string: " + e.getMessage());
             return Optional.empty();
         }
     }
@@ -922,9 +945,28 @@ public class ValueUtil {
     }
 
     protected static void doSchemaInit() {
-        generator = new JsonSchemaGenerator(JSON, JSONSchemaUtil.getJsonSchemaConfig());
+        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
     }
 
+    /**
+     * Computes JSON schemas for complex meta items and generates cache keys
+     */
+    public static void cacheCommonValueDescriptorSchemas() {
+        Map<String, MetaItemDescriptor<?>> metaItems = getMetaItemDescriptors();
+        valueDescriptorSchemas.putAll(metaItems.values().stream()
+                .map(AbstractNameValueDescriptorHolder::getType)
+                .filter(v -> v.getJsonType().equals("object") || v.getArrayDimensions() != null && v.getArrayDimensions() > 0)
+                .collect(Collectors.toMap(ValueDescriptor::getName, vd -> new SchemaResult(getSchema(vd.getType()).toString())))
+        );
+    }
+
+    public static SchemaResult getValueDescriptorSchema(String name) {
+        if (ValueUtil.getValueDescriptor(name).isEmpty()) {
+            return null;
+        }
+        ValueDescriptor<?> vd = ValueUtil.getValueDescriptor(name).get();
+        return valueDescriptorSchemas.computeIfAbsent(vd.getName(), key -> new SchemaResult(getSchema(vd.getType()).toString()));
+    }
 
     protected static Class<?>[] getAgentLinkClasses() {
         return Arrays.stream(getAssetDescriptors(null))
@@ -1029,7 +1071,7 @@ public class ValueUtil {
         if (generator == null) {
             return JSON.createObjectNode();
         }
-        return generator.generateJsonSchema(clazz);
+        return generator.generateSchema(clazz);
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {

@@ -124,7 +124,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         }
     }
     
-    protected getCardConfig(): MapAssetCardTypeConfig | undefined {
+    protected _getCardConfig(): MapAssetCardTypeConfig | undefined {
         let cardConfig = this.config || DefaultConfig;
 
         if (!this.asset) {
@@ -140,10 +140,10 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
             return html``;
         }
 
-        const icon = this.getIcon();
-        const color = this.getColor();
+        const icon = this._getIcon();
+        const color = this._getColor();
         const styleStr = color ? "--internal-or-map-asset-card-header-color: #" + color + ";" : "";
-        const cardConfig = this.getCardConfig();
+        const cardConfig = this._getCardConfig();
         const attributes = Object.values(this.asset.attributes!).filter((attr) => attr.name !== WellknownAttributes.LOCATION);
         const includedAttributes = cardConfig && cardConfig.include ? cardConfig.include : undefined;
         const excludedAttributes = cardConfig && cardConfig.exclude ? cardConfig.exclude : [];
@@ -188,7 +188,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         this.dispatchEvent(new OrMapAssetCardLoadAssetEvent(assetId));
     }
 
-    protected getIcon(): string | undefined {
+    protected _getIcon(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
             const icon = getMarkerIconAndColorFromAssetType(descriptor)?.icon;
@@ -196,7 +196,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected getColor(): string | undefined {
+    protected _getColor(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
             const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;

@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
@@ -53,9 +55,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
@@ -75,7 +76,7 @@ public class MapService implements ContainerService {
     public static final String OR_PATH_PREFIX_DEFAULT = "";
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
     private static final String DEFAULT_VECTOR_TILES_URL = "mbtiles://mapdata.mbtiles";
-    private static final String DEFAULT_SPRITE_PATH = "map/sprites/bright-v9";
+    private static final String DEFAULT_SPRITE_PATH = "map/sprites/osm-liberty";
     private static final String DEFAULT_GLYPHS_PATH = "{fontstack}/{range}.pbf";
     private static ConfigurationService configurationService;
 
@@ -126,13 +127,11 @@ public class MapService implements ContainerService {
         mapConfiguration.sources.clear();
         mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vectorTiles, MapSourceConfig.class));
 
-        Iterator<Map.Entry<String, JsonNode>> fields = sources.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
-            if (!Objects.equals(field.getKey(), "vector_tiles")) {
+        sources.propertyStream()
+            .filter(field -> !Objects.equals(field.getKey(), "vector_tiles"))
+            .forEach(field -> {
                 mapConfiguration.sources.put(field.getKey(), ValueUtil.JSON.convertValue(field.getValue(), MapSourceConfig.class));
-            }
-        }
+            });
 
         mapConfig.remove("override");
         if (mapConfiguration.override != null) {
@@ -249,7 +248,7 @@ public class MapService implements ContainerService {
                 proxyHandler.handleRequest(exchange);
             };
 
-            webService.getRequestHandlers().add(0, pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
+            webService.deploy(RASTER_MAP_TILE_PATH, proxyWrapper);
         }
     }
 
@@ -380,7 +379,7 @@ public class MapService implements ContainerService {
     }
 
     /**
-     * Dynamically build Mapbox GL settings based on mapsettings.json
+     * Dynamically build MapLibre GL settings based on mapsettings.json
      */
     public ObjectNode getMapSettings(String realm, URI host) {
         String realmUriKey = realm + host.toString();
@@ -472,35 +471,6 @@ public class MapService implements ContainerService {
         return settings;
     }
 
-    /**
-     * Dynamically build Mapbox JS settings based on mapsettings.json
-     */
-    public ObjectNode getMapSettingsJs(String realm, URI host) {
-        String realmUriKey = realm + host.toString();
-        if (mapSettingsJs.containsKey(realmUriKey)) {
-            return mapSettingsJs.get(realmUriKey);
-        }
-
-        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realmUriKey, r -> ValueUtil.JSON.createObjectNode());
-
-        if (!metadata.isValid() || mapConfig.isEmpty()) {
-            return settings;
-        }
-
-        ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
-        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
-        tilesArray.insert(0, tileUrl);
-
-        settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);
-
-        settings.put("attribution", metadata.attribution);
-        settings.put("format", "png");
-        settings.put("type", "baselayer");
-        settings.replace("tiles", tilesArray);
-
-        return settings;
-    }
-
     public byte[] getMapTile(int zoom, int column, int row) {
         // Flip y, oh why
         row = Double.valueOf(Math.pow(2, zoom) - 1 - row).intValue();
@@ -552,18 +522,14 @@ public class MapService implements ContainerService {
                 if (written > customMapLimit) {
                     String msg = "Stream continued passed custom map limit size: " + tilesPath;
                     LOG.log(Level.SEVERE, msg);
-                    throw new IOException(msg);
+                    deletePartiallyWrittenFile(tilesPath, filename);
+                    throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
                 }
                 outputStream.write(buffer, 0, bytesRead);
                 written += bytesRead;
             }
         } catch (IOException e) {
-            try {
-                // Attempt to delete this invalid map data file
-                Files.deleteIfExists(tilesPath);
-            } catch (IOException ex) {
-                LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
-            }
+            deletePartiallyWrittenFile(tilesPath, filename);
             throw e;
         }
 
@@ -573,12 +539,7 @@ public class MapService implements ContainerService {
         saveMapMetadata(metadata);
 
         if (loadedFile == null || !loadedFile.toAbsolutePath().equals(tilesPath.toAbsolutePath())) {
-            try {
-                // Attempt to delete this invalid map data file
-                Files.deleteIfExists(tilesPath);
-            } catch (IOException ex) {
-                LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
-            }
+            deletePartiallyWrittenFile(tilesPath, filename);
             throw new IOException("Failed to load map data ensure the uploaded file is a valid mbtiles file: " + filename);
         }
 
@@ -591,6 +552,15 @@ public class MapService implements ContainerService {
                 LOG.log(Level.WARNING, "Could not delete old file: " + previousCustomTilesPath, ex);
                 // This is problematic as which custom file gets discovered first on next startup??
             }
+        }
+    }
+
+    private void deletePartiallyWrittenFile(Path file, String filename) {
+        try {
+            // Attempt to delete this invalid map data file
+            Files.deleteIfExists(file);
+        } catch (IOException ex) {
+            LOG.log(Level.WARNING, "Could not delete partially written file: " + filename, ex);
         }
     }
 
@@ -611,13 +581,12 @@ public class MapService implements ContainerService {
     public void saveMapMetadata(Metadata metadata) {
         Optional<JsonNode> options = Optional.ofNullable(mapConfig.get("options"));
         if (metadata.isValid() && options.isPresent()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = options.get().fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                ObjectNode value = (ObjectNode)field.getValue();
-                value.set("center", metadata.getCenter());
-                value.set("bounds", metadata.getBounds());
-            }
+            options.get().propertyStream()
+                .forEach(field -> {
+                    ObjectNode value = (ObjectNode)field.getValue();
+                    value.set("center", metadata.getCenter());
+                    value.set("bounds", metadata.getBounds());
+                });
             configurationService.saveMapConfig(mapConfig);
             mapConfig = configurationService.getMapConfig();
             mapSettings.clear();

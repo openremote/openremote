@@ -30,11 +30,6 @@ import java.util.concurrent.ScheduledExecutorService;
 @TsIgnore
 public interface Container {
 
-    String OR_DEV_MODE = "OR_DEV_MODE";
-    boolean OR_DEV_MODE_DEFAULT = true;
-    String OR_METRICS_ENABLED = "OR_METRICS_ENABLED";
-    boolean OR_METRICS_ENABLED_DEFAULT = false;
-
     boolean isDevMode();
 
     Map<String, String> getConfig();

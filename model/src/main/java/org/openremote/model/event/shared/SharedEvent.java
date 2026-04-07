@@ -23,8 +23,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent;
 import org.openremote.model.event.Event;
 import org.openremote.model.gateway.*;
+import org.openremote.model.services.ExternalServiceEvent;
 import org.openremote.model.rules.RulesEngineStatusEvent;
 import org.openremote.model.rules.RulesetChangedEvent;
 import org.openremote.model.simulator.RequestSimulatorState;
@@ -38,13 +40,17 @@ import org.openremote.model.alarm.AlarmEvent;
 @JsonSubTypes({
     // Events used on client and server (serializable)
     @JsonSubTypes.Type(value = AlarmEvent.class, name = "alarm"),
+    @JsonSubTypes.Type(value = ExternalServiceEvent.class, name = "external-service"),
     @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
+    @JsonSubTypes.Type(value = AssetPredictedDatapointEvent.class, name = "asset-predicted-data-points"),
     @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
     @JsonSubTypes.Type(value = AssetsEvent.class, name = "assets"),
     @JsonSubTypes.Type(value = ReadAttributeEvent.class, name = "read-asset-attribute"),
     @JsonSubTypes.Type(value = ReadAssetEvent.class, name = "read-asset"),
     @JsonSubTypes.Type(value = ReadAssetsEvent.class, name = "read-assets"),
+    @JsonSubTypes.Type(value = ReadAssetTreeEvent.class, name = "read-asset-tree"),
+    @JsonSubTypes.Type(value = AssetTreeEvent.class, name = "asset-tree"),
     @JsonSubTypes.Type(value = SimulatorState.class, name = "simulator-state"),
     @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state"),
     @JsonSubTypes.Type(value = RulesEngineStatusEvent.class, name = "rules-engine-status"),
@@ -56,7 +62,9 @@ import org.openremote.model.alarm.AlarmEvent;
     @JsonSubTypes.Type(value = GatewayTunnelStartRequestEvent.class, name = "gateway-tunnel-start-request"),
     @JsonSubTypes.Type(value = GatewayTunnelStartResponseEvent.class, name = "gateway-tunnel-start-response"),
     @JsonSubTypes.Type(value = GatewayTunnelStopRequestEvent.class, name = "gateway-tunnel-stop-request"),
-    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response")
+    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response"),
+    @JsonSubTypes.Type(value = GatewayInitStartEvent.class, name = GatewayInitStartEvent.TYPE),
+    @JsonSubTypes.Type(value = GatewayInitDoneEvent.class, name = GatewayInitDoneEvent.TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

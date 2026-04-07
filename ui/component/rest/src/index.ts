@@ -1,4 +1,4 @@
-import axios, {AxiosInstance, AxiosRequestConfig, GenericAxiosResponse, AxiosError} from "axios";
+import axios, {AxiosInstance, GenericAxiosResponse, AxiosError, InternalAxiosRequestConfig} from "axios";
 import {ApiClient, RestResponse} from "./restclient";
 import Qs from "qs";
 
@@ -37,7 +37,7 @@ export class RestApi {
         this._axiosInstance.defaults.timeout = timeout;
     }
 
-    public addRequestInterceptor(interceptor: (config: AxiosRequestConfig) => AxiosRequestConfig) {
+    public addRequestInterceptor(interceptor: (config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig) {
         this._axiosInstance.interceptors.request.use(interceptor);
     }
 

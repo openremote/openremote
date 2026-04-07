@@ -14,7 +14,7 @@ import spock.lang.Specification
 
 import jakarta.ws.rs.WebApplicationException
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
@@ -184,7 +184,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart building" &&
                     it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
-                    it.createdOn.time <= timerService.currentTimeMillis
+                    it.createdOn.toEpochMilli() <= timerService.currentTimeMillis
         }
 
         when: "an asset link is deleted"

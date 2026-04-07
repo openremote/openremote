@@ -21,7 +21,7 @@ package org.openremote.manager.system;
 
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.prometheus.metrics.exporter.httpserver.HTTPServer;
-import org.openremote.container.util.MapAccess;
+import org.openremote.model.util.MapAccess;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;

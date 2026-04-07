@@ -29,20 +29,23 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
+import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 /**
  * A mock protocol for testing purposes that records the various method calls and supports protocol discovery
  */
-public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> implements ProtocolAssetDiscovery {
+public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> implements ProtocolAssetDiscovery, ProtocolAssetImport {
 
     public static final String PROTOCOl_NAME = "Mock protocol";
     public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
+    public List<Object> protocolWriteProcessedValues = new ArrayList<>();
     public List<String> protocolMethodCalls = new ArrayList<>();
     public boolean updateSensor = true;
     protected Container container;
@@ -87,6 +90,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
     protected void doLinkedAttributeWrite(MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
         protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + event.getName());
         protocolWriteAttributeEvents.add(event);
+        protocolWriteProcessedValues.add(processedValue);
         if (updateSensor) {
             updateReceived(event.getRef(), event.getValue(), event.getTimestamp());
         }
@@ -161,5 +165,10 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
 
            return null;
         });
+    }
+
+    @Override
+    public Future<Void> startAssetImport(byte[] fileData, Consumer<AssetTreeNode[]> assetConsumer) {
+        return CompletableFuture.completedFuture(null);
     }
 }

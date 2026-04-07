@@ -54,14 +54,6 @@ public class WebResource implements AuthContext {
     @Context
     protected SecurityContext securityContext;
 
-    public WebApplication getApplication() {
-        return (WebApplication) application;
-    }
-
-    public Container getContainer() {
-        return getApplication().getContainer();
-    }
-
     public String getClientRemoteAddress() {
         return request.getRemoteAddr();
     }

@@ -5,6 +5,7 @@ import org.openremote.agent.protocol.velbus.VelbusAgentLink
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.model.asset.AssetTreeNode
 import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
@@ -21,7 +22,7 @@ import org.openremote.setup.integration.protocol.velbus.MockVelbusProtocol
 
 import java.util.stream.Collectors
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
@@ -154,7 +155,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
 
         when: "discovery is requested with a VELBUS project file"
         def fileInfo = new FileInfo("VelbusProject.vlp", velbusProjectFile, false)
-        def assets = agentResource.doProtocolAssetImport(null, agent.getId(), MASTER_REALM, fileInfo)
+        AssetTreeNode[] assets = agentResource.doProtocolAssetImport(null, agent.getId(), MASTER_REALM, fileInfo)
 
         then: "the correct number of assets should be returned and all should have IDs"
         assert assets != null
@@ -197,7 +198,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         }
 
         cleanup: "remove agent and imported assets"
-        if (agent != null) {
+        if (agent != null && assets != null) {
             ids = []
             ids.addAll(Arrays.stream(assets).map{it.asset.id}.collect(Collectors.toList()))
             ids.add(agent.id)

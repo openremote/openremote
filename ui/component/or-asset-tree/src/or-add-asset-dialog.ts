@@ -11,8 +11,10 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
+import {DefaultColor2, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import debounce from "lodash.debounce";
+
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -65,6 +67,9 @@ export class OrAddAssetDialog extends LitElement {
     @property({attribute: false})
     selectedChildAssetType: string = "";
 
+    @property({type: String})
+    private typeFilter: string = "";
+
     public name: string = "New Asset";
 
     @query("#name-input")
@@ -78,6 +83,9 @@ export class OrAddAssetDialog extends LitElement {
 
     @query("#parent-asset-list")
     protected parentAssetList?: OrMwcList;
+
+    @query("#filterInput")
+    private _filterInput!: OrMwcInput;
 
     public static get styles() {
         // language=CSS
@@ -117,7 +125,7 @@ export class OrAddAssetDialog extends LitElement {
             
             #mdc-dialog-form-add {
                 display: flex;
-                height: 100%;
+                height: 600px;
                 max-height: 600px;
                 width: 1000px;
             }
@@ -140,10 +148,24 @@ export class OrAddAssetDialog extends LitElement {
                 font-size: 16px;
             }
 
+            #type-list-filter {
+                padding: 7px;
+                background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)}))
+            }
+            
+            #filterInput{
+                width: 100%;
+            }
+
             #type-list {
-                width: 260px;
                 overflow: auto;
                 text-transform: capitalize;
+            }
+
+            #type-list-container {
+                display: flex;
+                flex-direction: column;
+                width: 260px;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
 
@@ -205,12 +227,18 @@ export class OrAddAssetDialog extends LitElement {
 
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
+
+        const searchProvider = (item: ListItem) => (item.text ?? "").toLowerCase().includes(this.typeFilter.toLowerCase());
+        const filteredAgentItems = agentItems.filter(searchProvider);
+        const filteredAssetItems = assetItems.filter(searchProvider);
+
+
         const lists: ListGroupItem[] = [];
         if (agentItems.length > 0) {
             lists.push(
                 {
                     heading: i18next.t("agents"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${filteredAgentItems}" id="agent-list"></or-mwc-list>`
                 }
             );
         }
@@ -218,7 +246,7 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("assets"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${filteredAssetItems}" id="asset-list"></or-mwc-list>`
                 }
             );
         }
@@ -228,9 +256,24 @@ export class OrAddAssetDialog extends LitElement {
         return html`
             <div class="col" style="height: 100%;">
                 <form id="mdc-dialog-form-add" class="row">
-                    <div id="type-list" class="col">
-                        ${createListGroup(lists)}
+                    <div id="type-list-container" class="col">
+                        <div id="type-list-filter">
+                            <or-mwc-input
+                                id="filterInput"
+                                .type="${InputType.TEXT}"
+                                placeholder="${i18next.t("filter.filter")}..."
+                                compact="true"
+                                outlined="true"
+                                @input="${debounce(() => {
+                                    this.typeFilter = this._filterInput.nativeValue ?? "";
+                                }, 200)}"
+                            ></or-mwc-input>
+                        </div>
+                        <div id="type-list">
+                            ${createListGroup(lists)}
+                        </div>
                     </div>
+
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
                         ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`

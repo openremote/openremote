@@ -19,17 +19,25 @@
  */
 package org.openremote.manager.asset;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.util.ValueUtil.SchemaResult;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.util.Map;
+
+import static jakarta.ws.rs.core.Response.Status.*;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
@@ -63,5 +71,24 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     @Override
     public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
+    }
+
+    @Override
+    public Response getValueDescriptorSchema(String name, Request request) {
+        SchemaResult result = assetModelService.getValueDescriptorSchema(name);
+
+        if (result == null) {
+            throw new WebApplicationException(NOT_FOUND);
+        }
+
+        EntityTag etag = new EntityTag(result.hash(), true);
+
+        Response.ResponseBuilder builder = request.evaluatePreconditions(etag);
+        if (builder != null) {
+            // If the ETag matches, return 304 (Not Modified)
+            return builder.build();
+        }
+
+        return Response.ok(result.schema()).tag(etag).build();
     }
 }

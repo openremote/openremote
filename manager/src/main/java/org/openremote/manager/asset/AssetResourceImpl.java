@@ -38,6 +38,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.AssetTree;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
@@ -144,8 +145,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Check all links are for the same user and realm
-        String realm = userAssetLinks.get(0).getId().getRealm();
-        String userId = userAssetLinks.get(0).getId().getUserId();
+        String realm = userAssetLinks.getFirst().getId().getRealm();
+        String userId = userAssetLinks.getFirst().getId().getUserId();
         String[] assetIds = new String[userAssetLinks.size()];
 
         IntStream.range(0, userAssetLinks.size()).forEach(i -> {
@@ -216,8 +217,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Check all links are for the same user and realm
-        String realm = userAssetLinks.get(0).getId().getRealm();
-        String userId = userAssetLinks.get(0).getId().getUserId();
+        String realm = userAssetLinks.getFirst().getId().getRealm();
+        String userId = userAssetLinks.getFirst().getId().getUserId();
 
         if (userAssetLinks.stream().anyMatch(userAssetLink -> !userAssetLink.getId().getRealm().equals(realm) || !userAssetLink.getId().getUserId().equals(userId))) {
             throw new BadRequestException("All user asset links must be for the same user");
@@ -556,6 +557,37 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result.toArray(new Asset[0]);
+    }
+
+    @Override
+    public AssetTree queryAssetTree(RequestParams requestParams, AssetQuery query) {
+        if (query == null) {
+            query = new AssetQuery();
+        }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        AssetTree result = assetStorageService.queryAssetTree(query);
+
+        // Compress response (the request attribute enables the interceptor)
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        return result;
+    }
+
+    @Override
+    public Integer queryCount(RequestParams requestParams, AssetQuery query) {
+        if (query == null) {
+            query = new AssetQuery();
+        }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        return assetStorageService.count(query);
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {

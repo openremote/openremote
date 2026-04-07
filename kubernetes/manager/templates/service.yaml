@@ -17,12 +17,6 @@ spec:
       targetPort: 1883
       protocol: TCP
     {{- end }}
-    {{- if .Values.or.metricsEnabled }}
-    - name: metrics
-      port: {{ .Values.or.metricsPort }}
-      targetPort: {{ .Values.or.metricsPort }}
-      protocol: TCP
-    {{- end }}
   selector:
     {{- include "manager.selectorLabels" . | nindent 4 }}
 ---
@@ -70,4 +64,44 @@ spec:
       port: 8883
       targetPort: 1883
       protocol: TCP
+{{- end }}
+---
+{{- if and (.Values.or.metricsEnabled) (.Values.service.metrics.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: manager-metrics
+  {{- with .Values.service.metrics.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.metrics.type }}
+  ports:
+    - name: metrics
+      port: {{ .Values.service.metrics.port }}
+      targetPort: {{ .Values.or.metricsPort }}
+      protocol: TCP
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
+{{- end }}
+---
+{{- if .Values.service.jmx.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: manager-jmx
+  {{- with .Values.service.jmx.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.jmx.type }}
+  ports:
+    - name: jmx
+      port: {{ .Values.service.jmx.port }}
+      targetPort: 8085
+      protocol: TCP
+  selector:
+    {{- include "manager.selectorLabels" . | nindent 4 }}
 {{- end }}

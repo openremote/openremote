@@ -19,18 +19,20 @@
  */
 package org.openremote.model.simulator;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
+import org.openremote.model.datapoint.ValueDatapoint;
+
 import java.io.Serializable;
 import java.util.Optional;
 
 /**
- * Represents a value at a point in time defined as the number of seconds of the day.
+ * Represents a value at a point in time defined as the number of seconds relative to the occurrence start.
  */
 @JsonSchemaTitle("Data point")
 public class SimulatorReplayDatapoint implements Serializable {
 
     /**
-     * Seconds of the day
+     * Seconds relative to occurrence start
      */
     public long timestamp;
     public Object value;
@@ -42,11 +44,15 @@ public class SimulatorReplayDatapoint implements Serializable {
         this.value = value;
     }
 
-    public Optional<Long> getTimestamp() {
-        return Optional.of(timestamp);
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public Optional<Object> getValue() {
         return Optional.ofNullable(value);
+    }
+
+    public ValueDatapoint<Object> toValueDatapoint() {
+        return new ValueDatapoint<>(timestamp, value);
     }
 }

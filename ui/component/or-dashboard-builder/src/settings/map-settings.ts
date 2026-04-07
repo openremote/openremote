@@ -4,15 +4,14 @@ import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
-import {AttributeMarkerColours, LngLatLike, MapMarkerColours} from "@openremote/or-map";
+import {LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
-import {LngLat} from "maplibre-gl"; // TODO: Replace this import
 import {when} from "lit/directives/when.js";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 import manager from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {BoolColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
+import {BoolColorsChangeEvent, TextColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
 
 const styling = css`
   .switchMwcInputContainer {
@@ -25,6 +24,19 @@ const styling = css`
 @customElement("map-settings")
 export class MapSettings extends AssetWidgetSettings {
 
+    protected static _allowedValueTypes = ["boolean", "number", "integer", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
+    protected static _config: AssetTypesFilterConfig = {
+        assets: {
+            enabled: true,
+            multi: true,
+            allOfTypeOption: true
+        },
+        attributes: {
+            enabled: true,
+            valueTypes: MapSettings._allowedValueTypes
+        }
+    };
+
     protected widgetConfig!: MapWidgetConfig;
 
     static get styles() {
@@ -32,21 +44,8 @@ export class MapSettings extends AssetWidgetSettings {
     }
 
     protected render(): TemplateResult {
-        const allowedValueTypes = ["boolean", "number", "integer", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
-        const config = {
-            assets: {
-                enabled: true,
-                multi: true,
-                allOfTypeOption: true
-            },
-            attributes: {
-                enabled: true,
-                valueTypes: allowedValueTypes
-            }
-        } as AssetTypesFilterConfig;
         return html`
             <div>
-
                 <!-- Map settings -->
                 <settings-panel displayName="configuration.mapSettings" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -75,7 +74,7 @@ export class MapSettings extends AssetWidgetSettings {
 
                 <!-- Panel where Asset type and the selected attribute can be customized -->
                 <settings-panel displayName="attributes" expanded="${true}">
-                    <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeNames="${this.widgetConfig.attributeName}" .config="${config}"
+                    <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeNames="${this.widgetConfig.attributeName}" .config="${MapSettings._config}"
                                       .allOfType="${this.widgetConfig.allOfType}" .assetIds="${this.widgetConfig.assetIds}"
                                       @assettype-select="${(ev: AssetTypeSelectEvent) => this.onAssetTypeSelect(ev)}"
                                       @alloftype-switch="${(ev: AssetAllOfTypeSwitchEvent) => this.onAssetAllOfTypeSwitch(ev)}"
@@ -103,14 +102,16 @@ export class MapSettings extends AssetWidgetSettings {
                 </settings-panel>
 
                 <!-- List of customizable thresholds -->
-                ${when(this.widgetConfig.assetIds.length > 0, () => html`
+                ${when(this.widgetConfig.attributeName, () => html`
                     <settings-panel displayName="thresholds" expanded="${true}">
-                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" 
-                                        .boolColors="${this.widgetConfig.boolColors}" 
-                                        .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
+                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}"
+                                          .boolColors="${this.widgetConfig.boolColors}"
+                                          .textColors="${this.widgetConfig.textColors}"
+                                          .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                           @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}"
-                                          @bool-colors-change="${(ev: BoolColorsChangeEvent) => this.onBoolColorsChange(ev)}">
+                                          @bool-colors-change="${(ev: BoolColorsChangeEvent) => this.onBoolColorsChange(ev)}"
+                                          @text-colors-change="${(ev: TextColorsChangeEvent) => this.onTextColorsChange(ev)}">
                         </thresholds-panel>
                     </settings-panel>
                 `)}
@@ -149,7 +150,7 @@ export class MapSettings extends AssetWidgetSettings {
             this.widgetConfig.showLabels = false;
             this.widgetConfig.showUnits = false;
             this.widgetConfig.boolColors = {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'};
-            this.widgetConfig.textColors = [['example', "#4caf50"], ['example2', "#ff9800"]];
+            this.widgetConfig.textColors = [['example1', "#4caf50"], ['example2', "#ff9800"]];
             this.widgetConfig.thresholds = [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]];
             this.widgetConfig.assetType = ev.detail;
             this.notifyConfigUpdate();
@@ -176,19 +177,21 @@ export class MapSettings extends AssetWidgetSettings {
                     realm: { name: manager.displayRealm },
                     select: { attributes: [attrName, 'location'] },
                     types: [this.widgetConfig.assetType!],
-                    ids: ids
+                    ids: ids,
+                    limit: ids?.length ?? 1
                 });
-                this.widgetConfig.assetIds = response.data.map((a) => a.id!);
+                this.widgetConfig.assetIds = ids?.length ? response.data.map((a) => a.id!) : [];
                 this.widgetConfig.valueType = response.data.length ? response.data[0].attributes![attrName].type : "text";
                 if (!response.data[0].attributes![attrName].type) {
-                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")}
+                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")
+                }
             } catch (reason) {
                 console.error(reason);
                 if (reason instanceof TypeError) {
                     showSnackbar(undefined, "noAttributesToShow");
                 } else {
                     showSnackbar(undefined, "errorOccurred");
-                    }
+                }
             }
         };
 
@@ -221,4 +224,8 @@ export class MapSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
+    protected onTextColorsChange(ev: TextColorsChangeEvent) {
+        this.widgetConfig.textColors = ev.detail;
+        this.notifyConfigUpdate();
+    }
 }

@@ -43,7 +43,7 @@ export class AttributesChartPanel extends AttributesPanel {
                     <or-icon icon="close-circle"></or-icon>
                 </button>
             </div>
-            ${when(!!this.attributeIconCallback, () => html`
+            ${when(!!this.attributeActionCallback, () => html`
                 <div class="attribute-list-item-actions" style="margin-left: 18px; justify-content: start;">
                     <!-- Custom actions defined by callback -->
                     ${this.attributeActionCallback!(attributeRef).map(action => this._getAttributeActionTemplate(action, asset, attributeRef))}
@@ -57,7 +57,7 @@ export class AttributesChartPanel extends AttributesPanel {
         if(action.icon === "palette") {
             return html`
                 <div style="position: relative;">
-                    <input id="chart-color-${attributeRef.id}-${attributeRef.name}" type="color" style="position: absolute; visibility: hidden; height: 24px; width: 24px; padding: 0;" />
+                    <input id="chart-color-${attributeRef.id}-${attributeRef.name}" type="color" value="${action.color}" style="position: absolute; visibility: hidden; height: 24px; width: 24px; padding: 0;" />
                     ${super._getAttributeActionTemplate(action, asset, attributeRef)}
                 </div>
             `;

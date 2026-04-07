@@ -7,6 +7,7 @@ import {
     CoreActions,
     coreReducer,
     createAjv,
+    createDefaultValue,
     Dispatch,
     generateDefaultUISchema,
     generateJsonSchema,
@@ -27,6 +28,9 @@ import {getLabel, getTemplateFromProps} from "./util";
 import {baseStyle} from "./styles";
 import {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
+import {i18next, translate} from "@openremote/or-translate";
+
+export * from "@jsonforms/core";
 
 declare global {
     interface SymbolConstructor {
@@ -37,9 +41,7 @@ declare global {
 export {
     ErrorObject,
     StandardRenderers,
-    getTemplateWrapper,
-    JsonFormsRendererRegistryEntry,
-    UISchemaElement
+    getTemplateWrapper
 };
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {
@@ -58,7 +60,7 @@ const styles = css`
 `;
 
 @customElement("or-json-forms")
-export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
+export class OrJSONForms extends translate(i18next)(LitElement) implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
@@ -118,18 +120,23 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
             this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
         }
 
+        if (!this.data) {
+            // AJV will not modify the root instance, only properties, thus we initialize with a default
+            // see https://ajv.js.org/guide/modifying-data.html#general-considerations
+            this.data = createDefaultValue(this.schema, this.schema);
+        }
+
         if (!this.uischema) {
             this.uischema = generateDefaultUISchema(this.schema!);
         }
 
         if (!this.core) {
-            this.core = {
-                ajv: createAjv({useDefaults: true, validateFormats: false}),
-                data: {},
-                schema: this.schema!,
-                uischema: this.uischema!
-            };
-            this.updateCore(Actions.init(this.data, this.schema, this.uischema));
+            const ajv = createAjv({
+                discriminator: true,   // This is required for polymorphic types that contain defaults in their subtypes
+                useDefaults: true,     // AJV will mutate the data adding missing properties that have a "default"
+                validateFormats: false
+            });
+            this.updateCore(Actions.init(this.data, this.schema, this.uischema, ajv));
             this.config = configReducer(undefined, setConfig(this.config));
         }
 
@@ -139,7 +146,14 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
             );
         }
 
-        if (!this.contextValue || _changedProperties.has("core") || _changedProperties.has("renderers") || _changedProperties.has("cells") || _changedProperties.has("config") || _changedProperties.has("readonly")) {
+        if (!this.contextValue
+            || _changedProperties.has("core")
+            || _changedProperties.has("renderers")
+            || _changedProperties.has("cells")
+            || _changedProperties.has("config")
+            || _changedProperties.has("readonly")
+            || _changedProperties.has("_language")
+        ) {
             this.contextValue = {
                 core: this.core,
                 renderers: this.renderers,
@@ -147,7 +161,15 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
                 config: this.config,
                 uischemas: this.uischemas,
                 readonly: this.readonly,
-                dispatch: (action: CoreActions) => this.updateCore(action)
+                dispatch: (action: CoreActions) => this.updateCore(action),
+                i18n: {
+                    locale: this._language,
+                    translate: (id, defaultMessage, { errors: [error] }) => {
+                        const defaultValue = defaultMessage || error?.message || "";
+                        return i18next.t(id, { defaultValue })
+                            || i18next.t(id, { defaultValue, lng: "en" });
+                    }
+                }
             }
         }
 

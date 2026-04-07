@@ -2,6 +2,7 @@
 import {pageProvisioningProvider} from "./pages/page-provisioning";
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
+import themeCss from "@openremote/theme";
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
     headerItemAccount,
@@ -11,6 +12,7 @@ import {
     headerItemGatewayConnection,
     headerItemGatewayTunnel,
     headerItemInsights,
+    headerItemServices,
     headerItemLanguage,
     headerItemLogout,
     headerItemLogs,
@@ -30,6 +32,8 @@ import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
 import "./pages/page-insights";
 import {PageInsightsConfig, pageInsightsProvider} from "./pages/page-insights";
+import "./pages/page-services";
+import {pageServicesProvider} from "./pages/page-services";
 import "./pages/page-rules";
 import {PageRulesConfig, pageRulesProvider} from "./pages/page-rules";
 import "./pages/page-logs";
@@ -61,7 +65,9 @@ const rootReducer = combineReducers({
 type RootState = ReturnType<typeof rootReducer>;
 
 export const store = configureStore({
-    reducer: rootReducer
+    reducer: rootReducer,
+    // Disable serializableCheck to improve performance in developement (normally disabled in production)
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });
 
 const orApp = new OrApp(store);
@@ -73,6 +79,7 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageGatewayTunnelProvider(store),
     pageLogsProvider(store),
     pageInsightsProvider(store),
+    pageServicesProvider(store),
     pageRulesProvider(store),
     pageAccountProvider(store),
     pageRolesProvider(store),
@@ -89,7 +96,8 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
     map: headerItemMap(orApp),
     assets: headerItemAssets(orApp),
     rules: headerItemRules(orApp),
-    insights: headerItemInsights(orApp)
+    services: headerItemServices(orApp),
+    insights: headerItemInsights(orApp),
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
@@ -263,12 +271,19 @@ fetch(configURL).then<ManagerAppConfig>(async (result) => {
                     }
                 }).catch(reason => {
                     console.error("Failed to initialise app: " + reason);
-                })
+                });
             }
-        })
+        });
 
         return orAppConfig;
     };
 
+    // Apply theme to the Manager app
+    const style = document.createElement("style");
+    style.id = "orDefaultTheme";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    // Load app
     document.body.appendChild(orApp);
 });

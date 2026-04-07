@@ -2,17 +2,18 @@ const fs = require("fs");
 const path = require("path");
 const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 function getStandardModuleRules() {
     return {
         rules: [
             {
-                test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
+                test: /(maplibre|@material|gridstack|@mdi).*\.css$/, //output css as strings
                 type: "asset/source"
             },
             {
                 test: /\.css$/, //
-                exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
+                exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
                 use: [
                     { loader: "css-loader" }
                 ]
@@ -100,7 +101,11 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
-        })
+        }),
+        // Remove any unused locales
+        new MomentLocalesPlugin({
+          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pt', 'ro', 'uk'],
+        }),
     ];
 
     if (production) {
@@ -188,6 +193,14 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
 
     config.devtool = !isDevServer ? false : "inline-source-map";
     config.devServer = {
+        client: {
+          overlay: {
+            runtimeErrors: (e) => {
+              console.error(e);
+              return false;
+            }
+          }
+        },
         historyApiFallback: {
             index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
         },
@@ -271,5 +284,6 @@ function generateExports(dirname) {
 module.exports = {
     getLibName: getLibName,
     generateExports: generateExports,
+    getStandardModuleRules: getStandardModuleRules,
     getAppConfig: getAppConfig
 };

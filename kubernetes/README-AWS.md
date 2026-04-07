@@ -112,7 +112,7 @@ See the values-eks.yaml files annotations fields for more information.
 
 Some aspects of the setup are configurable.
 
-### eks-setup.sh script variables
+### eks-common.sh script variables
 
 The script contains several variables that can be changed.
 
@@ -142,9 +142,9 @@ export AWS_ACCESS_KEY_ID="…"
 export AWS_SECRET_ACCESS_KEY="…"
 export AWS_SESSION_TOKEN="…"
 
-aws ecr get-login-password --region eu-west-1| docker login --username AWS --password-stdin 134517981306.dkr.ecr.eu-west-1.amazonaws.com
+aws ecr get-login-password --region eu-west-1| docker login --username AWS --password-stdin <or-developers account id>.dkr.ecr.eu-west-1.amazonaws.com
 
-docker buildx build --no-cache --push --platform linux/amd64,linux/arm64 -t 134517981306.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:demo manager/build/install/manager/
+docker buildx build --no-cache --push --platform linux/amd64,linux/arm64 -t <or-developers account id>.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:demo manager/build/install/manager/
 ```
 
 ### Starting a cluster with the OR demo image
@@ -157,7 +157,7 @@ helm install manager manager -f manager/values-haproxy-eks.yaml \
 with
 ```bash
 helm install manager manager -f manager/values-haproxy-eks.yaml -f manager/values-demo.yaml \
-  --set-string or.hostname=$FQDN
+  --set-string or.hostname=$FQDN --set-string image.repository=$AWS_DEVELOPERS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager
 ```
 
 This values file does two things:
@@ -180,6 +180,4 @@ and the manager (which is not architected yet to support multiple replicas).
 We could explore using storage class and not explicit binding and/or using other volume types.  
 We should anyway review the manager usage of persistent storage and limit the use of the file system for this purpose.
 
-There is some duplication in the configuration, with the same values appearing in the shell scripts and the cluster.yaml file.  
-When moving to production usage, this should be reviewed.  
-But also the shell script might be replaced with CloudFormation templates or using Terraform or similar tools.
+When moving to production usage, the shell script might be replaced with CloudFormation templates or using Terraform or similar tools.

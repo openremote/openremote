@@ -22,12 +22,13 @@ package org.openremote.agent.protocol.bluetooth.mesh.utils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
 public class MeshAddress {
-    private static final byte[] VTAD = "vtad".getBytes(Charset.forName("US-ASCII"));
+    private static final byte[] VTAD = "vtad".getBytes(StandardCharsets.US_ASCII);
 
     //Unassigned addresses
     public static final int UNASSIGNED_ADDRESS = 0x0000;

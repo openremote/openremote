@@ -23,10 +23,7 @@ import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
-import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.security.User
-import org.openremote.model.util.TextUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -37,7 +34,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
@@ -466,7 +463,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notifications = adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null).reverse(true)
         def sentNotification = notifications[0]
         def removeCount = notifications.count {it.sentOn >= sentNotification.sentOn}
-        adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, sentNotification.sentOn.getTime(), null, null, null, null)
+        adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, sentNotification.sentOn.toEpochMilli(), null, null, null, null)
 
         then: "notifications sent after or at that time should have been removed"
         conditions.eventually {

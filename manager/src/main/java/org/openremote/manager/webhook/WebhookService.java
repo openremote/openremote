@@ -38,7 +38,7 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getInteger;
 
 public class WebhookService extends RouteBuilder implements ContainerService {
 

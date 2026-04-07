@@ -25,12 +25,15 @@ import {WidgetManifest} from "./util/or-widget";
 import {ChartWidget} from "./widgets/chart-widget";
 import {GaugeWidget} from "./widgets/gauge-widget";
 import {IntervalSelectEvent, intervalToMillis} from "./controls/dashboard-refresh-controls";
+export {intervalToMillis} from "./controls/dashboard-refresh-controls";
+export {OrDashboardPreview} from "./or-dashboard-preview";
 import {ImageWidget} from "./widgets/image-widget";
 import {KpiWidget} from "./widgets/kpi-widget";
 import {MapWidget} from "./widgets/map-widget";
 import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
+import {BarChartWidget} from "./widgets/barchart-widget";
 
 // language=CSS
 const styling = css`
@@ -210,14 +213,15 @@ export function getActivePreset(gridWidth: number, presets: DashboardScreenPrese
 export const widgetTypes: Map<string, WidgetManifest> = new Map<string, WidgetManifest>();
 
 export function registerWidgetTypes() {
-    widgetTypes.set("linechart", ChartWidget.getManifest());
+    widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
+    widgetTypes.set("barchart", BarChartWidget.getManifest());
+    widgetTypes.set("gateway", GatewayWidget.getManifest());
     widgetTypes.set("gauge", GaugeWidget.getManifest());
     widgetTypes.set("image", ImageWidget.getManifest());
     widgetTypes.set("kpi", KpiWidget.getManifest());
+    widgetTypes.set("linechart", ChartWidget.getManifest());
     widgetTypes.set("map", MapWidget.getManifest());
-    widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
-    widgetTypes.set("gateway", GatewayWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")
@@ -658,7 +662,7 @@ export class OrDashboardBuilder extends LitElement {
                             </div>
                         </div>
                     `}
-                    <div id="content" style="flex: 1;">
+                    <div id="content" style="flex: 1; overflow: auto;">
                         <div id="container">
                             ${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? html`
                                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
@@ -719,7 +723,7 @@ export class OrDashboardBuilder extends LitElement {
                                             <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
                                                 <or-mwc-tabs .items="${this.tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                             </div>
-                                            <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
+                                            <div id="content" style="flex: 1; overflow: auto;">
                                                 <div style="position: relative;">
                                                     <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                                     <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 

@@ -20,7 +20,7 @@
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
 # 4 - ROOT_DISK_SIZE to use for created EBS root volume (GB)
 # 5 - DATA_DISK_SIZE to use for created EBS data volume (GB)
-# 6 - SNAPSHOT_ID to use for creating the EBS data volume based off an existing snapshot
+# 6 - SNAPSHOT_ID to use for creating the EBS data volume based on an existing snapshot
 # 7 - ELASTIC_IP if 'true' then create an elastic public IP for this host
 # 8 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
 # 9 - ENABLE_METRICS set to 'false' to not enable cloudwatch metrics for this instance
@@ -72,7 +72,6 @@ fi
 STACK_NAME=$(tr '.' '-' <<< "$HOST")
 SMTP_STACK_NAME="$STACK_NAME-smtp"
 HEALTH_STACK_NAME="$STACK_NAME-healthcheck"
-SSM_STACK_NAME="$STACK_NAME-ssm-attach-detach-documents"
 
 # Provision SMTP user using CloudFormation (if stack doesn't already exist)
 echo "Provisioning SMTP user"
@@ -98,7 +97,7 @@ else
   PARAMS="ParameterKey=UserName,ParameterValue='$SMTP_STACK_NAME'"
 
   # Create standard stack resources in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $SMTP_STACK_NAME --template-body file://$SMTP_TEMPLATE_PATH --parameters $PARAMS --output text)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $SMTP_STACK_NAME --template-body file://$SMTP_TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
@@ -236,7 +235,7 @@ EOF
   # Look for EFS mount target in caller account for the same availability zone ID (no costs if within same AZ) - Don't use name as name to IDs vary between accounts
   EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='or-map-efs'].FileSystemId" --output text)
   EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?AvailabilityZoneId=='$SUBNET_AZ'].IpAddress" --output text)
-  
+
   # Get role to be assumed by DLM
   ROLE_ARN="arn:aws:iam::$AWS_ACCOUNT_ID:role/$AWS_ROLE_NAME-$AWS_REGION"
 
@@ -250,7 +249,7 @@ EOF
   PARAMS="$PARAMS ParameterKey=DLMExecutionRoleArn,ParameterValue=$ROLE_ARN"
 
   # Create standard stack resources in specified account
-  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text $ACCOUNT_PROFILE)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
@@ -286,7 +285,7 @@ if [ -n "$STATUS" ] && [ "$STATUS" != 'available' ]; then
   echo "EBS data volume is already attached or not available for this host '$HOST' current status is '$STATUS'"
 else
 
-  EBS_DEVICE_NAME="/dev/sdf" # Only change if you know what you are doing
+  EBS_DEVICE_NAME="/dev/sdf" # Don't change it unless you know what you are doing
   INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values='$HOST'" --query "Reservations[].Instances[?Tags[?Value=='$STACK_ID']].InstanceId" --output text $ACCOUNT_PROFILE 2>/dev/null)
   VOLUME_ID=$(aws ec2 describe-volumes --filters "Name=tag:Name,Values='$HOST-data'" --query "Volumes[?Tags[?Value=='$STACK_ID']].VolumeId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -335,7 +334,7 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
   fi
 fi
 
-# Provision Route 53 healthcheck alarm CloudFormation (if stack doesn't already exist) - must be in the us-east-1 region
+# Provision Route53 Health Check Alarm CloudFormation (if stack doesn't already exist) - must be in the us-east-1 region
 echo "Provisioning Healthcheck Alarm"
 STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE --region us-east-1 2>/dev/null)
 
@@ -359,7 +358,7 @@ else
   PARAMS="ParameterKey=Host,ParameterValue='$HOST'"
 
   # Create standard stack resources in specified account in us-east-1 region
-  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$HEALTH_TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE --region us-east-1)
+  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$HEALTH_TEMPLATE_PATH --parameters $PARAMS --query 'StackId' --output text $ACCOUNT_PROFILE --region us-east-1)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"

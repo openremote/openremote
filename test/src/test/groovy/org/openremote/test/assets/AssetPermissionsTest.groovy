@@ -17,7 +17,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
@@ -537,13 +537,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         Asset apartment1 = assets[0]
         apartment1.id == managerTestSetup.apartment1Id
         apartment1.name == "Apartment 1"
-        apartment1.createdOn.getTime() < System.currentTimeMillis()
+        apartment1.createdOn.toEpochMilli() < System.currentTimeMillis()
         apartment1.realm == keycloakTestSetup.realmBuilding.name
         apartment1.type == BuildingAsset.DESCRIPTOR.getName()
         apartment1.parentId == managerTestSetup.smartBuildingId
         apartment1.path[0] == managerTestSetup.smartBuildingId
         apartment1.path[1] == managerTestSetup.apartment1Id
-        apartment1.attributes.size() == 7
+        apartment1.attributes.size() == 8
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId
@@ -691,14 +691,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the update should be ignored"
         assert testAsset.getParentId() == managerTestSetup.apartment1Id
 
-        when: "an asset is made public"
+        when: "an asset is made private"
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
-        testAsset.setAccessPublicRead(true)
+        testAsset.setAccessPublicRead(false)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
-        assert !testAsset.isAccessPublicRead()
+        assert testAsset.isAccessPublicRead()
 
         when: "an asset is renamed"
         testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
@@ -827,8 +827,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.queryAssets(null, new AssetQuery().recursive(true))
 
         then: "only public assets should be returned"
-        assets.size() == 2
+        assets.size() == 3
         assets.find {it.id == managerTestSetup.apartment1Id } != null
+        assets.find {it.id == managerTestSetup.apartment1LivingroomId } != null
         assets.find {it.id == managerTestSetup.apartment2LivingroomId } != null
 
         when: "the public assets are retrieved"
@@ -836,16 +837,18 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
 
         then: "the public assets should be retrieved"
-        assert assets.size() == 2
+        assert assets.size() == 3
         assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment1LivingroomId} != null
         assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
 
         when: "the public assets are retrieved without a query"
         assets = assetResource.queryAssets(null, null)
 
         then: "the public assets should be retrieved"
-        assert assets.size() == 2
+        assert assets.size() == 3
         assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment1LivingroomId} != null
         assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
 
         when: "an attribute with public write is written to and another with only public read"
@@ -858,5 +861,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert writeResults.size() == 2
         assert writeResults.find {it.ref.id == managerTestSetup.apartment1Id && it.ref.name == Asset.LOCATION.name}.failure == null
         assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.INSUFFICIENT_ACCESS
+
+        when: "an attribute with public write=false is written to anonymously"
+        def response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1Id, BuildingAsset.STREET.name, '"Should fail"')
+
+        then: "the request should fail"
+        response.withCloseable { r ->
+            assert r.status == 403
+            true
+        }
     }
 }

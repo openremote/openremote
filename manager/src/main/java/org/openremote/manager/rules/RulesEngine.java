@@ -47,6 +47,8 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -115,7 +117,8 @@ public class RulesEngine<T extends Ruleset> {
     final protected RulesFacts facts;
     final protected AbstractRulesEngine engine;
 
-    protected boolean running;
+    protected volatile boolean running;
+    protected AtomicBoolean executing = new AtomicBoolean(false);
     protected boolean previouslyFired;
     protected long lastFireTimestamp;
     protected boolean trackLocationPredicates;
@@ -347,21 +350,26 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void stop() {
+        ScheduledFuture<?> currentFireTimer;
+        ScheduledFuture<?> currentStatsTimer;
+
         synchronized (this) {
             if (!running) {
                 return;
             }
             running = false;
+            currentFireTimer = fireTimer;
+            fireTimer = null;
+            currentStatsTimer = statsTimer;
+            statsTimer = null;
         }
 
         LOG.info("Stopping: " + id);
-        if (fireTimer != null) {
-            fireTimer.cancel(true);
-            fireTimer = null;
+        if (currentFireTimer != null) {
+            currentFireTimer.cancel(true);
         }
-        if (statsTimer != null) {
-            statsTimer.cancel(true);
-            statsTimer = null;
+        if (currentStatsTimer != null) {
+            currentStatsTimer.cancel(true);
         }
 
         new HashSet<>(deployments.values()).forEach(this::stopRuleset);
@@ -402,19 +410,24 @@ public class RulesEngine<T extends Ruleset> {
      * once within the guaranteed minimum expiration time.
      */
     protected synchronized void scheduleFire(boolean quickFire) {
-        boolean timerRunning = fireTimer != null && !fireTimer.isDone();
+        if (!running) {
+            return;
+        }
+
+        ScheduledFuture<?> currentTimer = fireTimer;
+        boolean timerRunning = currentTimer != null && !currentTimer.isDone();
 
         if (timerRunning) {
             if (!quickFire) {
                 // Firing is already scheduled
                 return;
             } else {
-                if (fireTimer.getDelay(TimeUnit.MILLISECONDS) <= rulesService.quickFireMillis) {
+                if (currentTimer.getDelay(TimeUnit.MILLISECONDS) <= rulesService.quickFireMillis) {
                     // Firing is already going to occur within time frame
                     return;
                 } else {
                     // Cancel the existing timer
-                    fireTimer.cancel(false);
+                    currentTimer.cancel(false);
                 }
             }
         }
@@ -422,19 +435,47 @@ public class RulesEngine<T extends Ruleset> {
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
         LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
-        fireTimer = scheduledExecutorService.schedule(
-            () -> {
-                if (!running) {
-                    return;
-                }
-                // Process rules for all deployments
-                fireAllDeployments();
-                fireTimer = null;
-                scheduleFire(false);
-            },
+        AtomicReference<ScheduledFuture<?>> scheduledTimer = new AtomicReference<>();
+        scheduledTimer.set(scheduledExecutorService.schedule(
+            () -> onFireTimerTriggered(scheduledTimer.get()),
             fireTimeMillis,
             TimeUnit.MILLISECONDS
-        );
+        ));
+        fireTimer = scheduledTimer.get();
+    }
+
+    protected void onFireTimerTriggered(ScheduledFuture<?> scheduledTimer) {
+        if (!running) {
+            return;
+        }
+
+        // If we're not already executing rules, process rules for all deployments
+        if (executing.compareAndSet(false, true)) {
+            try {
+                fireAllDeployments();
+            } finally {
+                executing.set(false);
+            }
+        }
+
+        if (!running) {
+            return;
+        }
+
+        if (Thread.currentThread().isInterrupted()) {
+            LOG.finest("Timer interrupted during rules execution - not scheduling next fire");
+            return;
+        }
+
+        synchronized (this) {
+            // Ignore stale timer callbacks after a stop/start cycle or a reschedule.
+            if (fireTimer != scheduledTimer) {
+                return;
+            }
+            fireTimer = null;
+        }
+
+        scheduleFire(false);
     }
 
     protected void fireAllDeployments() {

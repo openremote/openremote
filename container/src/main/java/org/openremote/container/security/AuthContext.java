@@ -20,6 +20,7 @@
 package org.openremote.container.security;
 
 import org.openremote.model.Constants;
+import org.openremote.model.security.User;
 
 /**
  * Services should use this interface to access a user's identity and perform authorization checks.
@@ -40,6 +41,11 @@ public interface AuthContext {
      */
     default boolean isSuperUser() {
         return Constants.MASTER_REALM.equals(getAuthenticatedRealmName()) && hasRealmRole(Constants.SUPER_USER_REALM_ROLE);
+    }
+
+    default boolean isServiceAccount() {
+        String username = getUsername();
+        return username != null && username.startsWith(User.SERVICE_ACCOUNT_PREFIX);
     }
 
     boolean hasRealmRole(String role);

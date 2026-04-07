@@ -77,6 +77,22 @@ const style = css`
     .drag-container > button {
         cursor: grab;
     }
+
+    #content-wrapper {
+        overflow: auto;
+    }
+
+    [slot="header"] {
+        display: flex;
+        min-width: 0; /* Allows slotted element to shrink */
+        & span {
+            align-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            word-break: break-all;
+        }
+    }
 `;
 
 @customElement("or-json-forms-array-control")
@@ -142,7 +158,9 @@ export class ControlArrayElement extends ControlBaseElement {
         const itemCount = Array.isArray(this.data) ? (this.data as []).length : 0;
 
         const header = this.minimal ? `` : html`
-            <span slot="header">${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+            <div slot="header">
+                <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+            </div>
             <div id="header-description" slot="header-description">
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}

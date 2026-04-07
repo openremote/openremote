@@ -25,7 +25,7 @@ import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
 import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
@@ -40,16 +40,26 @@ import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
-public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDeviceAddress> {
+public class SerialIOClient<T> extends AbstractNettyIOClient<T> {
 
     protected String port;
     protected int baudRate;
+    protected int dataBits;
+    protected JSerialCommChannelConfig.Stopbits stopBits;
+    protected JSerialCommChannelConfig.Paritybit parity;
     public static int DEFAULT_BAUD_RATE = 38400;
 
     public SerialIOClient(String port, Integer baudRate) {
+        this(port, baudRate, 8, STOPBITS_1, NONE);
+    }
+
+    public SerialIOClient(String port, Integer baudRate, int dataBits, JSerialCommChannelConfig.Stopbits stopBits, JSerialCommChannelConfig.Paritybit parity) {
         TextUtil.requireNonNullAndNonEmpty(port);
         this.port = port;
         this.baudRate = baudRate == null ? DEFAULT_BAUD_RATE : baudRate;
+        this.dataBits = dataBits;
+        this.stopBits = stopBits;
+        this.parity = parity;
     }
 
     @Override
@@ -58,8 +68,8 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
     }
 
     @Override
-    protected Future<Void> startChannel() {
-        return bootstrap.connect(new JSerialCommDeviceAddress(port));
+    protected CompletableFuture<Void> startChannel() {
+        return toCompletableFuture(bootstrap.connect(new JSerialCommDeviceAddress(port)));
     }
 
     @Override
@@ -79,8 +89,8 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDevic
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(BAUD_RATE, baudRate);
-        bootstrap.option(DATA_BITS, 8);
-        bootstrap.option(STOP_BITS, STOPBITS_1);
-        bootstrap.option(PARITY_BIT, NONE);
+        bootstrap.option(DATA_BITS, dataBits);
+        bootstrap.option(STOP_BITS, stopBits);
+        bootstrap.option(PARITY_BIT, parity);
     }
 }

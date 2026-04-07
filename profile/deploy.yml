@@ -112,6 +112,8 @@ services:
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
       - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
 
   # The OpenRemote Manager
   manager:
@@ -137,6 +139,8 @@ services:
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
     #  - "127.0.0.1:8405:8405" # Localhost metrics access
+    #  - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                              # intended to be IP of the interface of the private subnet of the EC2 VM
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -229,6 +233,12 @@ services:
       # Manager web server maximum IO thread count; default: Processor core count or 2
       OR_WEBSERVER_IO_THREADS_MAX:
 
+      # Manager web server max request entity size in bytes; default: 30000000
+      OR_WEBSERVER_MAX_ENTITY_SIZE:
+
+      # Manager web server max multipart request entity size in bytes; default: 30000000
+      OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE:
+
       # Database settings
       OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
       OR_DB_HOST: ${OR_DB_HOST:-postgresql}
@@ -297,11 +307,6 @@ services:
       OR_AUTO_PROVISIONING_THREADS_MIN:
       # The maximum number of threads that will be used to process incoming auto provisioning messages
       OR_AUTO_PROVISIONING_THREADS_MAX:
-
-      # When asset attributes are enabled for rule events, each value update will be a temporary
-      # fact in rules. You can set the global default expiration time span used when no other
-      # attribute-level configuration exists. Default is 1 hour.
-      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-PT1H}
 
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
@@ -434,7 +439,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     restart: always
     # Shared memory should be increased for any reasonable DB size this should be increased further
     shm_size: 128mb
@@ -464,6 +469,35 @@ services:
       # preserved then the container will REINDEX the DB automatically unless the following
       # is set to false
       #OR_DISABLE_REINDEX=${OR_DISABLE_REINDEX:-false}
+
+  # Query Exporter - Prometheus metrics from PostgreSQL queries
+  # Documentation: https://github.com/albertodonato/query-exporter
+  query-exporter:
+    image: adonato/query-exporter:latest
+    restart: always
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      manager:
+        condition: service_healthy
+    volumes:
+      # Mount deployment-data volume containing config.yaml for query-exporter configuration
+      # Config file should be at: /deployment/query-exporter/config.yaml
+        - deployment-data:/deployment
+    ports:
+      - "127.0.0.1:8406:9560" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8406:8404" # Allows to also expose metrics on a given IP address,
+      # intended to be IP of the interface of the private subnet of the EC2 VM
+    environment:
+      TZ: ${TZ:-Europe/Amsterdam}
+      # Database connection settings (matches postgresql service)
+      # These can be referenced in the config.yaml file using !env tag
+      POSTGRES_HOST: ${OR_DB_HOST:-postgresql}
+      POSTGRES_PORT: ${OR_DB_PORT:-5432}
+      POSTGRES_DB: ${OR_DB_NAME:-openremote}
+      POSTGRES_USER: ${OR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      QE_CONFIG: /deployment/query-exporter/config.yaml
 
   # Map tile server
   tileserver:

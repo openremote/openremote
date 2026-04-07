@@ -212,7 +212,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         if (allowed) {
             // Only allow if there is no existing subscription for this topic
             RemotingConnection existingConnection = responseSubscribedConnections.get(topic.toString());
-            if (existingConnection != null) {
+            if (existingConnection != null && existingConnection.getTransportConnection().isOpen()) {
                 LOG.warning("Subscription already exists possible eavesdropping");
                 allowed = false;
             }
@@ -228,7 +228,11 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-        responseSubscribedConnections.remove(topic.toString());
+        responseSubscribedConnections.computeIfPresent(topic.toString(), (t, existingConnection) -> {
+            // Don't remove the existing entry if it is for a different connection; this is a possibility if a client
+            // disconnects and quickly reconnects as we have no guaranteed ordering of subscribe/unsubscribe calls
+            return existingConnection == connection ? null : existingConnection;
+        });
     }
 
     @Override
