@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.websocket;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.ValueType;
 
 @JsonTypeName(WebsocketHTTPSubscription.TYPE)
@@ -35,6 +36,7 @@ public class WebsocketHTTPSubscription extends WebsocketSubscription {
 
     public Method method;
     public String contentType;
+    @JsonSchemaTitle(value = "Headers", i18n = false)
     public ValueType.MultivaluedStringMap headers;
     public String uri;
 

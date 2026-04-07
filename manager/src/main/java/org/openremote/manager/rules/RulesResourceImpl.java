@@ -259,8 +259,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         // Only super users can create/modify groovy rules
         // TODO: Implement robust groovy sandbox
-        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
-            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        if ((ruleset.getLang() == Ruleset.Lang.GROOVY || ruleset.getLang() == Ruleset.Lang.JAVASCRIPT) && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy/javascript rules for security reasons");
         }
         ruleset = rulesetStorageService.merge(ruleset);
         return ruleset.getId();

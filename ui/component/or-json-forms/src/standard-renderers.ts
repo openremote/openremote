@@ -47,12 +47,10 @@ import {
     getSchemaConst, getSchemaPicker,
     getTemplateFromProps,
     mapStateToCombinatorRendererProps,
-    showJsonEditor
 } from "./util";
 import "./layouts/layout-vertical-element";
 import "./controls/control-input-element";
 import "./controls/control-array-element";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {AdditionalProps} from "./base-element";
 import {Util} from "@openremote/core";
 
@@ -100,7 +98,7 @@ export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnP
         type: props.type
     };
 
-    const template = html`<or-json-forms-vertical-layout .state="${state}" .props="${contentProps}"></or-json-forms-vertical-layout>`;
+    const template = html`<or-json-forms-vertical-layout style="max-width: 100%" .state="${state}" .props="${contentProps}"></or-json-forms-vertical-layout>`;
     let deleteHandler: undefined | (() => void);
     if (!contentProps.required && contentProps.path) {
         deleteHandler = () => {
@@ -209,7 +207,6 @@ export const anyOfOneOfControlTester: RankedTester = rankWith(
     )
 );
 export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: ControlProps & AdditionalProps) => {
-
     const jsonFormsContext = {jsonforms: {...state}};
 
     const {
@@ -228,11 +225,11 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     } = mapStateToControlWithDetailProps(jsonFormsContext, props);
 
     const keyword = schema.anyOf !== undefined ? "anyOf" : "oneOf";
-    const resolvedSchema = resolveSchema(schema, keyword, rootSchema);
+    const resolvedSchema = resolveSchema(schema, keyword, rootSchema) as JsonSchema[];
     const resolvedProps = mapStateToCombinatorRendererProps(jsonFormsContext, props, keyword);
 
     const renderInfos = createCombinatorRenderInfos(
-        resolvedSchema! as JsonSchema[],
+        resolvedSchema,
         rootSchema,
         keyword,
         resolvedProps.uischema || uischema,
@@ -242,7 +239,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
 
     if (data !== undefined && data !== null && (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0)) {
         // Try and match the data using our own combinator info objects
-        const combinatorInfos = getCombinatorInfos(resolvedSchema! as JsonSchema[], rootSchema);
+        const combinatorInfos = getCombinatorInfos(resolvedSchema, rootSchema);
 
         const constProp = combinatorInfos.length > 0 ? combinatorInfos[0].constProperty : undefined;
         if (constProp && typeof data === "object" && data[constProp]) {
@@ -254,25 +251,26 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     if (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0) {
         const { handleChange } = mapDispatchToControlProps(state.dispatch);
 
-        if (data !== undefined && data !== null) {
-            // We have data that doesn't match a schema so show invalid template
-            console.warn("Cannot match " + keyword + " schema to instance data");
+        // TODO: consider un-commenting when the AJV useDefaults option doesn't generate invalid schemas
+        // if (data != null) {
+        //     // We have data that doesn't match a schema so show invalid template
+        //     console.warn("Cannot match " + keyword + " schema to instance data");
 
-            const showJson = (ev: Event) => {
-                ev.stopPropagation();
+        //     const showJson = (ev: Event) => {
+        //         ev.stopPropagation();
 
-                showJsonEditor(label, data, ((newValue) => {
-                    handleChange(path || "", newValue);
-                }));
-            };
+        //         showJsonEditor(label, data, ((newValue) => {
+        //             handleChange(path || "", newValue);
+        //         }));
+        //     };
 
-            return html`
-                <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input></div>
-            `;
-        } else {
+        //     return html`
+        //         <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input></div>
+        //     `;
+        // } else {
             // We have no data so show a schema picker
-            return getSchemaPicker(rootSchema, resolvedSchema, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
-        }
+            return getSchemaPicker(rootSchema, resolvedSchema, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
+        // }
     }
 
     // Return template for the anyOf/oneOf schema that matches the data
@@ -344,7 +342,7 @@ export const arrayControlRenderer = (state: JsonFormsStateContext, props: Contro
     contentProps.required = !!props.required || contentProps.required;
     contentProps.minimal = props.minimal;
 
-    const template = html`<or-json-forms-array-control .state="${state}" .props="${contentProps}"></or-json-forms-array-control>`;
+    const template = html`<or-json-forms-array-control style="max-width: 100%" .state="${state}" .props="${contentProps}"></or-json-forms-array-control>`;
     let deleteHandler: undefined | (() => void);
     if (!contentProps.required && contentProps.path) {
         deleteHandler = () => {
