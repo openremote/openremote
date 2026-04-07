@@ -616,9 +616,9 @@ export class WebSocketEventProvider extends EventProviderImpl {
         // Await access token retrieval from the Manager if necessary
         let tokenPromise: Promise<void>;
         if (manager.authenticated) {
-            tokenPromise = (async () => {
-                authorisedUrl += "&Authorization=" + (await manager.retrieveAuthorizationHeader());
-            })();
+            tokenPromise = manager.retrieveAuthorizationHeader().then(value => {
+                authorisedUrl += "&Authorization=" + value;
+            });
         } else {
             tokenPromise = Promise.resolve();
         }

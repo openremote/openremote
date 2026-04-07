@@ -905,7 +905,7 @@ export class Manager implements EventProviderFactory {
     }
 
     /**
-     * This function revalidates the cached access token by checking if it is still valid, and retrieving a new token if necessary.
+     * This function revalidates the cached access token by checking if it is still valid, and retrieves a new token if necessary.
      * It is useful if you want to guarantee the token is valid before making a request to the Manager APIs.
      */
     public async retrieveKeycloakToken(): Promise<string | undefined> {
