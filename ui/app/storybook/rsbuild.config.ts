@@ -44,6 +44,7 @@ export default defineConfig({
             "@openremote/or-icon": "../../component/or-icon/src",
             "@openremote/or-map": "../../component/or-map/src",
             "@openremote/or-mwc-components": "../../component/or-mwc-components/src",
+            "@openremote/or-rive-renderer": "../../component/or-rive-renderer/src",
             "@openremote/or-scheduler": "../../component/or-scheduler/src",
             "@openremote/or-translate": "../../component/or-translate/src",
             "@openremote/or-tree-menu": "../../component/or-tree-menu/src",
@@ -59,6 +60,7 @@ export default defineConfig({
         },
         rspack: (config, { addRules }) => {
             addRules([{test: /(maplibre|@material|gridstack|@mdi).*\.css$/, type: "asset/source"}]); // Add rule to treat external CSS imports as raw strings.
+            addRules([{test: /\.wasm$/, type: "asset/resource"}]);
             return config;
         }
     }

@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.TimeZone;
 
-@JsonSchemaDefault("{\"timezone\":\"\"}")
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     @JsonSchemaDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
@@ -51,6 +50,7 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
     @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
 
+    @JsonSchemaDefault("")
     @JsonSchemaDescription("The timezone the Simulator should follow to replay the dataset.")
     @JsonSchemaFormat("timezone")
     protected TimeZone timezone;

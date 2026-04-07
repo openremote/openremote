@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.openremote.model.util.JSONSchemaUtil.*;
+import org.reflections.Reflections;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,9 +22,12 @@ import java.time.*;
 import java.util.Date;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 public class JSONSchemaUtilTest {
+
+    private static final Reflections reflections = new Reflections("org.openremote");
 
     @BeforeAll
     static void setup() {
@@ -214,7 +218,7 @@ public class JSONSchemaUtilTest {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "properties": {
-                    "test1": { "type": "boolean" },
+                    "test1": { "type": "boolean", "default": false },
                     "test2": { "type": "integer" },
                     "test3": { "type": "integer" },
                     "test4": { "type": "number" },
@@ -314,7 +318,6 @@ public class JSONSchemaUtilTest {
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
-                "title": "I 18n Annotations",
                 "i18n": "org.openremote.model.util.JSONSchemaUtilTest.I18nAnnotations",
                 "additionalProperties": true
             }"""
@@ -345,19 +348,19 @@ public class JSONSchemaUtilTest {
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
-    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
     @JsonSubTypes({
             @JsonSubTypes.Type(SubType.class),
             @JsonSubTypes.Type(SubTypeSuperclass.class),
     })
-    abstract static class PolymorphicType<T extends PolymorphicType<?>> implements Serializable {}
+    abstract static class PolymorphicType<T extends PolymorphicType<?>> implements Serializable { }
     @JsonTypeName("SubType")
-    static class SubType extends PolymorphicType<SubType> {}
+    static class SubType extends PolymorphicType<SubType> { }
     @JsonTypeName("SubTypeSuperclass")
     static class SubTypeSuperclass extends SubType { }
 
     @Test
-    public void shouldHaveSubtypesWithDefaultTypeProperty() throws JsonProcessingException, JSONException {
+    public void shouldHaveSubtypesWithTypeProperty() throws JsonProcessingException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -368,8 +371,7 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "SubType",
-                                "default": "SubType"
+                                "const": "SubType"
                             }
                         },
                         "required": [
@@ -382,14 +384,16 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "SubTypeSuperclass",
-                                "default": "SubTypeSuperclass"
+                                "const": "SubTypeSuperclass"
                             }
                         },
                         "required": [
                             "type"
                         ]
                     }
+                },
+                "discriminator": {
+                    "propertyName": "type"
                 },
                 "oneOf": [
                     { "$ref": "#/definitions/SubType" },
@@ -405,16 +409,16 @@ public class JSONSchemaUtilTest {
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
-    @JsonTypeInfo(property = "customType", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    @JsonTypeInfo(property = "customType", use = JsonTypeInfo.Id.NAME)
     @JsonSubTypes({
-            @JsonSubTypes.Type(CustomSubType.class),
-            @JsonSubTypes.Type(CustomSubTypeSuperclass.class),
+            @JsonSubTypes.Type(SubTypeWithCustomProperty.class),
+            @JsonSubTypes.Type(SubTypeSuperClassWithCustomProperty.class),
     })
-    abstract static class CustomPolymorphicType<T extends CustomPolymorphicType<?>> implements Serializable {}
-    @JsonTypeName("SubType")
-    static class CustomSubType extends CustomPolymorphicType<CustomSubType> {}
-    @JsonTypeName("SubTypeSuperclass")
-    static class CustomSubTypeSuperclass extends CustomSubType { }
+    abstract static class PolymorphicTypeWithCustomProperty<T extends PolymorphicTypeWithCustomProperty<?>> implements Serializable { }
+    @JsonTypeName("SubTypeWithCustomProperty")
+    static class SubTypeWithCustomProperty extends PolymorphicTypeWithCustomProperty<SubTypeWithCustomProperty> { }
+    @JsonTypeName("SubTypeSuperClassWithCustomProperty")
+    static class SubTypeSuperClassWithCustomProperty extends SubTypeWithCustomProperty { }
 
     @Test
     public void shouldHaveSubtypesWithCustomTypeProperty() throws JsonProcessingException, JSONException {
@@ -422,52 +426,121 @@ public class JSONSchemaUtilTest {
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "definitions": {
-                    "CustomSubType": {
-                        "title": "Custom Sub Type",
+                    "SubTypeWithCustomProperty": {
+                        "title": "Sub Type With Custom Property",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
                             "customType": {
-                                "const": "SubType",
-                                "default": "SubType"
+                                "const": "SubTypeWithCustomProperty"
                             }
                         },
                         "required": [
                             "customType"
-                        ],
-                        "discriminator": {
-                            "propertyName": "customType"
-                        }
+                        ]
                     },
-                    "CustomSubTypeSuperclass": {
-                        "title": "Custom Sub Type Superclass",
+                    "SubTypeSuperClassWithCustomProperty": {
+                        "title": "Sub Type Super Class With Custom Property",
                         "type": "object",
                         "additionalProperties": true,
                         "properties": {
                             "customType": {
-                                "const": "SubTypeSuperclass",
-                                "default": "SubTypeSuperclass"
+                                "const": "SubTypeSuperClassWithCustomProperty"
                             }
                         },
                         "required": [
                             "customType"
-                        ],
-                        "discriminator": {
-                            "propertyName": "customType"
-                        }
+                        ]
                     }
                 },
+                "discriminator": {
+                    "propertyName": "customType"
+                },
                 "oneOf": [
-                    { "$ref": "#/definitions/CustomSubType" },
-                    { "$ref": "#/definitions/CustomSubTypeSuperclass" }
+                    { "$ref": "#/definitions/SubTypeWithCustomProperty" },
+                    { "$ref": "#/definitions/SubTypeSuperClassWithCustomProperty" }
                 ],
                 "type": "object",
                 "additionalProperties": true,
-                "title": "Custom Polymorphic Type"
+                "title": "Polymorphic Type With Custom Property"
             }"""
         );
 
-        JsonNode actual = ValueUtil.getSchema(CustomPolymorphicType.class);
+        JsonNode actual = ValueUtil.getSchema(PolymorphicTypeWithCustomProperty.class);
+        assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    // Note: JsonTypeInfo.As.EXISTING_PROPERTY doesn't necessarily change the behavior mainly the
+    // "customType" property on the abstract class matters.
+    @JsonTypeInfo(property = PolymorphicTypeWithCustomExistingProperty.VALUE_KEY_CUSTOM_TYPE, use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    @JsonSubTypes({
+            @JsonSubTypes.Type(name=SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE, value=SubTypeWithCustomExistingProperty.class),
+            @JsonSubTypes.Type(name=SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE, value=SubTypeSuperClassWithCustomExistingProperty.class),
+    })
+    abstract static class PolymorphicTypeWithCustomExistingProperty<T extends PolymorphicTypeWithCustomExistingProperty<?>> implements Serializable {
+        public static final String VALUE_KEY_CUSTOM_TYPE = "customType";
+        @JsonProperty(VALUE_KEY_CUSTOM_TYPE)
+        protected String customType;
+        public String getCustomType() {
+            return customType;
+        }
+    }
+    @JsonTypeName(SubTypeWithCustomExistingProperty.SUB_CUSTOM_TYPE)
+    static class SubTypeWithCustomExistingProperty extends PolymorphicTypeWithCustomExistingProperty<SubTypeWithCustomExistingProperty> {
+        public static final String SUB_CUSTOM_TYPE = "sub";
+    }
+    @JsonTypeName(SubTypeSuperClassWithCustomExistingProperty.SUPER_CUSTOM_TYPE)
+    static class SubTypeSuperClassWithCustomExistingProperty extends SubTypeWithCustomExistingProperty {
+        public static final String SUPER_CUSTOM_TYPE = "super";
+    }
+
+    @Test
+    public void shouldHaveSubtypesWithExistingCustomTypeProperty() throws JsonProcessingException, JSONException {
+        JsonNode expected = ValueUtil.JSON.readTree("""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "definitions": {
+                    "SubTypeWithCustomExistingProperty": {
+                        "title": "Sub Type With Custom Existing Property",
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "customType": {
+                                "const": "sub"
+                            }
+                        },
+                        "required": [
+                            "customType"
+                        ]
+                    },
+                    "SubTypeSuperClassWithCustomExistingProperty": {
+                        "title": "Sub Type Super Class With Custom Existing Property",
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "customType": {
+                                "const": "super"
+                            }
+                        },
+                        "required": [
+                            "customType"
+                        ]
+                    }
+                },
+                "discriminator": {
+                    "propertyName": "customType"
+                },
+                "oneOf": [
+                    { "$ref": "#/definitions/SubTypeWithCustomExistingProperty" },
+                    { "$ref": "#/definitions/SubTypeSuperClassWithCustomExistingProperty" }
+                ],
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Polymorphic Type With Custom Existing Property"
+            }"""
+        );
+
+        JsonNode actual = ValueUtil.getSchema(PolymorphicTypeWithCustomExistingProperty.class);
         assertEquals(expected.toString(), actual.toString(), true);
     }
 
@@ -492,8 +565,7 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "ExternalSubType",
-                                "default": "ExternalSubType"
+                                "const": "ExternalSubType"
                             }
                         },
                         "required": [
@@ -506,8 +578,7 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "ExternalSubTypeSuperclass",
-                                "default": "ExternalSubTypeSuperclass"
+                                "const": "ExternalSubTypeSuperclass"
                             }
                         },
                         "required": [
@@ -515,18 +586,13 @@ public class JSONSchemaUtilTest {
                         ]
                     }
                 },
+                "discriminator": {
+                    "propertyName": "type"
+                },
                 "oneOf": [
                     { "$ref": "#/definitions/ExternalSubType" },
                     { "$ref": "#/definitions/ExternalSubTypeSuperclass" }
                 ],
-                "properties": {
-                    "type": {
-                        "enum": [
-                            "ExternalSubType",
-                            "ExternalSubTypeSuperclass"
-                        ]
-                    }
-                },
                 "type": "object",
                 "additionalProperties": true,
                 "title": "External Polymorphic Type"
@@ -538,7 +604,7 @@ public class JSONSchemaUtilTest {
     }
 
     @JsonTypeName("ReflectedPolymorphicType")
-    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY)
+    @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
     abstract static class ReflectedPolymorphicType<T extends ReflectedPolymorphicType<?>> implements Serializable {}
     @JsonTypeName("ResolvedSubType")
     static class ResolvedSubType extends ReflectedPolymorphicType<ResolvedSubType> { }
@@ -555,14 +621,16 @@ public class JSONSchemaUtilTest {
                         "additionalProperties": true,
                         "properties": {
                             "type": {
-                                "const": "ResolvedSubType",
-                                "default": "ResolvedSubType"
+                                "const": "ResolvedSubType"
                             }
                         },
                         "required": [
                             "type"
                         ]
                     }
+                },
+                "discriminator": {
+                    "propertyName": "type"
                 },
                 "title": "Reflected Polymorphic Type",
                 "oneOf": [
@@ -583,6 +651,13 @@ public class JSONSchemaUtilTest {
 
         JsonNode actual = ValueUtil.getSchema(ReflectedPolymorphicType.class);
         assertEquals(expected.toString(), actual.toString(), true);
+    }
+
+    @Test
+    public void shouldNotHaveAllOf() {
+        for (Class<?> clazz : reflections.getTypesAnnotatedWith(JsonTypeInfo.class)) {
+            assertFalse(ValueUtil.getSchema(clazz).toString().contains("allOf"));
+        }
     }
 
     static class JavaTimeJacksonModule {

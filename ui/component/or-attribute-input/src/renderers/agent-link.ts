@@ -98,9 +98,8 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
             const newAgentDescriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor;
             if (newAgentDescriptor) {
                 props.handleChange("", {
-                  id: agent.id,
-                  type: newAgentDescriptor.agentLinkType,
-                  ...(props.rootSchema?.definitions?.[newAgentDescriptor.agentLinkType ?? ""].default ?? {}),
+                    id: agent.id,
+                    type: newAgentDescriptor.agentLinkType,
                 });
             }
         }
