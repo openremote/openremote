@@ -52,7 +52,7 @@ const style = css`
         font-size: 15px;
         font-weight: 400;
         align-items: center;
-        padding: 0 24px 0 16px;
+        padding: 0 16px 0 16px;
         border-radius: inherit;
     }
     
@@ -73,6 +73,11 @@ const style = css`
         display: flex;
         flex-direction: row;
         overflow: hidden;
+        min-width: 0; /* Allows the element to shrink */
+    }
+
+    #header-title {
+        min-width: 0; /* Allows the element to shrink */
     }
 
     #header-title, #header-description {

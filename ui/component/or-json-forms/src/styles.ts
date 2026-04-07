@@ -51,7 +51,6 @@ export const baseStyle = css`
     
     .any-of-picker {
         width: 100%;
-        min-width: 200px;
     }
 
     #errors {

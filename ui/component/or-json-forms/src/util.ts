@@ -2,7 +2,6 @@ import {
     CombinatorKeyword,
     composeWithUi,
     ControlElement,
-    ControlProps,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -28,10 +27,8 @@ import "@openremote/or-components/or-ace-editor";
 import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
 import {html, TemplateResult, unsafeCSS} from "lit";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {ErrorObject} from "./index";
 import {unknownTemplate} from "./standard-renderers";
 import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AdditionalProps} from "./base-element";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {
@@ -133,8 +130,8 @@ export function getSchemaConst(schema: JsonSchema): any {
     }
 }
 
-export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSchema, path: string, keyword: "anyOf" | "oneOf", label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
-    const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
+export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchemas: JsonSchema[], label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
+    const combinatorInfos = getCombinatorInfos(resolvedSchemas, rootSchema);
     const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})]);
     const pickerUpdater = (index: number) => {
         const matchedInfo = combinatorInfos[index];
@@ -196,7 +193,7 @@ const COMBINATOR_IDENTIFICATION_PROPERTY = "type";
 export function getCombinatorIndexOfFittingSchema(
     data: any,
     keyword: CombinatorKeyword,
-    schema: JsonSchema,
+    schema: JsonSchema & { discriminator?: { propertyName?: string } },
     rootSchema: JsonSchema
 ): number {
     if (typeof data !== 'object' || data === null) {
@@ -216,8 +213,8 @@ export function getCombinatorIndexOfFittingSchema(
 
     // Check if the data matches the identification property of one of the resolved schemas
     for (let i = 0; i < resolvedCombinatorSchemas.length; i++) {
-        const resolvedSchema = resolvedCombinatorSchemas[i] as JsonSchema & { discriminator?: { propertyName?: string } };
-        const combinatorIdentificationProperty = resolvedSchema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
+        const resolvedSchema = resolvedCombinatorSchemas[i];
+        const combinatorIdentificationProperty = schema?.discriminator?.propertyName || COMBINATOR_IDENTIFICATION_PROPERTY;
 
         // Match the identification property against a constant value in resolvedSchema
         const maybeConstIdValue = resolvedSchema.properties?.[combinatorIdentificationProperty]?.const;
@@ -273,9 +270,7 @@ export function mapStateToCombinatorRendererProps(
         rootSchema,
         visible,
         id,
-        // Fall back to the first schema if none fits
-        indexOfFittingSchema:
-          indexOfFittingSchema !== -1 ? indexOfFittingSchema : 0,
+        indexOfFittingSchema,
         uischemas: state.jsonforms.uischemas!,
         uischema: uischema!,
     };
