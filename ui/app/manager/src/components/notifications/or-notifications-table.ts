@@ -1,4 +1,4 @@
-import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
@@ -169,7 +169,7 @@ export class OrNotificationsTable extends OrMwcTable {
     protected sortIndex = 4; // sort by sent date by default
     protected sortDirection: "ASC" | "DESC" = "DESC";
 
-    protected async willUpdate(changedProps: Map<string, any>) {
+    protected async willUpdate(changedProps: PropertyValues) {
         // update rows when notifications change
         if (changedProps.has("notifications")) {
             if (this.notifications?.length) {
