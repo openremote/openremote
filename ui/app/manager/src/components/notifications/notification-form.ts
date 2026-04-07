@@ -341,7 +341,7 @@ export class NotificationForm extends LitElement {
             body: pushMessage.body || '',
             priority: normalizedPriority,
             targetType: this.notification.target || '',
-            targets: [this.notification.targetId] || [],
+            targets: this.notification.targetId ? [this.notification.targetId] : [],
             actionUrl: pushMessage.action?.url,
             openButtonText: pushMessage.buttons?.[0]?.title,
             closeButtonText: pushMessage.buttons?.[1]?.title,
