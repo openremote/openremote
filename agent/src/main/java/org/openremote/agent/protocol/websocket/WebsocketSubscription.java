@@ -31,8 +31,7 @@ import java.io.Serializable;
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    property = "type",
-    defaultImpl = WebsocketSubscriptionImpl.class
+    property = "type"
 )
 public abstract class WebsocketSubscription implements Serializable {
 

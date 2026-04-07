@@ -607,7 +607,7 @@ public class JSONSchemaUtil {
             String typeKey = context.getKeyword(SchemaKeyword.TAG_TYPE);
             String customTypeKey = annotation.property();
             JsonNode allOfNode = attrs.get(context.getKeyword(SchemaKeyword.TAG_ALLOF));
-            if (!(allOfNode instanceof ArrayNode allOf)) {
+            if (!(allOfNode instanceof ArrayNode)) {
                 JsonNode props = attrs.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
                 if (attrs.has(typeKey)) {
                     attrs.remove(typeKey);
@@ -619,39 +619,6 @@ public class JSONSchemaUtil {
                     // duplicate which needs to be removed.
                     propsObj.remove(customTypeKey);
                 }
-                return;
-            }
-            // TODO: figure out why WebsocketSubscriptionImpl compared to WebsocketHTTPSubscription doesn't add the
-            // discriminator property to the required properties list. The following implementation shouldn't be needed?
-            for (JsonNode n : allOf) {
-                if (!(n instanceof ObjectNode node)) {
-                    continue;
-                }
-
-                JsonNode props = node.get(context.getKeyword(SchemaKeyword.TAG_PROPERTIES));
-
-                if (!(props instanceof ObjectNode)) {
-                    continue;
-                }
-
-                String activeKey;
-                if (props.has(customTypeKey)) activeKey = customTypeKey;
-                else if (props.has(typeKey)) activeKey = typeKey;
-                else return;
-
-                String requiredKey = context.getKeyword(SchemaKeyword.TAG_REQUIRED);
-                ArrayNode requiredArr;
-                if (node.has(requiredKey) && node.get(requiredKey).isArray()) {
-                    requiredArr = (ArrayNode) node.get(requiredKey);
-                } else {
-                    requiredArr = node.putArray(requiredKey);
-                }
-
-                for (JsonNode element : requiredArr) {
-                    if (element.asText().equals(activeKey)) return;
-                }
-
-                requiredArr.add(activeKey);
             }
         }
 
