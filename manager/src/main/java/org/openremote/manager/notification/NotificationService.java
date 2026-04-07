@@ -362,20 +362,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
         List<Object> parameters = new ArrayList<>();
 
         builder.append("select n from SentNotification n where 1=1");
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
+        processCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, false);
         builder.append(" order by n.sentOn asc");
 
         LOG.fine("Query builder after processing criteria: " + builder.toString());
         LOG.fine("Parameters after processing criteria: " + parameters);
         LOG.info("getNotifications called with: ids=" + ids + 
              ", types=" + types + 
-             ", fromTimestamp=" + fromTimestamp + 
-             ", toTimestamp=" + toTimestamp + 
+             ", fromTimestamp=" + from +
+             ", toTimestamp=" + to +
              ", realmIds=" + realmIds + 
              ", userIds=" + userIds + 
              ", assetIds=" + assetIds);
@@ -397,12 +397,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         );
     }
 
-    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
+        processCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, true);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
@@ -412,7 +412,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
         boolean hasIds = ids != null && !ids.isEmpty();
         boolean hasTypes = types != null && !types.isEmpty();
         boolean hasRealms = realmIds != null && !realmIds.isEmpty();
@@ -436,7 +436,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             counter++;
         }
 
-        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
+        if (isRemove && from == null && to == null && counter == 0) {
             LOG.fine("No filters set for remove notifications request so not allowed");
             throw new IllegalArgumentException("No criteria specified");
         }
@@ -454,18 +454,18 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(types);
         }
 
-        if (fromTimestamp != null) {
+        if (from != null) {
             builder.append(" AND n.sentOn >= ?")
                     .append(parameters.size() + 1);
 
-            parameters.add(Instant.ofEpochMilli(fromTimestamp));
+            parameters.add(from);
         }
 
-        if (toTimestamp != null) {
+        if (to != null) {
             builder.append(" AND n.sentOn <= ?")
                     .append(parameters.size() + 1);
 
-            parameters.add(Instant.ofEpochMilli(toTimestamp));
+            parameters.add(to);
         }
 
         if (hasAssets) {
@@ -497,7 +497,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Long fromTimestamp, Long toTimestamp) {
+    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to) {
         if (realmIds == null || realmIds.isEmpty()) {
             throw new IllegalArgumentException("RealmID must be specified"); 
         }
@@ -510,14 +510,14 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         parameters.add(realmIds);
 
 
-        if (fromTimestamp != null) {
+        if (from != null) {
             builder.append(" AND n.sentOn >= ?").append(paramIndex++);
-            parameters.add(new Date(fromTimestamp));
+            parameters.add(from);
         }
 
-        if (toTimestamp != null) {
+        if (to != null) {
             builder.append(" AND n.sentOn <= ?").append(paramIndex++);
-            parameters.add(new Date(toTimestamp));
+            parameters.add(to);
         }
 
         builder.append(" ORDER BY n.sentOn DESC");

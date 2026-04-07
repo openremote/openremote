@@ -36,6 +36,7 @@ import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,13 +65,13 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId) {
         try {
             return notificationService.getNotifications(
                 id != null ? Collections.singletonList(id) : null,
                 type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null
@@ -81,13 +82,13 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public void removeNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId) {
         try {
             notificationService.removeNotifications(
                 id != null ? Collections.singletonList(id) : null,
                 type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null,
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null);
@@ -222,7 +223,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long fromTimestamp, Long toTimestamp, String realmId) {
+    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long from, Long to, String realmId) {
         if (realmId == null) {
             throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
         }
@@ -230,8 +231,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         try {
             return notificationService.getNotificationsByRealm(
                 Collections.singletonList(realmId),
-                fromTimestamp,
-                toTimestamp
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null
             ).toArray(new SentNotification[0]);
 
         } catch (IllegalArgumentException e) {
