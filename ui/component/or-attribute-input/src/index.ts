@@ -92,7 +92,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     }
 
     return html`
-            <div id="wrapper" style="min-width: 0; width: 100%" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
+            <div id="wrapper" style="width: 100%" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
                 ${content}
                 <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
             </div>
