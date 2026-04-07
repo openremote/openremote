@@ -195,7 +195,7 @@ export class OrNotificationsTable extends OrMwcTable {
             this.resolveTargetDetails(notification);
         })
 
-        return notifications.map((notification, index) => {
+        return notifications.map((notification) => {
             const pushMessage = notification.message as PushNotificationMessage;
             return {
                 content: [

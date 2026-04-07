@@ -169,14 +169,6 @@ export class NotificationForm extends LitElement {
         }
     `;
 
-    constructor() {
-        super();
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-    }
-
     async firstUpdated() {
         // load assets first since it's default
         await this._loadAssets();
