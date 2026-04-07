@@ -542,7 +542,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 this._isFilteredSource = true; // set filter changes
                                 this.requestUpdate();
                             }}"
-                            comfortable
                     ></or-mwc-input>
 
                     <or-mwc-input
@@ -554,7 +553,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 this._isFilteredDate = true; // set flag when date changes
                                 this._loadData();
                             }}"
-                            comfortable
                     ></or-mwc-input>
 
                     <or-mwc-input
@@ -566,7 +564,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 this._isFilteredDate = true; // set flag when date changes
                                 this._loadData();
                             }}"
-                            comfortable
                     ></or-mwc-input>
                 </div>
                 <div class="create-btn">
