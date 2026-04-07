@@ -92,7 +92,6 @@ class PollutantDispersionProtocolTest extends Specification implements ManagerCo
         def dispersionAgent = new PollutantDispersionAgent("Dispersion Agent")
             .setRealm(MASTER_REALM)
             .setWeatherAssetId(weatherAsset.id)
-            .setEmissionScaleFactor(1d)
             .setSourceHeightMeters(5d)
             .setReceptorHeightMeters(1.5d)
             .setMinWindSpeedMs(0.5d)
@@ -116,6 +115,7 @@ class PollutantDispersionProtocolTest extends Specification implements ManagerCo
                     AGENT_LINK,
                     new PollutantDispersionAgentLink(dispersionAgent.id)
                         .setRole(PollutantDispersionLinkRole.SOURCE_TRIGGER)
+                        .setEmissionRateGramsPerSecond(20d)
                         .setTriggerPredicate(new NumberPredicate(999, AssetQuery.Operator.GREATER_THAN))
                 )
             )
@@ -229,8 +229,8 @@ class PollutantDispersionProtocolTest extends Specification implements ManagerCo
 
             assert secondM != null
             assert secondN != null
-            assert secondM < firstM
-            assert secondN < firstN
+            assert Math.abs(secondM - firstM) < 1e-12d
+            assert Math.abs(secondN - firstN) < 1e-12d
             assert (predictedM*.timestamp.min() as Long) > firstStartTimestampM
             assert (predictedN*.timestamp.min() as Long) > firstStartTimestampN
         }

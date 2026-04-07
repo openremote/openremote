@@ -28,7 +28,10 @@ import org.openremote.model.value.ValueType;
 
 import java.util.Optional;
 
+import static org.openremote.model.Constants.UNITS_GRAM;
 import static org.openremote.model.Constants.UNITS_METRE;
+import static org.openremote.model.Constants.UNITS_PER;
+import static org.openremote.model.Constants.UNITS_SECOND;
 
 @Entity
 public class PollutantDispersionAgent extends Agent<PollutantDispersionAgent, PollutantDispersionProtocol, PollutantDispersionAgentLink> {
@@ -44,6 +47,11 @@ public class PollutantDispersionAgent extends Agent<PollutantDispersionAgent, Po
 
     public static final AttributeDescriptor<Double> RECEPTOR_HEIGHT_METERS =
         new AttributeDescriptor<>("receptorHeightMeters", ValueType.POSITIVE_NUMBER).withOptional(true).withUnits(UNITS_METRE);
+
+    public static final AttributeDescriptor<Double> EMISSION_RATE_GRAMS_PER_SECOND =
+        new AttributeDescriptor<>("emissionRateGramsPerSecond", ValueType.POSITIVE_NUMBER)
+            .withOptional(true)
+            .withUnits(UNITS_GRAM, UNITS_PER, UNITS_SECOND);
 
     public static final AttributeDescriptor<Double> EMISSION_SCALE_FACTOR =
         new AttributeDescriptor<>("emissionScaleFactor", ValueType.POSITIVE_NUMBER).withOptional(true);
@@ -105,6 +113,15 @@ public class PollutantDispersionAgent extends Agent<PollutantDispersionAgent, Po
 
     public PollutantDispersionAgent setEmissionScaleFactor(Double value) {
         getAttributes().getOrCreate(EMISSION_SCALE_FACTOR).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEmissionRateGramsPerSecond() {
+        return getAttributes().getValue(EMISSION_RATE_GRAMS_PER_SECOND);
+    }
+
+    public PollutantDispersionAgent setEmissionRateGramsPerSecond(Double value) {
+        getAttributes().getOrCreate(EMISSION_RATE_GRAMS_PER_SECOND).setValue(value);
         return this;
     }
 

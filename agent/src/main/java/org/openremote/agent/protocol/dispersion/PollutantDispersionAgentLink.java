@@ -35,6 +35,9 @@ public class PollutantDispersionAgentLink extends AgentLink<PollutantDispersionA
     @JsonPropertyDescription("Predicate evaluated against source values; propagation triggers when this transitions from false to true")
     protected ValuePredicate triggerPredicate;
 
+    @JsonPropertyDescription("Emission rate in grams per second used when this link is SOURCE_TRIGGER")
+    protected Double emissionRateGramsPerSecond;
+
     // For Hydrators
     protected PollutantDispersionAgentLink() {
     }
@@ -58,6 +61,15 @@ public class PollutantDispersionAgentLink extends AgentLink<PollutantDispersionA
 
     public PollutantDispersionAgentLink setTriggerPredicate(ValuePredicate triggerPredicate) {
         this.triggerPredicate = triggerPredicate;
+        return this;
+    }
+
+    public Optional<Double> getEmissionRateGramsPerSecond() {
+        return Optional.ofNullable(emissionRateGramsPerSecond);
+    }
+
+    public PollutantDispersionAgentLink setEmissionRateGramsPerSecond(Double emissionRateGramsPerSecond) {
+        this.emissionRateGramsPerSecond = emissionRateGramsPerSecond;
         return this;
     }
 }

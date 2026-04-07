@@ -53,7 +53,7 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
 
     protected static final double DEFAULT_SOURCE_HEIGHT_METERS = 5d;
     protected static final double DEFAULT_RECEPTOR_HEIGHT_METERS = 1.5d;
-    protected static final double DEFAULT_EMISSION_SCALE_FACTOR = 1d;
+    protected static final double MICROGRAMS_PER_GRAM = 1_000_000d;
     protected static final double DEFAULT_MIN_WIND_SPEED_MS = 0.5d;
     protected static final int DEFAULT_PREDICTION_INTERVAL_MINUTES = 30;
     protected static final int DEFAULT_PREDICTION_HORIZON_HOURS = 24;
@@ -102,6 +102,7 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
         LOG.info(
             "Dispersion protocol started for agent='" + agent.getId()
                 + "' weatherAssetId='" + agent.getWeatherAssetId().orElse("<unset>")
+                + "' emissionRateGps=" + agent.getEmissionRateGramsPerSecond().map(Object::toString).orElse("<unset>")
                 + "' intervalMinutes=" + agent.getPredictionIntervalMinutes().orElse(DEFAULT_PREDICTION_INTERVAL_MINUTES)
                 + " horizonHours=" + agent.getPredictionHorizonHours().orElse(DEFAULT_PREDICTION_HORIZON_HOURS)
                 + " datapointCountOverride=" + agent.getPredictionDatapointCount().orElse(0)
@@ -165,9 +166,39 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
             return;
         }
 
-        LOG.info("Dispersion triggered for " + event.getRef() + " with sourceValue=" + sourceValue.get());
+        Optional<Double> emissionRateGramsPerSecond = resolveEmissionRateGramsPerSecond(agentLink);
 
-        doPropagation(event.getRef(), sourceValue.get(), event.getTimestamp());
+        if (emissionRateGramsPerSecond.isEmpty()) {
+            LOG.info(
+                "Dispersion propagation skipped because no emission rate is configured"
+                    + " (source-link emissionRateGramsPerSecond=" + agentLink.getEmissionRateGramsPerSecond().map(Object::toString).orElse("<unset>")
+                    + ", agent emissionRateGramsPerSecond=" + agent.getEmissionRateGramsPerSecond().map(Object::toString).orElse("<unset>")
+                    + ")"
+            );
+            return;
+        }
+
+        boolean emissionRateFromLink = agentLink.getEmissionRateGramsPerSecond().filter(value -> value > 0d).isPresent();
+        String emissionRateSource = emissionRateFromLink ? "source-link" : "agent-default";
+
+        LOG.info(
+            "Dispersion triggered for " + event.getRef()
+                + " with sourceValue=" + sourceValue.get()
+                + ", emissionRateGps=" + emissionRateGramsPerSecond.get()
+                + ", emissionRateSource=" + emissionRateSource
+        );
+
+        doPropagation(event.getRef(), sourceValue.get(), emissionRateGramsPerSecond.get(), emissionRateSource, event.getTimestamp());
+    }
+
+    protected Optional<Double> resolveEmissionRateGramsPerSecond(PollutantDispersionAgentLink sourceAgentLink) {
+        Optional<Double> sourceLinkEmissionRate = sourceAgentLink.getEmissionRateGramsPerSecond().filter(value -> value > 0d);
+
+        if (sourceLinkEmissionRate.isPresent()) {
+            return sourceLinkEmissionRate;
+        }
+
+        return agent.getEmissionRateGramsPerSecond().filter(value -> value > 0d);
     }
 
     protected boolean evaluateTriggerPredicate(ValuePredicate predicate, Object value) {
@@ -183,7 +214,11 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
         }
     }
 
-    protected void doPropagation(AttributeRef sourceAttributeRef, double sourceValue, long timestamp) {
+    protected void doPropagation(AttributeRef sourceAttributeRef,
+                                 double sourceValue,
+                                 double emissionRateGramsPerSecond,
+                                 String emissionRateSource,
+                                 long timestamp) {
         if (predictedDatapointService == null) {
             LOG.warning("Predicted datapoint service is unavailable, propagation is skipped");
             return;
@@ -209,11 +244,10 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
             return;
         }
 
-        double emissionScaleFactor = agent.getEmissionScaleFactor().orElse(DEFAULT_EMISSION_SCALE_FACTOR);
-        double q = Math.max(0d, sourceValue * emissionScaleFactor);
+        double qMicrogramsPerSecond = Math.max(0d, emissionRateGramsPerSecond * MICROGRAMS_PER_GRAM);
 
-        if (q <= 0d) {
-            LOG.info("Dispersion propagation skipped because emission rate is not positive (q=" + q + ")");
+        if (qMicrogramsPerSecond <= 0d) {
+            LOG.info("Dispersion propagation skipped because emission rate is not positive (emissionRateGps=" + emissionRateGramsPerSecond + ")");
             return;
         }
 
@@ -230,7 +264,10 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
         WeatherSnapshot weatherSnapshot = weatherDataContext.current;
 
         LOG.info(
-            "Dispersion run config: q=" + q
+            "Dispersion run config: q=" + qMicrogramsPerSecond
+                + " ug/s"
+                + ", emissionRateGps=" + emissionRateGramsPerSecond
+                + ", emissionRateSource=" + emissionRateSource
                 + ", sourceHeight=" + sourceHeightMeters
                 + ", receptorHeight=" + receptorHeightMeters
                 + ", windSpeedMs=" + weatherSnapshot.windSpeedMs
@@ -273,7 +310,7 @@ public class PollutantDispersionProtocol extends AbstractProtocol<PollutantDispe
             }
 
             List<ValueDatapoint<?>> predictedValues = buildPredictionDatapoints(
-                q,
+                qMicrogramsPerSecond,
                 weatherDataContext,
                 sourceLocation,
                 receptorLocation,

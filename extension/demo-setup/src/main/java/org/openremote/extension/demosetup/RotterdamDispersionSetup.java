@@ -42,6 +42,7 @@ import java.util.List;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.util.MapAccess.getBoolean;
+import static org.openremote.model.util.MapAccess.getDouble;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
@@ -58,6 +59,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
     public static final String OR_SETUP_DISPERSION_PM25_TRIGGER = "OR_SETUP_DISPERSION_PM25_TRIGGER";
     public static final String OR_SETUP_DISPERSION_INTERVAL_MINUTES = "OR_SETUP_DISPERSION_INTERVAL_MINUTES";
     public static final String OR_SETUP_DISPERSION_HORIZON_HOURS = "OR_SETUP_DISPERSION_HORIZON_HOURS";
+    public static final String OR_SETUP_DISPERSION_EMISSION_RATE_GPS = "OR_SETUP_DISPERSION_EMISSION_RATE_GPS";
 
     protected static final String ROOT_ASSET_NAME = "Rotterdam Dispersion Demo";
     protected static final String WEATHER_ASSET_NAME = "Rotterdam Weather K";
@@ -65,6 +67,15 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
     protected static final String RECEPTOR_M_ASSET_NAME = "Rotterdam Receptor M";
     protected static final String RECEPTOR_N_ASSET_NAME = "Rotterdam Receptor N";
     protected static final String RECEPTOR_ATTRIBUTE_NAME = "predictedPollutantConcentration";
+
+    protected static final double WEATHER_LON = 5.45904195784459d;
+    protected static final double WEATHER_LAT = 51.446481105211575d;
+    protected static final double SOURCE_LON = 5.45904195784459d;
+    protected static final double SOURCE_LAT = 51.446481105211575d;
+    protected static final double RECEPTOR_M_LON = 5.455684510126105d;
+    protected static final double RECEPTOR_M_LAT = 51.43999597025555d;
+    protected static final double RECEPTOR_N_LON = 5.47086337481927d;
+    protected static final double RECEPTOR_N_LAT = 51.45163880769935d;
 
     protected final Container container;
 
@@ -83,6 +94,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
         int triggerThreshold = getInteger(container.getConfig(), OR_SETUP_DISPERSION_PM25_TRIGGER, 999);
         int predictionIntervalMinutes = Math.max(1, getInteger(container.getConfig(), OR_SETUP_DISPERSION_INTERVAL_MINUTES, 30));
         int predictionHorizonHours = Math.max(1, getInteger(container.getConfig(), OR_SETUP_DISPERSION_HORIZON_HOURS, 24));
+        double emissionRateGramsPerSecond = Math.max(0.1d, getDouble(container.getConfig(), OR_SETUP_DISPERSION_EMISSION_RATE_GPS, 20d));
 
         Asset<?> existingRoot = assetStorageService.find(
             new AssetQuery().types(ThingAsset.class).names(ROOT_ASSET_NAME).realm(new RealmPredicate(realm))
@@ -98,6 +110,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
             );
 
             if (existingWeather instanceof WeatherAsset weatherAsset) {
+                weatherAsset.setLocation(new GeoJSONPoint(WEATHER_LON, WEATHER_LAT));
                 weatherAsset.getAttribute(WeatherAsset.WIND_SPEED).ifPresent(attribute -> attribute.addOrReplaceMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true), new MetaItem<>(STORE_DATA_POINTS, true)));
                 weatherAsset.getAttribute(WeatherAsset.WIND_DIRECTION).ifPresent(attribute -> attribute.addOrReplaceMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true), new MetaItem<>(STORE_DATA_POINTS, true)));
                 weatherAsset.getAttribute(WeatherAsset.CLOUD_COVERAGE).ifPresent(attribute -> attribute.addOrReplaceMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS, true), new MetaItem<>(STORE_DATA_POINTS, true)));
@@ -106,7 +119,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
                 seedWeatherPredictedDatapoints(weatherAsset, predictionIntervalMinutes, predictionHorizonHours);
             }
 
-            ensureExistingAssetMeta(existingRoot, realm);
+            ensureExistingAssetMeta(existingRoot, realm, emissionRateGramsPerSecond);
 
             LOG.log(System.Logger.Level.INFO,
                 "Rotterdam dispersion setup already exists in realm '" + realm + "': " + existingRoot.getId());
@@ -120,7 +133,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
         WeatherAsset weatherAsset = new WeatherAsset(WEATHER_ASSET_NAME)
             .setRealm(realm)
             .setParent(root)
-            .setLocation(new GeoJSONPoint(4.47917d, 51.92442d));
+            .setLocation(new GeoJSONPoint(WEATHER_LON, WEATHER_LAT));
         weatherAsset.getAttributes().getOrCreate(WeatherAsset.WIND_SPEED).setValue(18d);
         weatherAsset.getAttributes().getOrCreate(WeatherAsset.WIND_DIRECTION).setValue(270);
         weatherAsset.getAttributes().getOrCreate(WeatherAsset.CLOUD_COVERAGE).setValue(25);
@@ -138,7 +151,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
             .setWeatherAssetId(weatherAsset.getId())
             .setSourceHeightMeters(20d)
             .setReceptorHeightMeters(1.5d)
-            .setEmissionScaleFactor(1d)
+            .setEmissionRateGramsPerSecond(emissionRateGramsPerSecond)
             .setMinWindSpeedMs(0.5d)
             .setStabilityClass("AUTO")
             .setPredictionIntervalMinutes(predictionIntervalMinutes)
@@ -149,20 +162,21 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
         EnvironmentSensorAsset sourceAsset = new EnvironmentSensorAsset(SOURCE_ASSET_NAME)
             .setRealm(realm)
             .setParent(root)
-            .setLocation(new GeoJSONPoint(4.44900d, 51.90900d));
+            .setLocation(new GeoJSONPoint(SOURCE_LON, SOURCE_LAT));
 
         sourceAsset.getAttribute(EnvironmentSensorAsset.PM2_5).ifPresent(attribute ->
             attribute.addOrReplaceMeta(
                 new MetaItem<>(AGENT_LINK,
                     new PollutantDispersionAgentLink(dispersionAgentId)
                         .setRole(PollutantDispersionLinkRole.SOURCE_TRIGGER)
+                        .setEmissionRateGramsPerSecond(emissionRateGramsPerSecond)
                         .setTriggerPredicate(new NumberPredicate(triggerThreshold, AssetQuery.Operator.GREATER_THAN))
                 ),
                 new MetaItem<>(STORE_DATA_POINTS, true),
-                new MetaItem<>(RULE_STATE, true)
+                new MetaItem<>(RULE_STATE, true),
+                new MetaItem<>(READ_ONLY, false)
             )
         );
-        sourceAsset.getAttribute(EnvironmentSensorAsset.PM2_5).ifPresent(attribute -> attribute.getMeta().remove(READ_ONLY));
         sourceAsset.getAttributes().getOrCreate(EnvironmentSensorAsset.PM2_5).setValue(Math.max(0, triggerThreshold - 100));
         sourceAsset = assetStorageService.merge(sourceAsset);
 
@@ -170,7 +184,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
             realm,
             root,
             RECEPTOR_M_ASSET_NAME,
-            new GeoJSONPoint(4.48900d, 51.90900d),
+            new GeoJSONPoint(RECEPTOR_M_LON, RECEPTOR_M_LAT),
             dispersionAgentId
         );
         receptorM = assetStorageService.merge(receptorM);
@@ -179,7 +193,7 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
             realm,
             root,
             RECEPTOR_N_ASSET_NAME,
-            new GeoJSONPoint(4.47800d, 51.92000d),
+            new GeoJSONPoint(RECEPTOR_N_LON, RECEPTOR_N_LAT),
             dispersionAgentId
         );
         receptorN = assetStorageService.merge(receptorN);
@@ -266,24 +280,39 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
             );
     }
 
-    protected void ensureExistingAssetMeta(Asset<?> root, String realm) {
+    protected void ensureExistingAssetMeta(Asset<?> root, String realm, double emissionRateGramsPerSecond) {
+        Asset<?> dispersionAgent = assetStorageService.find(
+            new AssetQuery().types(PollutantDispersionAgent.class).parents(root.getId()).realm(new RealmPredicate(realm))
+        );
+
+        if (dispersionAgent instanceof PollutantDispersionAgent pollutantDispersionAgent) {
+            pollutantDispersionAgent.setEmissionRateGramsPerSecond(emissionRateGramsPerSecond);
+            assetStorageService.merge(pollutantDispersionAgent);
+        }
+
         Asset<?> source = assetStorageService.find(
             new AssetQuery().types(EnvironmentSensorAsset.class).parents(root.getId()).names(SOURCE_ASSET_NAME).realm(new RealmPredicate(realm))
         );
 
         if (source instanceof EnvironmentSensorAsset sourceAsset) {
+            sourceAsset.setLocation(new GeoJSONPoint(SOURCE_LON, SOURCE_LAT));
             sourceAsset.getAttribute(EnvironmentSensorAsset.PM2_5).ifPresent(attribute -> {
-                attribute.getMeta().remove(READ_ONLY);
-                attribute.addOrReplaceMeta(new MetaItem<>(STORE_DATA_POINTS, true), new MetaItem<>(RULE_STATE, true));
+                attribute.getMetaValue(AGENT_LINK).ifPresent(agentLink -> {
+                    if (agentLink instanceof PollutantDispersionAgentLink sourceLink) {
+                        sourceLink.setEmissionRateGramsPerSecond(emissionRateGramsPerSecond);
+                        attribute.addOrReplaceMeta(new MetaItem<>(AGENT_LINK, sourceLink));
+                    }
+                });
+                attribute.addOrReplaceMeta(new MetaItem<>(STORE_DATA_POINTS, true), new MetaItem<>(RULE_STATE, true), new MetaItem<>(READ_ONLY, false));
             });
             assetStorageService.merge(sourceAsset);
         }
 
-        ensureExistingReceptorMeta(root, realm, RECEPTOR_M_ASSET_NAME);
-        ensureExistingReceptorMeta(root, realm, RECEPTOR_N_ASSET_NAME);
+        ensureExistingReceptorMeta(root, realm, RECEPTOR_M_ASSET_NAME, RECEPTOR_M_LON, RECEPTOR_M_LAT);
+        ensureExistingReceptorMeta(root, realm, RECEPTOR_N_ASSET_NAME, RECEPTOR_N_LON, RECEPTOR_N_LAT);
     }
 
-    protected void ensureExistingReceptorMeta(Asset<?> root, String realm, String receptorName) {
+    protected void ensureExistingReceptorMeta(Asset<?> root, String realm, String receptorName, double lon, double lat) {
         Asset<?> receptorAsset = assetStorageService.find(
             new AssetQuery().types(ThingAsset.class).parents(root.getId()).names(receptorName).realm(new RealmPredicate(realm))
         );
@@ -291,6 +320,8 @@ public class RotterdamDispersionSetup extends org.openremote.manager.setup.Manag
         if (!(receptorAsset instanceof ThingAsset thingAsset)) {
             return;
         }
+
+        thingAsset.setLocation(new GeoJSONPoint(lon, lat));
 
         thingAsset.getAttribute(RECEPTOR_ATTRIBUTE_NAME).ifPresent(attribute ->
             attribute.addOrReplaceMeta(
