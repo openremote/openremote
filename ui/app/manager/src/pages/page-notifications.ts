@@ -11,7 +11,7 @@ import {
     User
 } from "@openremote/model";
 import manager, {DefaultColor3} from "@openremote/core";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AxiosError, isAxiosError} from "@openremote/rest";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
