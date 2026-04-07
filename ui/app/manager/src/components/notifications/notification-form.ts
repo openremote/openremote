@@ -1,8 +1,8 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
 import manager, {DefaultColor3, Util} from "@openremote/core";
 import {Asset, PushNotificationMessage, SentNotification, User} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
