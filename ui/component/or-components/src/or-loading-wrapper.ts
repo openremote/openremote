@@ -46,6 +46,10 @@ export class OrLoadingWrapper extends LitElement {
                 width: 100%;
                 height: 100%;
             }
+
+            #content-wrapper {
+                display: flex;
+            }
         `;
     }
 
