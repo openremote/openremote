@@ -1,8 +1,8 @@
-import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {OrMwcTable, OrMwcTableRowClickDetail, OrMwcTableRowClickEvent, TableColumn, TableConfig, TableContent, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
-import {Notification, SentNotification, PushNotificationMessage, NotificationTargetType} from "@openremote/model";
+import {SentNotification, PushNotificationMessage, NotificationTargetType} from "@openremote/model";
 import i18next from "i18next";
 import {classMap} from "lit/directives/class-map.js";
 import { NotificationService } from "../../pages/page-notifications";
