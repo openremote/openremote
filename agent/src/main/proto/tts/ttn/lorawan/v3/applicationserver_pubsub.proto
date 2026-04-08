@@ -1,0 +1,320 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ApplicationPubSubIdentifiers {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  string pub_sub_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+}
+
+message ApplicationPubSub {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ApplicationPubSubIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+
+  // The format to use for the body.
+  // Supported values depend on the Application Server configuration.
+  string format = 4 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 20
+  }];
+
+  // The NATS provider settings.
+  message NATSProvider {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // The server connection URL.
+    string server_url = 1 [(validate.rules).string.uri = true];
+  }
+  // The MQTT provider settings.
+  message MQTTProvider {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    string server_url = 1 [(validate.rules).string.uri = true];
+    string client_id = 2 [(validate.rules).string.max_len = 23];
+    string username = 3 [(validate.rules).string.max_len = 100];
+    string password = 4 [(validate.rules).string.max_len = 100];
+
+    enum QoS {
+      option (thethings.json.enum) = {marshal_as_string: true};
+
+      AT_MOST_ONCE = 0;
+      AT_LEAST_ONCE = 1;
+      EXACTLY_ONCE = 2;
+    }
+    QoS subscribe_qos = 5;
+    QoS publish_qos = 6;
+
+    bool use_tls = 7;
+    // The server Root CA certificate. PEM formatted.
+    bytes tls_ca = 8 [
+      (validate.rules).bytes.max_len = 8192,
+      (thethings.flags.field) = {
+        set_flag_new_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.NewHexBytesFlag",
+        set_flag_getter_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.GetBytes"
+      }
+    ];
+    // The client certificate. PEM formatted.
+    bytes tls_client_cert = 9 [
+      (validate.rules).bytes.max_len = 8192,
+      (thethings.flags.field) = {
+        set_flag_new_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.NewHexBytesFlag",
+        set_flag_getter_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.GetBytes"
+      }
+    ];
+    // The client private key. PEM formatted.
+    bytes tls_client_key = 10 [
+      (validate.rules).bytes.max_len = 8192,
+      (thethings.flags.field) = {
+        set_flag_new_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.NewHexBytesFlag",
+        set_flag_getter_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.GetBytes"
+      }
+    ];
+
+    // HTTP headers to use on MQTT-over-Websocket connections.
+    map<string, string> headers = 11;
+  }
+
+  message AWSIoTProvider {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // The AWS region.
+    string region = 1 [(validate.rules).string = {
+      in: [
+        "af-south-1",
+        "ap-east-1",
+        "ap-northeast-1",
+        "ap-northeast-2",
+        "ap-south-1",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ca-central-1",
+        "eu-central-1",
+        "eu-north-1",
+        "eu-south-1",
+        "eu-west-1",
+        "eu-west-2",
+        "eu-west-3",
+        "me-south-1",
+        "sa-east-1",
+        "us-east-1",
+        "us-east-2",
+        "us-west-1",
+        "us-west-2"
+      ]
+    }];
+
+    message AccessKey {
+      option (thethings.flags.message) = {
+        select: true,
+        set: true
+      };
+      string access_key_id = 1 [(validate.rules).string = {
+        pattern: "^[\\w]*$",
+        min_len: 16,
+        max_len: 128
+      }];
+      string secret_access_key = 2 [(validate.rules).string.max_len = 40];
+      string session_token = 3 [(validate.rules).string.max_len = 256];
+    }
+
+    // If set, the integration will use an AWS access key.
+    AccessKey access_key = 2;
+
+    message AssumeRole {
+      option (thethings.flags.message) = {
+        select: true,
+        set: true
+      };
+      string arn = 1 [(validate.rules).string = {pattern: "^arn:aws:iam::[0-9]{12}:role\\/[A-Za-z0-9_+=,.@-]+$"}];
+      string external_id = 2 [(validate.rules).string = {
+        pattern: "^[\\w+=,.@:\\/-]*$",
+        max_len: 1224
+      }];
+      google.protobuf.Duration session_duration = 3;
+    }
+
+    // If set, the integration will assume the given role during operation.
+    AssumeRole assume_role = 3;
+
+    // The endpoint address to connect to. If the endpoint address is left empty,
+    // the integration will try to discover it.
+    string endpoint_address = 4 [(validate.rules).string = {
+      pattern: "^((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])|)$",
+      max_len: 128
+    }];
+
+    message DefaultIntegration {
+      option (thethings.flags.message) = {
+        select: true,
+        set: true
+      };
+      // The stack name that is associated with the CloudFormation deployment of The Things Stack Enterprise integration.
+      string stack_name = 1 [(validate.rules).string = {
+        pattern: "^[A-Za-z][A-Za-z0-9\\-]*$",
+        max_len: 128
+      }];
+    }
+
+    oneof deployment {
+      // Enable the default integration. This overrides custom base topic and message topics of the pub/sub integration.
+      DefaultIntegration default = 5;
+    }
+  }
+
+  // The provider for the PubSub.
+  oneof provider {
+    option (validate.required) = true;
+
+    NATSProvider nats = 17;
+    MQTTProvider mqtt = 25;
+    AWSIoTProvider aws_iot = 101;
+  }
+
+  // Base topic name to which the messages topic is appended.
+  string base_topic = 6 [(validate.rules).string.max_len = 100];
+
+  message Message {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // The topic on which the Application Server publishes or receives the messages.
+    string topic = 1 [(validate.rules).string.max_len = 100];
+  }
+
+  // The topic to which the Application Server subscribes for downlink queue push operations.
+  Message downlink_push = 7;
+  // The topic to which the Application Server subscribes for downlink queue replace operations.
+  Message downlink_replace = 8;
+
+  Message uplink_message = 9;
+  Message uplink_normalized = 20;
+  Message join_accept = 10;
+  Message downlink_ack = 11;
+  Message downlink_nack = 12;
+  Message downlink_sent = 13;
+  Message downlink_failed = 14;
+  Message downlink_queued = 15;
+  Message downlink_queue_invalidated = 19;
+  Message location_solved = 16;
+  Message service_data = 18;
+
+  // next: 21
+}
+
+message ApplicationPubSubs {
+  repeated ApplicationPubSub pubsubs = 1;
+}
+
+message ApplicationPubSubFormats {
+  // Format and description.
+  map<string, string> formats = 1;
+}
+
+message GetApplicationPubSubRequest {
+  ApplicationPubSubIdentifiers ids = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListApplicationPubSubsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+  uint32 limit = 3 [(validate.rules).uint32.lte = 1000];
+  uint32 page = 4;
+}
+
+message SetApplicationPubSubRequest {
+  ApplicationPubSub pubsub = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+service ApplicationPubSubRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage application pubsubs."};
+  rpc GetFormats(google.protobuf.Empty) returns (ApplicationPubSubFormats) {
+    option (google.api.http) = {get: "/as/pubsub-formats"};
+  }
+
+  rpc Get(GetApplicationPubSubRequest) returns (ApplicationPubSub) {
+    option (google.api.http) = {get: "/as/pubsub/{ids.application_ids.application_id}/{ids.pub_sub_id}"};
+  }
+
+  rpc List(ListApplicationPubSubsRequest) returns (ApplicationPubSubs) {
+    option (google.api.http) = {get: "/as/pubsub/{application_ids.application_id}"};
+  }
+
+  rpc Set(SetApplicationPubSubRequest) returns (ApplicationPubSub) {
+    option (google.api.http) = {
+      put: "/as/pubsub/{pubsub.ids.application_ids.application_id}/{pubsub.ids.pub_sub_id}"
+      body: "*"
+      additional_bindings {
+        post: "/as/pubsub/{pubsub.ids.application_ids.application_id}"
+        body: "*"
+      }
+    };
+  }
+
+  rpc Delete(ApplicationPubSubIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/as/pubsub/{application_ids.application_id}/{pub_sub_id}"};
+  }
+}
