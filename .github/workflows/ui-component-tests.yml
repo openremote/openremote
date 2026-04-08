@@ -8,6 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: mdi-fonts
@@ -16,12 +22,8 @@ jobs:
         with:
           name: or-ui-component-build
           path: ui/component
-      - name: Set up JDK 21 and Gradle cache
-        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+      - name: Update when the `tsbuildinfo` files were last modified to 'now'
+        run: find . -name "*.tsbuildinfo" -exec touch {} +
       - name: Install Playwright browsers
         run: npx playwright@1.57.0 install --with-deps chromium
       - name: Run UI component tests
