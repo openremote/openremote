@@ -1765,7 +1765,6 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -1776,7 +1775,6 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/util": "workspace:*"
     lit-html: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -1792,7 +1790,6 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
     lit: "npm:^3.3.1"
   languageName: unknown
@@ -1821,7 +1818,6 @@ __metadata:
     "@openremote/or-services": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
-    "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
     "@rsdoctor/rspack-plugin": "npm:~1.4.0"
     iso-639-1: "npm:^3.1.3"
@@ -1847,7 +1843,6 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
-    "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
     "@webcomponents/webcomponentsjs": "npm:^2.6.0"
     lit: "npm:^3.3.1"
@@ -2101,8 +2096,9 @@ __metadata:
     "@openremote/or-components": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@types/http-link-header": "npm:1.0.7"
     axios: "npm:1.13.6"
-    http-link-header: "npm:^1.1.3"
+    http-link-header: "npm:1.1.3"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
@@ -3388,6 +3384,15 @@ __metadata:
   version: 2.0.4
   resolution: "@types/http-errors@npm:2.0.4"
   checksum: 10c0/494670a57ad4062fee6c575047ad5782506dd35a6b9ed3894cea65830a94367bd84ba302eb3dde331871f6d70ca287bfedb1b2cf658e6132cd2cbd427ab56836
+  languageName: node
+  linkType: hard
+
+"@types/http-link-header@npm:1.0.7":
+  version: 1.0.7
+  resolution: "@types/http-link-header@npm:1.0.7"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/ffde4514a286ee62fab86bd5164958f5c9ad9d8012eaeb4f5536efa6157e6cf9f93121d5a39bf160c3712554d945300a223a9f8b1f3fb08cc70b73f539767338
   languageName: node
   linkType: hard
 
@@ -7685,7 +7690,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-link-header@npm:^1.1.3":
+"http-link-header@npm:1.1.3":
   version: 1.1.3
   resolution: "http-link-header@npm:1.1.3"
   checksum: 10c0/56698a9d3aee4d5319d1cdfe62ef5d7179f179ec1e6432d23c9e6a0c896be642ba47a4985a45419cff91008032aef920aca9df94ff9e763e646c83bf54b7243d

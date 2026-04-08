@@ -36,9 +36,6 @@
     "navigo": "^8.11.1",
     "pwa-helpers": "^0.9.0"
   },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
-  },
   "publishConfig": {
     "access": "public"
   }
