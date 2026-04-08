@@ -265,6 +265,20 @@ jobs:
             profile
           sparse-checkout-cone-mode: false
 
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+
+      - name: Yarn cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        if: steps.skip-cicd.outputs.value != 'true'
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn---
+
       - name: Install node_modules
         if: steps.ui-files-changed.outputs.any_modified == 'true'
         run: yarn --immutable
@@ -616,20 +630,6 @@ jobs:
         with:
           version: latest
           install: true
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
-
-      - name: Yarn cache
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        if: steps.skip-cicd.outputs.value != 'true'
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn---
 
       - name: Output info
         if: steps.skip-cicd.outputs.value != 'true'
