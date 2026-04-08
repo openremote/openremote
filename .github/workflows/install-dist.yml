@@ -40,6 +40,8 @@ jobs:
           path: |
             ui/component/model/src/model.ts
             ui/component/rest/src/restclient.ts
+            ui/component/**/custom-elements.json
+            ui/component/**/custom-elements-jsx.d.ts
             ui/component/**/dist
             ui/component/**/lib
             ui/component/**/tsconfig.tsbuildinfo
