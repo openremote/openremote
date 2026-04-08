@@ -38,10 +38,11 @@ jobs:
           name: or-ui-component-build
           if-no-files-found: error
           path: |
-            ui/component/**/dist
-            ui/component/**/lib
             ui/component/model/src/model.ts
             ui/component/rest/src/restclient.ts
+            ui/component/**/dist
+            ui/component/**/lib
+            ui/component/**/tsconfig.tsbuildinfo
       - name: Archive MDI fonts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
