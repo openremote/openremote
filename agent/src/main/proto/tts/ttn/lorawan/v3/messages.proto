@@ -1,0 +1,754 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/error.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/keys.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "ttn/lorawan/v3/metadata.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Uplink message from the end device to the network
+message UplinkMessage {
+  // Mapping from UDP message (other fields can be set in "advanced"):
+  //
+  // - time: rx_metadata.time
+  // - tmst: rx_metadata.timestamp
+  // - freq: settings.frequency
+  // - modu: settings.modulation
+  // - datr: settings.data_rate_index (and derived fields)
+  // - codr: settings.coding_rate
+  // - size: len(raw_payload)
+  // - data: raw_payload (and derived payload)
+  // - rsig: rx_metadata
+  //  - ant: rx_metadata.antenna_index
+  //  - chan: rx_metadata.channel_index
+  //  - rssis: rx_metadata.rssi
+  //  - lsnr: rx_metadata.snr
+
+  // Mapping from BACKEND message:
+  //
+  // - PHYPayload: raw_payload
+  // - FRMPayload: payload.mac_payload.frm_payload
+  // - DevEUI: end_device.dev_eui
+  // - DevAddr: end_device.dev_addr
+  // - ULMetadata:
+  //  - DevEUI: end_device.dev_eui
+  //  - DevAddr: end_device.dev_addr
+  //  - FPort: payload.mac_payload.f_port
+  //  - FCntUp: payload.mac_payload.f_hdr.f_cnt
+  //  - Confirmed: payload.mhdr.m_type
+  //  - DataRate: settings.data_rate_index (and derived fields)
+  //  - ULFreq: settings.frequency
+  //  - RecvTime: included in each rx_metadata
+  //  - GWCnt: derived from rx_metadata contents
+  //  - GWInfo:
+  //   - ID: rx_metadata.gateway_id
+  //   - RSSI: rx_metadata.rssi
+  //   - SNR: rx_metadata.snr
+  //   - Lat: rx_metadata.location.latitude
+  //   - Lon: rx_metadata.location.longitude
+
+  bytes raw_payload = 1;
+  Message payload = 2;
+  reserved 3; // end_device_ids (obsolete).
+  TxSettings settings = 4 [(validate.rules).message.required = true];
+  repeated RxMetadata rx_metadata = 5;
+  // Server time when a component received the message.
+  // The Gateway Server and Network Server set this value to their local server time of reception.
+  google.protobuf.Timestamp received_at = 6;
+  repeated string correlation_ids = 7 [(validate.rules).repeated.items.string.max_len = 100];
+  reserved 8; // gateway_channel_index (obsolete).
+  // Index of the device channel that received the message.
+  // Set by Network Server.
+  uint32 device_channel_index = 9 [(validate.rules).uint32 = {lte: 255}];
+
+  // Consumed airtime for the transmission of the uplink message. Calculated by Network Server using the RawPayload size and the transmission settings.
+  google.protobuf.Duration consumed_airtime = 10;
+
+  // Cyclic Redundancy Check (CRC) status of demodulating the frame.
+  // If unset, the modulation does not support CRC or the gateway did not provide a CRC status.
+  // If set to false, this message should not be processed.
+  google.protobuf.BoolValue crc_status = 11;
+}
+
+// Downlink message from the network to the end device
+message DownlinkMessage {
+  // Mapping from UDP message:
+  //
+  // imme: -
+  // tmst: scheduled.timestamp
+  // tmms: scheduled.time
+  // freq: scheduled.frequency
+  // rfch: (0)
+  // powe: scheduled.tx_power
+  // modu: scheduled.modulation
+  // datr: scheduled.data_rate_index (derived)
+  // codr: scheduled.coding_rate
+  // fdev: (derived from bandwidth)
+  // ipol: scheduled.invert_polarization
+  // prea: [scheduled.advanced]
+  // size: (derived from len(raw_payload))
+  // data: raw_payload
+  // ncrc: [scheduled.advanced]
+
+  // Mapping from BACKEND message:
+  //
+  // - PHYPayload: raw_payload
+  // - FRMPayload: payload.mac_payload.frm_payload
+  // - DevEUI: end_device_ids.dev_eui
+  // - DevAddr: end_device_ids.dev_addr
+  // - DLMetadata:
+  //  - DevEUI: end_device_ids.dev_eui
+  //  - DevAddr: end_device_ids.dev_addr
+  //  - FPort: payload.mac_payload.f_port
+  //  - FCntDown: payload.mac_payload.f_hdr.f_cnt
+  //  - Confirmed: payload.mhdr.m_type
+  //  - RxDelay1: request.rx1_delay
+  //  - DLFreq1: request.rx1_frequency
+  //  - DLFreq2: request.rx2_frequency
+  //  - DataRate1: request_rx1_data_rate_index
+  //  - DataRate2: request.rx2_data_rate_index
+  //  - GWInfo:
+  //   - ID: request.gateway_ids.gateway_id
+  //  - HiPriorityFlag: request.priority >= HIGH
+
+  bytes raw_payload = 1;
+  Message payload = 2;
+  EndDeviceIdentifiers end_device_ids = 3;
+  oneof settings {
+    option (validate.required) = true;
+
+    TxRequest request = 4;
+    TxSettings scheduled = 5;
+  }
+  repeated string correlation_ids = 6 [(validate.rules).repeated.items.string.max_len = 100];
+  bytes session_key_id = 7 [(validate.rules).bytes.max_len = 2048];
+}
+
+message TxAcknowledgment {
+  // Correlation IDs for the downlink message.
+  // Set automatically by the UDP and LBS frontends.
+  // For gRPC and the MQTT v3 frontends, the correlation IDs must match the ones of the downlink message the Tx acknowledgment message refers to.
+  repeated string correlation_ids = 1 [(validate.rules).repeated.items.string.max_len = 100];
+
+  enum Result {
+    option (thethings.json.enum) = {marshal_as_string: true};
+
+    SUCCESS = 0;
+    UNKNOWN_ERROR = 1;
+    TOO_LATE = 2;
+    TOO_EARLY = 3;
+    COLLISION_PACKET = 4;
+    COLLISION_BEACON = 5;
+    TX_FREQ = 6;
+    TX_POWER = 7;
+    GPS_UNLOCKED = 8;
+  }
+  Result result = 2 [(validate.rules).enum.defined_only = true];
+
+  // The acknowledged downlink message. Set by the Gateway Server.
+  DownlinkMessage downlink_message = 3;
+}
+
+message GatewayTxAcknowledgment {
+  GatewayIdentifiers gateway_ids = 1;
+  TxAcknowledgment tx_ack = 2;
+}
+
+message GatewayUplinkMessage {
+  UplinkMessage message = 1 [(validate.rules).message.required = true];
+  // LoRaWAN band ID of the gateway.
+  string band_id = 2;
+}
+
+message LastBatteryPercentage {
+  // Frame counter value of last uplink containing DevStatusAns.
+  uint32 f_cnt = 1;
+  // The battery percentage of the end device.
+  // The value is defined in the [0, 100] interval.
+  google.protobuf.FloatValue value = 2 [(validate.rules).float = {
+    gte: 0,
+    lte: 100
+  }];
+  // Time when last DevStatus MAC command was received.
+  google.protobuf.Timestamp received_at = 3;
+}
+
+message ApplicationUplink {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Join Server issued identifier for the session keys used by this uplink.
+  bytes session_key_id = 1 [(validate.rules).bytes.max_len = 2048];
+  // LoRaWAN FPort of the uplink message.
+  uint32 f_port = 2 [(validate.rules).uint32 = {
+    lte: 255,
+    not_in: [224]
+  }];
+  // LoRaWAN FCntUp of the uplink message.
+  uint32 f_cnt = 3;
+
+  // The frame payload of the uplink message.
+  // The payload is still encrypted if the skip_payload_crypto field of the EndDevice
+  // is true, which is indicated by the presence of the app_s_key field.
+  bytes frm_payload = 4;
+
+  // The decoded frame payload of the uplink message.
+  // This field is set by the message processor that is configured for the end device (see formatters) or application (see default_formatters).
+  google.protobuf.Struct decoded_payload = 5;
+  // Warnings generated by the message processor while decoding the frm_payload.
+  repeated string decoded_payload_warnings = 12;
+
+  // The normalized frame payload of the uplink message.
+  // This field is set by the message processor that is configured for the end device (see formatters) or application (see default_formatters).
+  // If the message processor is a custom script, there is no uplink normalizer script and the decoded output is valid
+  // normalized payload, this field contains the decoded payload.
+  repeated google.protobuf.Struct normalized_payload = 17;
+  // Warnings generated by the message processor while normalizing the decoded payload.
+  repeated string normalized_payload_warnings = 18;
+
+  // A list of metadata for each antenna of each gateway that received this message.
+  repeated RxMetadata rx_metadata = 6;
+
+  // Transmission settings used by the end device.
+  TxSettings settings = 7 [(validate.rules).message.required = true];
+
+  // Server time when the Network Server received the message.
+  google.protobuf.Timestamp received_at = 8;
+
+  // The AppSKey of the current session.
+  // This field is only present if the skip_payload_crypto field of the EndDevice
+  // is true.
+  // Can be used to decrypt uplink payloads and encrypt downlink payloads.
+  KeyEnvelope app_s_key = 9;
+  // The last AFCntDown of the current session.
+  // This field is only present if the skip_payload_crypto field of the EndDevice
+  // is true.
+  // Can be used with app_s_key to encrypt downlink payloads.
+  uint32 last_a_f_cnt_down = 10;
+
+  // Indicates whether the end device used confirmed data uplink.
+  bool confirmed = 11;
+
+  // Consumed airtime for the transmission of the uplink message. Calculated by Network Server using the raw payload size and the transmission settings.
+  google.protobuf.Duration consumed_airtime = 13;
+
+  // Packet error rate of the recent uplinks in the current session.
+  // Calculated by the Network Server. The value is defined in the [0, 1] interval.
+  float packet_error_rate = 19;
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 14;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 15;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 16;
+
+  // Last battery percentage of the end device.
+  // Received via the DevStatus MAC command at last_dev_status_received_at or earlier.
+  // Set by the Network Server while handling the message.
+  LastBatteryPercentage last_battery_percentage = 20;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 21 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 22
+}
+
+message ApplicationUplinkNormalized {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  // Join Server issued identifier for the session keys used by this uplink.
+  bytes session_key_id = 1 [(validate.rules).bytes.max_len = 2048];
+  // LoRaWAN FPort of the uplink message.
+  uint32 f_port = 2 [(validate.rules).uint32 = {
+    gte: 1,
+    lte: 255,
+    not_in: [224]
+  }];
+  // LoRaWAN FCntUp of the uplink message.
+  uint32 f_cnt = 3;
+
+  // The frame payload of the uplink message.
+  // This field is always decrypted with AppSKey.
+  bytes frm_payload = 4;
+
+  // The normalized frame payload of the uplink message.
+  // This field is set for each item in normalized_payload in the corresponding ApplicationUplink message.
+  google.protobuf.Struct normalized_payload = 5 [(validate.rules).message.required = true];
+  // This field is set to normalized_payload_warnings in the corresponding ApplicationUplink message.
+  repeated string normalized_payload_warnings = 6;
+
+  // A list of metadata for each antenna of each gateway that received this message.
+  repeated RxMetadata rx_metadata = 7;
+
+  // Transmission settings used by the end device.
+  TxSettings settings = 8 [(validate.rules).message.required = true];
+
+  // Server time when the Network Server received the message.
+  google.protobuf.Timestamp received_at = 9 [(validate.rules).timestamp.required = true];
+
+  // Indicates whether the end device used confirmed data uplink.
+  bool confirmed = 10;
+
+  // Consumed airtime for the transmission of the uplink message. Calculated by Network Server using the raw payload size and the transmission settings.
+  google.protobuf.Duration consumed_airtime = 11;
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 12;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 13;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 14;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 15 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 16
+}
+
+message ApplicationLocation {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  string service = 1;
+  Location location = 2 [(validate.rules).message.required = true];
+  map<string, string> attributes = 3 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+}
+
+message ApplicationJoinAccept {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  // Join Server issued identifier for the session keys negotiated in this join.
+  bytes session_key_id = 1 [(validate.rules).bytes.max_len = 2048];
+  // Encrypted Application Session Key (if Join Server sent it to Network Server).
+  KeyEnvelope app_s_key = 2;
+  // Downlink messages in the queue that got invalidated because of the session change.
+  repeated ApplicationDownlink invalidated_downlinks = 3;
+  // Indicates whether the security context refers to the pending session, i.e. when this join-accept is an answer to a
+  // rejoin-request.
+  bool pending_session = 4;
+  // Server time when the Network Server received the message.
+  google.protobuf.Timestamp received_at = 8 [(validate.rules).timestamp.required = true];
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 9;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 10;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 11;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 12 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 13
+}
+
+message ApplicationDownlink {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Join Server issued identifier for the session keys used by this downlink.
+  bytes session_key_id = 1 [
+    (validate.rules).bytes.max_len = 2048,
+    (thethings.flags.field) = {
+      set_flag_new_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.NewHexBytesFlag",
+      set_flag_getter_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.GetBytes"
+    }
+  ];
+  uint32 f_port = 2 [(validate.rules).uint32 = {
+    lte: 255,
+    not_in: [224]
+  }];
+  uint32 f_cnt = 3;
+
+  // The frame payload of the downlink message.
+  // The payload is encrypted if the skip_payload_crypto field of the EndDevice
+  // is true.
+  bytes frm_payload = 4 [
+    (validate.rules).bytes.max_len = 255,
+    (thethings.flags.field) = {
+      set_flag_new_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.NewHexBytesFlag",
+      set_flag_getter_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.GetBytes"
+    }
+  ];
+
+  // The decoded frame payload of the downlink message.
+  // When scheduling downlink with a message processor configured for the end device (see formatters) or application (see default_formatters),
+  // this fields acts as input for the downlink encoder, and the output is set to frm_payload.
+  // When reading downlink (listing the queue, downlink message events, etc), this fields acts as output of the downlink decoder, and the input is frm_payload.
+  google.protobuf.Struct decoded_payload = 5;
+  // Warnings generated by the message processor while encoding frm_payload (scheduling downlink) or decoding the frm_payload (reading downlink).
+  repeated string decoded_payload_warnings = 10;
+
+  bool confirmed = 6;
+
+  message ClassBC {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // Possible gateway identifiers, antenna index, and group index to use for this downlink message.
+    // The Network Server selects one of these gateways for downlink, based on connectivity, signal quality, channel utilization and an available slot.
+    // If none of the gateways can be selected, the downlink message fails.
+    // If empty, a gateway and antenna is selected automatically from the gateways seen in recent uplinks.
+    // If group index is set, gateways will be grouped by the index for the Network Server to select one gateway per group.
+    repeated ClassBCGatewayIdentifiers gateways = 7;
+    // Absolute time when the downlink message should be transmitted.
+    // This requires the gateway to have GPS time synchronization.
+    // If the time is in the past or if there is a scheduling conflict, the downlink message fails.
+    // If null, the time is selected based on slot availability. This is recommended in class B mode.
+    google.protobuf.Timestamp absolute_time = 8;
+  }
+  // Optional gateway and timing information for class B and C.
+  // If set, this downlink message will only be transmitted as class B or C downlink.
+  // If not set, this downlink message may be transmitted in class A, B and C.
+  ClassBC class_b_c = 7;
+  // Priority for scheduling the downlink message.
+  TxSchedulePriority priority = 8 [(validate.rules).enum.defined_only = true];
+
+  repeated string correlation_ids = 9 [(validate.rules).repeated.items.string.max_len = 100];
+
+  message ConfirmedRetry {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+
+    // The number of attempted confirmed downlink acknowledgements.
+    uint32 attempt = 1;
+    // The maximum number of confirmed downlink acknowledgement attempts.
+    // If null, the Application Server configuration is used instead.
+    google.protobuf.UInt32Value max_attempts = 2 [(validate.rules).uint32 = {
+      gt: 0,
+      lte: 100
+    }];
+  }
+
+  ConfirmedRetry confirmed_retry = 11;
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 12;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 13;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 14;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 15 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 16
+}
+
+message ApplicationDownlinks {
+  repeated ApplicationDownlink downlinks = 1;
+}
+
+message ApplicationDownlinkFailed {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  ApplicationDownlink downlink = 1 [(validate.rules).message.required = true];
+  ErrorDetails error = 2 [(validate.rules).message.required = true];
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 3;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 4;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 5;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 7
+}
+
+message ApplicationInvalidatedDownlinks {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  repeated ApplicationDownlink downlinks = 1;
+  uint32 last_f_cnt_down = 2;
+  bytes session_key_id = 3 [(validate.rules).bytes.max_len = 2048];
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 4;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 5;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 6;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 7 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 8
+}
+
+message DownlinkQueueOperationErrorDetails {
+  bytes dev_addr = 1 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  bytes session_key_id = 2 [(validate.rules).bytes.max_len = 2048];
+  uint32 min_f_cnt_down = 3;
+
+  bytes pending_dev_addr = 4 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  bytes pending_session_key_id = 5 [(validate.rules).bytes.max_len = 2048];
+  uint32 pending_min_f_cnt_down = 6;
+}
+
+message ApplicationServiceData {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  string service = 1;
+  google.protobuf.Struct data = 2;
+
+  // End device location metadata, set by the Application Server while handling the message.
+  map<string, Location> locations = 3;
+
+  // End device version identifiers, set by the Application Server while handling the message.
+  EndDeviceVersionIdentifiers version_ids = 4;
+
+  // Network identifiers, set by the Network Server that handles the message.
+  NetworkIdentifiers network_ids = 5;
+
+  // Attributes for devices, set by the Application Server while handling the message.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // next: 7
+}
+
+// Application uplink message.
+message ApplicationUp {
+  option (thethings.flags.message) = {
+    select: true,
+    set: false
+  };
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  repeated string correlation_ids = 2 [(validate.rules).repeated.items.string.max_len = 100];
+  // Server time when the Application Server received the message.
+  google.protobuf.Timestamp received_at = 12;
+
+  oneof up {
+    option (validate.required) = true;
+
+    ApplicationUplink uplink_message = 3;
+    ApplicationUplinkNormalized uplink_normalized = 15;
+    ApplicationJoinAccept join_accept = 4;
+    ApplicationDownlink downlink_ack = 5;
+    ApplicationDownlink downlink_nack = 6;
+    ApplicationDownlink downlink_sent = 7;
+    ApplicationDownlinkFailed downlink_failed = 8;
+    ApplicationDownlink downlink_queued = 9;
+    ApplicationInvalidatedDownlinks downlink_queue_invalidated = 10;
+    ApplicationLocation location_solved = 11;
+    ApplicationServiceData service_data = 13;
+  }
+
+  // Signals if the message is coming from the Network Server or is simulated.
+  // The Application Server automatically sets this field, and callers must not manually set it.
+  bool simulated = 14;
+
+  // next: 17
+}
+
+enum PayloadFormatter {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "FORMATTER"
+  };
+
+  // No payload formatter to work with raw payload only.
+  FORMATTER_NONE = 0;
+  // Use payload formatter for the end device type from a repository.
+  FORMATTER_REPOSITORY = 1;
+  // gRPC service payload formatter. The parameter is the host:port of the service.
+  FORMATTER_GRPC_SERVICE = 2;
+  // Custom payload formatter that executes Javascript code. The parameter is a JavaScript filename.
+  FORMATTER_JAVASCRIPT = 3;
+  // CayenneLPP payload formatter.
+  FORMATTER_CAYENNELPP = 4;
+  // More payload formatters can be added.
+}
+
+message MessagePayloadFormatters {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Payload formatter for uplink messages, must be set together with its parameter.
+  PayloadFormatter up_formatter = 1 [(validate.rules).enum.defined_only = true];
+  // Parameter for the up_formatter, must be set together. The API enforces a maximum length of 16KB, but the size may be restricted further by deployment configuration.
+  string up_formatter_parameter = 2 [(validate.rules).string.max_len = 40960];
+  // Payload formatter for downlink messages, must be set together with its parameter.
+  PayloadFormatter down_formatter = 3 [(validate.rules).enum.defined_only = true];
+  // Parameter for the down_formatter, must be set together. The API enforces a maximum length of 16KB, but the size may be restricted further by deployment configuration.
+  string down_formatter_parameter = 4 [(validate.rules).string.max_len = 40960];
+}
+
+message DownlinkQueueRequest {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  repeated ApplicationDownlink downlinks = 2 [(validate.rules).repeated.max_items = 100000];
+}

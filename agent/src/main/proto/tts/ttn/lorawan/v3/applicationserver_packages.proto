@@ -1,0 +1,224 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ApplicationPackage {
+  string name = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  uint32 default_f_port = 2 [(validate.rules).uint32 = {
+    gte: 1,
+    lte: 255
+  }];
+}
+
+message ApplicationPackages {
+  repeated ApplicationPackage packages = 1;
+}
+
+message ApplicationPackageAssociationIdentifiers {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  uint32 f_port = 2 [(validate.rules).uint32 = {
+    gte: 1,
+    lte: 255
+  }];
+}
+
+message ApplicationPackageAssociation {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ApplicationPackageAssociationIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  string package_name = 4 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  google.protobuf.Struct data = 5;
+}
+
+message ApplicationPackageAssociations {
+  repeated ApplicationPackageAssociation associations = 1;
+}
+
+message GetApplicationPackageAssociationRequest {
+  ApplicationPackageAssociationIdentifiers ids = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListApplicationPackageAssociationRequest {
+  EndDeviceIdentifiers ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  // Each page is ordered by the FPort.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  google.protobuf.FieldMask field_mask = 4;
+}
+
+message SetApplicationPackageAssociationRequest {
+  ApplicationPackageAssociation association = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ApplicationPackageDefaultAssociationIdentifiers {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  uint32 f_port = 2 [(validate.rules).uint32 = {
+    gte: 1,
+    lte: 255
+  }];
+}
+
+message ApplicationPackageDefaultAssociation {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ApplicationPackageDefaultAssociationIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  string package_name = 4 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  google.protobuf.Struct data = 5;
+}
+
+message ApplicationPackageDefaultAssociations {
+  repeated ApplicationPackageDefaultAssociation defaults = 1;
+}
+
+message GetApplicationPackageDefaultAssociationRequest {
+  ApplicationPackageDefaultAssociationIdentifiers ids = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListApplicationPackageDefaultAssociationRequest {
+  ApplicationIdentifiers ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  // Each page is ordered by the FPort.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  google.protobuf.FieldMask field_mask = 4;
+}
+
+message SetApplicationPackageDefaultAssociationRequest {
+  ApplicationPackageDefaultAssociation default = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+service ApplicationPackageRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage application packages and their associations."};
+  // List returns the available packages for the end device.
+  rpc List(EndDeviceIdentifiers) returns (ApplicationPackages) {
+    option (google.api.http) = {get: "/as/applications/{application_ids.application_id}/devices/{device_id}/packages"};
+  }
+
+  // GetAssociation returns the association registered on the FPort of the end device.
+  rpc GetAssociation(GetApplicationPackageAssociationRequest) returns (ApplicationPackageAssociation) {
+    option (google.api.http) = {get: "/as/applications/{ids.end_device_ids.application_ids.application_id}/devices/{ids.end_device_ids.device_id}/packages/associations/{ids.f_port}"};
+  }
+
+  // ListAssociations returns all of the associations of the end device.
+  rpc ListAssociations(ListApplicationPackageAssociationRequest) returns (ApplicationPackageAssociations) {
+    option (google.api.http) = {get: "/as/applications/{ids.application_ids.application_id}/devices/{ids.device_id}/packages/associations"};
+  }
+
+  // SetAssociation updates or creates the association on the FPort of the end device.
+  rpc SetAssociation(SetApplicationPackageAssociationRequest) returns (ApplicationPackageAssociation) {
+    option (google.api.http) = {
+      put: "/as/applications/{association.ids.end_device_ids.application_ids.application_id}/devices/{association.ids.end_device_ids.device_id}/packages/associations/{association.ids.f_port}"
+      body: "*"
+    };
+  }
+
+  // DeleteAssociation removes the association on the FPort of the end device.
+  rpc DeleteAssociation(ApplicationPackageAssociationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/packages/associations/{f_port}"};
+  }
+
+  // GetDefaultAssociation returns the default association registered on the FPort of the application.
+  rpc GetDefaultAssociation(GetApplicationPackageDefaultAssociationRequest) returns (ApplicationPackageDefaultAssociation) {
+    option (google.api.http) = {get: "/as/applications/{ids.application_ids.application_id}/packages/associations/{ids.f_port}"};
+  }
+
+  // ListDefaultAssociations returns all of the default associations of the application.
+  rpc ListDefaultAssociations(ListApplicationPackageDefaultAssociationRequest) returns (ApplicationPackageDefaultAssociations) {
+    option (google.api.http) = {get: "/as/applications/{ids.application_id}/packages/associations"};
+  }
+
+  // SetDefaultAssociation updates or creates the default association on the FPort of the application.
+  rpc SetDefaultAssociation(SetApplicationPackageDefaultAssociationRequest) returns (ApplicationPackageDefaultAssociation) {
+    option (google.api.http) = {
+      put: "/as/applications/{default.ids.application_ids.application_id}/packages/associations/{default.ids.f_port}"
+      body: "*"
+    };
+  }
+
+  // DeleteDefaultAssociation removes the default association on the FPort of the application.
+  rpc DeleteDefaultAssociation(ApplicationPackageDefaultAssociationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/as/applications/{application_ids.application_id}/packages/associations/{f_port}"};
+  }
+}

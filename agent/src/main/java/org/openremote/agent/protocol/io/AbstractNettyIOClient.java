@@ -261,7 +261,7 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
             execution.recordResult(null);
         });
 
-        future.whenComplete((result, ex) -> {
+        future.whenCompleteAsync((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
                 disconnect();
@@ -273,7 +273,7 @@ public abstract class AbstractNettyIOClient<T> implements NettyIOClient<T> {
                     }
                 }
             }
-        });
+        }, executorService);
 
         synchronized (this) {
             if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
