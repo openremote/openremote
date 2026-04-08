@@ -18,8 +18,5 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "lit-html": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   }
 }
