@@ -23,8 +23,14 @@ jobs:
         with:
           name: or-ui-component-build
           path: ui/component
-      - name: Install Playwright browsers
-        run: npx playwright@1.57.0 install --with-deps chromium
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: playwright-browsers
+          path: /home/runner/.cache/ms-playwright
+      - name: Make Playwright browser binaries executable
+        run: chmod -R +x /home/runner/.cache/ms-playwright
+      # - name: Install Playwright browsers dependencies
+      #   run: npx playwright@$(jq -r ".devDependencies.playwright" ui/test/package.json) install-deps chromium-headless-shell
       - name: Set up JDK 21 and gradle cache
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:

@@ -22,10 +22,16 @@ jobs:
         with:
           name: or-ui-component-build
           path: ui/component
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: playwright-browsers
+          path: /home/runner/.cache/ms-playwright
+      - name: Make Playwright browser binaries executable
+        run: chmod -R +x /home/runner/.cache/ms-playwright
+      # - name: Install Playwright browsers dependencies
+      #   run: npx playwright@$(jq -r ".devDependencies.playwright" ui/test/package.json) install-deps chromium-headless-shell
       - name: Update when the `tsbuildinfo` files were last modified to 'now'
         run: find . -name "*.tsbuildinfo" -exec touch {} +
-      - name: Install Playwright browsers
-        run: npx playwright@1.57.0 install --with-deps chromium
       - name: Run UI component tests
         timeout-minutes: 20
         run: ./gradlew -p ui/component npmTest
