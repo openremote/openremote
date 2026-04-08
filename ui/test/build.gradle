@@ -1,0 +1,4 @@
+tasks.register("installBrowsers", Exec) {
+    mustRunAfter(resolveTask(":deployment:installDist"))
+    commandLine npmCommand("npx"), "playwright", "install", "chromium"
+}
