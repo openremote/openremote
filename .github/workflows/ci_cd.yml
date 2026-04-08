@@ -273,8 +273,13 @@ jobs:
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        env:
+          # Use zstd compression (faster than default gzip)
+          GZIP: "-1"
         with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          path: |
+              node_modules
+              ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn---
