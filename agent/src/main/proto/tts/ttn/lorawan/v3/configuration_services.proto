@@ -1,0 +1,205 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ListFrequencyPlansRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Optional base frequency in MHz for hardware support (433, 470, 868 or 915)
+  uint32 base_frequency = 1;
+  // Optional Band ID to filter the results.
+  string band_id = 2;
+  // Optional field to include only gateway related results.
+  bool gateways_only = 3;
+}
+
+message FrequencyPlanDescription {
+  string id = 1;
+  // The ID of the frequency that the current frequency plan is based on.
+  string base_id = 2;
+  string name = 3;
+  // Base frequency in MHz for hardware support (433, 470, 868 or 915)
+  uint32 base_frequency = 4;
+  string band_id = 5;
+}
+
+message ListFrequencyPlansResponse {
+  repeated FrequencyPlanDescription frequency_plans = 1;
+}
+
+message GetPhyVersionsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Optional Band ID to filter the results.
+  // If unused, all supported Bands and their versions are returned.
+  string band_id = 1;
+}
+
+message GetPhyVersionsResponse {
+  message VersionInfo {
+    string band_id = 1;
+    repeated PHYVersion phy_versions = 2;
+  }
+  repeated VersionInfo version_info = 2;
+}
+
+message ListBandsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Optional Band ID to filter the results.
+  // If unused, all supported Bands are returned.
+  string band_id = 1;
+  // Optional PHY version to filter the results.
+  // If unused, all supported versions are returned.
+  PHYVersion phy_version = 2 [(validate.rules).enum.defined_only = true];
+}
+
+message BandDescription {
+  string id = 1;
+
+  message Beacon {
+    DataRateIndex data_rate_index = 1;
+    string coding_rate = 2;
+    reserved 3; // inverted_polarity
+    reserved 4; // compute_frequency
+    repeated uint64 frequencies = 5;
+  }
+
+  Beacon beacon = 2;
+  reserved 3; // ping_slot_frequency
+  repeated uint64 ping_slot_frequencies = 32;
+
+  uint32 max_uplink_channels = 4;
+
+  message Channel {
+    uint64 frequency = 1;
+    DataRateIndex min_data_rate = 2;
+    DataRateIndex max_data_rate = 3;
+  }
+
+  repeated Channel uplink_channels = 5;
+  uint32 max_downlink_channels = 6;
+  repeated Channel downlink_channels = 7;
+
+  message SubBandParameters {
+    uint64 min_frequency = 1;
+    uint64 max_frequency = 2;
+    float duty_cycle = 3;
+    float max_eirp = 4;
+  }
+
+  repeated SubBandParameters sub_bands = 8;
+
+  message BandDataRate {
+    DataRate rate = 1;
+    reserved 2; // max_mac_payload_size
+  }
+
+  map<uint32, BandDataRate> data_rates = 9;
+
+  uint64 freq_multiplier = 10;
+  bool implements_cf_list = 11;
+  CFListType cf_list_type = 12;
+  google.protobuf.Duration receive_delay_1 = 13;
+  google.protobuf.Duration receive_delay_2 = 14;
+  google.protobuf.Duration join_accept_delay_1 = 15;
+  google.protobuf.Duration join_accept_delay_2 = 16;
+  uint64 max_fcnt_gap = 17;
+  bool supports_dynamic_adr = 18;
+  ADRAckLimitExponent adr_ack_limit = 19;
+  google.protobuf.Duration min_retransmit_timeout = 20;
+  google.protobuf.Duration max_retransmit_timeout = 21;
+  repeated float tx_offset = 22;
+  DataRateIndex max_adr_data_rate_index = 23;
+  google.protobuf.Duration relay_forward_delay = 34;
+  google.protobuf.Duration relay_receive_delay = 35;
+
+  bool tx_param_setup_req_support = 24;
+  float default_max_eirp = 25;
+  reserved 26; // rx1_channel
+  reserved 27; // rx2_datarate
+  reserved 28; // generate_ch_masks
+  reserved 29; // parse_ch_mask
+
+  message Rx2Parameters {
+    DataRateIndex data_rate_index = 1;
+    uint64 frequency = 2;
+  }
+
+  Rx2Parameters default_rx2_parameters = 30;
+
+  message DwellTime {
+    google.protobuf.BoolValue uplinks = 1;
+    google.protobuf.BoolValue downlinks = 2;
+  }
+
+  DwellTime boot_dwell_time = 31;
+
+  message RelayParameters {
+    message RelayWORChannel {
+      uint64 frequency = 1;
+      uint64 ack_frequency = 2;
+      DataRateIndex data_rate_index = 3;
+    }
+    repeated RelayWORChannel wor_channels = 1;
+  }
+
+  RelayParameters relay = 33;
+}
+
+message ListBandsResponse {
+  message VersionedBandDescription {
+    map<string, BandDescription> band = 1;
+  }
+  map<string, VersionedBandDescription> descriptions = 1;
+}
+
+service Configuration {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Retrieve LoRaWAN network configuration options."};
+  rpc ListFrequencyPlans(ListFrequencyPlansRequest) returns (ListFrequencyPlansResponse) {
+    option (google.api.http) = {get: "/configuration/frequency-plans"};
+  }
+
+  // Returns a list of supported LoRaWAN PHY Versions for the given Band ID.
+  rpc GetPhyVersions(GetPhyVersionsRequest) returns (GetPhyVersionsResponse) {
+    option (google.api.http) = {get: "/configuration/phy-versions"};
+  }
+
+  rpc ListBands(ListBandsRequest) returns (ListBandsResponse) {
+    option (google.api.http) = {
+      get: "/configuration/bands"
+      additional_bindings {get: "/configuration/bands/{band_id}"}
+      additional_bindings {get: "/configuration/bands/{band_id}/{phy_version}"}
+    };
+  }
+}
