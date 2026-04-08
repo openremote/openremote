@@ -281,7 +281,7 @@ jobs:
 
       - name: Install node_modules
         # if: steps.ui-files-changed.outputs.any_modified == 'true'
-        run: yarn --immutable
+        run: yarn install
 
       - name: Check UI dependencies
         if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
