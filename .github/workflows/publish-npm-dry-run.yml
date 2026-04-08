@@ -11,6 +11,11 @@ jobs:
         with:
           name: or-ui-component-build
           path: ui/component
+      - name: Update when the `tsbuildinfo` files were last modified to 'now'
+        run: find . -name "*.tsbuildinfo" -exec touch {} +
+        # You can see how the TypeScript compiler invalidates the build artifacts by running:
+        # - `npx tsc -b --verbose`: to see if the artifacts are up-to-date
+        # - `find src | xargs touch`: to update component inputs
       - run: yarn --immutable
       - name: Run NPM publish dry run
         timeout-minutes: 20
