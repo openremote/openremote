@@ -15,6 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-ui-component-build
+          path: ui/component
+      - name: Update when the `tsbuildinfo` files were last modified to 'now'
+        run: find . -name "*.tsbuildinfo" -exec touch {} +
+      - run: yarn --immutable
       - name: Publish to NPM
         run: |
           echo 'npmRegistries:' >> .yarnrc.yml
