@@ -159,6 +159,7 @@ logging:
   existingConfigMap: ""
 
   # Key within logging.existingConfigMap to mount as logging.properties.
+  # Requires logging.existingConfigMap.
   existingConfigMapKey: "logging.properties"
 
   # Optional token to force a rollout when using an external ConfigMap.
