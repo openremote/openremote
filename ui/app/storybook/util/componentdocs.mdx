@@ -50,7 +50,7 @@ export const ComponentDocs = (props) => {
 
             {/* Description of the component */}
             {story.default?.parameters?.docs?.description || customElements.description
-                ? <p>{story.default?.parameters?.docs?.description ?? customElements.description}</p>
+                ? <Markdown>{story.default?.parameters?.docs?.description ?? customElements.description}</Markdown>
                 : <i>Could not find description of the story. Please place a comment above the TypeScript class of the component.</i>
             }
 
