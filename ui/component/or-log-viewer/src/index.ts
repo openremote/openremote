@@ -19,13 +19,12 @@ import moment from "moment";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import { GenericAxiosResponse } from "axios";
+import type { GenericAxiosResponse } from "axios";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { when } from "lit/directives/when.js";
-
+import { parse } from "http-link-header";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const linkParser = require("http-link-header");
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export interface ViewerConfig {
@@ -508,8 +507,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
         const linkHeaders = response.headers["link"] as any;
         if (linkHeaders) {
-            const links = linkParser.parse(linkHeaders);
-            let lastLink = links.rel("last");
+            const links = parse(linkHeaders);
+            let lastLink: any = links.rel("last");
             if (Array.isArray(lastLink) && lastLink.length > 0) {
                 lastLink = lastLink[0];
             }

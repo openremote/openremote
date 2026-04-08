@@ -34,8 +34,5 @@
     "@openremote/rest": "workspace:*",
     "@reduxjs/toolkit": "^1.8.1",
     "lit": "^3.3.1"
-  },
-  "devDependencies": {
-    "@openremote/util": "workspace:*"
   }
 }
