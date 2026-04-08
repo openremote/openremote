@@ -1,7 +1,16 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
+import {
+    InputType,
+    OrMwcInput,
+    OrInputChangedEvent,
+    getValueHolderInputTemplateProvider,
+    ValueInputProviderOptions,
+    OrInputChangedEventDetail,
+    ValueInputProvider,
+    ValueInputProviderGenerator
+} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
