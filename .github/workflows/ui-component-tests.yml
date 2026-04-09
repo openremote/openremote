@@ -2,7 +2,6 @@ name: UI Component Tests
 on: workflow_call
 
 jobs:
-
   ui-component-tests:
     name: UI Component Tests
     runs-on: ubuntu-latest
@@ -11,9 +10,9 @@ jobs:
       - name: Set up JDK 21 and Gradle cache
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: mdi-fonts

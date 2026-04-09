@@ -2,7 +2,6 @@ name: Unit Tests
 on: workflow_call
 
 jobs:
-
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -11,9 +10,9 @@ jobs:
       - name: Set up JDK 21 and Gradle cache
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
       - name: Run unit tests
         timeout-minutes: 20
         run: ./gradlew test -x :test:test -x npmTest
@@ -23,4 +22,3 @@ jobs:
         with:
           name: or-unit-test-results
           path: test/build/reports/tests
-

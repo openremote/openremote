@@ -11,7 +11,6 @@ permissions:
   id-token: write
 
 jobs:
-
   snapshot-image:
     name: Snapshot image
     runs-on: ubuntu-latest
@@ -28,10 +27,10 @@ jobs:
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
         with:
           version: latest
-#      - name: Configure AWS Credentials
-#        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
-#        with:
-#          aws-region: eu-west-1
-#          role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
+      #      - name: Configure AWS Credentials
+      #        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
+      #        with:
+      #          aws-region: eu-west-1
+      #          role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
       - name: Build snapshot image
         run: docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t ${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-${{ github.sha }} manager/build/install/manager
