@@ -113,7 +113,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
     }
 
     @SuppressWarnings("GroovyAccessibility")
-    def "rules service should ignore an older retract when a newer rule state is already cached"() {
+    def "rules service should still retract a cached rule state when a later retract arrives with an older value timestamp"() {
         given: "the container is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
@@ -175,7 +175,7 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
         )
         rulesService.onAttributeEvent(newerEvent)
 
-        and: "an older delete for the same rule state arrives afterwards"
+        and: "a delete for the same rule state arrives afterwards carrying an older value timestamp"
         def olderRetractEvent = new AttributeEvent(
             storedAsset,
             storedAttribute,
@@ -187,18 +187,14 @@ class RulesServiceStateOrderingTest extends Specification implements ManagerCont
         ).setDeleted(true)
         rulesService.onAttributeEvent(olderRetractEvent)
 
-        then: "the newer rule state should remain cached"
+        then: "the cached rule state should be removed"
         def latestRuleState = rulesService.attributeEvents.find { it.id == asset.id && it.name == "count" }
-        assert latestRuleState != null
-        assert latestRuleState.timestamp == newerTimestamp
-        assert latestRuleState.value.get() == 2
+        assert latestRuleState == null
 
-        and: "the rule engine fact should also remain on the newer timestamp and latest value"
+        and: "the rule engine fact should also be removed"
         conditions.eventually {
             def engineState = engine.facts.assetStates.find { it.id == asset.id && it.name == "count" }
-            assert engineState != null
-            assert engineState.timestamp == newerTimestamp
-            assert engineState.value.get() == 2
+            assert engineState == null
         }
 
         cleanup:

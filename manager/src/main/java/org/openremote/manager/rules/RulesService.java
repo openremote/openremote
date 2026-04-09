@@ -136,7 +136,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     // here means we can quickly insert facts into newly started engines
     protected final Set<AttributeEvent> attributeEvents = ConcurrentHashMap.newKeySet();
     protected final Map<AttributeRef, AttributeEvent> attributeEventsByRef = new ConcurrentHashMap<>();
-    protected final Map<AttributeRef, AttributeEvent> preInitAttributeEvents = new HashMap<>();
+    protected final Set<AttributeEvent> preInitAttributeEvents = new HashSet<>();
     protected final Object attributeEventsLock = new Object();
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
@@ -338,12 +338,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
             assetEngines.values().forEach(RulesEngine::start);
 
             startDone = true;
-            Map<AttributeRef, AttributeEvent> bufferedEvents;
+            Set<AttributeEvent> bufferedEvents;
             synchronized (preInitAttributeEvents) {
-                bufferedEvents = new HashMap<>(preInitAttributeEvents);
+                bufferedEvents = new HashSet<>(preInitAttributeEvents);
                 preInitAttributeEvents.clear();
             }
-            bufferedEvents.values().forEach(this::doProcessAttributeUpdate);
+            bufferedEvents.forEach(this::doProcessAttributeUpdate);
         }
     }
 
@@ -768,12 +768,6 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected void retractAttributeInfo(AttributeEvent attributeEvent) {
         synchronized (attributeEventsLock) {
             AttributeEvent currentEvent = attributeEventsByRef.get(attributeEvent.getRef());
-            if (isOlderThanCurrent(attributeEvent, currentEvent)) {
-                AttributeEvent finalCurrentEvent = currentEvent;
-                LOG.log(FINEST, () -> "Ignoring retract event older than current rule state: incoming=" + attributeEvent + ", current=" + finalCurrentEvent);
-                return;
-            }
-
             LOG.log(FINEST, () -> "Retracting attribute event: " + attributeEvent);
 
             if (currentEvent != null) {
@@ -800,10 +794,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected void bufferPreInitAttributeEvent(AttributeEvent attributeEvent) {
         synchronized (preInitAttributeEvents) {
-            AttributeEvent currentEvent = preInitAttributeEvents.get(attributeEvent.getRef());
-            if (currentEvent == null || attributeEvent.getTimestamp() >= currentEvent.getTimestamp()) {
-                preInitAttributeEvents.put(attributeEvent.getRef(), attributeEvent);
-            }
+            preInitAttributeEvents.add(attributeEvent);
         }
     }
 
