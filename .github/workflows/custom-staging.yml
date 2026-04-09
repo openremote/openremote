@@ -1,4 +1,4 @@
-name: staging
+name: Custom staging
 
 on:
   workflow_dispatch:
