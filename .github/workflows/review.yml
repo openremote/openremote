@@ -49,7 +49,7 @@ jobs:
   install-dist:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true' || needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/install-dist.yml"
 
   unit-tests:
@@ -79,7 +79,7 @@ jobs:
   build-manager-image:
     name: Build
     needs: [detect-changes, install-dist]
-    if: needs.detect-changes.outputs.any_changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true' || needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/build-manager-image.yml"
     secrets:
       DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
@@ -88,7 +88,7 @@ jobs:
   build-deployment-image:
     name: Build
     needs: [detect-changes, install-dist]
-    if: needs.detect-changes.outputs.any_changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true' || needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/build-deployment-image.yml"
 
   publish-npm-dry-run:
@@ -100,5 +100,5 @@ jobs:
   deployment:
     name: Deploy
     needs: [detect-changes, build-deployment-image]
-    if: needs.detect-changes.outputs.any_changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true' || needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/deployment.yml"
