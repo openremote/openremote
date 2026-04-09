@@ -2,7 +2,6 @@ name: Integration Tests
 on: workflow_call
 
 jobs:
-
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -13,9 +12,9 @@ jobs:
       - name: Set up JDK 21 and Gradle cache
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
       - name: Pull Docker images
         run: docker compose -f profile/dev-testing.yml pull # Only Keycloak and PostgreSQL for running integration tests
       - name: Run integration tests

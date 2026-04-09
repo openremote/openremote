@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   detect-changes:
     name: Detect whether code changed
     runs-on: ubuntu-latest
