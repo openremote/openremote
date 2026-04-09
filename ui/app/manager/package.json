@@ -25,8 +25,7 @@
     "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 rspack serve --mode development",
     "test": "npx playwright test",
-    "prepack": "npx tsc -b",
-    "start": "../../../run-manager.sh"
+    "prepack": "npx tsc -b"
   },
   "dependencies": {
     "@lit/task": "^1.0.3",

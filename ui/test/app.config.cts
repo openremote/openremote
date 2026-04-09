@@ -1,4 +1,5 @@
-import { basename, resolve } from "node:path";
+// These imports are transpiled by TypeScript to CommonJS
+import { basename, resolve, join } from "node:path";
 import { defineConfig as baseConfig, devices, Project } from ".";
 
 const { CI, DEV, managerUrl } = process.env;
@@ -66,7 +67,7 @@ export const defineAppConfig = (path: string) => {
       video: "on",
     },
     webServer: {
-      command: "npm start"
+      command: `node ${join(__dirname, "manager.cjs")}`
     },
     /* Configure projects */
     projects: [

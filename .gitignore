@@ -66,5 +66,3 @@ test-results
 app-test-report
 component-test-report
 .auth
-
-!ui/test/run-manager.sh
