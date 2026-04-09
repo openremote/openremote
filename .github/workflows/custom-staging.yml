@@ -1,0 +1,52 @@
+name: staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      PUSH_SNAPSHOT:
+        description: "Push snapshot Docker image to AWS ECR"
+        type: boolean
+
+jobs:
+  detect-changes:
+    name: Detect whether code changed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Detect changes
+        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
+        with:
+          files_yaml: |
+            ui:
+              - 'ui/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+            backend:
+              - '!.ci_cd/**'
+              - '!deployment/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!yarn.lock'
+
+  install-dist:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_changed == 'true'
+    uses: "./.github/workflows/install-dist.yml"
+
+  unit-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
+    uses: "./.github/workflows/unit-tests.yml"
+
+  integration-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
+    uses: "./.github/workflows/integration-tests.yml"
+
+  # deployment:
+  #   name: Deploy
+  #   needs: [unit-tests, integration-tests]
+  #   uses: "./.github/workflows/deployment.yml"

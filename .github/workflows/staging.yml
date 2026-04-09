@@ -31,102 +31,102 @@ jobs:
   ui-check-dependencies:
     name: Lint
     needs: detect-changes
-    #if: needs.detect-changes.outputs.changed == 'true'
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/ui-check-dependencies.yml"
 
   ui-check-outdated-translations:
     name: Lint
     needs: detect-changes
-    #if: needs.detect-changes.outputs.changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
     uses: "./.github/workflows/ui-check-outdated-translations.yml"
 
   install-browsers:
     name: Build
     needs: detect-changes
-    #if: needs.detect-changes.outputs.changed == 'true'
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/install-browsers.yml"
 
   install-dist:
     name: Build
     needs: detect-changes
-    #if: needs.detect-changes.outputs.changed == 'true'
+    if: needs.detect-changes.outputs.any_changed == 'true'
     uses: "./.github/workflows/install-dist.yml"
 
   unit-tests:
     name: Test
     needs: detect-changes
-    #if: needs.detect-changes.outputs.changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
     uses: "./.github/workflows/unit-tests.yml"
 
   integration-tests:
     name: Test
     needs: detect-changes
-    #if: needs.detect-changes.outputs.changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
     uses: "./.github/workflows/integration-tests.yml"
 
   ui-component-tests:
     name: Test
     needs: [detect-changes, install-dist, install-browsers]
-    #if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/ui-component-tests.yml"
 
   ui-app-tests:
     name: Test
     needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/ui-app-tests.yml"
 
-  build-manager-image:
-    name: Build
-    needs: [detect-changes, install-dist]
-    uses: "./.github/workflows/build-manager-image.yml"
-    secrets:
-      DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
-      DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
+  # build-manager-image:
+  #   name: Build
+  #   needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  #   if: needs.detect-changes.outputs.any_changed == 'true'
+  #   uses: "./.github/workflows/build-manager-image.yml"
+  #   secrets:
+  #     DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
+  #     DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
 
   build-deployment-image:
     name: Build
     needs: [install-dist]
     uses: "./.github/workflows/build-deployment-image.yml"
 
-  build-snapshot-image:
+  # build-snapshot-image:
+  #   name: Build
+  #   if: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
+  #   needs: [install-dist]
+  #   uses: "./.github/workflows/build-snapshot-image.yml"
+  #   secrets:
+  #     AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
+  #     AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
+
+  update-package-json:
     name: Build
-    if: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
-    needs: [detect-changes, install-dist]
-    uses: "./.github/workflows/build-snapshot-image.yml"
-    secrets:
-      AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
-      AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/update-package-json.yml"
 
-  #  update-package-json:
-  #    name: Build
-  #   needs: detect-changes
-  #    uses: './.github/workflows/update-package-json.yml'
-
-  #  publish-maven:
-  #    name: Publish
-  #    needs: [ui-check-outdated-translations]
-  #    uses: './.github/workflows/publish-maven.yml'
-  #    secrets:
-  #      MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
-  #      MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
+  # publish-maven:
+  #   name: Publish
+  #   needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  #   if: needs.detect-changes.outputs.any_changed == 'true'
+  #   uses: "./.github/workflows/publish-maven.yml"
+  #   secrets:
+  #     MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
+  #     MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
   #     MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
-  #      MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
+  #     MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
 
-  publish-npm-dry-run:
-    name: Publish
-    needs: [install-dist]
-    uses: "./.github/workflows/publish-npm-dry-run.yml"
+  # publish-npm:
+  #   name: Publish
+  #   needs: [detect-changes, install-dist, update-package-json, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  #   if: needs.detect-changes.outputs.ui_any_changed == 'true'
+  #   uses: "./.github/workflows/publish-npm.yml"
+  #   with:
+  #     tag: ${{ needs.update-package-json.outputs.tag }}
+  #   secrets:
+  #     NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
 
-  #  publish-npm:
-  #    name: Publish
-  #    needs: [update-package-json]
-  #    uses: './.github/workflows/publish-npm.yml'
-  #    with:
-  #      tag: ${{ needs.update-package-json.outputs.tag }}
-  #    secrets:
-  #      NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
-
-  deployment:
-    name: Deploy
-    needs: [build-deployment-image]
-    uses: "./.github/workflows/deployment.yml"
+  # deployment:
+  #   name: Deploy
+  #   needs: [build-deployment-image, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  #   uses: "./.github/workflows/deployment.yml"

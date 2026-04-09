@@ -2,6 +2,10 @@ name: Review
 
 on:
   workflow_dispatch:
+    inputs:
+      PUSH_SNAPSHOT:
+        description: "Push snapshot Docker image to AWS ECR"
+        type: boolean
 
 jobs:
   detect-changes:
@@ -23,3 +27,78 @@ jobs:
               - '!**/*.md'
               - '!**/*.yml'
               - '!yarn.lock'
+
+  ui-check-dependencies:
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/ui-check-dependencies.yml"
+
+  ui-check-outdated-translations:
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
+    uses: "./.github/workflows/ui-check-outdated-translations.yml"
+
+  install-browsers:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/install-browsers.yml"
+
+  install-dist:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_changed == 'true'
+    uses: "./.github/workflows/install-dist.yml"
+
+  unit-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
+    uses: "./.github/workflows/unit-tests.yml"
+
+  integration-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
+    uses: "./.github/workflows/integration-tests.yml"
+
+  ui-component-tests:
+    name: Test
+    needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/ui-component-tests.yml"
+
+  ui-app-tests:
+    name: Test
+    needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/ui-app-tests.yml"
+
+  build-manager-image:
+    name: Build
+    needs: [detect-changes, install-dist]
+    if: needs.detect-changes.outputs.any_changed == 'true'
+    uses: "./.github/workflows/build-manager-image.yml"
+    secrets:
+      DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
+      DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
+
+  build-deployment-image:
+    name: Build
+    needs: [detect-changes, install-dist]
+    if: needs.detect-changes.outputs.any_changed == 'true'
+    uses: "./.github/workflows/build-deployment-image.yml"
+
+  publish-npm-dry-run:
+    name: Publish
+    needs: [detect-changes, install-dist]
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/publish-npm-dry-run.yml"
+
+  deployment:
+    name: Deploy
+    needs: [detect-changes, build-deployment-image]
+    if: needs.detect-changes.outputs.any_changed == 'true'
+    uses: "./.github/workflows/deployment.yml"
