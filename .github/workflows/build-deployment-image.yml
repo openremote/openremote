@@ -2,7 +2,6 @@ name: Build deployment image
 on: workflow_call
 
 jobs:
-
   deployment-image:
     name: Deployment image
     runs-on: ubuntu-latest

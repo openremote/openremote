@@ -10,8 +10,8 @@ jobs:
       - name: Set up JDK 21 and gradle cache
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
       - name: Check UI dependencies
         run: ./gradlew knip
