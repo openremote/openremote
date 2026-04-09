@@ -51,7 +51,6 @@ import org.openremote.model.util.Pair;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
@@ -105,8 +104,18 @@ import static org.openremote.model.Constants.*;
  * </dl>
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
+    /**
+     * Holds state for each websocket session
+     */
+    protected static class SessionDispatchState {
+        final Deque<Exchange> queue = new ArrayDeque<>();
+        boolean draining = false;
+        boolean closed = false;
+    }
+
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
-    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
+    protected static final int MAX_QUEUE_SIZE = 100;
+    protected static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
@@ -115,7 +124,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     final protected Set<Pair<EventSubscription<? extends Event>, Consumer<? extends Event>>> eventSubscriptions = new CopyOnWriteArraySet<>();
     final protected Map<String, WebSocketChannel> sessionChannels = new ConcurrentHashMap<>();
     final protected Map<String, Map<String, Consumer<? extends Event>>> websocketSessionSubscriptionConsumers = new ConcurrentHashMap<>();
-    final protected Map<String, CompletableFuture<Void>> sessionTails = new ConcurrentHashMap<>();
+    final protected Map<String, SessionDispatchState> sessionStates = new ConcurrentHashMap<>();
     protected TimerService timerService;
     protected ExecutorService executorService;
     protected MessageBrokerService messageBrokerService;
@@ -174,21 +183,40 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .process(exchange -> {
                String sessionKey = getSessionKey(exchange);
+               SessionDispatchState state = sessionStates.computeIfAbsent(sessionKey, k -> new SessionDispatchState());
+               UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
+               boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
 
-               // Create a safe copy of the exchange for async processing
-               final Exchange exchangeCopy = exchange.copy();
+               synchronized (state) {
+                   // 1. Drop normal frames if closed, but ALWAYS let terminal events through
+                   if (state.closed && !isTerminalEvent) {
+                       exchange.setRouteStop(true);
+                       return;
+                   }
 
-               // Chain the processing sequentially for this specific session
-               sessionTails.compute(sessionKey, (key, tail) ->
-                  (tail == null ? CompletableFuture.completedFuture(null) : tail)
-                     .handle((r, ex) -> {
-                        if (ex != null) {
-                           LOG.log(WARNING, "Error in previous websocket frame processing for session: " + key, ex);
-                        }
-                        return null;
-                     })
-                     .thenRunAsync(() -> processInbound(exchangeCopy), executorService)
-               );
+                   // 2. Enforce Backpressure (only for non-terminal events)
+                   if (!isTerminalEvent && state.queue.size() >= MAX_QUEUE_SIZE) {
+                       LOG.log(WARNING, "Session " + sessionKey + " exceeded queue limit. Closing connection.");
+                       state.closed = true;
+                       state.queue.clear();
+
+                       WebSocketChannel channel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
+                       if (channel != null) {
+                           try { channel.close(); } catch (Exception ignored) {}
+                       }
+                       exchange.setRouteStop(true);
+                       return;
+                   }
+
+                   // 3. Queue the frame and trigger the drainer if dormant
+                   // Create a safe copy of the exchange for async processing
+                   state.queue.add(exchange.copy());
+                   if (!state.draining) {
+                       state.draining = true;
+                       executorService.submit(() -> drainSession(sessionKey, state));
+                   }
+               }
+               exchange.setRouteStop(true);
             });
 
         // Send event to each interested subscribers
@@ -203,11 +231,54 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             });
     }
 
-   /**
-    * Handles all inbound websocket exchanges
-    */
-   protected void processInbound(Exchange exchange) {
+    /**
+     * Drains the session queue and processes incoming frames.
+     */
+   protected void drainSession(String sessionKey, SessionDispatchState state) {
+       while (true) {
+           Exchange exchange;
+
+           // Safely pull the next frame or exit if empty
+           synchronized (state) {
+               exchange = state.queue.poll();
+               if (exchange == null) {
+                   state.draining = false;
+
+                   // If closed, we know no new items can be added because the producer checks state.closed.
+                   // We can safely remove the exact state object from the map.
+                   if (state.closed) {
+                       sessionStates.remove(sessionKey, state);
+                   }
+                   return;
+               }
+           }
+
+           try {
+               UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
+
+               // Handle terminal events
+               if (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR) {
+                   synchronized (state) {
+                       state.closed = true;
+                       state.queue.clear(); // Drop any pending data frames that arrived later
+                   }
+               }
+
+               // Process the frame (using your existing logic refactored into this method)
+               processInbound(exchange);
+
+           } catch (Exception e) {
+               LOG.log(WARNING, "Error processing websocket frame for session " + sessionKey, e);
+           }
+       }
+   }
+
+    /**
+     * Handles all inbound websocket exchanges
+     */
+    protected void processInbound(Exchange exchange) {
       UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
+      boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
 
       if (eventType != null) {
          processWebsocketConnectionEvent(exchange, eventType);
@@ -233,7 +304,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
          procesInboundEvent(exchange);
       }
-   }
+    }
 
    /**
     * Handles the lifecycle of a websocket connection
@@ -290,7 +361,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
                return null;
             });
-            sessionTails.remove(sessionKey);
          }
          case ONERROR -> {
             AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
@@ -311,7 +381,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
                return null;
             });
-            sessionTails.remove(sessionKey);
          }
       }
 
@@ -343,6 +412,13 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
       if (exchange.getIn().getBody() instanceof EventSubscription<?> subscription) {
          String sessionKey = getSessionKey(exchange);
+
+         if (!sessionChannels.containsKey(sessionKey)) {
+             LOG.log(TRACE, () -> "Ignoring subscription for closed session '" + sessionKey + "': " + subscription);
+             exchange.setRouteStop(true);
+             return;
+         }
+
          LOG.log(TRACE, () -> "Adding subscription for session '" + sessionKey + "': " + subscription);
 
          if (!authorizeEventSubscription(realm, authContext, subscription)) {
@@ -404,10 +480,13 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                .withBody(attributeEvent)
                .to(ATTRIBUTE_EVENT_PROCESSOR)
                .asyncSend();
-            return;
+         } else {
+             // Asynchronously hand off just the event payload to the queue
+             messageBrokerService.getFluentProducerTemplate()
+                     .withBody(event)
+                     .to(PUBLISH_QUEUE)
+                     .asyncSend();
          }
-
-         sendToSubscribers(event);
       }
    }
 
