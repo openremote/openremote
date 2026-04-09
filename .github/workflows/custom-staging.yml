@@ -31,7 +31,7 @@ jobs:
   install-dist:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_changed == 'true'
+    if: needs.detect-changes.outputs.backend_any_changed == 'true' || needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/install-dist.yml"
 
   unit-tests:
