@@ -795,8 +795,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
         synchronized (preInitAttributeEvents) {
             AttributeEvent currentEvent = preInitAttributeEvents.get(attributeEvent.getRef());
             if (!shouldReplaceBufferedPreInitEvent(currentEvent, attributeEvent)) {
-                AttributeEvent finalCurrentEvent = currentEvent;
-                LOG.log(FINEST, () -> "Ignoring buffered pre-init attribute event older than current buffered state: incoming=" + attributeEvent + ", current=" + finalCurrentEvent);
+                LOG.log(FINEST, () -> "Ignoring buffered pre-init attribute event older than current buffered state: incoming=" + attributeEvent + ", current=" + currentEvent);
                 return;
             }
             preInitAttributeEvents.put(attributeEvent.getRef(), attributeEvent);
