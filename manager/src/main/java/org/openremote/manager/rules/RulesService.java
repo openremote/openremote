@@ -780,7 +780,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     }
 
     protected Collection<AttributeEvent> getAttributeEvents() {
-        return new ArrayList<>(attributeEventsByRef.values());
+        return attributeEventsByRef.values();
     }
 
     protected void bufferPreInitAttributeEvent(AttributeEvent attributeEvent) {
