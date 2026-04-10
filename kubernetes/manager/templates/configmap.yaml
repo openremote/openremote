@@ -1,0 +1,11 @@
+{{- if .Values.logging.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "manager.logging.configMapName" . }}
+  labels:
+    {{- include "manager.labels" . | nindent 4 }}
+data:
+  logging.properties: |-
+{{- .Values.logging.config | nindent 4 }}
+{{- end }}
