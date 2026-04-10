@@ -136,7 +136,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     // here means we can quickly insert facts into newly started engines
     protected final Set<AttributeEvent> attributeEvents = ConcurrentHashMap.newKeySet();
     protected final Map<AttributeRef, AttributeEvent> attributeEventsByRef = new ConcurrentHashMap<>();
-    protected final Set<AttributeEvent> preInitAttributeEvents = new HashSet<>();
+    protected final Map<AttributeRef, AttributeEvent> preInitAttributeEvents = new LinkedHashMap<>();
     protected final Object attributeEventsLock = new Object();
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
@@ -338,12 +338,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
             assetEngines.values().forEach(RulesEngine::start);
 
             startDone = true;
-            Set<AttributeEvent> bufferedEvents;
+            Map<AttributeRef, AttributeEvent> bufferedEvents;
             synchronized (preInitAttributeEvents) {
-                bufferedEvents = new HashSet<>(preInitAttributeEvents);
+                bufferedEvents = new LinkedHashMap<>(preInitAttributeEvents);
                 preInitAttributeEvents.clear();
             }
-            bufferedEvents.forEach(this::doProcessAttributeUpdate);
+            bufferedEvents.values().forEach(this::doProcessAttributeUpdate);
         }
     }
 
@@ -794,12 +794,33 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected void bufferPreInitAttributeEvent(AttributeEvent attributeEvent) {
         synchronized (preInitAttributeEvents) {
-            preInitAttributeEvents.add(attributeEvent);
+            AttributeEvent currentEvent = preInitAttributeEvents.get(attributeEvent.getRef());
+            if (!shouldReplaceBufferedPreInitEvent(currentEvent, attributeEvent)) {
+                AttributeEvent finalCurrentEvent = currentEvent;
+                LOG.log(FINEST, () -> "Ignoring buffered pre-init attribute event older than current buffered state: incoming=" + attributeEvent + ", current=" + finalCurrentEvent);
+                return;
+            }
+            preInitAttributeEvents.put(attributeEvent.getRef(), attributeEvent);
         }
     }
 
     protected boolean isOlderThanCurrent(AttributeEvent incomingEvent, AttributeEvent currentEvent) {
         return currentEvent != null && incomingEvent.getTimestamp() < currentEvent.getTimestamp();
+    }
+
+    protected boolean shouldReplaceBufferedPreInitEvent(AttributeEvent currentEvent, AttributeEvent incomingEvent) {
+        if (currentEvent == null) {
+            return true;
+        }
+
+        boolean currentInserts = isRuleState(currentEvent) && !currentEvent.isDeleted();
+        boolean incomingInserts = isRuleState(incomingEvent) && !incomingEvent.isDeleted();
+
+        if (currentInserts && incomingInserts) {
+            return !isOlderThanCurrent(incomingEvent, currentEvent);
+        }
+
+        return true;
     }
 
     protected List<RulesEngine<?>> getEnginesInScope(String realm, String[] assetPath) {

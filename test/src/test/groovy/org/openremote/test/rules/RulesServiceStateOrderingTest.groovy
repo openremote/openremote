@@ -8,7 +8,9 @@ import org.openremote.model.Constants
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.MetaMap
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -19,6 +21,59 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 class RulesServiceStateOrderingTest extends Specification implements ManagerContainerTrait {
+
+    def "pre-init buffer should keep the newest rule state event for the same attribute"() {
+        given:
+        def rulesService = new RulesService()
+        def ref = new AttributeRef(UniqueIdentifierGenerator.generateId("Buffered state asset"), "count")
+        def ruleStateMeta = new MetaMap([new MetaItem<>(MetaItemType.RULE_STATE)])
+
+        and:
+        def olderEvent = new AttributeEvent(ref, 1, 1000L)
+            .setMeta(ruleStateMeta)
+            .setRealm(Constants.MASTER_REALM)
+        def newerEvent = new AttributeEvent(ref, 2, 2000L)
+            .setMeta(ruleStateMeta)
+            .setRealm(Constants.MASTER_REALM)
+
+        when:
+        rulesService.onAttributeEvent(olderEvent)
+        rulesService.onAttributeEvent(newerEvent)
+
+        then:
+        rulesService.preInitAttributeEvents.size() == 1
+        def bufferedEvent = rulesService.preInitAttributeEvents.get(ref)
+        bufferedEvent != null
+        bufferedEvent.timestamp == 2000L
+        bufferedEvent.value.get() == 2
+    }
+
+    def "pre-init buffer should keep a later retract even when its value timestamp is older"() {
+        given:
+        def rulesService = new RulesService()
+        def ref = new AttributeRef(UniqueIdentifierGenerator.generateId("Buffered retract asset"), "count")
+        def ruleStateMeta = new MetaMap([new MetaItem<>(MetaItemType.RULE_STATE)])
+
+        and:
+        def newerInsert = new AttributeEvent(ref, 2, 2000L)
+            .setMeta(ruleStateMeta)
+            .setRealm(Constants.MASTER_REALM)
+        def laterRetract = new AttributeEvent(ref, null, 1000L)
+            .setMeta(ruleStateMeta)
+            .setRealm(Constants.MASTER_REALM)
+            .setDeleted(true)
+
+        when:
+        rulesService.onAttributeEvent(newerInsert)
+        rulesService.onAttributeEvent(laterRetract)
+
+        then:
+        rulesService.preInitAttributeEvents.size() == 1
+        def bufferedEvent = rulesService.preInitAttributeEvents.get(ref)
+        bufferedEvent != null
+        bufferedEvent.deleted
+        bufferedEvent.timestamp == 1000L
+    }
 
     @SuppressWarnings("GroovyAccessibility")
     def "rules service should keep the newest rule state when committed events arrive out of order"() {
