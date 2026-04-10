@@ -131,13 +131,11 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected AssetLocationPredicateProcessor locationPredicateRulesConsumer;
     protected final Map<RulesEngine<?>, List<RulesEngine.AssetLocationPredicates>> engineAssetLocationPredicateMap = new ConcurrentHashMap<>();
     protected final Set<String> assetsWithModifiedLocationPredicates = new HashSet<>();
-    // Keep global list of asset states that have been pushed to any engines
+    // Keep a keyed view of asset states that have been pushed to any engines.
     // The objects are already in memory inside the rule engines but keeping them
-    // here means we can quickly insert facts into newly started engines
-    protected final Set<AttributeEvent> attributeEvents = ConcurrentHashMap.newKeySet();
+    // here means we can quickly insert facts into newly started engines.
     protected final Map<AttributeRef, AttributeEvent> attributeEventsByRef = new ConcurrentHashMap<>();
     protected final Map<AttributeRef, AttributeEvent> preInitAttributeEvents = new LinkedHashMap<>();
-    protected final Object attributeEventsLock = new Object();
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
     protected boolean initDone;
@@ -368,10 +366,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
             globalEngine.set(null);
         }
 
-        synchronized (attributeEventsLock) {
-            attributeEvents.clear();
-            attributeEventsByRef.clear();
-        }
+        attributeEventsByRef.clear();
         synchronized (preInitAttributeEvents) {
             preInitAttributeEvents.clear();
         }
@@ -577,7 +572,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
             if (isNewEngine) {
                 // Push all existing facts into the engine
                 RulesEngine<GlobalRuleset> finalEngine = engine;
-                attributeEvents.forEach(assetState -> finalEngine.insertOrUpdateAttributeInfo(assetState, true));
+                getAttributeEvents().forEach(assetState -> finalEngine.insertOrUpdateAttributeInfo(assetState, true));
             }
 
             engine.addRuleset(ruleset);
@@ -627,7 +622,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
                 // Push all existing facts into the engine
                 RulesEngine<RealmRuleset> finalRealmRulesEngine = realmRulesEngine;
-                attributeEvents.forEach(assetState -> {
+                getAttributeEvents().forEach(assetState -> {
                     if (assetState.getRealm().equals(ruleset.getRealm())) {
                         finalRealmRulesEngine.insertOrUpdateAttributeInfo(assetState, true);
                     }
@@ -737,23 +732,23 @@ public class RulesService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        final boolean inserted;
-        synchronized (attributeEventsLock) {
-            AttributeEvent currentEvent = attributeEventsByRef.get(attributeEvent.getRef());
+        final AttributeEvent[] previousEventHolder = new AttributeEvent[1];
+        final boolean[] appliedHolder = new boolean[1];
+        attributeEventsByRef.compute(attributeEvent.getRef(), (ref, currentEvent) -> {
+            previousEventHolder[0] = currentEvent;
             if (isOlderThanCurrent(attributeEvent, currentEvent)) {
                 LOG.log(FINEST, () -> "Ignoring attribute event older than current rule state: incoming=" + attributeEvent + ", current=" + currentEvent);
-                return;
+                return currentEvent;
             }
 
             LOG.log(FINEST, () -> "Inserting attribute event: " + attributeEvent);
-
-            inserted = currentEvent == null;
-            if (currentEvent != null) {
-                attributeEvents.remove(currentEvent);
-            }
-            attributeEventsByRef.put(attributeEvent.getRef(), attributeEvent);
-            attributeEvents.add(attributeEvent);
+            appliedHolder[0] = true;
+            return attributeEvent;
+        });
+        if (!appliedHolder[0]) {
+            return;
         }
+        boolean inserted = previousEventHolder[0] == null;
 
         // Get the chain of rule engines that we need to pass through
         List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
@@ -765,15 +760,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
     }
 
     protected void retractAttributeInfo(AttributeEvent attributeEvent) {
-        synchronized (attributeEventsLock) {
-            AttributeEvent currentEvent = attributeEventsByRef.get(attributeEvent.getRef());
-            LOG.log(FINEST, () -> "Retracting attribute event: " + attributeEvent);
-
-            if (currentEvent != null) {
-                attributeEventsByRef.remove(attributeEvent.getRef());
-                attributeEvents.remove(currentEvent);
-            }
-        }
+        LOG.log(FINEST, () -> "Retracting attribute event: " + attributeEvent);
+        attributeEventsByRef.remove(attributeEvent.getRef());
 
         // Get the chain of rule engines that we need to pass through
         List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
@@ -785,10 +773,14 @@ public class RulesService extends RouteBuilder implements ContainerService {
     }
 
     protected List<AttributeInfo> getAssetStatesInScope(String assetId) {
-        return attributeEvents
+        return getAttributeEvents()
             .stream()
             .filter(assetState -> Arrays.asList(assetState.getPath()).contains(assetId))
             .collect(Collectors.toList());
+    }
+
+    protected Collection<AttributeEvent> getAttributeEvents() {
+        return new ArrayList<>(attributeEventsByRef.values());
     }
 
     protected void bufferPreInitAttributeEvent(AttributeEvent attributeEvent) {
