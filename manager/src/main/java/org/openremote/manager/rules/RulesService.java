@@ -741,8 +741,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
         synchronized (attributeEventsLock) {
             AttributeEvent currentEvent = attributeEventsByRef.get(attributeEvent.getRef());
             if (isOlderThanCurrent(attributeEvent, currentEvent)) {
-                AttributeEvent finalCurrentEvent = currentEvent;
-                LOG.log(FINEST, () -> "Ignoring attribute event older than current rule state: incoming=" + attributeEvent + ", current=" + finalCurrentEvent);
+                LOG.log(FINEST, () -> "Ignoring attribute event older than current rule state: incoming=" + attributeEvent + ", current=" + currentEvent);
                 return;
             }
 
