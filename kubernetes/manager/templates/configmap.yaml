@@ -1,4 +1,3 @@
-{{- include "manager.logging.validate" . }}
 {{- if .Values.logging.config }}
 apiVersion: v1
 kind: ConfigMap
