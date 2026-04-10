@@ -130,6 +130,8 @@ Changing the logging configuration in the values file and running `helm upgrade`
 When `logging.existingConfigMap` is used, Helm mounts the referenced `ConfigMap` but does not track changes made directly to it.  
 If you edit that `ConfigMap` with `kubectl edit cm ...`, Kubernetes does not restart the pod because the Deployment specification has not changed.  
 To trigger a restart through Helm after changing the external `ConfigMap`, bump the `logging.restartToken` value and run `helm upgrade`.
+`existingConfigMapKey` allows the manager chart to work with whatever structure that existing `ConfigMap` has.  
+One handy use of this is defining multiple logging configuration in one `ConfigMap` under different keys and easily switching between them.
 
 Also note that the manager reads the logging configuration only once during startup.  
 Kubernetes may refresh the mounted `ConfigMap` file on disk after a short delay, but the running JVM does not automatically reload the logging settings.  
