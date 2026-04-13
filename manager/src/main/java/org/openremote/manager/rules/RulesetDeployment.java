@@ -23,31 +23,47 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
 import org.codehaus.groovy.control.CompilerConfiguration;
-import org.jeasy.rules.api.Action;
-import org.jeasy.rules.api.Condition;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.Rules;
-import org.jeasy.rules.core.RuleBuilder;
 import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
-import org.openjdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.rules.*;
+import org.openremote.model.rules.Alarms;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.HistoricDatapoints;
+import org.openremote.model.rules.Notifications;
+import org.openremote.model.rules.PredictedDatapoints;
+import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.RulesetStatus;
+import org.openremote.model.rules.Users;
+import org.openremote.model.rules.Webhooks;
 import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.script.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.rules.RulesetStatus.*;
+import static org.openremote.model.rules.RulesetStatus.COMPILATION_ERROR;
+import static org.openremote.model.rules.RulesetStatus.DEPLOYED;
+import static org.openremote.model.rules.RulesetStatus.DISABLED;
+import static org.openremote.model.rules.RulesetStatus.EMPTY;
+import static org.openremote.model.rules.RulesetStatus.VALIDITY_PERIOD_ERROR;
 
 public class RulesetDeployment {
 
@@ -60,13 +76,10 @@ public class RulesetDeployment {
     }
 
     public static final int DEFAULT_RULE_PRIORITY = 1000;
-    // Share one JS script engine manager, it's thread-safe
-    static final protected ScriptEngineManager scriptEngineManager;
+
     static final protected GroovyShell groovyShell;
 
     static {
-        scriptEngineManager = new ScriptEngineManager();
-
         /* TODO Sharing a static GroovyShell doesn't work, redeploying a ruleset which defines classes (e.g. Flight) is broken:
         java.lang.RuntimeException: Error evaluating condition of rule '-Update flight facts when estimated landing time of flight asset is updated':
         No signature of method: org.openremote.manager.setup.database.Script1$_run_closure2$_closure14$_closure17.doCall() is applicable for argument types: (org.openremote.manager.setup.database.Flight) values: [...]
@@ -216,7 +229,8 @@ public class RulesetDeployment {
 
         switch (ruleset.getLang()) {
             case JAVASCRIPT:
-                return compileRulesJavascript(ruleset, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
+                LOG.warning("JavaScript not supported for ruleset: " + ruleset.getName());
+                return false;
             case GROOVY:
                 return compileRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
             case JSON:
@@ -300,149 +314,6 @@ public class RulesetDeployment {
         } catch (Exception e) {
             setError(e);
             return false;
-        }
-    }
-
-    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
-        // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
-        ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
-        ScriptContext newContext = new SimpleScriptContext();
-        newContext.setBindings(scriptEngine.createBindings(), ScriptContext.ENGINE_SCOPE);
-        Bindings engineScope = newContext.getBindings(ScriptContext.ENGINE_SCOPE);
-        engineScope.put("LOG", LOG);
-        engineScope.put("assets", assetsFacade);
-        engineScope.put("users", usersFacade);
-        engineScope.put("notifications", notificationsFacade);
-        engineScope.put("historicDatapoints", historicDatapointsFacade);
-        engineScope.put("predictedDatapoints", predictedDatapointsFacade);
-
-        String script = ruleset.getRules();
-
-        // Default header/imports for all rules scripts
-        script = "load(\"nashorn:mozilla_compat.js\");\n" + // This provides importPackage
-                "\n" +
-                "importPackage(\n" +
-                "    \"java.util.stream\",\n" +
-                "    \"org.openremote.model.asset\",\n" +
-                "    \"org.openremote.model.attribute\",\n" +
-                "    \"org.openremote.model.value\",\n" +
-                "    \"org.openremote.model.rules\",\n" +
-                "    \"org.openremote.model.query\"\n" +
-                ");\n" +
-                "var Match = Java.type(\"org.openremote.model.query.AssetQuery$Match\");\n" +
-                "var Operator = Java.type(\"org.openremote.model.query.AssetQuery$Operator\");\n" +
-                "var NumberType = Java.type(\"org.openremote.model.query.AssetQuery$NumberType\");\n" +
-                "var StringPredicate = Java.type(\"org.openremote.model.query.filter.StringPredicate\");\n" +
-                "var BooleanPredicate = Java.type(\"org.openremote.model.query.filter.BooleanPredicate\");\n" +
-                "var StringArrayPredicate = Java.type(\"org.openremote.model.query.filter.StringArrayPredicate\");\n" +
-                "var DateTimePredicate = Java.type(\"org.openremote.model.query.filter.DateTimePredicate\");\n" +
-                "var NumberPredicate = Java.type(\"org.openremote.model.query.filter.NumberPredicate\");\n" +
-                "var ParentPredicate = Java.type(\"org.openremote.model.query.filter.ParentPredicate\");\n" +
-                "var PathPredicate = Java.type(\"org.openremote.model.query.filter.PathPredicate\");\n" +
-                "var RealmPredicate = Java.type(\"org.openremote.model.query.filter.RealmPredicate\");\n" +
-                "var AttributePredicate = Java.type(\"org.openremote.model.query.filter.AttributePredicate\");\n" +
-                "var AttributeExecuteStatus = Java.type(\"org.openremote.model.attribute.AttributeExecuteStatus\");\n" +
-                "var EXACT = Match.EXACT;\n" +
-                "var BEGIN = Match.BEGIN;\n" +
-                "var END = Match.END;\n" +
-                "var CONTAINS = Match.CONTAINS;\n" +
-                "var EQUALS = Operator.EQUALS;\n" +
-                "var GREATER_THAN = Operator.GREATER_THAN;\n" +
-                "var GREATER_EQUALS = Operator.GREATER_EQUALS;\n" +
-                "var LESS_THAN = Operator.LESS_THAN;\n" +
-                "var LESS_EQUALS = Operator.LESS_EQUALS;\n" +
-                "var BETWEEN = Operator.BETWEEN;\n" +
-                "var REQUEST_START = AttributeExecuteStatus.REQUEST_START;\n" +
-                "var REQUEST_REPEATING = AttributeExecuteStatus.REQUEST_REPEATING;\n" +
-                "var REQUEST_CANCEL = AttributeExecuteStatus.REQUEST_CANCEL;\n" +
-                "var READY = AttributeExecuteStatus.READY;\n" +
-                "var COMPLETED = AttributeExecuteStatus.COMPLETED;\n" +
-                "var RUNNING = AttributeExecuteStatus.RUNNING;\n" +
-                "var CANCELLED = AttributeExecuteStatus.CANCELLED;\n" +
-                "var ERROR = AttributeExecuteStatus.ERROR;\n" +
-                "var DISABLED = AttributeExecuteStatus.DISABLED;\n" +
-                "\n"
-                + script;
-
-        try {
-            scriptEngine.eval(script, engineScope);
-
-            compileRulesJavascript((ScriptObjectMirror) engineScope.get("rules"));
-            return true;
-
-        } catch (Exception e) {
-            setError(e);
-            engineScope.clear();
-            return false;
-        }
-    }
-
-    /**
-     * Marshal the JavaScript rules array into {@link Rule} instances.
-     */
-    protected void compileRulesJavascript(ScriptObjectMirror scriptRules) {
-        if (scriptRules == null || !scriptRules.isArray()) {
-            throw new IllegalArgumentException("No 'rules' array defined in ruleset");
-        }
-        Collection<Object> rulesObjects = scriptRules.values();
-        for (Object rulesObject : rulesObjects) {
-            ScriptObjectMirror rule = (ScriptObjectMirror) rulesObject;
-
-            String name;
-            if (!rule.containsKey("name")) {
-                throw new IllegalArgumentException("Missing 'name' in rule definition");
-            }
-            try {
-                name = (String) rule.getMember("name");
-            } catch (ClassCastException ex) {
-                throw new IllegalArgumentException("Defined 'name' of rule is not a string");
-            }
-
-            String description;
-            try {
-                description = rule.containsKey("description") ? (String) rule.getMember("description") : null;
-            } catch (ClassCastException ex) {
-                throw new IllegalArgumentException("Defined 'description' is not a string in rule: " + name);
-            }
-
-            int priority;
-            try {
-                priority = rule.containsKey("priority") ? (int) rule.getMember("priority") : DEFAULT_RULE_PRIORITY;
-            } catch (ClassCastException ex) {
-                throw new IllegalArgumentException("Defined 'priority' is not a number in rule: " + name);
-            }
-
-            if (!rule.containsKey("when")) {
-                throw new IllegalArgumentException("Missing 'when' function in rule: " + name);
-            }
-
-            Condition when;
-            try {
-                ScriptObjectMirror whenMirror = (ScriptObjectMirror) rule.getMember("when");
-                if (!whenMirror.isFunction()) {
-                    throw new IllegalArgumentException("Defined 'when' is not a function in rule: " + name);
-                }
-                when = whenMirror.to(Condition.class);
-            } catch (ClassCastException ex) {
-                throw new IllegalArgumentException("Defined 'when' is not a function in rule: " + name);
-            }
-
-            Action then;
-            try {
-                ScriptObjectMirror thenMirror = (ScriptObjectMirror) rule.getMember("then");
-                if (!thenMirror.isFunction()) {
-                    throw new IllegalArgumentException("Defined 'then' is not a function in rule: " + name);
-                }
-                then = thenMirror.to(Action.class);
-            } catch (ClassCastException ex) {
-                throw new IllegalArgumentException("Defined 'then' is not a function in rule: " + name);
-            }
-
-            LOG.finest("Registering javascript rule: " + name);
-
-            rules.register(
-                    new RuleBuilder().name(name).description(description).priority(priority).when(when).then(then).build()
-            );
         }
     }
 

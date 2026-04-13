@@ -28,7 +28,7 @@ import {
     RuleView,
     RuleViewInfoMap
 } from "./index";
-import {ClientRole, RulesetUnion} from "@openremote/model";
+import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
 import manager, {Util} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
@@ -41,6 +41,7 @@ import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
 import { INTUITIVE_NOT_APPLICABLE, OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
+import {when} from "lit/directives/when.js";
 
 const DISABLED_RRULE_PARTS = [
     "interval",
@@ -129,6 +130,16 @@ export const style = css`
         margin-left: 10px;
         --or-icon-fill: var(--internal-or-rules-list-icon-color-error);
     }
+
+    .legacy-warning {
+        width: calc(100% - 40px);
+        box-sizing: border-box;
+        margin: 0 20px 15px;
+        padding: 12px 14px;
+        border-radius: 4px;
+        border: 2px solid var(--internal-or-rules-invalid-color);
+        color: var(--internal-or-rules-invalid-color);
+    }
 `;
 
 @customElement("or-rule-viewer")
@@ -203,7 +214,9 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             return html`<div class="wrapper" style="justify-content: center"><or-translate value="noRuleSelected"></or-translate></div>`;
         }
 
-        let viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, this.readonly);
+        const readonly = this._isReadonly();
+        const isLegacyJavascriptRuleset = this._isLegacyJavascriptRuleset();
+        let viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, readonly);
         let statusIcon: string = "help";
         let statusClass: string = "iconfill-gray";
         let statusText: string = "NOSTATUS";
@@ -251,28 +264,36 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
-                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="1" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
+                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${readonly}" required minlength="1" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
                     <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
                     <span id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</span>
                     <div id="rule-header-controls">
                         <span id="active-wrapper">
                             <or-translate value="enabled"></or-translate>
-                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${readonly || !this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
                         </span>
-                        <or-scheduler
-                            id="rule-header-validity"
-                            header="scheduleRuleActivity"
-                            defaultEventTypeLabel="validityAlways"
-                            disableNegativeByPartValues
-                            .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
-                            .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
-                            .schedule="${this.ruleset?.meta?.validity}"
-                            @or-scheduler-changed="${this._onSchedulerChanged}"
-                        ></or-scheduler>
+                        ${when(!readonly, () => html`
+                            <or-scheduler
+                                    id="rule-header-validity"
+                                    header="scheduleRuleActivity"
+                                    defaultEventTypeLabel="validityAlways"
+                                    disableNegativeByPartValues
+                                    .disabledRRuleParts="${DISABLED_RRULE_PARTS}"
+                                    .disabledByPartCombinations="${INTUITIVE_NOT_APPLICABLE}"
+                                    .schedule="${this.ruleset?.meta?.validity}"
+                                    @or-scheduler-changed="${this._onSchedulerChanged}"
+                            ></or-scheduler>
+                        `)}
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
                     </div>
                 </div>
 
+                ${when(isLegacyJavascriptRuleset, () => html`
+                    <div class="legacy-warning">
+                        <or-translate value="rulesLegacyJavaScriptWarning"></or-translate>
+                    </div>
+                `)}
+                
                 ${viewer}
             </div>
         `;
@@ -287,14 +308,22 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected _isReadonly() {
-        return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
+        return this.readonly || this._isLegacyJavascriptRuleset() || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
     protected _cannotSave() {
         return this._isReadonly() || !this.ruleset || !this.modified || !this.valid;
     }
 
+    protected _isLegacyJavascriptRuleset(ruleset = this.ruleset) {
+        return ruleset?.lang === RulesetLang.JAVASCRIPT;
+    }
+
     protected _changeName(name: string) {
+        if (this._isReadonly()) {
+            return;
+        }
+
         if (this.ruleset && this.ruleset.name !== name) {
             this.ruleset.name = name;
             this.modified = true;
@@ -303,6 +332,10 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected _onSchedulerChanged(e?: OrSchedulerChangedEvent) {
+        if (this._isReadonly()) {
+            return;
+        }
+
         if (this.ruleset) {
             this.ruleset.meta ??= {};
             this.ruleset.meta.validity = e?.detail.value;
@@ -312,11 +345,20 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected _onRuleChanged(e: OrRulesRuleChangedEvent) {
-        this.modified = true;
+        if (!this._isReadonly()) {
+            this.modified = true;
+        }
         this._ruleValid = e.detail;
     }
 
     protected _onSaveClicked() {
+        if (this._isReadonly()) {
+            if (this._isLegacyJavascriptRuleset()) {
+                showErrorDialog(i18next.t("rulesLegacyJavaScriptWarning"));
+            }
+            return;
+        }
+
         if (!this.ruleset || !this.view) {
             return;
         }
@@ -339,6 +381,13 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         const ruleset = this.ruleset;
 
         if (!ruleset || !this.view) {
+            return;
+        }
+
+        if (this._isReadonly()) {
+            if (this._isLegacyJavascriptRuleset(ruleset)) {
+                showErrorDialog(i18next.t("rulesLegacyJavaScriptWarning"));
+            }
             return;
         }
 
@@ -406,6 +455,10 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected _toggleEnabled() {
+        if (this._isReadonly()) {
+            return;
+        }
+
         if (this.ruleset) {
             this.ruleset.enabled = !this.ruleset.enabled;
             this.modified = true;
