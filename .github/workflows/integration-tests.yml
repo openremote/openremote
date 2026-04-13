@@ -33,11 +33,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
-          name: integration-test-results
+          name: or-integration-test-results
           path: test/build/reports/tests
-      - name: Archive JaCoCo coverage report
+      - name: Archive JaCoCo coverage outputs
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
-          name: or-coverage-report
-          path: test/build/reports/jacoco/test/html
+          name: or-integration-test-outputs
+          path: |
+            test/build/classes/java/main/**
+            test/build/classes/java/test/**
+            test/build/jacoco/*.exec
+            test/build/reports/tests/test/**
+            test/build/test-results/test/**

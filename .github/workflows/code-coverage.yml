@@ -1,0 +1,31 @@
+name: Code Coverage
+on: workflow_call
+
+jobs:
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-unit-test-outputs
+          path: .
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        with:
+          name: or-integration-test-outputs
+          path: test/build
+      - run: ./gradlew combinedCoverageReport
+        timeout-minutes: 20
+      - name: Archive JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-coverage-report
+          path: build/reports/jacoco/combinedCoverageReport/html

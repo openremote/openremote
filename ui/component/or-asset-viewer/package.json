@@ -14,6 +14,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
+    "build": "npx tsc -b",
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "npx tsc -b && npx playwright test",
     "prepack": "npx rspack"
