@@ -11,9 +11,13 @@ jobs:
   detect-changes:
     name: Detect whether code changed
     runs-on: ubuntu-latest
+    outputs: # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
+      backend_any_changed: ${{ steps.changed-files.outputs.backend_any_changed }}
+      ui_any_changed: ${{ steps.changed-files.outputs.ui_any_changed }}
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
       - name: Detect changes
+        id: changed-files
         uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
         with:
           files_yaml: |
