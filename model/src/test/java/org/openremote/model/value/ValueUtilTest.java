@@ -205,4 +205,61 @@ public class ValueUtilTest {
         assertFalse(valid);
     }
 
+    @Test
+    public void validateHostnameOrIpAddressAllowsNumericLabel() {
+        AttributeDescriptor<String> attributeDescriptor = new AttributeDescriptor<>("host", ValueType.HOSTNAME_OR_IP_ADDRESS);
+
+        Attribute<String> attribute = new Attribute<>(attributeDescriptor);
+        attribute.setValue("my.amazing.0947D354.broker.io");
+
+        ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
+                constraintViolationBuilder
+                        .addPropertyNode("attributes")
+                        .addPropertyNode("value")
+                        .inContainer(Map.class, 1)
+                        .inIterable().atKey(attribute.getName());
+
+        Boolean valid = ValueUtil.validateValue(attributeDescriptor, attributeDescriptor.getType(), attribute, Instant.now(), context, pathProvider, attribute.getValue().orElse(null));
+
+        assertTrue(valid);
+    }
+
+    @Test
+    public void validateHostnameOrIpAddressAllowsAlphanumericLabel() {
+        AttributeDescriptor<String> attributeDescriptor = new AttributeDescriptor<>("host", ValueType.HOSTNAME_OR_IP_ADDRESS);
+
+        Attribute<String> attribute = new Attribute<>(attributeDescriptor);
+        attribute.setValue("my.amazing.X0947D354.broker.io");
+
+        ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
+                constraintViolationBuilder
+                        .addPropertyNode("attributes")
+                        .addPropertyNode("value")
+                        .inContainer(Map.class, 1)
+                        .inIterable().atKey(attribute.getName());
+
+        Boolean valid = ValueUtil.validateValue(attributeDescriptor, attributeDescriptor.getType(), attribute, Instant.now(), context, pathProvider, attribute.getValue().orElse(null));
+
+        assertTrue(valid);
+    }
+
+    @Test
+    public void validateHostnameOrIpAddressRejectsLabelStartingWithHyphen() {
+        AttributeDescriptor<String> attributeDescriptor = new AttributeDescriptor<>("host", ValueType.HOSTNAME_OR_IP_ADDRESS);
+
+        Attribute<String> attribute = new Attribute<>(attributeDescriptor);
+        attribute.setValue("my.amazing.-broker.io");
+
+        ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
+                constraintViolationBuilder
+                        .addPropertyNode("attributes")
+                        .addPropertyNode("value")
+                        .inContainer(Map.class, 1)
+                        .inIterable().atKey(attribute.getName());
+
+        Boolean valid = ValueUtil.validateValue(attributeDescriptor, attributeDescriptor.getType(), attribute, Instant.now(), context, pathProvider, attribute.getValue().orElse(null));
+
+        assertFalse(valid);
+    }
+
 }

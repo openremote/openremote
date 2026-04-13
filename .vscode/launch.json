@@ -1,0 +1,36 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Manager (Debug Demo Setup, one-click)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "preLaunchTask": "gradle: debug manager (demo, bg)"
+        },
+        {
+            "type": "java",
+            "name": "Manager (Debug Test Setup, one-click)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5006,
+            "preLaunchTask": "gradle: debug manager (test, bg)"
+        },
+        {
+            "type": "node",
+            "name": "Manager UI: serve",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "serve"
+            ],
+            "cwd": "${workspaceFolder}/ui/app/manager",
+            "console": "integratedTerminal",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        }
+    ]
+}
