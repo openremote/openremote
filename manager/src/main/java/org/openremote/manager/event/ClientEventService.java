@@ -54,6 +54,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
@@ -186,24 +187,22 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                SessionDispatchState state = sessionStates.computeIfAbsent(sessionKey, k -> new SessionDispatchState());
                UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
                boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
+               WebSocketChannel channel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
 
                synchronized (state) {
-                   // 1. Drop normal frames if closed, but ALWAYS let terminal events through
-                   if (state.closed && !isTerminalEvent) {
-                       exchange.setRouteStop(true);
-                       return;
-                   }
+                  // 1. Drop normal frames if closed, but ALWAYS let terminal events through
+                  if (isTerminalEvent) {
+                     // Mark as closed to prevent queuing additional events
+                     state.closed = true;
+                  } else if (state.closed) {
+                     exchange.setRouteStop(true);
+                     return;
+                  }
 
                    // 2. Enforce Backpressure (only for non-terminal events)
                    if (!isTerminalEvent && state.queue.size() >= MAX_QUEUE_SIZE) {
                        LOG.log(WARNING, "Session " + sessionKey + " exceeded queue limit. Closing connection.");
-                       state.closed = true;
-                       state.queue.clear();
-
-                       WebSocketChannel channel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
-                       if (channel != null) {
-                           try { channel.close(); } catch (Exception ignored) {}
-                       }
+                       closeSession(sessionKey, channel, state);
                        exchange.setRouteStop(true);
                        return;
                    }
@@ -213,13 +212,33 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                    state.queue.add(exchange.copy());
                    if (!state.draining) {
                        state.draining = true;
-                       executorService.submit(() -> drainSession(sessionKey, state));
+
+                       // Capture the Undertow I/O thread
+                       final Thread submitterThread = Thread.currentThread();
+
+                      try {
+                         executorService.submit(() -> {
+                            // Defeat CallerRunsPolicy: If the executor forces this thread to run the task,
+                            // we abort immediately to protect the Undertow network layer.
+                            if (Thread.currentThread() == submitterThread) {
+                               LOG.log(WARNING, "Executor saturated (CallerRuns). Shedding load for session: " + sessionKey);
+                               closeSession(sessionKey, channel, state);
+                               return;
+                            }
+
+                            drainSession(sessionKey, state);
+                         });
+                      } catch (RejectedExecutionException e) {
+                         // Defeat AbortPolicy: If the executor throws an exception instead.
+                         LOG.log(WARNING, "Executor saturated (Rejected). Shedding load for session: " + sessionKey);
+                         closeSession(sessionKey, channel, state);
+                      }
                    }
                }
                exchange.setRouteStop(true);
             });
 
-        // Send event to each interested subscribers
+        // Send event to each interested subscriber
         from(PUBLISH_QUEUE)
             .routeId("ClientPublishToSubscribers")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
@@ -244,8 +263,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                if (exchange == null) {
                    state.draining = false;
 
-                   // If closed, we know no new items can be added because the producer checks state.closed.
-                   // We can safely remove the exact state object from the map.
                    if (state.closed) {
                        sessionStates.remove(sessionKey, state);
                    }
@@ -255,16 +272,15 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
            try {
                UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
+               boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
 
-               // Handle terminal events
-               if (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR) {
+               if (isTerminalEvent) {
                    synchronized (state) {
                        state.closed = true;
                        state.queue.clear(); // Drop any pending data frames that arrived later
                    }
                }
 
-               // Process the frame (using your existing logic refactored into this method)
                processInbound(exchange);
 
            } catch (Exception e) {
@@ -274,11 +290,20 @@ public class ClientEventService extends RouteBuilder implements ContainerService
    }
 
     /**
+     * Force close the session but don't clear the queue (that will be done during processing)
+     */
+    protected void closeSession(String sessionKey, WebSocketChannel channel, SessionDispatchState state) {
+       synchronized (state) {
+          state.closed = true;
+       }
+       closeWebsocketChannel(sessionKey, channel);
+    }
+
+    /**
      * Handles all inbound websocket exchanges
      */
     protected void processInbound(Exchange exchange) {
       UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
-      boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
 
       if (eventType != null) {
          processWebsocketConnectionEvent(exchange, eventType);
@@ -346,35 +371,22 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             sessionChannels.put(getSessionKey(exchange), webSocketChannel);
             LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
          }
-         case ONCLOSE -> {
+         case ONCLOSE, ONERROR -> {
             AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
             String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
             String sessionKey = getSessionKey(exchange);
 
             exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
             exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-            exchange.getIn().setHeader(SESSION_CLOSE, true);
-            LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
-            LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
-            sessionChannels.remove(getSessionKey(exchange));
-            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-               subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
-               return null;
-            });
-         }
-         case ONERROR -> {
-            AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-            String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
-            String sessionKey = getSessionKey(exchange);
 
-            exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-            exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-            exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
-            LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
-            try {
-               webSocketChannel.close();
-            } catch (Exception ignored) {
+            if (eventType == UndertowConstants.EventType.ONCLOSE) {
+               LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
+               exchange.getIn().setHeader(SESSION_CLOSE, true);
+            } else {
+               LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
+               exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
             }
+
             LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
             sessionChannels.remove(getSessionKey(exchange));
             websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
@@ -634,16 +646,18 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     }
 
     public void closeWebsocketSession(String sessionKey) {
-        WebSocketChannel webSocketChannel = sessionChannels.get(sessionKey);
-        if (webSocketChannel != null) {
-            LOG.log(INFO, () -> "Force closing websocket session: " + sessionKey);
-            try {
-                webSocketChannel.close();
-            } catch (IOException e) {
-                LOG.log(DEBUG, () -> "Failed to close websocket session: " + sessionKey);
-                throw new RuntimeException(e);
-            }
-        }
+        closeWebsocketChannel(sessionKey, sessionChannels.get(sessionKey));
+    }
+
+    protected void closeWebsocketChannel(String sessionKey, WebSocketChannel webSocketChannel) {
+       if (webSocketChannel != null) {
+          LOG.log(INFO, () -> "Force closing websocket session: " + sessionKey);
+          try {
+             webSocketChannel.close();
+          } catch (IOException e) {
+             LOG.log(DEBUG, () -> "Failed to close websocket session: " + sessionKey);
+          }
+       }
     }
 
     @Override
