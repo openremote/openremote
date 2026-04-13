@@ -199,7 +199,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                      return;
                   }
 
-                   // 2. Enforce Backpressure (only for non-terminal events)
+                   // 2. Close the session if the queue limit is exceeded (only for non-terminal events)
                    if (!isTerminalEvent && state.queue.size() >= MAX_QUEUE_SIZE) {
                        LOG.log(WARNING, "Session " + sessionKey + " exceeded queue limit. Closing connection.");
                        closeSession(sessionKey, channel, state);
