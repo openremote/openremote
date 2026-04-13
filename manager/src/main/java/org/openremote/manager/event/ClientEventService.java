@@ -188,6 +188,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
                boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
                WebSocketChannel channel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
+               boolean shouldSubmitDrainer = false;
 
                synchronized (state) {
                   // 1. Drop normal frames if closed, but ALWAYS let terminal events through
@@ -212,28 +213,33 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                    state.queue.add(exchange.copy());
                    if (!state.draining) {
                        state.draining = true;
-
-                       // Capture the Undertow I/O thread
-                       final Thread submitterThread = Thread.currentThread();
-
-                      try {
-                         executorService.submit(() -> {
-                            // Defeat CallerRunsPolicy: If the executor forces this thread to run the task,
-                            // we abort immediately to protect the Undertow network layer.
-                            if (Thread.currentThread() == submitterThread) {
-                               LOG.log(WARNING, "Executor saturated (CallerRuns). Shedding load for session: " + sessionKey);
-                               closeSession(sessionKey, channel, state);
-                               return;
-                            }
-
-                            drainSession(sessionKey, state);
-                         });
-                      } catch (RejectedExecutionException e) {
-                         // Defeat AbortPolicy: If the executor throws an exception instead.
-                         LOG.log(WARNING, "Executor saturated (Rejected). Shedding load for session: " + sessionKey);
-                         closeSession(sessionKey, channel, state);
-                      }
+                       shouldSubmitDrainer = true;
                    }
+               }
+
+               if (shouldSubmitDrainer) {
+                  // Capture the Undertow I/O thread
+                  final Thread submitterThread = Thread.currentThread();
+
+                  try {
+                     executorService.submit(() -> {
+                        // Defeat CallerRunsPolicy: If the executor forces this thread to run the task,
+                        // process only terminal frames so session close/error cleanup still executes.
+                        if (Thread.currentThread() == submitterThread) {
+                           LOG.log(WARNING, "Executor saturated (CallerRuns). Shedding load for session: " + sessionKey);
+                           closeSession(sessionKey, channel, state);
+                           drainSession(sessionKey, state, true);
+                           return;
+                        }
+
+                        drainSession(sessionKey, state, false);
+                     });
+                  } catch (RejectedExecutionException e) {
+                     // Defeat AbortPolicy: If the executor throws an exception instead.
+                     LOG.log(WARNING, "Executor saturated (Rejected). Shedding load for session: " + sessionKey);
+                     closeSession(sessionKey, channel, state);
+                     drainSession(sessionKey, state, true);
+                  }
                }
                exchange.setRouteStop(true);
             });
@@ -251,9 +257,10 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     }
 
     /**
-     * Drains the session queue and processes incoming frames.
+     * Drains the session queue and processes incoming frames, optionally only processing terminal events
+     * in the event the session is forcefully closed
      */
-   protected void drainSession(String sessionKey, SessionDispatchState state) {
+   protected void drainSession(String sessionKey, SessionDispatchState state, boolean terminalOnly) {
        while (true) {
            Exchange exchange;
 
@@ -273,6 +280,10 @@ public class ClientEventService extends RouteBuilder implements ContainerService
            try {
                UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
                boolean isTerminalEvent = (eventType == UndertowConstants.EventType.ONCLOSE || eventType == UndertowConstants.EventType.ONERROR);
+
+               if (terminalOnly && !isTerminalEvent) {
+                   continue;
+               }
 
                if (isTerminalEvent) {
                    synchronized (state) {
@@ -384,6 +395,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                exchange.getIn().setHeader(SESSION_CLOSE, true);
             } else {
                LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
+               closeWebsocketChannel(sessionKey, webSocketChannel);
                exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
             }
 
