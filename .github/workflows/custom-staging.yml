@@ -16,6 +16,8 @@ jobs:
       ui_any_changed: ${{ steps.changed-files.outputs.ui_any_changed }}
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        with:
+          fetch-depth: 2 # Must be 2 for push events to compare to previous commit
       - name: Detect changes
         id: changed-files
         uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
