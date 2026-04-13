@@ -1,0 +1,31 @@
+{
+  "name": "@openremote/or-rive-renderer",
+  "version": "1.14.0-snapshot",
+  "description": "A web component for displaying Rive animations using WebGL",
+  "customElements": "custom-elements.json",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
+  },
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
+    "build": "npx tsc -b",
+    "test": "npx tsc -b && npx playwright test",
+    "prepack": "npx rspack"
+  },
+  "author": "OpenRemote",
+  "repository": "https://github.com/openremote/openremote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@rive-app/webgl2": "^2.35.4",
+    "lit": "^3.3.1",
+    "lodash.debounce": "^4.0.8"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

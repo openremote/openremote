@@ -1,7 +1,17 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion"
+    }
+}
+
 apply plugin: "java-library"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
 apply plugin: "signing"
+apply plugin: "com.google.protobuf"
 
 dependencies {
 
@@ -49,13 +59,41 @@ dependencies {
     implementation "io.grpc:grpc-protobuf:$grpcVersion"
     implementation "io.grpc:grpc-stub:$grpcVersion"
 
+    compileOnly "javax.annotation:javax.annotation-api:$grpcAnnotationsVersion"
+
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
 
-    implementation files("libs/chirpstack-api-4.14.1.jar")
-    implementation files("libs/tts-api-3.34.3.jar")
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDirs.clear()
+            srcDirs = [
+                'src/main/proto/chirpstack',
+                'src/main/proto/tts',
+                'src/main/proto/shared'
+            ]
+        }
+    }
 }
 
 base {
