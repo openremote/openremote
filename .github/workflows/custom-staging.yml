@@ -53,6 +53,12 @@ jobs:
     if: needs.detect-changes.outputs.backend_any_changed == 'true'
     uses: "./.github/workflows/integration-tests.yml"
 
+  code-coverage:
+    name: Test
+    needs: [unit-tests, integration-tests]
+    if: needs.detect-changes.outputs.backend_any_changed == 'true'
+    uses: "./.github/workflows/code-coverage.yml"
+
   # deployment:
   #   name: Deploy
   #   needs: [unit-tests, integration-tests]

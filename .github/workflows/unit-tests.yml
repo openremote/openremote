@@ -15,10 +15,21 @@ jobs:
           cache: "gradle"
       - name: Run unit tests
         timeout-minutes: 20
-        run: ./gradlew test -x :test:test -x npmTest
+        run: ./gradlew test -x :test:test -x npmTest unitTestReport
       - name: Archive unit test results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: or-unit-test-results
-          path: test/build/reports/tests
+          path: build/reports/tests/test/aggregated-results/
+      - name: Archive JaCoCo coverage outputs
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: or-unit-test-outputs
+          path: |
+            **/build/classes/java/main/**
+            **/build/classes/java/test/**
+            **/build/jacoco/*.exec
+            **/build/reports/tests/test/**
+            **/build/test-results/test/**
