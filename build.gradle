@@ -6,6 +6,146 @@ import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
+apply plugin: 'java-base'
+apply plugin: 'test-report-aggregation'
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+subprojects {
+    if (project.path.startsWith(':ui')) return
+    pluginManager.withPlugin('java') {
+        apply plugin: 'jacoco'
+        jacoco { toolVersion = "0.8.14" }
+    }
+}
+
+tasks.register('npmTest') {
+    group = 'verification'
+    description = 'Runs all UI tests sequentially (component then app)'
+}
+
+tasks.register('test') {
+    group = 'verification'
+    description = 'Executes all backend and UI tests in specific order'
+    // When './gradlew test' is run, ensure the UI tests are also pulled into the task graph
+    dependsOn 'npmTest'
+}
+
+// Enforce order in which we run the backend- and frontend tests
+// Order: 1. Unit tests
+//     -> 2. Integration tests
+//     -> 3. UI component tests
+//     -> 4. UI app tests
+gradle.projectsEvaluated {
+    def unitTests = subprojects.findAll { it.path != ':test' }
+        .collect { it.tasks.matching { t -> t.name == 'test' } }
+
+    def integrationTests = subprojects.findAll { it.path == ':test' }
+        .collect { it.tasks.matching { t -> t.name == 'test' } }
+
+    def uiComponentTests = subprojects.findAll { it.path.startsWith(':ui:component') }
+        .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
+
+    def uiAppTests = subprojects.findAll { it.path.startsWith(':ui:app') }
+        .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
+
+    tasks.named('npmTest').configure {
+        dependsOn(uiComponentTests, uiAppTests)
+    }
+
+    def rootTest = tasks.findByName('test') ?: tasks.register('test').get()
+    rootTest.configure {
+        dependsOn(unitTests, integrationTests, npmTest)
+    }
+
+    integrationTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests) }
+    }
+
+    uiComponentTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests, integrationTests) }
+    }
+
+    uiAppTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests, integrationTests, uiComponentTests) }
+    }
+}
+
+dependencies {
+    subprojects.forEach { subproject ->
+        if (subproject.path.startsWith(':ui')) return
+        subproject.pluginManager.withPlugin('java') {
+            // Aggregate unit test results spread over different projects
+            if (subproject.path != ':test') {
+                testReportAggregation project(subproject.path)
+            }
+        }
+    }
+}
+
+reporting {
+    reports { // Task which generates an aggregated unit test report
+        unitTestReport(AggregateTestReport) {
+            testSuiteName = 'test'
+        }
+    }
+}
+
+tasks.named('unitTestReport').configure {
+    doLast {
+        def htmlIndex = new File(destinationDirectory.get().asFile, "index.html")
+        println "Aggregated Unit Test Results: file://${htmlIndex.absolutePath}"
+    }
+}
+
+// We replace the 'jacoco-report-aggregation' plugin with the following task to
+// ensure we get a combined coverage report for the unit- and integration tests
+tasks.register('combinedCoverageReport', JacocoReport) {
+    group = 'reporting'
+    description = 'Generates a unified coverage report for all Unit and Integration tests'
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    doLast {
+        def htmlIndex = new File(reports.html.outputLocation.get().asFile, "index.html")
+        println "Combined Code Coverage: file://${htmlIndex.absolutePath}"
+    }
+}
+
+gradle.projectsEvaluated {
+    def backendProjects = subprojects.findAll {
+        !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java')
+    }
+
+    def activeTestTasks = backendProjects.collectMany { it.tasks.withType(Test) }
+        .findAll { it.name == 'test' }
+
+    // Configure the task safely now that all plugins and sources exist
+    tasks.named('combinedCoverageReport').configure { reportTask ->
+        reportTask.dependsOn(activeTestTasks)
+
+        reportTask.executionData.setFrom(project.provider {
+            activeTestTasks.collect { task ->
+                task.extensions.findByType(JacocoTaskExtension)?.destinationFile
+            }.findAll { it != null && it.exists() }
+        })
+
+        def sourceDirs = backendProjects.collectMany { it.sourceSets.main.allJava.srcDirs }
+        reportTask.sourceDirectories.setFrom(files(sourceDirs))
+
+        def classDirs = backendProjects.collectMany { it.sourceSets.main.output.classesDirs.files }
+        reportTask.classDirectories.setFrom(files(classDirs).asFileTree.matching {
+            include 'org/openremote/**'
+        })
+    }
+}
+
 // Configure version based on Git tags
 apply plugin: 'pl.allegro.tech.build.axion-release'
 scmVersion {
@@ -78,7 +218,7 @@ tasks.register('checkFilesGitIgnoredNew', Exec) {
 def gitFile = Paths.get(projectDir.path, '.git').toFile()
 checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
-tasks.register('clean') {
+tasks.named('clean') {
     doLast {
         delete 'tmp'
     }
@@ -98,7 +238,6 @@ buildscript {
 subprojects {
     // Apply only if the project has a 'test' task
     tasks.withType(Test).configureEach { testTask ->
-        outputs.upToDateWhen { false }
         useJUnitPlatform()
 
         systemProperty "junit.jupiter.execution.parallel.enabled", "true"
@@ -204,18 +343,4 @@ subprojects {
             }
         }
     }
-}
-
-// Finalize the gradle test task with the npmTest task so that all tests can be run with gradle test.
-// Runs backend tests first and then frontend tests. UI tests are registered under npmTest to avoid
-// complications when configuring the test task on projects w/o the Java plugin where the test task is
-// already defined. It also allows for easy exclusion using the `-x` argument (e.g. `gradle test -x npmTest`.)
-tasks.register('test') {
-    dependsOn subprojects.collect { it.tasks.matching { it.name == 'test' } }
-}
-tasks.register('npmTest') {
-    dependsOn subprojects.collect { it.tasks.matching { it.name == 'npmTest' } }
-}
-tasks.named('test') {
-    finalizedBy tasks.named('npmTest')
 }

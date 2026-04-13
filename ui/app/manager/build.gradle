@@ -76,6 +76,9 @@ tasks.register('npmBuild', Exec) {
 }
 
 tasks.register('installTestDeps', Exec) {
+    onlyIf {
+        !gradle.taskGraph.hasTask(':yarnInstall')
+    }
     commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core"
 }
 
