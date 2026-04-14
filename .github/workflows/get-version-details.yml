@@ -1,0 +1,24 @@
+name: Get version details
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.get-version-details.outputs.version }}
+
+jobs:
+  get-version-details:
+    name: Get version details
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - name: Get version details
+        id: get-version-details
+        run: |
+          ./gradlew currentVersion | tee /tmp/currentVersion
+          versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
+          version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT

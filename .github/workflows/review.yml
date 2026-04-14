@@ -105,6 +105,12 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/publish-npm-dry-run.yml"
 
+  get-version-details:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/get-version-details.yml"
+
   deployment:
     name: Deploy
     needs: [detect-changes, build-deployment-image]
