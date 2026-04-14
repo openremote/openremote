@@ -1,10 +1,5 @@
 # Query Exporter Configuration for OpenRemote PostgreSQL Monitoring
 # Documentation: https://github.com/albertodonato/query-exporter/blob/main/docs/configuration.rst
-#
-# Environment Variables:
-# - TABLE_BLOAT_THRESHOLD: Table bloat ratio threshold for alerting (default: 1.2 = 20% bloat)
-# - INDEX_BLOAT_THRESHOLD: Index bloat ratio threshold for alerting (default: 1.5 = 50% bloat)
-#   Set these in docker-compose or deployment environment to adjust sensitivity
 
 databases:
   openremote:
@@ -102,6 +97,51 @@ metrics:
   pg_background_errors:
     type: counter
     description: Count of errors in background worker processes
+
+  pg_timescale_job_total_runs:
+    type: counter
+    labels: [job_id, proc_name, hypertable_schema]
+    description: TimescaleDB job total runs by job
+
+  pg_timescale_job_total_failures:
+    type: counter
+    labels: [job_id, proc_name, hypertable_schema]
+    description: TimescaleDB job total failures by job
+
+  pg_timescale_job_last_run_duration_seconds:
+    type: gauge
+    labels: [job_id, proc_name, hypertable_schema]
+    description: TimescaleDB job last run duration in seconds
+
+  pg_timescale_job_next_start_seconds:
+    type: gauge
+    labels: [job_id, proc_name, hypertable_schema]
+    description: Seconds until next scheduled run for each TimescaleDB job
+
+  pg_timescale_job_last_run_status:
+    type: gauge
+    labels: [job_id, proc_name, hypertable_schema, last_run_status]
+    description: TimescaleDB job last run status marker (1)
+
+  pg_wal_total:
+    type: counter
+    description: Total WAL written since statistics reset in MB
+
+  pg_bgwriter_checkpoints_timed_total:
+    type: counter
+    description: Scheduled checkpoints executed
+
+  pg_bgwriter_checkpoints_req_total:
+    type: counter
+    description: Requested checkpoints executed
+
+  pg_bgwriter_checkpoint_write_time_seconds_total:
+    type: counter
+    description: Total time spent writing checkpoints in seconds
+
+  pg_bgwriter_checkpoint_sync_time_seconds_total:
+    type: counter
+    description: Total time spent syncing checkpoints in seconds
 
   pg_table_bloat_count:
     type: gauge
@@ -211,6 +251,53 @@ queries:
       SELECT
         SUM(total_failures) AS pg_background_errors
         FROM timescaledb_information.job_stats;
+
+  timescale_job_stats:
+    interval: 300 # 5 minutes
+    databases: [openremote]
+    metrics:
+      [
+        pg_timescale_job_total_runs,
+        pg_timescale_job_total_failures,
+        pg_timescale_job_last_run_duration_seconds,
+        pg_timescale_job_next_start_seconds,
+        pg_timescale_job_last_run_status
+      ]
+    sql: |
+      SELECT
+        s.job_id::text AS job_id,
+        CONCAT(j.proc_schema, '.', j.proc_name) AS proc_name,
+        COALESCE(j.hypertable_schema, '') AS hypertable_schema,
+        COALESCE(s.last_run_status, 'unknown') AS last_run_status,
+        COALESCE(s.total_runs, 0) AS pg_timescale_job_total_runs,
+        COALESCE(s.total_failures, 0) AS pg_timescale_job_total_failures,
+        EXTRACT(EPOCH FROM COALESCE(s.last_run_duration, INTERVAL '0 seconds')) AS pg_timescale_job_last_run_duration_seconds,
+        EXTRACT(EPOCH FROM (COALESCE(s.next_start, now()) - now())) AS pg_timescale_job_next_start_seconds,
+        1 AS pg_timescale_job_last_run_status
+      FROM timescaledb_information.job_stats s
+      JOIN timescaledb_information.jobs j ON j.job_id = s.job_id
+      WHERE j.hypertable_name = 'asset_datapoint';
+
+  write_path_pressure:
+    interval: 300 # 5 minutes
+    databases: [openremote]
+    metrics:
+      [
+        pg_wal_total,
+        pg_bgwriter_checkpoints_timed_total,
+        pg_bgwriter_checkpoints_req_total,
+        pg_bgwriter_checkpoint_write_time_seconds_total,
+        pg_bgwriter_checkpoint_sync_time_seconds_total
+      ]
+    sql: |
+      SELECT
+        (w.wal_bytes / 1048576.0) AS pg_wal_total,
+        b.checkpoints_timed AS pg_bgwriter_checkpoints_timed_total,
+        b.checkpoints_req AS pg_bgwriter_checkpoints_req_total,
+        ROUND((b.checkpoint_write_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_write_time_seconds_total,
+        ROUND((b.checkpoint_sync_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_sync_time_seconds_total
+      FROM pg_stat_wal w
+      CROSS JOIN pg_stat_bgwriter b;
       
   table_and_index_bloat:
     interval: 300 # 5 minutes
@@ -221,20 +308,14 @@ queries:
         SELECT count(*) AS tbl_count
         FROM pg_stat_user_tables
         WHERE schemaname IN ('openremote', 'public')
-        -- 1. NOISE FILTER: Only look at tables larger than 5MB.
         AND pg_relation_size(relid) > 5 * 1024 * 1024
-        -- 2. THRESHOLD: Dead tuples are > 30% of live rows.
-        -- (Autovacuum runs at 20%, so 30% means autovacuum is failing to keep up)
         AND (n_dead_tup::numeric / NULLIF(n_live_tup, 0)) > 0.30
       ),
       bloated_indexes AS (
       SELECT count(*) AS idx_count
       FROM pg_stat_user_indexes
       WHERE schemaname IN ('openremote', 'public')
-      -- 1. NOISE FILTER: Only look at indexes larger than 10MB.
       AND pg_relation_size(indexrelid) > 10 * 1024 * 1024
-      -- 2. ALARM THRESHOLD: Index size is > 150% of the raw table size.
-      -- (Catches severe page-splitting and fragmentation)
       AND (pg_relation_size(indexrelid)::numeric / GREATEST(pg_relation_size(relid), 1)) > 1.50
       )
       SELECT
