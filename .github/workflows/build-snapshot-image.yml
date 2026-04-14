@@ -1,4 +1,5 @@
 name: Build snapshot image
+
 on:
   workflow_call:
     secrets:

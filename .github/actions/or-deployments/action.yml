@@ -1,0 +1,22 @@
+name: OpenRemote Deployment
+description: Deploy OR Stack
+inputs:
+  environment:
+    description: Environment (.env) file to use.
+    required: false
+  hostname:
+    description: Instance to deploy to.
+    required: true
+  password:
+    description: Configure OR_ADMIN_PASSWORD or override .env value
+    required: false
+  clean_install:
+    description: Delete Docker volumes (manager / postgres data)
+    default:
+runs:
+  using: composite
+  steps:
+    - name: Test Action
+      run: echo "test"
+      shell: bash
+
