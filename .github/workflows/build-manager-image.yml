@@ -1,4 +1,5 @@
 name: Build manager image
+
 on:
   workflow_call:
     secrets:
