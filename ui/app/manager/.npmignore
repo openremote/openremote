@@ -1,6 +1,8 @@
 build/
 build.gradle
 test/
+app-test-report/
+test-results/
 src/
 webpack.config.js
 rspack.config.js

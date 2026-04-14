@@ -85,9 +85,18 @@ async function applyParentAssets(parentAssets: Asset[], manager: Manager) {
  * @and Tries to navigate through the assets in the system using the asset tree
  * @then The asset list should be complete and should not display any artifacts or visual errors.
  */
-test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage }) => {
+test(`Check if assets are visible in the tree`, async ({ assetTree, manager, assetsPage, page }) => {
+
+    // Make sure the count endpoint during page load returns a correct value
+    await page.route("**/asset/count", async (route, request) => {
+        await route.continue();
+        const response = await request.response();
+        expect(response?.status()).toBe(200);
+        expect(await response?.json()).toBeGreaterThanOrEqual(8);
+    });
+
     const batteryAssets = createBatteryAssets(2);
-    const electricityAssets = createElectricityAssets(2)
+    const electricityAssets = createElectricityAssets(2);
     await manager.setup("smartcity", { assets: [...batteryAssets, ...electricityAssets] });
     await applyParentAssets(parentAssets, manager);
     await manager.goToRealmStartPage("smartcity");
@@ -199,7 +208,10 @@ test(`Load more buttons are shown when there are a lot of assets`, async ({ page
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
     await expect(assetTree.getAssetNodes()).toHaveCount(5); // 2 battery assets + 2 electricity assets + 1 console group
-    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '2')});
+    await page.locator('or-asset-tree').evaluate(tree => {
+        (tree as OrAssetTree).setAttribute('queryLimit', '2');
+        (tree as OrAssetTree).setAttribute('paginationThreshold', '1');
+    });
     await expect(assetTree.getAssetNodes()).toHaveCount(2);
     await page.getByRole('button', { name: "Load More" }).click();
     await expect(assetTree.getAssetNodes()).toHaveCount(4);
@@ -228,7 +240,10 @@ test(`Load more buttons are shown properly without any unexpected scroll behavio
     await expect(assetTree.getAssetNodes()).toHaveCount(3 + 25); // City 1, City 2, Consoles asset and 25 battery assets
 
     // Limit the number of expanding nodes to 20, and check if the tree is still in tact
-    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '20')});
+    await page.locator('or-asset-tree').evaluate(tree => {
+        (tree as OrAssetTree).setAttribute('queryLimit', '20');
+        (tree as OrAssetTree).setAttribute('paginationThreshold', '1');
+    });
     await expect(assetTree.getAssetNodes()).toHaveCount(3); // City 1, City 2 and Consoles asset
     cityAsset1 = assetTree.getAssetNodes().filter({ hasText: parentAssets[0].name });
     await cityAsset1.locator('[data-expandable]').click();
@@ -292,7 +307,10 @@ test(`Load more buttons are shown properly when there is a complex tree`, async 
     // Navigate to the asset tree
     await manager.goToRealmStartPage("smartcity");
     await assetsPage.goto();
-    await page.locator('or-asset-tree').evaluate(tree => {(tree as OrAssetTree).setAttribute('queryLimit', '2')});
+    await page.locator('or-asset-tree').evaluate(tree => {
+        (tree as OrAssetTree).setAttribute('queryLimit', '2');
+        (tree as OrAssetTree).setAttribute('paginationThreshold', '1')
+    });
     await expect(assetTree.getAssetNodes()).toHaveCount(2); // 2 parent assets (the other console group is hidden because of queryLimit=2)
 
     // Navigate to the 1st building within the first city

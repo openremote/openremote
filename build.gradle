@@ -101,6 +101,10 @@ subprojects {
         outputs.upToDateWhen { false }
         useJUnitPlatform()
 
+        systemProperty "junit.jupiter.execution.parallel.enabled", "true"
+        systemProperty "junit.jupiter.execution.parallel.mode.default", "concurrent"
+        systemProperty "junit.jupiter.execution.parallel.mode.classes.default", "concurrent"
+
         testLogging {
 
             // set options for log level LIFECYCLE
@@ -128,12 +132,14 @@ subprojects {
             }
             info.events = debug.events
             info.exceptionFormat = debug.exceptionFormat
+        }
 
-            afterTest { desc, result ->
-                logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-            }
+        addTestListener(new TestListener() {
+            @Override
+            void beforeSuite(TestDescriptor suite) {}
 
-            afterSuite { desc, result ->
+            @Override
+            void afterSuite(TestDescriptor desc, TestResult result) {
                 if (!desc.parent) { // will match the outermost suite
                     def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
                     def startItem = '|  ', endItem = '  |'
@@ -141,7 +147,15 @@ subprojects {
                     println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
                 }
             }
-        }
+
+            @Override
+            void beforeTest(TestDescriptor desc) {}
+
+            @Override
+            void afterTest(TestDescriptor desc, TestResult result) {
+                logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
+            }
+        })
     }
 
     afterEvaluate { proj ->

@@ -16,6 +16,7 @@ import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_P
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
+import static org.openremote.model.rules.Ruleset.Lang.FLOW
 import static org.openremote.model.rules.Ruleset.Lang.JAVASCRIPT
 import static org.openremote.model.rules.Ruleset.Lang.JSON
 
@@ -98,8 +99,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         globalRuleset.id == rulesetId
         globalRuleset.version == 0
-        globalRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        globalRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         globalRuleset.name == "Test global definition"
         globalRuleset.rules == "SomeRulesCode"
         globalRuleset.lang == GROOVY
@@ -120,8 +121,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         globalRuleset.id == rulesetId
         globalRuleset.version > 0
-        globalRuleset.createdOn.time < System.currentTimeMillis()
-        globalRuleset.lastModified.time > lastModified.time
+        globalRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        globalRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         globalRuleset.name == "Renamed test global definition"
         globalRuleset.rules == "SomeRulesCodeModified"
 
@@ -164,8 +165,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 0
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         realmRuleset.name == "Test realm definition"
         realmRuleset.rules == "SomeRulesCode"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -186,8 +187,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 1
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        realmRuleset.lastModified.time > lastModified.time
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        realmRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         realmRuleset.name == "Renamed test realm definition"
         realmRuleset.rules == "SomeRulesCodeModified"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -247,8 +248,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 0
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         realmRuleset.name == "Test realm definition"
         realmRuleset.rules == "SomeRulesCode"
         realmRuleset.realm == keycloakTestSetup.realmBuilding.name
@@ -270,8 +271,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -292,8 +293,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        assetRuleset.lastModified.time > lastModified.time
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        assetRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -352,8 +353,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment2Id
@@ -461,8 +462,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 0
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         realmRuleset.name == "Test realm definition"
         realmRuleset.rules == "SomeRulesCode"
         realmRuleset.realm == MASTER_REALM
@@ -483,8 +484,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         realmRuleset.id == rulesetId
         realmRuleset.version == 1
-        realmRuleset.createdOn.time < System.currentTimeMillis()
-        realmRuleset.lastModified.time > lastModified.time
+        realmRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        realmRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         realmRuleset.name == "Renamed test realm definition"
         realmRuleset.rules == "SomeRulesCodeModified"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -543,7 +544,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a realm ruleset is created in a non-authenticated realm"
-        realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", JAVASCRIPT, "SomeRulesCode")
+        realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", FLOW, "SomeRulesCode")
         rulesetResource.createRealmRuleset(null, realmRuleset)
 
         then: "access should be forbidden"
@@ -551,7 +552,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "an asset ruleset is created in the authenticated realm"
-        def assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
+        def assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", FLOW, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
         rulesetId = rulesetResource.getAssetRulesets(null, managerTestSetup.smartOfficeId, null, false)[0].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
@@ -560,8 +561,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -582,8 +583,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        assetRuleset.lastModified.time > lastModified.time
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        assetRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -899,7 +900,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a realm ruleset is created in a non-authenticated realm"
-        realmRuleset = new RealmRuleset(keycloakTestSetup.realmCity.name, "Test realm definition", JAVASCRIPT, "SomeRulesCode")
+        realmRuleset = new RealmRuleset(keycloakTestSetup.realmCity.name, "Test realm definition", FLOW, "SomeRulesCode")
         rulesetResource.createRealmRuleset(null, realmRuleset)
 
         then: "access should be forbidden"
@@ -910,7 +911,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def assetRuleset = new AssetRuleset(
             managerTestSetup.apartment1Id,
             "Test asset definition",
-            JAVASCRIPT, "SomeRulesCode")
+            FLOW, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
         def rulesetId = rulesetResource.getAssetRulesets(null, managerTestSetup.apartment1Id, null, false)[1].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
@@ -919,8 +920,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 0
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        lastModified.toEpochMilli() < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment1Id
@@ -941,8 +942,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
-        assetRuleset.createdOn.time < System.currentTimeMillis()
-        assetRuleset.lastModified.time > lastModified.time
+        assetRuleset.createdOn.toEpochMilli() < System.currentTimeMillis()
+        assetRuleset.lastModified.toEpochMilli() > lastModified.toEpochMilli()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.apartment1Id
@@ -1000,7 +1001,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset ruleset is created in the authenticated realm but on a forbidden asset"
-        assetRuleset = new AssetRuleset(managerTestSetup.apartment3Id, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
+        assetRuleset = new AssetRuleset(managerTestSetup.apartment3Id, "Test asset definition", FLOW, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
@@ -1008,7 +1009,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "an asset ruleset is created in a non-authenticated realm"
-        assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
+        assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", FLOW, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
@@ -1016,4 +1017,191 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
             }
+
+    def "JavaScript ruleset create requests are rejected"() {
+
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+        and: "an authenticated admin user"
+        def accessToken = authenticate(
+            container,
+            MASTER_REALM,
+            KEYCLOAK_CLIENT_ID,
+            MASTER_REALM_ADMIN_USER,
+            getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "the ruleset resource"
+        def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
+
+        when: "a global JavaScript ruleset is created"
+        rulesetResource.createGlobalRuleset(null, new GlobalRuleset("Test JS global definition", JAVASCRIPT, "SomeRulesCode"))
+
+        then: "the request should be rejected"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        when: "a realm JavaScript ruleset is created"
+        rulesetResource.createRealmRuleset(null, new RealmRuleset(MASTER_REALM, "Test JS realm definition", JAVASCRIPT, "SomeRulesCode"))
+
+        then: "the request should be rejected"
+        ex = thrown()
+        ex.response.status == 400
+
+        when: "an asset JavaScript ruleset is created"
+        rulesetResource.createAssetRuleset(null, new AssetRuleset(managerTestSetup.smartOfficeId, "Test JS asset definition", JAVASCRIPT, "SomeRulesCode"))
+
+        then: "the request should be rejected"
+        ex = thrown()
+        ex.response.status == 400
+    }
+
+    def "JavaScript ruleset update requests are rejected"() {
+
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+        and: "an authenticated admin user"
+        def accessToken = authenticate(
+            container,
+            MASTER_REALM,
+            KEYCLOAK_CLIENT_ID,
+            MASTER_REALM_ADMIN_USER,
+            getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "the ruleset resource"
+        def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
+
+        and: "existing rulesets are stored directly"
+        def globalRuleset = rulesetStorageService.merge(new GlobalRuleset("Test global definition", JSON, "SomeRulesCode"))
+        def realmRuleset = rulesetStorageService.merge(new RealmRuleset(MASTER_REALM, "Test JS realm definition", JAVASCRIPT, "SomeRulesCode"))
+        def assetRuleset = rulesetStorageService.merge(new AssetRuleset(managerTestSetup.smartOfficeId, "Test JS asset definition", JAVASCRIPT, "SomeRulesCode"))
+
+        when: "a stored global ruleset is updated to JavaScript"
+        def updatedGlobalRuleset = rulesetResource.getGlobalRuleset(null, globalRuleset.id)
+        updatedGlobalRuleset.lang = JAVASCRIPT
+        updatedGlobalRuleset.rules = "SomeRulesCodeModified"
+        rulesetResource.updateGlobalRuleset(null, globalRuleset.id, updatedGlobalRuleset)
+
+        then: "the request should be rejected"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        when: "a stored JavaScript realm ruleset is updated to a non-JavaScript language"
+        def updatedRealmRuleset = rulesetResource.getRealmRuleset(null, realmRuleset.id)
+        updatedRealmRuleset.lang = JSON
+        updatedRealmRuleset.rules = "SomeRulesCodeModified"
+        rulesetResource.updateRealmRuleset(null, realmRuleset.id, updatedRealmRuleset)
+
+        then: "the request should be rejected"
+        ex = thrown()
+        ex.response.status == 400
+
+        when: "a stored JavaScript asset ruleset is updated to a non-JavaScript language"
+        def updatedAssetRuleset = rulesetResource.getAssetRuleset(null, assetRuleset.id)
+        updatedAssetRuleset.lang = FLOW
+        updatedAssetRuleset.rules = "SomeRulesCodeModified"
+        rulesetResource.updateAssetRuleset(null, assetRuleset.id, updatedAssetRuleset)
+
+        then: "the request should be rejected"
+        ex = thrown()
+        ex.response.status == 400
+    }
+
+    def "Legacy JavaScript rulesets remain readable and deletable"() {
+
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+
+        and: "an authenticated admin user"
+        def accessToken = authenticate(
+            container,
+            MASTER_REALM,
+            KEYCLOAK_CLIENT_ID,
+            MASTER_REALM_ADMIN_USER,
+            getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "the ruleset resource"
+        def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
+
+        and: "legacy JavaScript rulesets are stored directly"
+        def globalRuleset = rulesetStorageService.merge(new GlobalRuleset("Legacy JS global definition", JAVASCRIPT, "SomeRulesCode"))
+        def realmRuleset = rulesetStorageService.merge(new RealmRuleset(MASTER_REALM, "Legacy JS realm definition", JAVASCRIPT, "SomeRulesCode"))
+        def assetRuleset = rulesetStorageService.merge(new AssetRuleset(managerTestSetup.smartOfficeId, "Legacy JS asset definition", JAVASCRIPT, "SomeRulesCode"))
+
+        when: "legacy JavaScript rulesets are listed"
+        def globalRulesets = rulesetResource.getGlobalRulesets(null, null, false)
+        def realmRulesets = rulesetResource.getRealmRulesets(null, MASTER_REALM, null, false)
+        def assetRulesets = rulesetResource.getAssetRulesets(null, managerTestSetup.smartOfficeId, null, false)
+
+        then: "they remain visible in list endpoints"
+        def listedGlobalRuleset = globalRulesets.find { it.id == globalRuleset.id }
+        def listedRealmRuleset = realmRulesets.find { it.id == realmRuleset.id }
+        def listedAssetRuleset = assetRulesets.find { it.id == assetRuleset.id }
+
+        listedGlobalRuleset != null
+        listedGlobalRuleset.lang == JAVASCRIPT
+        listedGlobalRuleset.name == "Legacy JS global definition"
+        listedGlobalRuleset.rules == null
+
+        listedRealmRuleset != null
+        listedRealmRuleset.lang == JAVASCRIPT
+        listedRealmRuleset.name == "Legacy JS realm definition"
+        listedRealmRuleset.rules == null
+
+        listedAssetRuleset != null
+        listedAssetRuleset.lang == JAVASCRIPT
+        listedAssetRuleset.name == "Legacy JS asset definition"
+        listedAssetRuleset.rules == null
+
+        when: "legacy JavaScript rulesets are fetched"
+        def fetchedGlobalRuleset = rulesetResource.getGlobalRuleset(null, globalRuleset.id)
+        def fetchedRealmRuleset = rulesetResource.getRealmRuleset(null, realmRuleset.id)
+        def fetchedAssetRuleset = rulesetResource.getAssetRuleset(null, assetRuleset.id)
+
+        then: "they remain readable through detail endpoints"
+        fetchedGlobalRuleset.lang == JAVASCRIPT
+        fetchedGlobalRuleset.rules == "SomeRulesCode"
+        fetchedRealmRuleset.lang == JAVASCRIPT
+        fetchedRealmRuleset.rules == "SomeRulesCode"
+        fetchedAssetRuleset.lang == JAVASCRIPT
+        fetchedAssetRuleset.rules == "SomeRulesCode"
+
+        when: "legacy JavaScript rulesets are deleted"
+        rulesetResource.deleteGlobalRuleset(null, globalRuleset.id)
+        rulesetResource.deleteRealmRuleset(null, realmRuleset.id)
+        rulesetResource.deleteAssetRuleset(null, assetRuleset.id)
+
+        then: "the delete requests succeed"
+        notThrown(WebApplicationException)
+
+        when: "a deleted global ruleset is fetched"
+        rulesetResource.getGlobalRuleset(null, globalRuleset.id)
+
+        then: "it is no longer found"
+        WebApplicationException ex = thrown()
+        ex.response.status == 404
+
+        when: "a deleted realm ruleset is fetched"
+        rulesetResource.getRealmRuleset(null, realmRuleset.id)
+
+        then: "it is no longer found"
+        ex = thrown()
+        ex.response.status == 404
+
+        when: "a deleted asset ruleset is fetched"
+        rulesetResource.getAssetRuleset(null, assetRuleset.id)
+
+        then: "it is no longer found"
+        ex = thrown()
+        ex.response.status == 404
+    }
 }

@@ -1,5 +1,6 @@
 import {
     Asset,
+    AssetModelUtil,
     AssetDescriptor,
     Attribute,
     AttributeDescriptor,
@@ -22,14 +23,12 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
-    Role,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
-import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import {transform} from "lodash";
+import transform from "lodash.transform";
 
 export class Deferred<T> {
 
@@ -222,11 +221,7 @@ export function isObject(object: any): boolean {
     return false;
 }
 
-export function isFunction(object: any): boolean {
-    return !!(object && object.constructor && object.call && object.apply);
-}
-
-export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): boolean {
+export function objectsEqual(obj1?: any, obj2?: any, deep = true): boolean {
     if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
         return obj1 === obj2;
     }
@@ -384,14 +379,8 @@ export function capitaliseFirstLetter(str: string | undefined) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export function enumContains(enm: object, val: string): boolean {
-    return enm && Object.values(enm).includes(val);
-}
-
-export function getEnumKeyAsString(enm: object, val: string): string {
-    // @ts-ignore
-    const key = Object.keys(enm).find((k) => enm[k] === val);
-    return key!;
+export function getEnumKeyAsString(enm: object, val: string): string | undefined {
+    return Object.keys(enm).find((k) => enm[k as keyof object] === val);
 }
 
 /* For a given date, get the ISO week number
@@ -496,7 +485,7 @@ export function dateToCronString(date: Date): string {
 * Input for example would be `0 00 11 * * ? *` for every day at 11am.
 * If the input is '*', it will be replaced by 1. (month parameter of '*' becomes January)
 */
-export function cronStringToISOString(cronString: String, isUTC: boolean): string | undefined {
+export function cronStringToISOString(cronString: string, isUTC: boolean): string | undefined {
     const splStr = cronString.split(" ");
     if(!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
         const year: string = (!Number.isNaN(Number(splStr[6])) ? splStr[6] : new Date().getFullYear()).toString();
@@ -522,8 +511,6 @@ export function cronStringToISOString(cronString: String, isUTC: boolean): strin
     return undefined;
 }
 
-
-
 export function getMetaValue(name: string | NameHolder, attribute: Attribute<any> | undefined, descriptor?:  ValueDescriptorHolder | ValueDescriptor | string): any | undefined {
     const metaName = typeof name === "string" ? name : (name as NameHolder).name!;
 
@@ -548,6 +535,22 @@ export function hasMetaItem(name: string | NameHolder, attribute: Attribute<any>
     }
 
     return false;
+}
+
+export function isPrimitiveValueDescriptor(descriptor: ValueDescriptor | undefined): boolean {
+    return !isComplexValueDescriptor(descriptor);
+}
+
+export function isComplexValueDescriptor(descriptor: ValueDescriptor | undefined): boolean {
+    return Boolean(descriptor?.jsonType === "object" || descriptor?.arrayDimensions && descriptor.arrayDimensions > 0);
+}
+
+export function getPrimitiveMetaItems(): MetaItemDescriptor[] {
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isPrimitiveValueDescriptor(AssetModelUtil.getValueDescriptor(m.type)));
+}
+
+export function getComplexMetaItems(): MetaItemDescriptor[] {
+    return AssetModelUtil.getMetaItemDescriptors().filter(m => isComplexValueDescriptor(AssetModelUtil.getValueDescriptor(m.type)));
 }
 
 export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
@@ -966,7 +969,7 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
 /**
  * Immutable update of an asset using the supplied attribute event
  */
-export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
+export function updateAsset<T extends Asset>(asset: T, event: AttributeEvent): T {
 
     const attributeName = event.ref!.name!;
 
@@ -1060,4 +1063,18 @@ export function blobToBase64(blob:Blob) {
             reject(error);
         };
     });
+}
+
+/**
+ * Generates a 36 character UUID using the crypto API. https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
+ * As a fallback, in case an insecure browser context is used, we use `getRandomValues` and change it into UUIDv4.
+ */
+export function generateUniqueUUID(): string {
+    if (typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
+    // Fallback for insecure contexts
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+      (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
+    );
 }

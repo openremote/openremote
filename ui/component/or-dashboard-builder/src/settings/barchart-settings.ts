@@ -36,7 +36,7 @@ import {OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 import {AttributesChartPanel} from "../panels/attributes-chart-panel";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 
 const styling = css`
     .switch-container {

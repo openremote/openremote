@@ -9,15 +9,15 @@ export class WidgetService {
     public static getManifest(widgetTypeId: string) {
         const manifest = widgetTypes.get(widgetTypeId);
         if(!manifest) {
-            throw new Error("Widget manifest could not be found during widget creation.");
+            throw new Error(`Widget manifest could not be found during widget creation. [ID=${widgetTypeId}]`);
         }
         return manifest;
     }
 
     public static async placeNew(widgetTypeId: string, x: number, y: number): Promise<DashboardWidget> {
-        const randomId = (Math.random() + 1).toString(36).substring(2);
+        const randomId = Util.generateUniqueUUID();
         const manifest = this.getManifest(widgetTypeId);
-        const widget = {
+        return {
             id: randomId,
             displayName: manifest.displayName,
             gridItem: {
@@ -37,7 +37,6 @@ export class WidgetService {
             widgetConfig: manifest.getDefaultConfig(),
             widgetTypeId: widgetTypeId
         } as DashboardWidget;
-        return widget;
     }
 
     // Method used to correct the OrWidgetConfig specification

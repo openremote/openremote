@@ -1,0 +1,540 @@
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message EndDeviceBrand {
+  // Brand identifier, as specified in the Device Repository.
+  string brand_id = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Brand name.
+  string name = 2;
+
+  // Private Enterprise Number (PEN) assigned by IANA.
+  uint32 private_enterprise_number = 3;
+  // Organization Unique Identifiers (OUI) assigned by IEEE.
+  repeated string organization_unique_identifiers = 4 [(validate.rules).repeated.items.string.pattern = "[0-9A-F]{6}"];
+  // VendorID managed by the LoRa Alliance, as defined in TR005.
+  uint32 lora_alliance_vendor_id = 5;
+  // Brand website URL.
+  string website = 6 [(validate.rules).string = {
+    uri: true,
+    ignore_empty: true
+  }];
+  // Contact email address.
+  string email = 7 [(validate.rules).string = {
+    email: true,
+    ignore_empty: true
+  }];
+  // Path to brand logo.
+  string logo = 8 [(validate.rules).string.pattern = "^$|^(([a-z0-9-]+\\/)+)?([a-z0-9_-]+\\.)+(png|svg)$"];
+}
+
+enum KeyProvisioning {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "KEY_PROVISIONING"
+  };
+
+  // Unknown Key Provisioning.
+  KEY_PROVISIONING_UNKNOWN = 0 [(thethings.json.enum_value) = {value: "unknown"}];
+  // Custom Key Provisioning.
+  KEY_PROVISIONING_CUSTOM = 1 [(thethings.json.enum_value) = {value: "custom"}];
+  // Key Provisioning from the Global Join Server.
+  KEY_PROVISIONING_JOIN_SERVER = 2 [(thethings.json.enum_value) = {value: "join server"}];
+  // Key Provisioning from Manifest.
+  KEY_PROVISIONING_MANIFEST = 3 [(thethings.json.enum_value) = {value: "manifest"}];
+}
+
+enum KeySecurity {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "KEY_SECURITY"
+  };
+
+  // Unknown key security.
+  KEY_SECURITY_UNKNOWN = 0 [(thethings.json.enum_value) = {value: "unknown"}];
+  // No key security.
+  KEY_SECURITY_NONE = 1 [(thethings.json.enum_value) = {value: "none"}];
+  // Read Protected key security.
+  KEY_SECURITY_READ_PROTECTED = 2 [(thethings.json.enum_value) = {value: "read protected"}];
+  // Key security using the Security Element.
+  KEY_SECURITY_SECURE_ELEMENT = 3 [(thethings.json.enum_value) = {value: "secure element"}];
+}
+
+message EndDeviceModel {
+  // Brand identifier, as defined in the Device Repository.
+  string brand_id = 1 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Model identifier, as defined in the Device Repository.
+  string model_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Model name, as defined in the Device Repository.
+  string name = 3;
+  // Model description.
+  string description = 4;
+
+  message HardwareVersion {
+    // Hardware version string.
+    string version = 1;
+    // Numberic hardware revision number.
+    uint32 numeric = 2;
+    // Hardware part number.
+    string part_number = 3;
+  }
+  // Available hardware versions.
+  repeated HardwareVersion hardware_versions = 5;
+
+  message FirmwareVersion {
+    message Profile {
+      // Vendor ID of the profile, as defined in the Device Repository.
+      // If this value is set, the profile is loaded from this vendor's folder.
+      // If this value is not set, the profile is loaded from the current (end device's) vendor.
+      string vendor_id = 4 [(validate.rules).string = {
+        pattern: "^$|^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }];
+      // Profile identifier, as defined in the Device Repository.
+      string profile_id = 1 [(validate.rules).string = {
+        pattern: "^$|^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }];
+      // Whether the device is LoRaWAN certified.
+      bool lorawan_certified = 2;
+      // Payload formatter codec identifier, as defined in the Device Repository.
+      string codec_id = 3 [(validate.rules).string = {
+        pattern: "^$|^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }];
+    }
+    // Firmware version string.
+    string version = 1;
+    // Numeric firmware revision number.
+    uint32 numeric = 2;
+    // Hardware versions supported by this firmware version.
+    repeated string supported_hardware_versions = 3 [(validate.rules).repeated.unique = true];
+    // Device profiles for each supported region (band).
+    map<string, Profile> profiles = 4;
+  }
+  // Available firmware versions.
+  repeated FirmwareVersion firmware_versions = 6;
+  // List of sensors included in the device.
+  repeated string sensors = 7 [(validate.rules).repeated.unique = true];
+  message Dimensions {
+    // Device width (mm).
+    google.protobuf.FloatValue width = 1;
+    // Device height (mm).
+    google.protobuf.FloatValue height = 2;
+    // Device diameter (mm).
+    google.protobuf.FloatValue diameter = 3;
+    // Device length (mm).
+    google.protobuf.FloatValue length = 4;
+  }
+  // Device dimensions.
+  Dimensions dimensions = 8;
+  // Device weight (gram).
+  google.protobuf.FloatValue weight = 9;
+  message Battery {
+    // Whether the device battery can be replaced.
+    google.protobuf.BoolValue replaceable = 1;
+    // Battery type.
+    string type = 2;
+  }
+  // Device battery information.
+  Battery battery = 10;
+  message OperatingConditions {
+    message Limits {
+      // Min value of operating conditions range.
+      google.protobuf.FloatValue min = 1;
+      // Max value of operating conditions range.
+      google.protobuf.FloatValue max = 2;
+    }
+    // Temperature operating conditions (Celsius).
+    Limits temperature = 1;
+    // Relative humidity operating conditions (Fraction, in range [0, 1]).
+    Limits relative_humidity = 2;
+  }
+  // Device operating conditions.
+  OperatingConditions operating_conditions = 11;
+  // Device IP rating code.
+  string ip_code = 12;
+  // Supported key provisioning methods.
+  repeated KeyProvisioning key_provisioning = 13 [(validate.rules).repeated = {
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    },
+  }];
+  // Device key security.
+  KeySecurity key_security = 14 [(validate.rules).enum.defined_only = true];
+
+  message Photos {
+    // Main device photo.
+    string main = 1 [(validate.rules).string.pattern = "^$|^(([a-z0-9-]+\\/)+)?([a-z0-9_-]+\\.)+(png|jpg|jpeg)$"];
+    // List of other device photos.
+    repeated string other = 2 [(validate.rules).repeated = {
+      unique: true,
+      items: {
+        string: {pattern: "^$|^(([a-z0-9-]+\\/)+)?([a-z0-9_-]+\\.)+(png|jpg|jpeg)$"}
+      },
+    }];
+  }
+  // Device photos.
+  Photos photos = 15;
+  message Videos {
+    // Link to main device video.
+    string main = 1 [(validate.rules).string.pattern = "^(?:https?:\\/\\/(?:www\\.)?youtu(?:be\\.com\\/watch\\?v=|\\.be\\/)(?:[\\w\\-_]*)(?:&(amp;)?[\\w\\?=]*)?)$|^(?:https?:\\/\\/(?:www\\.)?vimeo\\.com\\/(?:channels\\/(?:\\w+\\/)?|groups\\/([^\\/]*)\\/videos\\/|)(?:\\d+)(?:|\\/\\?))$"];
+    // Links to other device videos.
+    repeated string other = 2 [(validate.rules).repeated = {
+      unique: true,
+      items: {
+        string: {pattern: "^(?:https?:\\/\\/(?:www\\.)?youtu(?:be\\.com\\/watch\\?v=|\\.be\\/)(?:[\\w\\-_]*)(?:&(amp;)?[\\w\\?=]*)?)$|^(?:https?:\\/\\/(?:www\\.)?vimeo\\.com\\/(?:channels\\/(?:\\w+\\/)?|groups\\/([^\\/]*)\\/videos\\/|)(?:\\d+)(?:|\\/\\?))$"}
+      },
+    }];
+  }
+  // Device videos.
+  Videos videos = 16;
+
+  // Device information page URL.
+  string product_url = 17 [(validate.rules).string = {
+    uri: true,
+    ignore_empty: true
+  }];
+  // Device datasheet URL.
+  string datasheet_url = 18 [(validate.rules).string = {
+    uri: true,
+    ignore_empty: true
+  }];
+
+  message Reseller {
+    // Reseller name.
+    string name = 1;
+    // Reseller regions.
+    repeated string region = 2;
+    // Reseller URL.
+    string url = 3 [(validate.rules).string = {
+      uri: true,
+      ignore_empty: true
+    }];
+  }
+  // Reseller URLs.
+  repeated Reseller resellers = 19;
+
+  message Compliances {
+    message Compliance {
+      string body = 1;
+      string norm = 2;
+      string standard = 3;
+      string version = 4;
+    }
+    // List of safety standards the device is compliant with.
+    repeated Compliance safety = 1;
+    // List of radio equipment standards the device is compliant with.
+    repeated Compliance radio_equipment = 2;
+  }
+  // List of standards the device is compliant with.
+  Compliances compliances = 20;
+
+  // List of any additional radios included in the device.
+  repeated string additional_radios = 21 [(validate.rules).repeated.unique = true];
+}
+
+message GetEndDeviceBrandRequest {
+  // Application identifiers.
+  ApplicationIdentifiers application_ids = 1 [deprecated = true];
+
+  // Brand identifier, as defined in the Device Repository.
+  string brand_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+
+  // Field mask paths.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message ListEndDeviceBrandsRequest {
+  // Application identifiers.
+  ApplicationIdentifiers application_ids = 1 [deprecated = true];
+
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+
+  // Order (for pagination)
+  string order_by = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "brand_id",
+      "-brand_id",
+      "name",
+      "-name"
+    ]
+  }];
+
+  // Search for brands matching a query string.
+  string search = 5 [(validate.rules).string = {max_len: 100}];
+
+  // Field mask paths.
+  google.protobuf.FieldMask field_mask = 6;
+}
+
+message GetEndDeviceModelRequest {
+  // Application identifiers.
+  ApplicationIdentifiers application_ids = 1 [deprecated = true];
+
+  // Brand identifier, as defined in the Device Repository.
+  string brand_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Model identifier, as defined in the Device Repository.
+  string model_id = 3 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+
+  // Field mask paths.
+  google.protobuf.FieldMask field_mask = 4;
+}
+
+message ListEndDeviceModelsRequest {
+  // Application identifiers.
+  ApplicationIdentifiers application_ids = 1 [deprecated = true];
+
+  // List end devices from a specific brand.
+  string brand_id = 2 [(validate.rules).string = {
+    pattern: "^([a-z0-9](?:[-]?[a-z0-9]){2,}|)?$",
+    max_len: 36
+  }];
+
+  // Limit the number of results per page.
+  uint32 limit = 3 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 4;
+  // Order end devices
+  string order_by = 5 [(validate.rules).string = {
+    in: [
+      "",
+      "brand_id",
+      "-brand_id",
+      "model_id",
+      "-model_id",
+      "name",
+      "-name"
+    ]
+  }];
+
+  // List end devices matching a query string.
+  string search = 6 [(validate.rules).string = {max_len: 100}];
+
+  // Field mask paths.
+  google.protobuf.FieldMask field_mask = 7;
+}
+
+message GetTemplateRequest {
+  // Identifiers to uniquely identify a LoRaWAN end device profile.
+  message EndDeviceProfileIdentifiers {
+    // VendorID managed by the LoRa Alliance, as defined in TR005.
+    uint32 vendor_id = 1 [(validate.rules).uint32 = {gte: 1}];
+
+    // ID of the LoRaWAN end device profile assigned by the vendor.
+    uint32 vendor_profile_id = 2;
+  }
+
+  // Application identifiers.
+  ApplicationIdentifiers application_ids = 1 [deprecated = true];
+
+  // End device version information.
+  // Use either EndDeviceVersionIdentifiers or EndDeviceProfileIdentifiers.
+  EndDeviceVersionIdentifiers version_ids = 2;
+
+  // End device profile identifiers.
+  EndDeviceProfileIdentifiers end_device_profile_ids = 3;
+}
+
+message GetPayloadFormatterRequest {
+  // Application identifiers.
+  ApplicationIdentifiers application_ids = 1 [deprecated = true];
+
+  // End device version information.
+  EndDeviceVersionIdentifiers version_ids = 2;
+
+  // Field mask paths.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message ListEndDeviceBrandsResponse {
+  repeated EndDeviceBrand brands = 1;
+}
+
+message ListEndDeviceModelsResponse {
+  repeated EndDeviceModel models = 1;
+}
+
+message EncodedMessagePayload {
+  uint32 f_port = 1 [(validate.rules).uint32.lte = 255];
+  bytes frm_payload = 2;
+  repeated string warnings = 3 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {max_len: 100}
+    }
+  }];
+  repeated string errors = 4 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {max_len: 100}
+    }
+  }];
+}
+
+message DecodedMessagePayload {
+  google.protobuf.Struct data = 1;
+  repeated string warnings = 2 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {max_len: 100}
+    }
+  }];
+  repeated string errors = 3 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {max_len: 100}
+    }
+  }];
+}
+
+message MessagePayloadDecoder {
+  // Payload formatter type.
+  PayloadFormatter formatter = 1 [(validate.rules).enum.defined_only = true];
+  // Parameter for the formatter, must be set together.
+  string formatter_parameter = 2;
+
+  string codec_id = 3 [(validate.rules).string = {
+    pattern: "^([a-z0-9](?:[-]?[a-z0-9]){2,}|)?$",
+    max_len: 36
+  }];
+
+  message Example {
+    string description = 1 [(validate.rules).string.max_len = 200];
+    EncodedMessagePayload input = 2;
+    DecodedMessagePayload output = 3;
+  }
+  repeated Example examples = 4 [(validate.rules).repeated.max_items = 20];
+}
+
+message MessagePayloadEncoder {
+  // Payload formatter type.
+  PayloadFormatter formatter = 1 [(validate.rules).enum.defined_only = true];
+  // Parameter for the formatter, must be set together.
+  string formatter_parameter = 2;
+
+  string codec_id = 3 [(validate.rules).string = {
+    pattern: "^([a-z0-9](?:[-]?[a-z0-9]){2,}|)?$",
+    max_len: 36
+  }];
+
+  message Example {
+    string description = 1 [(validate.rules).string.max_len = 200];
+    DecodedMessagePayload input = 2;
+    EncodedMessagePayload output = 3;
+  }
+  repeated Example examples = 4 [(validate.rules).repeated.max_items = 20];
+}
+
+service DeviceRepository {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Get information on LoRaWAN end device brands, models, and templates from the Device Repository."};
+  rpc ListBrands(ListEndDeviceBrandsRequest) returns (ListEndDeviceBrandsResponse) {
+    option (google.api.http) = {
+      get: "/dr/brands"
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands"}
+    };
+  }
+
+  rpc GetBrand(GetEndDeviceBrandRequest) returns (EndDeviceBrand) {
+    option (google.api.http) = {
+      get: "/dr/brands/{brand_id}"
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{brand_id}"}
+    };
+  }
+
+  rpc ListModels(ListEndDeviceModelsRequest) returns (ListEndDeviceModelsResponse) {
+    option (google.api.http) = {
+      get: "/dr/models"
+      additional_bindings {get: "/dr/brands/{brand_id}/models"}
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/models"}
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{brand_id}/models"}
+    };
+  }
+
+  rpc GetModel(GetEndDeviceModelRequest) returns (EndDeviceModel) {
+    option (google.api.http) = {
+      get: "/dr/brands/{brand_id}/models/{model_id}"
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{brand_id}/models/{model_id}"}
+    };
+  }
+
+  rpc GetTemplate(GetTemplateRequest) returns (EndDeviceTemplate) {
+    option (google.api.http) = {
+      get: "/dr/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/template"
+      additional_bindings {get: "/dr/vendors/{end_device_profile_ids.vendor_id}/profiles/{end_device_profile_ids.vendor_profile_id}/template"}
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/template"}
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/vendors/{end_device_profile_ids.vendor_id}/profiles/{end_device_profile_ids.vendor_profile_id}/template"}
+    };
+  }
+
+  rpc GetUplinkDecoder(GetPayloadFormatterRequest) returns (MessagePayloadDecoder) {
+    option (google.api.http) = {
+      get: "/dr/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/uplink/decoder"
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/uplink/decoder"}
+    };
+  }
+
+  rpc GetDownlinkDecoder(GetPayloadFormatterRequest) returns (MessagePayloadDecoder) {
+    option (google.api.http) = {
+      get: "/dr/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/decoder"
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/decoder"}
+    };
+  }
+
+  rpc GetDownlinkEncoder(GetPayloadFormatterRequest) returns (MessagePayloadEncoder) {
+    option (google.api.http) = {
+      get: "/dr/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/encoder"
+      additional_bindings {get: "/dr/applications/{application_ids.application_id}/brands/{version_ids.brand_id}/models/{version_ids.model_id}/{version_ids.firmware_version}/{version_ids.band_id}/formatters/downlink/encoder"}
+    };
+  }
+}

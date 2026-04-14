@@ -2,17 +2,22 @@ const fs = require("fs");
 const path = require("path");
 const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 function getStandardModuleRules() {
     return {
         rules: [
             {
-                test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
+                test: /(maplibre|@material|gridstack|@mdi).*\.css$/, //output css as strings
                 type: "asset/source"
             },
             {
+                test: /\.wasm$/,
+                type: "asset/resource"
+            },
+            {
                 test: /\.css$/, //
-                exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
+                exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
                 use: [
                     { loader: "css-loader" }
                 ]
@@ -82,6 +87,9 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
                 "vm": false,
                 "querystring": require.resolve("querystring-es3")
             }
+        },
+        experiments: {
+            asyncWebAssembly: true
         }
     };
 
@@ -100,7 +108,11 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
-        })
+        }),
+        // Remove any unused locales
+        new MomentLocalesPlugin({
+          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pt', 'ro', 'uk'],
+        }),
     ];
 
     if (production) {

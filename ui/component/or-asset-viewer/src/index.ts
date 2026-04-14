@@ -48,7 +48,7 @@ import {progressCircular} from "@openremote/or-mwc-components/style";
 import { when } from "lit/directives/when.js";
 
 export interface PanelConfig {
-    type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
+    type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
     title?: string;
     hide?: boolean;
     column?: number;
@@ -1200,6 +1200,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (changedProperties.has("assetId")) {
             this._assetInfo = undefined;
             this.asset = undefined;
+            this._validationResults = [];
 
             // Set asset ID on mixin which will go and load the asset
             if (this.assetId) {

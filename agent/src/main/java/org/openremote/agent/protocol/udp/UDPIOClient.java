@@ -31,7 +31,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -45,7 +45,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
-public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
+public class UDPIOClient<T> extends AbstractNettyIOClient<T> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UDPIOClient.class);
     protected String host;
@@ -90,8 +90,8 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     }
 
     @Override
-    protected Future<Void> startChannel() {
-        return bootstrap.bind("0.0.0.0", bindPort);
+    protected CompletableFuture<Void> startChannel() {
+        return toCompletableFuture(bootstrap.bind("0.0.0.0", bindPort));
     }
 
     @Override
@@ -113,5 +113,6 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     protected void configureChannel() {
         super.configureChannel();
         bootstrap.option(ChannelOption.SO_BROADCAST, true);
+        bootstrap.option(ChannelOption.SO_REUSEADDR, true);
     }
 }

@@ -1,7 +1,17 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion"
+    }
+}
+
 apply plugin: "java-library"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
 apply plugin: "signing"
+apply plugin: "com.google.protobuf"
 
 dependencies {
 
@@ -20,9 +30,6 @@ dependencies {
     }
 
     api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
-
-    implementation "org.apache.plc4x:plc4j-api:$plc4xVersion"
-    runtimeOnly "org.apache.plc4x:plc4j-driver-modbus:$plc4xVersion"
 
     //IKEA Tradfri agent dependencies
     api "org.eclipse.californium:californium-core:$californiumCoreVersion"
@@ -48,10 +55,45 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
+    implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    implementation "io.grpc:grpc-protobuf:$grpcVersion"
+    implementation "io.grpc:grpc-stub:$grpcVersion"
+
+    compileOnly "javax.annotation:javax.annotation-api:$grpcAnnotationsVersion"
+
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDirs.clear()
+            srcDirs = [
+                'src/main/proto/chirpstack',
+                'src/main/proto/tts',
+                'src/main/proto/shared'
+            ]
+        }
+    }
 }
 
 base {

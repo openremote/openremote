@@ -40,4 +40,5 @@ export const ctFixtures: Fixtures<PlaywrightTestArgs & PlaywrightTestOptions & S
     shared: withPage(CtShared),
 };
 
-export { test as ct, type ComponentTestType, type Shared, type BasePage, type Page, type Locator, type Project };
+export const ct = test;
+export type { BasePage, ComponentTestType, Locator, Page, Project, Shared, TestFixture };

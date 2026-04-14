@@ -1,0 +1,16 @@
+service:
+  http:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "external"
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:eu-west-1:<openremote account id>:certificate/..."
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443,8883"
+or:
+  haproxyConfig: /etc/haproxy/haproxy-edge-terminated-tls.cfg
+  httpsPort: 8080
+  mqttPort: 1883
+  env:
+    - name: DISABLE_ACME
+      value: "true"

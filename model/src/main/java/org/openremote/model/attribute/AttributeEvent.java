@@ -34,7 +34,6 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -78,7 +77,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     @JsonIgnore
     protected Class<? extends Asset> assetClass;
     @JsonView(Enhanced.class)
-    protected Date createdOn;
+    protected Instant createdOn;
     @JsonIgnore
     protected MetaMap meta;
 
@@ -256,7 +255,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     @Override
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
@@ -358,7 +357,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
+            "timestamp=" + (timestamp != null ? timestamp : "null") +
             ", ref=" + ref +
             ", realm=" + realm +
             ", source=" + source +
@@ -369,7 +368,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     public String toStringWithValue() {
         String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp.toInstant() +
+            "timestamp=" + timestamp +
             ", ref=" + ref +
             ", realm=" + realm +
             ", source=" + source +

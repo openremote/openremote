@@ -20,10 +20,7 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
-
-import java.util.Date;
 
 /**
  * Used to indicate to a connected gateway should disconnect
@@ -46,11 +43,6 @@ public class GatewayDisconnectEvent extends SharedEvent {
     protected Reason reason;
 
     @JsonCreator
-    public GatewayDisconnectEvent(@JsonProperty("timestamp") Date timestamp, @JsonProperty("reason") Reason reason) {
-        super(timestamp != null ? timestamp.getTime() : new Date().getTime());
-        this.reason = reason;
-    }
-
     public GatewayDisconnectEvent(Reason reason) {
         this.reason = reason;
     }

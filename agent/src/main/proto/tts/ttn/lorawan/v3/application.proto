@@ -1,0 +1,297 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/contact_info.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Application is the message that defines an Application in the network.
+message Application {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The identifiers of the application. These are public and can be seen by any authenticated user in the network.
+  ApplicationIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  // When the application was created. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the application was last updated. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the application was deleted. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp deleted_at = 8 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  // The name of the application.
+  string name = 4 [(validate.rules).string.max_len = 50];
+  // A description for the application.
+  string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this application. Typically used for organizing applications or for storing integration-specific data.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // Contact information for this application. Typically used to indicate who to contact with technical/security questions about the application.
+  // This field is deprecated. Use administrative_contact and technical_contact instead.
+  repeated ContactInfo contact_info = 7 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+
+  OrganizationOrUserIdentifiers administrative_contact = 10;
+  OrganizationOrUserIdentifiers technical_contact = 11;
+
+  // The address of the Network Server where this application is supposed to be registered.
+  // If set, this fields indicates where end devices for this application should be registered.
+  //
+  // Stored in Entity Registry.
+  // The typical format of the address is "host:port". If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string network_server_address = 12 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+
+  // The address of the Application Server where this application is supposed to be registered.
+  // If set, this fields indicates where end devices for this application should be registered.
+  //
+  // Stored in Entity Registry.
+  // The typical format of the address is "host:port". If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string application_server_address = 13 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+
+  // The address of the Join Server where this application is supposed to be registered.
+  // If set, this fields indicates where end devices for this application should be registered.
+  //
+  // Stored in Entity Registry.
+  // The typical format of the address is "host:port". If the port is omitted,
+  // the normal port inference (with DNS lookup, otherwise defaults) is used.
+  // The connection shall be established with transport layer security (TLS).
+  // Custom certificate authorities may be configured out-of-band.
+  string join_server_address = 14 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+
+  uint32 dev_eui_counter = 9 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  reserved 15;
+  reserved "end_device_limit";
+
+  reserved 16;
+  reserved "label_ids";
+
+  // next: 17
+}
+
+message Applications {
+  repeated Application applications = 1;
+}
+
+message IssueDevEUIResponse {
+  bytes dev_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+message GetApplicationRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  // The names of the application fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListApplicationsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // By default we list all applications the caller has rights on.
+  // Set the user or the organization (not both) to instead list the applications
+  // where the user or organization is collaborator on.
+  OrganizationOrUserIdentifiers collaborator = 1 [(thethings.flags.field) = {hidden: true}];
+  // The names of the application fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "application_id",
+      "-application_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 5;
+  // Only return recently deleted applications.
+  bool deleted = 6;
+}
+
+message CreateApplicationRequest {
+  Application application = 1 [(validate.rules).message.required = true];
+  // Collaborator to grant all rights on the newly created application.
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateApplicationRequest {
+  Application application = 1 [(validate.rules).message.required = true];
+  // The names of the application fields that should be updated.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListApplicationAPIKeysRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  // Order the results by this field path.
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "api_key_id",
+      "-api_key_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at",
+      "expires_at",
+      "-expires_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+}
+
+message GetApplicationAPIKeyRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  // Unique public identifier for the API key.
+  string key_id = 2;
+}
+
+message CreateApplicationAPIKeyRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  string name = 2 [(validate.rules).string.max_len = 50];
+  repeated Right rights = 3 [(validate.rules).repeated = {
+    min_items: 1,
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+  google.protobuf.Timestamp expires_at = 4 [(validate.rules).timestamp.gt_now = true];
+}
+
+message UpdateApplicationAPIKeyRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  APIKey api_key = 2 [(validate.rules).message.required = true];
+  // The names of the api key fields that should be updated.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message DeleteApplicationAPIKeyRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  string key_id = 2;
+}
+
+message ListApplicationCollaboratorsRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "id",
+      "-id",
+      "-rights",
+      "rights"
+    ]
+  }];
+}
+
+message GetApplicationCollaboratorRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message SetApplicationCollaboratorRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  Collaborator collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message DeleteApplicationCollaboratorRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator_ids = 2 [(validate.rules).message.required = true];
+}

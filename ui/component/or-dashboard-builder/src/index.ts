@@ -25,6 +25,8 @@ import {WidgetManifest} from "./util/or-widget";
 import {ChartWidget} from "./widgets/chart-widget";
 import {GaugeWidget} from "./widgets/gauge-widget";
 import {IntervalSelectEvent, intervalToMillis} from "./controls/dashboard-refresh-controls";
+export {intervalToMillis} from "./controls/dashboard-refresh-controls";
+export {OrDashboardPreview} from "./or-dashboard-preview";
 import {ImageWidget} from "./widgets/image-widget";
 import {KpiWidget} from "./widgets/kpi-widget";
 import {MapWidget} from "./widgets/map-widget";
@@ -211,15 +213,15 @@ export function getActivePreset(gridWidth: number, presets: DashboardScreenPrese
 export const widgetTypes: Map<string, WidgetManifest> = new Map<string, WidgetManifest>();
 
 export function registerWidgetTypes() {
-    widgetTypes.set("linechart", ChartWidget.getManifest());
+    widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
+    widgetTypes.set("barchart", BarChartWidget.getManifest());
+    widgetTypes.set("gateway", GatewayWidget.getManifest());
     widgetTypes.set("gauge", GaugeWidget.getManifest());
     widgetTypes.set("image", ImageWidget.getManifest());
     widgetTypes.set("kpi", KpiWidget.getManifest());
+    widgetTypes.set("linechart", ChartWidget.getManifest());
     widgetTypes.set("map", MapWidget.getManifest());
-    widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
-    widgetTypes.set("gateway", GatewayWidget.getManifest());
-    widgetTypes.set("barchart", BarChartWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")
@@ -660,7 +662,7 @@ export class OrDashboardBuilder extends LitElement {
                             </div>
                         </div>
                     `}
-                    <div id="content" style="flex: 1;">
+                    <div id="content" style="flex: 1; overflow: auto;">
                         <div id="container">
                             ${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? html`
                                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">

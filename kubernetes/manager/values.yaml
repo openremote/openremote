@@ -68,6 +68,11 @@ service:
     type: ClusterIP
     port: 8405
     annotations: {}
+  jmx:
+    enabled: false
+    type: ClusterIP
+    port: 8085
+    annotations: {}
 
 # Expose an Ingress for direct HTTP(S) access to the manager, disable when using HA Proxy
 ingress:
@@ -137,6 +142,28 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+logging:
+  # Full custom logging.properties content managed by this chart.
+  # When empty and existingConfigMap is also empty, the manager falls back to
+  # the built in logging.properties or logging-dev.properties based on or.devMode.
+  # Example:
+  # config: |
+  #   handlers=java.util.logging.ConsoleHandler
+  #   .level=INFO
+  config: ""
+
+  # Name of an existing ConfigMap containing a custom logging.properties file.
+  # Mutually exclusive with logging.config.
+  # Example: existingConfigMap: "my-manager-logging"
+  existingConfigMap: ""
+
+  # Key within logging.existingConfigMap to mount as logging.properties.
+  # Requires logging.existingConfigMap.
+  existingConfigMapKey: "logging.properties"
+
+  # Optional token to force a rollout when using an external ConfigMap.
+  restartToken: ""
 
 or:
   # Additional environment variables passed to the container

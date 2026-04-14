@@ -21,9 +21,14 @@ package org.openremote.agent.protocol.lorawan;
 
 import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTProtocol;
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 public class LoRaWANMQTTProtocol extends MQTTProtocol {
     protected LoRaWANMQTTProtocol(MQTTAgent agent) {
         super(agent);
+    }
+
+    public void setStatus(ConnectionStatus status) {
+        setConnectionStatus(status);
     }
 }

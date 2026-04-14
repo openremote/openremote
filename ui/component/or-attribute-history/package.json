@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-history",
-  "version": "1.10.0-snapshot",
+  "version": "1.14.0-snapshot",
   "description": "OpenRemote attribute history",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
@@ -30,10 +30,13 @@
     "@openremote/or-translate": "workspace:*",
     "@openremote/rest": "workspace:*",
     "echarts": "~6.0.0",
-    "jsonpath-plus": "^6.0.1",
+    "jsonpath-plus": "^10.3.0",
     "lit": "^3.3.1",
-    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
     "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@types/lodash.debounce": "^4"
   },
   "publishConfig": {
     "access": "public"

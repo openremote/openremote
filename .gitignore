@@ -48,7 +48,6 @@ local.properties
 **/yarn.lock
 
 # File extensions
-*.mbtiles
 *.air
 *.ipa
 *.apk
