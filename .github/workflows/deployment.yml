@@ -1,6 +1,7 @@
 name: Deployment
 on:
   workflow_dispatch:
+  workflow_call:
     inputs:
       environment:
         description: Environment (.env) file to use.
