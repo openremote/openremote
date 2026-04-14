@@ -117,8 +117,8 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/get-version-details.yml"
 
-  deployment:
-    name: Deploy
-    needs: [detect-changes, build-deployment-image]
-    if: needs.detect-changes.outputs.any_changed == 'true'
-    uses: "./.github/workflows/deployment.yml"
+  # deployment:
+  #   name: Deploy
+  #   needs: [detect-changes, build-deployment-image]
+  #   if: needs.detect-changes.outputs.any_changed == 'true'
+  #   uses: "./.github/workflows/deployment.yml"
