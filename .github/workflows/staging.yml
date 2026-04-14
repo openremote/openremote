@@ -113,6 +113,14 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.ui_any_changed == 'true'
     uses: "./.github/workflows/update-package-json.yml"
+    with:
+      version: ${{ needs.get-version-details.outputs.version }}
+
+  get-version-details:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_changed == 'true'
+    uses: "./.github/workflows/get-version-details.yml"
 
   # publish-maven:
   #   name: Publish
