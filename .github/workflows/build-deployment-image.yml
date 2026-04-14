@@ -1,4 +1,5 @@
 name: Build deployment image
+
 on: workflow_call
 
 jobs:

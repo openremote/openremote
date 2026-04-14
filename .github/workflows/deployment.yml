@@ -1,9 +1,28 @@
 name: Deployment
-on: workflow_call
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment (.env) file to use.
+        type: string
+        required: false
+      hostname:
+        description: Instance to deploy to.
+        type: string
+        required: true
+      password:
+        description: Configure OR_ADMIN_PASSWORD or override .env value
+        type: string
+        required: false
+      clean_install:
+        description: Delete Docker volumes (manager / postgres data)
+        type: boolean
+        default: false
 
 jobs:
-  aws-deployment:
-    name: "AWS"
+  deployment:
+    name: "Deployment"
     runs-on: ubuntu-latest
     steps:
-      - run: echo test
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - run: echo 'test'
