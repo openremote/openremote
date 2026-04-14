@@ -1,0 +1,599 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "DeviceProfileProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "common/common.proto";
+
+enum CodecRuntime {
+  // None.
+  NONE = 0;
+
+  // Cayenne LPP.
+  CAYENNE_LPP = 1;
+
+  // JavaScript.
+  JS = 2;
+}
+
+enum MeasurementKind {
+  // Unknown (in which case it is not tracked).
+  UNKNOWN = 0;
+
+  // Incrementing counters that never decrease (these are not reset on each
+  // reading).
+  COUNTER = 1;
+
+  // Counters that do get reset upon reading.
+  ABSOLUTE = 2;
+
+  // E.g. a temperature value.
+  GAUGE = 3;
+
+  // E.g. a firmware version, true / false value.
+  STRING = 4;
+}
+
+enum CadPeriodicity {
+  // 1 second.
+  SEC_1 = 0;
+
+  // 500 milliseconds
+  MS_500 = 1;
+
+  // 250 milliseconds
+  MS_250 = 2;
+
+  // 100 milliseconds
+  MS_100 = 3;
+
+  // 50 milliseconds
+  MS_50 = 4;
+
+  // 20 milliseconds
+  MS_20 = 5;
+}
+
+enum SecondChAckOffset {
+  // 0 kHz.
+  KHZ_0 = 0;
+
+  // 200 kHz.
+  KHZ_200 = 1;
+
+  // 400 kHz.
+  KHZ_400 = 2;
+
+  // 800 kHz.
+  KHZ_800 = 3;
+
+  // 1600 kHz.
+  KHZ_1600 = 4;
+
+  // 3200 kHz.
+  KHZ_3200 = 5;
+}
+
+enum RelayModeActivation {
+  // Disable the relay mode.
+  DISABLE_RELAY_MODE = 0;
+
+  // Enable the relay model.
+  ENABLE_RELAY_MODE = 1;
+
+  // Dynamic.
+  DYNAMIC = 2;
+
+  // End-device controlled.
+  END_DEVICE_CONTROLLED = 3;
+}
+
+enum Ts003Version {
+  // Not implemented.
+  TS003_NOT_IMPLEMENTED = 0;
+
+  // v1.0.0.
+  TS003_V100 = 1;
+
+  // v2.0.0
+  TS003_v200 = 2;
+}
+
+enum Ts004Version {
+  // Not implemented.
+  TS004_NOT_IMPLEMENTED = 0;
+
+  // v1.0.0.
+  TS004_V100 = 1;
+
+  // v2.0.0
+  TS004_V200 = 2;
+}
+
+enum Ts005Version {
+  // Not implemented.
+  TS005_NOT_IMPLEMENTED = 0;
+
+  // v1.0.0.
+  TS005_V100 = 1;
+
+  // v2.0.0
+  TS005_V200 = 2;
+}
+
+// DeviceProfileService is the service providing API methods for managing
+// device-profiles.
+service DeviceProfileService {
+  // Create the given device-profile.
+  rpc Create(CreateDeviceProfileRequest) returns (CreateDeviceProfileResponse) {
+    option (google.api.http) = {
+      post : "/api/device-profiles"
+      body : "*"
+    };
+  }
+
+  // Get the device-profile for the given ID.
+  rpc Get(GetDeviceProfileRequest) returns (GetDeviceProfileResponse) {
+    option (google.api.http) = {
+      get : "/api/device-profiles/{id}"
+    };
+  }
+
+  // Update the given device-profile.
+  rpc Update(UpdateDeviceProfileRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/device-profiles/{device_profile.id}"
+      body : "*"
+    };
+  }
+
+  // Delete the device-profile with the given ID.
+  rpc Delete(DeleteDeviceProfileRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/device-profiles/{id}"
+    };
+  }
+
+  // List the available device-profiles.
+  rpc List(ListDeviceProfilesRequest) returns (ListDeviceProfilesResponse) {
+    option (google.api.http) = {
+      get : "/api/device-profiles"
+    };
+  }
+
+  // List available ADR algorithms.
+  rpc ListAdrAlgorithms(google.protobuf.Empty)
+      returns (ListDeviceProfileAdrAlgorithmsResponse) {
+    option (google.api.http) = {
+      get : "/api/device-profiles/adr-algorithms"
+    };
+  }
+}
+
+message DeviceProfile {
+  // Device-profile ID (UUID).
+  // Note: on create this will be automatically generated.
+  string id = 1;
+
+  // Tenant ID (UUID).
+  string tenant_id = 2;
+
+  // Name.
+  string name = 3;
+
+  // Description.
+  string description = 26;
+
+  // Region.
+  common.Region region = 4;
+
+  // LoRaWAN mac-version.
+  common.MacVersion mac_version = 5;
+
+  // Regional parameters revision.
+  common.RegParamsRevision reg_params_revision = 6;
+
+  // ADR algorithm ID.
+  string adr_algorithm_id = 7;
+
+  // Payload codec runtime.
+  CodecRuntime payload_codec_runtime = 8;
+
+  // Payload codec script.
+  string payload_codec_script = 9;
+
+  // Flush queue on device activation.
+  bool flush_queue_on_activate = 10;
+
+  // Uplink interval (seconds).
+  // This defines the expected uplink interval which the device uses for
+  // communication. If the uplink interval has expired and no uplink has
+  // been received, the device is considered inactive.
+  uint32 uplink_interval = 11;
+
+  // Device-status request interval (times / day).
+  // This defines the times per day that ChirpStack will request the
+  // device-status from the device.
+  uint32 device_status_req_interval = 12;
+
+  // Supports OTAA.
+  bool supports_otaa = 13;
+
+  // Supports Class B.
+  bool supports_class_b = 14;
+
+  // Supports Class-C.
+  bool supports_class_c = 15;
+
+  // Class-B timeout (seconds).
+  // This is the maximum time ChirpStack will wait to receive an acknowledgement
+  // from the device (if requested).
+  uint32 class_b_timeout = 16;
+
+  // Class-B ping-slot periodicity.
+  // Valid options are: 0 - 7.
+  //
+  // Number of ping-slots per beacon-period:
+  // pingNb = 2^(7-periodicity)
+  //
+  // Periodicity: 0 = 128 ping-slots per beacon period = ~ every 1 sec
+  // Periodicity: 7 = 1 ping-slot per beacon period = ~ every 128 sec
+  uint32 class_b_ping_slot_periodicity = 17;
+
+  // Class-B ping-slot DR.
+  uint32 class_b_ping_slot_dr = 18;
+
+  // Class-B ping-slot freq (Hz).
+  uint32 class_b_ping_slot_freq = 19;
+
+  // Class-C timeout (seconds).
+  // This is the maximum time ChirpStack will wait to receive an acknowledgement
+  // from the device (if requested).
+  uint32 class_c_timeout = 20;
+
+  // RX1 delay (for ABP).
+  uint32 abp_rx1_delay = 21;
+
+  // RX1 DR offset (for ABP).
+  uint32 abp_rx1_dr_offset = 22;
+
+  // RX2 DR (for ABP).
+  uint32 abp_rx2_dr = 23;
+
+  // RX2 frequency (for ABP, Hz).
+  uint32 abp_rx2_freq = 24;
+
+  // Tags (user defined).
+  // These tags can be used to add additional information the the
+  // device-profile. These tags are exposed in all the integration events of
+  // devices using this device-profile.
+  map<string, string> tags = 25;
+
+  // Measurements.
+  // If defined, ChirpStack will visualize these metrics in the web-interface.
+  map<string, Measurement> measurements = 27;
+
+  // Auto-detect measurements.
+  // If set to true, measurements will be automatically added based on the
+  // keys of the decoded payload. In cases where the decoded payload contains
+  // random keys in the data, you want to set this to false.
+  bool auto_detect_measurements = 28;
+
+  // Region configuration ID.
+  // If set, devices will only use the associated region. If let blank, then
+  // devices will use all regions matching the selected common-name. Note
+  // that multiple region configurations can exist for the same common-name,
+  // e.g. to provide an 8 channel and 16 channel configuration for the US915
+  // band.
+  string region_config_id = 29;
+
+  // Device is a Relay device.
+  // Enable this in case the device is a Relay. A Relay device implements TS011
+  // and is able to relay data from relay capable devices.
+  // See for more information the TS011 specification.
+  bool is_relay = 30;
+
+  // Device is a Relay end-device.
+  // Enable this in case the device is an end-device that can operate under a
+  // Relay. Please refer to the TS011 specification for more information.
+  bool is_relay_ed = 31;
+
+  // End-device only accept data through relay.
+  // Only accept data for this device through a relay. This setting is useful
+  // for testing as in case of a test-setup, the end-device is usually within
+  // range of the gateway.
+  bool relay_ed_relay_only = 32;
+
+  // Relay must be enabled.
+  bool relay_enabled = 33;
+
+  // Relay CAD periodicity.
+  CadPeriodicity relay_cad_periodicity = 34;
+
+  // Relay default channel index.
+  // Valid values are 0 and 1, please refer to the RP002 specification for
+  // the meaning of these values.
+  uint32 relay_default_channel_index = 35;
+
+  // Relay second channel frequency (Hz).
+  uint32 relay_second_channel_freq = 36;
+
+  // Relay second channel DR.
+  uint32 relay_second_channel_dr = 37;
+
+  // Relay second channel ACK offset.
+  SecondChAckOffset relay_second_channel_ack_offset = 38;
+
+  // Relay end-device activation mode.
+  RelayModeActivation relay_ed_activation_mode = 39;
+
+  // Relay end-device smart-enable level.
+  uint32 relay_ed_smart_enable_level = 40;
+
+  // Relay end-device back-off (in case it does not receive WOR ACK frame).
+  // 0 = Always send a LoRaWAN uplink
+  // 1..63 = Send a LoRaWAN uplink after X WOR frames without a WOR ACK
+  uint32 relay_ed_back_off = 41;
+
+  // Relay end-device uplink limit bucket size.
+  //
+  // This field indicates the multiplier to determine the bucket size
+  // according to the following formula:
+  // BucketSize TOKEN = _reload_rate x _bucket_size
+  //
+  // Valid values (0 - 3):
+  //   0 = 1
+  //   1 = 2
+  //   2 = 4
+  //   3 = 12
+  uint32 relay_ed_uplink_limit_bucket_size = 42;
+
+  // Relay end-device uplink limit reload rate.
+  //
+  // Valid values:
+  //   * 0 - 62 = X tokens every hour
+  //   * 63     = no limitation
+  uint32 relay_ed_uplink_limit_reload_rate = 43;
+
+  // Relay join-request limit reload rate.
+  //
+  // Valid values:
+  //   * 0 - 126 = X tokens every hour
+  //   * 127     = no limitation
+  uint32 relay_join_req_limit_reload_rate = 44;
+
+  // Relay notify limit reload rate.
+  //
+  // Valid values:
+  //   * 0 - 126 = X tokens every hour
+  //   * 127     = no limitation
+  uint32 relay_notify_limit_reload_rate = 45;
+
+  // Relay global uplink limit reload rate.
+  //
+  // Valid values:
+  //   * 0 - 126 = X tokens every hour
+  //   * 127     = no limitation
+  uint32 relay_global_uplink_limit_reload_rate = 46;
+
+  // Relay overall limit reload rate.
+  //
+  // Valid values:
+  //   * 0 - 126 = X tokens every hour
+  //   * 127     = no limitation
+  uint32 relay_overall_limit_reload_rate = 47;
+
+  // Relay join-request limit bucket size.
+  //
+  // This field indicates the multiplier to determine the bucket size
+  // according to the following formula:
+  // BucketSize TOKEN = _reload_rate x _bucket_size
+  //
+  // Valid values (0 - 3):
+  //   0 = 1
+  //   1 = 2
+  //   2 = 4
+  //   3 = 12
+  uint32 relay_join_req_limit_bucket_size = 48;
+
+  // Relay notify limit bucket size.
+  //
+  // This field indicates the multiplier to determine the bucket size
+  // according to the following formula:
+  // BucketSize TOKEN = _reload_rate x _bucket_size
+  //
+  // Valid values (0 - 3):
+  //   0 = 1
+  //   1 = 2
+  //   2 = 4
+  //   3 = 12
+  uint32 relay_notify_limit_bucket_size = 49;
+
+  // Relay globak uplink limit bucket size.
+  //
+  // This field indicates the multiplier to determine the bucket size
+  // according to the following formula:
+  // BucketSize TOKEN = _reload_rate x _bucket_size
+  //
+  // Valid values (0 - 3):
+  //   0 = 1
+  //   1 = 2
+  //   2 = 4
+  //   3 = 12
+  uint32 relay_global_uplink_limit_bucket_size = 50;
+
+  // Relay overall limit bucket size.
+  //
+  // This field indicates the multiplier to determine the bucket size
+  // according to the following formula:
+  // BucketSize TOKEN = _reload_rate x _bucket_size
+  //
+  // Valid values (0 - 3):
+  //   0 = 1
+  //   1 = 2
+  //   2 = 4
+  //   3 = 12
+  uint32 relay_overall_limit_bucket_size = 51;
+
+  // Allow roaming.
+  //
+  // If set to true, it means that the device is allowed to use roaming.
+  bool allow_roaming = 52;
+
+  // RX1 Delay.
+  //
+  // This makes it possible to override the system RX1 Delay. Please note that
+  // this values only has effect in case it is higher than the system value.
+  // In other words, it can be used to increase the RX1 Delay but not to decrease
+  // it.
+  // Valid options are 1 - 15 (0 = always use system RX1 Delay).
+  uint32 rx1_delay = 53;
+
+  // Application Layer parameters.
+  AppLayerParams app_layer_params = 54;
+}
+
+message Measurement {
+  // Name (user defined).
+  string name = 2;
+
+  // Kind.
+  MeasurementKind kind = 3;
+}
+
+message AppLayerParams {
+  // TS003 version (Application Layer Clock Sync).
+  Ts003Version ts003_version = 1;
+
+  // TS003 fPort.
+  uint32 ts003_f_port = 2;
+
+  // TS004 version (Fragmented Data Block Transport).
+  Ts004Version ts004_version = 3;
+
+  // TS004 fPort.
+  uint32 ts004_f_port = 4;
+
+  // TS005 version (Remote Multicast Setup).
+  Ts005Version ts005_version = 5;
+
+  // TS005 fPort.
+  uint32 ts005_f_port = 6;
+}
+
+message DeviceProfileListItem {
+  // Device-profile ID (UUID).
+  string id = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+
+  // Name.
+  string name = 4;
+
+  // Region.
+  common.Region region = 5;
+
+  // LoRaWAN mac-version.
+  common.MacVersion mac_version = 6;
+
+  // Regional parameters revision.
+  common.RegParamsRevision reg_params_revision = 7;
+
+  // Supports OTAA.
+  bool supports_otaa = 8;
+
+  // Supports Class-B.
+  bool supports_class_b = 9;
+
+  // Supports Class-C.
+  bool supports_class_c = 10;
+}
+
+message CreateDeviceProfileRequest {
+  // Object to create.
+  DeviceProfile device_profile = 1;
+}
+
+message CreateDeviceProfileResponse {
+  // ID (UUID).
+  string id = 1;
+}
+
+message GetDeviceProfileRequest {
+  // ID (UUID).
+  string id = 1;
+}
+
+message GetDeviceProfileResponse {
+  // Device-profile object.
+  DeviceProfile device_profile = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message UpdateDeviceProfileRequest {
+  // Device-profile object.
+  DeviceProfile device_profile = 1;
+}
+
+message DeleteDeviceProfileRequest {
+  // ID (UUID).
+  string id = 1;
+}
+
+message ListDeviceProfilesRequest {
+  // Max number of device-profiles to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // If set, the given string will be used to search on name.
+  string search = 3;
+
+  // Tenant ID to list the device-profiles for.
+  string tenant_id = 4;
+}
+
+message ListDeviceProfilesResponse {
+  // Total number of device-profiles.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated DeviceProfileListItem result = 2;
+}
+
+message ListDeviceProfileAdrAlgorithmsResponse {
+  // Total number of algorithms.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated AdrAlgorithmListItem result = 2;
+}
+
+message AdrAlgorithmListItem {
+  // Algorithm ID.
+  string id = 1;
+
+  // Algorithm name.
+  string name = 2;
+}

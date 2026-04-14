@@ -105,6 +105,10 @@ export class OrAceEditor extends LitElement {
                 this._aceEditor.setValue(this._lastValue);
             }
         }
+
+        if (_changedProperties.has("readonly") && this._aceEditor) {
+            this._aceEditor.setReadOnly(!!this.readonly);
+        }
     }
 
     render(): TemplateResult | void {
