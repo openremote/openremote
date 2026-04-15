@@ -726,11 +726,10 @@ jobs:
           composeProfile='profile/dev-testing.yml'
 
           # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -p tmp
-          chmod 777 tmp
+          mkdir -pm 777 tmp
 
           # Define cleanup command
-          echo "cleanup=docker compose -f $composeProfile down" >> $GITHUB_OUTPUT
+          echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
 
           # Start the stack
           echo "docker compose -f ${composeProfile} up -d --no-build"
@@ -820,16 +819,20 @@ jobs:
           path: ui/component/*/component-test-report/**
 
       - name: Run UI app tests
+        id: run-ui-app-tests
         # Skip UI app tests for custom projects until we want to use them there
         if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
           composeProfile='profile/dev-testing.yml'
 
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
+          # Make temp dir and set mask to 777 as docker seems to run as root
+          mkdir -pm 777 tmp
+
+          # Define cleanup command
+          echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
 
           # Start the stack
+          echo "docker compose -f ${composeProfile} up -d --no-build"
           docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
@@ -846,6 +849,10 @@ jobs:
         with:
           name: ui-app-test-results
           path: ui/app/*/app-test-report/**
+
+      - name: Cleanup UI app tests
+        if: ${{ steps.test-ui-apps-command.outputs.value != '' }}
+        run: ${{ steps.run-ui-app-tests.outputs.cleanup }}
 
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
