@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +187,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     @Override
     public void stop(Container container) throws Exception {
-        calculationFutures.keySet().forEach(this::stopCalculation);
+        new ArrayList<>(calculationFutures.keySet()).forEach(this::stopCalculation);
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {

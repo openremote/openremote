@@ -491,6 +491,14 @@ public abstract class WebService implements ContainerService {
             identityService.secureDeployment(deploymentInfo);
         }
 
+        Filter loggingFilter = new LoggingFilter();
+        FilterInfo loggingFilterInfo = Servlets.filter(
+                "Logging Filter",
+                LoggingFilter.class,
+                () -> new ImmediateInstanceHandle<>(loggingFilter)).setAsyncSupported(true);
+        deploymentInfo.addFilter(loggingFilterInfo);
+        deploymentInfo.addFilterUrlMapping("Logging Filter","/*", DispatcherType.REQUEST);
+
         // Cannot set config on constructor as init method will overwrite it
         CORSFilter corsFilter = new CORSFilter();
 
@@ -500,7 +508,7 @@ public abstract class WebService implements ContainerService {
                 () -> new ImmediateInstanceHandle<>(corsFilter)).setAsyncSupported(true);
         getCORSConfiguration(corsOverride).forEach((k,v) -> corsFilterInfo.addInitParam(k.toString(), v.toString()));
         deploymentInfo.addFilter(corsFilterInfo);
-        deploymentInfo.addFilterUrlMapping(     "CORS Filter","/*", DispatcherType.REQUEST);
+        deploymentInfo.addFilterUrlMapping("CORS Filter","/*", DispatcherType.REQUEST);
 
         // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
         deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
