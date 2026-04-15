@@ -88,12 +88,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
     public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
     public static final String OIDC_CONFIG_PATH = "/realms/master/.well-known/openid-configuration";
-    public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
-    public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
     public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
-    public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
-    public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
     public static final String OR_IDENTITY_SESSION_MAX_MINUTES = "OR_IDENTITY_SESSION_MAX_MINUTES";
     public static final int OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
