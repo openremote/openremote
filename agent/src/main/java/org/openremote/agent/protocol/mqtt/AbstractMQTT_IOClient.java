@@ -469,7 +469,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
 
         LOG.info("Establishing connection: " + getClientUri());
-        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         // 2. Safely restore CONNECTING only if we were WAITING (due to retry backoff)
         // If it was already CONNECTING, this safely ignores the update.
