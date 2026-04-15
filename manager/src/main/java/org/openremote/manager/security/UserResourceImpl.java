@@ -169,6 +169,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User create(RequestParams requestParams, String realm, User user) {
+        throwIfCannotAdminRealm(realm);
 
         try {
             return identityService.getIdentityProvider().createUpdateUser(realm, user, null, false);
@@ -183,6 +184,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void delete(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotAdminRealm(realm);
         throwIfIllegalMasterAdminUserDeletion(requestParams, realm, userId);
 
         try {
@@ -256,6 +258,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public String resetSecret(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             return identityService.getIdentityProvider().resetSecret(realm, userId, null);
         } catch (ClientErrorException ex) {
@@ -323,6 +327,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String[] roles, String clientId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             identityService.getIdentityProvider().updateUserClientRoles(
                 realm,
@@ -339,6 +345,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void updateUserRealmRoles(RequestParams requestParams, String realm, String userId, String[] roles) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             identityService.getIdentityProvider().updateUserRealmRoles(
                 realm,
@@ -372,6 +380,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void updateClientRoles(RequestParams requestParams, String realm, Role[] roles, String clientId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             identityService.getIdentityProvider().updateClientRoles(
                 realm,
@@ -464,6 +474,17 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         if (!currentUserId.equals(userId) && !hasResourceRole(Constants.WRITE_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
             throw new NotAllowedException("Not allowed to mutate another user");
+        }
+    }
+
+    protected void throwIfCannotAdminRealm(String realm) throws WebApplicationException {
+        AuthContext authContext = getAuthContext();
+        if (authContext == null) {
+            throw new NotAuthorizedException("Not authenticated");
+        }
+
+        if (!authContext.isRealmAccessibleByUser(realm)) {
+            throw new NotAllowedException("Cannot administer a different realm");
         }
     }
 
