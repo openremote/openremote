@@ -7,6 +7,10 @@
   "asset": "Ressource",
   "asset_plural": "Ressources",
   "assets": "Ressources",
+  "users": "Utilisateurs",
+  "realms": "Locataires",
+  "provisioning": "Provisionnement automatique",
+  "provisioningConfig": "Configuration de provisionnement",
   "attribute": "Attribut",
   "attributes": "Attributs",
   "attribute_plural": "Attributs",
@@ -107,6 +111,7 @@
   "month": "Mois",
   "year": "Année",
   "period": "Période",
+  "beginning": "Début",
   "ending": "Se terminant",
   "timeframe": "Plage de temps",
   "addAttribute": "Ajouter un attribut",
@@ -172,6 +177,7 @@
   "french": "Français",
   "german": "Allemand",
   "italian": "Italien",
+  "polish": "Polonais",
   "portuguese": "Portugais",
   "romanian": "Roumain",
   "spanish": "Espagnol",
@@ -627,5 +633,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "Le nom du domaine existe déjà"
 }

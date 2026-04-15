@@ -7,6 +7,10 @@
   "asset": "مكونات المشروع",
   "asset_plural": "مكونات المشروع",
   "assets": "مكونات المشروع",
+  "users": "المستخدمين",
+  "realms": "عالم دنيا",
+  "provisioning": "توفير تلقائي",
+  "provisioningConfig": "تكوين التوفير",
   "attribute": "الخاصية",
   "attributes": "الخصائص",
   "attribute_plural": "الخصائص",
@@ -106,6 +110,7 @@
   "month": "الشهر",
   "year": "السنة",
   "period": "الفترة الزمنية",
+  "beginning": "البداية",
   "ending": "النهاية",
   "timeframe": "الإطار الزمني",
   "addAttribute": "إضافة خاصية",
@@ -162,6 +167,7 @@
   "dutch": "الهولندية",
   "french": "الفرنسية",
   "german": "الألمانية",
+  "polish": "بولندي",
   "romanian": "روماني",
   "spanish": "الإسبانية",
   "ukrainian": "الأوكرانية",
@@ -572,5 +578,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "اسم المجال موجود بالفعل"
 }
