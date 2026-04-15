@@ -101,48 +101,65 @@ tasks.named('unitTestReport').configure {
     }
 }
 
+def getBackendProjects = {
+    subprojects.findAll { !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java') }
+}
+
+def getActiveTestTasks = {
+    getBackendProjects().collectMany { it.tasks.withType(Test) }.findAll { it.name == 'test' }
+}
+
+tasks.register('checkCoverageDataExists') {
+    group = 'reporting'
+    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+    doLast {
+        def testTasks = getActiveTestTasks()
+        def hasFiles = testTasks.any {
+            it.extensions.findByType(JacocoTaskExtension)?.destinationFile?.exists()
+        }
+        // Check if any of the configured execution data files exist on disk
+        if (!hasFiles) {
+            println "Please run the following task to be able to generate a report."
+            println "Required tasks: ${testTasks.collect { it.path }.join(', ')}"
+            println "Run: gradle test -x npmTest checkCoverageDataExists"
+            throw new StopExecutionException()
+        }
+    }
+}
+
 // We replace the 'jacoco-report-aggregation' plugin with the following task to
 // ensure we get a combined coverage report for the unit- and integration tests
 tasks.register('combinedCoverageReport', JacocoReport) {
     group = 'reporting'
     description = 'Generates a unified coverage report for all Unit and Integration tests'
+    dependsOn('checkCoverageDataExists')
+    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
 
     reports {
         xml.required = true
         html.required = true
     }
 
+    executionData.setFrom(project.provider {
+        getActiveTestTasks().collect {
+            it.extensions.findByType(JacocoTaskExtension)?.destinationFile
+        }.findAll { it != null && it.exists() }
+    })
+
+    sourceDirectories.setFrom(project.provider {
+        getBackendProjects().collectMany { it.sourceSets.main.allJava.srcDirs }
+    })
+
+    classDirectories.setFrom(project.provider {
+        def dirs = getBackendProjects().collectMany { it.sourceSets.main.output.classesDirs.files }
+        files(dirs).asFileTree.matching {
+            include 'org/openremote/**'
+        }
+    })
+
     doLast {
         def htmlIndex = new File(reports.html.outputLocation.get().asFile, "index.html")
         println "Combined Code Coverage: file://${htmlIndex.absolutePath}"
-    }
-}
-
-gradle.projectsEvaluated {
-    def backendProjects = subprojects.findAll {
-        !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java')
-    }
-
-    def activeTestTasks = backendProjects.collectMany { it.tasks.withType(Test) }
-        .findAll { it.name == 'test' }
-
-    // Configure the task safely now that all plugins and sources exist
-    tasks.named('combinedCoverageReport').configure { reportTask ->
-        reportTask.mustRunAfter(activeTestTasks)
-
-        reportTask.executionData.setFrom(project.provider {
-            activeTestTasks.collect { task ->
-                task.extensions.findByType(JacocoTaskExtension)?.destinationFile
-            }.findAll { it != null && it.exists() }
-        })
-
-        def sourceDirs = backendProjects.collectMany { it.sourceSets.main.allJava.srcDirs }
-        reportTask.sourceDirectories.setFrom(files(sourceDirs))
-
-        def classDirs = backendProjects.collectMany { it.sourceSets.main.output.classesDirs.files }
-        reportTask.classDirectories.setFrom(files(classDirs).asFileTree.matching {
-            include 'org/openremote/**'
-        })
     }
 }
 
