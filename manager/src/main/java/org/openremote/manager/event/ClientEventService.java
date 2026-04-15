@@ -354,9 +354,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
       switch (eventType) {
          case ONOPEN -> {
             WebSocketHttpExchange httpExchange = exchange.getIn().getHeader(UndertowConstants.EXCHANGE, WebSocketHttpExchange.class);
-            AuthContext authContext = null;
-            Principal principal = null;
             String realm = getHeaderThenQueryParam(httpExchange, REALM_PARAM_NAME, REALM_PARAM_NAME);
+            Principal principal = null;
+            AuthContext authContext = null;
             String authorization = getHeaderThenQueryParam(httpExchange, AUTHORIZATION, AUTHORIZATION);
 
             if (!TextUtil.isNullOrEmpty(authorization)) {
@@ -428,11 +428,11 @@ public class ClientEventService extends RouteBuilder implements ContainerService
    @SuppressWarnings({"unchecked", "rawtypes"})
    void procesInboundEvent(Exchange exchange) {
       WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
-      AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-      String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+      AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
+      String realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
 
-      exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-      exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+      exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+      exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
 
       // Pass to gateway interceptor and abort if it stops the exchange
       if (gatewayInterceptor != null) {
