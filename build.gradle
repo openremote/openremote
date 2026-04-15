@@ -128,7 +128,7 @@ gradle.projectsEvaluated {
 
     // Configure the task safely now that all plugins and sources exist
     tasks.named('combinedCoverageReport').configure { reportTask ->
-        reportTask.dependsOn(activeTestTasks)
+        reportTask.mustRunAfter(activeTestTasks)
 
         reportTask.executionData.setFrom(project.provider {
             activeTestTasks.collect { task ->
@@ -238,6 +238,7 @@ buildscript {
 subprojects {
     // Apply only if the project has a 'test' task
     tasks.withType(Test).configureEach { testTask ->
+        outputs.upToDateWhen { false } // Disable caching
         useJUnitPlatform()
 
         systemProperty "junit.jupiter.execution.parallel.enabled", "true"
