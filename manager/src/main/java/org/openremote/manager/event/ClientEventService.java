@@ -360,59 +360,59 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             String authorization = getHeaderThenQueryParam(httpExchange, AUTHORIZATION, AUTHORIZATION);
 
             if (!TextUtil.isNullOrEmpty(authorization)) {
-                            authorization = RequestParams.getBearerAuth(authorization);
-                            try {
-                                principal = identityService.verify(realm, authorization);
-                            } catch (AuthenticationException e) {
-                                LOG.log(INFO, "Failed to verify client identity '" + e.getMessage() + "': " + webSocketChannel.getSourceAddress());
-                            }
+                authorization = RequestParams.getBearerAuth(authorization);
+                try {
+                    principal = identityService.verify(realm, authorization);
+                } catch (AuthenticationException e) {
+                    LOG.log(INFO, "Failed to verify client identity '" + e.getMessage() + "': " + webSocketChannel.getSourceAddress());
+                }
 
-                            if (principal instanceof AuthContext ac) {
-                                LOG.log(DEBUG, "Client identity verified '" + ((TokenPrincipal) principal).getUsername() + "': " + webSocketChannel.getSourceAddress());
-                                authContext = ac;
-                            }
-                        }
-
-                        // Set an idle timeout value for service account connections; browsers don't reliably support
-                        // ping/pong frames so we can't be too aggressive with those connections but other clients
-                        // should implement ping/pong
-                        if (authContext != null && authContext.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX)) {
-                            webSocketChannel.setIdleTimeout(30000);
-                        }
-
-                        // Push auth and realm into channel for future use
-                        webSocketChannel.setAttribute(AUTH_CONTEXT, authContext);
-                        webSocketChannel.setAttribute(REALM_PARAM_NAME, realm);
-
-                        exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
-                        exchange.getIn().setHeader(SESSION_OPEN, true);
-                        sessionChannels.put(getSessionKey(exchange), webSocketChannel);
-                        LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
-                    }
-                    case ONCLOSE, ONERROR -> {
-                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(AUTH_CONTEXT);
-                        String realm = (String)webSocketChannel.getAttribute(REALM_PARAM_NAME);
-                        String sessionKey = getSessionKey(exchange);
-
-            exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
-            exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
-
-            if (eventType == UndertowConstants.EventType.ONCLOSE) {
-               LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
-               exchange.getIn().setHeader(SESSION_CLOSE, true);
-            } else {
-               LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
-               closeWebsocketChannel(sessionKey, webSocketChannel);
-               exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
+                if (principal instanceof AuthContext ac) {
+                    LOG.log(DEBUG, "Client identity verified '" + ((TokenPrincipal) principal).getUsername() + "': " + webSocketChannel.getSourceAddress());
+                    authContext = ac;
+                }
             }
 
-            LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
-            sessionChannels.remove(getSessionKey(exchange));
-            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-               subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
-               return null;
-            });
+             // Set an idle timeout value for service account connections; browsers don't reliably support
+             // ping/pong frames so we can't be too aggressive with those connections but other clients
+             // should implement ping/pong
+             if (authContext != null && authContext.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX)) {
+                 webSocketChannel.setIdleTimeout(30000);
+             }
+
+             // Push auth and realm into channel for future use
+             webSocketChannel.setAttribute(AUTH_CONTEXT, authContext);
+             webSocketChannel.setAttribute(REALM_PARAM_NAME, realm);
+
+             exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+             exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
+             exchange.getIn().setHeader(SESSION_OPEN, true);
+             sessionChannels.put(getSessionKey(exchange), webSocketChannel);
+             LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
+         }
+         case ONCLOSE, ONERROR -> {
+             AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
+             String realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
+             String sessionKey = getSessionKey(exchange);
+
+             exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+             exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
+
+             if (eventType == UndertowConstants.EventType.ONCLOSE) {
+                 LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
+                 exchange.getIn().setHeader(SESSION_CLOSE, true);
+             } else {
+                 LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
+                 closeWebsocketChannel(sessionKey, webSocketChannel);
+                 exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
+             }
+
+             LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
+             sessionChannels.remove(getSessionKey(exchange));
+             websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
+                 subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
+                 return null;
+             });
          }
       }
 
