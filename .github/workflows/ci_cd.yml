@@ -473,7 +473,7 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "value=./gradlew test -x npmTest" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew test -x npmTest unitTestReport combinedCoverageReport" >> $GITHUB_OUTPUT
 
       - name: Define UI component test command
         id: test-ui-components-command
@@ -740,18 +740,25 @@ jobs:
         timeout-minutes: 20
         #continue-on-error: true
 
-      - name: Archive backend test results
+      - name: Archive integration test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
-          name: backend-test-results
-          path: test/build/reports/tests
+          name: integration-test-results
+          path: test/build/reports/tests/test
+
+      - name: Archive unit test results
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: unit-test-results
+          path: build/reports/tests/test/aggregated-results
 
       - name: Archive coverage report
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: coverage-report
-          path: test/build/reports/jacoco/test/html
+          path: build/reports/jacoco/combinedCoverageReport/html
 
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
