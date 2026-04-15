@@ -173,11 +173,12 @@ export class OrConfPanel extends LitElement {
                 }
             },
         ];
+        const headingKey = this.isMapConfig(this.config) ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization';
         showDialog(new OrMwcDialog()
-            .setHeading(i18next.t('configuration.addMapCustomization'))
+            .setHeading(i18next.t(headingKey))
             .setActions(dialogActions)
             .setContent(html`
-                <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}"
+                <or-mwc-input class="selector" .label="${i18next.t('realm')}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}"
                               .options="${Object.entries(this.getAvailableRealms(this.config, this.realmOptions)).map(([, value]) => {
                 return [value.name, value.displayName]
             })}"

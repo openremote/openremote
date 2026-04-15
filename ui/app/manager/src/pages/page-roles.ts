@@ -15,7 +15,7 @@ import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -71,18 +71,25 @@ export class PageRoles extends Page<AppStateKeyed> {
           border-radius: 5px;
           position: relative;
           margin: 0 auto;
-          padding: 18px 24px 24px;
+          padding: 12px 24px 24px;
         }
 
         .panel-title {
+          display: flex;
+          align-items: center;
           text-transform: uppercase;
           font-weight: bolder;
           line-height: 1em;
           color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-          margin-bottom: 20px;
+          margin-bottom: 10px;
           margin-top: 0;
           flex: 0 0 auto;
           letter-spacing: 0.025em;
+          min-height: 36px;
+        }
+
+        .panel-title p {
+          margin: 0;
         }
 
         #table-roles,
@@ -111,6 +118,7 @@ export class PageRoles extends Page<AppStateKeyed> {
           max-height: 0;
           transition: max-height 0.25s ease-out;
           padding-left: 16px;
+          padding-right: 16px;
         }
 
         or-mwc-input {
@@ -228,6 +236,9 @@ export class PageRoles extends Page<AppStateKeyed> {
   protected _rolesMapper = {};
 
   @state()
+  protected _roleFilter: (roles: Role[]) => Role[] = (roles) => roles;
+
+  @state()
   public realm?: string;
 
   get name(): string {
@@ -333,7 +344,12 @@ export class PageRoles extends Page<AppStateKeyed> {
             <or-icon icon="account-box-multiple"></or-icon>${i18next.t("role_plural")}
         </div>
         <div class="panel">
-            <p class="panel-title">${i18next.t("role")}</p>
+            <div class="panel-title" style="justify-content: space-between;">
+                <p style="margin: 0;">${i18next.t("role")}</p>
+                <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
+                              @input="${(ev: InputEvent) => this.onRoleSearch(ev)}"
+                ></or-mwc-input>
+            </div>
             <div id="table-roles" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="attribute list">
                     <thead>
@@ -350,7 +366,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${this._compositeRoles.map((role, index) => {
+                        ${this._roleFilter(this._compositeRoles).map((role, index) => {
                           const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).sort((a, b) => a.localeCompare(b)).join(', '); return html`
                         <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${() => this.expanderToggle(index)}">
                             <td class="padded-cell mdc-data-table__cell">
@@ -370,7 +386,7 @@ export class PageRoles extends Page<AppStateKeyed> {
 
                                     <div class="row">
                                         <div class="column">
-                                            <or-mwc-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-mwc-input>
+                                            <or-mwc-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name || undefined}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { role.name = e.detail.value; const isDuplicate = this._compositeRoles.some(r => r !== role && r.name === role.name); (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('roleAlreadyExists') : undefined); this.requestUpdate(); }}"></or-mwc-input>
                                         </div>
                                         <div class="column">
                                             <or-mwc-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>
@@ -406,10 +422,10 @@ export class PageRoles extends Page<AppStateKeyed> {
                                     <div class="row" style="margin-bottom: 0;">
                                         ${role.id ? html`
                                         <or-mwc-input label="delete" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._deleteRole(role, index)}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}" style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
                                         ` : html`
                                         <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
                                         `}
                                     </div>
                                     `}
@@ -430,6 +446,18 @@ export class PageRoles extends Page<AppStateKeyed> {
         </div>
       </div>
     `;
+  }
+
+  protected onRoleSearch(ev: InputEvent) {
+      const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
+      if (!value) {
+          this._roleFilter = (roles) => roles;
+      } else {
+          this._roleFilter = (roles) => roles.filter(r =>
+              (r.name as string)?.toLowerCase().includes(value) ||
+              (r.description as string)?.toLowerCase().includes(value)
+          );
+      }
   }
 
   public stateChanged(state: AppStateKeyed) {

@@ -8,7 +8,7 @@ import manager, {Util} from '@openremote/core';
 import {ListItem} from '@openremote/or-mwc-components/or-mwc-list';
 import '@openremote/or-mwc-components/or-mwc-menu';
 import {showOkCancelDialog} from '@openremote/or-mwc-components/or-mwc-dialog';
-import {i18next} from '@openremote/or-translate';
+import {i18next, translate} from '@openremote/or-translate';
 import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
 import {style as OrAssetTreeStyle} from '@openremote/or-asset-tree';
 import {DashboardService, DashboardSizeOption} from './service/dashboard-service';
@@ -34,7 +34,7 @@ const treeStyling = css`
 `;
 
 @customElement('or-dashboard-tree')
-export class OrDashboardTree extends LitElement {
+export class OrDashboardTree extends translate(i18next)(LitElement) {
 
     static get styles() {
         return [style, treeStyling, OrAssetTreeStyle];

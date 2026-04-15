@@ -11,77 +11,82 @@ export class UsersPage implements BasePage {
   }
 
   async gotoUserCreation(realm: string, type: "serviceuser" | "regular") {
-      return this.page.goto(this.manager.getAppUrl(realm) + `#/users/new/${type}`);
+    await this.manager.goToRealmStartPage(realm);
+    await this.manager.navigateToMenuItem("Users");
+    if (type === "regular") {
+      await this.page.getByText("Add User").click();
+    } else {
+      await this.page.getByText("Add Service user").click();
+    }
   }
 
   /**
-   * Get permission locator by name.
+   * Get permission locator by name, optionally scoped to a container.
    * @param permission The permission name
+   * @param scope Optional locator to scope the search within
    */
-  getPermission(permission: string): Locator {
-    return this.page.getByRole("checkbox", { name: permission });
+  getPermission(permission: string, scope: Page | Locator = this.page): Locator {
+    return scope.getByRole("checkbox", { name: permission });
   }
 
   /**
-   * Toggle roles when configuring a user.
-   * @param roles The roles to toggle
+   * Toggle roles when configuring a user, optionally scoped to a container.
+   * @param scopeOrFirstRole A Locator to scope within, or the first role name (page-wide)
+   * @param roles Additional role names to toggle
    */
-  async toggleUserRoles(...roles: string[]) {
-    const roleSelector = this.page.getByRole("button", { name: "Manager roles" });
-    const itemSelector = this.page.locator("li");
-    await roleSelector.click({ delay: 500 });
-    for (const role of roles) {
-      await itemSelector.filter({ hasText: role }).click();
+  async toggleUserRoles(scopeOrFirstRole: Page | Locator | string, ...roles: string[]): Promise<void> {
+    const scope = typeof scopeOrFirstRole !== "string" ? scopeOrFirstRole : this.page;
+    const allRoles = typeof scopeOrFirstRole === "string" ? [scopeOrFirstRole, ...roles] : roles;
+    const roleInput = scope.locator("or-mwc-input").filter({ hasText: "Manager roles" });
+    const roleSelector = roleInput.getByRole("button", { name: "Manager roles" });
+    await roleSelector.click();
+    for (const role of allRoles) {
+      await roleInput.locator("li").filter({ hasText: role }).click();
     }
     await roleSelector.click();
   }
 
   /**
-   * Assert selected permissions.
-   * @param perms The permissions expected to be checked
+   * Assert selected permissions, optionally scoped to a container.
+   * @param scopeOrFirstPerm A Locator to scope within, or the first permission name (page-wide)
+   * @param perms Additional permission names expected to be checked
    */
-  async toHavePermissions(...perms: string[]) {
-    for (const permisison of perms) {
-      await expect(this.getPermission(permisison)).toBeChecked();
-      await expect(this.getPermission(permisison)).toBeDisabled();
+  async toHavePermissions(scopeOrFirstPerm?: Page | Locator | string, ...perms: string[]): Promise<void> {
+    const scope = (scopeOrFirstPerm && typeof scopeOrFirstPerm !== "string") ? scopeOrFirstPerm : this.page;
+    const allPerms = typeof scopeOrFirstPerm === "string" ? [scopeOrFirstPerm, ...perms] : perms;
+    for (const p of allPerms) {
+      await expect(this.getPermission(p, scope)).toBeChecked();
+      await expect(this.getPermission(p, scope)).toBeDisabled();
     }
-    for (const permisison of permissions.filter((p) => !perms.includes(p))) {
-      await expect(this.getPermission(permisison)).not.toBeChecked();
-      await expect(this.getPermission(permisison)).not.toBeDisabled();
+    for (const p of permissions.filter((p) => !allPerms.includes(p))) {
+      await expect(this.getPermission(p, scope)).not.toBeChecked();
+      await expect(this.getPermission(p, scope)).not.toBeDisabled();
     }
   }
 
   /**
    * Create a user with read and write access for the current realm.
    *
-   * Internally checks whether the permissions are correctly set and
-   * registers the user for cleanup.
-   *
    * @param username The users' username
    * @param password The users' password
    * @param tag Optional tag for the user
    */
   async addUser(username: string, password: string, tag?: string) {
-    await this.page
-      .locator("#content")
-      .filter({ hasText: "Regular users" })
-      .getByRole("button", { name: "Add User" })
-      .click();
-    await this.page.locator("label").filter({ hasText: "Username" }).fill(username);
-    await this.page
-      .locator("label")
-      .filter({ hasText: /Password/ })
-      .fill(password);
-    await this.page.locator("label").filter({ hasText: "Repeat password" }).fill(password);
+    await this.page.getByText("Add User").click();
+    const lastRow = this.page.locator("#table-users tbody tr").last();
+    await lastRow.getByRole("textbox", { name: "Username" }).fill(username);
+    await lastRow.getByRole("textbox", { name: /Password/ }).fill(password);
+    await lastRow.getByRole("textbox", { name: "Repeat password" }).fill(password);
     if (tag) {
-      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+      await lastRow.getByRole("textbox", { name: "Tag" }).fill(tag);
     }
-    await this.toggleUserRoles("Read", "Write");
-    await this.toHavePermissions(...permissions);
+    await this.toggleUserRoles(lastRow, "Read", "Write");
+    await this.toHavePermissions(lastRow, ...permissions);
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
     await this.page.getByRole("button", { name: "Create" }).click();
+    await expect(this.page.locator("#table-users tr.attribute-meta-row.expanded")).toHaveCount(0);
   }
 
   /**
@@ -91,21 +96,19 @@ export class UsersPage implements BasePage {
    * @param tag Optional tag for the service user
    */
   async addServiceUser(username: string, tag?: string): Promise<void> {
-    await this.page
-      .locator("#content")
-      .filter({ hasText: "Service users" })
-      .getByRole("button", { name: "Add User" })
-      .click();
-    await this.page.locator("label").filter({ hasText: "Username" }).fill(username);
+    await this.page.getByText("Add Service user").click();
+    const lastRow = this.page.locator("#table-service-users tbody tr").last();
+    await lastRow.getByRole("textbox", { name: "Username" }).fill(username);
     if (tag) {
-      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+      await lastRow.getByRole("textbox", { name: "Tag" }).fill(tag);
     }
-    await this.toggleUserRoles("Read", "Write");
-    await this.toHavePermissions(...permissions);
+    await this.toggleUserRoles(lastRow, "Read", "Write");
+    await this.toHavePermissions(lastRow, ...permissions);
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
     await this.page.getByRole("button", { name: "Create" }).click();
+    await expect(this.page.locator("#table-service-users tr.attribute-meta-row.expanded")).toHaveCount(0);
   }
 
   /**
@@ -113,7 +116,7 @@ export class UsersPage implements BasePage {
    * @param searchTerm The term to search for
    */
   async searchRegularUsers(searchTerm: string) {
-    const panel = this.page.locator("#content").filter({ hasText: "Regular users" }).first();
+    const panel = this.page.locator(".panel").filter({ hasText: "Regular users" }).first();
     const input = panel.locator('or-mwc-input[placeholder="Search"] input');
     await input.fill(searchTerm);
   }
@@ -123,7 +126,7 @@ export class UsersPage implements BasePage {
    * @param searchTerm The term to search for
    */
   async searchServiceUsers(searchTerm: string) {
-    const panel = this.page.locator("#content").filter({ hasText: "Service users" }).first();
+    const panel = this.page.locator(".panel").filter({ hasText: "Service users" }).first();
     const input = panel.locator('or-mwc-input[placeholder="Search"] input');
     await input.fill(searchTerm);
   }

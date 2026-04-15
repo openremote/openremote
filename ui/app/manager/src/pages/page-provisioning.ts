@@ -8,7 +8,7 @@ import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {ClientRole, ProvisioningConfig, X509ProvisioningData} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
@@ -66,19 +66,25 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     border-radius: 5px;
                     position: relative;
                     margin: 5px auto;
-                    padding: 24px;
+                    padding: 12px 24px 24px;
                 }
 
                 .panel-title {
+                    display: flex;
+                    align-items: center;
                     text-transform: uppercase;
                     font-weight: bolder;
                     line-height: 1em;
-                    color: var(--internal-or-asset-viewer-title-text-color);
-                    margin-bottom: 20px;
+                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    margin-bottom: 10px;
                     margin-top: 0;
                     flex: 0 0 auto;
                     letter-spacing: 0.025em;
-                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    min-height: 36px;
+                }
+
+                .panel-title p {
+                    margin: 0;
                 }
 
                 #table-users,
@@ -202,6 +208,8 @@ export class PageProvisioning extends Page<AppStateKeyed> {
     @state()
     protected _realmOptions?: string[];
 
+    protected _configFilter: (configs: ProvisioningConfig<any, any>[]) => ProvisioningConfig<any, any>[] = (configs) => configs;
+
     get name(): string {
         return "autoProvisioning";
     }
@@ -233,6 +241,12 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 </div>
 
                 <div class="panel">
+                    <div class="panel-title" style="justify-content: space-between;">
+                        <p>${i18next.t("provisioningConfigs")}</p>
+                        <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
+                                      @input="${(ev: InputEvent) => this.onConfigSearch(ev)}"
+                        ></or-mwc-input>
+                    </div>
                     <div id="table-users" class="mdc-data-table">
                         <table class="mdc-data-table__table" aria-label="attribute list">
                             <thead>
@@ -252,7 +266,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                             </tr>
                             </thead>
                             <tbody class="mdc-data-table__content">
-                            ${this._configs.map((config, index) => this._getConfigTemplate(() => {
+                            ${this._configFilter(this._configs).map((config, index) => this._getConfigTemplate(() => {
                                 this._configs.pop(); this._configs = [...this._configs];
                             }, config))}
                             ${(this._configs.length === 0 || (this._configs.length > 0 && !!this._configs[this._configs.length - 1].id)) ? html`
@@ -260,7 +274,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                         this._configs = [...this._configs, {type: "x509"}];
                                     }}">
                                     <td colspan="100%">
-                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")}</a>
+                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("provisioningConfig")}</a>
                                     </td>
                                 </tr>
                             ` : ``}
@@ -372,7 +386,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                               .type="${InputType.TEXTAREA}"
                               .value="${data.CACertPEM}"
                               resizeVertical
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => data.CACertPEM = e.detail.value}"></or-mwc-input>
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => { data.CACertPEM = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
                 <or-mwc-input .label="${i18next.t("ignoreExpiryDate")}"
                               .type="${InputType.CHECKBOX}"
                               .value="${data.ignoreExpiryDate}"
@@ -409,7 +423,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                 <or-mwc-input .label="${i18next.t("name")}"
                                               .type="${InputType.TEXT}" min="1" required
                                               .value="${config.name}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.name = e.detail.value}"></or-mwc-input>
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => { config.name = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
                                 <or-mwc-input ?disabled="${!!config.id}" required
                                               .label="${i18next.t("type")}"
                                               .type="${InputType.SELECT}"
@@ -421,7 +435,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                               .type="${InputType.SELECT}"
                                               .options="${this._realmOptions}"
                                               .value="${config.realm}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.realm = e.detail.value}"></or-mwc-input>
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => { config.realm = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
                                 <or-mwc-input ?disabled="${!!config.id}"
                                               .value="${config.userRoles}"
                                               .type="${InputType.SELECT}" multiple
@@ -460,11 +474,26 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                             <or-mwc-input class="savebtn" style="margin-left: auto;"
                                   label="${config.id ? "save" : "create"}"
                                   .type="${InputType.BUTTON}"
+                                  ?disabled="${!config.id && (!config.name || !config.realm || !config.type || !(config.data as X509ProvisioningData)?.CACertPEM)}"
                                   @or-mwc-input-changed="${() => this._createUpdateConfig(config)}"></or-mwc-input>
                         </div>
                     </div>
                 </td>
             </tr>
         `
+    }
+
+    protected onConfigSearch(ev: InputEvent) {
+        const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
+        if (!value) {
+            this._configFilter = (configs) => configs;
+        } else {
+            this._configFilter = (configs) => configs.filter(c =>
+                (c.name as string)?.toLowerCase().includes(value) ||
+                (c.realm as string)?.toLowerCase().includes(value) ||
+                (c.type as string)?.toLowerCase().includes(value)
+            );
+        }
+        this.requestUpdate();
     }
 }

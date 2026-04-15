@@ -63,25 +63,31 @@ export class PageRealms extends Page<AppStateKeyed> {
 
         .panel {
           width: calc(100% - 90px);
-          padding: 0 20px;
           max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
           border-radius: 5px;
           position: relative;
           margin: 0 auto;
-          padding: 24px;
+          padding: 12px 24px 24px;
         }
 
         .panel-title {
+            display: flex;
+            align-items: center;
             text-transform: uppercase;
             font-weight: bolder;
             line-height: 1em;
             color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             margin-top: 0;
             flex: 0 0 auto;
             letter-spacing: 0.025em;
+            min-height: 36px;
+        }
+
+        .panel-title p {
+            margin: 0;
         }
 
 
@@ -220,6 +226,8 @@ export class PageRealms extends Page<AppStateKeyed> {
   @property()
   protected _realms: Realm[] = [];
 
+  protected _realmFilter: (realms: Realm[]) => Realm[] = (realms) => realms;
+
   protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
   get name(): string {
@@ -269,7 +277,12 @@ export class PageRealms extends Page<AppStateKeyed> {
                 )}
                 </div>
                 <div class="panel">
-                <p class="panel-title">${i18next.t("realm_plural")}</p>
+                <div class="panel-title" style="justify-content: space-between;">
+                    <p>${i18next.t("realm_plural")}</p>
+                    <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
+                                  @input="${(ev: InputEvent) => this.onRealmSearch(ev)}"
+                    ></or-mwc-input>
+                </div>
                   <div id="table-roles" class="mdc-data-table">
                   <table class="mdc-data-table__table" aria-label="realm list" >
                       <thead>
@@ -280,7 +293,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                           </tr>
                       </thead>
                       <tbody class="mdc-data-table__content">
-                      ${this._realms.map(
+                      ${this._realmFilter(this._realms).map(
                         (realm, index) => {
                        
                           return html`
@@ -304,14 +317,14 @@ export class PageRealms extends Page<AppStateKeyed> {
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.name = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { realm.name = e.detail.value; const isDuplicate = this._realms.some(r => r !== realm && r.name === realm.name); (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('realmAlreadyExists') : undefined); this.requestUpdate(); }}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
-                                      <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { realm.displayName = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("emailTheme", Util.camelCaseToSentenceCase("emailTheme"))}" .type="${InputType.TEXT}" .value="${realm.emailTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.emailTheme = e.detail.value}"></or-mwc-input>
                                     </div>
                                   </div>
@@ -324,7 +337,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                                       <or-mwc-input style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
                                   ` : !readonly ? html`
                                     <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
-                                    <or-mwc-input style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
+                                    <or-mwc-input ?disabled="${!realm.name || !realm.displayName || this._realms.some(r => r !== realm && r.name === realm.name)}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>
                                   `: ``}    
                                   </div>
                               </div>
@@ -335,7 +348,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                         ${this._realms.length > 0 && !!this._realms[this._realms.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
-                            <a class="button" @click="${() => this._realms = [...this._realms, {displayName:"", enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
+                            <a class="button" @click="${() => this._realms = [...this._realms, {enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
                           </td>
                         </tr>
                       ` : ``}
@@ -363,23 +376,21 @@ export class PageRealms extends Page<AppStateKeyed> {
         const response = await manager.rest.api.RealmResource.update(realm.name, realm);
         if (response.status === 204) {
             showSnackbar(undefined, "saveRealmSucceeded");
+            this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
         } else {
             showSnackbar(undefined, "saveRealmFailed");
         }
-        //TODO improve this so that header realm picker is updated
-        window.location.reload();
     }
 
     private async _createRealm(realm) {
-        await manager.rest.api.RealmResource.create(realm).then(response => {
-            if (response.status === 204) {
-                showSnackbar(undefined, "saveRealmSucceeded");
-            } else {
-                showSnackbar(undefined, "saveRealmFailed");
-            }
-            //TODO improve this so that header realm picker is updated
-            window.location.reload();
-        });
+        const response = await manager.rest.api.RealmResource.create(realm);
+        if (response.status === 204) {
+            showSnackbar(undefined, "saveRealmSucceeded");
+            await this._getRealms();
+            this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
+        } else {
+            showSnackbar(undefined, "saveRealmFailed");
+        }
     }
 
     private _deleteRealm(realm: Realm) {
@@ -392,6 +403,7 @@ export class PageRealms extends Page<AppStateKeyed> {
         try {
             await manager.rest.api.RealmResource.delete(realm.name);
             this._realms = this._realms.filter(r => r !== realm);
+            this.dispatchEvent(new CustomEvent("realms-changed", { bubbles: true, composed: true }));
         } catch (e) {
             showSnackbar(undefined, "realmDeleteFailed", "dismiss");
         }
@@ -447,6 +459,19 @@ export class PageRealms extends Page<AppStateKeyed> {
                         </style>
                     `)
           .setDismissAction(null));
+    }
+
+    protected onRealmSearch(ev: InputEvent) {
+        const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
+        if (!value) {
+            this._realmFilter = (realms) => realms;
+        } else {
+            this._realmFilter = (realms) => realms.filter(r =>
+                (r.name as string)?.toLowerCase().includes(value) ||
+                (r.displayName as string)?.toLowerCase().includes(value)
+            );
+        }
+        this.requestUpdate();
     }
 
     private async _doDelete(realm) {

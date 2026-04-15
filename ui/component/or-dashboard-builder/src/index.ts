@@ -17,7 +17,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {i18next} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
 import {OrDashboardPreview} from "./or-dashboard-preview";
@@ -225,7 +225,7 @@ export function registerWidgetTypes() {
 }
 
 @customElement("or-dashboard-builder")
-export class OrDashboardBuilder extends LitElement {
+export class OrDashboardBuilder extends translate(i18next)(LitElement) {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
