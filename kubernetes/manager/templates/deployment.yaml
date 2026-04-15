@@ -1,3 +1,8 @@
+{{- include "manager.logging.validate" . }}
+{{- $loggingInlineConfig := .Values.logging.config -}}
+{{- $loggingExistingConfigMap := .Values.logging.existingConfigMap -}}
+{{- $loggingEnabled := or $loggingInlineConfig $loggingExistingConfigMap -}}
+{{- $loggingExternalConfig := $loggingExistingConfigMap -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,9 +16,17 @@ spec:
       {{- include "manager.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- if or .Values.podAnnotations $loggingEnabled }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if $loggingInlineConfig }}
+        checksum/logging-config: {{ .Values.logging.config | sha256sum | quote }}
+        {{- end }}
+        {{- if and $loggingExternalConfig .Values.logging.restartToken }}
+        logging.openremote.io/restart-token: {{ .Values.logging.restartToken | quote }}
+        {{- end }}
       {{- end }}
       labels:
         {{- include "manager.labels" . | nindent 8 }}
@@ -123,16 +136,34 @@ spec:
               value: "{{ .Values.or.metricsEnabled }}"
             - name: OR_METRICS_PORT
               value: "{{ .Values.or.metricsPort }}"
+
+            {{- if $loggingEnabled }}
+            - name: OR_LOGGING_CONFIG_FILE
+              value: "{{ include "manager.logging.configFilePath" . }}"
+            {{- end }}
           {{- with .Values.or.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if $loggingEnabled }}
+            - name: volume-logging-config
+              mountPath: /etc/openremote/logging
+              readOnly: true
+            {{- end }}
             - mountPath: /storage
               name: manager-data
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
       volumes:
+        {{- if $loggingEnabled }}
+        - name: volume-logging-config
+          configMap:
+            name: {{ include "manager.logging.configMapRefName" . }}
+            items:
+              - key: {{ include "manager.logging.configMapKey" . | quote }}
+                path: logging.properties
+        {{- end }}
         - name: manager-data
           persistentVolumeClaim:
             claimName: {{ include "manager.fullname" . }}

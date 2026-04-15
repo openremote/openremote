@@ -383,6 +383,7 @@ public class GatewayConnector {
                 if (e instanceof AssetsEvent) {
                     if (obsoleteReadFuture != null) {
                         obsoleteReadFuture.cancel(true);
+                        obsoleteReadFuture = null;
                     }
                     onSyncAssetsResponse((AssetsEvent) e);
                 } else if (e instanceof AttributeEvent) {

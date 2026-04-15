@@ -1,0 +1,295 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "ttn/lorawan/v3/mqtt.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ApplicationLink {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  reserved 1; // Deprecated: network_server_address
+  reserved 2; // Deprecated: api_key
+  // Default message payload formatters to use when there are no formatters
+  // defined on the end device level.
+  MessagePayloadFormatters default_formatters = 3;
+  reserved 4; // Deprecated: tls
+  // Skip decryption of uplink payloads and encryption of downlink payloads.
+  // Leave empty for the using the Application Server's default setting.
+  google.protobuf.BoolValue skip_payload_crypto = 5;
+}
+
+message GetApplicationLinkRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message SetApplicationLinkRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  ApplicationLink link = 2 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+// Link stats as monitored by the Application Server.
+message ApplicationLinkStats {
+  google.protobuf.Timestamp linked_at = 1;
+  string network_server_address = 2 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+  // Timestamp when the last upstream message has been received from a Network Server.
+  // This can be a join-accept, uplink message or downlink message event.
+  google.protobuf.Timestamp last_up_received_at = 3;
+  // Number of upstream messages received.
+  uint64 up_count = 4;
+  // Timestamp when the last downlink message has been forwarded to a Network Server.
+  google.protobuf.Timestamp last_downlink_forwarded_at = 5;
+  // Number of downlink messages forwarded.
+  uint64 downlink_count = 6;
+}
+
+// Application Server configuration.
+message AsConfiguration {
+  message PubSub {
+    message Providers {
+      enum Status {
+        option (thethings.json.enum) = {marshal_as_string: true};
+
+        // No restrictions are in place.
+        ENABLED = 0;
+        // Warnings are being emitted that the provider will be deprecated in the future.
+        WARNING = 1;
+        // New integrations cannot be set up, and old ones do not start.
+        DISABLED = 2;
+      }
+
+      Status mqtt = 1;
+      Status nats = 2;
+      reserved 3; // Deprecated: aws_iot
+    }
+
+    Providers providers = 1;
+  }
+  PubSub pubsub = 1;
+
+  message Webhooks {
+    int64 unhealthy_attempts_threshold = 1;
+    google.protobuf.Duration unhealthy_retry_interval = 2;
+
+    reserved 3;
+    reserved "queue";
+  }
+  Webhooks webhooks = 2;
+}
+
+message GetAsConfigurationRequest {}
+
+message GetAsConfigurationResponse {
+  AsConfiguration configuration = 1;
+}
+
+// The As service manages the Application Server.
+service As {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage an Application Server."};
+  // Get a link configuration from the Application Server to Network Server.
+  // This only contains the configuration. Use GetLinkStats to view statistics and any link errors.
+  rpc GetLink(GetApplicationLinkRequest) returns (ApplicationLink) {
+    option (google.api.http) = {get: "/as/applications/{application_ids.application_id}/link"};
+  }
+
+  // Set a link configuration from the Application Server a Network Server.
+  // This call returns immediately after setting the link configuration; it does not wait for a link to establish.
+  // To get link statistics or errors, use GetLinkStats.
+  // Note that there can only be one Application Server instance linked to a Network Server for a given application at a time.
+  rpc SetLink(SetApplicationLinkRequest) returns (ApplicationLink) {
+    option (google.api.http) = {
+      put: "/as/applications/{application_ids.application_id}/link",
+      body: "*"
+    };
+  }
+
+  // Delete the link between the Application Server and Network Server for the specified application.
+  rpc DeleteLink(ApplicationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/as/applications/{application_id}/link"};
+  }
+
+  // GetLinkStats returns the link statistics.
+  // This call returns a NotFound error code if there is no link for the given application identifiers.
+  // This call returns the error code of the link error if linking to a Network Server failed.
+  rpc GetLinkStats(ApplicationIdentifiers) returns (ApplicationLinkStats) {
+    option (google.api.http) = {get: "/as/applications/{application_id}/link/stats"};
+  }
+
+  rpc GetConfiguration(GetAsConfigurationRequest) returns (GetAsConfigurationResponse) {
+    option (google.api.http) = {get: "/as/configuration"};
+  }
+}
+
+// Container for multiple Application uplink messages.
+message NsAsHandleUplinkRequest {
+  repeated ApplicationUp application_ups = 1 [(validate.rules).repeated.min_items = 1];
+}
+
+// The NsAs service connects a Network Server to an Application Server.
+service NsAs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The NsAs service is used by The Things Stack Network Servers to interact with The Things Stack Application Servers. This is an inter-component service and is not meant for end users."};
+  // Handle Application uplink messages.
+  rpc HandleUplink(NsAsHandleUplinkRequest) returns (google.protobuf.Empty);
+}
+
+message EncodeDownlinkRequest {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  EndDeviceVersionIdentifiers version_ids = 2;
+  ApplicationDownlink downlink = 3 [(validate.rules).message.required = true];
+  PayloadFormatter formatter = 4 [(validate.rules).enum.defined_only = true];
+  string parameter = 5;
+}
+
+message EncodeDownlinkResponse {
+  ApplicationDownlink downlink = 1;
+}
+
+message DecodeUplinkRequest {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  EndDeviceVersionIdentifiers version_ids = 2;
+  ApplicationUplink uplink = 3 [(validate.rules).message.required = true];
+  PayloadFormatter formatter = 4 [(validate.rules).enum.defined_only = true];
+  string parameter = 5;
+}
+
+message DecodeUplinkResponse {
+  ApplicationUplink uplink = 1;
+}
+
+message DecodeDownlinkRequest {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  EndDeviceVersionIdentifiers version_ids = 2;
+  ApplicationDownlink downlink = 3 [(validate.rules).message.required = true];
+  PayloadFormatter formatter = 4 [(validate.rules).enum.defined_only = true];
+  string parameter = 5;
+}
+
+message DecodeDownlinkResponse {
+  ApplicationDownlink downlink = 1;
+}
+
+// The AppAs service connects an application or integration to an Application Server.
+service AppAs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Connect and manage applications or integrations to an Application Server."};
+  // Subscribe to upstream messages.
+  rpc Subscribe(ApplicationIdentifiers) returns (stream ApplicationUp);
+  // Push downlink messages to the end of the downlink queue.
+  rpc DownlinkQueuePush(DownlinkQueueRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/push",
+      body: "*"
+    };
+  }
+  // Replace the entire downlink queue with the specified messages.
+  // This can also be used to empty the queue by specifying no messages.
+  rpc DownlinkQueueReplace(DownlinkQueueRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/replace",
+      body: "*"
+    };
+  }
+  // List the items currently in the downlink queue.
+  rpc DownlinkQueueList(EndDeviceIdentifiers) returns (ApplicationDownlinks) {
+    option (google.api.http) = {get: "/as/applications/{application_ids.application_id}/devices/{device_id}/down"};
+  }
+  // Get connection information to connect an MQTT client.
+  rpc GetMQTTConnectionInfo(ApplicationIdentifiers) returns (MQTTConnectionInfo) {
+    option (google.api.http) = {get: "/as/applications/{application_id}/mqtt-connection-info"};
+  }
+  // Simulate an upstream message. This can be used to test integrations.
+  rpc SimulateUplink(ApplicationUp) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/up/simulate",
+      body: "*"
+    };
+  }
+  rpc EncodeDownlink(EncodeDownlinkRequest) returns (EncodeDownlinkResponse) {
+    option (google.api.http) = {
+      post: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/encode",
+      body: "*"
+    };
+  }
+  rpc DecodeUplink(DecodeUplinkRequest) returns (DecodeUplinkResponse) {
+    option (google.api.http) = {
+      post: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/up/decode",
+      body: "*"
+    };
+  }
+  rpc DecodeDownlink(DecodeDownlinkRequest) returns (DecodeDownlinkResponse) {
+    option (google.api.http) = {
+      post: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/down/decode",
+      body: "*"
+    };
+  }
+}
+
+// The AsEndDeviceRegistry service allows clients to manage their end devices on the Application Server.
+service AsEndDeviceRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage end devices on the Application Server."};
+  // Get returns the device that matches the given identifiers.
+  // If there are multiple matches, an error will be returned.
+  rpc Get(GetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {get: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}"};
+  }
+
+  // Set creates or updates the device.
+  rpc Set(SetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {
+      put: "/as/applications/{end_device.ids.application_ids.application_id}/devices/{end_device.ids.device_id}"
+      body: "*"
+      additional_bindings {
+        post: "/as/applications/{end_device.ids.application_ids.application_id}/devices"
+        body: "*"
+      };
+    };
+  }
+
+  // Delete deletes the device that matches the given identifiers.
+  // If there are multiple matches, an error will be returned.
+  rpc Delete(EndDeviceIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/as/applications/{application_ids.application_id}/devices/{device_id}"};
+  }
+}
+
+// The AsEndDeviceBatchRegistry service allows clients to manage batches end devices on the Application Server.
+service AsEndDeviceBatchRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage batches of end devices on the Application Server."};
+  // Delete a list of devices within the same application.
+  // This operation is atomic; either all devices are deleted or none.
+  // Devices not found are skipped and no error is returned.
+  rpc Delete(BatchDeleteEndDevicesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/as/applications/{application_ids.application_id}/devices/batch"};
+  }
+}
