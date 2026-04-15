@@ -26,6 +26,7 @@ import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
 import com.nimbusds.jwt.proc.JWTProcessor;
@@ -69,8 +70,12 @@ public class TokenVerifierImpl implements TokenVerifier {
 
         final String expectedIssuer = keycloakPublicUrl + "/realms/" + realm;
         final String expectedClientId = Constants.KEYCLOAK_CLIENT_ID;
+        final JWTClaimsSetVerifier<SecurityContext> defaultClaimsVerifier = new DefaultJWTClaimsVerifier<>(null, null);
 
         JWTClaimsSetVerifier<SecurityContext> verifier = (claims, context) -> {
+            // Preserve Nimbus built-in checks for exp / nbf validation.
+            defaultClaimsVerifier.verify(claims, context);
+
             // 1) issuer check (keep/remove depending on your policy)
             if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
                 throw new BadJWTException("Invalid token issuer");
@@ -127,7 +132,7 @@ public class TokenVerifierImpl implements TokenVerifier {
             // Only allow super users to cross realms
             String authRealm = principal.getRealm();
             if (!Objects.equals(authRealm, realm)) {
-                if (!principal.isUserInRealmRole(Constants.SUPER_USER_REALM_ROLE)) {
+                if (!principal.hasRealmRole(Constants.SUPER_USER_REALM_ROLE)) {
                     throw new AuthenticationException("Invalid token realm");
                 }
             }

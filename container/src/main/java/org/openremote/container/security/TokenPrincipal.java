@@ -92,10 +92,6 @@ public class TokenPrincipal implements Principal, AuthContext {
         return resourceRoles.getOrDefault(resource, Collections.emptyList()).contains(role);
     }
 
-    public boolean isUserInRealmRole(String role) {
-        return realmRoles.contains(role);
-    }
-
     @Override
     public String getAuthenticatedRealmName() {
         return getRealm();
@@ -108,7 +104,7 @@ public class TokenPrincipal implements Principal, AuthContext {
 
     @Override
     public boolean hasRealmRole(String role) {
-        return isUserInRole(role);
+        return realmRoles.contains(role);
     }
 
     @Override
