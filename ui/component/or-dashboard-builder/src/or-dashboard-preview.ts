@@ -11,7 +11,7 @@ import "@openremote/or-components/or-loading-indicator";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {i18next} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {when} from "lit/directives/when.js";
 import {cache} from "lit/directives/cache.js";
 import {guard} from "lit/directives/guard.js";
@@ -123,7 +123,7 @@ export interface DashboardPreviewSize {
 /* ------------------------------------------------------------ */
 
 @customElement("or-dashboard-preview")
-export class OrDashboardPreview extends LitElement {
+export class OrDashboardPreview extends translate(i18next)(LitElement) {
 
     // Monitoring the changes in the template, save the changes to this.latestChanges,
     // so we can check afterwards which changes are made. Used for

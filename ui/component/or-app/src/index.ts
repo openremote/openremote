@@ -183,12 +183,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
         document.addEventListener("visibilitychange", this._onVisibilityChanged);
+        this.addEventListener("realms-changed", this._onRealmsChanged);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        document.removeEventListener("visibilityChange", this._onVisibilityChanged);
+        document.removeEventListener("visibilitychange", this._onVisibilityChanged);
+        this.removeEventListener("realms-changed", this._onRealmsChanged);
         manager.removeListener(this._onEvent);
         super.disconnectedCallback();
     }
@@ -442,6 +444,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._realm = state.app.realm;
         this._page = state.app!.page;
         this._offline = state.app!.offline;
+    }
+
+    protected _onRealmsChanged = () => this._refreshRealms();
+
+    protected async _refreshRealms() {
+        const response = await manager.rest.api.RealmResource.getAccessible();
+        this._realms = response.data;
+        this.requestUpdate();
     }
 
     protected _handleEvent(event: OREvent) {

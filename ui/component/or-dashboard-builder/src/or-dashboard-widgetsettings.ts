@@ -3,7 +3,7 @@ import {html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {style} from './style';
-import { i18next } from "@openremote/or-translate";
+import { i18next, translate } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
 import {WidgetService} from "./service/widget-service";
 import {WidgetSettings, WidgetSettingsChangedEvent} from "./util/widget-settings";
@@ -15,7 +15,7 @@ const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 /* ------------------------------------ */
 
 @customElement("or-dashboard-widgetsettings")
-export class OrDashboardWidgetsettings extends LitElement {
+export class OrDashboardWidgetsettings extends translate(i18next)(LitElement) {
 
     static get styles() {
         return [unsafeCSS(tableStyle), style]

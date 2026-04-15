@@ -323,7 +323,7 @@ export class OrAddAssetDialog extends LitElement {
                         <div style="display: grid">
                             ${attributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => html`
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, descriptor.name, true)}"
                                                   .disabled="${true}" .value="${true}"></or-mwc-input>
                             `)}
                         </div>
@@ -337,7 +337,7 @@ export class OrAddAssetDialog extends LitElement {
                         <div style="display: grid">
                             ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => html`
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, descriptor.name, true)}"
                                                   .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
                                                   @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
                             `)}

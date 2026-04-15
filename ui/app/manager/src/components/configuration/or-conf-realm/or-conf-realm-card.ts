@@ -33,7 +33,7 @@ import {
     manager,
     Util,
 } from "@openremote/core";
-import { i18next } from "@openremote/or-translate";
+import { i18next, translate } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
@@ -41,7 +41,7 @@ import ISO6391 from 'iso-639-1';
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
 
 @customElement("or-conf-realm-card")
-export class OrConfRealmCard extends LitElement {
+export class OrConfRealmCard extends translate(i18next)(LitElement) {
 
     static styles = css`
       .language {
@@ -134,16 +134,14 @@ export class OrConfRealmCard extends LitElement {
     protected headerListPrimary: string[] = Object.keys(DefaultHeaderMainMenu);
     protected headerListSecondary: string[] = Object.keys(DefaultHeaderSecondaryMenu);
 
-    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]));
-    protected _languages: string[][] = [];
-
-    connectedCallback() {
-        const languageNames = ISO6391.getAllNames();
-        this._languages = ISO6391.getAllCodes()
-            .map((code, index) => ([code, languageNames[index]]))
+    protected get _languages(): string[][] {
+        return Object.entries(DEFAULT_LANGUAGES)
+            .map(([code, key]) => [code, i18next.t(key)])
             .sort((a, b) => a[1].localeCompare(b[1]));
+    }
 
-        return super.connectedCallback();
+    protected get commonLanguages(): string[] {
+        return this._languages.map(entry => entry[1]);
     }
 
     protected _getColors() {
