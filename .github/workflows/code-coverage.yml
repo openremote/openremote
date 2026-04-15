@@ -20,7 +20,7 @@ jobs:
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: or-integration-test-results
-          path: test/build/reports/tests
+          path: test/build
       - run: ./gradlew combinedCoverageReport
         timeout-minutes: 20
       - name: Archive JaCoCo coverage report
