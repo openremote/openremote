@@ -70,8 +70,4 @@ public class RequestParams {
 
         return this.uriInfo.getBaseUriBuilder().scheme(scheme).host(host).port(port);
     }
-
-    public static String getBearerAuth(@NotNull String authorizationHeader) {
-        return authorizationHeader.substring(BEARER_AUTH_PREFIX.length()).trim();
-    }
 }

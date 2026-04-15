@@ -41,7 +41,6 @@ import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
@@ -58,9 +57,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -89,12 +86,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
     public static final String OR_KEYCLOAK_PATH_DEFAULT = "/auth";
-    public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
-    public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
     public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
-    public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
-    public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
     public static final String OR_IDENTITY_SESSION_MAX_MINUTES = "OR_IDENTITY_SESSION_MAX_MINUTES";
     public static final int OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
@@ -296,21 +289,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public URI getTokenUri(String realm) {
         return keycloakServiceUri.clone().path("realms").path(realm).path("protocol/openid-connect/token").build();
-    }
-
-    /**
-     * Convenience method for generating access tokens from a given OAuth compliant server
-     */
-    public Supplier<String> getAccessTokenSupplier(OAuthGrant grant) {
-        OAuthFilter oAuthFilter = new OAuthFilter(httpClient, grant);
-        return () -> {
-            try {
-                return oAuthFilter.getAccessToken();
-            } catch (Exception e) {
-                LOG.log(Level.INFO, "Failed to get OAuth access token using grant: " + grant, e);
-            }
-            return null;
-        };
     }
 
     /**
