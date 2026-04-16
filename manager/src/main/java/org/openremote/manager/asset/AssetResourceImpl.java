@@ -737,13 +737,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void updateNoneParent(RequestParams requestParams, List<String> assetIds) {
-        AssetQuery query = new AssetQuery();
-        query.ids = assetIds.toArray(String[]::new);
+        BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, null, false);
 
-        List<Asset<?>> assets = this.assetStorageService.findAll(query);
-        LOG.fine("Updating parent for assets: count=" + assets.size() + ", newParentID=NONE");
+        LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=NONE");
 
-        for (Asset<?> asset : assets) {
+        for (Asset<?> asset : validation.childAssets) {
             asset.setParentId(null);
             LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=NONE");
             assetStorageService.merge(asset);
