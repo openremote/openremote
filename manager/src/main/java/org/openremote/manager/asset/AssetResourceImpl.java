@@ -638,14 +638,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void updateParent(RequestParams requestParams, String parentId, List<String> assetIds) {
-        AssetQuery query = new AssetQuery();
-        query.ids = assetIds.toArray(String[]::new);
+        BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, parentId, true);
 
-        List<Asset<?>> assets = this.assetStorageService.findAll(query);
-        LOG.fine("Updating parent for assets: count=" + assets.size() + ", newParentID=" + parentId);
+        String targetParentId = validation.parentAsset.getId();
+        LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=" + targetParentId);
 
-        for (Asset<?> asset : assets) {
-            asset.setParentId(parentId);
+        for (Asset<?> asset : validation.childAssets) {
+            asset.setParentId(targetParentId);
             LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
             assetStorageService.merge(asset);
         }
