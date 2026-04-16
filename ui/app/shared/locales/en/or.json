@@ -1071,6 +1071,8 @@
   "body": "Body",
   "content": "Content",
   "priority": "Priority",
+  "normal": "Normal",
+  "high": "High",
   "source": "Source",
   "sent": "Sent",
   "delivered": "Delivered",

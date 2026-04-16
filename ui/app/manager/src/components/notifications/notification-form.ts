@@ -567,7 +567,7 @@ export class NotificationForm extends LitElement {
                 <or-mwc-input
                         label="${i18next.t('priority')}"
                         type="${InputType.SELECT}"
-                        .options="${['Normal', 'High']}"
+                        .options="${[['Normal', i18next.t('normal')], ['High', i18next.t('high')]]}"
                         ?readonly="${inputDisabled}"
                         id="notificationPriority"
                         .value="${live(this.formData.priority || 'Normal')}"
