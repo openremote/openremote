@@ -692,7 +692,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             if (childRealm == null) {
                 childRealm = childAssetRealm;
-            } else if (!childRealm.equals(childAssetRealm)) {
+            } else if (validateParent && !childRealm.equals(childAssetRealm)) {
                 LOG.fine("Request to update parent for child assets in multiple realms: username=" + getUsername());
                 throw new WebApplicationException(BAD_REQUEST);
             }

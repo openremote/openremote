@@ -849,6 +849,34 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         (assetResource.get(null, asset2.id) as RoomAsset).parentId == null
     }
 
+    def "Batch parent clear across accessible realms succeeds for superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there are child assets with parents in different accessible realms"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def masterAsset = assetResource.create(null, new RoomAsset("Master batch clear").setRealm(keycloakTestSetup.realmMaster.name).setParentId(managerTestSetup.groundFloorId))
+        def buildingAsset = assetResource.create(null, new RoomAsset("Building batch clear").setRealm(keycloakTestSetup.realmBuilding.name).setParentId(managerTestSetup.smartBuildingId))
+
+        when: "the superuser clears the parent of both assets in one request"
+        assetResource.updateNoneParent(null, [masterAsset.id, buildingAsset.id])
+
+        then: "both assets should become root assets"
+        (assetResource.get(null, masterAsset.id) as RoomAsset).parentId == null
+        (assetResource.get(null, buildingAsset.id) as RoomAsset).parentId == null
+    }
+
     def "Batch parent updates reject foreign child assets for testuser1"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
