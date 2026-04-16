@@ -1082,7 +1082,7 @@
     "urlToVisit": "URL om naartoe te gaan (optioneel)",
     "openButtonText": "Open knop tekst (optioneel)",
     "closeButtonText": "Sluiten knop tekst (optioneel)",
-    "failedToCreateNofication": "Notificatie aanmaken mislukt: ",
+    "failedToCreateNotification": "Notificatie aanmaken mislukt: ",
     "successfullySentNotification": "Notificatie verstuurd",
     "missingFields": "Notificatie maken mislukt, niet alle verplichte velden waren gevuld.",
     "allSources": "Alle bronnen",

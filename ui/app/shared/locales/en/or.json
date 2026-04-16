@@ -1087,7 +1087,7 @@
     "urlToVisit": "URL to visit (optional)",
     "openButtonText": "Open button text (optional)",
     "closeButtonText": "Close button text (optional)",
-    "failedToCreateNofication": "Failed to create notification: ",
+    "failedToCreateNotification": "Failed to create notification: ",
     "successfullySentNotification": "Successfully sent notification.",
     "missingFields": "Failed to create notification, missing required fields.",
     "allSources": "All sources",
