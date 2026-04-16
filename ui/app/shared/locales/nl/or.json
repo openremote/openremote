@@ -1098,6 +1098,8 @@
   "body": "Bericht",
   "content": "Inhoud",
   "priority": "Prioriteit",
+  "normal": "Normaal",
+  "high": "Hoog",
   "source": "Bron",
   "sent": "Gestuurd",
   "delivered": "Bezorgd",
