@@ -185,7 +185,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     margin-right: 20px;
                 }
 
-                // Dialog and form specific styles
+                /* Dialog and form specific styles */
 
                 .dialog-content {
                     display: flex;
@@ -239,7 +239,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
-                    width: 100%; // Add this to ensure full width
+                    width: 100%; /* Add this to ensure full width */
                 }
 
                 or-mwc-input[readonly] {
