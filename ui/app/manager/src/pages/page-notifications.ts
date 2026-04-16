@@ -575,12 +575,18 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected _renderNotificationsTable() {
+        const notifications = this._getFilteredNotifications();
         return html`
             <or-notifications-table
-                    .notifications=${this._getFilteredNotifications() || []}
+                    .notifications=${notifications}
                     .notificationService=${this.notificationService}
                     @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"
             ></or-notifications-table>
+            ${!this._loading && notifications && notifications.length === 0 ? html`
+                <div style="padding: 20px; text-align: center; font-style: italic; color: var(--or-app-color3);">
+                    <or-translate value="noResults"></or-translate>
+                </div>
+            ` : ''}
         `;
     }
 
