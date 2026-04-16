@@ -171,6 +171,129 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         ex.response.status == 400
     }
 
+    def "Batch parent updates reject unknown child asset ids as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there's an asset in the master realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def existingAsset = assetResource.create(null, new RoomAsset("Existing asset").setRealm(keycloakTestSetup.realmMaster.name))
+        def missingChildId = UniqueIdentifierGenerator.generateId()
+
+        when: "an updateParent call is made with child asset list containing an unknown child asset id"
+        assetResource.updateParent(null, managerTestSetup.groundFloorId, [existingAsset.id, missingChildId])
+
+        then: "the request should be bad and no asset should be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, existingAsset.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent updates reject unknown parent asset ids as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there's an asset in the master realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def existingAsset = assetResource.create(null, new RoomAsset("Existing asset").setRealm(keycloakTestSetup.realmMaster.name))
+        def missingParentId = UniqueIdentifierGenerator.generateId()
+
+        when: "an updateParent call is made with a non-existent parent asset id"
+        assetResource.updateParent(null, missingParentId, [existingAsset.id])
+
+        then: "the request should be bad and no asset should be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, existingAsset.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent updates reject mixed child realms as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there are assets in the master and building realms"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def masterAssetForMixedRealm = assetResource.create(null, new RoomAsset("Master Mixed Realm").setRealm(keycloakTestSetup.realmMaster.name))
+        def buildingAssetForMixedRealm = assetResource.create(null, new RoomAsset("Building Mixed Realm").setRealm(keycloakTestSetup.realmBuilding.name))
+
+        when: "an updateParent call is made with child asset list containing child assets from different realms"
+        assetResource.updateParent(null, managerTestSetup.groundFloorId, [masterAssetForMixedRealm.id, buildingAssetForMixedRealm.id])
+
+        then: "the request should be bad and no asset should be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, masterAssetForMixedRealm.id) as RoomAsset).parentId == null
+        (assetResource.get(null, buildingAssetForMixedRealm.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent update rejects null or empty child lists as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there's an asset in the master realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def rootAsset = assetResource.create(null, new RoomAsset("Root Asset").setRealm(keycloakTestSetup.realmMaster.name))
+
+        when: "a parent update is requested with an empty child list"
+        assetResource.updateParent(null, managerTestSetup.groundFloorId, [] as List<String>)
+
+        then: "the request should be bad"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, rootAsset.id) as RoomAsset).parentId == null
+
+        when: "a parent clear is requested with a null child list"
+        assetResource.updateNoneParent(null, null)
+
+        then: "the request should be bad"
+        ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, rootAsset.id) as RoomAsset).parentId == null
+    }
+
     def "Test writing attributes with timestamps"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())

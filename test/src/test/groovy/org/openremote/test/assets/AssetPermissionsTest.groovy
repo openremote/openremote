@@ -814,6 +814,147 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().getValue().get() == "My label update"
     }
 
+    def "Batch parent updates within the authenticated realm succeed for testuser1"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated test user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser1",
+                "testuser1"
+        ).token
+
+        and: "there are assets in the authenticated realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def asset1 = assetResource.create(null, new RoomAsset("Batch Asset 1").setRealm(keycloakTestSetup.realmMaster.name))
+        def asset2 = assetResource.create(null, new RoomAsset("Batch Asset 2").setRealm(keycloakTestSetup.realmMaster.name))
+
+        when: "assets in the authenticated realm are moved under an authenticated parent"
+        assetResource.updateParent(null, managerTestSetup.groundFloorId, [asset1.id, asset2.id])
+
+        then: "the assets should be moved"
+        (assetResource.get(null, asset1.id) as RoomAsset).parentId == managerTestSetup.groundFloorId
+        (assetResource.get(null, asset2.id) as RoomAsset).parentId == managerTestSetup.groundFloorId
+
+        when: "the parent is cleared for assets in the authenticated realm"
+        assetResource.updateNoneParent(null, [asset1.id, asset2.id])
+
+        then: "the assets should become root assets again"
+        (assetResource.get(null, asset1.id) as RoomAsset).parentId == null
+        (assetResource.get(null, asset2.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent updates reject foreign child assets for testuser1"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated test user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser1",
+                "testuser1"
+        ).token
+
+        and: "there is an asset in the authenticated realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def asset1 = assetResource.create(null, new RoomAsset("Batch Asset 1").setRealm(keycloakTestSetup.realmMaster.name))
+
+        when: "a parent update is requested with an asset from a foreign realm"
+        assetResource.updateParent(null, managerTestSetup.groundFloorId, [asset1.id, managerTestSetup.apartment2LivingroomId])
+
+        then: "the request should be forbidden and no asset should be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+        (assetResource.get(null, asset1.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent updates reject foreign parents for testuser1"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated test user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser1",
+                "testuser1"
+        ).token
+
+        and: "there's an asset in the authenticated realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def asset1 = assetResource.create(null, new RoomAsset("Batch Asset 1").setRealm(keycloakTestSetup.realmMaster.name))
+
+        when: "a parent update is requested with the target parent in a foreign realm"
+        assetResource.updateParent(null, managerTestSetup.smartBuildingId, [asset1.id])
+
+        then: "the request should be forbidden and no asset should be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+        (assetResource.get(null, asset1.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent updates are forbidden for restricted testuser3"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated restricted user will make the call"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        ).token
+
+        when: "a restricted user tries to move a linked asset"
+        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
+        assetResource.updateParent(null, managerTestSetup.apartment2Id, [managerTestSetup.apartment1LivingroomId])
+
+        then: "the request should be forbidden and the parent should remain unchanged"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+        (assetResource.get(null, managerTestSetup.apartment1LivingroomId) as RoomAsset).parentId == managerTestSetup.apartment1Id
+    }
+
+    def "Batch parent clear is forbidden for restricted testuser3"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated restricted user will make the call"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        ).token
+
+        when: "a restricted user tries to clear the parent of a linked asset"
+        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
+        assetResource.updateNoneParent(null, [managerTestSetup.apartment1LivingroomId])
+
+        then: "the request should be forbidden and the parent should remain unchanged"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+        (assetResource.get(null, managerTestSetup.apartment1LivingroomId) as RoomAsset).parentId == managerTestSetup.apartment1Id
+    }
+
     def "Access assets as anonymous user"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
