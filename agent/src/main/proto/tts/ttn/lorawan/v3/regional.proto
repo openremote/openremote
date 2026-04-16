@@ -1,0 +1,61 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/duration.proto";
+import "ttn/lorawan/v3/gateway.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ConcentratorConfig {
+  message Channel {
+    // Frequency (Hz).
+    uint64 frequency = 1;
+    uint32 radio = 2;
+  }
+  repeated Channel channels = 1;
+
+  message LoRaStandardChannel {
+    // Frequency (Hz).
+    uint64 frequency = 1;
+    uint32 radio = 2;
+    // Bandwidth (Hz).
+    uint32 bandwidth = 3;
+    uint32 spreading_factor = 4;
+  }
+  LoRaStandardChannel lora_standard_channel = 2;
+  message FSKChannel {
+    // Frequency (Hz).
+    uint64 frequency = 1;
+    uint32 radio = 2;
+  }
+  FSKChannel fsk_channel = 3;
+
+  message LBTConfiguration {
+    // Received signal strength (dBm).
+    float rssi_target = 1;
+    // Received signal strength offset (dBm).
+    float rssi_offset = 2;
+    google.protobuf.Duration scan_time = 3;
+  }
+  LBTConfiguration lbt = 4;
+
+  Channel ping_slot = 5;
+
+  repeated GatewayRadio radios = 6;
+  uint32 clock_source = 7;
+}

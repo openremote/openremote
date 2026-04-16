@@ -2226,6 +2226,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/or-rive-renderer@workspace:ui/component/or-rive-renderer":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-rive-renderer@workspace:ui/component/or-rive-renderer"
+  dependencies:
+    "@rive-app/webgl2": "npm:^2.35.4"
+    lit: "npm:^3.3.1"
+    lodash.debounce: "npm:^4.0.8"
+  languageName: unknown
+  linkType: soft
+
 "@openremote/or-rules@workspace:*, @openremote/or-rules@workspace:ui/component/or-rules":
   version: 0.0.0-use.local
   resolution: "@openremote/or-rules@workspace:ui/component/or-rules"
@@ -2614,6 +2624,13 @@ __metadata:
     react-redux:
       optional: true
   checksum: 10c0/fa0aa4b7c6973ac87ce0ac7e45faa02c73b66c4ee0bc950d178494539a42a1bb908d109297102458b7ea14d5e7dae356e7a7ce9a1b9849b0e8451e6dd70fca9c
+  languageName: node
+  linkType: hard
+
+"@rive-app/webgl2@npm:^2.35.4":
+  version: 2.35.4
+  resolution: "@rive-app/webgl2@npm:2.35.4"
+  checksum: 10c0/df8996510459d3388d027589c8fe628673bc49d550dd850ee5fc2752586706d78ccc7709332e40962f8aa30cd3febb94e51ff564ae35b36816917156476f4f03
   languageName: node
   linkType: hard
 

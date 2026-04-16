@@ -6,6 +6,58 @@ import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
+tasks.register('npmTest') {
+    group = 'verification'
+    description = 'Runs all UI tests sequentially (component then app)'
+}
+
+tasks.register('test') {
+    group = 'verification'
+    description = 'Executes all backend and UI tests in specific order'
+    // When './gradlew test' is run, ensure the UI tests are also pulled into the task graph
+    dependsOn 'npmTest'
+}
+
+// Enforce order in which we run the backend- and frontend tests
+// Order: 1. Unit tests
+//     -> 2. Integration tests
+//     -> 3. UI component tests
+//     -> 4. UI app tests
+gradle.projectsEvaluated {
+    def unitTests = subprojects.findAll { it.path != ':test' }
+        .collect { it.tasks.matching { t -> t.name == 'test' } }
+
+    def integrationTests = subprojects.findAll { it.path == ':test' }
+        .collect { it.tasks.matching { t -> t.name == 'test' } }
+
+    def uiComponentTests = subprojects.findAll { it.path.startsWith(':ui:component') }
+        .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
+
+    def uiAppTests = subprojects.findAll { it.path.startsWith(':ui:app') }
+        .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
+
+    tasks.named('npmTest').configure {
+        dependsOn(uiComponentTests, uiAppTests)
+    }
+
+    def rootTest = tasks.findByName('test') ?: tasks.register('test').get()
+    rootTest.configure {
+        dependsOn(unitTests, integrationTests, npmTest)
+    }
+
+    integrationTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests) }
+    }
+
+    uiComponentTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests, integrationTests) }
+    }
+
+    uiAppTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests, integrationTests, uiComponentTests) }
+    }
+}
+
 // Configure version based on Git tags
 apply plugin: 'pl.allegro.tech.build.axion-release'
 scmVersion {
@@ -98,7 +150,7 @@ buildscript {
 subprojects {
     // Apply only if the project has a 'test' task
     tasks.withType(Test).configureEach { testTask ->
-        outputs.upToDateWhen { false }
+        outputs.upToDateWhen { false } // Always invalidate the test cache
         useJUnitPlatform()
 
         systemProperty "junit.jupiter.execution.parallel.enabled", "true"
@@ -204,18 +256,4 @@ subprojects {
             }
         }
     }
-}
-
-// Finalize the gradle test task with the npmTest task so that all tests can be run with gradle test.
-// Runs backend tests first and then frontend tests. UI tests are registered under npmTest to avoid
-// complications when configuring the test task on projects w/o the Java plugin where the test task is
-// already defined. It also allows for easy exclusion using the `-x` argument (e.g. `gradle test -x npmTest`.)
-tasks.register('test') {
-    dependsOn subprojects.collect { it.tasks.matching { it.name == 'test' } }
-}
-tasks.register('npmTest') {
-    dependsOn subprojects.collect { it.tasks.matching { it.name == 'npmTest' } }
-}
-tasks.named('test') {
-    finalizedBy tasks.named('npmTest')
 }

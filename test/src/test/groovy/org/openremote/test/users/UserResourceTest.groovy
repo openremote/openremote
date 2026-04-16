@@ -415,6 +415,36 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         resetPasswordRequests == 3
     }
 
+    def "Update user realm roles requires realm administration rights"() {
+        when: "a realm admin updates realm roles for a user in their own realm"
+        adminUserBuildingResource.updateUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, [
+            KeycloakTestSetup.REALM_ROLE_TEST
+        ] as String[])
+
+        then: "the role update should succeed"
+        adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id) == [
+            KeycloakTestSetup.REALM_ROLE_TEST
+        ] as String[]
+
+        when: "a superuser updates realm roles across realms"
+        adminUserResource.updateUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, [
+            KeycloakTestSetup.REALM_ROLE_TEST2
+        ] as String[])
+
+        then: "the cross-realm update should succeed for the superuser"
+        adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id) == [
+            KeycloakTestSetup.REALM_ROLE_TEST2
+        ] as String[]
+
+        when: "a realm admin tries to update realm roles for a user in the master realm"
+        adminUserBuildingResource.updateUserRealmRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, [
+            Constants.SUPER_USER_REALM_ROLE
+        ] as String[])
+
+        then: "the cross-realm update should be rejected"
+        thrown(NotAllowedException)
+    }
+
     def "Create invalid users"() {
 
         when: "a regular user is created"
@@ -478,5 +508,136 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         User[] users5 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
         assert users5.size() == (4 + 3)
         assert users5.any { it.username == username5 }
+    }
+
+    def "Create user requires realm administration rights"() {
+        String sameRealmUsername = "sameRealmCreate" + System.nanoTime()
+        String superuserRealmUsername = "superuserCreate" + System.nanoTime()
+        String crossRealmUsername = "crossRealmCreate" + System.nanoTime()
+        User sameRealmUser = null
+        User superuserRealmUser = null
+        User crossRealmUser = null
+
+        when: "a realm admin creates a user in their own realm"
+        sameRealmUser = adminUserBuildingResource.create(null, keycloakTestSetup.realmBuilding.name, new User().setUsername(sameRealmUsername))
+
+        then: "the user should be created"
+        sameRealmUser != null
+        sameRealmUser.realm == keycloakTestSetup.realmBuilding.name
+
+        when: "a superuser creates a user across realms"
+        superuserRealmUser = adminUserResource.create(null, keycloakTestSetup.realmBuilding.name, new User().setUsername(superuserRealmUsername))
+
+        then: "the cross-realm create should succeed for the superuser"
+        superuserRealmUser != null
+        superuserRealmUser.realm == keycloakTestSetup.realmBuilding.name
+
+        when: "a realm admin tries to create a user in the master realm"
+        crossRealmUser = adminUserBuildingResource.create(null, MASTER_REALM, new User().setUsername(crossRealmUsername))
+
+        then: "the cross-realm create should be rejected"
+        thrown(NotAllowedException)
+
+        cleanup:
+        if (sameRealmUser?.id) {
+            adminUserResource.delete(null, sameRealmUser.realm, sameRealmUser.id)
+        }
+        if (superuserRealmUser?.id) {
+            adminUserResource.delete(null, superuserRealmUser.realm, superuserRealmUser.id)
+        }
+        if (crossRealmUser?.id) {
+            adminUserResource.delete(null, MASTER_REALM, crossRealmUser.id)
+        }
+    }
+
+    def "Reset secret requires realm administration rights"() {
+        when: "a realm admin resets a secret in their own realm"
+        String sameRealmSecret = adminUserBuildingResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
+
+        then: "the secret reset should succeed"
+        sameRealmSecret != null
+        !sameRealmSecret.isEmpty()
+
+        when: "a superuser resets a secret across realms"
+        String superuserSecret = adminUserResource.resetSecret(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.serviceUser.id)
+
+        then: "the cross-realm reset should succeed for the superuser"
+        superuserSecret != null
+        !superuserSecret.isEmpty()
+
+        when: "a realm admin tries to reset a secret in the master realm"
+        adminUserBuildingResource.resetSecret(null, MASTER_REALM, keycloakTestSetup.superServiceUser.id)
+
+        then: "the cross-realm reset should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Update user client roles requires realm administration rights"() {
+        String[] buildingUserRoles = adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
+        String[] masterUserRoles = adminUserResource.getUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, KEYCLOAK_CLIENT_ID)
+
+        when: "a realm admin updates client roles for a user in their own realm"
+        adminUserBuildingResource.updateUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, buildingUserRoles, KEYCLOAK_CLIENT_ID)
+
+        then: "the role update should succeed"
+        adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID) as Set == buildingUserRoles as Set
+
+        when: "a superuser updates client roles across realms"
+        adminUserResource.updateUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, buildingUserRoles, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm update should succeed for the superuser"
+        adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID) as Set == buildingUserRoles as Set
+
+        when: "a realm admin tries to update client roles for a user in the master realm"
+        adminUserBuildingResource.updateUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, masterUserRoles, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm update should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Update default client roles requires realm administration rights"() {
+        Role[] buildingRoles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+        Role[] masterRoles = adminUserResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
+
+        when: "a realm admin updates default client roles in their own realm"
+        adminUserBuildingResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles)
+
+        then: "the role update should succeed"
+        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
+
+        when: "a superuser updates default client roles across realms"
+        adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles)
+
+        then: "the cross-realm update should succeed for the superuser"
+        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
+
+        when: "a realm admin tries to update default client roles in the master realm"
+        adminUserBuildingResource.updateRoles(null, MASTER_REALM, masterRoles)
+
+        then: "the cross-realm update should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Update client roles requires realm administration rights"() {
+        Role[] buildingRoles = adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)
+        Role[] masterRoles = adminUserResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
+
+        when: "a realm admin updates client roles in their own realm"
+        adminUserBuildingResource.updateClientRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles, KEYCLOAK_CLIENT_ID)
+
+        then: "the role update should succeed"
+        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
+
+        when: "a superuser updates client roles across realms"
+        adminUserResource.updateClientRoles(null, keycloakTestSetup.realmBuilding.name, buildingRoles, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm update should succeed for the superuser"
+        adminUserResource.getClientRoles(null, keycloakTestSetup.realmBuilding.name, KEYCLOAK_CLIENT_ID)*.name as Set == buildingRoles*.name as Set
+
+        when: "a realm admin tries to update client roles in the master realm"
+        adminUserBuildingResource.updateClientRoles(null, MASTER_REALM, masterRoles, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm update should be rejected"
+        thrown(NotAllowedException)
     }
 }

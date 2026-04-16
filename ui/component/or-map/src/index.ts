@@ -268,6 +268,10 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     <or-vaadin-button theme="icon" @click=${onClick}>
                         <or-icon icon="crosshairs-gps"></or-icon>
                     </or-vaadin-button>
+                    <!--<div style="display: flex">
+                        <or-mwc-input .comfortable="${comfortable}" .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}"></or-mwc-input>
+                        <or-mwc-input style="width: unset" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @or-mwc-input-changed="${onClick}"></or-mwc-input>
+                    </div>-->
                 </div>
             `;
         }

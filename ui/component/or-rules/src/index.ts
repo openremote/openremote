@@ -738,7 +738,9 @@ export class OrRulesDeleteEvent extends CustomEvent<RulesetUnion[]> {
     }
 }
 
-export class OrRulesGroupNameChangeEvent extends CustomEvent<{ value: string }> {
+export type OrRulesGroupNameChangeReason = "exists" | "legacyJavascript";
+
+export class OrRulesGroupNameChangeEvent extends CustomEvent<{ value: string, reason?: OrRulesGroupNameChangeReason }> {
 
     public static readonly NAME = "or-rules-group-name-change";
 
@@ -748,7 +750,8 @@ export class OrRulesGroupNameChangeEvent extends CustomEvent<{ value: string }> 
             composed: true,
             cancelable: true,
             detail: {
-                value: name
+                value: name,
+                reason: undefined
             }
         });
     }
@@ -891,6 +894,14 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     protected _isReadonly(): boolean {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
+    }
+
+    protected _isLegacyJavascriptRuleset(ruleset?: RulesetUnion) {
+        return ruleset?.lang === RulesetLang.JAVASCRIPT;
+    }
+
+    protected _containsLegacyJavascriptRuleset(rulesets?: (RulesetUnion | undefined)[]) {
+        return !!rulesets?.some(ruleset => this._isLegacyJavascriptRuleset(ruleset));
     }
 
     protected _confirmContinue(action: (ok: boolean) => void) {
@@ -1054,6 +1065,14 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected _onRuleDrag(ev: OrTreeDragEvent) {
         const isModified = this._viewer?.modified;
         const groupId = ev.detail.groupNode?.label;
+        const draggedRulesets = (ev.detail.nodes as RuleTreeNode[])
+            .flatMap(node => node.ruleset ? [node.ruleset] : []);
+
+        if (this._containsLegacyJavascriptRuleset(draggedRulesets)) {
+            ev.preventDefault();
+            showSnackbar(undefined, "rulesLegacyJavaScriptUpdate");
+            return;
+        }
 
         const moveAndSave = (ruleset: RulesetUnion, groupId?: string) => {
             move(ruleset, groupId);
@@ -1131,11 +1150,21 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected _onGroupNameChange(ev: OrRulesGroupNameChangeEvent) {
         const oldValue = this._selectedGroup;
         const newValue = ev.detail.value;
+        const groupRules = this._rulesTree?.rules?.filter(r => r.meta?.groupId === oldValue);
 
         // If the group name already exists, we should prevent the event from happening
         if(this._rulesTree?.nodes.find(n => n.label === newValue)) {
             console.warn(`The group '${newValue}' already exists. Please try again.`);
+            ev.detail.reason = "exists";
             ev.preventDefault();
+            return;
+        }
+
+        if (this._containsLegacyJavascriptRuleset(groupRules)) {
+            console.warn(`Prevented renaming group '${oldValue}' because it contains legacy JavaScript rules.`);
+            ev.detail.reason = "legacyJavascript";
+            ev.preventDefault();
+            showSnackbar(undefined, "rulesLegacyJavaScriptRename");
             return;
         }
 
@@ -1143,7 +1172,6 @@ export class OrRules extends translate(i18next)(LitElement) {
 
         // Change the groupId for each child rule, and prepare an HTTP API update
         const promises: Promise<any>[] = [];
-        const groupRules = this._rulesTree?.rules?.filter(r => r.meta?.groupId === oldValue);
         groupRules?.forEach((r) => {
             r.meta!.groupId = newValue;
             promises.push(this._saveRuleset(r));
@@ -1178,6 +1206,10 @@ export class OrRules extends translate(i18next)(LitElement) {
      * @param ruleset - The ruleset to be saved
      */
     protected async _saveRuleset(ruleset: RulesetUnion){
+        if (this._isLegacyJavascriptRuleset(ruleset)) {
+            throw new Error(i18next.t("rulesLegacyJavaScriptUpdate"));
+        }
+
         let promise;
         switch (ruleset.type) {
             case "asset": {
