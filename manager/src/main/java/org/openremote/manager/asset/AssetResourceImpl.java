@@ -638,15 +638,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void updateParent(RequestParams requestParams, String parentId, List<String> assetIds) {
-        BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, parentId, true);
+        try {
+            BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, parentId, true);
 
-        String targetParentId = validation.parentAsset.getId();
-        LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=" + targetParentId);
+            String targetParentId = validation.parentAsset.getId();
+            LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=" + targetParentId);
 
-        for (Asset<?> asset : validation.childAssets) {
-            asset.setParentId(targetParentId);
-            LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
-            assetStorageService.merge(asset);
+            for (Asset<?> asset : validation.childAssets) {
+                asset.setParentId(targetParentId);
+                LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
+                assetStorageService.merge(asset);
+            }
+        } catch (IllegalStateException | ConstraintViolationException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
         }
     }
 
@@ -737,14 +741,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void updateNoneParent(RequestParams requestParams, List<String> assetIds) {
-        BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, null, false);
+        try {
+            BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, null, false);
 
-        LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=NONE");
+            LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=NONE");
 
-        for (Asset<?> asset : validation.childAssets) {
-            asset.setParentId(null);
-            LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=NONE");
-            assetStorageService.merge(asset);
+            for (Asset<?> asset : validation.childAssets) {
+                asset.setParentId(null);
+                LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=NONE");
+                assetStorageService.merge(asset);
+            }
+        } catch (IllegalStateException | ConstraintViolationException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
         }
     }
 }
