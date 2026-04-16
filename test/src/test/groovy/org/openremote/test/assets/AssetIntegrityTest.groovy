@@ -3,10 +3,14 @@ package org.openremote.test.assets
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.container.timer.TimerService
+import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.event.ClientEventService
+import org.openremote.manager.gateway.GatewayService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetResource
+import org.openremote.model.asset.impl.GatewayAsset
+import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
@@ -228,6 +232,33 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         (assetResource.get(null, existingAsset.id) as RoomAsset).parentId == null
     }
 
+    def "Batch parent updates reject self-parent requests as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there's an asset in the master realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def existingAsset = assetResource.create(null, new RoomAsset("Existing asset").setRealm(keycloakTestSetup.realmMaster.name))
+
+        when: "an updateParent call is made with the asset itself as the parent"
+        assetResource.updateParent(null, existingAsset.id, [existingAsset.id])
+
+        then: "the request should be bad and the asset should remain a root asset"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, existingAsset.id) as RoomAsset).parentId == null
+    }
+
     def "Batch parent updates reject mixed child realms as superuser"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -292,6 +323,145 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         ex = thrown()
         ex.response.status == 400
         (assetResource.get(null, rootAsset.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent updates reject moving an asset under its own descendant as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there is an asset hierarchy in the master realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def rootAsset = assetResource.create(null, new RoomAsset("Root asset").setRealm(keycloakTestSetup.realmMaster.name))
+        def childAsset = assetResource.create(null, new RoomAsset("Child asset").setRealm(keycloakTestSetup.realmMaster.name).setParentId(rootAsset.id))
+        def grandChildAsset = assetResource.create(null, new RoomAsset("Grandchild asset").setRealm(keycloakTestSetup.realmMaster.name).setParentId(childAsset.id))
+
+        when: "an updateParent call tries to move the root asset under its own descendant"
+        assetResource.updateParent(null, grandChildAsset.id, [rootAsset.id])
+
+        then: "the request should be bad and the hierarchy should remain unchanged"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, rootAsset.id) as RoomAsset).parentId == null
+        (assetResource.get(null, childAsset.id) as RoomAsset).parentId == rootAsset.id
+        (assetResource.get(null, grandChildAsset.id) as RoomAsset).parentId == childAsset.id
+    }
+
+    def "Batch parent updates reject group child-type mismatches as superuser"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there is a group parent that only accepts room assets"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def groupParent = assetResource.create(null, new GroupAsset("Rooms only", RoomAsset.class).setRealm(keycloakTestSetup.realmMaster.name))
+        def invalidChild = assetResource.create(null, new ThingAsset("Invalid child").setRealm(keycloakTestSetup.realmMaster.name))
+
+        when: "an updateParent call tries to move a mismatched asset type under the group"
+        assetResource.updateParent(null, groupParent.id, [invalidChild.id])
+
+        then: "the request should be bad and the asset should not be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, invalidChild.id) as ThingAsset).parentId == null
+    }
+
+    def "Batch parent updates reject moving a local asset under a gateway asset as superuser"() {
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def gatewayService = container.getService(GatewayService.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there is a locally registered gateway asset in the building realm"
+        GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
+                .setRealm(managerTestSetup.realmBuildingName))
+        conditions.eventually {
+            assert gatewayService.isLocallyRegisteredGateway(gateway.id)
+        }
+
+        and: "there is a regular asset in the same realm"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def localAsset = assetResource.create(null, new RoomAsset("Local asset").setRealm(managerTestSetup.realmBuildingName))
+
+        when: "an updateParent call tries to move the local asset under the gateway asset"
+        assetResource.updateParent(null, gateway.id, [localAsset.id])
+
+        then: "the request should be bad and the asset should not be moved"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetResource.get(null, localAsset.id) as RoomAsset).parentId == null
+    }
+
+    def "Batch parent clear rejects gateway descendant assets as superuser"() {
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def gatewayService = container.getService(GatewayService.class)
+
+        and: "an authenticated admin user will make the call"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "there is a locally registered gateway asset and a gateway descendant in the building realm"
+        GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
+                .setRealm(managerTestSetup.realmBuildingName))
+        conditions.eventually {
+            assert gatewayService.isLocallyRegisteredGateway(gateway.id)
+        }
+        def gatewayDescendant = assetStorageService.merge(
+                new RoomAsset("Gateway descendant")
+                        .setId(UniqueIdentifierGenerator.generateId("GatewayDescendant"))
+                        .setRealm(managerTestSetup.realmBuildingName)
+                        .setParentId(gateway.id),
+                false,
+                gateway,
+                null
+        )
+
+        when: "an updateNoneParent call tries to clear the parent of the gateway descendant"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        assetResource.updateNoneParent(null, [gatewayDescendant.id])
+
+        then: "the request should be bad and the gateway descendant should remain attached to the gateway"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        (assetStorageService.find(gatewayDescendant.id, true) as RoomAsset).parentId == gateway.id
     }
 
     def "Test writing attributes with timestamps"() {
