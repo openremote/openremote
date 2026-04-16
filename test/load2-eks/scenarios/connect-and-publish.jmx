@@ -72,7 +72,7 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.NameBasedGenerator;
 
 // Generate asset ids to be used in ForEach controller later
-def assetsCount = vars.get(&quot;ASSETS_COUNT&quot;) ?: &quot;5&quot;
+def assetsCount = props.get(&quot;ASSETS_COUNT&quot;) ?: &quot;5&quot;
 def count = assetsCount.toInteger()
 for (int i = 1; i &lt;= count; i++) {
     def assetId = Url62.encode(Generators.nameBasedGenerator().generate(&quot;masterlight-${__threadNum}-${i}&quot;))
