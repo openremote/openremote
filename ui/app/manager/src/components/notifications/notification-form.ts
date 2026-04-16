@@ -504,7 +504,7 @@ export class NotificationForm extends LitElement {
     protected _renderMessageContentContainer(inputDisabled: boolean) {
         return html`
             <div class="messageContentContainer">
-                <h5>${i18next.t("Content")}</h5>
+                <h5>${i18next.t("content")}</h5>
                 <or-mwc-input
                         label="${i18next.t('title')}"
                         type="${InputType.TEXT}"
@@ -536,7 +536,7 @@ export class NotificationForm extends LitElement {
     protected _renderActionButtonContainer(inputDisabled: boolean) {
         return html`
             <div class="actionButtonContainer">
-                <h5>${i18next.t("Actions")}</h5>
+                <h5>${i18next.t("actions")}</h5>
                 <or-mwc-input
                         label="${i18next.t("notifications.urlToVisit")}"
                         type="${InputType.TEXT}"
