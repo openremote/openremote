@@ -248,11 +248,6 @@ export class OrNotificationsTable extends OrMwcTable {
     protected getStatusContent(notification: SentNotification): TemplateResult {
         const isDelivered = !!notification.deliveredOn;
 
-        console.log('Notification status:', {
-            deliveredOn: notification.deliveredOn,
-            isDelivered: isDelivered
-        });
-
         const classes = {
             "notification-status": true, 
             "status-delivered": isDelivered,
@@ -266,7 +261,6 @@ export class OrNotificationsTable extends OrMwcTable {
             </span> 
         `;
 
-        console.log('Template result:', result);
         return result;
     }
 
@@ -275,7 +269,6 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     protected sortTemplateRows(cellA: any, cellB: any, cIndex: number, sortDirection: "ASC" | "DESC"): number {
-        console.log("called sortTemplateRows from notifications table");
         // first extract the primitive values from the cell content
         const valueA: string | undefined = (cellA.values as any[])
         .filter(v => typeof v === 'string')
