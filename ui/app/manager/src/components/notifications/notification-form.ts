@@ -160,7 +160,7 @@ export class NotificationForm extends LitElement {
         }
 
         :host([readonly]) or-mwc-input {
-            --mdc-text-field-fill-color: var (--or-app-color2);
+            --mdc-text-field-fill-color: var(--or-app-color2);
             pointer-events: none;
         }
 
