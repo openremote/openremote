@@ -8,6 +8,7 @@ settings:
     RAMP_RATE: 20
     DURATION: 300
     MILLIS_BETWEEN_PUBLISHES: 1000
+    RECONNECT_ATTEMPTS: 0
     DISCONNECT_DELAY: 0
 
 reporting:
@@ -32,6 +33,7 @@ modules:
       RAMP_RATE: ${RAMP_RATE}
       DURATION: ${DURATION}
       MILLIS_BETWEEN_PUBLISHES: ${MILLIS_BETWEEN_PUBLISHES}
+      RECONNECT_ATTEMPTS: ${RECONNECT_ATTEMPTS}
       DISCONNECT_DELAY: ${DISCONNECT_DELAY}
 
 execution:
@@ -40,4 +42,3 @@ execution:
 scenarios:
   simple:
     script: connect-and-publish.jmx
-
