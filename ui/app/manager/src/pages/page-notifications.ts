@@ -410,7 +410,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _getFormData(dialog: OrMwcDialog): NotificationFormData | null {
         const form = dialog.shadowRoot?.querySelector<NotificationForm>("notification-form");
         if (!form) {
-            console.error("Form not found in dialog");
             return null;
         }
 
@@ -418,11 +417,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
         // validate required fields per schema
         if (!formData?.name || !formData?.targetType || !formData?.targets) {
-            console.error("Missing required fields:", {
-                hasName: !!formData?.name,
-                hasTargetType: !!formData?.targetType,
-                hasTarget: !!formData?.targets
-            });
             showSnackbar(undefined, i18next.t("notifications.missingFields"));
             return null;
         }
