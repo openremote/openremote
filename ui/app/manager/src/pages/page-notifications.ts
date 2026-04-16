@@ -528,7 +528,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             <div id="title">
                 <div style="display: flex; align-items: center;">
                     <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                    <span><or-translate value="${i18next.t("notifications.notifications")}"/></span>
+                    <span><or-translate value="notifications.notifications"/></span>
                 </div>
 
                 <div class="filter-section">
