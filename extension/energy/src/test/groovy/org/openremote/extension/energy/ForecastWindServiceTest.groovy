@@ -37,7 +37,9 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
-            if (finished) false
+            if (finished) {
+               return
+            }
             def requestUri = requestContext.uri
 
             switch (requestUri.path) {
