@@ -17,7 +17,7 @@ jobs:
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: or-manager-build
-          path: manager/build/install/manager
+          path: manager/build
       - name: Install QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
         with:
