@@ -57,7 +57,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
-          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="LoopController.loops">${__groovy(((props.get(&quot;RECONNECT_ATTEMPTS&quot;) ?: &quot;0&quot;).toString().toInteger() &gt; 0) ? &quot;-1&quot; : &quot;1&quot;,)}</stringProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -96,6 +96,9 @@ if (vars.getObject(&quot;threadEndTime&quot;) == null) {
     vars.putObject(&quot;threadEndTime&quot;, endTime)
     vars.put(&quot;testDuration&quot;, duration.toString())
     log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} started, will run for ${duration} seconds&quot;)
+} else if (System.currentTimeMillis() &gt;= vars.getObject(&quot;threadEndTime&quot;)) {
+    log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} runtime elapsed before reconnect attempt, stopping thread&quot;)
+    ctx.getThread().stop()
 }
 </stringProp>
         </JSR223Sampler>
