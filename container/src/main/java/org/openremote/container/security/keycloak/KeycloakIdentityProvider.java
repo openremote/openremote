@@ -101,8 +101,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected int sessionOfflineTimeoutSeconds;
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
-    // The client we use to access Keycloak
-    protected ResteasyClient httpClient;
     protected ResteasyWebTarget keycloakTarget;
     protected OAuthGrant oAuthGrant;
     protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();

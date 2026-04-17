@@ -141,6 +141,7 @@ public class WebServiceExceptions {
     public static Response handleResteasyException(boolean devMode, Throwable throwable) {
         Throwable effectiveException = throwable;
         int status = 500;
+        Response webApplicationResponse = null;
 
         // Unpack ServletException to see if the root cause is a WebApplicationException
         if (throwable instanceof jakarta.servlet.ServletException && throwable.getCause() != null) {
@@ -154,20 +155,20 @@ public class WebServiceExceptions {
         }
 
         if (effectiveException instanceof WebApplicationException webApplicationException) {
-            Response response = webApplicationException.getResponse();
+            webApplicationResponse = webApplicationException.getResponse();
 
-            switch (response.getStatusInfo().getFamily()) {
+            switch (webApplicationResponse.getStatusInfo().getFamily()) {
                 case CLIENT_ERROR:
-                    status = response.getStatus();
+                    status = webApplicationResponse.getStatus();
                     break;
                 case SERVER_ERROR:
-                    status = response.getStatus();
+                    status = webApplicationResponse.getStatus();
                     break;
                 default:
                     logException(devMode, "JAX-RS", Level.FINEST, effectiveException);
                     // If it's not a client or server error, it's not really an "exception" to
                     // be handled but a status that should be returned to the client
-                    return response;
+                    return webApplicationResponse;
             }
         }
 
@@ -175,11 +176,17 @@ public class WebServiceExceptions {
             Level level = status >= 500 ? Level.SEVERE : status >= 400 ? Level.FINER : Level.FINEST;
             logException(devMode, "JAX-RS", level, effectiveException);
 
-            if (devMode) {
-                return Response.status(status).entity(renderDevModeError(status, effectiveException)).type(TEXT_PLAIN_TYPE).build();
-            } else {
-                return Response.status(status).entity(renderProductionError(status, effectiveException)).type(TEXT_PLAIN_TYPE).build();
+            if (webApplicationResponse != null && webApplicationResponse.hasEntity()) {
+                return Response.fromResponse(webApplicationResponse).build();
             }
+
+            Response.ResponseBuilder responseBuilder = webApplicationResponse != null
+                ? Response.fromResponse(webApplicationResponse)
+                : Response.status(status);
+            String errorBody = devMode
+                ? renderDevModeError(status, effectiveException)
+                : renderProductionError(status, effectiveException);
+            return responseBuilder.entity(errorBody).type(TEXT_PLAIN_TYPE).build();
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Couldn't render server error trace response", ex);
             return Response.serverError().build();

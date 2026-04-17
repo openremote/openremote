@@ -80,11 +80,6 @@ public class LoggingFilter implements Filter {
         }
 
         @Override
-        public void setHeader(String name, String value) {
-            super.setHeader(name, value);
-        }
-
-        @Override
         public PrintWriter getWriter() throws IOException {
             if (teeWriter != null) {
                 return teeWriter;
@@ -183,48 +178,46 @@ public class LoggingFilter implements Filter {
                         ? System.Logger.Level.WARNING
                         : status >= 400 ? System.Logger.Level.TRACE : System.Logger.Level.DEBUG;
 
-                if (!LOG.isLoggable(level)) {
-                    return;
-                }
+                if (LOG.isLoggable(level)) {
+                    String method = req.getMethod();
+                    String requestPathAndQuery = req.getRequestURI() + (req.getQueryString() != null ? "?" + req.getQueryString() : "");
+                    String requestRealm = req.getHeader(Constants.REALM_PARAM_NAME);
+                    Principal principal = req.getUserPrincipal();
+                    String username = principal != null ? principal.getName() : null;
+                    String origin = req.getHeader(ORIGIN_HEADER);
+                    String forwardedFor = req.getHeader(FORWARDED_FOR_HEADER);
+                    String contentType = effectiveResponse.getContentType();
+                    String body = null;
 
-                String method = req.getMethod();
-                String requestPathAndQuery = req.getRequestURI() + (req.getQueryString() != null ? "?" + req.getQueryString() : "");
-                String requestRealm = req.getHeader(Constants.REALM_PARAM_NAME);
-                Principal principal = req.getUserPrincipal();
-                String username = principal != null ? principal.getName() : null;
-                String origin = req.getHeader(ORIGIN_HEADER);
-                String forwardedFor = req.getHeader(FORWARDED_FOR_HEADER);
-                String contentType = effectiveResponse.getContentType();
-                String body = null;
-
-                if (traceEnabled) {
-                    boolean isTextual = contentType == null
-                            || contentType.startsWith("text/")
-                            || contentType.contains("json")
-                            || contentType.contains("xml")
-                            || contentType.contains("problem+json");
-                    if (isTextual) {
-                        body = wrapped.getCapturedBodyAsString();
+                    if (traceEnabled) {
+                        boolean isTextual = contentType == null
+                                || contentType.startsWith("text/")
+                                || contentType.contains("json")
+                                || contentType.contains("xml")
+                                || contentType.contains("problem+json");
+                        if (isTextual) {
+                            body = wrapped.getCapturedBodyAsString();
+                        }
                     }
+
+                    String message =
+                            "HTTP request={"
+                                    + "method=" + method
+                                    + ", path=" + requestPathAndQuery
+                                    + ", requestRealm=" + requestRealm
+                                    + ", username=" + username
+                                    + ", origin=" + origin
+                                    + ", forwarded-for=" + forwardedFor
+                                    + "}, response={"
+                                    + "tookMillis=" + tookMillis
+                                    + ", status=" + status
+                                    + ", contentType=" + contentType
+                                    + (traceEnabled ? ", body=" + body : "")
+                                    + (thrown != null ? ", exception=" + thrown.getClass().getName() + ": " + thrown.getMessage() : "")
+                                    + "}";
+
+                    LOG.log(level, message);
                 }
-
-                String message =
-                        "HTTP request={"
-                                + "method=" + method
-                                + ", path=" + requestPathAndQuery
-                                + ", requestRealm=" + requestRealm
-                                + ", username=" + username
-                                + ", origin=" + origin
-                                + ", forwarded-for=" + forwardedFor
-                                + "}, response={"
-                                + "tookMillis=" + tookMillis
-                                + ", status=" + status
-                                + ", contentType=" + contentType
-                                + (traceEnabled ? ", body=" + body : "")
-                                + (thrown != null ? ", exception=" + thrown.getClass().getName() + ": " + thrown.getMessage() : "")
-                                + "}";
-
-                LOG.log(level, message);
             }
         }
     }

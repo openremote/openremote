@@ -32,7 +32,7 @@ public class ClientErrorExceptionHandler implements ExceptionMapper<ClientErrorE
 
     @Override
     public Response toResponse(ClientErrorException exception) {
-        // We must build a new Response, and not just pass on the exception's ("Apache HttpClient") response
-        return Response.status(exception.getResponse().getStatus()).build();
+        // Build a new local response while preserving status, headers and entity from the original response.
+        return Response.fromResponse(exception.getResponse()).build();
     }
 }

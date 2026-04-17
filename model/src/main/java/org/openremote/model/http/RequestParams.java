@@ -19,11 +19,13 @@
  */
 package org.openremote.model.http;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import org.openremote.model.util.TextUtil;
 
-import jakarta.ws.rs.HeaderParam;
-import jakarta.ws.rs.core.*;
 import java.net.URI;
 
 public class RequestParams {
