@@ -114,12 +114,12 @@ tasks.register('checkCoverageDataExists') {
     mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
     doLast {
         def testTasks = getActiveTestTasks()
-        def hasFiles = testTasks.any {
+        def allJacocoResultsExist = testTasks.every {
             it.extensions.findByType(JacocoTaskExtension)?.destinationFile?.exists()
         }
         // Check if any of the configured execution data files exist on disk
-        if (!hasFiles) {
-            println "Please run the following task to be able to generate a report."
+        if (!allJacocoResultsExist) {
+            println "Please run the following tasks to be able to generate a report."
             println "Required tasks: ${testTasks.collect { it.path }.join(', ')}"
             println "Run: gradle test -x npmTest checkCoverageDataExists"
             throw new StopExecutionException()

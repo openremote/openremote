@@ -744,7 +744,7 @@ jobs:
         id: backend-test-reports
         run: |
           if [ "$IS_MAIN" = "true" ]; then
-            ./gradlew unitTestReport combinedCoverageReport
+            ./gradlew unitTestReport combinedCoverageReport -x test
             echo "coverage=build/reports/jacoco/combinedCoverageReport/html" >> $GITHUB_OUTPUT
           else
             echo "coverage=test/build/reports/jacoco/test/html" >> $GITHUB_OUTPUT
