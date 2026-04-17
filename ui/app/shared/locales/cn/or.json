@@ -175,7 +175,7 @@
   "french": "法语",
   "german": "德语",
   "italian": "意大利语",
-  "polish" : "波兰语",
+  "polish": "波兰语",
   "portuguese": "葡萄牙语",
   "romanian": "罗马尼亚语",
   "spanish": "西班牙语",
@@ -627,7 +627,6 @@
         }
       }
     }
-  }
-,
+  },
   "realmAlreadyExists": "该域名已存在"
 }
