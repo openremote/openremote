@@ -83,7 +83,7 @@ public class WebServiceExceptions {
                 Throwable throwable = exchange.getAttachment(io.undertow.server.handlers.ExceptionHandler.THROWABLE);
                 logException(devMode, "Undertow", Level.SEVERE, throwable);
 
-                // 3. Send a clean response to the client
+                // Send a clean response to the client
                 if (!exchange.isResponseStarted()) {
                     exchange.setStatusCode(500);
                     exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, TEXT_PLAIN_TYPE.toString());
