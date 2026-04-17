@@ -52,7 +52,7 @@ jobs:
 
   app-tests:
     name: Test
-    needs: [detect-changes, docker-manager-image]
+    needs: [detect-changes, install-dist]
     uses: './.github/workflows/app-tests.yml'
 
   docker-manager-image:
