@@ -116,8 +116,6 @@ if (vars.getObject(&quot;threadEndTime&quot;) == null) {
           <stringProp name="mqtt.client_id_prefix">device${__threadNum}</stringProp>
           <boolProp name="mqtt.client_id_suffix">false</boolProp>
           <stringProp name="mqtt.conn_keep_alive">30</stringProp>
-          <stringProp name="mqtt.conn_attampt_max">0</stringProp>
-          <stringProp name="mqtt.reconn_attampt_max">0</stringProp>
           <stringProp name="mqtt.conn_clean_session">true</stringProp>
           <stringProp name="mqtt.user_name">master:serviceuser${__threadNum}</stringProp>
           <stringProp name="mqtt.password">serviceuser${__threadNum}</stringProp>
