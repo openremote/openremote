@@ -19,8 +19,8 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import tools.jackson.annotation.JsonSubTypes;
+import tools.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 import java.util.Optional;

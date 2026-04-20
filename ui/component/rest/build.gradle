@@ -21,9 +21,6 @@ dependencies {
     compileOnly project(":model-util")
     implementation project(":model")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 }
 
 //project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")

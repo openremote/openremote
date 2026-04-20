@@ -19,13 +19,13 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.annotation.*;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonProcessingException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.util.TsIgnore;

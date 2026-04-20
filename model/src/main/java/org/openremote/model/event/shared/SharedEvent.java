@@ -19,8 +19,8 @@
  */
 package org.openremote.model.event.shared;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import tools.jackson.annotation.JsonSubTypes;
+import tools.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.datapoint.AssetPredictedDatapointEvent;

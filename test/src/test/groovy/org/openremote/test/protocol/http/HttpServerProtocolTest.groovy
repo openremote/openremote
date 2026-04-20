@@ -19,7 +19,7 @@
  */
 package org.openremote.test.protocol.http
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.node.ObjectNode
 import io.undertow.servlet.Servlets
 import jakarta.ws.rs.ForbiddenException
 import jakarta.ws.rs.HttpMethod

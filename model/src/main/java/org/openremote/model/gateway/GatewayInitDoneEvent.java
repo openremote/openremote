@@ -22,7 +22,7 @@
 
 package org.openremote.model.gateway;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonCreator;
 import org.openremote.model.event.shared.SharedEvent;
 
 /**

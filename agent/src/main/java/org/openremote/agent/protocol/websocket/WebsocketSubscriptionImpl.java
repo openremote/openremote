@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import tools.jackson.annotation.JsonTypeName;
 
 // This is just here because json schema doesn't support self references for types
 @JsonTypeName(WebsocketSubscriptionImpl.TYPE)

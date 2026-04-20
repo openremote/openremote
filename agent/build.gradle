@@ -52,8 +52,8 @@ dependencies {
 
     implementation "org.jdom:jdom2:$jdomVersion"
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "tools.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
+    implementation "tools.jackson.core:jackson-databind:$jacksonVersion"
 
     implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
     implementation "io.grpc:grpc-protobuf:$grpcVersion"

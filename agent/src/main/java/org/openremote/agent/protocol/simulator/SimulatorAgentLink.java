@@ -19,8 +19,8 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.util.JSONSchemaUtil.*;

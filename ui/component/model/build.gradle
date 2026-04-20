@@ -16,9 +16,6 @@ dependencies {
     compileOnly project(":model-util")
     implementation project(":model")
     implementation project(":agent")
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 

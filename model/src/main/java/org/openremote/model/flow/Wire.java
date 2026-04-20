@@ -20,7 +20,7 @@
 
 package org.openremote.model.flow;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import tools.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

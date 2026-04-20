@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.notification;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.type.TypeReference;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;

@@ -19,8 +19,8 @@
  */
 package org.openremote.model.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 

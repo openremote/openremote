@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import tools.jackson.annotation.JsonTypeName;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.ValueType;
 

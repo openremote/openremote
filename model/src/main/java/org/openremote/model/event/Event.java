@@ -19,8 +19,8 @@
  */
 package org.openremote.model.event;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonIgnore;
+import tools.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.openremote.model.util.TextUtil;
 

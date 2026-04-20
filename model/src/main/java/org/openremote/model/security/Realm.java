@@ -19,9 +19,9 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 

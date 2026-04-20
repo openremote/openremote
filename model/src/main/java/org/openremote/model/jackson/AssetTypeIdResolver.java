@@ -19,10 +19,10 @@
  */
 package org.openremote.model.jackson;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import tools.jackson.annotation.JsonTypeInfo;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.ThingAsset;

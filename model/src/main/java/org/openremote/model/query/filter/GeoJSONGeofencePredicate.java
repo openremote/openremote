@@ -19,8 +19,8 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
 import org.locationtech.jts.geom.*;
 import org.openremote.model.geo.*;
 import org.openremote.model.util.JSONSchemaUtil.JsonSchemaDescription;

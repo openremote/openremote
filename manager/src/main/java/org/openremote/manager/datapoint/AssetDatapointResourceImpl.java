@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.datapoint;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JsonProcessingException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.NotSupportedException;

@@ -19,8 +19,8 @@
  */
 package org.openremote.container.web;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonIgnore;
+import tools.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 

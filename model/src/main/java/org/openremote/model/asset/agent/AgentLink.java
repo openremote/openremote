@@ -19,8 +19,8 @@
  */
 package org.openremote.model.asset.agent;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.annotation.JsonTypeInfo;
+import tools.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil.*;

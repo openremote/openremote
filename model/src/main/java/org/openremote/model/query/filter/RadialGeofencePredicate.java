@@ -20,8 +20,8 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.util.JSONSchemaUtil.*;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
 import org.locationtech.jts.geom.Coordinate;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.model.geo.GeoJSONPoint;

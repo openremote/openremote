@@ -19,8 +19,8 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.annotation.JsonPropertyDescription;
+import tools.jackson.databind.annotation.JsonSerialize;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.openremote.model.asset.agent.AgentLink;

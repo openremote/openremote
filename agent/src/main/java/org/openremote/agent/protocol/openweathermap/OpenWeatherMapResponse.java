@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.openweathermap;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.annotation.JsonIgnoreProperties;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.List;
 

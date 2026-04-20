@@ -19,10 +19,10 @@
  */
 package org.openremote.model.jackson;
 
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.*;
+import tools.jackson.databind.*;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.TextNode;
 
 import java.io.IOException;
 import java.util.function.Function;

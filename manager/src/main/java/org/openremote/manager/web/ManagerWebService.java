@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.web;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonProperty;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;

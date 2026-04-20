@@ -19,8 +19,8 @@
  */
 package org.openremote.model.provisioning;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import tools.jackson.annotation.JsonSubTypes;
+import tools.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({

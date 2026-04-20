@@ -19,8 +19,8 @@
  */
 package org.openremote.model.notification;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import tools.jackson.annotation.JsonSubTypes;
+import tools.jackson.annotation.JsonTypeInfo;
 
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PushNotificationMessage.class, name = PushNotificationMessage.TYPE),

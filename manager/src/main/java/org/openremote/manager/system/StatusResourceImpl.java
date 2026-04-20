@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.NullNode;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;

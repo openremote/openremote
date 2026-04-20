@@ -19,9 +19,9 @@
  */
 package org.openremote.model.notification;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.databind.JsonNode;
 import org.openremote.model.attribute.AttributeRef;
 
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;

@@ -19,8 +19,8 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.annotation.JsonIgnore;
+import tools.jackson.databind.annotation.JsonSerialize;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.util.TsIgnoreTypeParams;
 

@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.AttributeInfo;

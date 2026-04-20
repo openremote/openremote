@@ -1,7 +1,7 @@
 package org.openremote.model.gateway;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonIgnore;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;

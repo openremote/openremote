@@ -19,8 +19,8 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
 
 public class RealmPredicate {
 

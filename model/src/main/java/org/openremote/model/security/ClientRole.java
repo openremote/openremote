@@ -19,7 +19,7 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import tools.jackson.annotation.JsonValue;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.model.Constants;
 

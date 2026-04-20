@@ -1,7 +1,7 @@
 package org.openremote.test.notification
 
 
-import com.fasterxml.jackson.databind.node.TextNode
+import tools.jackson.databind.node.TextNode
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.BadRequestException

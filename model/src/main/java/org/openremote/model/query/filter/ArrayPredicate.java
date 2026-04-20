@@ -20,8 +20,8 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.util.JSONSchemaUtil.*;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Arrays;

@@ -19,11 +19,11 @@
  */
 package org.openremote.model.datapoint.query;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonDeserializer;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

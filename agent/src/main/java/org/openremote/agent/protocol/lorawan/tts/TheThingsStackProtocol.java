@@ -19,8 +19,8 @@
  */
 package org.openremote.agent.protocol.lorawan.tts;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonProcessingException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.protobuf.FieldMask;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

@@ -19,9 +19,9 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonValue;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.NameHolder;
 

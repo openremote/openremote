@@ -19,7 +19,7 @@
  */
 package org.openremote.model.alarm;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonCreator;
 import jakarta.validation.constraints.NotNull;
 
 public class Alarm {

@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.lorawan;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonProperty;
 
 import java.util.Optional;
 

@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import cz.habarta.typescript.generator.TsType;
 import cz.habarta.typescript.generator.TypeProcessor;
 import cz.habarta.typescript.generator.util.Utils;
@@ -33,14 +33,14 @@ import java.util.*;
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
  * <ul>
  * <li>Ignore types/super types annotated with {@link TsIgnore}
- * <li>Will ignore types with a super type in the "com.fasterxml.jackson" package excluding those implementing {@link com.fasterxml.jackson.databind.JsonNode}</li>
+ * <li>Will ignore types with a super type in the "tools.jackson" package excluding those implementing {@link tools.jackson.databind.JsonNode}</li>
  * <li>Removes some or all type params from classes annotated with {@link TsIgnoreTypeParams}
  * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't support @JsonSerialize(contentConverter=...)
  * </ul>
  */
 public class CustomTypeProcessor implements TypeProcessor {
 
-    public static final String JACKSON_PACKAGE = "com.fasterxml.jackson";
+    public static final String JACKSON_PACKAGE = "tools.jackson";
 
     @Override
     public Result processType(Type javaType, Context context) {

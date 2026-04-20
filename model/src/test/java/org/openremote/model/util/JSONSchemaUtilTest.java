@@ -1,8 +1,8 @@
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.annotation.*;
+import tools.jackson.core.JsonProcessingException;
+import tools.jackson.databind.JsonNode;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

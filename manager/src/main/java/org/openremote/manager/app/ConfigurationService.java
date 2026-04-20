@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.app;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;

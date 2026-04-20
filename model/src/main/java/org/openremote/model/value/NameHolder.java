@@ -19,8 +19,8 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.databind.util.StdConverter;
 
 /**
  * Identifies an item that holds a named property, the name should be very simple, as we use them in SQL path

@@ -23,9 +23,9 @@ cglib:*: APACHE LICENSE, VERSION 2.0
 com.ahome-it:ahome-tooling-common: APACHE LICENSE, VERSION 2.0
 com.ahome-it:ahome-tooling-nativetools: APACHE LICENSE, VERSION 2.0
 com.ahome-it:lienzo-core: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.core:*: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.module:*: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.jaxrs:*: APACHE LICENSE, VERSION 2.0
+tools.jackson.core:*: APACHE LICENSE, VERSION 2.0
+tools.jackson.module:*: APACHE LICENSE, VERSION 2.0
+tools.jackson.jaxrs:*: APACHE LICENSE, VERSION 2.0
 com.fasterxml:classmate: APACHE LICENSE, VERSION 2.0
 com.google.code.findbugs: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 com.google.errorprone:error_prone_annotations: APACHE LICENSE, VERSION 2.0

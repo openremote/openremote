@@ -19,10 +19,10 @@
  */
 package org.openremote.model.calendar;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.util.Pair;

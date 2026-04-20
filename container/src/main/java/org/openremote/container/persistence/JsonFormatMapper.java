@@ -1,13 +1,13 @@
 package org.openremote.container.persistence;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JsonProcessingException;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.format.FormatMapper;
 import org.openremote.model.util.ValueUtil;
 
 /**
- * A {@link FormatMapper} that uses our own {@link com.fasterxml.jackson.databind.ObjectMapper}
+ * A {@link FormatMapper} that uses our own {@link tools.jackson.databind.ObjectMapper}
  */
 @SuppressWarnings("unchecked")
 public class JsonFormatMapper implements FormatMapper {

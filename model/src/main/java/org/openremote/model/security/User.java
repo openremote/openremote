@@ -19,9 +19,9 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import tools.jackson.annotation.JsonIgnore;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonSetter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;

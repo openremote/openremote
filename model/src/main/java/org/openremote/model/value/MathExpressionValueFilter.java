@@ -1,9 +1,9 @@
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import tools.jackson.annotation.JsonClassDescription;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonTypeName;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;

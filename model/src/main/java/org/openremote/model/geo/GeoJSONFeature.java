@@ -19,9 +19,9 @@
  */
 package org.openremote.model.geo;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonTypeName;
 
 import java.util.HashMap;
 import java.util.Map;

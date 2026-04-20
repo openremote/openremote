@@ -240,7 +240,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
                         "JsonSerializeExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
+                        "tools.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any"
                 ]
@@ -259,7 +259,7 @@ def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, 
                         "cz.habarta.typescript.generator.ext.AxiosClientExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
+                        "tools.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any",
                         "org.openremote.model.asset.Asset<T>:Model.Asset",
@@ -334,9 +334,9 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
                 setterVisibility: "NONE"
         ]
         jackson2Modules = [
-                "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
-                "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
-                "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
+                "tools.jackson.datatype.jdk8.Jdk8Module",
+                "tools.jackson.datatype.jsr310.JavaTimeModule",
+                "tools.jackson.module.paramnames.ParameterNamesModule"
         ]
     }
 }

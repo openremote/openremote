@@ -19,15 +19,15 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.annotation.JsonTypeInfo;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonDeserializer;
+import tools.jackson.databind.JsonMappingException;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
+import tools.jackson.databind.deser.ResolvableDeserializer;
+import tools.jackson.databind.deser.std.StdDeserializer;
 import jakarta.persistence.Table;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;

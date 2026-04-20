@@ -19,9 +19,9 @@
  */
 package org.openremote.model.geo;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.annotation.*;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 import org.geotools.referencing.GeodeticCalculator;
 import org.locationtech.jts.geom.Coordinate;
 

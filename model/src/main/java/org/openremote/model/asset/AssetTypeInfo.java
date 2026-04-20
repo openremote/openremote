@@ -19,11 +19,11 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.annotation.JsonCreator;
+import tools.jackson.annotation.JsonIgnore;
+import tools.jackson.annotation.JsonProperty;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.*;
 

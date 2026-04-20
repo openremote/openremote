@@ -1,7 +1,7 @@
 package org.openremote.agent.protocol.tradfri.payload;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.annotation.JsonIgnoreProperties;
+import tools.jackson.annotation.JsonProperty;
 import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
