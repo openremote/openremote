@@ -646,7 +646,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             for (Asset<?> asset : validation.childAssets) {
                 asset.setParentId(targetParentId);
-                LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
+                LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + targetParentId);
                 assetStorageService.merge(asset);
             }
         } catch (IllegalStateException | ConstraintViolationException ex) {
