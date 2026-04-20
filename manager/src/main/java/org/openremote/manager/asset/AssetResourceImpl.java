@@ -61,6 +61,7 @@ import static org.openremote.model.value.MetaItemType.*;
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
+
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
     protected final ClientEventService clientEventService;
@@ -625,31 +626,121 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void updateParent(RequestParams requestParams, String parentId, List<String> assetIds) {
-        AssetQuery query = new AssetQuery();
-        query.ids = assetIds.toArray(String[]::new);
+        try {
+            List<Asset<?>> validatedChildAssets = validateBatchParentMutation(assetIds, parentId, true);
 
-        List<Asset<?>> assets = this.assetStorageService.findAll(query);
-        LOG.fine("Updating parent for assets: count=" + assets.size() + ", newParentID=" + parentId);
+            String targetParentId = parentId;
+            LOG.fine("Updating parent for assets: count=" + validatedChildAssets.size() + ", newParentID=" + targetParentId);
 
-        for (Asset<?> asset : assets) {
-            asset.setParentId(parentId);
-            LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
-            assetStorageService.merge(asset);
+            for (Asset<?> asset : validatedChildAssets) {
+                asset.setParentId(targetParentId);
+                LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + targetParentId);
+                assetStorageService.merge(asset);
+            }
+        } catch (IllegalStateException | ConstraintViolationException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
         }
+    }
+
+    private List<Asset<?>> validateBatchParentMutation(List<String> assetIds, String parentId, boolean validateParent) {
+        if (isRestrictedUser()) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        List<String> normalizedAssetIds = normalizeBatchParentMutationAssetIds(assetIds);
+
+        if (validateParent) {
+            if (TextUtil.isNullOrEmpty(parentId)) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+
+            if (normalizedAssetIds.contains(parentId)) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+        }
+
+        List<Asset<?>> childAssets = assetStorageService.findAll(
+            new AssetQuery().ids(normalizedAssetIds.toArray(String[]::new))
+        );
+
+        if (childAssets.size() != normalizedAssetIds.size()) {
+            LOG.fine("Request to update parent of one or more invalid assets");
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+
+        String childRealm = null;
+
+        for (Asset<?> childAsset : childAssets) {
+            String childAssetRealm = childAsset.getRealm();
+
+            if (!isRealmActiveAndAccessible(childAssetRealm)) {
+                LOG.fine("Child asset in a nonexistent, inactive or inaccessible realm: username=" + getUsername() + ", assetID=" + childAsset.getId());
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            if (childRealm == null) {
+                childRealm = childAssetRealm;
+            } else if (validateParent && !childRealm.equals(childAssetRealm)) {
+                LOG.fine("Request to update parent for child assets in multiple realms: username=" + getUsername());
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+        }
+        Asset<?> parentAsset = null;
+
+        if (validateParent) {
+            parentAsset = assetStorageService.find(parentId, true);
+
+            if (parentAsset == null) {
+                LOG.fine("Parent asset not found: parentID=" + parentId);
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+
+            if (!isRealmActiveAndAccessible(parentAsset.getRealm())) {
+                LOG.fine("Parent asset in a nonexistent, inactive or inaccessible realm: username=" + getUsername() + ", parentID=" + parentId);
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            if (!childRealm.equals(parentAsset.getRealm())) {
+                LOG.fine("Parent asset realm does not match child asset realm: childRealm=" + childRealm + ", parentRealm=" + parentAsset.getRealm());
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+        }
+
+        return childAssets;
+    }
+
+    private List<String> normalizeBatchParentMutationAssetIds(List<String> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+
+        LinkedHashSet<String> normalizedAssetIds = new LinkedHashSet<>();
+
+        for (String assetId : assetIds) {
+            if (TextUtil.isNullOrEmpty(assetId)) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+
+            normalizedAssetIds.add(assetId);
+        }
+
+        return new ArrayList<>(normalizedAssetIds);
     }
 
     @Override
     public void updateNoneParent(RequestParams requestParams, List<String> assetIds) {
-        AssetQuery query = new AssetQuery();
-        query.ids = assetIds.toArray(String[]::new);
+        try {
+            List<Asset<?>> validatedChildAssets = validateBatchParentMutation(assetIds, null, false);
 
-        List<Asset<?>> assets = this.assetStorageService.findAll(query);
-        LOG.fine("Updating parent for assets: count=" + assets.size() + ", newParentID=NONE");
+            LOG.fine("Updating parent for assets: count=" + validatedChildAssets.size() + ", newParentID=NONE");
 
-        for (Asset<?> asset : assets) {
-            asset.setParentId(null);
-            LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=NONE");
-            assetStorageService.merge(asset);
+            for (Asset<?> asset : validatedChildAssets) {
+                asset.setParentId(null);
+                LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=NONE");
+                assetStorageService.merge(asset);
+            }
+        } catch (IllegalStateException | ConstraintViolationException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
         }
     }
 }
