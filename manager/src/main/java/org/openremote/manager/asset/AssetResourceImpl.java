@@ -62,18 +62,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
-    private static final class BatchParentMutationValidation {
-        private final List<Asset<?>> childAssets;
-        private final Asset<?> parentAsset;
-        private final String childRealm;
-
-        private BatchParentMutationValidation(List<Asset<?>> childAssets, Asset<?> parentAsset, String childRealm) {
-            this.childAssets = childAssets;
-            this.parentAsset = parentAsset;
-            this.childRealm = childRealm;
-        }
-    }
-
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
     protected final ClientEventService clientEventService;
@@ -639,12 +627,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void updateParent(RequestParams requestParams, String parentId, List<String> assetIds) {
         try {
-            BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, parentId, true);
+            List<Asset<?>> validatedChildAssets = validateBatchParentMutation(assetIds, parentId, true);
 
-            String targetParentId = validation.parentAsset.getId();
-            LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=" + targetParentId);
+            String targetParentId = parentId;
+            LOG.fine("Updating parent for assets: count=" + validatedChildAssets.size() + ", newParentID=" + targetParentId);
 
-            for (Asset<?> asset : validation.childAssets) {
+            for (Asset<?> asset : validatedChildAssets) {
                 asset.setParentId(targetParentId);
                 LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + targetParentId);
                 assetStorageService.merge(asset);
@@ -654,7 +642,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
-    private BatchParentMutationValidation validateBatchParentMutation(List<String> assetIds, String parentId, boolean validateParent) {
+    private List<Asset<?>> validateBatchParentMutation(List<String> assetIds, String parentId, boolean validateParent) {
         if (isRestrictedUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
@@ -718,7 +706,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
         }
 
-        return new BatchParentMutationValidation(childAssets, parentAsset, childRealm);
+        return childAssets;
     }
 
     private List<String> normalizeBatchParentMutationAssetIds(List<String> assetIds) {
@@ -742,11 +730,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void updateNoneParent(RequestParams requestParams, List<String> assetIds) {
         try {
-            BatchParentMutationValidation validation = validateBatchParentMutation(assetIds, null, false);
+            List<Asset<?>> validatedChildAssets = validateBatchParentMutation(assetIds, null, false);
 
-            LOG.fine("Updating parent for assets: count=" + validation.childAssets.size() + ", newParentID=NONE");
+            LOG.fine("Updating parent for assets: count=" + validatedChildAssets.size() + ", newParentID=NONE");
 
-            for (Asset<?> asset : validation.childAssets) {
+            for (Asset<?> asset : validatedChildAssets) {
                 asset.setParentId(null);
                 LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=NONE");
                 assetStorageService.merge(asset);
