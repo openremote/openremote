@@ -31,7 +31,7 @@ import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.impl.DefinitionKey;
 import com.github.victools.jsonschema.generator.impl.module.SimpleTypeModule;
 import com.github.victools.jsonschema.generator.naming.DefaultSchemaDefinitionNamingStrategy;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
@@ -496,7 +496,7 @@ public class JSONSchemaUtil {
             node.set("enum", this.mapper.createArrayNode().addAll(values.stream().map(StringNode::new).toList()));
         }
 
-        private static class JacksonResolvers extends JacksonModule {
+        private static class JacksonResolvers extends JacksonSchemaModule {
             protected String resolveDescription(MemberScope<?, ?> member) {
                 return super.resolveDescription(member);
             }
