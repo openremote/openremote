@@ -28,7 +28,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Response;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -245,7 +244,7 @@ public interface AssetResource {
         @ApiResponse(description = "The result of the write operation",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = AttributeWriteResult.class)))})
-    Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
+    AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
 
     @PUT
     //TODO: Using {timestamp:(\\d+)?} does not correctly tokenize when using the assetResource proxy client in Groovy tests.
@@ -257,7 +256,7 @@ public interface AssetResource {
                     description = "The result of the write operation",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = AttributeWriteResult.class))
             )})
-    Response writeAttributeValue(@BeanParam RequestParams requestParams,
+    AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams,
                                  @PathParam("assetId") String assetId,
                                  @PathParam("attributeName") String attributeName,
                                  @PathParam("timestamp") Long timestamp,

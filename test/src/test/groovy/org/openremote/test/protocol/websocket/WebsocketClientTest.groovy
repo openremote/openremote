@@ -43,22 +43,27 @@ import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.shared.EventSubscription
+import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.util.MapAccess.getString
 
 /**
  * This tests the {@link WebsocketIOClient} by connecting to the manager web socket API which means it also tests
@@ -154,22 +159,28 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         List<Object> receivedMessages2 = new CopyOnWriteArrayList<>()
         List<Object> receivedMessages3 = new CopyOnWriteArrayList<>()
         client.addMessageConsumer({
-            message -> receivedMessages.add(messageFromString(message))
+            getLOG().info("Client1 message received: $it")
+            receivedMessages.add(messageFromString(it))
         })
         client.addConnectionStatusConsumer({
-            status -> connectionStatus = status
+            getLOG().info("Client1 status change: $it")
+            connectionStatus = it
         })
         client2.addMessageConsumer({
-            message -> receivedMessages2.add(messageFromString(message))
+            getLOG().info("Client2 message received: $it")
+            receivedMessages2.add(messageFromString(it))
         })
         client2.addConnectionStatusConsumer({
-            status -> connectionStatus2 = status
+            getLOG().info("Client1 status change: $it")
+            connectionStatus2 = it
         })
         client3.addMessageConsumer({
-            message -> receivedMessages3.add(messageFromString(message))
+            getLOG().info("Client3 message received: $it")
+            receivedMessages3.add(messageFromString(it))
         })
         client3.addConnectionStatusConsumer({
-            status -> connectionStatus3 = status
+            getLOG().info("Client3 status change: $it")
+            connectionStatus3 = it
         })
 
         and: "the system settles down"

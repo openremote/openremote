@@ -19,13 +19,18 @@
  */
 package org.openremote.model.http;
 
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import org.openremote.model.util.TextUtil;
 
-import jakarta.ws.rs.HeaderParam;
-import jakarta.ws.rs.core.*;
 import java.net.URI;
 
 public class RequestParams {
+
+    public static final String BEARER_AUTH_PREFIX = "Bearer ";
 
     @Context
     public HttpHeaders headers;
@@ -41,12 +46,6 @@ public class RequestParams {
 
     @Context
     public UriInfo uriInfo;
-
-    public String getBearerAuth() {
-        if (authorization == null || !authorization.startsWith("Bearer ") || authorization.split(" ").length != 2)
-            return null;
-        return authorization.split(" ")[1];
-    }
 
     public URI getExternalSchemeHostAndPort() {
         return getExternalBaseUriBuilder().replacePath("").build();
