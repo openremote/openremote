@@ -27,7 +27,7 @@ import tools.jackson.databind.deser.BeanDeserializerModifier;
 import tools.jackson.databind.jsontype.NamedType;
 import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.node.NullNode;
-import tools.jackson.databind.node.TextNode;
+import tools.jackson.databind.node.StringNode;
 import tools.jackson.databind.ser.impl.SimpleFilterProvider;
 import tools.jackson.datatype.jdk8.Jdk8Module;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
@@ -468,8 +468,8 @@ public class ValueUtil {
             return (T)object;
         }
         if (targetType == String.class) {
-            if (object instanceof TextNode) {
-                return (T) ((TextNode)object).textValue();
+            if (object instanceof StringNode) {
+                return (T) ((StringNode)object).textValue();
             }
             return (T) asJSON(object).orElse(null);
         }

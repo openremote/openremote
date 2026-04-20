@@ -97,7 +97,7 @@ public class JSONSchemaUtil {
 
         public static JsonNode getTypesNode(List<String> types) {
             if (types.size() == 1) {
-                return NF.textNode(types.getFirst());
+                return NF.stringNode(types.getFirst());
             }
             ArrayNode arr = NF.arrayNode();
             types.forEach(arr::add);
@@ -493,7 +493,7 @@ public class JSONSchemaUtil {
         }
 
         private void setEnum(ObjectNode node, Set<String> values) {
-            node.set("enum", this.mapper.createArrayNode().addAll(values.stream().map(TextNode::new).toList()));
+            node.set("enum", this.mapper.createArrayNode().addAll(values.stream().map(StringNode::new).toList()));
         }
 
         private static class JacksonResolvers extends JacksonModule {
@@ -687,7 +687,7 @@ public class JSONSchemaUtil {
             try {
                 return mapper.readTree(input);
             } catch (Exception e) {
-                return new TextNode(input);
+                return new StringNode(input);
             }
         }
 
@@ -697,7 +697,7 @@ public class JSONSchemaUtil {
             Class<?> annotationClass = annotation.getClass();
             try {
                 if ((boolean)annotationClass.getMethod("i18n").invoke(annotation)) {
-                    schema.set("i18n", new TextNode(key));
+                    schema.set("i18n", new StringNode(key));
                     return true;
                 }
             } catch (Exception e) {

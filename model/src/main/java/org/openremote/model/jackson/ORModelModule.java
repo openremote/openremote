@@ -22,7 +22,7 @@ package org.openremote.model.jackson;
 import tools.jackson.core.*;
 import tools.jackson.databind.*;
 import tools.jackson.databind.module.SimpleModule;
-import tools.jackson.databind.node.TextNode;
+import tools.jackson.databind.node.StringNode;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -45,7 +45,7 @@ public class ORModelModule extends SimpleModule {
         @Override
         public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
             JsonNode node = p.getCodec().readTree(p);
-            if (node instanceof TextNode) {
+            if (node instanceof StringNode) {
                 return descriptorNameFinder.apply(node.textValue());
             } else {
                 return p.getCodec().treeToValue(node, implClass);
