@@ -75,7 +75,7 @@ export enum RuleTreeSorting {
 @customElement("or-rule-tree")
 export class OrRuleTree extends OrTreeMenu {
 
-    public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.JAVASCRIPT, RulesetLang.FLOW];
+    public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.FLOW];
 
     /**
      * List of rules visible in the tree menu
@@ -197,7 +197,7 @@ export class OrRuleTree extends OrTreeMenu {
                 </h3>
                 <div id="tree-header-actions">
                     ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('ruleset')) && !this.readonly, () => html`
-                        ${when(this._findSelectedTreeNodes().length === 1, () => html`
+                        ${when(this._findSelectedTreeNodes().length === 1 && !this._isSelectedLegacyJavascriptRuleset(), () => html`
                             <or-mwc-input type=${InputType.BUTTON} icon="content-copy" @or-mwc-input-changed=${this._onCopyClicked}></or-mwc-input>
                         `)}
                         <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
@@ -232,6 +232,10 @@ export class OrRuleTree extends OrTreeMenu {
         }
 
         const node = selected[0];
+        if (this._isLegacyJavascriptRuleset(node.ruleset)) {
+            return;
+        }
+
         const ruleset = JSON.parse(JSON.stringify(node.ruleset)) as RulesetUnion;
         delete ruleset.lastModified;
         delete ruleset.createdOn;
@@ -463,6 +467,10 @@ export class OrRuleTree extends OrTreeMenu {
      * @param global - Whether to create a global ruleset or not.
      */
     protected _onRulesetAddClick(lang: RulesetLang, global = this.global) {
+        if (lang === RulesetLang.JAVASCRIPT) {
+            return;
+        }
+
         const type = global ? "global" : "realm";
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
@@ -547,7 +555,8 @@ export class OrRuleTree extends OrTreeMenu {
      * @param global - Whether only to include global rulesets
      */
     protected _getAllowedLanguages(config = this.config, global = this.global): RulesetLang[] | undefined {
-        const languages = config?.controls?.allowedLanguages ? [...config.controls.allowedLanguages] : OrRuleTree.DEFAULT_ALLOWED_LANGUAGES;
+        const languages = (config?.controls?.allowedLanguages ? [...config.controls.allowedLanguages] : [...OrRuleTree.DEFAULT_ALLOWED_LANGUAGES])
+            .filter(lang => lang !== RulesetLang.JAVASCRIPT);
         const groovyIndex = languages.indexOf(RulesetLang.GROOVY);
         const flowIndex = languages.indexOf(RulesetLang.FLOW);
         if (!manager.isSuperUser()) {
@@ -559,6 +568,15 @@ export class OrRuleTree extends OrTreeMenu {
             if (flowIndex > 0) languages.splice(flowIndex, 1);
         }
         return languages;
+    }
+
+    protected _isLegacyJavascriptRuleset(ruleset?: RulesetUnion) {
+        return ruleset?.lang === RulesetLang.JAVASCRIPT;
+    }
+
+    protected _isSelectedLegacyJavascriptRuleset() {
+        const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
+        return selected.length === 1 && this._isLegacyJavascriptRuleset(selected[0].ruleset);
     }
 
     /**
