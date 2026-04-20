@@ -28,7 +28,7 @@ import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.ValueDeserializer;
-import tools.jackson.databind.SerializerProvider;
+import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.deser.std.StdDeserializer;
@@ -174,7 +174,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         }
 
         @Override
-        public void serialize(Attribute value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        public void serialize(Attribute value, JsonGenerator gen, SerializationContext provider) throws IOException {
             gen.writeStartObject();
             gen.writeFieldName("name");
             gen.writeString(value.getName());

@@ -5,7 +5,7 @@ import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonSerializer;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.SerializerProvider;
+import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.introspect.Annotated;
 import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import tools.jackson.databind.module.SimpleModule;
@@ -228,7 +228,7 @@ public class EnumWithInterfacesExtension extends Extension {
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new SimpleModule().addSerializer(Enum.class, new JsonSerializer<Enum>() {
                     @Override
-                    public void serialize(Enum anEnum, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+                    public void serialize(Enum anEnum, JsonGenerator jsonGenerator, SerializationContext SerializationContext) throws IOException {
                         jsonGenerator.writeRawValue(anEnum.getClass().getSimpleName() + "." + anEnum.name());
                     }
                 }))

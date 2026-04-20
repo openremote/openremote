@@ -20,7 +20,7 @@
 package org.openremote.model.attribute;
 
 import tools.jackson.core.JsonGenerator;
-import tools.jackson.databind.SerializerProvider;
+import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.ser.std.StdSerializer;
 import org.openremote.model.value.AbstractNameValueHolder;
@@ -47,7 +47,7 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
         }
 
         @Override
-        public void serialize(MetaItem value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        public void serialize(MetaItem value, JsonGenerator gen, SerializationContext provider) throws IOException {
             gen.writeObject(value.value);
         }
     }

@@ -27,7 +27,7 @@ import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.JsonSerializer;
-import tools.jackson.databind.SerializerProvider;
+import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
 import net.fortuna.ical4j.model.Recur;
@@ -344,7 +344,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         public static class EpochLocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
 
             @Override
-            public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            public void serialize(LocalDateTime value, JsonGenerator gen, SerializationContext serializers) throws IOException {
                 if (value == null) {
                     gen.writeNull();
                     return;
