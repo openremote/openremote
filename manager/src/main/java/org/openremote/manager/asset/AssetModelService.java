@@ -22,7 +22,7 @@ package org.openremote.manager.asset;
 import tools.jackson.core.*;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JavaType;
-import tools.jackson.databind.JsonMappingException;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
@@ -110,7 +110,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         @Override
         public AssetTypeInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JacksonException {
             if (!jp.isExpectedStartObjectToken()) {
-                throw JsonMappingException.from(jp, "Must be an object");
+                throw DatabindException.from(jp, "Must be an object");
             }
 
             TokenBuffer attributeDescriptorBuffer = null;

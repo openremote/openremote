@@ -26,7 +26,7 @@ import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JsonDeserializer;
-import tools.jackson.databind.JsonMappingException;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.deser.ResolvableDeserializer;
 import tools.jackson.databind.deser.std.StdDeserializer;
 import jakarta.validation.constraints.Pattern;
@@ -94,7 +94,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
             }
 
             if (!p.isExpectedStartObjectToken()) {
-                throw JsonMappingException.from(p, "Value descriptor must be a string or object");
+                throw DatabindException.from(p, "Value descriptor must be a string or object");
             }
 
             return defaultDeserializer.deserialize(p, ctxt);
@@ -102,7 +102,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
         // The wrapped deserializer might need some post-processing so check whether it implements it or not
         @Override
-        public void resolve(DeserializationContext ctxt) throws JsonMappingException {
+        public void resolve(DeserializationContext ctxt) throws DatabindException {
             if (defaultDeserializer instanceof ResolvableDeserializer resolvableDeserializer) {
                 resolvableDeserializer.resolve(ctxt);
             }

@@ -402,7 +402,7 @@ public class JSONSchemaUtil {
                 try {
                     JsonFormatVisitorWrapper visitor = new JsonFormatVisitorWrapper.Base() {
                         @Override
-                        public JsonStringFormatVisitor expectStringFormat(JavaType type) throws JsonMappingException {
+                        public JsonStringFormatVisitor expectStringFormat(JavaType type) throws DatabindException {
                             node.put("type", "string");
                             return new JsonStringFormatVisitor() {
                                 public void format(JsonValueFormat format) {
@@ -415,7 +415,7 @@ public class JSONSchemaUtil {
                         }
 
                         @Override
-                        public JsonNumberFormatVisitor expectNumberFormat(JavaType type) throws JsonMappingException {
+                        public JsonNumberFormatVisitor expectNumberFormat(JavaType type) throws DatabindException {
                             node.put("type", "number");
                             return new JsonNumberFormatVisitor() {
                                 public void numberType(JsonParser.NumberType numberType) {}
@@ -429,7 +429,7 @@ public class JSONSchemaUtil {
                         }
 
                         @Override
-                        public JsonIntegerFormatVisitor expectIntegerFormat(JavaType type) throws JsonMappingException {
+                        public JsonIntegerFormatVisitor expectIntegerFormat(JavaType type) throws DatabindException {
                             node.put("type", "integer");
                             return new JsonIntegerFormatVisitor() {
                                 public void numberType(JsonParser.NumberType numberType) {}
@@ -443,7 +443,7 @@ public class JSONSchemaUtil {
                         }
 
                         @Override
-                        public JsonBooleanFormatVisitor expectBooleanFormat(JavaType type) throws JsonMappingException {
+                        public JsonBooleanFormatVisitor expectBooleanFormat(JavaType type) throws DatabindException {
                             node.put("type", "boolean");
                             return new JsonBooleanFormatVisitor() {
                                 public void format(JsonValueFormat format) {

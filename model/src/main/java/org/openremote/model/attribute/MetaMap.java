@@ -22,7 +22,7 @@ package org.openremote.model.attribute;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.JsonMappingException;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.deser.std.StdDeserializer;
 import org.openremote.model.util.ValueUtil;
@@ -67,7 +67,7 @@ public class MetaMap extends NamedMap<String, MetaItem<?>> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt, Function<String, MetaItemDescriptor<?>> metaDescriptorProvider) throws IOException {
         if (!jp.isExpectedStartObjectToken()) {
-            throw JsonMappingException.from(jp, "MetaMap must be an object");
+            throw DatabindException.from(jp, "MetaMap must be an object");
         }
 
         List<MetaItem<?>> list = new ArrayList<>();
