@@ -211,7 +211,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -239,7 +239,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -267,7 +267,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -295,7 +295,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there are assets in the master and building realms"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -325,7 +325,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -360,7 +360,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is an asset hierarchy in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -391,7 +391,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is a group parent that only accepts room assets"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -422,7 +422,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is a locally registered gateway asset in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -459,7 +459,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is a locally registered gateway asset and a gateway descendant in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")

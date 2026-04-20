@@ -928,7 +928,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "there are assets in the authenticated realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -963,7 +963,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there are child assets with parents in different accessible realms"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -991,7 +991,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "there is an asset in the authenticated realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -1019,7 +1019,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
 
         and: "there's an asset in the authenticated realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -1047,7 +1047,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         when: "a restricted user tries to move a linked asset"
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
@@ -1072,7 +1072,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         when: "a restricted user tries to clear the parent of a linked asset"
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(AssetResource.class)
