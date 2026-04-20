@@ -379,7 +379,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getValueDescriptorSchema(name);
     }
 
-    protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {
+    protected <T> T parse(String jsonString, Class<T> type) throws JacksonException {
         return JSON.readValue(jsonString, JSON.constructType(type));
     }
 
@@ -393,7 +393,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                     if (descriptorStr != null) {
                         return parse(descriptorStr, descriptorClazz);
                     }
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     LOG.log(Level.SEVERE, "Failed to parse descriptor file '" + descriptorFile + "': " + e.getMessage());
                 } catch (IOException e) {
                     LOG.log(Level.SEVERE, "Failed to read descriptor file '" + descriptorFile + "': " + e.getMessage());

@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.lorawan.tts;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.google.protobuf.FieldMask;
 import io.grpc.ManagedChannel;
@@ -314,7 +314,7 @@ public class TheThingsStackProtocol extends AbstractLoRaWANProtocol<TheThingsSta
             try {
                 String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
                 agentLink.setWriteValue(json);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 isOk = false;
                 LOG.log(Level.SEVERE, "CSV import failure " + deviceRecord + " for: " + getProtocolInstanceUri(), e);
             }

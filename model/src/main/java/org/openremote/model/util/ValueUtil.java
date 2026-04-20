@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.*;
 import tools.jackson.databind.cfg.ConstructorDetector;
@@ -262,13 +262,13 @@ public class ValueUtil {
     public static Optional<String> asJSON(Object object) {
         try {
             return Optional.of(asJSONOrThrow(object));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.log(Level.WARNING, "Failed to convert object to JSON string: " + e.getMessage());
             return Optional.empty();
         }
     }
 
-    public static String asJSONOrThrow(Object object) throws JsonProcessingException {
+    public static String asJSONOrThrow(Object object) throws JacksonException {
         if (object == null) {
             return NULL_LITERAL;
         }

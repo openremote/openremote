@@ -1,7 +1,7 @@
 package org.openremote.model.util;
 
 import com.fasterxml.jackson.annotation.*;
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +41,7 @@ public class JSONSchemaUtilTest {
     static class Title {}
 
     @Test
-    public void shouldHaveTitle() throws JsonProcessingException, JSONException {
+    public void shouldHaveTitle() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -64,7 +64,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldNotHaveTitle() throws JsonProcessingException, JSONException {
+    public void shouldNotHaveTitle() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
                 {
                   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -100,7 +100,7 @@ public class JSONSchemaUtilTest {
     static class AdditionalProperties {}
 
     @Test
-    public void shouldHaveAdditionalPropertiesTrue() throws JsonProcessingException, JSONException {
+    public void shouldHaveAdditionalPropertiesTrue() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -126,7 +126,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldRemapTypes() throws JsonProcessingException, JSONException {
+    public void shouldRemapTypes() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema":"http://json-schema.org/draft-07/schema#",
@@ -172,7 +172,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldHandleJacksonAnnotations() throws JsonProcessingException, JSONException {
+    public void shouldHandleJacksonAnnotations() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -212,7 +212,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldHaveRequiredPrimitives() throws JsonProcessingException, JSONException {
+    public void shouldHaveRequiredPrimitives() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -254,7 +254,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldApplyCustomAnnotationsForFields() throws JsonProcessingException, JSONException {
+    public void shouldApplyCustomAnnotationsForFields() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -287,7 +287,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldApplyCustomAnnotationsForTypes() throws JsonProcessingException, JSONException {
+    public void shouldApplyCustomAnnotationsForTypes() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -313,7 +313,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldApplyI18nAnnotations() throws JsonProcessingException, JSONException {
+    public void shouldApplyI18nAnnotations() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -333,7 +333,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldApplyI18nAnnotationsPartiallyDisabled() throws JsonProcessingException, JSONException {
+    public void shouldApplyI18nAnnotationsPartiallyDisabled() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -360,7 +360,7 @@ public class JSONSchemaUtilTest {
     static class SubTypeSuperclass extends SubType { }
 
     @Test
-    public void shouldHaveSubtypesWithTypeProperty() throws JsonProcessingException, JSONException {
+    public void shouldHaveSubtypesWithTypeProperty() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -421,7 +421,7 @@ public class JSONSchemaUtilTest {
     static class SubTypeSuperClassWithCustomProperty extends SubTypeWithCustomProperty { }
 
     @Test
-    public void shouldHaveSubtypesWithCustomTypeProperty() throws JsonProcessingException, JSONException {
+    public void shouldHaveSubtypesWithCustomTypeProperty() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -495,7 +495,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldHaveSubtypesWithExistingCustomTypeProperty() throws JsonProcessingException, JSONException {
+    public void shouldHaveSubtypesWithExistingCustomTypeProperty() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -554,7 +554,7 @@ public class JSONSchemaUtilTest {
     static class ExternalSubTypeSuperclass extends ExternalSubType { }
 
     @Test
-    public void shouldSetEnumTypeForExternalProperty() throws JsonProcessingException, JSONException {
+    public void shouldSetEnumTypeForExternalProperty() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -610,7 +610,7 @@ public class JSONSchemaUtilTest {
     static class ResolvedSubType extends ReflectedPolymorphicType<ResolvedSubType> { }
 
     @Test
-    public void shouldResolveSubtypesThroughReflections() throws JsonProcessingException, JSONException {
+    public void shouldResolveSubtypesThroughReflections() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -679,7 +679,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldApplyJacksonSerializers() throws JsonProcessingException, JSONException {
+    public void shouldApplyJacksonSerializers() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",
@@ -760,7 +760,7 @@ public class JSONSchemaUtilTest {
     }
 
     @Test
-    public void shouldGenerateEnum() throws JsonProcessingException, JSONException {
+    public void shouldGenerateEnum() throws JacksonException, JSONException {
         JsonNode expected = ValueUtil.JSON.readTree("""
             {
                 "$schema": "http://json-schema.org/draft-07/schema#",

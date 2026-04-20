@@ -1,6 +1,6 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.agent.protocol.tradfri.payload.DeviceResponse;
@@ -78,7 +78,7 @@ public class DeviceObserver extends Observer {
                     }
                 }
             }
-        } catch (JsonProcessingException ignored) { }
+        } catch (JacksonException ignored) { }
     }
 
 }

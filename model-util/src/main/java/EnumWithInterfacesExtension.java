@@ -2,7 +2,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import tools.jackson.core.JsonGenerator;
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonSerializer;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializerProvider;
@@ -308,7 +308,7 @@ public class EnumWithInterfacesExtension extends Extension {
 
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RuntimeException("Failed to convert enum '" + enumName + "' member '" + memberName + "' value to string: " + ex.getMessage());
         }
     }

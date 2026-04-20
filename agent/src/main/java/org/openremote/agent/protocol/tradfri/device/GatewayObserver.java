@@ -1,6 +1,6 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
@@ -73,7 +73,7 @@ public class GatewayObserver extends Observer {
                     called.add(eventHandler);
                 }
             }
-        } catch (JsonProcessingException ignored) {
+        } catch (JacksonException ignored) {
         }
     }
 

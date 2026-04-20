@@ -1,6 +1,6 @@
 package org.openremote.container.persistence;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.format.FormatMapper;
@@ -20,7 +20,7 @@ public class JsonFormatMapper implements FormatMapper {
         try {
             return ValueUtil.JSON.readValue( charSequence.toString(), ValueUtil.JSON.constructType( javaType.getJavaType() ) );
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException( "Could not deserialize string to java type: " + javaType, e );
         }
     }
@@ -34,7 +34,7 @@ public class JsonFormatMapper implements FormatMapper {
             return ValueUtil.JSON.writerFor( ValueUtil.JSON.constructType( javaType.getJavaType() ) )
                 .writeValueAsString( value );
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException( "Could not serialize object of java type: " + javaType, e );
         }
     }

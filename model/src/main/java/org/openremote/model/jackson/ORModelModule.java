@@ -43,7 +43,7 @@ public class ORModelModule extends SimpleModule {
         }
 
         @Override
-        public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
             JsonNode node = p.getCodec().readTree(p);
             if (node instanceof StringNode) {
                 return descriptorNameFinder.apply(node.textValue());

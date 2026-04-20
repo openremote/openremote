@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.notification;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
@@ -439,7 +439,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             if (pushMessage.getButtons() != null) {
                 builder.putData("buttons", ValueUtil.asJSONOrThrow(pushMessage.getButtons()));
             }
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             e.printStackTrace();
         }
 

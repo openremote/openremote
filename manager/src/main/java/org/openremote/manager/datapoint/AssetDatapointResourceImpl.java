@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.datapoint;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.NotSupportedException;
@@ -239,7 +239,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             asyncResponse.resume(
                 response
             );
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             asyncResponse.resume(new BadRequestException(ex));
         } catch (DatapointQueryTooLargeException dqex) {
             asyncResponse.resume(new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE));

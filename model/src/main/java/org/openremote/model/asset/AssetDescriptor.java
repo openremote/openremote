@@ -21,7 +21,7 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.*;
 import tools.jackson.core.JsonParser;
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.annotation.JsonDeserialize;
@@ -61,7 +61,7 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
         }
 
         @Override
-        public AssetDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        public AssetDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
             JsonNode node = p.getCodec().readTree(p);
             String name = node.get("name").asText();
 
