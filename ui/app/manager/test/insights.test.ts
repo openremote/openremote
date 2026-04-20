@@ -82,6 +82,7 @@ test("Create a Map widget with text thresholds", async ({ manager, shared, page,
             }),
         ],
     });
+    await manager.configureAppConfig({});
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("Insights");
 

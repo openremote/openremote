@@ -479,7 +479,7 @@ public abstract class WebService implements ContainerService {
         }
 
         // Then logging
-        FilterRegistration.Dynamic loggingRegistration = ctx.addFilter(LoggingFilter.class.getSimpleName(), LoggingFilter.class);
+        FilterRegistration.Dynamic loggingRegistration = ctx.addFilter(LoggingFilter.class.getSimpleName(), new LoggingFilter(devMode));
         loggingRegistration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST),true,"/*");
         loggingRegistration.setAsyncSupported(true);
 

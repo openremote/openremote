@@ -274,8 +274,9 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     public static final String DEFAULT_HTTP_METHOD = HttpMethod.GET;
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HTTPProtocol.class);
+    // Cannot be final due to adjustment needed in tests to speed up tests
     public static int MIN_POLLING_MILLIS = 5000;
-    public static int DEFAULT_READ_TIMEOUT_MILLIS = 10000;
+    public static final int DEFAULT_READ_TIMEOUT_MILLIS = 10000;
 
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();

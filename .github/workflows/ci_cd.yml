@@ -726,11 +726,10 @@ jobs:
           composeProfile='profile/dev-testing.yml'
 
           # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -p tmp
-          chmod 777 tmp
+          mkdir -pm 777 tmp
 
           # Define cleanup command
-          echo "cleanup=docker compose -f $composeProfile down" >> $GITHUB_OUTPUT
+          echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
 
           # Start the stack
           echo "docker compose -f ${composeProfile} up -d --no-build"
@@ -741,18 +740,37 @@ jobs:
         timeout-minutes: 20
         #continue-on-error: true
 
-      - name: Archive backend test results
+      - name: Generate backend test reports
+        id: backend-test-reports
+        run: |
+          if [ "$IS_MAIN" = "true" ]; then
+            ./gradlew unitTestReport combinedCoverageReport -x test
+            echo "coverage=build/reports/jacoco/combinedCoverageReport/html" >> $GITHUB_OUTPUT
+          else
+            echo "coverage=test/build/reports/jacoco/test/html" >> $GITHUB_OUTPUT
+          fi
+        env:
+          IS_MAIN: ${{ steps.is_main_repo.outputs.value }}
+
+      - name: Archive integration test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
-          name: backend-test-results
-          path: test/build/reports/tests
+          name: integration-test-results
+          path: test/build/reports/tests/test
+
+      - name: Archive unit test results
+        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: unit-test-results
+          path: build/reports/tests/test/aggregated-results
 
       - name: Archive coverage report
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: coverage-report
-          path: test/build/reports/jacoco/test/html
+          path: ${{ steps.backend-test-reports.outputs.coverage }}
 
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
@@ -803,7 +821,7 @@ jobs:
 
       - name: Run install playwright browser(s)
         if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium-headless-shell
         timeout-minutes: 20
 
       - name: Run UI component tests
@@ -819,27 +837,22 @@ jobs:
           name: ui-component-test-results
           path: ui/component/*/component-test-report/**
 
-      - name: Run manager docker build command
-        if: steps.manager-docker-command.outputs.value != ''
-        run: |
-          ${{ steps.manager-docker-command.outputs.value }}
-
       - name: Run UI app tests
-        # Skip UI app tests for custom projects until we want to use them there.
-        # .ci_cd/host_init/healthy.sh is missing initially for custom projects .ci_cd/host_init/healthy.sh
+        id: run-ui-app-tests
+        # Skip UI app tests for custom projects until we want to use them there
         if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
-          composeProfile='profile/dev-ui.yml'
+          composeProfile='profile/dev-testing.yml'
 
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
+          # Make temp dir and set mask to 777 as docker seems to run as root
+          mkdir -pm 777 tmp
+
+          # Define cleanup command
+          echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
 
           # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Wait for services to be healthy
-          bash .ci_cd/host_init/healthy.sh profile
+          echo "docker compose -f ${composeProfile} up -d --no-build"
+          docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
           ${{ steps.test-ui-apps-command.outputs.value }}
@@ -855,6 +868,15 @@ jobs:
         with:
           name: ui-app-test-results
           path: ui/app/*/app-test-report/**
+
+      - name: Cleanup UI app tests
+        if: ${{ steps.test-ui-apps-command.outputs.value != '' }}
+        run: ${{ steps.run-ui-app-tests.outputs.cleanup }}
+
+      - name: Run manager docker build command
+        if: steps.manager-docker-command.outputs.value != ''
+        run: |
+          ${{ steps.manager-docker-command.outputs.value }}
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
