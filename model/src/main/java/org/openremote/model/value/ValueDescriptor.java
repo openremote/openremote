@@ -25,7 +25,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.JsonDeserializer;
+import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.deser.ResolvableDeserializer;
 import tools.jackson.databind.deser.std.StdDeserializer;
@@ -69,9 +69,9 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
         public static final String VALUE_DESCRIPTOR_PROVIDER = "value-descriptor-provider";
         protected static Function<String, ValueDescriptor<?>> DEFAULT_VALUE_DESCRIPTOR_PROVIDER = (name) -> ValueUtil.getValueDescriptor(name).orElse(null);
-        protected JsonDeserializer<ValueDescriptor<?>> defaultDeserializer;
+        protected ValueDeserializer<ValueDescriptor<?>> defaultDeserializer;
 
-        public ValueDescriptorDeserializer(JsonDeserializer<ValueDescriptor<?>> deserializer) {
+        public ValueDescriptorDeserializer(ValueDeserializer<ValueDescriptor<?>> deserializer) {
             super(ValueDescriptor.class);
             this.defaultDeserializer = deserializer;
         }

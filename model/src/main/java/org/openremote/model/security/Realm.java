@@ -48,7 +48,7 @@ public class Realm {
         );
     private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER = new PasswordPolicyConverter();
 
-    public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
+    public static class PasswordPolicyDeserializer extends ValueDeserializer<List<String>> {
         @Override
         public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             JsonNode node = p.getCodec().readTree(p);

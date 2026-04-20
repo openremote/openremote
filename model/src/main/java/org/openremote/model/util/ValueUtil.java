@@ -205,12 +205,12 @@ public class ValueUtil {
             .registerModule(new SimpleModule()
                 .setDeserializerModifier(new BeanDeserializerModifier() {
                 @Override
-                public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+                public ValueDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, ValueDeserializer<?> deserializer) {
                     if (Asset.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                        return new Asset.AssetDeserializer((JsonDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
+                        return new Asset.AssetDeserializer((ValueDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
                     }
                     if (ValueDescriptor.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                        return new ValueDescriptor.ValueDescriptorDeserializer((JsonDeserializer<ValueDescriptor<?>>) deserializer);
+                        return new ValueDescriptor.ValueDescriptorDeserializer((ValueDeserializer<ValueDescriptor<?>>) deserializer);
                     }
                     return deserializer;
                 }}));

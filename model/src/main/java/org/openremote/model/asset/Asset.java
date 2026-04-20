@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JavaType;
-import tools.jackson.databind.JsonDeserializer;
+import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.annotation.JsonTypeIdResolver;
 import tools.jackson.databind.deser.ResolvableDeserializer;
@@ -244,8 +244,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
      */
     public static class AssetDeserializer extends StdDeserializer<Asset<?>> implements ResolvableDeserializer {
         public static final String ASSET_TYPE_INFO_ATTRIBUTE = "assetTypeInfo";
-        protected final JsonDeserializer<Asset<?>> defaultDeserializer;
-        public AssetDeserializer(JsonDeserializer<Asset<?>> defaultDeserializer, Class<?> clazz) {
+        protected final ValueDeserializer<Asset<?>> defaultDeserializer;
+        public AssetDeserializer(ValueDeserializer<Asset<?>> defaultDeserializer, Class<?> clazz) {
             super(clazz);
             this.defaultDeserializer = defaultDeserializer;
         }

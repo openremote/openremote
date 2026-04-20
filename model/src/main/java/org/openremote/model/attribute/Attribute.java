@@ -27,7 +27,7 @@ import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JavaType;
-import tools.jackson.databind.JsonDeserializer;
+import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.SerializerProvider;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
@@ -66,14 +66,14 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         protected static final JavaType META_MAP_TYPE = TypeFactory.defaultInstance().constructType(MetaMap.class);
         protected static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
         public static final System.Logger LOG = System.getLogger(AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
-        protected static JsonDeserializer<Object> metaDeserialiser = null;
+        protected static ValueDeserializer<Object> metaDeserialiser = null;
 
         protected AttributeDeserializer() {
             super(Attribute.class);
         }
 
         public static Object deserialiseValue(ValueDescriptor<?> valueDescriptor, JsonParser jp, DeserializationContext ctxt) throws IOException {
-            JsonDeserializer<Object> valueTypeDeserializer;
+            ValueDeserializer<Object> valueTypeDeserializer;
             if (valueDescriptor != null) {
                 valueTypeDeserializer = ctxt.findRootValueDeserializer(TypeFactory.defaultInstance().constructType(valueDescriptor.getType()));
             } else {

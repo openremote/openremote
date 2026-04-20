@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.JsonDeserializer;
+import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.JsonSerializer;
 import tools.jackson.databind.SerializerProvider;
 import tools.jackson.databind.annotation.JsonDeserialize;
@@ -327,7 +327,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     public static class Schedule implements Serializable {
 
-        private static class EpochLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+        private static class EpochLocalDateTimeDeserializer extends ValueDeserializer<LocalDateTime> {
 
             @Override
             public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {

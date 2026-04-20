@@ -32,7 +32,7 @@ import java.util.function.Function;
  */
 public class ORModelModule extends SimpleModule {
 
-    public static class DescriptorDeserializer<T, U extends T> extends JsonDeserializer<T> {
+    public static class DescriptorDeserializer<T, U extends T> extends ValueDeserializer<T> {
 
         protected Function<String, T> descriptorNameFinder;
         protected Class<U> implClass;
