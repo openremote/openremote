@@ -491,7 +491,7 @@ public abstract class WebService implements ContainerService {
             identityService.secureDeployment(deploymentInfo);
         }
 
-        Filter loggingFilter = new LoggingFilter();
+        Filter loggingFilter = new LoggingFilter(devMode);
         FilterInfo loggingFilterInfo = Servlets.filter(
                 "Logging Filter",
                 LoggingFilter.class,

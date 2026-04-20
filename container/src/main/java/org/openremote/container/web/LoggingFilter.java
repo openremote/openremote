@@ -43,7 +43,80 @@ public class LoggingFilter implements Filter {
     protected static final int MAX_BODY_BYTES = 1024;
     protected static final String ORIGIN_HEADER = "Origin";
     protected static final String FORWARDED_FOR_HEADER = "X-Forwarded-For";
+    public static final String FILTER_APPLIED_ATTR = LoggingFilter.class.getName() + ".FILTER_APPLIED";
     protected static final System.Logger LOG = System.getLogger(LoggingFilter.class.getName() + "." + SyslogCategory.API.name());
+    protected final boolean devMode;
+
+    public LoggingFilter() {
+        this(false);
+    }
+
+    public LoggingFilter(boolean devMode) {
+        this.devMode = devMode;
+    }
+
+    public static void logException(boolean devMode, String source, System.Logger.Level level, Throwable t) {
+        logException(devMode, source, level, t, null, null, null);
+    }
+
+    public static void logException(
+            boolean devMode,
+            String source,
+            System.Logger.Level level,
+            Throwable t,
+            HttpServletRequest req,
+            Integer status,
+            String contentType
+    ) {
+        if (t == null) {
+            return;
+        }
+
+        if (LOG.isLoggable(level)) {
+            String message = buildHttpLogMessage(req, status, contentType, null, null, t, source);
+            if (devMode || level.getSeverity() >= System.Logger.Level.INFO.getSeverity()) {
+                LOG.log(level, message, t);
+            } else {
+                LOG.log(level, message);
+            }
+        }
+    }
+
+    protected static String buildHttpLogMessage(
+            HttpServletRequest req,
+            Integer status,
+            String contentType,
+            String body,
+            Long tookMillis,
+            Throwable thrown,
+            String source
+    ) {
+        String method = req != null ? req.getMethod() : null;
+        String requestPathAndQuery = req != null
+                ? req.getRequestURI() + (req.getQueryString() != null ? "?" + req.getQueryString() : "")
+                : null;
+        String requestRealm = req != null ? req.getHeader(Constants.REALM_PARAM_NAME) : null;
+        Principal principal = req != null ? req.getUserPrincipal() : null;
+        String username = principal != null ? principal.getName() : null;
+        String origin = req != null ? req.getHeader(ORIGIN_HEADER) : null;
+        String forwardedFor = req != null ? req.getHeader(FORWARDED_FOR_HEADER) : null;
+
+        return "HTTP request={"
+                + "method=" + method
+                + ", path=" + requestPathAndQuery
+                + ", requestRealm=" + requestRealm
+                + ", username=" + username
+                + ", origin=" + origin
+                + ", forwarded-for=" + forwardedFor
+                + "}, response={"
+                + (source != null ? "source=" + source + ", " : "")
+                + (tookMillis != null ? "tookMillis=" + tookMillis + ", " : "")
+                + "status=" + status
+                + ", contentType=" + contentType
+                + (body != null ? ", body=" + body : "")
+                + (thrown != null ? ", exception=" + thrown.getClass().getName() + ": " + thrown.getMessage() : "")
+                + "}";
+    }
 
     /**
      * Minimal response wrapper that tees response body into a buffer while still writing to the real response.
@@ -146,6 +219,8 @@ public class LoggingFilter implements Filter {
             return;
         }
 
+        req.setAttribute(FILTER_APPLIED_ATTR, Boolean.TRUE);
+
         final long startNanos = System.nanoTime();
         final boolean traceEnabled = LOG.isLoggable(System.Logger.Level.TRACE);
 
@@ -179,13 +254,6 @@ public class LoggingFilter implements Filter {
                         : status >= 400 ? System.Logger.Level.TRACE : System.Logger.Level.DEBUG;
 
                 if (LOG.isLoggable(level)) {
-                    String method = req.getMethod();
-                    String requestPathAndQuery = req.getRequestURI() + (req.getQueryString() != null ? "?" + req.getQueryString() : "");
-                    String requestRealm = req.getHeader(Constants.REALM_PARAM_NAME);
-                    Principal principal = req.getUserPrincipal();
-                    String username = principal != null ? principal.getName() : null;
-                    String origin = req.getHeader(ORIGIN_HEADER);
-                    String forwardedFor = req.getHeader(FORWARDED_FOR_HEADER);
                     String contentType = effectiveResponse.getContentType();
                     String body = null;
 
@@ -200,23 +268,21 @@ public class LoggingFilter implements Filter {
                         }
                     }
 
-                    String message =
-                            "HTTP request={"
-                                    + "method=" + method
-                                    + ", path=" + requestPathAndQuery
-                                    + ", requestRealm=" + requestRealm
-                                    + ", username=" + username
-                                    + ", origin=" + origin
-                                    + ", forwarded-for=" + forwardedFor
-                                    + "}, response={"
-                                    + "tookMillis=" + tookMillis
-                                    + ", status=" + status
-                                    + ", contentType=" + contentType
-                                    + (traceEnabled ? ", body=" + body : "")
-                                    + (thrown != null ? ", exception=" + thrown.getClass().getName() + ": " + thrown.getMessage() : "")
-                                    + "}";
+                    String message = buildHttpLogMessage(
+                            req,
+                            status,
+                            contentType,
+                            traceEnabled ? body : null,
+                            tookMillis,
+                            thrown,
+                            null
+                    );
 
-                    LOG.log(level, message);
+                    if (thrown != null && (devMode || level.getSeverity() >= System.Logger.Level.INFO.getSeverity())) {
+                        LOG.log(level, message, thrown);
+                    } else {
+                        LOG.log(level, message);
+                    }
                 }
             }
         }

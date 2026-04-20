@@ -26,6 +26,7 @@ import io.undertow.util.Headers;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -33,8 +34,6 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 
@@ -51,7 +50,7 @@ import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
  */
 public class WebServiceExceptions {
 
-    private static final Logger LOG = Logger.getLogger(WebServiceExceptions.class.getName());
+    private static final System.Logger LOG = System.getLogger(WebServiceExceptions.class.getName());
 
     /**
      * The mapper handles JAX-RS exceptions
@@ -81,7 +80,15 @@ public class WebServiceExceptions {
             addExceptionHandler(Throwable.class, (HttpServerExchange exchange) -> {
                 // Get the exception that was thrown
                 Throwable throwable = exchange.getAttachment(io.undertow.server.handlers.ExceptionHandler.THROWABLE);
-                logException(devMode, "Undertow", Level.SEVERE, throwable);
+                LoggingFilter.logException(
+                        devMode,
+                        "Undertow",
+                        System.Logger.Level.ERROR,
+                        throwable,
+                        null,
+                        500,
+                        TEXT_PLAIN_TYPE.toString()
+                );
 
                 // Send a clean response to the client
                 if (!exchange.isResponseStarted()) {
@@ -123,8 +130,19 @@ public class WebServiceExceptions {
                 status = webApplicationException.getResponse().getStatus();
             }
 
-            // We don't log here as the LoggingFilter will do that
-            //logException(devMode, "Servlet", Level.WARNING, effectiveException);
+            boolean filterApplied = Boolean.TRUE.equals(request.getAttribute(LoggingFilter.FILTER_APPLIED_ATTR));
+            if (!filterApplied) {
+                System.Logger.Level level = status >= 500 ? System.Logger.Level.ERROR : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
+                LoggingFilter.logException(
+                        devMode,
+                        "Servlet",
+                        level,
+                        effectiveException,
+                        request instanceof HttpServletRequest httpRequest ? httpRequest : null,
+                        status,
+                        response.getContentType()
+                );
+            }
 
             if (!exchange.isResponseStarted()) {
                 exchange.setStatusCode(status);
@@ -165,7 +183,15 @@ public class WebServiceExceptions {
                     status = webApplicationResponse.getStatus();
                     break;
                 default:
-                    logException(devMode, "JAX-RS", Level.FINEST, effectiveException);
+                    LoggingFilter.logException(
+                            devMode,
+                            "JAX-RS",
+                            System.Logger.Level.TRACE,
+                            effectiveException,
+                            null,
+                            webApplicationResponse.getStatus(),
+                            webApplicationResponse.getMediaType() != null ? webApplicationResponse.getMediaType().toString() : null
+                    );
                     // If it's not a client or server error, it's not really an "exception" to
                     // be handled but a status that should be returned to the client
                     return webApplicationResponse;
@@ -173,8 +199,18 @@ public class WebServiceExceptions {
         }
 
         try {
-            Level level = status >= 500 ? Level.SEVERE : status >= 400 ? Level.FINER : Level.FINEST;
-            logException(devMode, "JAX-RS", level, effectiveException);
+            System.Logger.Level level = status >= 500 ? System.Logger.Level.ERROR : status >= 400 ? System.Logger.Level.DEBUG : System.Logger.Level.TRACE;
+            LoggingFilter.logException(
+                    devMode,
+                    "JAX-RS",
+                    level,
+                    effectiveException,
+                    null,
+                    status,
+                    webApplicationResponse != null && webApplicationResponse.getMediaType() != null
+                            ? webApplicationResponse.getMediaType().toString()
+                            : TEXT_PLAIN_TYPE.toString()
+            );
 
             if (webApplicationResponse != null && webApplicationResponse.hasEntity()) {
                 return Response.fromResponse(webApplicationResponse).build();
@@ -188,18 +224,8 @@ public class WebServiceExceptions {
                 : renderProductionError(status, effectiveException);
             return responseBuilder.entity(errorBody).type(TEXT_PLAIN_TYPE).build();
         } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Couldn't render server error trace response", ex);
+            LOG.log(System.Logger.Level.ERROR, "Couldn't render server error trace response", ex);
             return Response.serverError().build();
-        }
-    }
-
-    public static void logException(boolean devMode, String source, Level level, Throwable t) {
-        if (LOG.isLoggable(level)) {
-            if (devMode || level.intValue() > Level.INFO.intValue()) {
-                LOG.log(level, "HTTP " + source + ": " + t.getMessage(), t);
-            } else {
-                LOG.log(level, "HTTP " + source + ": " + t.getMessage());
-            }
         }
     }
 
