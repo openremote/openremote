@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.openweathermap;
 
-import tools.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.agent.AgentLink;
 

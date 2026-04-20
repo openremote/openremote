@@ -19,7 +19,7 @@
  */
 package org.openremote.model.value;
 
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.jackson;
 
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import tools.jackson.databind.DatabindContext;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.jsontype.impl.TypeIdResolverBase;

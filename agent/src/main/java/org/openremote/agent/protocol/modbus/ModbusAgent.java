@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.Entity;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.value.AttributeDescriptor;

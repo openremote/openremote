@@ -19,7 +19,7 @@
  */
 package org.openremote.model.security;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 public class UserSession {
     protected final String ID;

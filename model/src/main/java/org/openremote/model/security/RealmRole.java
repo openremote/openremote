@@ -19,8 +19,8 @@
  */
 package org.openremote.model.security;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Subselect;
 
 import jakarta.persistence.Column;

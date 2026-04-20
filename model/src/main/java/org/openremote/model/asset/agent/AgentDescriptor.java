@@ -19,9 +19,9 @@
  */
 package org.openremote.model.asset.agent;
 
-import tools.jackson.annotation.JsonIgnore;
-import tools.jackson.annotation.JsonProperty;
-import tools.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;

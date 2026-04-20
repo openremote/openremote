@@ -19,8 +19,8 @@
  */
 package org.openremote.model.rules.geofence;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class GeofenceDefinition {
 

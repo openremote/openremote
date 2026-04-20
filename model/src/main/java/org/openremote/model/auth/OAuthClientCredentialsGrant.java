@@ -19,9 +19,9 @@
  */
 package org.openremote.model.auth;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonProperty;
-import tools.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(OAuthClientCredentialsGrant.CLIENT_CREDENTIALS_GRANT_TYPE)
 public class OAuthClientCredentialsGrant extends OAuthGrant {

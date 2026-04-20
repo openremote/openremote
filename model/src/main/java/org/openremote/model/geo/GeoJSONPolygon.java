@@ -19,7 +19,7 @@
  */
 package org.openremote.model.geo;
 
-import tools.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.*;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.util.StdConverter;
 import org.locationtech.jts.geom.Coordinate;

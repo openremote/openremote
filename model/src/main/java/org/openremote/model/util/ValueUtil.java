@@ -15,10 +15,10 @@
  */
 package org.openremote.model.util;
 
-import tools.jackson.annotation.JsonAutoDetect;
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonInclude;
-import tools.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import tools.jackson.core.JsonProcessingException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.*;

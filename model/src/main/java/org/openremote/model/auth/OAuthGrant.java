@@ -19,9 +19,9 @@
  */
 package org.openremote.model.auth;
 
-import tools.jackson.annotation.JsonProperty;
-import tools.jackson.annotation.JsonSubTypes;
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.util.TextUtil;
 

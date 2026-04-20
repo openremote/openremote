@@ -19,7 +19,7 @@
  */
 package org.openremote.model.value;
 
-import tools.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.attribute.Attribute;
 
 import java.io.Serializable;

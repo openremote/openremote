@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
  * Represents last will configuration for a client

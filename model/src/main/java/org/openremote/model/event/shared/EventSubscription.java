@@ -19,7 +19,7 @@
  */
 package org.openremote.model.event.shared;
 
-import tools.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.event.Event;
 
 /**

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import tools.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public abstract class GeofencePredicate extends ValuePredicate {
 

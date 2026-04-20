@@ -1,6 +1,6 @@
 package org.openremote.model.attribute;
 
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.value.MetaHolder;

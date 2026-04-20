@@ -19,8 +19,8 @@
  */
 package org.openremote.model.datapoint.query;
 
-import tools.jackson.annotation.JsonSubTypes;
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.attribute.AttributeRef;
 

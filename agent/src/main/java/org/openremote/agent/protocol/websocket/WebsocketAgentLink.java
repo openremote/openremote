@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import tools.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 
 import java.util.Optional;

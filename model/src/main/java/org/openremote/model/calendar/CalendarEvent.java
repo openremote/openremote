@@ -19,8 +19,8 @@
  */
 package org.openremote.model.calendar;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.util.StdConverter;
 import net.fortuna.ical4j.model.Recur;

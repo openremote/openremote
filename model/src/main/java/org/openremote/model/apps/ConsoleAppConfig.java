@@ -1,6 +1,6 @@
 package org.openremote.model.apps;
 
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 

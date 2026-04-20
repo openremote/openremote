@@ -19,8 +19,8 @@
  */
 package org.openremote.agent.protocol.modbus;
 
-import tools.jackson.annotation.JsonAlias;
-import tools.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.Min;
 import org.openremote.model.asset.agent.AgentLink;
 import java.math.BigInteger;

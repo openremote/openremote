@@ -19,9 +19,9 @@
  */
 package org.openremote.model.rules;
 
-import tools.jackson.annotation.JsonIgnore;
-import tools.jackson.annotation.JsonSubTypes;
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

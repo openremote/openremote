@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import tools.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.*;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonProcessingException;
 import tools.jackson.databind.DeserializationContext;

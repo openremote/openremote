@@ -19,7 +19,7 @@
  */
 package org.openremote.model.value.impl;
 
-import tools.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.util.StdConverter;

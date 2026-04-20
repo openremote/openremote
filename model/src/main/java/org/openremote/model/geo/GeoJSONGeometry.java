@@ -19,8 +19,8 @@
  */
 package org.openremote.model.geo;
 
-import tools.jackson.annotation.JsonSubTypes;
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonSubTypes({
     @JsonSubTypes.Type(value = GeoJSONPoint.class),

@@ -21,7 +21,7 @@ package org.openremote.model.util;
 
 
 import com.fasterxml.classmate.ResolvedType;
-import tools.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.*;
 import tools.jackson.databind.jsonFormatVisitors.*;
@@ -47,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 public class JSONSchemaUtil {
 

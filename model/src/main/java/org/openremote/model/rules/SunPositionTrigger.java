@@ -19,7 +19,7 @@
  */
 package org.openremote.model.rules;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.geo.GeoJSONPoint;
 
 public class SunPositionTrigger {

@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.simulator;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonIgnore;
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;

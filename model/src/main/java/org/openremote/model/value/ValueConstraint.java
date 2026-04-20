@@ -19,7 +19,7 @@
  */
 package org.openremote.model.value;
 
-import tools.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.*;
 
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.ValueUtil;

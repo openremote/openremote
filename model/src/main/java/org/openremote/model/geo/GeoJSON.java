@@ -19,9 +19,9 @@
  */
 package org.openremote.model.geo;
 
-import tools.jackson.annotation.JsonProperty;
-import tools.jackson.annotation.JsonSubTypes;
-import tools.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 

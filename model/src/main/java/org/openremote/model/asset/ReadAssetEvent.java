@@ -19,9 +19,9 @@
  */
 package org.openremote.model.asset;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonIgnore;
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;

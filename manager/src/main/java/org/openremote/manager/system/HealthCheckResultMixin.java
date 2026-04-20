@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.system;
 
-import tools.jackson.annotation.JsonInclude;
-import tools.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializerProvider;
 import tools.jackson.databind.annotation.JsonSerialize;

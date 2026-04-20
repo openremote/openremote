@@ -19,8 +19,8 @@
  */
 package org.openremote.model.util;
 
-import tools.jackson.annotation.JsonCreator;
-import tools.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.Serializable;

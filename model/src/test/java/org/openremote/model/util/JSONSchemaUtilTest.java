@@ -1,6 +1,6 @@
 package org.openremote.model.util;
 
-import tools.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.*;
 import tools.jackson.core.JsonProcessingException;
 import tools.jackson.databind.JsonNode;
 import org.json.JSONException;

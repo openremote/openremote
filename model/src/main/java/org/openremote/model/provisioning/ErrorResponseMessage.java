@@ -19,7 +19,7 @@
  */
 package org.openremote.model.provisioning;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 public class ErrorResponseMessage extends ProvisioningMessage {
 

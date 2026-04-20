@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.http;
 
-import tools.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.value.ValueType;

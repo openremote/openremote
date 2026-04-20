@@ -1,6 +1,6 @@
 package org.openremote.model.query;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.webhook;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.http.HTTPMethod;

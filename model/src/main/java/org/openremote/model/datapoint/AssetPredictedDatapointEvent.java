@@ -19,7 +19,7 @@
  */
 package org.openremote.model.datapoint;
 
-import tools.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.SharedEvent;
 

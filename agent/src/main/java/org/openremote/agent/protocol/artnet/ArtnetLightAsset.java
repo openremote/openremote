@@ -1,6 +1,6 @@
 package org.openremote.agent.protocol.artnet;
 
-import tools.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.value.AttributeDescriptor;

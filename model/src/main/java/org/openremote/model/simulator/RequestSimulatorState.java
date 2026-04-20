@@ -19,7 +19,7 @@
  */
 package org.openremote.model.simulator;
 
-import tools.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
