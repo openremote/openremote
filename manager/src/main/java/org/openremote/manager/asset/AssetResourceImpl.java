@@ -686,7 +686,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             String childAssetRealm = childAsset.getRealm();
 
             if (!isRealmActiveAndAccessible(childAssetRealm)) {
-                LOG.fine("Child asset in an nonexistent, inactive or inaccessible realm: username=" + getUsername() + ", assetID=" + childAsset.getId());
+                LOG.fine("Child asset in a nonexistent, inactive or inaccessible realm: username=" + getUsername() + ", assetID=" + childAsset.getId());
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -708,7 +708,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             if (!isRealmActiveAndAccessible(parentAsset.getRealm())) {
-                LOG.fine("Parent asset in an nonexistent, inactive or inaccessible realm: username=" + getUsername() + ", parentID=" + parentId);
+                LOG.fine("Parent asset in a nonexistent, inactive or inaccessible realm: username=" + getUsername() + ", parentID=" + parentId);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
