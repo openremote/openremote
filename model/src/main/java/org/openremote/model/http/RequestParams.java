@@ -75,6 +75,6 @@ public class RequestParams {
     }
 
     public static String getBearerAuth(@NotNull String authorizationHeader) {
-        return authorizationHeader.charAt(0) != 'B' ? authorizationHeader : authorizationHeader.substring(BEARER_AUTH_PREFIX.length()).trim();
+        return authorizationHeader.isEmpty() || authorizationHeader.charAt(0) != 'B' ? authorizationHeader : authorizationHeader.substring(BEARER_AUTH_PREFIX.length()).trim();
     }
 }

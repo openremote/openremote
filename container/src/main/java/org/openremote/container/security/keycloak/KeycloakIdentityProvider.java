@@ -364,7 +364,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
           .exceptionallyCompose(ex -> {
              Throwable cause = (ex instanceof CompletionException) ? ex.getCause() : ex;
 
-             if (ex instanceof WebApplicationException webEx) {
+             if (cause instanceof WebApplicationException webEx) {
                  if (webEx.getResponse() != null) {
                      // Ensure the response is closed to free the connection
                      webEx.getResponse().close();
@@ -392,7 +392,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 keycloakServiceUri.build()).build().path(OIDC_CONFIG_PATH);
 
         LOG.info("Getting public URL of keycloak from the keycloak OIDC discovery endpoint: " + webTarget.getUri());
-        DiscoveryResult result;
+        DiscoveryResult result = null;
         try (Response response = webTarget.request(MediaType.APPLICATION_JSON_TYPE).accept(MediaType.APPLICATION_JSON_TYPE).get()) {
 
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
@@ -402,9 +402,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 } catch (Exception ignore) {}
 
                 LOG.severe("OIDC discovery failed: HTTP " + response.getStatus() + " body=" + body);
+            } else {
+                result = response.readEntity(DiscoveryResult.class);
             }
-
-            result = response.readEntity(DiscoveryResult.class);
         }
 
         // We want the base public URI not the master specific one
