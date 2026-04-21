@@ -26,9 +26,9 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.HttpHeaders;
 import org.openremote.model.Constants;
 
-import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.security.Principal;
 
