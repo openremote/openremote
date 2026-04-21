@@ -19,6 +19,7 @@
  */
 package org.openremote.model.http;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
