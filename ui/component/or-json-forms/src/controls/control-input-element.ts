@@ -117,6 +117,9 @@ export class ControlInputElement extends ControlBaseElement {
 
             if (format === "date-time") {
                 this.inputType = InputType.DATETIME;
+            } else if (format === "color") {
+                this.inputType = InputType.COLOUR;
+                this.label = "";
             } else if (format === "date") {
                 this.inputType = InputType.DATE;
             } else if (format === "time") {
