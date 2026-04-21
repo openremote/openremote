@@ -171,7 +171,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             receivedMessages2.add(messageFromString(it))
         })
         client2.addConnectionStatusConsumer({
-            getLOG().info("Client1 status change: $it")
+            getLOG().info("Client2 status change: $it")
             connectionStatus2 = it
         })
         client3.addMessageConsumer({
