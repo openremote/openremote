@@ -740,18 +740,37 @@ jobs:
         timeout-minutes: 20
         #continue-on-error: true
 
-      - name: Archive backend test results
+      - name: Generate backend test reports
+        id: backend-test-reports
+        run: |
+          if [ "$IS_MAIN" = "true" ]; then
+            ./gradlew unitTestReport combinedCoverageReport -x test
+            echo "coverage=build/reports/jacoco/combinedCoverageReport/html" >> $GITHUB_OUTPUT
+          else
+            echo "coverage=test/build/reports/jacoco/test/html" >> $GITHUB_OUTPUT
+          fi
+        env:
+          IS_MAIN: ${{ steps.is_main_repo.outputs.value }}
+
+      - name: Archive integration test results
         if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
-          name: backend-test-results
-          path: test/build/reports/tests
+          name: integration-test-results
+          path: test/build/reports/tests/test
+
+      - name: Archive unit test results
+        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: unit-test-results
+          path: build/reports/tests/test/aggregated-results
 
       - name: Archive coverage report
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: coverage-report
-          path: test/build/reports/jacoco/test/html
+          path: ${{ steps.backend-test-reports.outputs.coverage }}
 
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}

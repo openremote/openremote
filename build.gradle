@@ -6,6 +6,22 @@ import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
+apply plugin: 'java-base'
+apply plugin: 'test-report-aggregation'
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+subprojects {
+    if (project.path.startsWith(':ui')) return
+    pluginManager.withPlugin('java') {
+        apply plugin: 'jacoco'
+        jacoco { toolVersion = "0.8.14" }
+    }
+}
+
 tasks.register('npmTest') {
     group = 'verification'
     description = 'Runs all UI tests sequentially (component then app)'
@@ -55,6 +71,95 @@ gradle.projectsEvaluated {
 
     uiAppTests.forEach { group ->
         group.configureEach { it.mustRunAfter(unitTests, integrationTests, uiComponentTests) }
+    }
+}
+
+dependencies {
+    subprojects.forEach { subproject ->
+        if (subproject.path.startsWith(':ui')) return
+        subproject.pluginManager.withPlugin('java') {
+            // Aggregate unit test results spread over different projects
+            if (subproject.path != ':test') {
+                testReportAggregation project(subproject.path)
+            }
+        }
+    }
+}
+
+reporting {
+    reports { // Task which generates an aggregated unit test report
+        unitTestReport(AggregateTestReport) {
+            testSuiteName = 'test'
+        }
+    }
+}
+
+tasks.named('unitTestReport').configure {
+    doLast {
+        def htmlIndex = new File(destinationDirectory.get().asFile, "index.html")
+        println "Aggregated Unit Test Results: file://${htmlIndex.absolutePath}"
+    }
+}
+
+def getBackendProjects = {
+    subprojects.findAll { !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java') }
+}
+
+def getActiveTestTasks = {
+    getBackendProjects().collectMany { it.tasks.withType(Test) }.findAll { it.name == 'test' }
+}
+
+tasks.register('checkCoverageDataExists') {
+    group = 'reporting'
+    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+    doLast {
+        def testTasks = getActiveTestTasks()
+        def allJacocoResultsExist = testTasks.every {
+            it.extensions.findByType(JacocoTaskExtension)?.destinationFile?.exists()
+        }
+        // Check if any of the configured execution data files exist on disk
+        if (!allJacocoResultsExist) {
+            println "Please run the following tasks to be able to generate a report."
+            println "Required tasks: ${testTasks.collect { it.path }.join(', ')}"
+            println "Run: gradle test -x npmTest checkCoverageDataExists"
+            throw new StopExecutionException()
+        }
+    }
+}
+
+// We replace the 'jacoco-report-aggregation' plugin with the following task to
+// ensure we get a combined coverage report for the unit- and integration tests
+tasks.register('combinedCoverageReport', JacocoReport) {
+    group = 'reporting'
+    description = 'Generates a unified coverage report for all Unit and Integration tests'
+    dependsOn('checkCoverageDataExists')
+    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    executionData.setFrom(project.provider {
+        getActiveTestTasks().collect {
+            it.extensions.findByType(JacocoTaskExtension)?.destinationFile
+        }.findAll { it != null && it.exists() }
+    })
+
+    sourceDirectories.setFrom(project.provider {
+        getBackendProjects().collectMany { it.sourceSets.main.allJava.srcDirs }
+    })
+
+    classDirectories.setFrom(project.provider {
+        def dirs = getBackendProjects().collectMany { it.sourceSets.main.output.classesDirs.files }
+        files(dirs).asFileTree.matching {
+            include 'org/openremote/**'
+        }
+    })
+
+    doLast {
+        def htmlIndex = new File(reports.html.outputLocation.get().asFile, "index.html")
+        println "Combined Code Coverage: file://${htmlIndex.absolutePath}"
     }
 }
 
@@ -130,10 +235,8 @@ tasks.register('checkFilesGitIgnoredNew', Exec) {
 def gitFile = Paths.get(projectDir.path, '.git').toFile()
 checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
-tasks.register('clean') {
-    doLast {
-        delete 'tmp'
-    }
+tasks.named('clean') {
+    delete 'tmp'
 }
 
 

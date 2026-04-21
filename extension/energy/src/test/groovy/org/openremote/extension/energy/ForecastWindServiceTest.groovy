@@ -1,8 +1,12 @@
 package org.openremote.extension.energy
 
-import org.openremote.extension.energy.model.ElectricityProducerWindAsset
-import org.openremote.extension.energy.manager.ForecastSolarService
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.extension.energy.manager.ForecastWindService
+import org.openremote.extension.energy.model.ElectricityProducerWindAsset
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
@@ -18,10 +22,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
@@ -33,9 +33,13 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
 
     @Shared
     def mockServer = new ClientRequestFilter() {
+        boolean finished = true
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
+            if (finished) {
+               return
+            }
             def requestUri = requestContext.uri
 
             switch (requestUri.path) {
@@ -641,11 +645,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
         config << [(OR_OPEN_WEATHER_API_APP_ID): "test-key"]
-
-        ForecastWindService.initClient()
-        if (!ForecastWindService.resteasyClient.get().configuration.isRegistered(mockServer)) {
-            ForecastWindService.resteasyClient.get().register(mockServer, Integer.MAX_VALUE)
-        }
+        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
 
         def container = startContainer(config, defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -772,9 +772,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newWindAsset3.getId(), ElectricityProducerWindAsset.POWER_FORECAST.getName())).size() > 0
         }
 
-        cleanup: "remove mock"
-        if (ForecastSolarService.resteasyClient.get() != null) {
-            ForecastSolarService.resteasyClient.set(null)
-        }
+        cleanup: "disable mock filter"
+        mockServer.finished = true
     }
 }

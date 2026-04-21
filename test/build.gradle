@@ -1,5 +1,4 @@
 plugins {
-    id "jacoco"
     id 'com.adarshr.test-logger' version '4.0.0'
 }
 
@@ -46,36 +45,7 @@ tasks.withType(Test) {
     environment("OR_LOGGING_CONFIG_FILE", "logging-dev.properties")
 }
 
-test {
-    finalizedBy jacocoTestReport
-}
-
-jacocoTestReport {
-    dependsOn test
-
-    sourceDirectories.from(
-            project(':agent').sourceSets.main.allSource.srcDirs,
-            project(':container').sourceSets.main.allSource.srcDirs,
-            project(':manager').sourceSets.main.allSource.srcDirs,
-            project(':model').sourceSets.main.allSource.srcDirs,
-            project(':model-util').sourceSets.main.allSource.srcDirs,
-            project(':setup').sourceSets.main.allSource.srcDirs
-    )
-
-    classDirectories.from(
-            project(':agent').sourceSets.main.output,
-            project(':container').sourceSets.main.output,
-            project(':manager').sourceSets.main.output,
-            project(':model').sourceSets.main.output,
-            project(':model-util').sourceSets.main.output,
-            project(':setup').sourceSets.main.output
-    )
-
-    reports {
-        xml.required = true
-        html.required = true
-    }
-}
+test {}
 
 javadoc {
     failOnError = false
