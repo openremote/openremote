@@ -30,7 +30,7 @@ import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
-import {OrInputChangedEvent, type ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrInputChangedEventDetail, type ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 import {agentIdRendererRegistryEntry} from "./renderers/agent-link";
 import {schedulerRendererRegistryEntry} from "./renderers/scheduler";
 
@@ -209,9 +209,9 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clea
                                    .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}">
                     </or-json-forms>
                     ${when(clear, () => html`
-                        <or-mwc-input id="clear" outlined .type="${InputType.BUTTON}" icon="backspace" @or-mwc-input-changed="${
-                            () => valueChangeNotifier({ value: null })
-                        }"></or-mwc-input>
+                        <or-vaadin-button id="clear" theme="icon" @click="${() => valueChangeNotifier({ value: null })}">
+                            <or-icon icon="backspace"></or-icon>
+                        </or-vaadin-button>
                     `)}
                     </div>
                 </or-loading-wrapper>
