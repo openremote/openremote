@@ -199,6 +199,9 @@ public abstract class WebService implements ContainerService {
 
        LOG.log(INFO, "Deploying undertow servlet deployment: name=" + deploymentInfo.getDeploymentName() + ", path=" + pathPrefix + ", secure=" + !deploymentInfo.isSecurityDisabled());
 
+       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
+
        try {
            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
            manager.deploy();
@@ -256,11 +259,10 @@ public abstract class WebService implements ContainerService {
      * path
      */
     public static List<Object> getStandardProviders(boolean devMode) {
-
         return Lists.newArrayList(
-           new WebServiceExceptions.JAXRSExceptionMapper(devMode),
-           new JacksonConfig(),
-           new ClientErrorExceptionHandler()
+            new WebServiceExceptions.JAXRSExceptionMapper(devMode),
+            new JacksonConfig(),
+            new ClientErrorExceptionHandler()
         );
     }
 
@@ -316,8 +318,6 @@ public abstract class WebService implements ContainerService {
                new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
        );
 
-       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
        deploy(deploymentInfo, false);
    }
 
@@ -363,8 +363,6 @@ public abstract class WebService implements ContainerService {
                new ServletContainerInitializerInfo(containerInitializer.getClass(), initFactory, Collections.emptySet())
        );
 
-       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
        deploy(deploymentInfo, false);
    }
 
@@ -427,8 +425,6 @@ public abstract class WebService implements ContainerService {
            new ServletContainerInitializerInfo(containerInitializer.getClass(), factory, Collections.emptySet())
        );
 
-       // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-       deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
        deploy(deploymentInfo, true);
    }
 
@@ -540,7 +536,7 @@ public abstract class WebService implements ContainerService {
     }
 
     public CompletableFuture<String> getBearerToken(@NotNull OAuthGrant oAuthGrant) {
-       return getBearerToken(executorService, getClient(), oAuthGrant);
+       return getBearerToken(executorService, WebTargetBuilder.getClient(), oAuthGrant);
     }
 
     /**
