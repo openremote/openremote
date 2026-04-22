@@ -1,8 +1,7 @@
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
-import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {type OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import "@openremote/or-icon";
@@ -32,7 +31,6 @@ import manager, {EventCallback, subscribe, Util} from "@openremote/core";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
@@ -43,7 +41,6 @@ import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {when} from "lit/directives/when.js";
 import debounce from "lodash.debounce";
-import { styleMap } from "lit/directives/style-map";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -304,10 +301,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public checkboxes?: boolean = false;
 
     @property({type: Number})
-    public readonly queryLimit = 100;
+    public readonly queryLimit = 2;
 
     @property({type: Number})
-    public readonly paginationThreshold = 1000;
+    public readonly paginationThreshold = 3;
 
     protected config?: AssetTreeConfig;
 
@@ -330,10 +327,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _filterSettingOpen: boolean = false;
     @state()
     protected _assetTypes: AssetDescriptor[] = [];
+    @query("#attributeTypeFilter")
+    protected _attributeTypeFilter!: OrVaadinComboBox;
     @query("#attributeNameFilter")
-    protected _attributeNameFilter!: OrMwcInput;
+    protected _attributeNameFilter!: OrVaadinTextField;
     @query("#attributeValueFilter")
-    protected _attributeValueFilter!: OrMwcInput;
+    protected _attributeValueFilter!: OrVaadinTextField;
     @state()
     protected _assetTypeFilter!: string;
     protected _uniqueAssetTypes: string[] = [];
@@ -436,7 +435,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             </div>
         `;
         return html`
-            <or-vaadin-combo-box ?disabled=${disabled} .items=${descriptors} .selected-item=${selected} style="width: 100%; --vaadin-combo-box-overlay-width: 350px; padding-top: 0px;"
+            <or-vaadin-combo-box id="attributeTypeFilter" ?disabled=${disabled} .items=${descriptors} .selected-item=${selected}
+                                 style="width: 100%; --vaadin-combo-box-overlay-width: 350px; padding-top: 0px;"
                                  .itemLabelGenerator=${(descriptor: AssetDescriptor) => Util.getAssetTypeLabel(descriptor)} item-value-path="name"
                                  ${comboBoxRenderer(itemRenderer, [])}
                                  @change=${(ev: CustomEvent) => { this._assetTypeFilter = (ev.currentTarget as OrVaadinComboBox).value; }}>
@@ -554,8 +554,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                 // Wipe the current value and hide the clear button
                                 this._filterInput.toggleAttribute("value", false);
 
-                                this._attributeValueFilter.value = undefined;
-                                this._attributeNameFilter.value = undefined;
+                                this._attributeTypeFilter?.clear();
+                                this._attributeValueFilter.clear();
+                                this._attributeNameFilter.clear();
 
                                 this._attributeValueFilter.disabled = true;
 
@@ -590,11 +591,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                         <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
                                              @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
                                              @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
-                                            <or-mwc-input type=${InputType.BUTTON} label="loadMore" outlined compact @or-mwc-input-changed=${() => {
+                                            <or-vaadin-button @click=${() => {
                                                 const cache: Asset[] = [];
                                                 OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
                                                 this._loadAssets(undefined, this._nodes?.length ?? 0, cache);
-                                            }}></or-mwc-input>
+                                            }}>
+                                                <or-translate value="loadMore"></or-translate>
+                                            </or-vaadin-button>
                                         </div>
                                     </li>
                                 `)}
@@ -821,7 +824,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const isExpander = evt && (evt.target as HTMLElement).className.indexOf("expander") >= 0;
         const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
-        const isLoadMoreButton = evt && (evt.target as OrMwcInput)?.parentElement?.classList.contains("loadmore-element");
+        const isLoadMoreButton = evt && (
+            (evt.target as OrVaadinButton)?.parentElement?.classList.contains("loadmore-element") ||
+            (evt.target as HTMLElement)?.parentElement?.parentElement?.classList.contains("loadmore-element"));
 
         if (isExpander) {
             this._toggleExpander((evt.target as HTMLElement), node);
@@ -1465,7 +1470,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
             const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
-            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput;
+            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrVaadinButton;
             addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 
@@ -1477,11 +1482,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             .setActions([
                     {
                         actionName: "cancel",
-                        content: "cancel"
+                        content: html`<or-vaadin-button><or-translate value="cancel"></or-translate></or-vaadin-button>`
                     },
                     {
                         actionName: "add",
-                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="add" disabled></or-mwc-input>`,
+                        content: html`
+                            <or-vaadin-button id="add-btn" theme="primary" disabled>
+                                <or-translate value="add"></or-translate>
+                            </or-vaadin-button>`,
                         action: () => {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
@@ -2189,7 +2197,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
                     ${when(treeNode.asset?.id && this._incompleteParentIds.includes(treeNode.asset.id), () => html`
                         <li class="asset-list-element loadmore-element">
-                            <or-mwc-input type=${InputType.BUTTON} outlined label="loadMore" style="padding-left: ${(level + 1) * 22}px;"></or-mwc-input>
+                            <or-vaadin-button style="padding-left: ${(level + 1) * 22}px;">
+                                <or-translate value="loadMore"></or-translate>
+                            </or-vaadin-button>
                         </li>
                     `)}
                 </ol>

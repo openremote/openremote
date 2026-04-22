@@ -403,7 +403,7 @@
   "writePermissions": "صلاحيات الكتابة",
   "valueType": "نوع القيمة",
   "filter": {
-    "action": "FILTER",
+    "action": "Filter",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
