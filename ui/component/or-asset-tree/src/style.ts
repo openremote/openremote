@@ -85,6 +85,7 @@ export const style = css`
     #header-btns {
         display: flex;
         flex-direction: row;
+        align-items: center;
         padding-right: 5px;
     }
 

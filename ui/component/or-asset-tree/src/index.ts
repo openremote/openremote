@@ -1,9 +1,10 @@
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -458,6 +459,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected render() {
 
         const canAdd = this._canAdd();
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-icon icon="sort-variant"></or-icon>`),
+            children: [
+                { className: "name", checked: this.sortBy === "name", component: createMenuBarItem(html`<or-translate value="name"></or-translate>`) },
+                { className: "type", checked: this.sortBy === "type", component: createMenuBarItem(html`<or-translate value="type"></or-translate>`) },
+                { className: "createdOn", checked: this.sortBy === "createdOn", component: createMenuBarItem(html`<or-translate value="createdOn"></or-translate>`) }
+            ]
+        }];
 
         return html`
             <div id="header">
@@ -480,21 +489,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     </or-vaadin-button>
                     <or-vaadin-button theme="icon" ?hidden=${this._isReadonly() || !canAdd}
                                       title=${i18next.t("addAsset")} @click=${() => this._onAddClicked()}>
-                        <or-icon icon="plus"
+                        <or-icon icon="plus"></or-icon>
                     </or-vaadin-button>
-                    
-                    ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant" title="${i18next.t("sort")}" ></or-mwc-input>`,
-                            ["name", "type", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
-                            this.sortBy,
-                            (v) => this._onSortClicked(v as string))}
+                    <or-vaadin-menu-bar theme="icon" .items=${menuItems}
+                                        @item-selected=${(ev: CustomEvent)  => this._onSortClicked((ev.detail.value as MenuBarItem).className)}
+                    ></or-vaadin-menu-bar>
                 </div>
             </div>
             
             ${when(this.showFilter, () => html`
                 <div id="asset-tree-filter">
                     <or-vaadin-text-field id="filterInput" ?disabled=${this._loading} style="width: 100%;" placeholder="${i18next.t("filter.filter")}..."
-                                         @input=${debounce(() => { this._onFilterInput(this._filterInput.value)}, 200)}
+                                         @input=${debounce(() => { this._onFilterInput(this._filterInput.value); }, 200)}
                     ></or-vaadin-text-field>
                     ${when(this.showFilterIcon, () => html`
                         <or-vaadin-button id="filterSettingsIcon" theme="icon" title=${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")} @click=${() => {
@@ -1574,7 +1580,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected _onSortClicked(sortBy: string) {
+    protected _onSortClicked(sortBy?: string) {
         this.sortBy = sortBy;
     }
 

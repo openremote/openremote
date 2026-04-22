@@ -17,22 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+import {MenuBar} from "@vaadin/menu-bar";
+import {LitElement, render, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
-import {ListBox} from "@vaadin/list-box";
 import {OrVaadinComponent} from "./util";
-import {type LitElement} from "lit";
+import "@vaadin/menu-bar";
 
-export interface ListItem {
-    icon?: string;
-    trailingIcon?: string;
-    text?: string;
-    translate?: boolean;
-    secondaryText?: string;
-    value: any;
-    data?: any;
-    styleMap?: {[style: string]: string};
+export {MenuBarItem} from "@vaadin/menu-bar";
+
+export function createMenuBarItem(content: TemplateResult) {
+    const item = document.createElement("vaadin-menu-bar-item");
+    render(content, item);
+    return item;
 }
 
-@customElement("or-vaadin-list-box")
-export class OrVaadinListBox extends (ListBox as new () => ListBox & LitElement) implements OrVaadinComponent {
+@customElement("or-vaadin-menu-bar")
+export class OrVaadinMenuBar extends (MenuBar as new () => MenuBar & LitElement) implements OrVaadinComponent {
+
 }

@@ -1,13 +1,7 @@
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
-import {
-    createListGroup,
-    ListGroupItem,
-    ListItem
-} from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {styleMap} from "lit/directives/style-map.js";
@@ -15,10 +9,9 @@ import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import "@openremote/or-vaadin-components/or-vaadin-item";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
-import {OrVaadinListBox} from "@openremote/or-vaadin-components/or-vaadin-list-box";
+import {OrVaadinListBox, ListItem} from "@openremote/or-vaadin-components/or-vaadin-list-box";
 import { when } from "lit/directives/when.js";
 import {DefaultColor2, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import debounce from "lodash.debounce";
 
 export type OrAddAssetDetail = {
@@ -87,7 +80,7 @@ export class OrAddAssetDialog extends LitElement {
     protected assetList?: OrVaadinListBox;
 
     @query("#filterInput")
-    private _filterInput!: OrMwcInput;
+    private _filterInput!: OrVaadinTextField;
 
     public static get styles() {
         // language=CSS
@@ -170,7 +163,7 @@ export class OrAddAssetDialog extends LitElement {
             #type-list-container {
                 display: flex;
                 flex-direction: column;
-                width: 260px;
+                width: 300px;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
 
@@ -260,16 +253,10 @@ export class OrAddAssetDialog extends LitElement {
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list-container" class="col">
                         <div id="type-list-filter">
-                            <or-mwc-input
-                                id="filterInput"
-                                .type="${InputType.TEXT}"
-                                placeholder="${i18next.t("filter.filter")}..."
-                                compact="true"
-                                outlined="true"
-                                @input="${debounce(() => {
-                                    this.typeFilter = this._filterInput.nativeValue ?? "";
-                                }, 200)}"
-                            ></or-mwc-input>
+                            <or-vaadin-text-field id="filterInput" placeholder=${i18next.t("search")}
+                                                  @input=${debounce(() => this.typeFilter = this._filterInput.value ?? "", 200)}>
+                                <or-icon slot="suffix" icon="magnify"></or-icon>
+                            </or-vaadin-text-field>
                         </div>
                         <div id="type-list">
                             ${when(agentItems.length > 0, () => getListTemplate(filteredAgentItems, true))}

@@ -608,7 +608,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     --or-attribute-history-controls-justify-content: flex-start;
                 }
 
-               @media screen and (min-width: 1900px) {
+               @media screen and (min-width: 2050px) {
                    #attribute-picker {
                        position: absolute;
                    }
