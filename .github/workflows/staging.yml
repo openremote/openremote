@@ -85,14 +85,14 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_modified == 'true'
     uses: "./.github/workflows/ui-app-tests.yml"
 
-  # build-manager-image:
-  #   name: Build
-  #   needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-  #   if: needs.detect-changes.outputs.any_modified == 'true'
-  #   uses: "./.github/workflows/build-manager-image.yml"
-  #   secrets:
-  #     DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
-  #     DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
+  build-manager-image:
+     name: Build
+     needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+     if: needs.detect-changes.outputs.any_modified == 'true'
+     uses: "./.github/workflows/build-manager-image.yml"
+     secrets:
+       DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
+       DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
 
   build-deployment-image:
     name: Build
