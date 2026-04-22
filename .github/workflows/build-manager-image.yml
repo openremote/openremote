@@ -23,9 +23,8 @@ jobs:
         with:
           platforms: linux/amd64,linux/aarch64
       - name: Install Buildx
+        id: buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
-        with:
-          version: latest
       #      - name: Login to DockerHub
       #        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
       #        with:
@@ -35,9 +34,11 @@ jobs:
         id: build-manager-image
         run: |
           commitShaShort=$(git rev-parse --short HEAD)
-          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/manager:develop manager/build/install/manager
-          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64 -t openremote/manager:$commitShaShort --load manager/build/install/manager
+          docker build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/manager:develop manager/build/install/manager
+          docker build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64 -t openremote/manager:$commitShaShort --load manager/build/install/manager
           echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
+        env:
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
       - name: Scan manager docker image
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         id: manager-anchore-scan
