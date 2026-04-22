@@ -17,14 +17,15 @@ jobs:
         with:
           platforms: linux/amd64,linux/aarch64
       - name: Install Buildx
+        id: buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
-        with:
-          version: latest
       - name: Build deployment image
         run: |
           commitShaShort=$(git rev-parse --short HEAD)
-          docker buildx build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort --output type=oci,dest=or_deployment.tar deployment/build
+          docker build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort --output type=oci,dest=or_deployment.tar deployment/build
           echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
+        env:
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
       - name: Archive deployment image
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
