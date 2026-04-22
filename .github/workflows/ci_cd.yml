@@ -499,12 +499,12 @@ jobs:
 
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             if [ -n "$MANAGER_TAGS" ]; then
-              command="docker buildx --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
               echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
               echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
             else
               if [ "$PUSH_SNAPSHOT" == "true" ]; then
-                command="docker buildx --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+                command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ steps.inputs-and-secrets.outputs.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
               else
                 command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
               fi
@@ -520,6 +520,7 @@ jobs:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
           TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -563,7 +564,7 @@ jobs:
             echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
 
             if [ -n "$DEPLOYMENTS" ]; then
-              command="docker buildx --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
+              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
               echo "value=$command" >> $GITHUB_OUTPUT
             fi
           fi
@@ -571,6 +572,7 @@ jobs:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           DEPLOYMENT_DOCKERFILE_EXISTS: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
           DEPLOYMENT_GRADLE_EXISTS: ${{ steps.check_deployment_gradle.outputs.files_exists }}
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
 
       - name: Define installDist command
         id: install-command
@@ -613,8 +615,6 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         id: buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-        with:
-          version: latest
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
