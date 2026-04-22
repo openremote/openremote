@@ -14,6 +14,10 @@ databases:
       instance: openremote
 
 metrics:
+  pg_collation_mismatch_count:
+    type: gauge
+    description: Number of text indexes with collation version mismatches requiring a REINDEX
+
   pg_cache_hit_percentage:
     type: gauge
     description: What percentage of data is being served instantly from RAM versus being slowly read from disk. You want this as high as possible
@@ -153,6 +157,30 @@ metrics:
     
 
 queries:
+  collation_mismatch:
+    interval: 86400 # Daily check
+    databases: [openremote]
+    metrics: [pg_collation_mismatch_count]
+    sql: |
+      WITH mismatched_collations AS (
+        SELECT oid 
+        FROM pg_catalog.pg_collation 
+        WHERE collversion IS NOT NULL 
+          AND collversion <> pg_collation_actual_version(oid)
+      ),
+      mismatched_indexes AS (
+        SELECT DISTINCT d.objid AS index_oid
+        FROM pg_catalog.pg_depend d
+        JOIN mismatched_collations mc ON d.refobjid = mc.oid
+        WHERE d.classid = 'pg_class'::regclass
+          AND d.refclassid = 'pg_collation'::regclass
+      )
+      SELECT count(i.oid) AS pg_collation_mismatch_count
+      FROM pg_catalog.pg_class i
+      JOIN pg_catalog.pg_index idx ON i.oid = idx.indexrelid
+      JOIN mismatched_indexes mi ON i.oid = mi.index_oid
+      WHERE i.relkind = 'i';
+
   cache_hit_ratio:
     interval: 3600 # Hourly
     databases: [openremote]
