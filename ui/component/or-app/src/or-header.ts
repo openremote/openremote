@@ -8,15 +8,14 @@ import manager, {
     DefaultColor4,
     DefaultColor5,
     DefaultHeaderHeight,
-    Util,
-  DEFAULT_LANGUAGES,
-  Languages
+    DEFAULT_LANGUAGES,
+    Languages
 } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Alarm, AlarmEvent, AlarmStatus, PersistenceEvent, Realm} from "@openremote/model";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {AlarmEvent, Realm} from "@openremote/model";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
@@ -40,17 +39,6 @@ export interface HeaderItem {
    action?: () => void;
    hideMobile?: boolean;
    roles?: string[] | {[client: string]: string[]} | (() => boolean);
-}
-
-function getHeaderMenuItems(items: HeaderItem[]): ListItem[] {
-    return items.filter(hasRequiredRole).map((option) => {
-        return {
-            text: option.text,
-            value: option.value ? option.value : "",
-            icon: option.icon,
-            href: option.href
-        };
-    });
 }
 
 function hasRequiredRole(option: HeaderItem): boolean {
@@ -133,32 +121,8 @@ export class OrHeader extends LitElement {
                 box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
             }
                     
-            #drawer {
-                width: 100%;
-                position: absolute;
-                top: var(--internal-or-header-height);
-                max-height: 0;
-                height: calc(100% - var(--internal-or-header-height));
-                transition: max-height 0.25s ease-out;
-                background: var(--internal-or-header-drawer-color);
-                color: var(--internal-or-header-drawer-text-color);
-                --or-icon-fill: var(--internal-or-header-drawer-text-color);
-                --or-icon-height: calc(var(--internal-or-header-drawer-item-size) - 10px);
-                --or-icon-width: calc(var(--internal-or-header-drawer-item-size) - 10px);
-                overflow: auto;
-            }
-            
-            #drawer[opened] {
-                max-height: 10000px;
-                transition: max-height 0.75s ease-in;
-            }
-                            
-            #drawer > div {
-                box-sizing: border-box;
-                width: 100%;
-                height: 100%;
-                padding: 10px 0px;
-                position: relative;
+            #drawer-menu vaadin-menu-bar-item::part(content) {
+                gap: 8px;
             }
               
             .menu-btn {
@@ -171,16 +135,10 @@ export class OrHeader extends LitElement {
             
             #menu-btn-mobile {
                 display: flex;
+                align-items: center;
                 margin-left: auto;
                 --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
                 --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
-            }
-
-            #menu-btn-mobile #realm-picker > span{
-                max-width: 70px;
-                text-overflow: ellipsis;
-                overflow: hidden;
-                white-space: nowrap;
             }
     
             #menu-btn-desktop {
@@ -252,16 +210,7 @@ export class OrHeader extends LitElement {
             }
           
             #realm-picker {
-                position: relative;
-                display: flex;
-                height: 50px;
-                align-items: center;
-                cursor: pointer;
-                margin-left: 10px;
-            }
-            
-            #realm-picker > span {
-                margin-right: 2px;
+                min-width: 160px;
             }
           
             /* Wide layout: when the viewport width is bigger than 768px, layout
@@ -281,6 +230,8 @@ export class OrHeader extends LitElement {
                 
                 #desktop-right {
                     display: flex;
+                    align-items: center;
+                    gap: 8px;
                 }
                 
                 #desktop-left .menu-item {
@@ -432,39 +383,12 @@ export class OrHeader extends LitElement {
                             </a>
                         </div>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        ${secondaryItems ? getContentWithMenuTemplate(html`
-                            <button id="menu-btn-desktop" class="menu-btn" title="Menu"><or-icon icon="dots-vertical"></or-icon></button>
-                        `,
-                        getHeaderMenuItems(secondaryItems),
-                        undefined,
-                        (value) => this._onSecondaryMenuSelect(value as string)) : ``}
+                        ${when(secondaryItems, () => this._getSecondaryMenu(secondaryItems ?? []))}
                     </div>
                     <div id="menu-btn-mobile">
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        <button id="menu-btn" class="menu-btn" title="Menu" @click="${this._toggleDrawer}"><or-icon icon="${this._drawerOpened ? "close" : "menu"}"></or-icon></button>
+                        ${when(secondaryItems, () => this._getSecondaryMenu(secondaryItems ?? []))}
                     </div>
-                </div>
-            </div>
-            <div id="drawer" ?opened="${this._drawerOpened}" @click="${this._closeDrawer}">
-                <div>                    
-                    <div id="mobile-top">
-                        <nav id="drawer-list">
-                            ${mainItems ? mainItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
-                                return html`
-                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                `;
-                            }) : ``}
-                        </nav>
-                    </div>
-                    
-                    ${secondaryItems ? html`
-                        <div id="mobile-bottom" class="${mainItems.length > 0 ? 'mobile-bottom-border' : ''}">
-                            ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
-                                return html`
-                                    <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                `;
-                            })}
-                        </div>` : ``}
                 </div>
             </div>
         `;
@@ -473,34 +397,13 @@ export class OrHeader extends LitElement {
     protected _getRealmMenu(callback: (realm: string) => void): TemplateResult {
 
         const currentRealm = this.realms.find((t) => t.name === this.realm);
-
-        let realmTemplate = html`
-            ${when(this.realms?.length > 1, () => html`
-                <div id="realm-picker">
-                    <span>${currentRealm ? currentRealm.displayName : ""}</span>
-                    <or-icon icon="chevron-down"></or-icon>
-                </div>
-            `)}
+        const items = this.realms.map(r => ({value: r.name, label: r.displayName}));
+        return html`
+            <or-vaadin-select id="realm-picker" .items=${items} .value=${currentRealm?.name}
+                              ?readonly=${!manager.isSuperUser() || !this.realms?.length}
+                              @change="${(ev: CustomEvent) => callback((ev.currentTarget as OrVaadinSelect).value)}"
+            ></or-vaadin-select>
         `;
-
-        if (manager.isSuperUser()) {
-            const menuItems = this.realms.map((r) => {
-                return {
-                    text: r.displayName!,
-                    value: r.name!
-                } as ListItem;
-            });
-
-            realmTemplate = html`
-                ${getContentWithMenuTemplate(
-                        realmTemplate,
-                        menuItems,
-                        currentRealm ? currentRealm.name : undefined,
-                        (value) => callback(value as string))}
-            `;
-        }
-
-        return realmTemplate;
     }
 
     protected async _getAlarmButton() {
@@ -511,6 +414,22 @@ export class OrHeader extends LitElement {
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';
         this.alarmColor = newAlarms ? '--or-app-color4, ${unsafeCSS(DefaultColor4)}' : '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
+    }
+
+    protected _getSecondaryMenu(secondaryItems: HeaderItem[]): TemplateResult {
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-icon icon="dots-vertical"></or-icon>`),
+            children: secondaryItems.map(s => ({...s, text: undefined, component: createMenuBarItem(html`
+                    <or-icon icon=${s.icon}></or-icon>
+                    <or-translate value=${s.text}></or-translate>
+                `)}))
+        }];
+        console.debug(menuItems);
+        return html`
+            <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${menuItems} style="min-width: 40px;"
+                                @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}
+            ></or-vaadin-menu-bar>
+        `;
     }
 
     protected _onSecondaryMenuSelect(value: string) {

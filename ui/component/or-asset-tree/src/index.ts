@@ -492,7 +492,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         <or-icon icon="plus"></or-icon>
                     </or-vaadin-button>
                     <or-vaadin-menu-bar theme="icon" .items=${menuItems}
-                                        @item-selected=${(ev: CustomEvent)  => this._onSortClicked((ev.detail.value as MenuBarItem).className)}
+                                        @item-selected=${(ev: CustomEvent)=> this._onSortClicked((ev.detail.value as MenuBarItem).className)}
                     ></or-vaadin-menu-bar>
                 </div>
             </div>
