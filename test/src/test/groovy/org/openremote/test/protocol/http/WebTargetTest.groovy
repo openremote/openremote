@@ -34,6 +34,7 @@ import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.model.util.ValueUtil
+import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -211,6 +212,7 @@ class WebTargetTest extends Specification {
         }
     }
 
+    @AutoCleanup
     @Shared
     ResteasyClient client
 

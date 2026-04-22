@@ -77,12 +77,12 @@ tasks.register('npmBuild', Exec) {
 }
 
 tasks.register('npmTest', Exec) {
-    dependsOn getYarnInstallTask(), resolveTask(":clean")
+    dependsOn getYarnInstallTask(), resolveTask(":ui:test:clean")
     commandLine npmCommand("yarn"), "run", "test"
 }
 
 tasks.register('npmTestUI', Exec) {
-    dependsOn getYarnInstallTask(), resolveTask(":clean")
+    dependsOn getYarnInstallTask(), resolveTask(":ui:test:clean")
     commandLine npmCommand("yarn"), "run", "test", "--ui"
 }
 

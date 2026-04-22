@@ -37,11 +37,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.AssetDatapointResource;
-import org.openremote.model.datapoint.DatapointPeriod;
-import org.openremote.model.datapoint.DatapointExportFormat;
-import org.openremote.model.datapoint.DatapointQueryTooLargeException;
-import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.*;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
@@ -49,7 +45,9 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.MetaItemType;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PipedInputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -60,7 +58,6 @@ import static org.openremote.model.util.ValueUtil.JSON;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
-    private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
 
     protected final AssetStorageService assetStorageService;
@@ -104,7 +101,6 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
             // If logged in, user should have READ ASSETS role
             if(isAuthenticated() && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -157,7 +153,6 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -198,7 +193,6 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 }
 
                 if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                    DATA_EXPORT_LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
 

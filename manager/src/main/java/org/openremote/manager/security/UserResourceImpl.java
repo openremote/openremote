@@ -32,16 +32,19 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 
 import jakarta.ws.rs.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.AbstractMap;
+import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
+    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.API, UserResourceImpl.class.getName());
     protected MQTTBrokerService mqttBrokerService;
 
     public UserResourceImpl(TimerService timerService, ManagerIdentityService identityService, MQTTBrokerService mqttBrokerService) {
@@ -336,7 +339,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
                 clientId,
                 roles);
         } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
+            LOG.warning("Failed to update user client roles: " + ex.getMessage());
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
@@ -353,7 +356,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
                 userId,
                 roles);
         } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
+            LOG.warning("Failed to update user realm roles: " + ex.getMessage());
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
@@ -388,7 +391,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
                 clientId,
                 roles);
         } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
+            LOG.warning("Failed to update client roles: " + ex.getMessage());
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new NotFoundException(ex);

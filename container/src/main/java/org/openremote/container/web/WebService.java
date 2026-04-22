@@ -44,6 +44,8 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
@@ -53,6 +55,7 @@ import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.util.Config;
 import org.openremote.model.util.TextUtil;
@@ -62,6 +65,8 @@ import java.net.Inet4Address;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -95,6 +100,7 @@ public abstract class WebService implements ContainerService {
     protected boolean devMode;
     protected String host;
     protected IdentityService identityService;
+    protected ExecutorService executorService;
     protected int port;
     protected Undertow undertow;
     protected long maxEntitySize = OR_WEBSERVER_MAX_ENTITY_SIZE_DEFAULT;
@@ -102,7 +108,7 @@ public abstract class WebService implements ContainerService {
     protected URI containerHostUri;
     protected PathHandler pathHandler = Handlers.path();
 
-   public static final Map<String, String> MIME_TYPES = Map.of(
+    public static final Map<String, String> MIME_TYPES = Map.of(
          "pbf", "application/x-protobuf",
          "wsdl", "application/xml",
          "xsl", "text/xsl");
@@ -124,6 +130,7 @@ public abstract class WebService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         identityService = container.getService(IdentityService.class);
+        executorService = container.getExecutor();
         devMode = container.isDevMode();
         Map<String, String> config = container.getConfig();
 
@@ -250,12 +257,9 @@ public abstract class WebService implements ContainerService {
      */
     public static List<Object> getStandardProviders(boolean devMode, Integer realmIndex) {
         List<Object> providers = Lists.newArrayList(
-           new RequestLogger(),
-           new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode),
-           new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode),
-           new WebServiceExceptions.ServletUndertowExceptionHandler(devMode),
-           new JacksonConfig(),
-           new ClientErrorExceptionHandler()
+            new WebServiceExceptions.JAXRSExceptionMapper(devMode),
+            new JacksonConfig(),
+            new ClientErrorExceptionHandler()
         );
 
         if (realmIndex != null) {
@@ -336,7 +340,6 @@ public abstract class WebService implements ContainerService {
 
                if (secure) {
                    deployment.setSecurityEnabled(true);
-                   //servlet.setInitParameter(ResteasyContextParameters.RESTEASY_ROLE_BASED_SECURITY, "true");
                }
            }
        };
@@ -429,7 +432,6 @@ public abstract class WebService implements ContainerService {
             boolean secure,
             CORSConfig corsOverride) {
 
-
         if (corsOverride == null) {
             // Just use default CORS config
             corsOverride = new CORSConfig();
@@ -489,6 +491,14 @@ public abstract class WebService implements ContainerService {
             identityService.secureDeployment(deploymentInfo);
         }
 
+        Filter loggingFilter = new LoggingFilter(devMode);
+        FilterInfo loggingFilterInfo = Servlets.filter(
+                "Logging Filter",
+                LoggingFilter.class,
+                () -> new ImmediateInstanceHandle<>(loggingFilter)).setAsyncSupported(true);
+        deploymentInfo.addFilter(loggingFilterInfo);
+        deploymentInfo.addFilterUrlMapping("Logging Filter","/*", DispatcherType.REQUEST);
+
         // Cannot set config on constructor as init method will overwrite it
         CORSFilter corsFilter = new CORSFilter();
 
@@ -498,10 +508,10 @@ public abstract class WebService implements ContainerService {
                 () -> new ImmediateInstanceHandle<>(corsFilter)).setAsyncSupported(true);
         getCORSConfiguration(corsOverride).forEach((k,v) -> corsFilterInfo.addInitParam(k.toString(), v.toString()));
         deploymentInfo.addFilter(corsFilterInfo);
-        deploymentInfo.addFilterUrlMapping(     "CORS Filter","/*", DispatcherType.REQUEST);
+        deploymentInfo.addFilterUrlMapping("CORS Filter","/*", DispatcherType.REQUEST);
 
         // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-        deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+        deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletExceptionHandler(devMode));
     }
 
     public Undertow getUndertow() {
@@ -550,5 +560,37 @@ public abstract class WebService implements ContainerService {
         }
 
         return props;
+    }
+
+    public CompletableFuture<String> getBearerToken(@NotNull OAuthGrant oAuthGrant) {
+       return getBearerToken(executorService, WebTargetBuilder.getClient(), oAuthGrant);
+    }
+
+    /**
+     * Retrieve bearer tokens for the provided {@link OAuthGrant}.
+     */
+    public static CompletableFuture<String> getBearerToken(ExecutorService executorService, Client client, @NotNull OAuthGrant oAuthGrant) {
+        if (oAuthGrant == null) {
+            return CompletableFuture.failedFuture(new NullPointerException(OAuthGrant.class.getSimpleName() + " cannot be null"));
+        }
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        executorService.submit(() -> {
+            LOG.log(DEBUG, "Retrieving OAuth access token: " + oAuthGrant);
+
+            try {
+                OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
+                String authHeaderValue = oAuthFilter.getAccessToken();
+                if (TextUtil.isNullOrEmpty(authHeaderValue)) {
+                    throw new RuntimeException("Returned access token is null");
+                }
+                LOG.log(DEBUG,"Retrieved access token via OAuth: " + oAuthGrant);
+                future.complete(authHeaderValue);
+            } catch (Exception e) {
+                future.completeExceptionally(new Exception("Error retrieving OAuth access token for '" + oAuthGrant + "': " + e.getMessage()));
+            }
+        });
+
+        return future;
     }
 }
