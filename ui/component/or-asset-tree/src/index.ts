@@ -435,7 +435,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             </div>
         `;
         return html`
-            <or-vaadin-combo-box id="attributeTypeFilter" ?disabled=${disabled} .items=${descriptors} .selected-item=${selected}
+            <or-vaadin-combo-box id="attributeTypeFilter" ?disabled=${disabled} .items=${descriptors} .selectedItem=${selected}
                                  style="width: 100%; --vaadin-combo-box-overlay-width: 350px; padding-top: 0px;"
                                  .itemLabelGenerator=${(descriptor: AssetDescriptor) => Util.getAssetTypeLabel(descriptor)} item-value-path="name"
                                  ${comboBoxRenderer(itemRenderer, [])}
