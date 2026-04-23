@@ -520,7 +520,6 @@ jobs:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
           TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
-          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -572,7 +571,6 @@ jobs:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           DEPLOYMENT_DOCKERFILE_EXISTS: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
           DEPLOYMENT_GRADLE_EXISTS: ${{ steps.check_deployment_gradle.outputs.files_exists }}
-          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
 
       - name: Define installDist command
         id: install-command
@@ -876,6 +874,8 @@ jobs:
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+        env:
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
 
       - name: Scan manager docker image
         if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
@@ -921,6 +921,8 @@ jobs:
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
           ${{ steps.deployment-docker-command.outputs.value }}
+        env:
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
 
       - name: Run maven release command
         if: |
