@@ -301,10 +301,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public checkboxes?: boolean = false;
 
     @property({type: Number})
-    public readonly queryLimit = 2;
+    public readonly queryLimit = 100;
 
     @property({type: Number})
-    public readonly paginationThreshold = 3;
+    public readonly paginationThreshold = 1000;
 
     protected config?: AssetTreeConfig;
 
