@@ -1,0 +1,470 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/error.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ClaimEndDeviceRequest {
+  message AuthenticatedIdentifiers {
+    // JoinEUI (or AppEUI) of the device to claim.
+    bytes join_eui = 1 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+    // DevEUI of the device to claim.
+    bytes dev_eui = 2 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+    // Authentication code to prove ownership.
+    // In the LoRa Alliance TR005 specification, this equals the OwnerToken.
+    string authentication_code = 3 [(validate.rules).string.pattern = "^[A-Z0-9]{1,32}$"];
+  }
+  oneof source_device {
+    option (validate.required) = true;
+    // Authenticated identifiers.
+    AuthenticatedIdentifiers authenticated_identifiers = 1;
+    // Raw QR code contents.
+    bytes qr_code = 2 [(validate.rules).bytes = {
+      min_len: 0,
+      max_len: 1024
+    }];
+  }
+
+  // Application identifiers of the target end device.
+  ApplicationIdentifiers target_application_ids = 3 [(validate.rules).message.required = true];
+  // End device ID of the target end device. If empty, use the source device ID.
+  string target_device_id = 4 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+
+  reserved 5; // Deprecated: invalidate_authentication_code
+  reserved 6; // Deprecated: target_join_eui
+  reserved 7; // Deprecated: target_network_server_address
+  reserved 8; // Deprecated: target_network_server_kek_label
+  reserved 9; // Deprecated: target_application_server_address
+  reserved 10; // Deprecated: target_application_server_kek_label
+  reserved 11; // Deprecated: target_application_server_id
+  reserved 12; // Deprecated: target_join_server_address
+  reserved 13; // Deprecated: target_net_id
+}
+
+// DEPRECATED: Device claiming that transfers devices between applications is no longer supported and will be removed
+// in a future version of The Things Stack.
+message AuthorizeApplicationRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  string api_key = 2 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 128
+  }];
+}
+
+message GetInfoByJoinEUIRequest {
+  bytes join_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+message GetInfoByJoinEUIResponse {
+  bytes join_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  // If set, this Join EUI is available for claiming on one of the configured Join Servers.
+  bool supports_claiming = 2;
+}
+
+message GetInfoByJoinEUIsRequest {
+  repeated GetInfoByJoinEUIRequest requests = 1 [(validate.rules).repeated.max_items = 20];
+}
+
+message GetInfoByJoinEUIsResponse {
+  repeated GetInfoByJoinEUIResponse infos = 1;
+}
+
+message GetClaimStatusResponse {
+  EndDeviceIdentifiers end_device_ids = 1 [(validate.rules).message.required = true];
+  bytes home_net_id = 2 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  bytes home_ns_id = 3 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+
+  message VendorSpecific {
+    uint32 organization_unique_identifier = 1;
+    // Vendor Specific data in JSON format.
+    google.protobuf.Struct data = 2;
+  }
+
+  VendorSpecific vendor_specific = 4;
+}
+
+// The EndDeviceClaimingServer service support claiming and managing end devices on external Join Servers.
+service EndDeviceClaimingServer {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Claim and manage end devices on external Join Servers."};
+  // Claims the end device on a Join Server by claim authentication code or QR code.
+  rpc Claim(ClaimEndDeviceRequest) returns (EndDeviceIdentifiers) {
+    option (google.api.http) = {
+      post: "/edcs/claim",
+      body: "*"
+    };
+  }
+
+  // Unclaims the end device on a Join Server.
+  // EUIs provided in the request are ignored and the end device is looked up by the given identifiers.
+  rpc Unclaim(EndDeviceIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/edcs/claim/{application_ids.application_id}/devices/{device_id}"};
+  }
+
+  // Return whether claiming is available for a given JoinEUI.
+  rpc GetInfoByJoinEUI(GetInfoByJoinEUIRequest) returns (GetInfoByJoinEUIResponse) {
+    option (google.api.http) = {
+      post: "/edcs/claim/info",
+      body: "*"
+    };
+  }
+
+  // Gets the claim status of an end device.
+  // EUIs provided in the request are ignored and the end device is looked up by the given identifiers.
+  rpc GetClaimStatus(EndDeviceIdentifiers) returns (GetClaimStatusResponse) {
+    option (google.api.http) = {get: "/edcs/claim/{application_ids.application_id}/devices/{device_id}"};
+  }
+
+  // Authorize the End Device Claiming Server to claim devices registered in the given application. The application
+  // identifiers are the source application, where the devices are registered before they are claimed.
+  // The API key is used to access the application, find the device, verify the claim request and delete the end device
+  // from the source application.
+  // DEPRECATED: Device claiming that transfers devices between applications is no longer supported and will be removed
+  // in a future version of The Things Stack.
+  rpc AuthorizeApplication(AuthorizeApplicationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/edcs/applications/{application_ids.application_id}/authorize",
+      body: "*"
+    };
+  }
+
+  // Unauthorize the End Device Claiming Server to claim devices in the given application.
+  // This reverts the authorization given with rpc AuthorizeApplication.
+  // DEPRECATED: Device claiming that transfers devices between applications is no longer supported and will be removed
+  // in a future version of The Things Stack.
+  rpc UnauthorizeApplication(ApplicationIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/edcs/applications/{application_id}/authorize"};
+  }
+}
+
+message BatchUnclaimEndDevicesRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  repeated string device_ids = 2 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 20,
+    items: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    }
+  }];
+}
+
+message BatchUnclaimEndDevicesResponse {
+  ApplicationIdentifiers application_ids = 1;
+  // End devices that could not be unclaimed.
+  // The key is the device ID.
+  map<string, ErrorDetails> failed = 2;
+}
+
+// The EndDeviceBatchClaimingServer service support claiming and managing batches of end devices on external Join Servers.
+service EndDeviceBatchClaimingServer {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Claim and manage batches of end devices on external Join Servers."};
+  // Unclaims multiple end devices on an external Join Server.
+  // All devices must have the same application ID.
+  // Check the response for devices that could not be unclaimed.
+  rpc Unclaim(BatchUnclaimEndDevicesRequest) returns (BatchUnclaimEndDevicesResponse) {
+    option (google.api.http) = {delete: "/edcs/claim/{application_ids.application_id}/devices/batch"};
+  }
+
+  // Return whether claiming is supported for each Join EUI in a given list.
+  rpc GetInfoByJoinEUIs(GetInfoByJoinEUIsRequest) returns (GetInfoByJoinEUIsResponse) {
+    option (google.api.http) = {
+      post: "/edcs/claim/info/batch",
+      body: "*"
+    };
+  }
+}
+
+// DEPRECATED: This message is deprecated and will be removed in a future version of The Things Stack.
+message CUPSRedirection {
+  option deprecated = true;
+  // CUPS URI for LoRa Basics Station CUPS redirection.
+  string target_cups_uri = 1 [(validate.rules).string = {
+    uri: true,
+    pattern: "^https",
+    max_len: 256
+  }];
+
+  // The key set in the gateway to authenticate itself.
+  string current_gateway_key = 2 [(validate.rules).string.max_len = 2048];
+
+  // Optional PEM encoded CA Root certificate. If this field is empty, DCS will attempt to dial the Target CUPS server and fetch the CA.
+  bytes target_cups_trust = 3;
+  message ClientTLS {
+    // PEM encoded Client Certificate.
+    bytes cert = 1 [(validate.rules).bytes.max_len = 8192];
+    // PEM encoded Client Private Key.
+    bytes key = 2 [(validate.rules).bytes.max_len = 8192];
+  }
+  // CUPS Credentials for the gateway.
+  oneof gateway_credentials {
+    // TODO: Support mTLS (https://github.com/TheThingsNetwork/lorawan-stack/issues/137)
+    ClientTLS client_tls = 4;
+    // The Device Claiming Server will fill this field with a The Things Stack API Key.
+    string auth_token = 5 [(validate.rules).string.max_len = 2048];
+  }
+}
+
+message ClaimGatewayRequest {
+  message AuthenticatedIdentifiers {
+    bytes gateway_eui = 1 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+    bytes authentication_code = 2 [(validate.rules).bytes.max_len = 2048];
+  }
+  oneof source_gateway {
+    option (validate.required) = true;
+    AuthenticatedIdentifiers authenticated_identifiers = 1;
+    bytes qr_code = 2 [(validate.rules).bytes = {
+      min_len: 0,
+      max_len: 1024
+    }];
+  }
+
+  // Collaborator to grant all rights on the target gateway.
+  OrganizationOrUserIdentifiers collaborator = 3 [(validate.rules).message.required = true];
+
+  // Gateway ID for the target gateway. This must be a unique value.
+  // If this is not set, the target ID for the target gateway will be set to `<gateway-eui>`.
+  string target_gateway_id = 4 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+
+  // Target Gateway Server Address for the target gateway.
+  string target_gateway_server_address = 5 [(validate.rules).string.pattern = "^(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])(?::[0-9]{1,5})?$|^$"];
+
+  // Parameters to set CUPS redirection for the gateway.
+  // DEPRECATED: This field is deprecated and will be removed in a future version of The Things Stack.
+  CUPSRedirection cups_redirection = 6 [deprecated = true];
+
+  // Frequency plan ID of the target gateway.
+  // TODO: Remove this field (https://github.com/TheThingsIndustries/lorawan-stack/issues/4024)
+  // DEPRECATED: Use target_frequency_plan_ids instead.
+  string target_frequency_plan_id = 7 [
+    (validate.rules).string.max_len = 64,
+    deprecated = true
+  ];
+
+  // Frequency plan IDs of the target gateway.
+  repeated string target_frequency_plan_ids = 8 [(validate.rules).repeated = {
+    min_items: 0,
+    max_items: 8,
+    items: {
+      string: {max_len: 64}
+    }
+  }];
+}
+
+message AuthorizeGatewayRequest {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  string api_key = 2 [(validate.rules).string.min_len = 1];
+}
+
+message GetInfoByGatewayEUIRequest {
+  bytes eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+message GetInfoByGatewayEUIResponse {
+  bytes eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  bool supports_claiming = 2;
+  // Indicates whether the gateway is a managed gateway.
+  // If true, when the gateway is successfully claimed, it can be managed with ManagedGatewayConfigurationService.
+  bool is_managed = 3;
+}
+
+// The GatewayClaimingServer service support claiming and managing gateway claims.
+service GatewayClaimingServer {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Claim gateways and manage claims."};
+  // Claims a gateway by claim authentication code or QR code and transfers the gateway to the target user.
+  rpc Claim(ClaimGatewayRequest) returns (GatewayIdentifiers) {
+    option (google.api.http) = {
+      post: "/gcls/claim",
+      body: "*"
+    };
+  }
+
+  // Unclaims the gateway.
+  // EUI provided in the request are ignored and the end device is looked up by the gateway ID.
+  rpc Unclaim(GatewayIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/gcls/claim/{gateway_id}"};
+  }
+
+  // Return whether claiming is available for a given gateway EUI.
+  rpc GetInfoByGatewayEUI(GetInfoByGatewayEUIRequest) returns (GetInfoByGatewayEUIResponse) {
+    option (google.api.http) = {
+      post: "/gcls/claim/info",
+      body: "*"
+    };
+  }
+
+  // AuthorizeGateway allows a gateway to be claimed.
+  // DEPRECATED: Authorizing gateways for claiming is no longer supported and will be removed in a future version of The
+  // Things Stack.
+  rpc AuthorizeGateway(AuthorizeGatewayRequest) returns (google.protobuf.Empty) {
+    option deprecated = true;
+    option (google.api.http) = {
+      post: "/gcls/gateways/{gateway_ids.gateway_id}/authorize",
+      body: "*"
+    };
+  }
+
+  // UnauthorizeGateway prevents a gateway from being claimed.
+  // DEPRECATED: Unauthorizing (locking) gateways for claiming is no longer supported and will be removed in a future
+  // version of The Things Stack.
+  rpc UnauthorizeGateway(GatewayIdentifiers) returns (google.protobuf.Empty) {
+    option deprecated = true;
+    option (google.api.http) = {delete: "/gcls/gateways/{gateway_id}/authorize"};
+  }
+}

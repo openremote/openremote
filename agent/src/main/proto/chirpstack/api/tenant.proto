@@ -1,0 +1,330 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "TenantProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// TenantService is the service providing API methods for managing tenants.
+service TenantService {
+  // Create a new tenant.
+  rpc Create(CreateTenantRequest) returns (CreateTenantResponse) {
+    option (google.api.http) = {
+      post : "/api/tenants"
+      body : "*"
+    };
+  }
+
+  // Get the tenant for the given ID.
+  rpc Get(GetTenantRequest) returns (GetTenantResponse) {
+    option (google.api.http) = {
+      get : "/api/tenants/{id}"
+    };
+  }
+
+  // Update the given tenant.
+  rpc Update(UpdateTenantRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/tenants/{tenant.id}"
+      body : "*"
+    };
+  }
+
+  // Delete the tenant with the given ID.
+  rpc Delete(DeleteTenantRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/tenants/{id}"
+    };
+  }
+
+  // Get the list of tenants.
+  rpc List(ListTenantsRequest) returns (ListTenantsResponse) {
+    option (google.api.http) = {
+      get : "/api/tenants"
+    };
+  }
+
+  // Add an user to the tenant.
+  // Note: the user must already exist.
+  rpc AddUser(AddTenantUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/tenants/{tenant_user.tenant_id}/users"
+      body : "*"
+    };
+  }
+
+  // Get the the tenant user for the given tenant and user IDs.
+  rpc GetUser(GetTenantUserRequest) returns (GetTenantUserResponse) {
+    option (google.api.http) = {
+      get : "/api/tenants/{tenant_id}/users/{user_id}"
+    };
+  }
+
+  // Update the given tenant user.
+  rpc UpdateUser(UpdateTenantUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/tenants/{tenant_user.tenant_id}/users/{tenant_user.user_id}"
+      body : "*"
+    };
+  }
+
+  // Delete the given tenant user.
+  rpc DeleteUser(DeleteTenantUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/tenants/{tenant_id}/users/{user_id}"
+    };
+  }
+
+  // Get the list of tenant users.
+  rpc ListUsers(ListTenantUsersRequest) returns (ListTenantUsersResponse) {
+    option (google.api.http) = {
+      get : "/api/tenants/{tenant_id}/users"
+    };
+  }
+}
+
+message Tenant {
+  // Tenant ID (UUID).
+  // Note: this value will be automatically generated on create.
+  string id = 1;
+
+  // Tenant name,
+  string name = 2;
+
+  // Tenant description.
+  string description = 3;
+
+  // Can the tenant create and "own" Gateways?
+  bool can_have_gateways = 4;
+
+  // Max. gateway count for tenant.
+  // When set to 0, the tenant can have unlimited gateways.
+  uint32 max_gateway_count = 5;
+
+  // Max. device count for tenant.
+  // When set to 0, the tenant can have unlimited devices.
+  uint32 max_device_count = 6;
+
+  // Private gateways (uplink).
+  // If enabled, then uplink messages will not be shared with other tenants.
+  bool private_gateways_up = 7;
+
+  // Private gateways (downlink).
+  // If enabled, then other tenants will not be able to schedule downlink
+  // messages through the gateways of this tenant. For example, in case you
+  // do want to share uplinks with other tenants (private_gateways_up=false),
+  // but you want to prevent other tenants from using gateway airtime.
+  bool private_gateways_down = 8;
+
+  // Tags (user defined).
+  // These tags can be used to add additional information to the tenant. These
+  // tags are NOT exposed in the integration events.
+  map<string, string> tags = 9;
+}
+
+message TenantListItem {
+  // Tenant ID (UUID).
+  string id = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+
+  // Tenant name.
+  string name = 4;
+
+  // Can the tenant create and "own" Gateways?
+  bool can_have_gateways = 5;
+
+  // Private gateways (uplink).
+  bool private_gateways_up = 6;
+
+  // Private gateways (downlink).
+  bool private_gateways_down = 9;
+
+  // Max gateway count.
+  // 0 = unlimited.
+  uint32 max_gateway_count = 7;
+
+  // Max device count.
+  // 0 = unlimited.
+  uint32 max_device_count = 8;
+}
+
+message CreateTenantRequest {
+  // Tenant object to create.
+  Tenant tenant = 1;
+}
+
+message CreateTenantResponse {
+  // Tenant ID.
+  string id = 1;
+}
+
+message GetTenantRequest {
+  // Tenant ID.
+  string id = 1;
+}
+
+message GetTenantResponse {
+  // Tenant object.
+  Tenant tenant = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message UpdateTenantRequest {
+  // Tenant object.
+  Tenant tenant = 1;
+}
+
+message DeleteTenantRequest {
+  // Tenant ID.
+  string id = 1;
+}
+
+message ListTenantsRequest {
+  // Max number of tenants to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // If set, the given string will be used to search on name.
+  string search = 3;
+
+  // If set, filters the result set to the tenants of the user.
+  // Only global API keys are able to filter by this field.
+  string user_id = 4;
+}
+
+message ListTenantsResponse {
+  // Total number of tenants.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated TenantListItem result = 2;
+}
+
+message TenantUser {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+
+  // User ID (UUID).
+  string user_id = 2;
+
+  // User is admin within the context of the tenant.
+  // There is no need to set the is_device_admin and is_gateway_admin flags.
+  bool is_admin = 3;
+
+  // User is able to modify device related resources (applications,
+  // device-profiles, devices, multicast-groups).
+  bool is_device_admin = 4;
+
+  // User is able to modify gateways.
+  bool is_gateway_admin = 5;
+
+  // Email (only used on get and when adding a user to a tenant).
+  string email = 6;
+}
+
+message TenantUserListItem {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+
+  // User ID (UUID).
+  string user_id = 2;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 3;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 4;
+
+  // Email.
+  string email = 5;
+
+  // User is admin within the context of the tenant.
+  // There is no need to set the is_device_admin and is_gateway_admin flags.
+  bool is_admin = 6;
+
+  // User is able to modify device related resources (applications,
+  // device-profiles, devices, multicast-groups).
+  bool is_device_admin = 7;
+
+  // User is able to modify gateways.
+  bool is_gateway_admin = 8;
+}
+
+message AddTenantUserRequest {
+  // Tenant user object.
+  TenantUser tenant_user = 1;
+}
+
+message GetTenantUserRequest {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+
+  // User ID (UUID).
+  string user_id = 2;
+}
+
+message GetTenantUserResponse {
+  // Tenant user object.
+  TenantUser tenant_user = 1;
+
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 2;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message UpdateTenantUserRequest {
+  // Tenant user object.
+  TenantUser tenant_user = 1;
+}
+
+message DeleteTenantUserRequest {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+
+  // User ID (UUID).
+  string user_id = 2;
+}
+
+message ListTenantUsersRequest {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+
+  // Max number of tenants to return in the result-set.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 2;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 3;
+}
+
+message ListTenantUsersResponse {
+  // Total number of tenants.
+  uint32 total_count = 1;
+
+  // Result-set.
+  repeated TenantUserListItem result = 2;
+}

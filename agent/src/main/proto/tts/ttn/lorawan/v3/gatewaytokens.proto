@@ -1,0 +1,39 @@
+// Copyright © 2024 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/timestamp.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// GatewayToken is a special auth token used by cluster components to authenticate on behalf of gateways.
+message GatewayToken {
+  message Payload {
+    ttn.lorawan.v3.GatewayIdentifiers gateway_ids = 1;
+    ttn.lorawan.v3.Rights rights = 2;
+    google.protobuf.Timestamp created_at = 3;
+  }
+  // ID of the key used to hash the token.
+  string key_id = 1;
+
+  Payload payload = 2;
+
+  // Checksum of the payload to verify the authenticity of the caller.
+  bytes checksum = 3;
+}

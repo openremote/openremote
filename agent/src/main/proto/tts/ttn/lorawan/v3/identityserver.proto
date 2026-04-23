@@ -1,0 +1,158 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/oauth.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "ttn/lorawan/v3/user.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message AuthInfoResponse {
+  message APIKeyAccess {
+    APIKey api_key = 1 [(validate.rules).message.required = true];
+    EntityIdentifiers entity_ids = 2 [(validate.rules).message.required = true];
+  }
+  message GatewayToken {
+    GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+    repeated Right rights = 6;
+  }
+  oneof access_method {
+    AuthInfoResponse.APIKeyAccess api_key = 1;
+    OAuthAccessToken oauth_access_token = 2;
+    // Warning: A user authorized by session cookie will be granted all
+    // current and future rights. When using this auth type, the respective
+    // handlers need to ensure thorough CSRF and CORS protection using
+    // appropriate middleware.
+    UserSession user_session = 5;
+    AuthInfoResponse.GatewayToken gateway_token = 6;
+  }
+  Rights universal_rights = 3;
+  bool is_admin = 4;
+}
+
+// The EntityAccess service provides information about the access rights of an entity.
+service EntityAccess {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Check the access rights for an entity."};
+  // AuthInfo returns information about the authentication that is used on the request.
+  rpc AuthInfo(google.protobuf.Empty) returns (AuthInfoResponse) {
+    option (google.api.http) = {get: "/auth_info"};
+  }
+}
+
+message GetIsConfigurationRequest {}
+
+message IsConfiguration {
+  message UserRegistration {
+    message Invitation {
+      google.protobuf.BoolValue required = 1;
+      google.protobuf.Duration token_ttl = 2;
+    }
+    Invitation invitation = 1;
+
+    message ContactInfoValidation {
+      google.protobuf.BoolValue required = 1;
+      google.protobuf.Duration token_ttl = 2;
+      // The minimum interval between validation emails.
+      google.protobuf.Duration retry_interval = 3;
+    }
+    ContactInfoValidation contact_info_validation = 2;
+
+    message AdminApproval {
+      google.protobuf.BoolValue required = 1;
+    }
+    AdminApproval admin_approval = 3;
+
+    message PasswordRequirements {
+      google.protobuf.UInt32Value min_length = 1;
+      google.protobuf.UInt32Value max_length = 2;
+      google.protobuf.UInt32Value min_uppercase = 3;
+      google.protobuf.UInt32Value min_digits = 4;
+      google.protobuf.UInt32Value min_special = 5;
+    }
+    PasswordRequirements password_requirements = 4;
+
+    bool enabled = 5;
+  }
+  UserRegistration user_registration = 3;
+
+  message ProfilePicture {
+    google.protobuf.BoolValue disable_upload = 1;
+    google.protobuf.BoolValue use_gravatar = 2;
+  }
+  ProfilePicture profile_picture = 4;
+
+  message EndDevicePicture {
+    google.protobuf.BoolValue disable_upload = 1;
+  }
+  EndDevicePicture end_device_picture = 5;
+
+  message UserRights {
+    google.protobuf.BoolValue create_applications = 1;
+    google.protobuf.BoolValue create_clients = 2;
+    google.protobuf.BoolValue create_gateways = 3;
+    google.protobuf.BoolValue create_organizations = 4;
+  }
+  UserRights user_rights = 6;
+  message UserLogin {
+    google.protobuf.BoolValue disable_credentials_login = 1;
+  }
+  UserLogin user_login = 7;
+  message AdminRights {
+    google.protobuf.BoolValue all = 1;
+  }
+  AdminRights admin_rights = 8;
+  reserved 9;
+  reserved "network_limits";
+  reserved 10;
+  reserved "application_limits";
+  reserved 11;
+  reserved "organization_limits";
+  reserved 12;
+  reserved "user_limits";
+  reserved 13;
+  reserved "admin_restrictions";
+  message CollaboratorRights {
+    google.protobuf.BoolValue set_others_as_contacts = 1;
+  }
+  CollaboratorRights collaborator_rights = 14;
+  reserved 15;
+  reserved "tenant_registration";
+
+  // next: 16
+}
+
+message GetIsConfigurationResponse {
+  IsConfiguration configuration = 1;
+}
+
+// The Is service provides information about the Identity Server.
+service Is {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Get information about The Things Stack Identity Server."};
+  // Get the configuration of the Identity Server. The response is typically used
+  // to enable or disable features in a user interface.
+  rpc GetConfiguration(GetIsConfigurationRequest) returns (GetIsConfigurationResponse) {
+    option (google.api.http) = {get: "/is/configuration"};
+  }
+}

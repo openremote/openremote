@@ -1,0 +1,71 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "thethings/json/annotations.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+enum DownlinkPathConstraint {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "DOWNLINK_PATH_CONSTRAINT"
+  };
+
+  // Indicates that the gateway can be selected for downlink without constraints by the Network Server.
+  DOWNLINK_PATH_CONSTRAINT_NONE = 0;
+  // Indicates that the gateway can be selected for downlink only if no other or better gateway can be selected.
+  DOWNLINK_PATH_CONSTRAINT_PREFER_OTHER = 1;
+  // Indicates that this gateway will never be selected for downlink, even if that results in no available downlink path.
+  DOWNLINK_PATH_CONSTRAINT_NEVER = 2;
+}
+
+// State enum defines states that an entity can be in.
+enum State {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "STATE"
+  };
+
+  // Denotes that the entity has been requested and is pending review by an admin.
+  STATE_REQUESTED = 0;
+  // Denotes that the entity has been reviewed and approved by an admin.
+  STATE_APPROVED = 1;
+  // Denotes that the entity has been reviewed and rejected by an admin.
+  STATE_REJECTED = 2;
+  // Denotes that the entity has been flagged and is pending review by an admin.
+  STATE_FLAGGED = 3;
+  // Denotes that the entity has been reviewed and suspended by an admin.
+  STATE_SUSPENDED = 4;
+}
+
+enum ClusterRole {
+  NONE = 0;
+  ENTITY_REGISTRY = 1;
+  ACCESS = 2;
+  GATEWAY_SERVER = 3;
+  NETWORK_SERVER = 4;
+  APPLICATION_SERVER = 5;
+  JOIN_SERVER = 6;
+  CRYPTO_SERVER = 7;
+  DEVICE_TEMPLATE_CONVERTER = 8;
+  DEVICE_CLAIMING_SERVER = 9;
+  GATEWAY_CONFIGURATION_SERVER = 10;
+  QR_CODE_GENERATOR = 11;
+  PACKET_BROKER_AGENT = 12;
+  DEVICE_REPOSITORY = 13;
+}

@@ -1,0 +1,93 @@
+// Copyright © 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto2";
+
+package thethings.flags;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/TheThingsIndustries/protoc-gen-go-flags/annotations";
+
+// NOTE: protoc-gen-go-flags is primarily intended for internal use by
+// The Things Industries. We have therefore chosen to use option number 51886,
+// which is in the 50000-99999 range reserved for internal use within individual
+// organizations. For this reason, the option number is not registered on
+// https://github.com/protocolbuffers/protobuf/blob/master/docs/options.md.
+
+message FileOptions {}
+
+extend google.protobuf.FileOptions {
+  optional FileOptions file = 51886;
+}
+
+message MessageOptions {
+  // Generate (field mask) selector flags for this message.
+  optional bool select = 1;
+  // Generate setter flags for this message.
+  optional bool set = 2;
+  // Treat this message as a wrapper for the value field inside it.
+  optional bool wrapper = 3;
+  // Generate semantical flags for this message. Only active when set is also set.
+  optional bool semantical = 4;
+}
+
+extend google.protobuf.MessageOptions {
+  optional MessageOptions message = 51886;
+}
+
+message FieldOptions {
+  // Skip generating (field mask) selector flags for this field.
+  optional bool select = 1;
+  // Skip generating setter flags for this field.
+  optional bool set = 2;
+  // New flag definition for custom type flag.
+  // Specified as github.com/username/repo/package.New{CustomType}Flag.
+  optional string set_flag_new_func = 3;
+  // Custom value getter from the custom flag type.
+  // Specified as github.com/username/repo/package.Get{CustomType}FromFlag.
+  optional string set_flag_getter_func = 4;
+  // Set flag and all of its subfield flags to hidden.
+  optional bool hidden = 5;
+  // Implies field has meaning just by existing. Only active when set is also set.
+  optional bool semantical = 6;
+}
+
+extend google.protobuf.FieldOptions {
+  optional FieldOptions field = 51886;
+}
+
+message OneofOptions {}
+
+extend google.protobuf.OneofOptions {
+  optional OneofOptions oneof = 51886;
+}
+
+message EnumOptions {
+  // Path where the custom enum values are defined.
+  // The map must be of type string to int32, where string is an alias name and
+  // int32 must be a valid enum int32.
+  optional string alias_map = 1;
+}
+
+extend google.protobuf.EnumOptions {
+  optional EnumOptions enum = 51886;
+}
+
+message EnumValueOptions {}
+
+extend google.protobuf.EnumValueOptions {
+  optional EnumValueOptions enum_value = 51886;
+}
+
+message ServiceOptions {}
+
+extend google.protobuf.ServiceOptions {
+  optional ServiceOptions service = 51886;
+}
+
+message MethodOptions {}
+
+extend google.protobuf.MethodOptions {
+  optional MethodOptions method = 51886;
+}

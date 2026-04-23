@@ -1,0 +1,130 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/error.proto";
+import "ttn/lorawan/v3/gateway.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "ttn/lorawan/v3/mqtt.proto";
+import "ttn/lorawan/v3/regional.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// GatewayUp may contain zero or more uplink messages and/or a status message for the gateway.
+message GatewayUp {
+  // Uplink messages received by the gateway.
+  repeated UplinkMessage uplink_messages = 1;
+  // Gateway status produced by the gateway.
+  GatewayStatus gateway_status = 2;
+  // A Tx acknowledgment or error.
+  TxAcknowledgment tx_acknowledgment = 3;
+}
+
+// GatewayDown contains downlink messages for the gateway.
+message GatewayDown {
+  // DownlinkMessage for the gateway.
+  DownlinkMessage downlink_message = 1;
+}
+
+// The GtwGs service connects a gateway to a Gateway Server.
+service GtwGs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Connect a gRPC gateway to a The Things Stack Gateway Server."};
+  // Link a gateway to the Gateway Server for streaming upstream messages and downstream messages.
+  rpc LinkGateway(stream GatewayUp) returns (stream GatewayDown);
+  // Get configuration for the concentrator.
+  rpc GetConcentratorConfig(google.protobuf.Empty) returns (ConcentratorConfig);
+  // Get connection information to connect an MQTT gateway.
+  rpc GetMQTTConnectionInfo(GatewayIdentifiers) returns (MQTTConnectionInfo) {
+    option (google.api.http) = {get: "/gs/gateways/{gateway_id}/mqtt-connection-info"};
+  }
+  // Get legacy connection information to connect a The Things Network Stack V2 MQTT gateway.
+  rpc GetMQTTV2ConnectionInfo(GatewayIdentifiers) returns (MQTTConnectionInfo) {
+    option (google.api.http) = {get: "/gs/gateways/{gateway_id}/mqttv2-connection-info"};
+  }
+}
+
+message ScheduleDownlinkResponse {
+  // The amount of time between the message has been scheduled and it will be transmitted by the gateway.
+  google.protobuf.Duration delay = 1 [(validate.rules).duration.required = true];
+  // Downlink path chosen by the Gateway Server.
+  DownlinkPath downlink_path = 2;
+  // Whether RX1 has been chosen for the downlink message.
+  // Both RX1 and RX2 can be used for transmitting the same message by the same gateway.
+  bool rx1 = 3;
+  // Whether RX2 has been chosen for the downlink message.
+  // Both RX1 and RX2 can be used for transmitting the same message by the same gateway.
+  bool rx2 = 4;
+}
+
+message ScheduleDownlinkErrorDetails {
+  // Errors per path when downlink scheduling failed.
+  repeated ErrorDetails path_errors = 1;
+}
+
+// The NsGs service connects a Network Server to a Gateway Server.
+service NsGs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The NsGs service connects a Network Server to a Gateway Server. This is an inter-component service and is not intended for end users."};
+  // Instructs the Gateway Server to schedule a downlink message.
+  // The Gateway Server may refuse if there are any conflicts in the schedule or
+  // if a duty cycle prevents the gateway from transmitting.
+  rpc ScheduleDownlink(DownlinkMessage) returns (ScheduleDownlinkResponse);
+}
+
+message BatchGetGatewayConnectionStatsRequest {
+  repeated GatewayIdentifiers gateway_ids = 1 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 100
+  }];
+  // The names of the gateway stats fields that should be returned.
+  // This mask will be applied on each entry returned.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message BatchGetGatewayConnectionStatsResponse {
+  // The map key is the gateway identifier.
+  map<string, GatewayConnectionStats> entries = 1;
+}
+
+// The Gs service returns information about the Gateway Server and gateways connected to it.
+service Gs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Retrieve gateway connection statistics."};
+  // Get statistics about the current gateway connection to the Gateway Server.
+  // This is not persisted between reconnects.
+  rpc GetGatewayConnectionStats(GatewayIdentifiers) returns (GatewayConnectionStats) {
+    option (google.api.http) = {get: "/gs/gateways/{gateway_id}/connection/stats"};
+  }
+
+  // Get statistics about gateway connections to the Gateway Server of a batch of gateways.
+  // - Statistics are not persisted between reconnects.
+  // - Gateways that are not connected or are part of a different cluster are ignored.
+  // - The client should ensure that the requested gateways are in the requested cluster.
+  // - The client should have the right to get the gateway connection stats on all requested gateways.
+  rpc BatchGetGatewayConnectionStats(BatchGetGatewayConnectionStatsRequest) returns (BatchGetGatewayConnectionStatsResponse) {
+    option (google.api.http) = {
+      post: "/gs/gateways/connection/stats"
+      body: "*"
+    };
+  }
+}

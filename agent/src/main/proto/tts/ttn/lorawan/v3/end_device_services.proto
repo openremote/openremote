@@ -1,0 +1,140 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The EndDeviceRegistry service, exposed by the Identity Server, is used to manage
+// end device registrations.
+//
+// After registering an end device, it also needs to be registered in
+// the NsEndDeviceRegistry that is exposed by the Network Server,
+// the AsEndDeviceRegistry that is exposed by the Application Server,
+// and the JsEndDeviceRegistry that is exposed by the Join Server.
+//
+// Before deleting an end device it first needs to be deleted from the
+// NsEndDeviceRegistry, the AsEndDeviceRegistry and the JsEndDeviceRegistry.
+service EndDeviceRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage end devices on The Things Stack Identity Server."};
+  // Create a new end device within an application.
+  //
+  // After registering an end device, it also needs to be registered in
+  // the NsEndDeviceRegistry that is exposed by the Network Server,
+  // the AsEndDeviceRegistry that is exposed by the Application Server,
+  // and the JsEndDeviceRegistry that is exposed by the Join Server.
+  rpc Create(CreateEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {
+      post: "/applications/{end_device.ids.application_ids.application_id}/devices"
+      body: "*"
+    };
+  }
+
+  // Get the end device with the given identifiers, selecting the fields specified
+  // in the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc Get(GetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {get: "/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}"};
+  }
+
+  // Get the identifiers of the end device that has the given EUIs registered.
+  rpc GetIdentifiersForEUIs(GetEndDeviceIdentifiersForEUIsRequest) returns (EndDeviceIdentifiers);
+
+  // List end devices in the given application.
+  // Similar to Get, this selects the fields given by the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc List(ListEndDevicesRequest) returns (EndDevices) {
+    option (google.api.http) = {
+      get: "/applications/{application_ids.application_id}/devices"
+      additional_bindings {
+        post: "/applications/{application_ids.application_id}/devices/filter"
+        body: "*"
+      }
+    };
+  }
+
+  // Update the end device, changing the fields specified by the field mask to the provided values.
+  rpc Update(UpdateEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {
+      put: "/applications/{end_device.ids.application_ids.application_id}/devices/{end_device.ids.device_id}"
+      body: "*"
+    };
+  }
+
+  // Update the last seen timestamp for a batch of end devices.
+  rpc BatchUpdateLastSeen(BatchUpdateEndDeviceLastSeenRequest) returns (google.protobuf.Empty);
+
+  // Delete the end device with the given IDs.
+  //
+  // Before deleting an end device it first needs to be deleted from the
+  // NsEndDeviceRegistry, the AsEndDeviceRegistry and the JsEndDeviceRegistry.
+  // In addition, if the device claimed on a Join Server, it also needs to be
+  // unclaimed via the DeviceClaimingServer so it can be claimed in the future.
+  // This is NOT done automatically.
+  rpc Delete(EndDeviceIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/applications/{application_ids.application_id}/devices/{device_id}"};
+  }
+}
+
+// The EndDeviceTemplateRegistry service is used to convert end devices information between formats.
+service EndDeviceTemplateConverter {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Convert end device information between supported formats."};
+  // Returns the configured formats to convert from.
+  rpc ListFormats(google.protobuf.Empty) returns (EndDeviceTemplateFormats) {
+    option (google.api.http) = {get: "/edtc/formats"};
+  }
+
+  // Converts the binary data to a stream of end device templates.
+  rpc Convert(ConvertEndDeviceTemplateRequest) returns (stream EndDeviceTemplate) {
+    option (google.api.http) = {
+      post: "/edtc/convert",
+      body: "*"
+    };
+  }
+}
+
+// The EndDeviceBatchRegistry service, exposed by the Identity Server, is used to manage
+// end device registrations in batches.
+service EndDeviceBatchRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage end devices on The Things Stack Identity Server in batches."};
+  // Get a batch of end devices with the given identifiers, selecting the fields specified
+  // in the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  // Devices not found are skipped and no error is returned.
+  rpc Get(BatchGetEndDevicesRequest) returns (ttn.lorawan.v3.EndDevices) {
+    option (google.api.http) = {get: "/applications/{application_ids.application_id}/devices/batch"};
+  }
+
+  // Delete a batch of end devices with the given IDs.
+  //
+  // This operation is atomic; either all devices are deleted or none.
+  // Devices not found are skipped and no error is returned.
+  // Before calling this RPC, use the corresponding BatchDelete RPCs
+  // of NsEndDeviceRegistry, AsEndDeviceRegistry and
+  // optionally the JsEndDeviceRegistry to delete the end devices.
+  // If the devices were claimed on a Join Server, use the BatchUnclaim RPC
+  // of the DeviceClaimingServer.
+  // This is NOT done automatically.
+  rpc Delete(BatchDeleteEndDevicesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/applications/{application_ids.application_id}/devices/batch"};
+  }
+}

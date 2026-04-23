@@ -338,7 +338,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         if (header(SESSION_OPEN).matches(exchange)) {
-            // We need to delay processing here so that ClientEventService has fully initialised the session
             String sessionKey = ClientEventService.getSessionKey(exchange);
             processGatewayConnected(clientId, sessionKey);
             return;

@@ -1,0 +1,151 @@
+// Copyright © 2020 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message ContinuationTokenPayload {
+  google.protobuf.UInt32Value limit = 1;
+  google.protobuf.Timestamp after = 2;
+  google.protobuf.Timestamp before = 3;
+  google.protobuf.UInt32Value f_port = 4;
+  string order = 5;
+  google.protobuf.FieldMask field_mask = 6;
+  google.protobuf.Duration last = 7;
+  int64 last_received_id = 8;
+}
+
+message GetStoredApplicationUpRequest {
+  // Query upstream messages from all end devices of an application. Cannot be used in conjunction with end_device_ids.
+  ApplicationIdentifiers application_ids = 1;
+  // Query upstream messages from a single end device. Cannot be used in conjunction with application_ids.
+  EndDeviceIdentifiers end_device_ids = 2;
+
+  // Query upstream messages of a specific type. If not set, then all upstream messages are returned.
+  string type = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "uplink_message",
+      "uplink_normalized",
+      "join_accept",
+      "downlink_ack",
+      "downlink_nack",
+      "downlink_sent",
+      "downlink_failed",
+      "downlink_queued",
+      "downlink_queue_invalidated",
+      "location_solved",
+      "service_data"
+    ]
+  }];
+
+  // Limit number of results.
+  google.protobuf.UInt32Value limit = 4;
+  // Query upstream messages after this timestamp only. Cannot be used in conjunction with last.
+  google.protobuf.Timestamp after = 5;
+  // Query upstream messages before this timestamp only. Cannot be used in conjunction with last.
+  google.protobuf.Timestamp before = 6;
+  // Query uplinks on a specific FPort only.
+  google.protobuf.UInt32Value f_port = 7;
+
+  // Order results.
+  string order = 8 [(validate.rules).string = {
+    in: [
+      "",
+      "-received_at",
+      "received_at"
+    ]
+  }];
+
+  // The names of the upstream message fields that should be returned. See the API reference
+  // for allowed field names for each type of upstream message.
+  google.protobuf.FieldMask field_mask = 9;
+
+  // Query upstream messages that have arrived in the last minutes or hours. Cannot be used in conjunction with after and before.
+  google.protobuf.Duration last = 10 [deprecated = true];
+
+  // The continuation token, which is used to retrieve the next page. If provided, other fields are ignored.
+  string continuation_token = 11 [(validate.rules).string.max_len = 16000];
+}
+
+message GetStoredApplicationUpCountRequest {
+  // Count upstream messages from all end devices of an application. Cannot be used in conjunction with end_device_ids.
+  ApplicationIdentifiers application_ids = 1;
+  // Count upstream messages from a single end device. Cannot be used in conjunction with application_ids.
+  EndDeviceIdentifiers end_device_ids = 2;
+
+  // Count upstream messages of a specific type. If not set, then all upstream messages are returned.
+  string type = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "uplink_message",
+      "join_accept",
+      "downlink_ack",
+      "downlink_nack",
+      "downlink_sent",
+      "downlink_failed",
+      "downlink_queued",
+      "downlink_queue_invalidated",
+      "location_solved",
+      "service_data"
+    ]
+  }];
+
+  // Count upstream messages after this timestamp only. Cannot be used in conjunction with last.
+  google.protobuf.Timestamp after = 4;
+  // Count upstream messages before this timestamp only. Cannot be used in conjunction with last.
+  google.protobuf.Timestamp before = 5;
+  // Count uplinks on a specific FPort only.
+  google.protobuf.UInt32Value f_port = 6;
+
+  // Count upstream messages that have arrived in the last minutes or hours. Cannot be used in conjunction with after and before.
+  google.protobuf.Duration last = 7;
+}
+
+message GetStoredApplicationUpCountResponse {
+  // Number of stored messages by end device ID.
+  map<string, uint32> count = 1;
+}
+
+// The ApplicationUpStorage service can be used to query stored application upstream messages.
+service ApplicationUpStorage {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Query application upstream messages from the storage integration."};
+  // Returns a stream of application messages that have been stored in the database.
+  rpc GetStoredApplicationUp(GetStoredApplicationUpRequest) returns (stream ApplicationUp) {
+    option (google.api.http) = {
+      get: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/packages/storage/{type}"
+      additional_bindings {get: "/as/applications/{application_ids.application_id}/packages/storage/{type}"}
+    };
+  }
+  // Returns how many application messages have been stored in the database for an application or end device.
+  rpc GetStoredApplicationUpCount(GetStoredApplicationUpCountRequest) returns (GetStoredApplicationUpCountResponse) {
+    option (google.api.http) = {
+      get: "/as/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}/packages/storage/{type}/count"
+      additional_bindings {get: "/as/applications/{application_ids.application_id}/packages/storage/{type}/count"}
+    };
+  }
+}

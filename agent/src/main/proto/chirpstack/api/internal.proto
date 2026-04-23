@@ -1,0 +1,434 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/api";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "InternalProto";
+option csharp_namespace = "Chirpstack.Api";
+option php_namespace = "Chirpstack\\Api";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Api";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "common/common.proto";
+import "api/user.proto";
+
+// InternalService is the service providing API endpoints for internal usage.
+service InternalService {
+  // Log in a user
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+
+  // Get the current user's profile
+  rpc Profile(google.protobuf.Empty) returns (ProfileResponse) {}
+
+  // Perform a global search.
+  rpc GlobalSearch(GlobalSearchRequest) returns (GlobalSearchResponse) {}
+
+  // CreateApiKey creates the given API key.
+  rpc CreateApiKey(CreateApiKeyRequest) returns (CreateApiKeyResponse) {}
+
+  // DeleteApiKey deletes the API key.
+  rpc DeleteApiKey(DeleteApiKeyRequest) returns (google.protobuf.Empty) {}
+
+  // ListApiKeys lists the available API keys.
+  rpc ListApiKeys(ListApiKeysRequest) returns (ListApiKeysResponse) {}
+
+  // Get the global settings.
+  rpc Settings(google.protobuf.Empty) returns (SettingsResponse) {}
+
+  // OpenId Connect login.
+  rpc OpenIdConnectLogin(OpenIdConnectLoginRequest)
+      returns (OpenIdConnectLoginResponse) {}
+
+  // OAuth2 login.
+  rpc OAuth2Login(OAuth2LoginRequest) returns (OAuth2LoginResponse) {}
+
+  // GetDevicesSummary returns an aggregated summary of the devices.
+  rpc GetDevicesSummary(GetDevicesSummaryRequest)
+      returns (GetDevicesSummaryResponse) {}
+
+  // GetGatewaysSummary returns an aggregated summary of the gateways.
+  rpc GetGatewaysSummary(GetGatewaysSummaryRequest)
+      returns (GetGatewaysSummaryResponse) {}
+
+  // Stream frame for the given Gateway ID.
+  rpc StreamGatewayFrames(StreamGatewayFramesRequest) returns (stream LogItem) {
+  }
+
+  // Stream frames for the given Device EUI.
+  rpc StreamDeviceFrames(StreamDeviceFramesRequest) returns (stream LogItem) {}
+
+  // Stream events for the given Device EUI.
+  rpc StreamDeviceEvents(StreamDeviceEventsRequest) returns (stream LogItem) {}
+
+  // ListRegions lists the available (configured) regions.
+  rpc ListRegions(google.protobuf.Empty) returns (ListRegionsResponse) {}
+
+  // GetRegion returns the region details for the given region.
+  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {}
+
+  // GetVersion returns the ChirpStack version.
+  rpc GetVersion(google.protobuf.Empty) returns (GetVersionResponse) {}
+}
+
+message ApiKey {
+  // API key ID.
+  // This value will be automatically generated on create.
+  string id = 1;
+
+  // Name.
+  string name = 2;
+
+  // Is global admin key.
+  bool is_admin = 3;
+
+  // Tenant ID.
+  // In case the API key is intended to manage resources under a single tenant.
+  string tenant_id = 4;
+}
+
+message CreateApiKeyRequest {
+  // The API key to create.
+  ApiKey api_key = 1;
+}
+
+message CreateApiKeyResponse {
+  // API key ID.
+  string id = 1;
+
+  // API token for authentication API requests.
+  string token = 2;
+}
+
+message DeleteApiKeyRequest {
+  // API key ID.
+  string id = 1;
+}
+
+message ListApiKeysRequest {
+  // Max number of items to return.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  uint32 limit = 1;
+
+  // Offset in the result-set (for pagination).
+  uint32 offset = 2;
+
+  // Return only admin keys.
+  bool is_admin = 3;
+
+  // Filter on tenant ID.
+  string tenant_id = 4;
+}
+
+message ListApiKeysResponse {
+  // Total number of API keys.
+  uint32 total_count = 1;
+
+  repeated ApiKey result = 2;
+}
+
+// Defines a tenant to which the user is associated.
+message UserTenantLink {
+  // Created at timestamp.
+  google.protobuf.Timestamp created_at = 1;
+
+  // Last update timestamp.
+  google.protobuf.Timestamp updated_at = 2;
+
+  // Tenant ID.
+  string tenant_id = 3;
+
+  // User is admin within the context of this tenant.
+  // There is no need to set the is_device_admin and is_gateway_admin flags.
+  bool is_admin = 4;
+
+  // User is able to modify device related resources (applications,
+  // device-profiles, devices, multicast-groups).
+  bool is_device_admin = 5;
+
+  // User is able to modify gateways.
+  bool is_gateway_admin = 6;
+}
+
+message LoginRequest {
+  // Email of the user.
+  string email = 1;
+
+  // Password of the user.
+  string password = 2;
+}
+
+message LoginResponse {
+  // The JWT tag to be used to access chirpstack-application-server interfaces.
+  string jwt = 1;
+}
+
+message ProfileResponse {
+  // User object.
+  User user = 1;
+
+  // Tenants to which the user is associated.
+  repeated UserTenantLink tenants = 3;
+}
+
+message GlobalSearchRequest {
+  // Search query.
+  string search = 1;
+
+  // Max number of results to return.
+  // If not set, it will be treated as 0, and the response will only return the total_count.
+  int64 limit = 2;
+
+  // Offset offset of the result-set (for pagination).
+  int64 offset = 3;
+}
+
+message GlobalSearchResponse { repeated GlobalSearchResult result = 1; }
+
+message GlobalSearchResult {
+  // Record kind.
+  string kind = 1;
+
+  // Search score.
+  float score = 2;
+
+  // Organization id.
+  string tenant_id = 3;
+
+  // Organization name.
+  string tenant_name = 4;
+
+  // Application id.
+  string application_id = 5;
+
+  // Application name.
+  string application_name = 6;
+
+  // Device DevEUI (hex encoded).
+  string device_dev_eui = 7;
+
+  // Device name.
+  string device_name = 8;
+
+  // Gateway MAC (hex encoded).
+  string gateway_id = 9;
+
+  // Gateway name.
+  string gateway_name = 10;
+}
+
+message SettingsResponse {
+  // OpenId Connect settings.
+  OpenIdConnect openid_connect = 1;
+
+  // OAuth2 settings.
+  OAuth2 oauth2 = 2;
+
+  // Tileserver URL.
+  string tileserver_url = 3;
+
+  // Map attribution.
+  string map_attribution = 4;
+}
+
+message OpenIdConnect {
+  // Enable OpenId Connect authentication.
+  bool enabled = 1;
+
+  // Login url.
+  string login_url = 2;
+
+  // Login label.
+  string login_label = 3;
+
+  // Logout url.
+  string logout_url = 4;
+
+  // Login redirect.
+  bool login_redirect = 5;
+}
+
+message OAuth2 {
+  // OAuth2 is enabled.
+  bool enabled = 1;
+
+  // Login url.
+  string login_url = 2;
+
+  // Login label.
+  string login_label = 3;
+
+  // Logout url.
+  string logout_url = 4;
+
+  // Login redirect.
+  bool login_redirect = 5;
+}
+
+message OpenIdConnectLoginRequest {
+  // OpenId Connect callback code.
+  string code = 1;
+
+  // OpenId Connect callback state.
+  string state = 2;
+}
+
+message OpenIdConnectLoginResponse {
+  // Token to use for authentication.
+  string token = 1;
+}
+
+message OAuth2LoginRequest {
+  // OAuth2 callback code.
+  string code = 1;
+
+  // OAuth2 callback state.
+  string state = 2;
+}
+
+message OAuth2LoginResponse {
+  // Token to use for authentication.
+  string token = 1;
+}
+
+message GetDevicesSummaryRequest {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+}
+
+message GetDevicesSummaryResponse {
+  // Active count.
+  uint32 active_count = 1;
+
+  // Inactive count.
+  uint32 inactive_count = 2;
+
+  // per data-rate count.
+  // Devices that have never been seen are excluded.
+  map<uint32, uint32> dr_count = 3;
+
+  // Never seen count.
+  uint32 never_seen_count = 4;
+}
+
+message GetGatewaysSummaryRequest {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+}
+
+message GetGatewaysSummaryResponse {
+  // Online count.
+  uint32 online_count = 1;
+
+  // Offline count.
+  uint32 offline_count = 2;
+
+  // Never seen count.
+  uint32 never_seen_count = 3;
+}
+
+message LogItem {
+  // ID.
+  string id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Message.
+  string description = 3;
+
+  // Body.
+  string body = 4;
+
+  // Properties.
+  map<string, string> properties = 5;
+}
+
+message StreamGatewayFramesRequest {
+  // Gateway ID (EUI64).
+  string gateway_id = 1;
+}
+
+message StreamDeviceFramesRequest {
+  // Device EUI.
+  string dev_eui = 1;
+}
+
+message StreamDeviceEventsRequest {
+  // Device EUI.
+  string dev_eui = 1;
+}
+
+message ListRegionsResponse {
+  // Configured regions.
+  repeated RegionListItem regions = 1;
+}
+
+message RegionListItem {
+  // ID.
+  string id = 1;
+
+  // Region.
+  common.Region region = 2;
+
+  // Description.
+  string description = 3;
+}
+
+message GetRegionRequest {
+  // Region ID.
+  string id = 1;
+}
+
+message GetRegionResponse {
+  // ID.
+  string id = 1;
+
+  // Region.
+  common.Region region = 2;
+
+  // User information.
+  string user_info = 3;
+
+  // Uplink channels.
+  repeated RegionChannel uplink_channels = 4;
+
+  // RX1 delay.
+  uint32 rx1_delay = 5;
+
+  // RX1 data-rate offset.
+  uint32 rx1_dr_offset = 6;
+
+  // RX2 DR.
+  uint32 rx2_dr = 7;
+
+  // RX2 frequency.
+  uint32 rx2_frequency = 8;
+
+  // Class-B ping-slot DR.
+  uint32 class_b_ping_slot_dr = 9;
+
+  // Class-B ping-slot frequency.
+  uint32 class_b_ping_slot_frequency = 10;
+
+  // Region description.
+  string description = 11;
+}
+
+message RegionChannel {
+  // Frequency (Hz).
+  uint32 frequency = 1;
+
+  // Min DR.
+  uint32 dr_min = 2;
+
+  // Max DR.
+  uint32 dr_max = 3;
+}
+
+message GetVersionResponse {
+  // version
+  string version = 1;
+}

@@ -87,10 +87,11 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
 
     protected _onSaveClicked(): void {
         if(this.group && !this._cannotSave()) {
-            const success = this.dispatchEvent(new OrRulesGroupNameChangeEvent(this.group));
+            const event = new OrRulesGroupNameChangeEvent(this.group);
+            const success = this.dispatchEvent(event);
             if(success) {
                 this._lastSaved = this.group;
-            } else {
+            } else if (event.detail.reason === "exists" || !event.detail.reason) {
                 showSnackbar(undefined, 'ruleGroupExistsError');
             }
         }

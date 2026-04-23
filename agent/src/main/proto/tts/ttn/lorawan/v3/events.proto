@@ -1,0 +1,106 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message Event {
+  // Name of the event. This can be used to find the (localized) event description.
+  string name = 1;
+  // Time at which the event was triggered.
+  google.protobuf.Timestamp time = 2 [(validate.rules).timestamp.required = true];
+  // Identifiers of the entity (or entities) involved.
+  repeated EntityIdentifiers identifiers = 3;
+  // Optional data attached to the event.
+  google.protobuf.Any data = 4;
+  // Correlation IDs can be used to find related events and actions such as API calls.
+  repeated string correlation_ids = 5 [(validate.rules).repeated.items.string.max_len = 100];
+  // The origin of the event. Typically the hostname of the server that created it.
+  string origin = 6;
+  // Event context, internal use only.
+  map<string, bytes> context = 7;
+  // The event will be visible to a caller that has any of these rights.
+  Rights visibility = 8;
+  message Authentication {
+    // The type of authentication that was used. This is typically a bearer token.
+    string type = 1;
+    // The type of token that was used. Common types are APIKey, AccessToken and SessionToken.
+    string token_type = 2;
+    // The ID of the token that was used.
+    string token_id = 3;
+  }
+  // Details on the authentication provided by the caller that triggered this event.
+  Authentication authentication = 9;
+  // The IP address of the caller that triggered this event.
+  string remote_ip = 10;
+  // The IP address of the caller that triggered this event.
+  string user_agent = 11;
+  // The unique identifier of the event, assigned on creation.
+  string unique_id = 12;
+}
+
+message StreamEventsRequest {
+  repeated EntityIdentifiers identifiers = 1;
+  // If greater than zero, this will return historical events, up to this maximum when the stream starts.
+  // If used in combination with "after", the limit that is reached first, is used.
+  // The availability of historical events depends on server support and retention policy.
+  uint32 tail = 2;
+  // If not empty, this will return historical events after the given time when the stream starts.
+  // If used in combination with "tail", the limit that is reached first, is used.
+  // The availability of historical events depends on server support and retention policy.
+  google.protobuf.Timestamp after = 3;
+  // If provided, this will filter events, so that only events with the given names are returned.
+  // Names can be provided as either exact event names (e.g. 'gs.up.receive'),
+  // or as regular expressions (e.g. '/^gs\..+/').
+  repeated string names = 4;
+}
+
+message FindRelatedEventsRequest {
+  string correlation_id = 1 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100,
+  }];
+}
+
+message FindRelatedEventsResponse {
+  repeated Event events = 1;
+}
+
+// The Events service serves events from the cluster.
+service Events {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Read events served from a The Things Stack cluster."};
+  // Stream live events, optionally with a tail of historical events (depending on server support and retention policy).
+  // Events may arrive out-of-order.
+  rpc Stream(StreamEventsRequest) returns (stream Event) {
+    option (google.api.http) = {
+      post: "/events"
+      body: "*"
+    };
+  }
+
+  rpc FindRelated(FindRelatedEventsRequest) returns (FindRelatedEventsResponse) {
+    option (google.api.http) = {get: "/events/related"};
+  }
+}

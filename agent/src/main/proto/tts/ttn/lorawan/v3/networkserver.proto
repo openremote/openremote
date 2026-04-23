@@ -1,0 +1,193 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Response of GenerateDevAddr.
+message GenerateDevAddrResponse {
+  bytes dev_addr = 1 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+}
+
+// Request of GetDefaultMACSettings.
+message GetDefaultMACSettingsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  string frequency_plan_id = 1 [(validate.rules).string.max_len = 64];
+  PHYVersion lorawan_phy_version = 2 [(validate.rules).enum.defined_only = true];
+}
+
+message GetNetIDResponse {
+  bytes net_id = 1 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+}
+
+message GetDeviceAdressPrefixesResponse {
+  repeated bytes dev_addr_prefixes = 1 [
+    (validate.rules).repeated = {
+      items: {
+        bytes: {len: 5}
+      }
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalDevAddrPrefixSlice",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.UnmarshalDevAddrPrefixSlice"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      example: "[\"2600AB00/24\"]" // NOTE: openapiv2 generator does not support customizing array items.
+    }
+  ];
+}
+
+// The Ns service manages the Network Server.
+service Ns {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage The Things Stack Network Server."};
+  // GenerateDevAddr requests a device address assignment from the Network Server.
+  rpc GenerateDevAddr(google.protobuf.Empty) returns (GenerateDevAddrResponse) {
+    option (google.api.http) = {get: "/ns/dev_addr"};
+  }
+  // GetDefaultMACSettings retrieves the default MAC settings for a frequency plan.
+  rpc GetDefaultMACSettings(GetDefaultMACSettingsRequest) returns (MACSettings) {
+    option (google.api.http) = {get: "/ns/default_mac_settings/{frequency_plan_id}/{lorawan_phy_version}"};
+  }
+
+  rpc GetNetID(google.protobuf.Empty) returns (GetNetIDResponse) {
+    option (google.api.http) = {get: "/ns/net_id"};
+  }
+
+  rpc GetDeviceAddressPrefixes(google.protobuf.Empty) returns (GetDeviceAdressPrefixesResponse) {
+    option (google.api.http) = {get: "/ns/dev_addr_prefixes"};
+  }
+}
+
+// The AsNs service connects an Application Server to a Network Server.
+service AsNs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The AsNs service connects an Application Server to a Network Server. This is an inter-component service and is not intended to be used by end users."};
+  // Replace the entire downlink queue with the specified messages.
+  // This can also be used to empty the queue by specifying no messages.
+  // Note that this will trigger an immediate downlink if a downlink slot is available.
+  rpc DownlinkQueueReplace(DownlinkQueueRequest) returns (google.protobuf.Empty);
+  // Push downlink messages to the end of the downlink queue.
+  // Note that this will trigger an immediate downlink if a downlink slot is available.
+  rpc DownlinkQueuePush(DownlinkQueueRequest) returns (google.protobuf.Empty);
+  // List the items currently in the downlink queue.
+  rpc DownlinkQueueList(EndDeviceIdentifiers) returns (ApplicationDownlinks);
+}
+
+// The GsNs service connects a Gateway Server to a Network Server.
+service GsNs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The GsNS service connects a Gateway Server to a Network Server. This is an inter-component service and is not intended to be used by end users."};
+  // Called by the Gateway Server when an uplink message arrives.
+  rpc HandleUplink(UplinkMessage) returns (google.protobuf.Empty);
+  // Called by the Gateway Server when a Tx acknowledgment arrives.
+  rpc ReportTxAcknowledgment(GatewayTxAcknowledgment) returns (google.protobuf.Empty);
+}
+
+// The NsEndDeviceRegistry service allows clients to manage their end devices on the Network Server.
+service NsEndDeviceRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage end devices on The Things Stack Network Server."};
+  // Get returns the device that matches the given identifiers.
+  // If there are multiple matches, an error will be returned.
+  rpc Get(GetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {get: "/ns/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}"};
+  }
+
+  // Set creates or updates the device.
+  rpc Set(SetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {
+      put: "/ns/applications/{end_device.ids.application_ids.application_id}/devices/{end_device.ids.device_id}"
+      body: "*"
+      additional_bindings {
+        post: "/ns/applications/{end_device.ids.application_ids.application_id}/devices"
+        body: "*"
+      };
+    };
+  }
+
+  // ResetFactoryDefaults resets device state to factory defaults.
+  rpc ResetFactoryDefaults(ResetAndGetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {
+      patch: "/ns/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}"
+      body: "*"
+    };
+  }
+
+  // Delete deletes the device that matches the given identifiers.
+  // If there are multiple matches, an error will be returned.
+  rpc Delete(EndDeviceIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/ns/applications/{application_ids.application_id}/devices/{device_id}"};
+  }
+}
+
+// The NsEndDeviceBatchRegistry service allows clients to manage batches of end devices on the Network Server.
+service NsEndDeviceBatchRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage batches of end devices on The Things Stack Network Server."};
+  // Delete a list of devices within the same application.
+  // This operation is atomic; either all devices are deleted or none.
+  // Devices not found are skipped and no error is returned.
+  rpc Delete(BatchDeleteEndDevicesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/ns/applications/{application_ids.application_id}/devices/batch"};
+  }
+
+  // Set the MAC settings profile for a batch of end devices.
+  rpc SetMACSettingsProfile(BatchSetMACSettingsProfileRequest) returns (EndDevices) {
+    option (google.api.http) = {
+      post: "/ns/applications/{application_ids.application_id}/devices/mac_settings_profile/batch"
+      body: "*"
+    };
+  }
+}

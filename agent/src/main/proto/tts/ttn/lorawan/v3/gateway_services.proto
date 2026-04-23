@@ -1,0 +1,221 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/gateway.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The GatewayRegistry service, exposed by the Identity Server, is used to manage
+// gateway registrations.
+service GatewayRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage gateways."};
+  // Create a new gateway. This also sets the given organization or user as
+  // first collaborator with all possible rights.
+  rpc Create(CreateGatewayRequest) returns (Gateway) {
+    option (google.api.http) = {
+      post: "/users/{collaborator.user_ids.user_id}/gateways"
+      body: "*"
+      additional_bindings {
+        post: "/organizations/{collaborator.organization_ids.organization_id}/gateways"
+        body: "*"
+      }
+    };
+  }
+
+  // Get the gateway with the given identifiers, selecting the fields specified
+  // in the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc Get(GetGatewayRequest) returns (Gateway) {
+    option (google.api.http) = {get: "/gateways/{gateway_ids.gateway_id}"};
+  }
+
+  // Get the identifiers of the gateway that has the given EUI registered.
+  rpc GetIdentifiersForEUI(GetGatewayIdentifiersForEUIRequest) returns (GatewayIdentifiers);
+
+  // List gateways where the given user or organization is a direct collaborator.
+  // If no user or organization is given, this returns the gateways the caller
+  // has access to.
+  // Similar to Get, this selects the fields given by the field mask.
+  // More or less fields may be returned, depending on the rights of the caller.
+  rpc List(ListGatewaysRequest) returns (Gateways) {
+    option (google.api.http) = {
+      get: "/gateways"
+      additional_bindings {get: "/users/{collaborator.user_ids.user_id}/gateways"}
+      additional_bindings {get: "/organizations/{collaborator.organization_ids.organization_id}/gateways"}
+      additional_bindings {
+        post: "/gateways/filter"
+        body: "*"
+      }
+    };
+  }
+
+  // Update the gateway, changing the fields specified by the field mask to the provided values.
+  rpc Update(UpdateGatewayRequest) returns (Gateway) {
+    option (google.api.http) = {
+      put: "/gateways/{gateway.ids.gateway_id}"
+      body: "*"
+    };
+  }
+
+  // Delete the gateway. This may not release the gateway ID for reuse, but it does release the EUI.
+  rpc Delete(GatewayIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/gateways/{gateway_id}"};
+  }
+
+  // Restore a recently deleted gateway. This does not restore the EUI,
+  // as that was released when deleting the gateway.
+  //
+  // Deployment configuration may specify if, and for how long after deletion,
+  // entities can be restored.
+  rpc Restore(GatewayIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/gateways/{gateway_id}/restore"};
+  }
+
+  // Purge the gateway. This will release both gateway ID and EUI for reuse.
+  // The gateway owner is responsible for clearing data from any (external) integrations
+  // that may store and expose data by gateway ID.
+  rpc Purge(GatewayIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/gateways/{gateway_id}/purge"};
+  }
+}
+
+// The GatewayAccess service, exposed by the Identity Server, is used to manage
+// API keys and collaborators of gateways.
+service GatewayAccess {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage access to gateways."};
+  // List the rights the caller has on this gateway.
+  rpc ListRights(GatewayIdentifiers) returns (Rights) {
+    option (google.api.http) = {get: "/gateways/{gateway_id}/rights"};
+  }
+
+  // Create an API key scoped to this gateway.
+  rpc CreateAPIKey(CreateGatewayAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      post: "/gateways/{gateway_ids.gateway_id}/api-keys"
+      body: "*"
+    };
+  }
+
+  // List the API keys for this gateway.
+  rpc ListAPIKeys(ListGatewayAPIKeysRequest) returns (APIKeys) {
+    option (google.api.http) = {get: "/gateways/{gateway_ids.gateway_id}/api-keys"};
+  }
+
+  // Get a single API key of this gateway.
+  rpc GetAPIKey(GetGatewayAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {get: "/gateways/{gateway_ids.gateway_id}/api-keys/{key_id}"};
+  }
+
+  // Update the rights of an API key of the gateway.
+  // This method can also be used to delete the API key, by giving it no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc UpdateAPIKey(UpdateGatewayAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      put: "/gateways/{gateway_ids.gateway_id}/api-keys/{api_key.id}"
+      body: "*"
+    };
+  }
+
+  // Delete a single API key of this gateway.
+  rpc DeleteAPIKey(DeleteGatewayAPIKeyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/gateways/{gateway_ids.gateway_id}/api-keys/{key_id}"};
+  }
+
+  // Get the rights of a collaborator (member) of the gateway.
+  // Pseudo-rights in the response (such as the "_ALL" right) are not expanded.
+  rpc GetCollaborator(GetGatewayCollaboratorRequest) returns (GetCollaboratorResponse) {
+    option (google.api.http) = {
+      additional_bindings {get: "/gateways/{gateway_ids.gateway_id}/collaborator/user/{collaborator.user_ids.user_id}"}
+      additional_bindings {get: "/gateways/{gateway_ids.gateway_id}/collaborator/organization/{collaborator.organization_ids.organization_id}"}
+    };
+  }
+
+  // Set the rights of a collaborator (member) on the gateway.
+  // This method can also be used to delete the collaborator, by giving them no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc SetCollaborator(SetGatewayCollaboratorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/gateways/{gateway_ids.gateway_id}/collaborators"
+      body: "*"
+    };
+  }
+
+  // List the collaborators on this gateway.
+  rpc ListCollaborators(ListGatewayCollaboratorsRequest) returns (Collaborators) {
+    option (google.api.http) = {get: "/gateways/{gateway_ids.gateway_id}/collaborators"};
+  }
+
+  // DeleteCollaborator removes a collaborator from a gateway.
+  rpc DeleteCollaborator(DeleteGatewayCollaboratorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      additional_bindings {delete: "/gateways/{gateway_ids.gateway_id}/collaborators/user/{collaborator_ids.user_ids.user_id}"}
+      additional_bindings {delete: "/gateways/{gateway_ids.gateway_id}/collaborators/organization/{collaborator_ids.organization_ids.organization_id}"}
+    };
+  }
+}
+
+message PullGatewayConfigurationRequest {
+  GatewayIdentifiers gateway_ids = 1;
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message AssertGatewayRightsRequest {
+  repeated GatewayIdentifiers gateway_ids = 1 [
+    (validate.rules).repeated.min_items = 1,
+    (validate.rules).repeated.max_items = 100
+  ];
+  Rights required = 2 [(validate.rules).message.required = true];
+}
+
+// The GatewayBatchAccess service, exposed by the Identity Server, is used to
+// check the rights of the caller on multiple gateways at once.
+// EXPERIMENTAL: This service is subject to change.
+service GatewayBatchAccess {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage access to batches of gateways."};
+  // Assert that the caller has the requested rights on all the requested gateways.
+  // The check is successful if there are no errors.
+  rpc AssertRights(AssertGatewayRightsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {get: "/gateways/rights/batch"};
+  }
+}
+
+message BatchDeleteGatewaysRequest {
+  repeated ttn.lorawan.v3.GatewayIdentifiers gateway_ids = 1 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 20,
+  }];
+}
+
+// The GatewayBatchRegistry service, exposed by the Identity Server, is used to manage
+// gateway registrations in batches.
+service GatewayBatchRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage batches of gateways."};
+  // Delete a batch of gateways.
+  // This operation is atomic; either all gateways are deleted or none.
+  // The caller must have delete rights on all requested gateways.
+  rpc Delete(BatchDeleteGatewaysRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/gateways/batch"};
+  }
+}

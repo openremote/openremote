@@ -93,7 +93,7 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
 
     protected render(): TemplateResult | void {
         return html`
-            <or-ace-editor ${ref(this._aceEditor)} @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => this._onEditorChanged(ev)}" .mode="${this._getMode()}" .value="${this._getRulesString()}"></or-ace-editor>
+            <or-ace-editor ${ref(this._aceEditor)} @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => this._onEditorChanged(ev)}" .mode="${this._getMode()}" .readonly="${this.readonly}" .value="${this._getRulesString()}"></or-ace-editor>
         `;
     }
 
@@ -128,7 +128,7 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
     }
 
     public beforeSave() {
-        if (!this._aceEditor.value) {
+        if (this.readonly || !this._aceEditor.value) {
             return;
         }
 

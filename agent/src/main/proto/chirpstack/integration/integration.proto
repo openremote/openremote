@@ -1,0 +1,367 @@
+syntax = "proto3";
+
+package integration;
+
+option go_package = "github.com/brocaar/chirpstack/api/go/v4/integration";
+option java_package = "io.chirpstack.api.integration";
+option java_multiple_files = true;
+option java_outer_classname = "IntegrationProto";
+option csharp_namespace = "Chirpstack.Integration";
+option php_namespace = "Chirpstack\\Integration";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Integration";
+
+import "common/common.proto";
+import "gw/gw.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+enum LogLevel {
+  // Info.
+  INFO = 0;
+
+  // Warning.
+  WARNING = 1;
+
+  // Error.
+  ERROR = 2;
+}
+
+enum LogCode {
+  // Unknown type.
+  UNKNOWN = 0;
+
+  // Error related to the downlink payload size.
+  // Usually seen when the payload exceeded the maximum allowed payload size.
+  DOWNLINK_PAYLOAD_SIZE = 1;
+
+  // Uplink codec error.
+  UPLINK_CODEC = 2;
+
+  // Downlink codec error.
+  DOWNLINK_CODEC = 3;
+
+  // OTAA error.
+  OTAA = 4;
+
+  // Uplink frame-counter was reset.
+  UPLINK_F_CNT_RESET = 5;
+
+  // Uplink MIC error.
+  UPLINK_MIC = 6;
+
+  // Uplink frame-counter retransmission.
+  UPLINK_F_CNT_RETRANSMISSION = 7;
+
+  // Downlink gateway error.
+  DOWNLINK_GATEWAY = 8;
+
+  // Relay new end-device.
+  RELAY_NEW_END_DEVICE = 9;
+
+  // Downlink frame-counter.
+  F_CNT_DOWN = 10;
+
+  // Downlink has expired.
+  EXPIRED = 11;
+}
+
+// Device information.
+message DeviceInfo {
+  // Tenant ID (UUID).
+  string tenant_id = 1;
+
+  // Tenant name.
+  string tenant_name = 2;
+
+  // Application ID (UUID).
+  string application_id = 3;
+
+  // Application name.
+  string application_name = 4;
+
+  // Device-profile ID (UUID).
+  string device_profile_id = 5;
+
+  // Device-profile name.
+  string device_profile_name = 6;
+
+  // Device name.
+  string device_name = 7;
+
+  // Device EUI.
+  string dev_eui = 8;
+
+  // Device class.
+  common.DeviceClass device_class_enabled = 10;
+
+  // Device-profile and device tags.
+  map<string, string> tags = 9;
+}
+
+// Uplink relay RX information.
+message UplinkRelayRxInfo {
+  // Relay DevEUI.
+  string dev_eui = 1;
+
+  // Frequency.
+  uint32 frequency = 2;
+
+  // Data-rate.
+  uint32 dr = 3;
+
+  // SNR.
+  int32 snr = 4;
+
+  // RSSI.
+  int32 rssi = 5;
+
+  // WOR channel.
+  uint32 wor_channel = 6;
+}
+
+// UplinkEvent is the message sent when an uplink payload has been received.
+message UplinkEvent {
+  // Deduplication ID (UUID).
+  string deduplication_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device information.
+  DeviceInfo device_info = 3;
+
+  // Device address.
+  string dev_addr = 4;
+
+  // Device has ADR bit set.
+  bool adr = 5;
+
+  // Data-rate.
+  uint32 dr = 6;
+
+  // Frame counter.
+  uint32 f_cnt = 7;
+
+  // Frame port.
+  uint32 f_port = 8;
+
+  // Uplink was of type confirmed.
+  bool confirmed = 9;
+
+  // FRMPayload data.
+  bytes data = 10;
+
+  // Note that this is only set when a codec is configured in the Device
+  // Profile.
+  google.protobuf.Struct object = 11;
+
+  // Receiving gateway RX info.
+  repeated gw.UplinkRxInfo rx_info = 12;
+
+  // TX info.
+  gw.UplinkTxInfo tx_info = 13;
+
+  // Relay info.
+  UplinkRelayRxInfo relay_rx_info = 14;
+
+  // Join-Server context.
+  // A non-empty value indicatest that ChirpStack does not have access to
+  // the AppSKey and that the encryption / decryption of the payloads is
+  // the responsibility of the end-application.
+  common.JoinServerContext join_server_context = 15;
+
+  // Region config ID.
+  // This contains the region config ID which reported the uplink.
+  string region_config_id = 16;
+}
+
+// JoinEvent is the message sent when a device joined the network.
+// Note: this event is sent at the first uplink after OTAA.
+message JoinEvent {
+  // Deduplication ID (UUID).
+  string deduplication_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device info.
+  DeviceInfo device_info = 3;
+
+  // Device address.
+  string dev_addr = 4;
+
+  // Relay info.
+  UplinkRelayRxInfo relay_rx_info = 5;
+
+  // Join-Server context.
+  // A non-empty value indicatest that ChirpStack does not have access to
+  // the AppSKey and that the encryption / decryption of the payloads is
+  // the responsibility of the end-application.
+  common.JoinServerContext join_server_context = 6;
+
+  // Region config ID.
+  // This contains the region config ID which reported the uplink.
+  string region_config_id = 7;
+}
+
+// AckEvent is the message sent when a confirmation on a confirmed downlink
+// has been received -or- when the downlink timed out.
+message AckEvent {
+  // Deduplication ID (UUID).
+  string deduplication_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device info.
+  DeviceInfo device_info = 3;
+
+  // Downlink queue item ID (UUID).
+  string queue_item_id = 4;
+
+  // Frame was acknowledged.
+  bool acknowledged = 5;
+
+  // Downlink frame counter to which the acknowledgement relates.
+  uint32 f_cnt_down = 6;
+}
+
+// TxAckEvent is the message sent when a downlink was acknowledged by the
+// gateway for transmission. As a downlink can be scheduled in the future, this
+// event does not confirm that the message has already been transmitted.
+message TxAckEvent {
+  // Downlink ID.
+  uint32 downlink_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device info.
+  DeviceInfo device_info = 3;
+
+  // Downlink queue item ID (UUID).
+  string queue_item_id = 4;
+
+  // Downlink frame-counter.
+  uint32 f_cnt_down = 5;
+
+  // Gateway ID.
+  string gateway_id = 6;
+
+  // TX info.
+  gw.DownlinkTxInfo tx_info = 7;
+}
+
+// LogEvent is the message sent when a device-related log was sent.
+message LogEvent {
+  // Timestamp.
+  google.protobuf.Timestamp time = 1;
+
+  // Device info.
+  DeviceInfo device_info = 2;
+
+  // Log level.
+  LogLevel level = 3;
+
+  // Log code.
+  LogCode code = 4;
+
+  // Description message.
+  string description = 5;
+
+  // Context map.
+  map<string, string> context = 6;
+}
+
+// StatusEvent is the message sent when a device-status mac-command was sent
+// by the device.
+message StatusEvent {
+  // Deduplication ID (UUID).
+  string deduplication_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device info.
+  DeviceInfo device_info = 3;
+
+  // The demodulation signal-to-noise ratio in dB for the last successfully
+  // received device-status request by the Network Server.
+  int32 margin = 5;
+
+  // Device is connected to an external power source.
+  bool external_power_source = 6;
+
+  // Battery level is not available.
+  bool battery_level_unavailable = 7;
+
+  // Battery level.
+  float battery_level = 8;
+}
+
+// LocationEvent is the message sent when a geolocation resolve was returned.
+message LocationEvent {
+  // Deduplication ID (UUID).
+  string deduplication_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device info.
+  DeviceInfo device_info = 3;
+
+  // Location.
+  common.Location location = 4;
+}
+
+// IntegrationEvent is the message that can be sent by an integration.
+// It allows for sending events which are provided by an external integration
+// which are "not native" to ChirpStack.
+message IntegrationEvent {
+  // Deduplication ID (UUID).
+  string deduplication_id = 1;
+
+  // Timestamp.
+  google.protobuf.Timestamp time = 2;
+
+  // Device info.
+  DeviceInfo device_info = 3;
+
+  // Integration name.
+  string integration_name = 4;
+
+  // Event type.
+  string event_type = 5;
+
+  // Struct containing the event object.
+  google.protobuf.Struct object = 6;
+}
+
+// DownlinkCommand is the command to enqueue a downlink payload for the given
+// device.
+message DownlinkCommand {
+  // ID (UUID).
+  // If left blank, a random UUID will be generated.
+  string id = 1;
+
+  // Device EUI (EUI64).
+  string dev_eui = 2;
+
+  // Confirmed.
+  bool confirmed = 3;
+
+  // FPort (must be > 0).
+  uint32 f_port = 4;
+
+  // Data.
+  // Or use the json_object field when a codec has been configured.
+  bytes data = 5;
+
+  // Only use this when a codec has been configured that can encode this
+  // object to bytes.
+  google.protobuf.Struct object = 6;
+
+  // Expires at (optional).
+  // Expired queue-items will be automatically removed from the queue.
+  google.protobuf.Timestamp expires_at = 7;
+}

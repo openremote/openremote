@@ -1,0 +1,99 @@
+// Copyright © 2021 The Things Industries B.V.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto2";
+
+package thethings.json;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/TheThingsIndustries/protoc-gen-go-json/annotations";
+
+// NOTE: protoc-gen-go-json is primarily intended for internal use by
+// The Things Industries. We have therefore chosen to use option number 51885,
+// which is in the 50000-99999 range reserved for internal use within individual
+// organizations. For this reason, the option number is not registered on
+// https://github.com/protocolbuffers/protobuf/blob/master/docs/options.md.
+
+message FileOptions {
+  // Generate marshalers for all messages and enums in this file.
+  // Message options can be used to override this.
+  optional bool marshaler_all = 1;
+  // Generate unmarshalers for all messages and enums in this file.
+  // Message options can be used to override this.
+  optional bool unmarshaler_all = 2;
+}
+
+extend google.protobuf.FileOptions {
+  optional FileOptions file = 51885;
+}
+
+message MessageOptions {
+  // Generate a marshaler for this message.
+  optional bool marshaler = 1;
+  // Generate an unmarshaler for this message.
+  optional bool unmarshaler = 2;
+  // Treat this message as a wrapper for the value field inside it.
+  optional bool wrapper = 3;
+}
+
+extend google.protobuf.MessageOptions {
+  optional MessageOptions message = 51885;
+}
+
+message FieldOptions {
+  // Custom marshaler function. Specified as github.com/username/repo/package.FuncName.
+  optional string marshaler_func = 1;
+  // Custom unmarshaler function. Specified as github.com/username/repo/package.FuncName.
+  optional string unmarshaler_func = 2;
+}
+
+extend google.protobuf.FieldOptions {
+  optional FieldOptions field = 51885;
+}
+
+message OneofOptions {}
+
+extend google.protobuf.OneofOptions {
+  optional OneofOptions oneof = 51885;
+}
+
+message EnumOptions {
+  // Generate a marshaler for this enum.
+  optional bool marshaler = 1;
+  // Always marshal as a number.
+  optional bool marshal_as_number = 2;
+  // Always marshal as a string.
+  optional bool marshal_as_string = 3;
+  // Generate an unmarshaler for this enum.
+  optional bool unmarshaler = 4;
+  // Consider string values with this prefix when unmarshaling.
+  optional string prefix = 5;
+}
+
+extend google.protobuf.EnumOptions {
+  optional EnumOptions enum = 51885;
+}
+
+message EnumValueOptions {
+  // The value to emit when marshaling as string.
+  optional string value = 1;
+  // Aliases to accept when unmarshaling from string.
+  repeated string aliases = 2;
+}
+
+extend google.protobuf.EnumValueOptions {
+  optional EnumValueOptions enum_value = 51885;
+}
+
+message ServiceOptions {}
+
+extend google.protobuf.ServiceOptions {
+  optional ServiceOptions service = 51885;
+}
+
+message MethodOptions {}
+
+extend google.protobuf.MethodOptions {
+  optional MethodOptions method = 51885;
+}

@@ -1,0 +1,247 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/contact_info.proto";
+import "ttn/lorawan/v3/enums.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The OAuth2 flows an OAuth client can use to get an access token.
+enum GrantType {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "GRANT"
+  };
+
+  // Grant type used to exchange an authorization code for an access token.
+  GRANT_AUTHORIZATION_CODE = 0;
+  // Grant type used to exchange a user ID and password for an access token.
+  GRANT_PASSWORD = 1;
+  // Grant type used to exchange a refresh token for an access token.
+  GRANT_REFRESH_TOKEN = 2;
+}
+
+// An OAuth client on the network.
+message Client {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The identifiers of the OAuth client. These are public and can be seen by any authenticated user in the network.
+  ClientIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  // When the OAuth client was created. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the OAuth client was last updated. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the OAuth client was deleted. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp deleted_at = 16 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  // The name of the OAuth client. This information is public and can be seen by any authenticated user in the network.
+  string name = 4 [(validate.rules).string.max_len = 50];
+  // A description for the OAuth client. This information is public and can be seen by any authenticated user in the network.
+  string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this client. Typically used for organizing clients or for storing integration-specific data.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // Contact information for this client. Typically used to indicate who to contact with technical/security questions about the application.
+  // This information is public and can be seen by any authenticated user in the network.
+  // This field is deprecated. Use administrative_contact and technical_contact instead.
+  repeated ContactInfo contact_info = 7 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+
+  OrganizationOrUserIdentifiers administrative_contact = 18;
+  OrganizationOrUserIdentifiers technical_contact = 19;
+
+  // The client secret is only visible to collaborators of the client.
+  string secret = 8 [(validate.rules).string.max_len = 128];
+  // The allowed redirect URIs against which authorization requests are checked.
+  // If the authorization request does not pass a redirect URI, the first one
+  // from this list is taken.
+  // This information is public and can be seen by any authenticated user in the network.
+  repeated string redirect_uris = 9 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {max_len: 128}
+    }
+  }];
+  // The allowed logout redirect URIs against which client initiated logout
+  // requests are checked. If the authorization request does not pass a redirect
+  // URI, the first one from this list is taken.
+  // This information is public and can be seen by any authenticated user in the network.
+  repeated string logout_redirect_uris = 15 [(validate.rules).repeated = {
+    max_items: 10,
+    items: {
+      string: {max_len: 128}
+    }
+  }];
+  // The reviewing state of the client.
+  // This information is public and can be seen by any authenticated user in the network.
+  // This field can only be modified by admins.
+  // If state_description is not updated when updating state, state_description is cleared.
+  State state = 10 [(validate.rules).enum.defined_only = true];
+  // A description for the state field.
+  // This field can only be modified by admins, and should typically only be updated
+  // when also updating `state`.
+  string state_description = 17 [(validate.rules).string.max_len = 128];
+  // If set, the authorization page will be skipped.
+  // This information is public and can be seen by any authenticated user in the network.
+  // This field can only be modified by admins.
+  bool skip_authorization = 11;
+  // If set, the authorization page will show endorsement.
+  // This information is public and can be seen by any authenticated user in the network.
+  // This field can only be modified by admins.
+  bool endorsed = 12;
+  // OAuth flows that can be used for the client to get a token.
+  // This information is public and can be seen by any authenticated user in the network.
+  // After a client is created, this field can only be modified by admins.
+  repeated GrantType grants = 13 [(validate.rules).repeated.items.enum.defined_only = true];
+  // Rights denotes what rights the client will have access to.
+  // This information is public and can be seen by any authenticated user in the network.
+  // Users that previously authorized this client will have to re-authorize the
+  // client after rights are added to this list.
+  repeated Right rights = 14 [(validate.rules).repeated.items.enum.defined_only = true];
+
+  reserved 20;
+  reserved "label_ids";
+
+  // next: 21
+}
+
+message Clients {
+  repeated Client clients = 1;
+}
+
+message GetClientRequest {
+  ClientIdentifiers client_ids = 1 [(validate.rules).message.required = true];
+  // The names of the client fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListClientsRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // By default we list all OAuth clients the caller has rights on.
+  // Set the user or the organization (not both) to instead list the OAuth clients
+  // where the user or organization is collaborator on.
+  OrganizationOrUserIdentifiers collaborator = 1 [(thethings.flags.field) = {hidden: true}];
+  // The names of the client fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 3 [(validate.rules).string = {
+    in: [
+      "",
+      "client_id",
+      "-client_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 4 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 5;
+  // Only return recently deleted clients.
+  bool deleted = 6;
+}
+
+message CreateClientRequest {
+  Client client = 1 [(validate.rules).message.required = true];
+  // Collaborator to grant all rights on the newly created client.
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message UpdateClientRequest {
+  Client client = 1 [(validate.rules).message.required = true];
+  // The names of the client fields that should be updated.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListClientCollaboratorsRequest {
+  ClientIdentifiers client_ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "id",
+      "-id",
+      "-rights",
+      "rights"
+    ]
+  }];
+}
+
+message GetClientCollaboratorRequest {
+  ClientIdentifiers client_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message SetClientCollaboratorRequest {
+  ClientIdentifiers client_ids = 1 [(validate.rules).message.required = true];
+  Collaborator collaborator = 2 [(validate.rules).message.required = true];
+}
+
+message DeleteClientCollaboratorRequest {
+  ClientIdentifiers client_ids = 1 [(validate.rules).message.required = true];
+  OrganizationOrUserIdentifiers collaborator_ids = 2 [(validate.rules).message.required = true];
+}

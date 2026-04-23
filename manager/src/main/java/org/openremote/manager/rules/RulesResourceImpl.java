@@ -47,6 +47,7 @@ import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 public class RulesResourceImpl extends ManagerWebResource implements RulesResource {
 
     private static final Logger LOG = Logger.getLogger(RulesResourceImpl.class.getName());
+    private static final String LEGACY_JAVASCRIPT_RULESET_MUTATION_ERROR = "JavaScript rules are legacy and cannot be created or updated";
 
     final protected RulesetStorageService rulesetStorageService;
     final protected AssetStorageService assetStorageService;
@@ -116,6 +117,19 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             compilationErrorCount,
             executionErrorCount
         );
+    }
+
+    protected void rejectLegacyJavascriptCreate(Ruleset ruleset) {
+        if (ruleset != null && ruleset.getLang() == Ruleset.Lang.JAVASCRIPT) {
+            throw new WebApplicationException(LEGACY_JAVASCRIPT_RULESET_MUTATION_ERROR, BAD_REQUEST);
+        }
+    }
+
+    protected void rejectLegacyJavascriptUpdate(Ruleset existingRuleset, Ruleset incomingRuleset) {
+        if ((existingRuleset != null && existingRuleset.getLang() == Ruleset.Lang.JAVASCRIPT)
+            || (incomingRuleset != null && incomingRuleset.getLang() == Ruleset.Lang.JAVASCRIPT)) {
+            throw new WebApplicationException(LEGACY_JAVASCRIPT_RULESET_MUTATION_ERROR, BAD_REQUEST);
+        }
     }
 
     @Override
@@ -209,6 +223,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+        rejectLegacyJavascriptCreate(ruleset);
         ruleset = rulesetStorageService.merge(ruleset);
         return ruleset.getId();
     }
@@ -233,6 +248,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         GlobalRuleset existingRuleset = rulesetStorageService.find(GlobalRuleset.class, id);
         if (existingRuleset == null)
             throw new WebApplicationException(NOT_FOUND);
+        rejectLegacyJavascriptUpdate(existingRuleset, ruleset);
         rulesetStorageService.merge(ruleset);
     }
 
@@ -256,6 +272,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             LOG.fine("Realm '" + realm + "' is nonexistent, inactive or inaccessible: username=" + getUsername());
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+        rejectLegacyJavascriptCreate(ruleset);
 
         // Only super users can create/modify groovy rules
         // TODO: Implement robust groovy sandbox
@@ -303,6 +320,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!existingRuleset.getRealm().equals(ruleset.getRealm())) {
             throw new WebApplicationException("Requested realm and existing ruleset realm must match", BAD_REQUEST);
         }
+        rejectLegacyJavascriptUpdate(existingRuleset, ruleset);
 
         // Only super users can create/modify groovy rules
         // TODO: Implement robust groovy sandbox
@@ -353,6 +371,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+        rejectLegacyJavascriptCreate(ruleset);
 
         // Only super users can create/modify groovy rules
         // TODO: Implement robust groovy sandbox
@@ -406,6 +425,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException("Can't update asset ID, delete and create the ruleset to reassign",
                                               BAD_REQUEST);
         }
+        rejectLegacyJavascriptUpdate(existingRuleset, ruleset);
 
         // Only super users can create/modify groovy rules
         // TODO: Implement robust groovy sandbox
