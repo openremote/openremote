@@ -46,7 +46,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def serverUri = serverUri(serverPort)
@@ -68,16 +68,18 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.addOrReplaceAttributes(
             new Attribute<>("illegal- Attribute:name&&&", ValueType.TEXT)
         )
-
         assetResource.update(null, testAsset.getId(), testAsset)
 
         then: "the request should fail validation and return a validation report indicating the failure(s)"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
-        def report = ex.response.readEntity(ViolationReport)
-        report != null
-        report.propertyViolations.size() == 1
-        report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            def report =  r.readEntity(ViolationReport)
+            assert report != null
+            assert report.propertyViolations.size() == 1
+            assert report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
+            return true
+        }
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -121,7 +123,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a new realm"
         testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
@@ -129,7 +134,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is created with a non existent realm"
         newTestAsset.setId(null)
@@ -138,7 +146,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a non-existent parent"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -147,7 +158,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with itself as a parent"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -156,7 +170,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is updated with a parent in a different realm"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -165,14 +182,20 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
 
         when: "an asset is deleted but has children"
         assetResource.delete(null, [managerTestSetup.apartment1Id])
 
         then: "the request should be bad"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
     }
 
     def "Batch parent updates reject unknown child asset ids as superuser"() {
@@ -188,7 +211,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -216,7 +239,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -244,7 +267,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -272,7 +295,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there are assets in the master and building realms"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -302,7 +325,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there's an asset in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -337,7 +360,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is an asset hierarchy in the master realm"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -368,7 +391,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is a group parent that only accepts room assets"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -399,7 +422,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is a locally registered gateway asset in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -436,7 +459,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "there is a locally registered gateway asset and a gateway descendant in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
@@ -480,7 +503,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the asset resource"
         def serverUri = serverUri(serverPort)

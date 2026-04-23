@@ -417,14 +417,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
+    public AttributeWriteResult writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
         return writeAttributeValue(requestParams, assetId, attributeName, null, value);
     }
 
     @Override
-    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Long timestamp, Object value) {
-        Response.Status status = Response.Status.OK;
-
+    public AttributeWriteResult writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Long timestamp, Object value) {
         if (value instanceof NullNode) {
             value = null;
         }
@@ -440,15 +438,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         AttributeWriteResult result = doAttributeWrite(event);
 
         if (result.getFailure() != null) {
-            status = switch (result.getFailure()) {
+            Response.Status status = switch (result.getFailure()) {
                 case ASSET_NOT_FOUND, ATTRIBUTE_NOT_FOUND -> NOT_FOUND;
                 case INVALID_VALUE -> NOT_ACCEPTABLE;
                 case QUEUE_FULL -> TOO_MANY_REQUESTS;
                 default -> BAD_REQUEST;
             };
+            throw new WebApplicationException(Response.status(status).entity(result).type(MediaType.APPLICATION_JSON_TYPE).build());
         }
 
-        return Response.status(status).entity(result).type(MediaType.APPLICATION_JSON_TYPE).build();
+        return result;
     }
 
     @Override

@@ -129,7 +129,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
-        ).token
+        )
         // Resteasy client has issues with @Suspended annotation so not used for now
         //def datapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetDatapointResource.class)
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
@@ -537,7 +537,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser1",
             "testuser1"
-        ).token
+        )
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetPredictedDatapointResource.class)
 
         and: "a websocket client authenticated in the same realm"
@@ -717,7 +717,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-        ).token
+        )
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
 
         and: "a restricted websocket client in the same realm"
@@ -800,7 +800,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             KEYCLOAK_CLIENT_ID,
             "testuser2",
             "testuser2"
-        ).token
+        )
         def predictedDatapointResource = getClientApiTarget(serverUri(serverPort), "building", accessToken).proxy(AssetPredictedDatapointResource.class)
 
         and: "a restricted websocket client in the same realm"

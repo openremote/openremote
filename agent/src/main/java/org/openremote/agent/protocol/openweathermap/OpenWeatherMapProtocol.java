@@ -19,18 +19,9 @@
  */
 package org.openremote.agent.protocol.openweathermap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import jakarta.ws.rs.core.Response;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -42,11 +33,17 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.syslog.SyslogCategory;
-
-import jakarta.ws.rs.core.Response;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
-import static org.openremote.container.web.WebTargetBuilder.createClient;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.model.value.MetaItemType.HAS_PREDICTED_DATA_POINTS;
@@ -76,7 +73,6 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OpenWeatherMapProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "OpenWeatherMap";
-    private static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
 
     // Initial delay to allow system to populate agent links
     private static final int INITIAL_POLLING_DELAY_MILLIS = 3000; // 3 seconds
@@ -86,7 +82,6 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
 
     public OpenWeatherMapProtocol(OpenWeatherMapAgent agent) {
         super(agent);
-        initClient();
     }
 
     @Override
@@ -242,7 +237,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
      * @return the OpenWeatherMapResponse from the API
      */
     protected OpenWeatherMapResponse fetchWeatherData(String apiUrl) {
-        try (Response response = client.get().target(apiUrl).request().get()) {
+        try (Response response = WebTargetBuilder.getClient().target(apiUrl).request().get()) {
             if (response.getStatus() == 200) {
                 return response.readEntity(OpenWeatherMapResponse.class);
             } else if (response.getStatus() == 401) {
@@ -380,7 +375,7 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
      */
     protected boolean healthCheck() {
         String apiUrl = buildApiUrl(0, 0);
-        try (Response response = client.get().target(apiUrl).request().get()) {
+        try (Response response = WebTargetBuilder.getClient().target(apiUrl).request().get()) {
             if (response.getStatus() != 200) {
                 LOG.warning("Health check failed with status: " + response.getStatus());
                 return false;
@@ -462,14 +457,6 @@ public class OpenWeatherMapProtocol extends AbstractProtocol<OpenWeatherMapAgent
     protected void setOpenWeatherMapAttribution() {
         sendAttributeEvent(new AttributeEvent(agent.getId(), OpenWeatherMapAgent.ATTRIBUTION.getName(),
                 "Weather data provided by OpenWeather (https://openweathermap.org/)"));
-    }
-
-    protected static void initClient() {
-        synchronized (client) {
-            if (client.get() == null) {
-                client.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
-            }
-        }
     }
 
     /**
