@@ -1059,6 +1059,7 @@ jobs:
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
           DEPLOYMENT_DOCKER_BUILD_PATH: ${{ steps.deployment-docker-command.outputs.buildPath }}
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
