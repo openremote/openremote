@@ -296,31 +296,7 @@ queries:
     databases: [openremote]
     metrics: [pg_datapoint_query]
     sql: |
-      WITH heaviest_numeric_entity AS (
-        -- Safely find the busiest entity over the last day that ONLY has numeric JSONB values
-        SELECT entity_id, attribute_name
-        FROM asset_datapoint
-        WHERE timestamp > now() - INTERVAL '1 day'
-          AND jsonb_typeof(value) = 'number'
-        GROUP BY entity_id, attribute_name
-        ORDER BY count(*) DESC
-        LIMIT 1
-      ),
-      aggregated_points AS (
-        -- Calculate an hourly average over a 23-day window
-        SELECT 
-          time_bucket('1 hour', a.timestamp) AS bucket,
-          -- Cast JSONB to text first, then to numeric to avoid type errors
-          avg((a.value::text)::numeric) AS avg_value
-        FROM asset_datapoint a
-        JOIN heaviest_numeric_entity h 
-          ON a.entity_id = h.entity_id 
-          AND a.attribute_name = h.attribute_name
-        WHERE a.timestamp BETWEEN now() - INTERVAL '30 days' AND now() - INTERVAL '7 days'
-        GROUP BY bucket
-      )
-      SELECT count(bucket) AS pg_benchmark_rows_processed
-      FROM aggregated_points;
+      SELECT datapoint_metric_query() as pg_datapoint_query;
 
   background_errors:
     interval: 3600 # Hourly

@@ -1,24 +1,23 @@
-CREATE OR REPLACE FUNCTION get_benchmark_historical_aggregation()
+-- This is a function to ensure indexes are used for the dynamically retrieved entity and attribute.
+
+CREATE OR REPLACE FUNCTION datapoint_metric_query()
 RETURNS integer AS $$
 DECLARE
 target_entity text;
     target_attr text;
     result_count integer;
 BEGIN
-
--- 1. Find the heaviest entity and attribute safely
+    -- 1. Find the heaviest entity and attribute safely
+    -- REMOVED the jsonb_typeof check to guarantee an Index Only Scan
 SELECT entity_id, attribute_name
 INTO target_entity, target_attr
 FROM asset_datapoint
 WHERE timestamp > now() - INTERVAL '1 day'
-  AND jsonb_typeof(value) = 'number'
 GROUP BY entity_id, attribute_name
 ORDER BY count(*) DESC
     LIMIT 1;
 
 -- 2. Run the heavy aggregation using dynamic SQL.
--- The %L formatting injects the variables as literal strings,
--- tricking the query planner into using the lightning-fast Index Only Scans!
 EXECUTE format('
         WITH aggregated_points AS (
             SELECT
