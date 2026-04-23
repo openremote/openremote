@@ -307,9 +307,9 @@ export class OrAddAssetDialog extends LitElement {
                 <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
             </div>
             <div id="name-wrapper">
-                <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
+                <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
                 <div id="parent-wrapper">
-                    <or-mwc-input id="parent" .type="${InputType.TEXT}" readonly .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                    <or-mwc-input id="parent" .type="${InputType.TEXT}" readonly label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
                     <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
                     <or-mwc-input id="toggle-parent-selector" icon="${this.showParentAssetSelector ? "pencil-off" : "pencil"}" type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
                 </div>
@@ -319,7 +319,7 @@ export class OrAddAssetDialog extends LitElement {
                 ? html``
                 : html`
                     <div>
-                        <div class="heading">${i18next.t("attribute_plural")}</div>
+                        <div class="heading"><or-translate value="attribute_plural"></or-translate></div>
                         <div style="display: grid">
                             ${attributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => html`
@@ -333,7 +333,7 @@ export class OrAddAssetDialog extends LitElement {
                 ? html``
                 : html`
                     <div>
-                        <div class="heading">${i18next.t("optional_attributes")}</div>
+                        <div class="heading"><or-translate value="optional_attributes"></or-translate></div>
                         <div style="display: grid">
                             ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => html`

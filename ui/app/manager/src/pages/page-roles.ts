@@ -245,6 +245,13 @@ export class PageRoles extends Page<AppStateKeyed> {
     return "role_plural";
   }
 
+  protected _onRoleNameChanged(e: OrInputChangedEvent, role: Role): void {
+      role.name = e.detail.value;
+      const isDuplicate = this._compositeRoles.some(r => r !== role && r.name === role.name);
+      (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('roleAlreadyExists') : undefined);
+      this.requestUpdate();
+  }
+
   public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
       if (_changedProperties.has("realm")) {
@@ -345,7 +352,7 @@ export class PageRoles extends Page<AppStateKeyed> {
         </div>
         <div class="panel">
             <div class="panel-title" style="justify-content: space-between;">
-                <p style="margin: 0;">${i18next.t("role")}</p>
+                <p style="margin: 0;"><or-translate value="role"></or-translate></p>
                 <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
                               @input="${(ev: InputEvent) => this.onRoleSearch(ev)}"
                 ></or-mwc-input>
@@ -386,23 +393,23 @@ export class PageRoles extends Page<AppStateKeyed> {
 
                                     <div class="row">
                                         <div class="column">
-                                            <or-mwc-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name || undefined}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { role.name = e.detail.value; const isDuplicate = this._compositeRoles.some(r => r !== role && r.name === role.name); (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('roleAlreadyExists') : undefined); this.requestUpdate(); }}"></or-mwc-input>
+                                            <or-mwc-input label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name || undefined}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onRoleNameChanged(e, role)}"></or-mwc-input>
                                         </div>
                                         <div class="column">
-                                            <or-mwc-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>
+                                            <or-mwc-input label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>
                                         </div>
                                     </div>
 
                                     <div class="row">
                                         <div class="column">
-                                            <strong class="column-title">${i18next.t("readPermissions")}</strong> ${readRoles.map(r => {
+                                            <strong class="column-title"><or-translate value="readPermissions"></or-translate></strong> ${readRoles.map(r => {
                                             return html`
                                               <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
 
                                         </div>
                                         <div class="column">
-                                            <strong class="column-title">${i18next.t("writePermissions")}</strong> ${writeRoles.map(r => {
+                                            <strong class="column-title"><or-translate value="writePermissions"></or-translate></strong> ${writeRoles.map(r => {
                                             return html`
                                               <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}

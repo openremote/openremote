@@ -497,13 +497,13 @@ export class PageUsers extends Page<AppStateKeyed> {
             <div id="wrapper">
                 <div id="title">
                     <or-icon icon="account-group"></or-icon>
-                    <span>${i18next.t('user_plural')}</span>
+                    <span><or-translate value="user_plural"></or-translate></span>
                 </div>
 
                 <!-- Regular users panel -->
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
-                        <p style="margin:0;">${i18next.t("regularUser_plural")}</p>
+                        <p style="margin:0;"><or-translate value="regularUser_plural"></or-translate></p>
                         <or-mwc-input type="${InputType.TEXT}" placeholder="${i18next.t('search')}"
                                       style="margin: 0; text-transform: none;" iconTrailing="magnify" compact outlined
                                       @input="${(ev) => this.onRegularUserSearch(ev)}"
@@ -513,12 +513,12 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <table class="mdc-data-table__table" aria-label="user list">
                             <thead>
                                 <tr class="mdc-data-table__header-row">
-                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t('username')}</th>
-                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">${i18next.t('firstName')}</th>
-                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">${i18next.t('surname')}</th>
-                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">${i18next.t('email')}</th>
-                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t('status')}</th>
-                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">${i18next.t('tag')}</th>
+                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="username"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><or-translate value="firstName"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><or-translate value="surname"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><or-translate value="email"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="status"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><or-translate value="tag"></or-translate></th>
                                 </tr>
                             </thead>
                             <tbody class="mdc-data-table__content">
@@ -564,7 +564,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <!-- Service users panel -->
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
-                        <p style="margin:0;">${i18next.t("serviceUser_plural")}</p>
+                        <p style="margin:0;"><or-translate value="serviceUser_plural"></or-translate></p>
                         <or-mwc-input type="${InputType.TEXT}" placeholder="${i18next.t('search')}"
                                       style="margin: 0; text-transform: none;" iconTrailing="magnify" compact outlined
                                       @input="${(ev) => this.onServiceUserSearch(ev)}"
@@ -574,9 +574,9 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <table class="mdc-data-table__table" aria-label="service user list">
                             <thead>
                                 <tr class="mdc-data-table__header-row">
-                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t('username')}</th>
-                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t('status')}</th>
-                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">${i18next.t('tag')}</th>
+                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="username"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="status"></or-translate></th>
+                                    <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><or-translate value="tag"></or-translate></th>
                                 </tr>
                             </thead>
                             <tbody class="mdc-data-table__content">
@@ -917,10 +917,10 @@ export class PageUsers extends Page<AppStateKeyed> {
         return html`
             <div class="row" style="padding: 16px 0 8px;">
                 <div class="column">
-                    <h5>${i18next.t("details")}</h5>
+                    <h5><or-translate value="details"></or-translate></h5>
                     <or-mwc-input id="new-username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
                                   class="validate"
-                                  .label="${i18next.t("username")}"
+                                  label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255"
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
                                   pattern="[A-Za-z0-9_+@\\.\\-ßçʊÇʊ]+"
@@ -934,7 +934,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <or-mwc-input id="new-email" ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
                                   .disabled="${!!user.id && this._registrationEmailAsUsername}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
-                                  .label="${i18next.t("email")}"
+                                  label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
                                   .value="${user.email}" autocomplete="false"
                                   ?required="${!isServiceUser && this._registrationEmailAsUsername}"
@@ -951,7 +951,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   }}"></or-mwc-input>
                     <or-mwc-input id="new-firstName" ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
-                                  .label="${i18next.t("firstName")}"
+                                  label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}" minLength="1"
                                   .value="${user.firstName}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -960,7 +960,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   }}"></or-mwc-input>
                     <or-mwc-input id="new-surname" ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
-                                  .label="${i18next.t("surname")}"
+                                  label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}" minLength="1"
                                   .value="${user.lastName}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -969,7 +969,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   }}"></or-mwc-input>
                     <or-mwc-input id="new-tag" ?readonly="${readonly || isGatewayServiceUser}"
                                   class="validate"
-                                  .label="${i18next.t("tag")}"
+                                  label="${i18next.t("tag")}"
                                   .type="${InputType.TEXT}" minLength="1"
                                   .value="${user.attributes?.Tag?.[0]}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -982,30 +982,30 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       user.attributes.Tag[0] = e.detail.value;
                                       this.onUserChanged(suffix);
                                   }}"></or-mwc-input>
-                    <h5>${i18next.t("password")}</h5>
+                    <h5><or-translate value="password"></or-translate></h5>
                     ${isServiceUser ? html`
                         ${when(user.secret, () => html`
                             <or-mwc-input id="new-password-${suffix}" readonly
                                           class="validate"
-                                          .label="${i18next.t("secret")}"
+                                          label="${i18next.t("secret")}"
                                           .value="${user.secret}"
                                           .type="${InputType.TEXT}"></or-mwc-input>
                             <or-mwc-input ?readonly="${!user.id || readonly}"
                                           ?disabled="${isGatewayServiceUser}"
-                                          .label="${i18next.t("regenerateSecret")}"
+                                          label="${i18next.t("regenerateSecret")}"
                                           .type="${InputType.BUTTON}"
                                           @or-mwc-input-changed="${(ev) => {
                                               this._regenerateSecret(ev, user, "new-password-" + suffix).catch(() => showSnackbar(undefined, 'errorOccurred'));
                                               this.onUserChanged(suffix);
                                           }}"></or-mwc-input>
                         `, () => html`
-                            <span>${i18next.t("generateSecretInfo")}</span>
+                            <span><or-translate value="generateSecretInfo"></or-translate></span>
                         `)}
                     ` : html`
                         <or-mwc-input id="new-password-${suffix}"
                                       ?readonly="${readonly}"
                                       class="validate"
-                                      .label="${i18next.t("password")}"
+                                      label="${i18next.t("password")}"
                                       .type="${InputType.PASSWORD}" min="1" autocomplete="false"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
@@ -1014,7 +1014,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         ></or-mwc-input>
                         <or-mwc-input id="new-repeatPassword-${suffix}"
                                       helperPersistent ?readonly="${readonly}"
-                                      .label="${i18next.t("repeatPassword")}"
+                                      label="${i18next.t("repeatPassword")}"
                                       .type="${InputType.PASSWORD}" min="1" autocomplete="false"
                                       style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -1027,10 +1027,10 @@ export class PageUsers extends Page<AppStateKeyed> {
                 </div>
 
                 <div class="column">
-                    <h5>${i18next.t("settings")}</h5>
+                    <h5><or-translate value="settings"></or-translate></h5>
                     <or-mwc-input ?readonly="${readonly || isGatewayServiceUser}"
                                   class="validate"
-                                  .label="${i18next.t("active")}"
+                                  label="${i18next.t("active")}"
                                   .type="${InputType.CHECKBOX}"
                                   .value="${user.enabled}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -1046,7 +1046,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             .value="${user.realmRoles}"
                             .type="${InputType.SELECT}" multiple
                             .options="${realmRoleOptions}"
-                            .label="${i18next.t("realm_role_plural")}"
+                            label="${i18next.t("realm_role_plural")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this.onUserChanged(suffix);
                                 user.realmRoles = e.detail.value as string[];
@@ -1058,7 +1058,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => this._compositeRoles.some(cr => cr.name === r)) : undefined}"
                             .type="${InputType.SELECT}" multiple
                             .options="${compositeRoleOptions}"
-                            .label="${i18next.t("manager_role_plural")}"
+                            label="${i18next.t("manager_role_plural")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 user.roles = e.detail.value as string[];
                                 this._updateUserSelectedRoles(user, suffix);
@@ -1092,7 +1092,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <span>${i18next.t("linkedAssets")}:</span>
                         <or-mwc-input outlined ?disabled="${readonly || isGatewayServiceUser}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
-                                      .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
+                                      label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
                                       @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly, suffix)}"></or-mwc-input>
                     </div>
                 </div>

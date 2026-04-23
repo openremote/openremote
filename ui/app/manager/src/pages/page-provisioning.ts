@@ -207,7 +207,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
     protected _roleOptions?: [string, string][];
     @state()
     protected _realmOptions?: string[];
-
+    @state()
     protected _configFilter: (configs: ProvisioningConfig<any, any>[]) => ProvisioningConfig<any, any>[] = (configs) => configs;
 
     get name(): string {
@@ -242,7 +242,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
 
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
-                        <p>${i18next.t("provisioningConfigs")}</p>
+                        <p><or-translate value="provisioningConfigs"></or-translate></p>
                         <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
                                       @input="${(ev: InputEvent) => this.onConfigSearch(ev)}"
                         ></or-mwc-input>
@@ -382,12 +382,12 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             const data = config.data as X509ProvisioningData;
 
             typeColumnContents = html`
-                <or-mwc-input .label="${i18next.t("CACertPem")}" required
+                <or-mwc-input label="${i18next.t("CACertPem")}" required
                               .type="${InputType.TEXTAREA}"
                               .value="${data.CACertPEM}"
                               resizeVertical
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => { data.CACertPEM = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("ignoreExpiryDate")}"
+                <or-mwc-input label="${i18next.t("ignoreExpiryDate")}"
                               .type="${InputType.CHECKBOX}"
                               .value="${data.ignoreExpiryDate}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => data.ignoreExpiryDate = !e.detail.value}"
@@ -420,18 +420,18 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     <div class="item-row-content">
                         <div class="row">
                             <div class="column">
-                                <or-mwc-input .label="${i18next.t("name")}"
+                                <or-mwc-input label="${i18next.t("name")}"
                                               .type="${InputType.TEXT}" min="1" required
                                               .value="${config.name}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => { config.name = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
                                 <or-mwc-input ?disabled="${!!config.id}" required
-                                              .label="${i18next.t("type")}"
+                                              label="${i18next.t("type")}"
                                               .type="${InputType.SELECT}"
                                               .options="${[["x509", "X.509"]]}"
                                               .value="${!config.type ? "x509" : config.type}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.type = e.detail.value}"></or-mwc-input>
                                 <or-mwc-input ?disabled="${!!config.id}" required
-                                              .label="${i18next.t("realm")}"
+                                              label="${i18next.t("realm")}"
                                               .type="${InputType.SELECT}"
                                               .options="${this._realmOptions}"
                                               .value="${config.realm}"
@@ -440,18 +440,18 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                               .value="${config.userRoles}"
                                               .type="${InputType.SELECT}" multiple
                                               .options="${this._roleOptions}" 
-                                              .label="${i18next.t("role_plural")}"
+                                              label="${i18next.t("role_plural")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.userRoles = e.detail.value as ClientRole[]}"></or-mwc-input>
-                                <or-mwc-input .label="${i18next.t("assetTemplate")}"
+                                <or-mwc-input label="${i18next.t("assetTemplate")}"
                                               .type="${InputType.JSON}"
                                               .value="${config.assetTemplate ? JSON.stringify(JSON.parse(config.assetTemplate), null, 2) : undefined}"
                                               resizeVertical
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value ? JSON.stringify(e.detail.value) : undefined}"></or-mwc-input>
-                                <or-mwc-input .label="${i18next.t("createAsRestrictedUser")}"
+                                <or-mwc-input label="${i18next.t("createAsRestrictedUser")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${config.restrictedUser}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.restrictedUser = e.detail.value}"></or-mwc-input>
-                                <or-mwc-input .label="${i18next.t("disabled")}"
+                                <or-mwc-input label="${i18next.t("disabled")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${config.disabled}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.disabled = e.detail.value}"></or-mwc-input>
@@ -494,6 +494,5 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 (c.type as string)?.toLowerCase().includes(value)
             );
         }
-        this.requestUpdate();
     }
 }

@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS,} from "lit";
 import {createSelector} from "reselect";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import manager, {DefaultColor3} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
@@ -225,13 +225,20 @@ export class PageRealms extends Page<AppStateKeyed> {
 
   @property()
   protected _realms: Realm[] = [];
-
+  @state()
   protected _realmFilter: (realms: Realm[]) => Realm[] = (realms) => realms;
 
   protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
   get name(): string {
     return "realm_plural";
+  }
+
+  protected _onRealmNameChanged(e: OrInputChangedEvent, realm: Realm): void {
+      realm.name = e.detail.value;
+      const isDuplicate = this._realms.some(r => r !== realm && r.name === realm.name);
+      (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('realmAlreadyExists') : undefined);
+      this.requestUpdate();
   }
 
     protected getRealmState = createSelector(
@@ -278,7 +285,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                 </div>
                 <div class="panel">
                 <div class="panel-title" style="justify-content: space-between;">
-                    <p>${i18next.t("realm_plural")}</p>
+                    <p><or-translate value="realm_plural"></or-translate></p>
                     <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
                                   @input="${(ev: InputEvent) => this.onRealmSearch(ev)}"
                     ></or-mwc-input>
@@ -317,15 +324,15 @@ export class PageRealms extends Page<AppStateKeyed> {
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { realm.name = e.detail.value; const isDuplicate = this._realms.some(r => r !== realm && r.name === realm.name); (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('realmAlreadyExists') : undefined); this.requestUpdate(); }}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${realm.id}" label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onRealmNameChanged(e, realm)}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
-                                      <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { realm.displayName = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("emailTheme", Util.camelCaseToSentenceCase("emailTheme"))}" .type="${InputType.TEXT}" .value="${realm.emailTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.emailTheme = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { realm.displayName = e.detail.value; this.requestUpdate(); }}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" label="${i18next.t("emailTheme", Util.camelCaseToSentenceCase("emailTheme"))}" .type="${InputType.TEXT}" .value="${realm.emailTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.emailTheme = e.detail.value}"></or-mwc-input>
                                     </div>
                                   </div>
 
@@ -418,7 +425,7 @@ export class PageRealms extends Page<AppStateKeyed> {
 
       const dialogContent = html`<div>
           <p style="text-align: justify; font-weight: bold;">${i18next.t("realmDeleteConfirm", {realmName: realm.name})}</p>
-          <or-mwc-input .type="${InputType.TEXT}" @input=${(ev: Event) => inputChanged((ev.target as OrMwcInput).nativeValue)} .label="${i18next.t("realm")}"></or-mwc-input>
+          <or-mwc-input .type="${InputType.TEXT}" @input=${(ev: Event) => inputChanged((ev.target as OrMwcInput).nativeValue)} label="${i18next.t("realm")}"></or-mwc-input>
       </div>`;
 
       const dialogActions: DialogAction[] = [
@@ -471,7 +478,6 @@ export class PageRealms extends Page<AppStateKeyed> {
                 (r.displayName as string)?.toLowerCase().includes(value)
             );
         }
-        this.requestUpdate();
     }
 
     private async _doDelete(realm) {
