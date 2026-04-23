@@ -98,6 +98,14 @@ metrics:
     type: gauge
     description: Asset datapoint table hypertable chunks not yet analyzed
 
+  pg_datapoint_compression_ratio:
+    type: gauge
+    description: Asset datapoint table compression ratio
+
+  pg_datapoint_query:
+    type: gauge
+    description: Dummy metric to get typical query time metric
+
   pg_background_errors:
     type: counter
     description: Count of errors in background worker processes
@@ -270,6 +278,49 @@ queries:
         AND last_autoanalyze IS NULL
         AND last_analyze IS NULL
         AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
+
+  compression_stats:
+    interval: 86400 # Daily
+    databases: [ openremote ]
+    metrics: [pg_datapoint_compression_ratio]
+    sql: |
+      SELECT 
+        COALESCE(
+          (before_compression_total_bytes::numeric / NULLIF(after_compression_total_bytes, 0)), 
+          1.0
+        ) AS pg_datapoint_compression_ratio
+      FROM hypertable_compression_stats('asset_datapoint');
+
+  benchmark_historical_aggregation:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_datapoint_query]
+    sql: |
+      WITH heaviest_numeric_entity AS (
+        -- Safely find the busiest entity over the last day that ONLY has numeric JSONB values
+        SELECT entity_id, attribute_name
+        FROM asset_datapoint
+        WHERE timestamp > now() - INTERVAL '1 day'
+          AND jsonb_typeof(value) = 'number'
+        GROUP BY entity_id, attribute_name
+        ORDER BY count(*) DESC
+        LIMIT 1
+      ),
+      aggregated_points AS (
+        -- Calculate an hourly average over a 23-day window
+        SELECT 
+          time_bucket('1 hour', a.timestamp) AS bucket,
+          -- Cast JSONB to text first, then to numeric to avoid type errors
+          avg((a.value::text)::numeric) AS avg_value
+        FROM asset_datapoint a
+        JOIN heaviest_numeric_entity h 
+          ON a.entity_id = h.entity_id 
+          AND a.attribute_name = h.attribute_name
+        WHERE a.timestamp BETWEEN now() - INTERVAL '30 days' AND now() - INTERVAL '7 days'
+        GROUP BY bucket
+      )
+      SELECT count(bucket) AS pg_benchmark_rows_processed
+      FROM aggregated_points;
 
   background_errors:
     interval: 3600 # Hourly
