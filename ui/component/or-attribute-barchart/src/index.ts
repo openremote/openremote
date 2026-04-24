@@ -36,7 +36,6 @@ import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, Grid
 import {BarChart, BarSeriesOption} from "echarts/charts";
 import {CanvasRenderer} from "echarts/renderers";
 import {UniversalTransition} from "echarts/features";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import moment from "moment";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {isAxiosError} from "@openremote/rest";
@@ -44,8 +43,8 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {cache} from "lit/directives/cache.js";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 import "@openremote/or-translate";
@@ -233,21 +232,6 @@ const style = css`
     #controls > * {
         margin-top: 5px;
         margin-bottom: 5px;
-    }
-
-    .dialog-container {
-        display: flex;
-        flex-direction: row;
-        flex: 1 1 0;
-    }
-
-    .dialog-container > * {
-        flex: 1 1 0;
-    }
-
-    .dialog-container > or-mwc-input {
-        background-color: var(--or-app-color2);
-        border-left: 3px solid var(--or-app-color4);
     }
 
     #chart-container {
@@ -607,8 +591,8 @@ export class OrAttributeBarChart extends LitElement {
                                     () => this._getTimeControlsTemplate(disabled || !!this.timeframe),
                                     () => html`
                                         <div style="display: flex; justify-content: center;">
-                                            <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(this.timePrefixKey?.toLowerCase() ?? '???')}" disabled style="margin-right: -2px;"></or-mwc-input>
-                                            <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(this.timeWindowKey?.toLowerCase() ?? '???')}" disabled style="margin-left: -2px;"></or-mwc-input>
+                                            <or-vaadin-button label=${i18next.t(this.timePrefixKey?.toLowerCase() ?? '???')} disabled style="margin-right: -2px;"></or-vaadin-button>
+                                            <or-vaadin-button label=${i18next.t(this.timeWindowKey?.toLowerCase() ?? '???')} disabled style="margin-left: -2px;"></or-vaadin-button>
                                         </div>
                                     `
                             )}
@@ -622,48 +606,35 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _getTimeControlsTemplate(disabled = true): TemplateResult {
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-translate value=${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}></or-translate>`),
+            children: this.timePrefixOptions.map(o => (
+                {type: "prefix", value: o, component: createMenuBarItem(html`<or-translate value=${o}></or-translate>`)}
+            ))
+        }, {
+            component: createMenuBarItem(html`<or-translate value=${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}></or-translate>`),
+            children: Array.from(this.timeWindowOptions).map(o => (
+                {type: "window", value: o[0], component: createMenuBarItem(html`<or-translate value=${o[0]?.toLowerCase()}></or-translate>`)}
+            ))
+        }];
+        const intervalMenuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-translate value=${`intervalBy${this._intervalConfig?.displayName?.toLowerCase()}`}></or-translate>`),
+            children: Array.from(this.intervalOptions.keys()).map(o => (
+                {value: o, component: createMenuBarItem(html`<or-translate value=${`intervalBy${o.toLowerCase()}`}></or-translate>`)}
+            ))
+        }]
         return html`
             <div id="period-controls">
+                <!-- Time prefix & window selection -->
                 <div id="period-dropdown-controls">
-                    <!-- Time prefix selection -->
-                    ${getContentWithMenuTemplate(
-                            html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}" ?disabled="${disabled}"></or-mwc-input>`,
-                            disabled ? null as any : this.timePrefixOptions.map(option => ({value: option} as ListItem)),
-                            this.timePrefixKey,
-                            (value: string | string[]) => {
-                                this.timeframe = undefined; // remove any custom start & end times
-                                this.timePrefixKey = value.toString();
-                            },
-                            undefined,
-                            undefined,
-                            undefined,
-                            true
-                    )}
-                    <!-- Time window selection -->
-                    ${getContentWithMenuTemplate(
-                            html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}" ?disabled="${disabled}"></or-mwc-input>`,
-                            disabled ? null as any : Array.from(this.timeWindowOptions.keys()).map(key => ({value: key, text: key.toLowerCase(), translate: true} as ListItem)),
-                            this.timeWindowKey,
-                            (value: string | string[]) => {
-                                this.timeframe = undefined; // remove any custom start & end times
-                                this.timeWindowKey = value.toString();
-                            },
-                            undefined,
-                            undefined,
-                            undefined,
-                            true
-                    )}
+                    <or-vaadin-menu-bar .items=${menuItems} ?dsiabled=${disabled}
+                                        @item-selected=${(ev: CustomEvent) => this._onTimeframeMenuSelect(ev)}
+                    ></or-vaadin-menu-bar>
                 </div>
                 <!-- Interval selection -->
-                ${getContentWithMenuTemplate(html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t(`intervalBy${this._intervalConfig?.displayName?.toLowerCase()}`)}"></or-mwc-input>`,
-                        Array.from(this.intervalOptions.keys()).map(key => ({value: key, text: `intervalBy${key.toLowerCase()}`, translate: true} as ListItem)),
-                        this.interval,
-                        value => this.interval = value as BarChartInterval,
-                        undefined,
-                        undefined,
-                        undefined,
-                        true
-                )}
+                <or-vaadin-menu-bar .items=${intervalMenuItems}
+                                    @item-selected=${(ev: CustomEvent) => this.interval = ev.detail.value.value}
+                ></or-vaadin-menu-bar>
             </div>
             <div class="navigate" style="text-align: right">
                 <!-- Scroll left button -->
@@ -677,6 +648,20 @@ export class OrAttributeBarChart extends LitElement {
                          @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined) : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-icon>
             </div>
         `;
+    }
+
+    protected _onTimeframeMenuSelect(ev: CustomEvent) {
+        const type = ev.detail.value.type as "prefix" | "window";
+        const value = ev.detail.value.value;
+        if(type === "prefix") {
+            // Handle time prefix
+            this.timeframe = undefined; // remove any custom start & end times
+            this.timePrefixKey = value;
+        } else {
+            // Handle time window
+            this.timeframe = undefined; // remove any custom start & end times
+            this.timeWindowKey = value;
+        }
     }
 
     protected _getTimeframeStatusTemplate(timeframe = this.timeframe): TemplateResult {
@@ -752,14 +737,18 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
-        const startRef: Ref<OrMwcInput> = createRef();
-        const endRef: Ref<OrMwcInput> = createRef();
+        const startRef: Ref<OrVaadinDateTimePicker> = createRef();
+        const endRef: Ref<OrVaadinDateTimePicker> = createRef();
         showDialog(new OrMwcDialog()
             .setHeading(i18next.t("timeframe"))
             .setContent(() => html`
-                <div>
-                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t("start")}" .value="${startTimestamp}"></or-mwc-input>
-                    <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t("ending")}" .value="${endTimestamp}"></or-mwc-input>
+                <div style="max-width: 480px; display: flex; flex-direction: column; gap: 8px;">
+                    <or-vaadin-date-time-picker ${ref(startRef)} required value=${startTimestamp ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(startTimestamp)) : undefined}>
+                        <or-translate slot="label" value="start"></or-translate>
+                    </or-vaadin-date-time-picker>
+                    <or-vaadin-date-time-picker ${ref(endRef)} required value=${endTimestamp ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(endTimestamp)) : undefined}>
+                        <or-translate slot="label" value="ending"></or-translate>
+                    </or-vaadin-date-time-picker>
                 </div>
             `)
             .setActions([{
