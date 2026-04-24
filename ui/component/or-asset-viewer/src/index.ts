@@ -1,4 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+
 declare function require(name: string): any;
 
 import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
@@ -13,7 +15,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {translate} from "@openremote/or-translate";
+import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util} from "@openremote/core";
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
@@ -400,7 +402,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         const updateFileName = () => {
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
-            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrVaadinButton;
             const str = fileInputElem.value;
 
             if (!str) {
@@ -419,8 +421,8 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
 
         const discoverAssets = () => {
-            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
-                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            const discoverBtn = hostElement.shadowRoot!.getElementById("discover-btn") as OrVaadinButton,
+                cancelBtn = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrVaadinButton;
 
             if (!discoverBtn || !cancelBtn) {
                 return false;
@@ -428,7 +430,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
             cancelBtn.hidden = false;
             discoverBtn.disabled = true;
-            discoverBtn.label = i18next.t("discovering") + '...';
+            (discoverBtn.firstElementChild as OrTranslate).value = "discovering"
 
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
@@ -446,16 +448,16 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 .finally(() => {
                     cancelBtn.hidden = true;
                     discoverBtn.disabled = false;
-                    discoverBtn.label = i18next.t("discoverAssets");
+                    (discoverBtn.firstElementChild as OrTranslate).value = "discoverAssets";
                 });
         }
 
         const cancelDiscovery = () => {
-            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
-                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            const discoverBtn = hostElement.shadowRoot!.getElementById("discover-btn") as OrVaadinButton,
+                cancelBtn = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrVaadinButton;
 
             discoverBtn.disabled = false;
-            discoverBtn.label = i18next.t("discoverAssets");
+            (discoverBtn.firstElementChild as OrTranslate).value = "discoverAssets";
             cancelBtn.hidden = true;
 
             // TODO: cancel the request to the manager
@@ -463,7 +465,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
         const doImport = () => {
             const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
-            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrVaadinButton;
             const progressElement = hostElement.shadowRoot!.getElementById("progress-circular") as HTMLProgressElement;
 
             if (!fileUploadBtn || !progressElement) {
@@ -528,18 +530,29 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         return html`
             ${when(descriptor.assetImport, () => html`
                 <div id="fileupload">
-                    <or-mwc-input style="flex: 0 1 auto;" outlined label="selectFile" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
-                        <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
-                    </or-mwc-input>
-                    <or-mwc-input style="flex: 1 1 auto; margin: 0 4px 0 10px;" id="filename-elem" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input style="flex: 0 1 auto;" id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
-                    <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
+                    <or-vaadin-button @click=${() => hostElement.shadowRoot?.getElementById('fileupload-elem')!.click()}>
+                        <or-translate value="selectFile"></or-translate>
+                        <input id="fileupload-elem" slot="invisible" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
+                    </or-vaadin-button>
+                    <or-vaadin-text-field id="filename-elem" readonly style="flex: 1 1 auto;">
+                        <or-translate slot="label" value="file"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-button id="fileupload-btn" theme="icon" @click=${() => doImport()} disabled>
+                        <or-icon icon="upload"></or-icon>
+                    </or-vaadin-button>
+                    <div id="progress-circular" class="hidden" style="flex: 0 0 48px;">
+                        <progress class="pure-material-progress-circular"></progress>
+                    </div>
                 </div>
             `)}
             ${when(descriptor.assetDiscovery, () => html`
                 <div id="discovery">
-                    <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
-                    <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                    <or-vaadin-button id="discover-btn" @click=${() => discoverAssets()}>
+                        <or-translate value="discoverAssets"></or-translate>
+                    </or-vaadin-button>
+                    <or-vaadin-button id="cancel-discover-btn" hidden theme="tertiary" @click=${() => cancelDiscovery()}>
+                        <or-translate value="cancel"></or-translate>
+                    </or-vaadin-button>
                 </div>
             `)}
         `;
