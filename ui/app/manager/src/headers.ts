@@ -109,7 +109,7 @@ export function headerItemNotifications<S extends AppStateKeyed, A extends AnyAc
         icon: "message",
         value: "notifications",
         href: getNotificationsRoute(),
-        text: "Notifications",
+        text: "notification_other",
         roles: ["write:admin", "read:admin"]
     }
 }
