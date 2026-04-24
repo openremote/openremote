@@ -1083,8 +1083,9 @@
   "loadingAssetsFailed": "Failed to load assets",
   "loadingUsersFailed": "Failed to load users",
   "loadingNotificationFailed": "Failed to load notification",
+  "notification_one": "Notification",
+  "notification_other": "Notifications",
   "notifications": {
-    "notifications": "Notifications",
     "target": "Recipient",
     "targetType": "Recipient type",
     "urlToVisit": "URL to visit (optional)",

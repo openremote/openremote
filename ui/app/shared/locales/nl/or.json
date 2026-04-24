@@ -1078,8 +1078,9 @@
   "loadingAssetsFailed": "Assets laden niet gelukt",
   "loadingUsersFailed": "Gebruikers laden niet gelukt",
   "loadingNotificationFailed": "Notificatie laden niet gelukt",
+  "notification_one": "Notificatie",
+  "notification_other": "Notificaties",
   "notifications": {
-    "notifications": "Notificaties",
     "target": "Ontvanger",
     "targetType": "Ontvanger type",
     "urlToVisit": "URL om naartoe te gaan (optioneel)",
