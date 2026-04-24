@@ -415,6 +415,7 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
+        console.debug("_onAttributeModified", attribute, newValue);
 
         // Check if modification came from external change
         const index = this.changedAttributes.indexOf(attribute.name!);

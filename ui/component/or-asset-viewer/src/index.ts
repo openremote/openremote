@@ -51,6 +51,8 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import {when} from "lit/directives/when.js";
 import {ifDefined} from "lit/directives/if-defined.js";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import {OrVaadinInput} from "@openremote/or-vaadin-components/or-vaadin-input";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
@@ -751,11 +753,16 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 html`
                     <div style="display: flex; flex-direction: column;">
                         ${availableAttributes.sort().map((attribute) => html`
-                            <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" style="display: inline-flex;"
-                                          .value="${!!selectedAttributes.find((selected) => selected === attribute)}" 
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => 
-                                                  evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"
-                            ></or-mwc-input>
+                            <or-vaadin-checkbox label=${i18next.t(Util.camelCaseToSentenceCase(attribute))} style="display: inline-flex;"
+                                                .checked=${!!selectedAttributes.find((selected) => selected === attribute)}
+                                                @change=${(ev: Event) => {
+                                                    if((ev.currentTarget as OrVaadinCheckbox).checked) {
+                                                        newlySelectedAttributes.push(attribute);
+                                                    } else {
+                                                        newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1);
+                                                    }
+                                                }}
+                            ></or-vaadin-checkbox>
                         `)}
                     </div>
                 `
@@ -773,7 +780,6 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 <style>
                     .asset-group-add-remove-button {
                         position: absolute;
-                        --or-mwc-input-color: currentColor;
                         top: calc(var(--internal-or-asset-viewer-panel-padding) - 15px);
                         right: calc(var(--internal-or-asset-viewer-panel-padding) - 15px);
                     }
@@ -782,7 +788,9 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         opacity: 1;
                     }
                 </style>
-                <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @or-mwc-input-changed="${() => attributePickerModalOpen()}"></or-mwc-input>
+                <or-vaadin-button theme="icon" class="asset-group-add-remove-button" @click=${() => attributePickerModalOpen()}>
+                    <or-icon icon="pencil"></or-icon>
+                </or-vaadin-button>
                 <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{stickyFirstColumn: true}}"></or-mwc-table>
             `;
     }
@@ -899,7 +907,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
                     (names) => {
                         if (names) {
                             if (hostElement && hostElement.shadowRoot) {
-                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
+                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrVaadinInput;
                                 if (pathField) {
                                     pathField.setAttribute("value", names.join(" > "));
                                 }
@@ -1043,6 +1051,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
             if (!asset.id) {
                 throw new Error("Request to update existing asset but asset ID is not set");
             }
+            console.debug("Updating asset to", asset);
             const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
             success = response.status === 200;
             savedAsset = response.data;
@@ -1178,10 +1187,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected wrapperElem!: HTMLDivElement;
 
     @query("#save-btn")
-    protected saveBtnElem!: OrMwcInput;
+    protected saveBtnElem!: OrVaadinButton;
 
     @query("#edit-btn")
-    protected editBtnElem!: OrMwcInput;
+    protected editBtnElem!: OrVaadinButton;
 
     @query("#editor")
     protected editor!: OrEditAssetPanel;
@@ -1449,8 +1458,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 (detail) => {
                     if (detail.allow) {
                         this._doEditToggle(edit);
-                    } else {
-                        this.editBtnElem.value = !edit;
                     }
                 });
     }
@@ -1479,6 +1486,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const asset = this._assetInfo.asset;
+        console.debug("Asset to be saved:", asset);
         this.saveBtnElem.disabled = true;
         this._saveInProgress = true;
         this.wrapperElem.classList.add("saving");
