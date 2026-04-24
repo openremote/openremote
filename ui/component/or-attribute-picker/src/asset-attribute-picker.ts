@@ -4,7 +4,6 @@ import {Asset, Attribute, AttributeRef, WellknownMetaItems} from "@openremote/mo
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {OrAssetTree, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {html, unsafeCSS} from "lit";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
 
@@ -74,12 +73,19 @@ export class OrAssetAttributePicker extends AttributePicker {
         this.actions = [
             {
                 actionName: "cancel",
-                content: "cancel"
+                content: html`
+                    <or-vaadin-button class="button">
+                        <or-translate value="cancel"></or-translate>
+                    </or-vaadin-button>
+                `
             },
             {
                 actionName: "add",
                 content: html`
-                    <or-mwc-input id="add-btn" class="button" label="add" .type="${InputType.BUTTON}"></or-mwc-input>`,
+                    <or-vaadin-button id="add-btn" theme="primary" class="button">
+                        <or-translate value="add"></or-translate>
+                    </or-vaadin-button>
+                `,
                 action: () => {
                     if (!this.addBtn.disabled) {
                         this.dispatchEvent(new OrAssetAttributePickerPickedEvent(this.selectedAttributes));

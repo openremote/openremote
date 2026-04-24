@@ -343,7 +343,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            ${!this.shouldHideAttributePicker() ? html`
+                            ${this.shouldHideAttributePicker() ? html`
                                 <or-vaadin-button class="button" @click=${() => this._openDialog()}>
                                     <or-icon slot="prefix" icon="plus"></or-icon>
                                     <or-translate value="selectAttribute"></or-translate>
