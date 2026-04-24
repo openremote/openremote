@@ -38,6 +38,16 @@ jobs:
         with:
           context: manager/build/install/manager
           platforms: linux/amd64,linux/aarch64
+          load: false
+          push: false
+          tags: openremote/manager:${{ inputs.tag }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+      - name: Build manager image
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: manager/build/install/manager
+          platforms: linux/amd64
           load: true
           push: false
           tags: openremote/manager:${{ inputs.tag }}
