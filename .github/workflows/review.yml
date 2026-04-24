@@ -104,6 +104,8 @@ jobs:
     needs: [detect-changes, install-dist]
     if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/build-deployment-image.yml"
+    with:
+      TAG: develop
 
   publish-npm-dry-run:
     name: Publish
