@@ -149,6 +149,7 @@ public interface NotificationResource {
     @GET
     @Path("{realmId}")
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
     @Operation(operationId = "getNotificationsByRealm", summary="Get notifications filtered by realm ownership and optional time bounds.")
     SentNotification[] getNotificationsByRealm(@BeanParam RequestParams requestParams,
                                         @QueryParam("from") Long fromTimestamp,
