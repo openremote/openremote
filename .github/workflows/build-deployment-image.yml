@@ -3,7 +3,7 @@ name: Build deployment image
 on:
   workflow_call:
     inputs:
-      TAG:
+      tag:
         type: string
         required: true
 
@@ -30,13 +30,9 @@ jobs:
           platforms: linux/amd64,linux/aarch64
           load: false
           push: false
-          tags: openremote/deployment:${{ inputs.TAG }}
+          tags: openremote/deployment:${{ inputs.tag }}
           build-args: |
             GIT_COMMIT=${{ github.sha }}
-          outputs: type=oci,dest=or_deployment.tar
-      - name: Archive deployment image
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: or-deployment-image
-          if-no-files-found: error
-          path: or_deployment.tar
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false

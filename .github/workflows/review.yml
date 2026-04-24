@@ -95,6 +95,8 @@ jobs:
      needs: [detect-changes, install-dist]
      if: needs.detect-changes.outputs.any_modified == 'true'
      uses: "./.github/workflows/build-manager-image.yml"
+     with:
+       tag: develop
      secrets:
        DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
        DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
@@ -105,7 +107,7 @@ jobs:
     if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/build-deployment-image.yml"
     with:
-      TAG: develop
+      tag: develop
 
   publish-npm-dry-run:
     name: Publish
