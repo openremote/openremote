@@ -137,7 +137,7 @@ export interface PageNotificationsConfig {
 
 export function pageNotificationsProvider(store: Store<AppStateKeyed>, config?: PageNotificationsConfig): PageProvider<AppStateKeyed> {
     return {
-        name: "Notifications",
+        name: "notifications",
         routes: ["notifications"],
         pageCreator: () => {
             return new PageNotifications(store);
@@ -312,7 +312,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed): void {
-        if (state.app.page === "Notifications") {
+        if (state.app.page === "notifications") {
             if (this.realm === undefined || this.realm === state.app.realm) {
                 this._loadData();
             }
