@@ -21,6 +21,8 @@ import "../components/notifications/notification-form";
 import {NotificationTableClickEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 
+type NotificationSource = " " | "CLIENT" | "INTERNAL" | "GLOBAL_RULESET" | "REALM_RULESET" | "ASSET_RULESET"
+
 export class NotificationService {
 
     async getNotifications(realm: string, fromDate?: number, toDate?: number): Promise<SentNotification[]> {
@@ -292,15 +294,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected notificationService: NotificationService;
 
-    protected _sourceOptions = [
-        {value: " ", text: i18next.t("notifications.allSources")},
-        {value: "CLIENT", text: i18next.t("notifications.client")},
-        {value: "INTERNAL", text: i18next.t("notifications.internal")},
-        {value: "GLOBAL_RULESET", text: i18next.t("notifications.globalRuleset")},
-        {value: "REALM_RULESET", text: i18next.t("notifications.realmRuleset")},
-        {value: "ASSET_RULESET", text: i18next.t("notifications.assetRuleset")},
-    ]
-
     constructor(store: Store<AppStateKeyed>) {
         super(store);
         this.notificationService = new NotificationService();
@@ -518,6 +511,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected _renderHeader(writeNotifications: boolean) {
+        const sourceOptions: [NotificationSource, string][] = [
+            [" ", i18next.t("notifications.allSources")],
+            ["CLIENT", i18next.t("notifications.client")],
+            ["INTERNAL", i18next.t("notifications.internal")],
+            ["GLOBAL_RULESET", i18next.t("notifications.globalRuleset")],
+            ["REALM_RULESET", i18next.t("notifications.realmRuleset")],
+            ["ASSET_RULESET", i18next.t("notifications.assetRuleset")],
+        ];
+
         return html`
             <div id="title">
                 <div style="display: flex; align-items: center;">
@@ -529,7 +531,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     <or-mwc-input
                             type="${InputType.SELECT}"
                             label="${i18next.t('source')}"
-                            .options="${this._sourceOptions.map(o => [o.value, o.text])}"
+                            .options="${sourceOptions}"
                             .value="${this._selectedSource}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this._selectedSource = e.detail.value;
