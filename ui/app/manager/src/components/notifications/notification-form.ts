@@ -4,7 +4,7 @@ import {when} from "lit/directives/when.js";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import manager, {DefaultColor3, Util} from "@openremote/core";
-import {Asset, PushNotificationMessage, SentNotification, User} from "@openremote/model";
+import {Asset, NotificationTargetType, PushNotificationMessage, SentNotification, User} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {live} from "lit/directives/live.js";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
@@ -16,7 +16,7 @@ export interface NotificationFormData {
     title: string;
     body: string;
     priority: string;
-    targetType: string;
+    targetType: NotificationTargetType;
     targets: string[]; // The IDs used for sending messages.
     // actions
     actionUrl?: string;
@@ -191,7 +191,7 @@ export class NotificationForm extends LitElement {
         title: '',
         body: '',
         priority: 'Normal',
-        targetType: 'Asset',
+        targetType: NotificationTargetType.ASSET,
         targets: [''],
         actionUrl: '',
         openButtonText: '',
@@ -283,7 +283,7 @@ export class NotificationForm extends LitElement {
         this._targetOptions = [];
 
         switch (type) {
-            case "User":
+            case NotificationTargetType.USER:
                 if (!this._users) {
                     await this._loadUsers();
                 }
@@ -293,13 +293,13 @@ export class NotificationForm extends LitElement {
                 }));
                 break;
 
-            case "Asset":
+            case NotificationTargetType.ASSET:
                 if (!this._assets) {
                     await this._loadAssets();
                 }
                 break;
 
-            case "Realm":
+            case NotificationTargetType.REALM:
                 if (!this._realms) {
                     await this._loadRealms();
                 }
@@ -340,7 +340,7 @@ export class NotificationForm extends LitElement {
             title: pushMessage.title,
             body: pushMessage.body || '',
             priority: normalizedPriority,
-            targetType: this.notification.target || '',
+            targetType: this.notification.target || NotificationTargetType.ASSET,
             targets: this.notification.targetId ? [this.notification.targetId] : [],
             actionUrl: pushMessage.action?.url,
             openButtonText: pushMessage.buttons?.[0]?.title,
@@ -451,6 +451,12 @@ export class NotificationForm extends LitElement {
             `;
         }
 
+        const allowedTargetTypes: [NotificationTargetType, string][] = [
+            [NotificationTargetType.USER, i18next.t("user_plural")],
+            [NotificationTargetType.ASSET, i18next.t("asset_plural")],
+            [NotificationTargetType.REALM, i18next.t("realm_plural")],
+        ];
+
         return html`
             <div class="targetContainer">
                 <h5 style="flex:0 0 auto;">${i18next.t("notifications.target")}</h5>
@@ -458,7 +464,7 @@ export class NotificationForm extends LitElement {
                         style="flex:0 0 auto;"
                         label="${i18next.t("notifications.targetType")}"
                         type="${InputType.SELECT}"
-                        .options="${["Asset", "User", "Realm"]}"
+                        .options="${allowedTargetTypes}"
                         ?disabled="${inputDisabled}"
                         required
                         id="targetType"
@@ -470,7 +476,7 @@ export class NotificationForm extends LitElement {
                 </or-mwc-input>
 
                 <div class="target-area">
-                    ${when(this.formData.targetType === "Asset",
+                    ${when(this.formData.targetType === NotificationTargetType.ASSET,
                             () => html`
                                 <or-asset-tree
                                         id="asset-selector"
