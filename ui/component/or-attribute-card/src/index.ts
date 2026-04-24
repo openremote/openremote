@@ -19,19 +19,15 @@ import {isAxiosError} from "@openremote/rest";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
 import "chartjs-adapter-moment";
 import {OrChartConfig} from "@openremote/or-chart";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-attribute-picker";
 import moment from "moment";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {when} from "lit/directives/when.js";
 import debounce from "lodash.debounce";
-
-export type ContextMenuOption = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, TimeSeriesScale);
 
@@ -68,24 +64,6 @@ const style = css`
         height: 100%;
         display: flex;
         flex-direction: column;
-    }
-        
-    .panel-title {
-        display: flex;
-        align-items: center;
-        /*margin: -15px -15px 0 0;*/ /* compensate for the click-space of the plusminus button */
-        font-weight: bolder;
-        line-height: 1em;
-        color: var(--internal-or-asset-viewer-title-text-color);
-        flex: 0 0 auto;
-    }
-    
-    .panel-title-text {
-        flex: 1;
-        text-transform: uppercase;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
     }
     
     .panel-content {
@@ -218,8 +196,6 @@ export class OrAttributeCard extends LitElement {
     public showControls: boolean = true;
     @property()
     public hideAttributePicker: boolean = false;
-    @property()
-    public showTitle: boolean = true;
     @property()
     protected _loading: boolean = false;
 
@@ -359,9 +335,6 @@ export class OrAttributeCard extends LitElement {
     shouldShowControls(): boolean { // Checking for string input as well since that was not working
         return (this.showControls && this.showControls.toString() == "true");
     }
-    shouldShowTitle(): boolean {
-        return (this.showTitle && this.showTitle.toString() == "true");
-    }
 
     protected render() {
 
@@ -371,9 +344,12 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             ${!this.shouldHideAttributePicker() ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                                <or-vaadin-button class="button" @click=${() => this._openDialog()}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="selectAttribute"></or-translate>
+                                </or-vaadin-button>
                             ` : html`
-                                <span style="text-align: center;">${i18next.t('noAttributeConnected')}</span>
+                                <or-translate style="text-align: center;" value="noAttributeConnected"></or-translate>
                             `}
                         </div>
                     </div>
@@ -389,35 +365,16 @@ export class OrAttributeCard extends LitElement {
             this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
         })
 
+        const periodItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-translate value=${this.period ?? '-'}></or-translate>`),
+            children: ["hour", "day", "week", "month", "year"].map(o => (
+                {value: o, component: createMenuBarItem(html`<or-translate value=${o}></or-translate>`)}
+            ))
+        }]
+
         return html`
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
-                    <div class="panel-title">
-                        ${this.shouldShowTitle() ? html`<span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>` : undefined}
-                        ${this.shouldShowTitle() ? getContentWithMenuTemplate(html`
-                            <or-mwc-input icon="dots-vertical" type="button"></or-mwc-input>
-                        `,
-                        [
-                            {
-                                text: i18next.t("editAttribute"),
-                                value: "editAttribute"
-                            },
-                            {
-                                text: i18next.t("editDelta"),
-                                value: "editDelta"
-                            },
-                            {
-                                text: i18next.t("editCurrentValue"),
-                                value: "editCurrentValue"
-                            },
-                            {
-                                text: i18next.t("delete"),
-                                value: "delete"
-                            }
-                        ],
-                        undefined,
-                        (option) => this.handleMenuSelect(option as ContextMenuOption)) : undefined}
-                    </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
                             ${when(!this._loading, () => html`
@@ -445,28 +402,11 @@ export class OrAttributeCard extends LitElement {
                                 <div class="delta-wrapper">
                                     <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
                                 </div>
-                                ${this.shouldShowControls() ? html`
-                                    <div class="period-selector-wrapper">
-                                        ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" label="${this.period ? this.period : '-'}"></or-mwc-input>`,
-                                                [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
-                                                    option.text = i18next.t(option.value);
-                                                    return option;
-                                                }),
-                                                this.period,
-                                                (value) => this._setPeriodOption(value),
-                                                undefined,      // closedCallback
-                                                false,          // multiSelect
-                                                true,           // translateValues
-                                                false,          // midHeight
-                                                false,          // fullWidth
-                                                "kpi-menu-id",  // Menu Id
-                                                true            // fixToHost
-                                        )}
-                                    </div>
-                                ` : html`
-                                    <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
-                                `}
+                                <div class="period-selector-wrapper">
+                                    <or-vaadin-menu-bar class="period-selector" .items=${periodItems} ?disabled=${!this.shouldShowControls()}
+                                                        @item-selected=${(ev: CustomEvent) => this._setPeriodOption(ev.detail.value.value)}
+                                    ></or-vaadin-menu-bar>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -475,94 +415,24 @@ export class OrAttributeCard extends LitElement {
         `;
     }
 
-    protected _openDialog(dialogContent?: ContextMenuOption) {
+    protected _openDialog() {
 
-        let dialog: OrMwcDialog | undefined;
+        let dialog = new OrAssetAttributePicker()
+            .setHeading(i18next.t("selectAttribute"));
 
-        switch (dialogContent) {
-            case "editDelta":
-            case "editCurrentValue":
-                dialog = new OrMwcDialog()
-                    .setHeading(i18next.t(dialogContent))
-                    .setDismissAction(null)
-                    .setContent(
-                        dialogContent === "editDelta"
-                            ? html`
-                                <or-mwc-input id="delta-mode-picker" value="${this.deltaFormat}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => {this.deltaFormat = evt.detail.value;this.saveSettings();}}" .type="${InputType.LIST}" .options="${[
-                                            ["percentage", "Percentage"],
-                                            ["absolute", "Absolute"]
-                                        ]}"></or-mwc-input>                
-                            `
-                            : html`
-                                <or-mwc-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.mainValueDecimals}" .type="${InputType.TEXT}"></or-mwc-input>
-                            `
-                    )
-                    .setActions([
-                        {
-                            actionName: "cancel",
-                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
-                            action: () => {
-                                // Nothing to do here
-                            }
-                        },
-                        {
-                            actionName: "yes",
-                            default: true,
-                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="ok" data-mdc-dialog-action="yes"></or-mwc-input>`,
-                            action: () => {
-                                if (dialogContent === "editDelta") {
-                                    this.delta = this.data ? this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data)) : undefined;
-                                } else {
-                                    if (dialog && dialog.shadowRoot && dialog.shadowRoot.getElementById("current-value-decimals")) {
-                                        const elm = dialog.shadowRoot.getElementById("current-value-decimals") as HTMLInputElement;
-                                        const input = parseInt(elm.value, 10);
-                                        if (input < 0) {this.mainValueDecimals = 0;}
-                                        else if (input > 10) {this.mainValueDecimals = 10;}
-                                        else {this.mainValueDecimals = input;}
-                                        this.formattedMainValue = this.getFormattedValue(this.mainValue!);
-                                        this.saveSettings();
-                                    }
-                                }
-                            }
-                        }
-                    ]);
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
+            // handle selected attrs
+            const attrRef = ev.detail[0];
+            try {
+                const response = await manager.rest.api.AssetResource.get(attrRef.id!);
+                this.asset = response.data;
+                this._setAttribute(attrRef.name as string);
+            } catch (e) {
+                console.error("Failed to get assets requested in settings", e);
+            }
+        });
 
-                dialog.addEventListener(OrAssetTreeSelectionEvent.NAME, async (ev: OrAssetTreeSelectionEvent) => {
-                    const selectedNode = ev.detail && ev.detail.newNodes.length > 0 ? ev.detail.newNodes[0] : undefined;
-
-                    if (!selectedNode) {
-                        this.asset = undefined;
-                    } else {
-                        // fully load the asset
-                        const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
-                            eventType: "read-asset",
-                            assetId: selectedNode.asset!.id
-                        });
-                        this.asset = assetEvent.asset;
-                    }
-                });
-                break;
-            default:
-                dialog = new OrAssetAttributePicker()
-                    .setHeading(i18next.t("selectAttribute"));
-
-                dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
-                    // handle selected attrs
-                    const attrRef = ev.detail[0];
-                    try {
-                        const response = await manager.rest.api.AssetResource.get(attrRef.id!);
-                        this.asset = response.data;
-                        this._setAttribute(attrRef.name as string);
-                    } catch (e) {
-                        console.error("Failed to get assets requested in settings", e);
-                    }
-                });
-                break;
-        }
-
-        if (dialog) {
-            showDialog(dialog);
-        }
+        showDialog(dialog);
     }
 
     private _setAttribute(attributeName: string) {
@@ -801,16 +671,6 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    protected getTotalValue(data: ValueDatapoint<any>[]): number {
-        return data.reduce(( acc: number, val: ValueDatapoint<any> ) => {
-            return val.y ? acc + Math.round(val.y) : acc;
-        }, 0);
-    }
-
-    protected getHighestValue(data: ValueDatapoint<any>[]): number {
-        return Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
-    }
-
     protected getFormattedValue(value: number | undefined): {value: number, unit: string} | undefined {
         if (value === undefined || !this.assets || !this.assetAttributes || this.assets.length === 0 || this.assetAttributes.length === 0) {
             return;
@@ -862,16 +722,6 @@ export class OrAttributeCard extends LitElement {
         }
 
         return {val: Math.round(lastVal - firstVal), unit: ""};
-    }
-
-    protected handleMenuSelect(value: ContextMenuOption) {
-        if (value === "delete") {
-            this.assets = [];
-            this.assetAttributes = [];
-            this.saveSettings();
-        } else {
-            this._openDialog(value);
-        }
     }
 
     protected setLabelSizeByLength(value: string) {
