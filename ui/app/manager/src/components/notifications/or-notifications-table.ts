@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
+import manager, {DefaultColor4} from "@openremote/core";
 import { SentNotification, PushNotificationMessage, NotificationTargetType } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
@@ -36,35 +36,6 @@ export class OrNotificationsTable extends OrMwcTable {
                     margin: 0 20px;
                     overflow: auto;
                 }
-    
-                // table {
-                //     width: 100%;
-                //     border-collapse: separate;
-                //     border-spacing: 0;
-                //     background-color: white;
-                //     border-radius: 4px;
-                //     box-shadow: var(--or-table-shadow, 0 1px 3px rgba(0,0,0,0.12));
-                // }
-                //
-                // th {
-                //     position: sticky;
-                //     top: 0;
-                //     background-color: white;
-                //     color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                //     text-align: left;
-                //     padding: 12px 16px;
-                //     font-weight: 500;
-                //     border-bottom: 2px solid #e0e0e0;
-                //     white-space: nowrap;
-                //     width: auto;
-                // }
-                //
-                // td {
-                //     padding: 4px 6px;
-                //     border-bottom: 1px solid #e0e0e0;
-                //     vertical-align: middle;
-                //     width: auto;
-                // } TODO: Check if all of this can be removed.
     
                 tbody tr:hover {
                     background-color: var(--or-table-row-hover-color, rgba(0,0,0,0.04));
