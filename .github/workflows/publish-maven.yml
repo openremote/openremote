@@ -16,7 +16,7 @@ jobs:
     name: Publish to Maven Central Sonatype
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Publish to Maven Central Sonatype
         run: ./gradlew publishToSonatype --no-parallel -PsigningKey=${{ secrets.MAVEN_SIGNING_KEY }} -PsigningPassword=${{ secrets.MAVEN_SIGNING_PASSWORD }} -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}"
       - name: Release to Maven Central Sonatype
