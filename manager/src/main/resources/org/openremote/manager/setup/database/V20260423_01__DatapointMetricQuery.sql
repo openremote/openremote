@@ -26,7 +26,7 @@ EXECUTE format('
             FROM asset_datapoint
             WHERE entity_id = %L
               AND attribute_name = %L
-              AND timestamp BETWEEN now() - INTERVAL ''30 days'' AND now() - INTERVAL ''7 days''
+              AND timestamp BETWEEN now() - INTERVAL ''14 days'' AND now() - INTERVAL ''7 days''
             GROUP BY bucket
         )
         SELECT count(bucket) FROM aggregated_points;

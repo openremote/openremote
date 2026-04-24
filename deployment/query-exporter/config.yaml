@@ -58,6 +58,10 @@ metrics:
     labels: [table_name]
     description: Asset table hours since last auto analyze run successfully
 
+  pg_db_disk_size:
+    type: gauge
+    description: DB size in MB
+
   pg_datapoint_raw_data_size:
     type: gauge
     description: Asset datapoint table raw uncompressed size in MB
@@ -97,6 +101,18 @@ metrics:
   pg_datapoint_chunks_not_analyzed:
     type: gauge
     description: Asset datapoint table hypertable chunks not yet analyzed
+
+  pg_datapoint_largest_uncompressed_chunk:
+    type: gauge
+    description: Asset datapoint table largest uncompressed hypertable chunk in MB
+
+  pg_datapoint_uncompressed_cache_hit_ratio:
+    type: gauge
+    description: Asset datapoint table cache hit ratio for uncompressed chunks (Aim for 99%+)
+
+  pg_datapoint_uncompressed_blks_read_total:
+    type: counter
+    description: Asset datapoint total physical disk blocks read for uncompressed chunks (Monitor rate with spikes indicate RAM spillover)
 
   pg_datapoint_compression_ratio:
     type: gauge
@@ -234,6 +250,13 @@ queries:
         FROM pg_stat_user_tables
         WHERE schemaname = 'openremote';
 
+  db_size:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_db_disk_size]
+    sql: |
+      SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 0);
+
   datapoint_table_size:
     interval: 3600 # Hourly
     databases: [openremote]
@@ -265,7 +288,22 @@ queries:
       FROM timescaledb_information.chunks
       WHERE hypertable_name = 'asset_datapoint'
       GROUP BY hypertable_name;
-      
+
+  datapoint_largest_uncompressed_chunk:
+    interval: 86400 # Daily
+    databases: [openremote]
+    metrics: [pg_datapoint_largest_uncompressed_chunk]
+    sql: |
+      SELECT 
+        ROUND(s.total_bytes / 1048576.0, 0) AS pg_datapoint_largest_uncompressed_chunk
+      FROM timescaledb_information.chunks c
+      JOIN chunks_detailed_size('asset_datapoint') s
+      ON c.chunk_schema = s.chunk_schema
+      AND c.chunk_name = s.chunk_name
+      WHERE c.is_compressed = false
+      ORDER BY s.total_bytes DESC
+      LIMIT 1;
+
   datapoint_autoanalyze:
     interval: 86400 # Daily
     databases: [openremote]
@@ -279,6 +317,41 @@ queries:
         AND last_analyze IS NULL
         AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
 
+  datapoint_historical_aggregation:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_datapoint_query]
+    sql: |
+      SELECT datapoint_metric_query() as pg_datapoint_query;
+
+  uncompressed_memory_pressure:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_datapoint_uncompressed_cache_hit_ratio, pg_datapoint_uncompressed_blks_read_total]
+    sql: |
+      WITH uncompressed_chunks AS (
+        SELECT chunk_name
+        FROM timescaledb_information.chunks
+        WHERE hypertable_name = 'asset_datapoint'
+          AND is_compressed = false
+      )
+      SELECT
+        -- Calculate the percentage of data served directly from RAM
+        ROUND(
+          COALESCE(
+            (sum(s.heap_blks_hit) + sum(s.idx_blks_hit) + sum(s.toast_blks_hit))::numeric / 
+            NULLIF(
+              sum(s.heap_blks_hit) + sum(s.idx_blks_hit) + sum(s.toast_blks_hit) + 
+              sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 
+            0) * 100, 
+          0), 
+        2) AS pg_uncompressed_cache_hit_ratio,
+      
+        -- Track the raw number of times Postgres had to go to the physical disk
+        COALESCE(sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 0) AS pg_uncompressed_blks_read_total
+      FROM pg_statio_user_tables s
+      JOIN uncompressed_chunks c ON s.relname = c.chunk_name;
+
   compression_stats:
     interval: 86400 # Daily
     databases: [ openremote ]
@@ -290,13 +363,6 @@ queries:
           1.0
         ) AS pg_datapoint_compression_ratio
       FROM hypertable_compression_stats('asset_datapoint');
-
-  benchmark_historical_aggregation:
-    interval: 3600 # Hourly
-    databases: [openremote]
-    metrics: [pg_datapoint_query]
-    sql: |
-      SELECT datapoint_metric_query() as pg_datapoint_query;
 
   background_errors:
     interval: 3600 # Hourly
