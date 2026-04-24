@@ -6,6 +6,7 @@ import { SentNotification, PushNotificationMessage, NotificationTargetType } fro
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
 import { NotificationService } from "../../pages/page-notifications";
+import { getAssetsRoute, getUsersRoute } from "../../routes";
 
 export interface NotificationTableRow extends TableRow {
     data: {
@@ -301,7 +302,7 @@ export class OrNotificationsTable extends OrMwcTable {
                         details = {
                             name: asset.name || asset.id,
                             type: 'asset',
-                            link: `#/assets/false/${notification.targetId}`
+                            link: `#/${getAssetsRoute(false, notification.targetId)}`
                         };
                     }
                     break;
@@ -312,7 +313,7 @@ export class OrNotificationsTable extends OrMwcTable {
                         details = {
                             name: user.username,
                             type: 'user',
-                            link: `#/users/${notification.targetId}`
+                            link: `#/${getUsersRoute(notification.targetId)}`
                         };
                     }
                     break;
