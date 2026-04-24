@@ -18,8 +18,6 @@ jobs:
       ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 1 # Works for pull_request events
       - name: Detect changes
         id: changed-files
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
@@ -121,8 +119,16 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_modified == 'true'
     uses: "./.github/workflows/get-version-details.yml"
 
-  # deployment:
-  #   name: Deploy
-  #   needs: [detect-changes, build-deployment-image]
-  #   if: needs.detect-changes.outputs.any_modified == 'true'
-  #   uses: "./.github/workflows/deployment.yml"
+  deployment:
+     name: Deploy
+     needs: [detect-changes, get-version-details]
+     if: needs.detect-changes.outputs.any_modified == 'true'
+     uses: "./.github/workflows/deployment.yml"
+     with:
+       OR_HOSTNAME: 'test1.openremote.app'
+       CLEAN_INSTALL: false
+       VERSION: ${{ needs.get-version-details.outputs.version }}
+       MANAGER_TAG: 'develop'
+     secrets:
+       SECRETS: ${{ toJSON(secrets) }}
+
