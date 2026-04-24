@@ -344,7 +344,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     get name(): string {
-        return "notification.notification_plural"
+        return "notifications_other"
     }
 
     protected async _loadData() {
@@ -524,7 +524,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             <div id="title">
                 <div style="display: flex; align-items: center;">
                     <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                    <span><or-translate value="notifications.notifications"/></span>
+                    <span><or-translate value="notification_other"/></span>
                 </div>
 
                 <div class="filter-section">
