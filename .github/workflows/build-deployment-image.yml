@@ -1,33 +1,41 @@
 name: Build deployment image
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      TAG:
+        type: string
+        required: true
 
 jobs:
   deployment-image:
     name: Deployment image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: or-deployment-build
           path: deployment/build
       - name: Install QEMU
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
         with:
           platforms: linux/amd64,linux/aarch64
       - name: Install Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
       - name: Build deployment image
-        run: |
-          commitShaShort=$(git rev-parse --short HEAD)
-          docker build --build-arg GIT_COMMIT=${{ github.sha }} --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort --output type=oci,dest=or_deployment.tar deployment/build
-          echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
-        env:
-          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: deployment/build
+          platforms: linux/amd64,linux/aarch64
+          load: false
+          push: false
+          tags: openremote/deployment:${{ inputs.TAG }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+          outputs: type=oci,dest=or_deployment.tar
       - name: Archive deployment image
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: or-deployment-image
           if-no-files-found: error
