@@ -43,6 +43,9 @@ jobs:
           tags: openremote/manager:${{ inputs.tag }}
           build-args: |
             GIT_COMMIT=${{ github.sha }}
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
       - name: Build manager image
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
@@ -53,6 +56,9 @@ jobs:
           tags: openremote/manager:${{ inputs.tag }}
           build-args: |
             GIT_COMMIT=${{ github.sha }}
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
       - name: Scan manager docker image
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         id: manager-anchore-scan
