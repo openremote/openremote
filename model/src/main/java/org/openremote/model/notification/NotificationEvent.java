@@ -4,17 +4,11 @@ import org.openremote.model.PersistenceEvent;
 import org.openremote.model.event.shared.RealmScopedEvent;
 
 public class NotificationEvent extends RealmScopedEvent {
-    protected String realm;
     protected PersistenceEvent.Cause cause;
 
     public NotificationEvent(String realm, PersistenceEvent.Cause cause) {
-        this.realm = realm;
+        super(realm);
         this.cause = cause;
-    }
-
-    @Override
-    public String getRealm() {
-        return realm;
     }
 
     public PersistenceEvent.Cause getCause() {
