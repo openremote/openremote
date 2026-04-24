@@ -6,11 +6,11 @@ jobs:
     name: Install Dist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
       - name: Set up JDK 21 and Gradle cache
-        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: "temurin"
           java-version: "21"
@@ -18,21 +18,21 @@ jobs:
       - name: Run Install Dist
         run: ./gradlew installDist
       - name: Archive manager build
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: or-manager-build
           if-no-files-found: error
           path: |
             manager/build
       - name: Archive deployment build
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: or-deployment-build
           if-no-files-found: error
           path: |
             deployment/build
       - name: Archive UI component build
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: or-ui-component-build
           if-no-files-found: error
@@ -45,7 +45,7 @@ jobs:
             ui/component/**/lib
             ui/component/**/tsconfig.tsbuildinfo
       - name: Archive MDI fonts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mdi-fonts
           if-no-files-found: error

@@ -16,12 +16,12 @@ jobs:
       backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
       ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 2 # Must be 2 for push events to compare to previous commit
       - name: Detect changes
         id: changed-files
-        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files_yaml: |
             ui:
