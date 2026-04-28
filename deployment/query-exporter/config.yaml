@@ -41,17 +41,17 @@ metrics:
   pg_hot_update_percent:
     type: gauge
     labels: [table_name]
-    description: Asset table percentage of updates that are HOT updates indicates good fillfactor
+    description: Table percentage of updates that are HOT updates indicates good fillfactor
 
   pg_dead_tuple_percent:
     type: gauge
     labels: [table_name]
-    description: Asset table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
+    description: Table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
 
   pg_last_autovacuum_hours:
     type: gauge
     labels: [table_name]
-    description: Asset table hours since last auto vacuum run successfully
+    description: Table hours since last auto vacuum run successfully
 
   pg_last_autoanalyze_hours:
     type: gauge
@@ -128,27 +128,27 @@ metrics:
 
   pg_timescale_job_total_runs:
     type: counter
-    labels: [job_id, proc_name, hypertable_schema]
+    labels: [job_id, proc_name]
     description: TimescaleDB job total runs by job
 
   pg_timescale_job_total_failures:
     type: counter
-    labels: [job_id, proc_name, hypertable_schema]
+    labels: [job_id, proc_name]
     description: TimescaleDB job total failures by job
 
   pg_timescale_job_last_run_duration_seconds:
     type: gauge
-    labels: [job_id, proc_name, hypertable_schema]
+    labels: [job_id, proc_name]
     description: TimescaleDB job last run duration in seconds
 
   pg_timescale_job_next_start_seconds:
     type: gauge
-    labels: [job_id, proc_name, hypertable_schema]
+    labels: [job_id, proc_name]
     description: Seconds until next scheduled run for each TimescaleDB job
 
   pg_timescale_job_last_run_status:
     type: gauge
-    labels: [job_id, proc_name, hypertable_schema, last_run_status]
+    labels: [job_id, proc_name, last_run_status]
     description: TimescaleDB job last run status marker (1)
 
   pg_wal_total:
@@ -255,7 +255,7 @@ queries:
     databases: [openremote]
     metrics: [pg_db_disk_size]
     sql: |
-      SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 0);
+      SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 0) as pg_db_disk_size;
 
   datapoint_table_size:
     interval: 3600 # Hourly
@@ -345,10 +345,10 @@ queries:
               sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 
             0) * 100, 
           0), 
-        2) AS pg_uncompressed_cache_hit_ratio,
+        2) AS pg_datapoint_uncompressed_cache_hit_ratio,
       
         -- Track the raw number of times Postgres had to go to the physical disk
-        COALESCE(sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 0) AS pg_uncompressed_blks_read_total
+        COALESCE(sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 0) AS pg_datapoint_uncompressed_blks_read_total
       FROM pg_statio_user_tables s
       JOIN uncompressed_chunks c ON s.relname = c.chunk_name;
 
@@ -388,7 +388,6 @@ queries:
       SELECT
         s.job_id::text AS job_id,
         CONCAT(j.proc_schema, '.', j.proc_name) AS proc_name,
-        COALESCE(j.hypertable_schema, '') AS hypertable_schema,
         COALESCE(s.last_run_status, 'unknown') AS last_run_status,
         COALESCE(s.total_runs, 0) AS pg_timescale_job_total_runs,
         COALESCE(s.total_failures, 0) AS pg_timescale_job_total_failures,
@@ -413,12 +412,12 @@ queries:
     sql: |
       SELECT
         (w.wal_bytes / 1048576.0) AS pg_wal_total,
-        b.checkpoints_timed AS pg_bgwriter_checkpoints_timed_total,
-        b.checkpoints_req AS pg_bgwriter_checkpoints_req_total,
-        ROUND((b.checkpoint_write_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_write_time_seconds_total,
-        ROUND((b.checkpoint_sync_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_sync_time_seconds_total
+        c.num_timed AS pg_bgwriter_checkpoints_timed_total,
+        c.num_requested AS pg_bgwriter_checkpoints_req_total,
+        ROUND((c.write_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_write_time_seconds_total,
+        ROUND((c.sync_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_sync_time_seconds_total
       FROM pg_stat_wal w
-      CROSS JOIN pg_stat_bgwriter b;
+      CROSS JOIN pg_stat_checkpointer c;
       
   table_and_index_bloat:
     interval: 300 # 5 minutes
