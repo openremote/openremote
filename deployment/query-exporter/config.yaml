@@ -374,7 +374,7 @@ queries:
         FROM timescaledb_information.job_stats;
 
   timescale_job_stats:
-    interval: 300 # 5 minutes
+    interval: 3600 # Hourly
     databases: [openremote]
     metrics:
       [
