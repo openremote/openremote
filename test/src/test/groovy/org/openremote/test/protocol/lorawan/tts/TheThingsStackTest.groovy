@@ -239,7 +239,8 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
                 f_port: UPLINK_PORT,
                 decoded_payload: [
                     Temperature: TEMPERATURE_VALUE,
-                    Humidity: HUMIDITY_VALUE
+                    Humidity: HUMIDITY_VALUE,
+                    Errors: ["error1", "error2"]
                 ]
             ]
         ]
@@ -253,6 +254,10 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
             def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
             assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
             assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
+            assert asset.getAttribute(ERRORS)
+                .flatMap {it.value}
+                .map {it.startsWith("[") && it.endsWith("]") && it.contains("error1") && it.contains("error2")}
+                .orElse(false)
         }
 
         when: "an asset attribute value is written"
@@ -353,7 +358,8 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
                 f_port: UPLINK_PORT,
                 decoded_payload: [
                     Temperature: TEMPERATURE_VALUE,
-                    Humidity: HUMIDITY_VALUE
+                    Humidity: HUMIDITY_VALUE,
+                    Errors: ["error1", "error2"]
                 ]
             ]
         ]
@@ -367,6 +373,10 @@ class TheThingsStackTest extends Specification implements ManagerContainerTrait 
             def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
             assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
             assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
+            assert asset.getAttribute(ERRORS)
+                .flatMap {it.value}
+                .map {it.startsWith("[") && it.endsWith("]") && it.contains("error1") && it.contains("error2")}
+                .orElse(false)
         }
 
         when: "an asset attribute value is written"
