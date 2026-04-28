@@ -587,15 +587,7 @@ export class OrAttributeBarChart extends LitElement {
                 ${when(this.timestampControls || this.showLegend, () => html`
                     <div id="chart-controls">
                         <div id="controls">
-                            ${when(this.timestampControls && this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions,
-                                    () => this._getTimeControlsTemplate(disabled || !!this.timeframe),
-                                    () => html`
-                                        <div style="display: flex; justify-content: center;">
-                                            <or-vaadin-button label=${i18next.t(this.timePrefixKey?.toLowerCase() ?? '???')} disabled style="margin-right: -2px;"></or-vaadin-button>
-                                            <or-vaadin-button label=${i18next.t(this.timeWindowKey?.toLowerCase() ?? '???')} disabled style="margin-left: -2px;"></or-vaadin-button>
-                                        </div>
-                                    `
-                            )}
+                            ${when(this.timestampControls && this.timePrefixKey && this.timeWindowKey, () => this._getTimeControlsTemplate(disabled || !!this.timeframe))}
                             ${when(this.timeframe, () => this._getTimeframeStatusTemplate(this.timeframe))}
                         </div>
                         ${cache(when(this.showLegend, () => this._getLegendTemplate()))}
@@ -605,7 +597,7 @@ export class OrAttributeBarChart extends LitElement {
         `;
     }
 
-    protected _getTimeControlsTemplate(disabled = true): TemplateResult {
+    protected _getTimeControlsTemplate(disabled: boolean): TemplateResult {
         const menuItems: MenuBarItem[] = [{
             component: createMenuBarItem(html`<or-translate value=${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}></or-translate>`),
             children: this.timePrefixOptions.map(o => (
@@ -627,7 +619,7 @@ export class OrAttributeBarChart extends LitElement {
             <div id="period-controls">
                 <!-- Time prefix & window selection -->
                 <div id="period-dropdown-controls">
-                    <or-vaadin-menu-bar .items=${menuItems} ?dsiabled=${disabled}
+                    <or-vaadin-menu-bar .items=${menuItems} ?disabled=${disabled}
                                         @item-selected=${(ev: CustomEvent) => this._onTimeframeMenuSelect(ev)}
                     ></or-vaadin-menu-bar>
                 </div>

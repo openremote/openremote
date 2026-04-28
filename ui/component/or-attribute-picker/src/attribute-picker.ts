@@ -119,7 +119,7 @@ export abstract class AttributePicker extends OrMwcDialog {
 
     /**
      * Function that creates the HTML template for selecting attributes.
-     * Currently uses {@link OrMwcList} with or without checkboxes, and uses {@link Util.getAttributeLabel} to formulate the text.
+     * Currently uses {@link OrVaadinListBox} with or without checkboxes, and uses {@link Util.getAttributeLabel} to formulate the text.
      *
      * @remarks TODO: Move this template into a separate component, such as an "or-attribute-list"
      */

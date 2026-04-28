@@ -14,7 +14,6 @@ import {
 } from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-asset-tree";
-import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import * as echarts from "echarts/core";
@@ -22,7 +21,6 @@ import {DatasetComponentOption, DataZoomComponent, DataZoomComponentOption, Grid
 import {LineChart, LineSeriesOption} from "echarts/charts";
 import {CanvasRenderer} from "echarts/renderers";
 import {UniversalTransition} from "echarts/features";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
@@ -32,11 +30,11 @@ import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openre
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
 import debounce from "lodash.debounce";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import {when} from "lit/directives/when.js";
 import {map} from "lit/directives/map.js";
 import {createRef, Ref, ref } from "lit/directives/ref.js";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 
 echarts.use([GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, LineChart, CanvasRenderer, UniversalTransition]);
 
@@ -304,21 +302,6 @@ const style = css`
 
     .attribute-list-item:hover .button.delete {
         display: block;
-    }
-    
-    .dialog-container {
-        display: flex;
-        flex-direction: row;
-        flex: 1 1 0;
-    }
-
-    .dialog-container > * {
-        flex: 1 1 0;
-    }
-    
-    .dialog-container > or-mwc-input {
-        background-color: var(--or-app-color2);
-        border-left: 3px solid var(--or-app-color4);
     }
 
     #chart-container {
@@ -740,7 +723,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
-        const disabled = this._latestError;
+        const disabled = this._loading || !!this._latestError;
         return html`
             <div id="container">
                 <div id="chart-container" style="opacity: ${this._loading ? '0.7' : '1'};">
@@ -760,62 +743,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
                     <div id="chart-controls">
                         <div id="controls">
-                                ${this.timePrefixKey && this.timePrefixOptions && this.timeWindowKey && this.timeWindowOptions ? html`
-                                    ${this.timestampControls ? html`
-                                        <div id="period-controls">
-                                            <div id="period-dropdown-controls">
-                                                <!-- Time prefix selection -->
-                                                ${getContentWithMenuTemplate(
-                                                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey.toLowerCase()}"></or-mwc-input>`,
-                                                        this.timePrefixOptions.map(option => ({value: option, text: option.toLowerCase() } as ListItem)),
-                                                        this.timePrefixKey,
-                                                        (value: string | string[]) => {
-                                                            this.timeframe = undefined; // remove any custom start & end times
-                                                            this.timePrefixKey = value.toString();
-                                                        },
-                                                        undefined,
-                                                        undefined,
-                                                        undefined,
-                                                        true
-                                                )}
-                                                <!-- Time window selection -->
-                                                ${getContentWithMenuTemplate(
-                                                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${this._isCustomWindow ? "timeframe" : this.timeWindowKey.toLowerCase()}"></or-mwc-input>`,
-                                                        Array.from(this.timeWindowOptions!.keys()).map(key => ({ value: key, text: key.toLowerCase() } as ListItem)),
-                                                        this.timeWindowKey,
-                                                        (value: string | string[]) => {
-                                                            this.timeframe = undefined; // remove any custom start & end times
-                                                            this.timeWindowKey = value.toString();
-                                                        },
-                                                        undefined,
-                                                        undefined,
-                                                        undefined,
-                                                        true
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div style="text-align: center">
-                                            <!-- Scroll left button -->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left"
-                                                     @click="${() => this._shiftTimeframe(this.timeframe?.[0] ?? new Date(this._startOfPeriod!), this.timeframe?.[1] ?? new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"
-                                            ></or-icon>
-                                            <!-- Scroll right button -->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right"
-                                                     @click="${() => this._shiftTimeframe(this.timeframe?.[0] ?? new Date(this._startOfPeriod!), this.timeframe?.[1] ?? new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"
-                                            ></or-icon>
-                                            <!-- Button that opens custom time selection or restores to widget setting-->
-                                            <or-icon class="button button-icon" ?disabled="${disabled}" icon="${this.timeframe ? 'restore' : 'calendar-clock'}"
-                                                     @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined) : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"
-                                            ></or-icon>
-                                        </div>
-                                    ` : html`
-                                        <div style = "display: flex; flex-direction: column; align-items: center">
-                                            <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePrefixKey}" disabled></or-mwc-input>
-                                            <or-mwc-input .type="${InputType.BUTTON}" label="${this.timeWindowKey}" disabled></or-mwc-input>
-                                        </div>
-                                    `}
-                                ` : undefined}
-                            
+                            ${when(this.timestampControls && this.timePrefixKey && this.timeWindowKey, () => this._getTimeControlsTemplate(disabled || !!this.timeframe))}
                             ${this.timeframe ? html`
                                 <div style="font-size: 12px; display: flex; justify-content: flex-end;">
                                     <table style="text-align: right;">
@@ -834,9 +762,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     </table>
                                 </div>
                             ` : undefined}
-                            ${this.attributeControls ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
-                            ` : undefined}
+                            ${when(this.attributeControls, () => html`
+                                <or-vaadin-button ?disabled=${disabled} @click=${() => this._openDialog()}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="selectAttributes"></or-translate>
+                                </or-vaadin-button>
+                            `)}
                         </div>
                         ${cache(this.showLegend ? html`
                             <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
@@ -875,6 +806,59 @@ export class OrChart extends translate(i18next)(LitElement) {
                 ` : undefined}
             </div>
         `;
+    }
+
+    protected _getTimeControlsTemplate(disabled: boolean) {
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-translate value=${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}></or-translate>`),
+            children: this.timePrefixOptions?.map(o => (
+                {type: "prefix", value: o, component: createMenuBarItem(html`<or-translate value=${o}></or-translate>`)}
+            ))
+        }, {
+            component: createMenuBarItem(html`<or-translate value=${this._isCustomWindow ? "timeframe" : i18next.t(this.timeWindowKey?.toLowerCase() ?? "")}></or-translate>`),
+            children: Array.from(this.timeWindowOptions ?? []).map(o => (
+                {type: "window", value: o[0], component: createMenuBarItem(html`<or-translate value=${o[0]?.toLowerCase()}></or-translate>`)}
+            ))
+        }];
+        return html`
+            <div id="period-controls">
+                <div id="period-dropdown-controls">
+                    <!-- Time prefix and window selection -->
+                    <or-vaadin-menu-bar .items=${menuItems} ?disabled=${disabled}
+                                        @item-selected=${(ev: CustomEvent) => this._onTimeframeMenuSelect(ev)}
+                    ></or-vaadin-menu-bar>
+                </div>
+            </div>
+            <div style="text-align: center">
+                <!-- Scroll left button -->
+                <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left"
+                         @click="${() => this._shiftTimeframe(this.timeframe?.[0] ?? new Date(this._startOfPeriod!), this.timeframe?.[1] ?? new Date(this._endOfPeriod!), this.timeWindowKey!, "previous")}"
+                ></or-icon>
+                <!-- Scroll right button -->
+                <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right"
+                         @click="${() => this._shiftTimeframe(this.timeframe?.[0] ?? new Date(this._startOfPeriod!), this.timeframe?.[1] ?? new Date(this._endOfPeriod!), this.timeWindowKey!, "next")}"
+                ></or-icon>
+                <!-- Button that opens custom time selection or restores to widget setting-->
+                <or-icon class="button button-icon" ?disabled="${disabled}"
+                         icon="${this.timeframe ? 'restore' : 'calendar-clock'}"
+                         @click="${() => this.timeframe ? (this._isCustomWindow = false, this.timeframe = undefined) : this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"
+                ></or-icon>
+            </div>
+        `;
+    }
+
+    protected _onTimeframeMenuSelect(ev: CustomEvent) {
+        const type = ev.detail.value.type as "prefix" | "window";
+        const value = ev.detail.value.value;
+        if(type === "prefix") {
+            // Handle time prefix
+            this.timeframe = undefined; // remove any custom start & end times
+            this.timePrefixKey = value;
+        } else {
+            // Handle time window
+            this.timeframe = undefined; // remove any custom start & end times
+            this.timeWindowKey = value;
+        }
     }
 
     protected async _onTreeSelectionChanged(event: OrAssetTreeSelectionEvent) {
@@ -1071,14 +1055,18 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
-        const startRef: Ref<OrMwcInput> = createRef();
-        const endRef: Ref<OrMwcInput> = createRef();
+        const startRef: Ref<OrVaadinDateTimePicker> = createRef();
+        const endRef: Ref<OrVaadinDateTimePicker> = createRef();
         showDialog(new OrMwcDialog()
             .setHeading(i18next.t('timeframe'))
             .setContent(() => html`
-                <div>
-                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
-                    <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
+                <div style="max-width: 480px; display: flex; flex-direction: column; gap: 8px;">
+                    <or-vaadin-date-time-picker ${ref(startRef)} required value=${startTimestamp ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(startTimestamp)) : undefined}>
+                        <or-translate slot="label" value="start"></or-translate>
+                    </or-vaadin-date-time-picker>
+                    <or-vaadin-date-time-picker ${ref(endRef)} required value=${endTimestamp ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(endTimestamp)) : undefined}>
+                        <or-translate slot="label" value="ending"></or-translate>
+                    </or-vaadin-date-time-picker>
                 </div>
             `)
             .setActions([{
