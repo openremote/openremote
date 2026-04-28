@@ -1,3 +1,4 @@
+# Currently only used to test if it builds before merging to master
 name: Build deployment image
 
 on:
@@ -8,7 +9,7 @@ on:
         required: true
 
 jobs:
-  deployment-image:
+  build-deployment-image:
     name: Deployment image
     runs-on: ubuntu-latest
     steps:
