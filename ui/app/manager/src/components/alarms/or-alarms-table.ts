@@ -23,6 +23,7 @@ import {OrMwcTable, TableColumn, TableConfig, TableContent, TableRow} from "@ope
 import {AlarmSeverity, AlarmStatus, Asset, SentAlarm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
+import "./or-status-chip-dropdown";
 
 /**
  * ## AlarmTableColumn
@@ -32,6 +33,33 @@ import {classMap} from "lit/directives/class-map.js";
 export interface AlarmTableColumn extends TableColumn {
     widthWeight?: number;
 }
+
+/**
+ * Interface defining the detail object for the alarm status change event.
+ */
+export interface OrAlarmsTableRowStatusChange {
+    alarm: SentAlarm; // The alarm object with updated status
+}
+
+/**
+ * Custom event fired when an alarm row's status changes in the alarms table.
+ * Carries the updated alarm as event detail.
+ */
+export class OrAlarmsTableRowStatusChangeEvent extends CustomEvent<OrAlarmsTableRowStatusChange> {
+
+    public static readonly NAME = "or-alarms-table-row-status-change";
+
+    constructor(alarm: SentAlarm) {
+        super(OrAlarmsTableRowStatusChangeEvent.NAME, {
+            detail: {
+                alarm: alarm
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 
 const styling = css`
     .alarm-text {
@@ -154,7 +182,8 @@ export class OrAlarmsTable extends OrMwcTable {
                 content: [
                     this.getSeverityContent(a.severity),
                     this.getDisplayNameContent(a.title),
-                    this.getAlarmStatusContent(a.status),
+                    // Complete alarm object is passed to the method for improved flexibility
+                    this.getAlarmStatusContent(a),
                     this.getLinkedAssetsContent(a.asset),
                     this.getAssigneeContent(a.assigneeUsername),
                     this.getLastModifiedContent(a.lastModified)
@@ -185,7 +214,8 @@ export class OrAlarmsTable extends OrMwcTable {
         return title;
     }
 
-    protected getAlarmStatusContent(status?: AlarmStatus): TableContent {
+    protected getAlarmStatusContent(alarm: SentAlarm): TableContent {
+        const status = alarm.status;
         const classes = {
             "alarm-text": true,
             "alarm-status-text__closed": status === AlarmStatus.CLOSED,
@@ -194,10 +224,27 @@ export class OrAlarmsTable extends OrMwcTable {
             "alarm-status-text__in-progress": status === AlarmStatus.IN_PROGRESS,
             "alarm-status-text__open": status === AlarmStatus.OPEN
         };
-        return html`
-            <or-translate class=${classMap(classes)}
-                          value="${status ? `alarm.status_${status}` : "error"}"></or-translate>
-        `;
+        // If readonly, render a localized status label; otherwise, render an editable status dropdown
+        if (this.readonly) {
+            return html`
+                <or-translate class=${classMap(classes)}
+                              value="${status ? `alarm.status_${status}` : "error"}"></or-translate>
+            `;
+        } else {
+            return html`
+                <or-status-chip-dropdown
+                    .status=${alarm.status}
+                    .readonly=${this.readonly}
+                    @status-change=${(e: CustomEvent) => this.handleStatusChange(alarm, e.detail.status)}>
+                </or-status-chip-dropdown>
+            `;
+        }
+    }
+
+    // Updates alarm status and dispatches a row status change event
+    protected handleStatusChange(alarm: SentAlarm, newStatus: AlarmStatus): void {
+        const updatedAlarm = {...alarm, status: newStatus};
+        this.dispatchEvent(new OrAlarmsTableRowStatusChangeEvent(updatedAlarm));
     }
 
     protected getLinkedAssetsContent(assets?: Asset[]): TableContent {
