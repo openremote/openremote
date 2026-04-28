@@ -1,0 +1,40 @@
+name: Check if main repo
+
+outputs:
+  value:
+    description: "Whether the workflow ran within the main_repo"
+    value: ${{ steps.is_main_repo.outputs.value }}
+  repository:
+    description: "The name of the current main repo"
+    value: ${{ steps.is_main_repo.outputs.repository }}
+  ref:
+    description: "The openremote version defined in the main repo"
+    value: ${{ steps.is_main_repo.outputs.ref }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check if main repo
+      id: is_main_repo
+      shell: bash
+      run: |
+        if [ -f manager/src/main/java/org/openremote/manager/Main.java ]; then
+          echo "value=true" >> $GITHUB_OUTPUT
+        else
+          if [ -e 'openremote' ]; then
+            echo "::error::openremote submodule no longer supported, see custom project template!"
+            exit 1
+          fi
+
+          echo "value=false" >> $GITHUB_OUTPUT
+          echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
+
+          version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
+
+          if [ -z "$version" ]; then
+            echo "openremoteVersion must be set in gradle.properties"
+            exit 1
+          fi
+
+          echo "ref=$version" >> $GITHUB_OUTPUT
+        fi

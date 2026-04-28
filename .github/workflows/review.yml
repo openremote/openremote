@@ -99,7 +99,7 @@ jobs:
        DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
        DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
 
-  build-deployment-image:
+  build-deployment-image: # Only here to check if it can build successfully
     name: Build
     needs: [detect-changes, install-dist]
     if: needs.detect-changes.outputs.any_modified == 'true'
@@ -118,17 +118,3 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.ui_any_modified == 'true'
     uses: "./.github/workflows/get-version-details.yml"
-
-  deployment:
-     name: Deploy
-     needs: [detect-changes, get-version-details]
-     if: needs.detect-changes.outputs.any_modified == 'true'
-     uses: "./.github/workflows/deployment.yml"
-     with:
-       OR_HOSTNAME: 'test1.openremote.app'
-       CLEAN_INSTALL: false
-       VERSION: ${{ needs.get-version-details.outputs.version }}
-       MANAGER_TAG: 'develop'
-     secrets:
-       SECRETS: ${{ toJSON(secrets) }}
-
