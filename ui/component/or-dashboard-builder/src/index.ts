@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
@@ -8,7 +27,6 @@ import "./or-dashboard-preview";
 import "./or-dashboard-widgetsettings";
 import "./or-dashboard-boardsettings";
 import "./controls/dashboard-refresh-controls";
-import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
 import {ClientRole, Dashboard, DashboardAccess, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
@@ -34,6 +52,7 @@ import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
 import {GatewayWidget} from "./widgets/gateway-widget";
 import {BarChartWidget} from "./widgets/barchart-widget";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 // language=CSS
 const styling = css`
@@ -71,6 +90,8 @@ const styling = css`
         border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
     }
     #header-title {
+        display: flex;
+        align-items: baseline;
         font-size: 18px;
     }
     #header-title > or-icon {
@@ -104,10 +125,6 @@ const styling = css`
         font-size: 18px;
         font-weight: bold;
         color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-    }
-    #fullscreen-header-title > or-mwc-input {
-        margin-right: 4px;
-        --or-icon-fill: ${unsafeCSS(DefaultColor3)};
     }
     #fullscreen-header-actions {
         flex: 1 1 auto;
@@ -326,6 +343,7 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     willUpdate(changedProps: PropertyValues) {
+        console.debug(changedProps);
         super.willUpdate(changedProps);
 
         this.isLoading = (this.dashboards == undefined);
@@ -496,10 +514,13 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
-    changeDashboardName(value: string) {
+    _onDashboardNameChanged(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinTextField;
+        if(!elem?.checkValidity()) {
+            return;
+        }
         if(this.selectedDashboard != null) {
-            const dashboard = this.selectedDashboard;
-            dashboard.displayName = value;
+            this.selectedDashboard.displayName = elem.value;
             this.requestUpdate("selectedDashboard");
         }
     }
@@ -586,6 +607,7 @@ export class OrDashboardBuilder extends LitElement {
             display: (this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'none' : undefined,
             maxHeight: this.editMode ? "calc(100vh - 77px - 50px)" : "inherit"
         };
+        console.debug(`Rendering dashboard UI with loading = ${this.isLoading} and hasChanged = ${this.hasChanged}`);
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${(this.showDashboardTree) ? html`
@@ -602,32 +624,38 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="header-wrapper">
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
-                                    ${this.selectedDashboard != null ? html`
-                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name')}" 
-                                                      ?readonly="${this._isReadonly() || !this._hasEditAccess()}" .value="${this.selectedDashboard.displayName}" 
-                                                      .disabled="${this.isLoading}" style="width: 300px;" 
-                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
-                                        ></or-mwc-input>
-                                    ` : undefined}
+                                    ${when(this.selectedDashboard, () => html`
+                                        <or-vaadin-text-field minlength="1" maxlength="1023" required ?readonly=${this._isReadonly() || !this._hasEditAccess()}
+                                                              value=${this.selectedDashboard?.displayName} ?disabled=${this.isLoading} style="width: 300px;"
+                                                              @change=${(ev: Event) => this._onDashboardNameChanged(ev)}>
+                                            <or-translate slot="label" value="name"></or-translate>
+                                        </or-vaadin-text-field>
+                                    `)}
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
                                         ${when(this.selectedDashboard, () => html`
-                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="refresh" title="${i18next.t("dashboard.refresh")}"
-                                                          @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}">
-                                            </or-mwc-input>
-                                            <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="responsive" title="${i18next.t("dashboard.previewScreenSizes")}"
-                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
-                                            </or-mwc-input>
-                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="open-in-new" title="${i18next.t("dashboard.openInNewTab")}"
-                                                          @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
-                                            </or-mwc-input>
-                                            <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged}" type="${InputType.BUTTON}" raised label="save"
-                                                          @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
-                                            </or-mwc-input>
-                                            <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="viewAsset"
-                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}">
-                                            </or-mwc-input>
+                                            <or-vaadin-button id="refresh-btn" theme="icon tertiary" ?disabled=${this.isLoading} title=${i18next.t("dashboard.refresh")}
+                                                              @click=${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}>
+                                                <or-icon slot="prefix" icon="refresh"></or-icon>
+                                            </or-vaadin-button>
+                                            <or-vaadin-button id="responsive-btn" theme="icon tertiary" ?disabled=${this.isLoading} title=${i18next.t("dashboard.previewScreenSizes")}
+                                                              @click=${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}>
+                                                <or-icon slot="prefix" icon="responsive"></or-icon>
+                                            </or-vaadin-button>
+                                            <or-vaadin-button id="share-btn" theme="icon tertiary" ?disabled=${this.isLoading} title=${i18next.t("dashboard.openInNewTab")}
+                                                              @click=${() => this.openDashboardInInsights()}>
+                                                <or-icon slot="prefix" icon="open-in-new"></or-icon>
+                                            </or-vaadin-button>
+                                            <or-vaadin-button id="save-btn" theme="primary" ?disabled=${this.isLoading || !this.hasChanged}
+                                                              ?hidden=${this._isReadonly() || !this._hasEditAccess()} @click=${() => this.saveDashboard()}>
+                                                <or-translate value="save"></or-translate>
+                                            </or-vaadin-button>
+                                            <or-vaadin-button id="view-btn" ?hidden=${this._isReadonly() || !this._hasViewAccess()}
+                                                              @click=${() => this.dispatchEvent(new CustomEvent('editToggle', { detail: false }))}>
+                                                <or-icon slot="prefix" icon="eye"></or-icon>
+                                                <or-translate value="viewAsset"></or-translate>
+                                            </or-vaadin-button>
                                         `)}
                                     </div>
                                 </div>
@@ -644,18 +672,22 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
                                         ${when(this.selectedDashboard, () => html`
-                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh" title="${i18next.t("dashboard.refresh")}"
-                                                      @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}"
-                                            ></or-mwc-input>
+                                            <or-vaadin-button id="refresh-btn" theme="icon" ?disabled=${(this.selectedDashboard == null)} title=${i18next.t("dashboard.refresh")}
+                                                              @click=${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}>
+                                                <or-icon icon="refresh"></or-icon>
+                                            </or-vaadin-button>
                                             <dashboard-refresh-controls .interval="${this.refreshInterval}" .readonly="${false}"
                                                                         @interval-select="${(ev: IntervalSelectEvent) => this.onIntervalSelect(ev)}"
                                             ></dashboard-refresh-controls>
-                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new" title="${i18next.t("dashboard.openInNewTab")}"
-                                                          @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
-                                            ></or-mwc-input>
-                                            <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="editAsset"
-                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}">
-                                            </or-mwc-input>
+                                            <or-vaadin-button id="share-btn" theme="icon" ?disabled=${(this.selectedDashboard == null)} title=${i18next.t("dashboard.openInNewTab")}
+                                                              @click=${() => this.openDashboardInInsights()}>
+                                                <or-icon icon="open-in-new"></or-icon> 
+                                            </or-vaadin-button>
+                                            <or-vaadin-button id="view-btn" class="hideMobile" ?hidden=${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}
+                                                              @click=${() => this.dispatchEvent(new CustomEvent('editToggle', { detail: true }))}>
+                                                <or-icon slot="prefix" icon="pencil"></or-icon>
+                                                <or-translate value="editAsset"></or-translate>
+                                            </or-vaadin-button>
                                         `)}
                                     </div>
                                 </div>
@@ -699,12 +731,14 @@ export class OrDashboardBuilder extends LitElement {
                                                         <span id="title" title="${selectedWidget?.displayName}">${selectedWidget?.displayName}</span>
                                                     </div>
                                                     <div id="sidebar-widget-headeractions">
-                                                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {
-                                                            showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => {
-                                                                if(ok) { this.deleteWidget(selectedWidget!); }
-                                                            })
-                                                        }}"></or-mwc-input>
-                                                        <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
+                                                        <or-vaadin-button theme="icon" @click=${() => showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => {
+                                                            if(ok) { this.deleteWidget(selectedWidget!); }
+                                                        })}>
+                                                            <or-icon icon="delete"></or-icon>
+                                                        </or-vaadin-button>
+                                                        <or-vaadin-button theme="icon" @click=${() => this.deselectWidget()}>
+                                                            <or-icon icon="close"></or-icon>
+                                                        </or-vaadin-button>
                                                     </div>
                                                 </div>
                                                 <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">

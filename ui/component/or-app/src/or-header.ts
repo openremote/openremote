@@ -215,7 +215,7 @@ export class OrHeader extends LitElement {
           
             /* Wide layout: when the viewport width is bigger than 768px, layout
             changes to a wide layout. */
-            @media (min-width: 768px) {
+            @media (min-width: 900px) {
                 #menu-btn-desktop {
                     display: block;
                 }          
@@ -267,7 +267,7 @@ export class OrHeader extends LitElement {
                 }
             }
             
-            @media (min-width: 1024px) {
+            @media (min-width: 1100px) {
                
     
                 #desktop-left .menu-item or-icon{
@@ -424,7 +424,6 @@ export class OrHeader extends LitElement {
                     <or-translate value=${s.text}></or-translate>
                 `)}))
         }];
-        console.debug(menuItems);
         return html`
             <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${menuItems} style="min-width: 40px;"
                                 @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}

@@ -297,7 +297,10 @@ export class OrAddAssetDialog extends LitElement {
             </div>
             <div id="name-wrapper">
                 <or-vaadin-text-field id="name-input" minlength="1" maxlength="1023" required value=${this.name}
-                                     @change=${(ev: Event) => this.onNameChanged((ev.currentTarget as OrVaadinTextField).value)}>
+                                     @change=${(ev: Event) => {
+                                         const elem = ev.currentTarget as OrVaadinTextField;
+                                         if(elem.checkValidity()) this.onNameChanged(elem.value);
+                                     }}>
                     <or-translate slot="label" value="name"></or-translate>
                 </or-vaadin-text-field>
                 <div id="parent-wrapper">

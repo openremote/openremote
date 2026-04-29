@@ -1416,7 +1416,15 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
                         ${when(editMode, () => html`
-                            <or-vaadin-text-field minlength="1" maxlength="1023" value=${asset.name} @change=${(ev: CustomEvent) => {asset!.name = (ev.currentTarget as OrVaadinTextField).value; this._assetInfo!.modified = true; this._doValidation();}}>
+                            <or-vaadin-text-field minlength="1" maxlength="1023" value=${asset.name}
+                                                  @change=${(ev: CustomEvent) => {
+                                                      const elem = ev.currentTarget as OrVaadinTextField;
+                                                      if(elem.checkValidity()) {
+                                                          asset!.name = elem.value;
+                                                          this._assetInfo!.modified = true;
+                                                          this._doValidation();
+                                                      }
+                                                  }}>
                                 <or-translate slot="label" value="name"></or-translate>
                             </or-vaadin-text-field>
                         `, () => html`

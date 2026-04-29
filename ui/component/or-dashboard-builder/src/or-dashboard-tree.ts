@@ -1,6 +1,24 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, LitElement, PropertyValues} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
-import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import '@openremote/or-icon';
 import {style} from './style';
 import {Dashboard} from '@openremote/model';
@@ -13,6 +31,7 @@ import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
 import {style as OrAssetTreeStyle} from '@openremote/or-asset-tree';
 import {DashboardService, DashboardSizeOption} from './service/dashboard-service';
 import {isAxiosError} from '@openremote/rest';
+import {when} from "lit/directives/when.js";
 
 // language=css
 const treeStyling = css`
@@ -224,34 +243,30 @@ export class OrDashboardTree extends LitElement {
                 <!-- Controls header -->
                 ${this.showControls ? html`
                     <div id="header-btns">
-                        ${this.selected != null ? html`
-                            <or-mwc-input type="${InputType.BUTTON}" icon="close" title="${i18next.t("deselect")}" @or-mwc-input-changed="${() => {
-                                this.selectDashboard(undefined);
-                            }}"></or-mwc-input>
-                            ${!this.readonly ? html`
-                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy" title="${i18next.t("duplicate")}"
-                                              @or-mwc-input-changed="${() => {
-                                                  this.duplicateDashboard(this.selected!);
-                                              }}"
-                                ></or-mwc-input>
-                                <or-mwc-input type="${InputType.BUTTON}" icon="delete" title="${i18next.t("delete")}" @or-mwc-input-changed="${() => {
+                        ${when(this.selected != null, () => html`
+                            <or-vaadin-button theme="icon" title=${i18next.t("deselect")} @click=${() => this.selectDashboard(undefined)}>
+                                <or-icon icon="close"></or-icon>
+                            </or-vaadin-button>
+                            ${when(!this.readonly, () => html`
+                                <or-vaadin-button theme="icon" class="hideMobile" title=${i18next.t("duplicate")} @click=${() => this.duplicateDashboard(this.selected!)}>
+                                    <or-icon icon="content-copy"></or-icon>
+                                </or-vaadin-button>
+                                <or-vaadin-button theme="icon" title=${i18next.t("delete")} @click=${() => {
                                     if (this.selected != null) {
                                         showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', {dashboard: this.selected.displayName}), i18next.t('delete')).then((ok: boolean) => {
-                                            if (ok) {
-                                                this.deleteDashboard(this.selected!);
-                                            }
+                                            if (ok) this.deleteDashboard(this.selected!);
                                         });
                                     }
-                                }}"></or-mwc-input>
-                            ` : undefined}
-                        ` : undefined}
-                        ${!this.readonly ? html`
-                            <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" title="${i18next.t("addInsights")}"
-                                          @or-mwc-input-changed="${() => {
-                                              this.createDashboard(DashboardSizeOption.DESKTOP);
-                                          }}"
-                            ></or-mwc-input>
-                        ` : undefined}
+                                }}>
+                                    <or-icon icon="delete"></or-icon>
+                                </or-vaadin-button>
+                            `)}
+                        `)}
+                        ${when(!this.readonly, () => html`
+                            <or-vaadin-button theme="icon" class="hideMobile" title=${i18next.t("addInsights")} @click=${() => this.createDashboard(DashboardSizeOption.DESKTOP)}>
+                                <or-icon icon="plus"></or-icon>
+                            </or-vaadin-button>
+                        `)}
                     </div>
                 ` : undefined}
             </div>

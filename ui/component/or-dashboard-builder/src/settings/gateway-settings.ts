@@ -1,12 +1,32 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import { customElement } from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
 import {TemplateResult, html} from "lit";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {Asset, AssetQuery, AttributeRef, GatewayTunnelInfoType} from "@openremote/model";
 import {GatewayWidgetConfig} from "../widgets/gateway-widget";
 import {Task} from "@lit/task";
 import manager from "@openremote/core";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 @customElement("gateway-settings")
 export class GatewaySettings extends WidgetSettings {
@@ -23,6 +43,7 @@ export class GatewaySettings extends WidgetSettings {
 
     protected render(): TemplateResult {
         const disabled = !this.widgetConfig.gatewayId;
+        const tunnelTypeItems: SelectItem[] = this.GATEWAY_TUNNEL_TYPES.map(t => ({value: t, label: i18next.t(t)}));
         return html`
             <div>
                 <settings-panel displayName="gatewayTunnels.settings" expanded="${true}">
@@ -30,75 +51,71 @@ export class GatewaySettings extends WidgetSettings {
                         <div>
                             ${this._fetchAssetsTask.render({
                                 pending: () => html`
-                                    <or-mwc-input .type="${InputType.SELECT}" compact style="width: 100%;" disabled
-                                                  label="${i18next.t('gatewayTunnels.selectAsset')}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-select disabled>
+                                        <or-translate slot="label" value="gatewayTunnels.selectAsset"></or-translate>
+                                    </or-vaadin-select>
                                 `,
                                 complete: (gatewayAssets) => {
-                                    const options: [string, string][] = gatewayAssets.map(a => [a.id!, a.name!]);
+                                    const options: SelectItem[] = gatewayAssets.map(a => ({value: a.id!, label: a.name! }));
                                     const selected = gatewayAssets.find(a => a.id === this.widgetConfig.gatewayId);
-                                    const value = selected ? [selected.id, selected.name] as [string, string] : undefined;
+                                    const value = selected?.id;
                                     return html`
-                                        <or-mwc-input .type="${InputType.SELECT}" compact style="width: 100%;"
-                                                      .options="${options}" .value="${value}"
-                                                      label="${i18next.t('gatewayTunnels.selectAsset')}"
-                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onAssetSelect(ev)}"
-                                        ></or-mwc-input>
+                                        <or-vaadin-select .items=${options} value=${value} @change=${(ev: Event) => this._onAssetSelect(ev)}>
+                                            <or-translate slot="label" value="gatewayTunnels.selectAsset"></or-translate>
+                                        </or-vaadin-select>
                                     `;
                                 },
                                 error: () => html`
-                                    <or-mwc-input .type="${InputType.TEXT}" compact style="width: 100%;" disabled
-                                                  label="${i18next.t('gatewayTunnels.selectAsset')}" .value="${i18next.t('errorOccurred')}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-text-field readonly value=${i18next.t("errorOccurred")}>
+                                        <or-translate slot="label" value="gatewayTunnels.selectAsset"></or-translate>
+                                    </or-vaadin-text-field>
                                 `
                             })}
                         </div>
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" compact style="width: 100%;"
-                                          .disabled="${disabled}" .options="${this.GATEWAY_TUNNEL_TYPES}" .value="${this.widgetConfig.type}"
-                                          label="${i18next.t('gatewayTunnels.protocol')}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelTypeSelect(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <div>
-                            <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;"
-                                          .disabled="${disabled}" .value="${this.widgetConfig.target}"
-                                          label="${i18next.t('gatewayTunnels.target')}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelTargetSelect(ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <div>
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
-                                          .disabled="${disabled}" .value="${this.widgetConfig.targetPort}"
-                                          label="${i18next.t('gatewayTunnels.targetPort')}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelTargetPortSelect(ev)}"
-                            ></or-mwc-input>
-                        </div>
+                        <!-- Select tunnel type (HTTP/HTTPS/TCP) -->
+                        <or-vaadin-select .items=${tunnelTypeItems} .value=${this.widgetConfig.type} ?disabled=${disabled}
+                                          @change=${(ev: Event) => this._onTunnelTypeSelect(ev)}>
+                            <or-translate slot="label" value="gatewayTunnels.protocol"></or-translate>
+                        </or-vaadin-select>
+                        <!-- Select tunnel target address -->
+                        <or-vaadin-text-field value=${this.widgetConfig.target} ?disabled=${disabled}
+                                              @change=${(ev: Event) => this._onTunnelTargetSelect(ev)}>
+                            <or-translate slot="label" value="gatewayTunnels.target"></or-translate>
+                        </or-vaadin-text-field>
+                        <!-- Select tunnel target port -->
+                        <or-vaadin-number-field value=${this.widgetConfig.targetPort} ?disabled=${disabled} min="0"
+                                                @change=${(ev: Event) => this._onTunnelTargetPortSelect(ev)}>
+                            <or-translate slot="label" value="gatewayTunnels.targetPort"></or-translate>
+                        </or-vaadin-number-field>
                     </div>
                 </settings-panel>
             </div>
         `;
     }
 
-    protected _onAssetSelect(ev: OrInputChangedEvent): void {
-        this.widgetConfig.gatewayId = ev.detail.value;
-        this.widgetConfig.attributeRefs = [{id: ev.detail.value, name: undefined} as AttributeRef]; // Add to attributeRefs object, so the backend is aware of asset permissions
+    protected _onAssetSelect(ev: Event): void {
+        const elem = ev.currentTarget as OrVaadinSelect;
+        this.widgetConfig.gatewayId = elem.value;
+        this.widgetConfig.attributeRefs = [{id: elem.value, name: undefined} as AttributeRef]; // Add to attributeRefs object, so the backend is aware of asset permissions
         this.notifyConfigUpdate();
     }
 
-    protected _onTunnelTypeSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.type = ev.detail.value;
+    protected _onTunnelTypeSelect(ev: Event) {
+        this.widgetConfig.type = (ev.currentTarget as OrVaadinSelect).value as GatewayTunnelInfoType;
         this.notifyConfigUpdate();
     }
 
-    protected _onTunnelTargetSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.target = ev.detail.value;
+    protected _onTunnelTargetSelect(ev: Event) {
+        this.widgetConfig.target = (ev.currentTarget as OrVaadinSelect).value;
         this.notifyConfigUpdate();
     }
 
-    protected _onTunnelTargetPortSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.targetPort = ev.detail.value;
-        this.notifyConfigUpdate();
+    protected _onTunnelTargetPortSelect(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinNumberField;
+        if(elem.checkValidity()) {
+            this.widgetConfig.targetPort = Number(elem.value);
+            this.notifyConfigUpdate();
+        }
     }
 
 

@@ -108,14 +108,14 @@ export class OrAssetAttributePicker extends AttributePicker {
                     ${when(this._assetAttributes && this._assetAttributes.length > 0, () => {
             const selectedNames = this.selectedAttributes.filter(attrRef => attrRef.id === this._asset?.id).map(attrRef => attrRef.name!);
             return html`
-                            <div class="attributes-header">
-                                <or-translate value="attribute_plural"></or-translate>
-                            </div>
-                            ${until(
-                this._getAttributesTemplate(this._assetAttributes!, undefined, selectedNames, this.multiSelect, (attrNames) => this._onAttributesSelect(attrNames)),
-                html`<or-loading></or-loading>`
-            )}
-                        `
+                <div class="attributes-header">
+                    <or-translate value="attribute_plural"></or-translate>
+                </div>
+                ${until(this._getAttributesTemplate(this._assetAttributes!, undefined, selectedNames, this.multiSelect,
+                        (attrNames) => this._onAttributesSelect(attrNames)), 
+                        html`<or-loading></or-loading>`
+                )}
+            `;
         }, () => html`
                         <div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;">
                             <span style="width:100%">
@@ -192,6 +192,7 @@ export class OrAssetAttributePicker extends AttributePicker {
      * So, selected attributes of other assets, will merge together with the new {@link attrNames}.
      */
     protected _onAttributesSelect(attrNames: string[]) {
+        console.debug(attrNames);
         this.setSelectedAttributes([
             ...this.selectedAttributes.filter(attributeRef => attributeRef.id !== this._asset!.id),
             ...attrNames.map(a => ({id: this._asset?.id, name: a}))

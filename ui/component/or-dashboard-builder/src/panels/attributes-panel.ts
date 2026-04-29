@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {Asset, AssetDescriptor, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
@@ -8,7 +27,6 @@ import {guard} from "lit/directives/guard.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-translate";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
@@ -308,10 +326,10 @@ export class AttributesPanel extends LitElement {
                 `)}
 
                 <!-- Button that opens attribute selection -->
-                <or-mwc-input .type="${InputType.BUTTON}" label="attribute" icon="${(this.multi || this.attributeRefs.length === 0) ? "plus" : "swap-horizontal"}"
-                              style="margin-top: 8px;"
-                              @or-mwc-input-changed="${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}">
-                </or-mwc-input>
+                <or-vaadin-button style="margin-top: 8px;" @click=${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}>
+                    <or-icon slot="prefix" icon="${(this.multi || this.attributeRefs.length === 0) ? "plus" : "swap-horizontal"}"></or-icon>
+                    <or-translate value="attribute"></or-translate>
+                </or-vaadin-button>
             </div>
         `;
     }

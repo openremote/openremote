@@ -135,7 +135,7 @@ export abstract class AttributePicker extends OrMwcDialog {
         const selectedIndexes = selectedNames?.map(name => listItems.findIndex(i => i.value === name));
         return html`
             <or-vaadin-list-box id="attribute-selector" ?multiple=${multi} .selectedValues=${ifDefined(selectedIndexes)}
-                                @selected-changed=${(ev: CustomEvent) => onSelect?.(listItems[ev.detail.value as number].value)}
+                                @selected-changed=${(ev: CustomEvent) => onSelect?.([listItems[ev.detail.value as number].value])}
                                 @selected-values-changed=${(ev: CustomEvent) => onSelect?.((ev.detail.value as number[])?.map(n => listItems[n].value) ?? [])}>
                 ${listItems.map(item => html`
                     <or-vaadin-item style=${styleMap(item.styleMap ?? {})}>

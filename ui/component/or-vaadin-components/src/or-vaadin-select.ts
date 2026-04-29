@@ -22,6 +22,8 @@ import {customElement} from "lit/decorators.js";
 import {OrVaadinComponent} from "./util";
 import {type LitElement} from "lit";
 
+export {SelectItem} from "@vaadin/select";
+
 /**
  * @slot label - The label element
  */
