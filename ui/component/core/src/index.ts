@@ -1001,6 +1001,9 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _createTokenUpdateInterval() {
+        if (!this._authenticated) {
+            return;
+        }
         if (!this._keycloakUpdateTokenInterval) {
             this._keycloakUpdateTokenInterval = window.setInterval(async () => {
                 await this._updateKeycloakAccessToken().catch(() => {
@@ -1098,6 +1101,17 @@ export class Manager implements EventProviderFactory {
 
         const tryReconnect = async () => {
             console.debug("Reconnecting to the Manager...");
+
+            // If the user was never authenticated (public access), skip token refresh and just reconnect the event provider.
+            if (!this._authenticated) {
+                console.debug("User is not authenticated, skipping token refresh");
+                const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
+                if (!isEventsOnline()) {
+                    await this.events?.connect();
+                }
+                return isEventsOnline();
+            }
+
             const keycloakOffline = !await this.isKeycloakReachable();
 
             if (keycloakOffline) {
