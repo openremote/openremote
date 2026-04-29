@@ -7,6 +7,10 @@
   "asset": "资源",
   "asset_plural": "资源",
   "assets": "资源",
+  "users": "用户",
+  "realms": "场所",
+  "provisioning": "自动配置",
+  "provisioningConfig": "预置配置",
   "attribute": "参数",
   "attributes": "参数",
   "attribute_plural": "参数",
@@ -106,6 +110,7 @@
   "month": "月",
   "year": "年",
   "period": "时期",
+  "beginning": "开始",
   "ending": "结束",
   "timeframe": "时间轴",
   "addAttribute": "添加参数",
@@ -170,6 +175,7 @@
   "french": "法语",
   "german": "德语",
   "italian": "意大利语",
+  "polish": "波兰语",
   "portuguese": "葡萄牙语",
   "romanian": "罗马尼亚语",
   "spanish": "西班牙语",
@@ -621,5 +627,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "该域名已存在"
 }

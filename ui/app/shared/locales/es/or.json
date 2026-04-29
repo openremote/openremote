@@ -7,6 +7,10 @@
   "asset": "Activo",
   "asset_plural": "Activos",
   "assets": "Activos",
+  "users": "Usuarios",
+  "realms": "Realms",
+  "provisioning": "Aprovisionamiento automático",
+  "provisioningConfig": "Configuración de aprovisionamiento",
   "attribute": "Atributo",
   "attributes": "Atributos",
   "attribute_plural": "Atributos",
@@ -107,6 +111,7 @@
   "month": "Mes",
   "year": "Año",
   "period": "Época",
+  "beginning": "Inicio",
   "ending": "Final",
   "timeframe": "Periodo de tiempo",
   "addAttribute": "Agregar atributo",
@@ -172,6 +177,7 @@
   "french": "Francés",
   "german": "Alemán",
   "italian": "Italiana",
+  "polish": "Polaco",
   "portuguese": "Portuguesa",
   "romanian": "Rumano",
   "spanish": "Español",
@@ -624,5 +630,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "El nombre del dominio ya existe"
 }
