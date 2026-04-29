@@ -1077,7 +1077,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             .setHeading(i18next.t('timeframe'))
             .setContent(() => html`
                 <div>
-                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
+                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('beginning')}" .value="${startTimestamp}"></or-mwc-input>
                     <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
                 </div>
             `)

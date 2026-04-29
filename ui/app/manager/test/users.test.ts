@@ -17,20 +17,20 @@ test(`Create regular users with tags and search by tag`, async ({ page, manager,
   await manager.navigateToMenuItem("Users");
   await usersPage.addUser("user1", "password123", "Company1");
   await usersPage.addUser("user2", "password123", "Company2");
-  await expect(page.getByRole("cell", { name: "user1", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "user2", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "user1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "user2" })).toBeVisible();
 
   await usersPage.searchRegularUsers("Company1");
-  await expect(page.getByRole("cell", { name: "user1", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "user2", exact: true })).not.toBeVisible();
+  await expect(page.getByRole("cell", { name: "user1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "user2" })).not.toBeVisible();
 
   await usersPage.searchRegularUsers("Company2");
-  await expect(page.getByRole("cell", { name: "user1", exact: true })).not.toBeVisible();
-  await expect(page.getByRole("cell", { name: "user2", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "user1" })).not.toBeVisible();
+  await expect(page.getByRole("cell", { name: "user2" })).toBeVisible();
 
   await usersPage.searchRegularUsers("");
-  await expect(page.getByRole("cell", { name: "user1", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "user2", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "user1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "user2" })).toBeVisible();
 });
 
 /**
@@ -46,20 +46,20 @@ test(`Create service users with tags and search by tag`, async ({ page, manager,
   await manager.navigateToMenuItem("Users");
   await usersPage.addServiceUser("serviceuser1", "api");
   await usersPage.addServiceUser("serviceuser2", "integration");
-  await expect(page.getByRole("cell", { name: "serviceuser1", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "serviceuser2", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser2" })).toBeVisible();
 
   await usersPage.searchServiceUsers("api");
-  await expect(page.getByRole("cell", { name: "serviceuser1", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "serviceuser2", exact: true })).not.toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser2" })).not.toBeVisible();
 
   await usersPage.searchServiceUsers("integration");
-  await expect(page.getByRole("cell", { name: "serviceuser1", exact: true })).not.toBeVisible();
-  await expect(page.getByRole("cell", { name: "serviceuser2", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser1" })).not.toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser2" })).toBeVisible();
 
   await usersPage.searchServiceUsers("");
-  await expect(page.getByRole("cell", { name: "serviceuser1", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "serviceuser2", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "serviceuser2" })).toBeVisible();
 });
 
 /**
@@ -71,17 +71,18 @@ test(`Create service users with tags and search by tag`, async ({ page, manager,
  */
 test(`Verify browser behavior while creating regular users`, async ({ page, usersPage }) => {
     await usersPage.gotoUserCreation("master", "regular");
-    await page.locator("label").filter({ hasText: "Username" }).fill("mycustomusername");
-    await page.locator("label").filter({ hasText: "Email" }).fill("mycustom@email.com");
-    await usersPage.toHavePermissions();
-    await usersPage.toggleUserRoles("Read", "Write");
-    await usersPage.toHavePermissions(...permissions);
+    const lastRow = page.locator("#table-users tbody tr").last();
+    await lastRow.getByRole("textbox", { name: "Username" }).fill("mycustomusername");
+    await lastRow.getByRole("textbox", { name: "Email" }).fill("mycustom@email.com");
+    await usersPage.toHavePermissions(lastRow);
+    await usersPage.toggleUserRoles(lastRow, "Read", "Write");
+    await usersPage.toHavePermissions(lastRow, ...permissions);
     await page.evaluate(() => {
         document.dispatchEvent(new Event('visibilitychange'));
     });
-    await expect(await page.getByRole('textbox', {name: /username/i }).inputValue()).toBe("mycustomusername");
-    await expect(await page.getByRole('textbox', {name: /email/i }).inputValue()).toBe("mycustom@email.com");
-    await usersPage.toHavePermissions(...permissions);
+    await expect(lastRow.getByRole('textbox', {name: /username/i})).toHaveValue("mycustomusername");
+    await expect(lastRow.getByRole('textbox', {name: /email/i})).toHaveValue("mycustom@email.com");
+    await usersPage.toHavePermissions(lastRow, ...permissions);
 });
 
 /**
@@ -105,18 +106,19 @@ test(`Verify gateway service user is read-only`, async ({ page, manager, usersPa
   await manager.navigateToMenuItem("Users");
   const gatewayUsername = `${clientId}`;
   await usersPage.searchServiceUsers(gatewayUsername);
-  await expect(page.getByRole("cell", { name: gatewayUsername, exact: true })).toBeVisible();
-  await page.getByRole("cell", { name: gatewayUsername, exact: true }).click();
-  const usernameInput = page.locator('[id*="username"]');
+  await expect(page.getByRole("cell", { name: gatewayUsername })).toBeVisible();
+  await page.getByRole("cell", { name: gatewayUsername }).click();
+  const serviceTable = page.locator("#table-service-users");
+  const usernameInput = serviceTable.locator('[id*="username"]');
   await expect(usernameInput).toHaveAttribute("readonly");
-  const tagInput = page.locator('or-mwc-input#new-tag');
+  const tagInput = serviceTable.locator('or-mwc-input#new-tag');
   await expect(tagInput).toHaveAttribute("readonly");
-  const activeCheckbox = page.locator('or-mwc-input').filter({ hasText: 'Active' }).locator('input[type="checkbox"]');
+  const activeCheckbox = serviceTable.locator('or-mwc-input').filter({ hasText: 'Active' }).locator('input[type="checkbox"]');
   await expect(activeCheckbox).toBeDisabled();
-  const realmRolesSelect = page.locator('or-mwc-input').filter({ hasText: 'Realm roles' });
+  const realmRolesSelect = serviceTable.locator('or-mwc-input').filter({ hasText: 'Realm roles' });
   await expect(realmRolesSelect).toHaveAttribute("disabled");
-  const managerRolesSelect = page.locator('or-mwc-input').filter({ hasText: 'Manager roles' });
+  const managerRolesSelect = serviceTable.locator('or-mwc-input').filter({ hasText: 'Manager roles' });
   await expect(managerRolesSelect).toHaveAttribute("disabled");
-  const saveButton = page.getByRole("button", { name: "Save" });
+  const saveButton = serviceTable.getByRole("button", { name: "Save" });
   await expect(saveButton).toBeDisabled();
 });
