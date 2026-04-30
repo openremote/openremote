@@ -7,6 +7,9 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "assets": "Assets",
+  "users": "Benutzer",
+  "realms": "Realms",
+  "provisioning": "Auto provisioning",
   "attribute": "Attribut",
   "attributes": "Attribute",
   "attribute_plural": "Attribute",
@@ -118,6 +121,7 @@
   "month": "Monat",
   "year": "Jahr",
   "period": "Zeitraum",
+  "beginning": "Beginn",
   "ending": "Ende",
   "timeframe": "Zeitfenster",
   "addAttribute": "Attribut hinzufügen",
@@ -188,6 +192,7 @@
   "french": "Französisch",
   "german": "Deutsch",
   "italian": "Italienisch",
+  "polish": "Polnisch",
   "portuguese": "Portugiesisch",
   "romanian": "Rumänisch",
   "spanish": "Spanisch",
@@ -479,6 +484,7 @@
     "keyAlreadyExists": "Schlüssel existiert bereits"
   },
   "autoProvisioning": "Auto provisioning",
+  "provisioningConfig": "Provisioning configuration",
   "provisioningConfigs": "Provisioning configurations",
   "loadFailedProvisioningConfigs": "Failed to load provisioning configurations",
   "deleteProvisioningConfigConfirm": "Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
@@ -667,5 +673,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "Realm-Name existiert bereits"
 }
