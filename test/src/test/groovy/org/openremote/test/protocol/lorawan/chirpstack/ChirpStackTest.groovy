@@ -45,6 +45,7 @@ import org.openremote.agent.protocol.lorawan.chirpstack.ChirpStackProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetTreeNode
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.AgentResource
@@ -52,6 +53,7 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.file.FileInfo
 import org.openremote.model.query.AssetQuery
+import org.openremote.model.value.AttributeDescriptor
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -227,12 +229,12 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         then: "asset attribute values should be updated"
         conditions.eventually {
             def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
-            assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
-            assert asset.getAttribute(ERRORS)
-                .flatMap {it.value}
-                .map {it.startsWith("[") && it.endsWith("]") && it.contains("error1") && it.contains("error2")}
-                .orElse(false)
+            assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
+            assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
+            assertAttribute(asset, ERRORS) { value ->
+                assert value.startsWith("[") && value.endsWith("]")
+                assert value.contains("error1") && value.contains("error2")
+            }
         }
 
         when: "an asset attribute value is written"
@@ -342,12 +344,12 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
         then: "asset attribute values should be updated"
         conditions.eventually {
             def asset = assetStorageService.find(new AssetQuery().attributeValue(ATTRIBUTE_NAME_DEV_EUI, DEV_EUI_1.toUpperCase()))
-            assert asset.getAttribute(TEMPERATURE).flatMap {it.value}.map {it == TEMPERATURE_VALUE}.orElse(false)
-            assert asset.getAttribute(RELATIVE_HUMIDITY).flatMap {it.value}.map {it == HUMIDITY_VALUE}.orElse(false)
-            assert asset.getAttribute(ERRORS)
-                .flatMap {it.value}
-                .map {it.startsWith("[") && it.endsWith("]") && it.contains("error1") && it.contains("error2")}
-                .orElse(false)
+            assertAttribute(asset, TEMPERATURE, TEMPERATURE_VALUE)
+            assertAttribute(asset, RELATIVE_HUMIDITY, HUMIDITY_VALUE)
+            assertAttribute(asset, ERRORS) { value ->
+                assert value.startsWith("[") && value.endsWith("]")
+                assert value.contains("error1") && value.contains("error2")
+            }
         }
 
         when: "an asset attribute value is written"
@@ -371,6 +373,26 @@ class ChirpStackTest extends Specification implements ManagerContainerTrait {
             assert downlinkMessage.fPort == DOWNLINK_PORT
             assert downlinkMessage.data == "DAE="
         }
+    }
+
+    <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, T expectedValue) {
+        def attrOpt = asset.getAttribute(descriptor)
+        assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
+
+        def valueOpt = attrOpt.get().value
+        assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
+
+        assert valueOpt.get() == expectedValue : "Expected ${expectedValue} but found ${valueOpt.get()}"
+    }
+
+    <T> void assertAttribute(Asset asset, AttributeDescriptor<T> descriptor, Closure validation) {
+        def attrOpt = asset.getAttribute(descriptor)
+        assert attrOpt.isPresent() : "Attribute ${descriptor} is missing"
+
+        def valueOpt = attrOpt.get().value
+        assert valueOpt.isPresent() : "Value for attribute ${descriptor} is missing (it's empty)"
+
+        validation(valueOpt.get())
     }
 
     static class ChirpStackGrpcServer {
