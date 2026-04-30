@@ -1,10 +1,5 @@
 # Query Exporter Configuration for OpenRemote PostgreSQL Monitoring
 # Documentation: https://github.com/albertodonato/query-exporter/blob/main/docs/configuration.rst
-#
-# Environment Variables:
-# - TABLE_BLOAT_THRESHOLD: Table bloat ratio threshold for alerting (default: 1.2 = 20% bloat)
-# - INDEX_BLOAT_THRESHOLD: Index bloat ratio threshold for alerting (default: 1.5 = 50% bloat)
-#   Set these in docker-compose or deployment environment to adjust sensitivity
 
 databases:
   openremote:
@@ -19,6 +14,10 @@ databases:
       instance: openremote
 
 metrics:
+  pg_collation_mismatch_count:
+    type: gauge
+    description: Number of text indexes with collation version mismatches requiring a REINDEX
+
   pg_cache_hit_percentage:
     type: gauge
     description: What percentage of data is being served instantly from RAM versus being slowly read from disk. You want this as high as possible
@@ -42,22 +41,26 @@ metrics:
   pg_hot_update_percent:
     type: gauge
     labels: [table_name]
-    description: Asset table percentage of updates that are HOT updates indicates good fillfactor
+    description: Table percentage of updates that are HOT updates indicates good fillfactor
 
   pg_dead_tuple_percent:
     type: gauge
     labels: [table_name]
-    description: Asset table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
+    description: Table ratio of dead tuples to live ones a ratio > 10-20% indicates not aggressive enough autovacuum
 
   pg_last_autovacuum_hours:
     type: gauge
     labels: [table_name]
-    description: Asset table hours since last auto vacuum run successfully
+    description: Table hours since last auto vacuum run successfully
 
   pg_last_autoanalyze_hours:
     type: gauge
     labels: [table_name]
     description: Asset table hours since last auto analyze run successfully
+
+  pg_db_disk_size:
+    type: gauge
+    description: DB size in MB
 
   pg_datapoint_raw_data_size:
     type: gauge
@@ -99,9 +102,74 @@ metrics:
     type: gauge
     description: Asset datapoint table hypertable chunks not yet analyzed
 
+  pg_datapoint_largest_uncompressed_chunk:
+    type: gauge
+    description: Asset datapoint table largest uncompressed hypertable chunk in MB
+
+  pg_datapoint_uncompressed_cache_hit_ratio:
+    type: gauge
+    description: Asset datapoint table cache hit ratio for uncompressed chunks (Aim for 99%+)
+
+  pg_datapoint_uncompressed_blks_read_total:
+    type: counter
+    description: Asset datapoint total physical disk blocks read for uncompressed chunks (Monitor rate with spikes indicate RAM spillover)
+
+  pg_datapoint_compression_ratio:
+    type: gauge
+    description: Asset datapoint table compression ratio
+
+  pg_datapoint_query:
+    type: gauge
+    description: Dummy metric to get typical query time metric
+
   pg_background_errors:
     type: counter
     description: Count of errors in background worker processes
+
+  pg_timescale_job_total_runs:
+    type: counter
+    labels: [job_id, proc_name]
+    description: TimescaleDB job total runs by job
+
+  pg_timescale_job_total_failures:
+    type: counter
+    labels: [job_id, proc_name]
+    description: TimescaleDB job total failures by job
+
+  pg_timescale_job_last_run_duration_seconds:
+    type: gauge
+    labels: [job_id, proc_name]
+    description: TimescaleDB job last run duration in seconds
+
+  pg_timescale_job_next_start_seconds:
+    type: gauge
+    labels: [job_id, proc_name]
+    description: Seconds until next scheduled run for each TimescaleDB job
+
+  pg_timescale_job_last_run_status:
+    type: gauge
+    labels: [job_id, proc_name, last_run_status]
+    description: TimescaleDB job last run status marker (1)
+
+  pg_wal_total:
+    type: counter
+    description: Total WAL written since statistics reset in MB
+
+  pg_bgwriter_checkpoints_timed_total:
+    type: counter
+    description: Scheduled checkpoints executed
+
+  pg_bgwriter_checkpoints_req_total:
+    type: counter
+    description: Requested checkpoints executed
+
+  pg_bgwriter_checkpoint_write_time_seconds_total:
+    type: counter
+    description: Total time spent writing checkpoints in seconds
+
+  pg_bgwriter_checkpoint_sync_time_seconds_total:
+    type: counter
+    description: Total time spent syncing checkpoints in seconds
 
   pg_table_bloat_count:
     type: gauge
@@ -113,6 +181,30 @@ metrics:
     
 
 queries:
+  collation_mismatch:
+    interval: 86400 # Daily check
+    databases: [openremote]
+    metrics: [pg_collation_mismatch_count]
+    sql: |
+      WITH mismatched_collations AS (
+        SELECT oid 
+        FROM pg_catalog.pg_collation 
+        WHERE collversion IS NOT NULL 
+          AND collversion <> pg_collation_actual_version(oid)
+      ),
+      mismatched_indexes AS (
+        SELECT DISTINCT d.objid AS index_oid
+        FROM pg_catalog.pg_depend d
+        JOIN mismatched_collations mc ON d.refobjid = mc.oid
+        WHERE d.classid = 'pg_class'::regclass
+          AND d.refclassid = 'pg_collation'::regclass
+      )
+      SELECT count(i.oid) AS pg_collation_mismatch_count
+      FROM pg_catalog.pg_class i
+      JOIN pg_catalog.pg_index idx ON i.oid = idx.indexrelid
+      JOIN mismatched_indexes mi ON i.oid = mi.index_oid
+      WHERE i.relkind = 'i';
+
   cache_hit_ratio:
     interval: 3600 # Hourly
     databases: [openremote]
@@ -158,6 +250,13 @@ queries:
         FROM pg_stat_user_tables
         WHERE schemaname = 'openremote';
 
+  db_size:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_db_disk_size]
+    sql: |
+      SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 0) as pg_db_disk_size;
+
   datapoint_table_size:
     interval: 3600 # Hourly
     databases: [openremote]
@@ -189,7 +288,22 @@ queries:
       FROM timescaledb_information.chunks
       WHERE hypertable_name = 'asset_datapoint'
       GROUP BY hypertable_name;
-      
+
+  datapoint_largest_uncompressed_chunk:
+    interval: 86400 # Daily
+    databases: [openremote]
+    metrics: [pg_datapoint_largest_uncompressed_chunk]
+    sql: |
+      SELECT 
+        ROUND(s.total_bytes / 1048576.0, 0) AS pg_datapoint_largest_uncompressed_chunk
+      FROM timescaledb_information.chunks c
+      JOIN chunks_detailed_size('asset_datapoint') s
+      ON c.chunk_schema = s.chunk_schema
+      AND c.chunk_name = s.chunk_name
+      WHERE c.is_compressed = false
+      ORDER BY s.total_bytes DESC
+      LIMIT 1;
+
   datapoint_autoanalyze:
     interval: 86400 # Daily
     databases: [openremote]
@@ -203,6 +317,53 @@ queries:
         AND last_analyze IS NULL
         AND n_mod_since_analyze > current_setting('autovacuum_analyze_threshold')::numeric;
 
+  datapoint_historical_aggregation:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_datapoint_query]
+    sql: |
+      SELECT datapoint_metric_query() as pg_datapoint_query;
+
+  uncompressed_memory_pressure:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics: [pg_datapoint_uncompressed_cache_hit_ratio, pg_datapoint_uncompressed_blks_read_total]
+    sql: |
+      WITH uncompressed_chunks AS (
+        SELECT chunk_name
+        FROM timescaledb_information.chunks
+        WHERE hypertable_name = 'asset_datapoint'
+          AND is_compressed = false
+      )
+      SELECT
+        -- Calculate the percentage of data served directly from RAM
+        ROUND(
+          COALESCE(
+            (sum(s.heap_blks_hit) + sum(s.idx_blks_hit) + sum(s.toast_blks_hit))::numeric / 
+            NULLIF(
+              sum(s.heap_blks_hit) + sum(s.idx_blks_hit) + sum(s.toast_blks_hit) + 
+              sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 
+            0) * 100, 
+          0), 
+        2) AS pg_datapoint_uncompressed_cache_hit_ratio,
+      
+        -- Track the raw number of times Postgres had to go to the physical disk
+        COALESCE(sum(s.heap_blks_read) + sum(s.idx_blks_read) + sum(s.toast_blks_read), 0) AS pg_datapoint_uncompressed_blks_read_total
+      FROM pg_statio_user_tables s
+      JOIN uncompressed_chunks c ON s.relname = c.chunk_name;
+
+  compression_stats:
+    interval: 86400 # Daily
+    databases: [ openremote ]
+    metrics: [pg_datapoint_compression_ratio]
+    sql: |
+      SELECT 
+        COALESCE(
+          (before_compression_total_bytes::numeric / NULLIF(after_compression_total_bytes, 0)), 
+          1.0
+        ) AS pg_datapoint_compression_ratio
+      FROM hypertable_compression_stats('asset_datapoint');
+
   background_errors:
     interval: 3600 # Hourly
     databases: [openremote]
@@ -211,6 +372,52 @@ queries:
       SELECT
         SUM(total_failures) AS pg_background_errors
         FROM timescaledb_information.job_stats;
+
+  timescale_job_stats:
+    interval: 3600 # Hourly
+    databases: [openremote]
+    metrics:
+      [
+        pg_timescale_job_total_runs,
+        pg_timescale_job_total_failures,
+        pg_timescale_job_last_run_duration_seconds,
+        pg_timescale_job_next_start_seconds,
+        pg_timescale_job_last_run_status
+      ]
+    sql: |
+      SELECT
+        s.job_id::text AS job_id,
+        CONCAT(j.proc_schema, '.', j.proc_name) AS proc_name,
+        COALESCE(s.last_run_status, 'unknown') AS last_run_status,
+        COALESCE(s.total_runs, 0) AS pg_timescale_job_total_runs,
+        COALESCE(s.total_failures, 0) AS pg_timescale_job_total_failures,
+        EXTRACT(EPOCH FROM COALESCE(s.last_run_duration, INTERVAL '0 seconds')) AS pg_timescale_job_last_run_duration_seconds,
+        EXTRACT(EPOCH FROM (COALESCE(s.next_start, now()) - now())) AS pg_timescale_job_next_start_seconds,
+        1 AS pg_timescale_job_last_run_status
+      FROM timescaledb_information.job_stats s
+      JOIN timescaledb_information.jobs j ON j.job_id = s.job_id
+      WHERE j.hypertable_name = 'asset_datapoint';
+
+  write_path_pressure:
+    interval: 300 # 5 minutes
+    databases: [openremote]
+    metrics:
+      [
+        pg_wal_total,
+        pg_bgwriter_checkpoints_timed_total,
+        pg_bgwriter_checkpoints_req_total,
+        pg_bgwriter_checkpoint_write_time_seconds_total,
+        pg_bgwriter_checkpoint_sync_time_seconds_total
+      ]
+    sql: |
+      SELECT
+        (w.wal_bytes / 1048576.0) AS pg_wal_total,
+        c.num_timed AS pg_bgwriter_checkpoints_timed_total,
+        c.num_requested AS pg_bgwriter_checkpoints_req_total,
+        ROUND((c.write_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_write_time_seconds_total,
+        ROUND((c.sync_time / 1000.0)::numeric, 0) AS pg_bgwriter_checkpoint_sync_time_seconds_total
+      FROM pg_stat_wal w
+      CROSS JOIN pg_stat_checkpointer c;
       
   table_and_index_bloat:
     interval: 300 # 5 minutes
@@ -221,20 +428,14 @@ queries:
         SELECT count(*) AS tbl_count
         FROM pg_stat_user_tables
         WHERE schemaname IN ('openremote', 'public')
-        -- 1. NOISE FILTER: Only look at tables larger than 5MB.
         AND pg_relation_size(relid) > 5 * 1024 * 1024
-        -- 2. THRESHOLD: Dead tuples are > 30% of live rows.
-        -- (Autovacuum runs at 20%, so 30% means autovacuum is failing to keep up)
         AND (n_dead_tup::numeric / NULLIF(n_live_tup, 0)) > 0.30
       ),
       bloated_indexes AS (
       SELECT count(*) AS idx_count
       FROM pg_stat_user_indexes
       WHERE schemaname IN ('openremote', 'public')
-      -- 1. NOISE FILTER: Only look at indexes larger than 10MB.
       AND pg_relation_size(indexrelid) > 10 * 1024 * 1024
-      -- 2. ALARM THRESHOLD: Index size is > 150% of the raw table size.
-      -- (Catches severe page-splitting and fragmentation)
       AND (pg_relation_size(indexrelid)::numeric / GREATEST(pg_relation_size(relid), 1)) > 1.50
       )
       SELECT
