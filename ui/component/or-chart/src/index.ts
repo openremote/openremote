@@ -1134,7 +1134,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getDefaultTimePrefixOptions(): string[] {
-        return ["this", "last"];
+        return ["this", "last", "next"];
     }
 
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
@@ -1184,6 +1184,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                     endDate = moment().startOf(unit);
                 } else { //For multiples like last 5 min
                     endDate = moment();
+                }
+                break;
+            case "next":
+                if (value === 1) { // For singulars like next hour
+                    startDate = moment().add(value, unit).startOf(unit);
+                    endDate = moment().add(value, unit).endOf(unit);
+                } else { // For multiples like next 5 min
+                    startDate = moment();
+                    endDate = moment().add(value, unit);
                 }
                 break;
         }
