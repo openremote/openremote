@@ -141,14 +141,6 @@ const style = css`
         word-wrap: break-word;
         white-space: pre-wrap;
     }
-    
-    .copy-button {
-        --or-mwc-input-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-    }
-    
-    .copy-button:hover {
-        --or-mwc-input-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
-    }
 `;
 
 @customElement("or-log-viewer")
@@ -481,7 +473,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${ev.message}</td>
                                     <td class="mdc-data-table__cell icon-cell">
                                         ${when(window.isSecureContext, () => html`
-                                            <or-mwc-input type="${InputType.BUTTON}" class="copy-button" icon="content-copy" @or-mwc-input-changed=${() => this._copyRow(ev)}></or-mwc-input>
+                                            <or-vaadin-button class="copy-button" theme="icon" @click=${() => this._copyRow(ev)}>
+                                                <or-icon icon="content-copy"></or-icon>
+                                            </or-vaadin-button>
                                         `)}
                                     </td>
                                 </tr>
