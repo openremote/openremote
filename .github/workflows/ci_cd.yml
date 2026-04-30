@@ -142,6 +142,7 @@ jobs:
 
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
+              print(f"::add-mask::{value}")
               os.system(f"echo 'Outputting secret: {key}'")
               lines = len(value.split("\n"))
               if lines > 1:
@@ -151,6 +152,7 @@ jobs:
 
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
+              print(f"::add-mask::{value}")
               os.system(f"echo 'Outputting input: {key}'")
               lines = len(value.split("\n"))
               if lines > 1:
