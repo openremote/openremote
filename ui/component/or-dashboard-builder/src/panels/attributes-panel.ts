@@ -153,6 +153,22 @@ const styling = css`
     .button-action:hover {
         --or-icon-fill: var(--or-icon-fill--hover, var(--or-app-color4));
     }
+
+    .attribute-list-item.broken {
+        opacity: 0.7;
+    }
+
+    .attribute-list-item.broken .attribute-list-item-label > .broken-label {
+        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        font-style: italic;
+    }
+
+    /* The row is the only way to remove a broken ref, so keep its actions visible without hover. */
+    .attribute-list-item.broken .attribute-list-item-actions,
+    .attribute-list-item.broken .button-action {
+        visibility: visible;
+        position: unset;
+    }
 `;
 
 @customElement("attributes-panel")
@@ -182,6 +198,7 @@ export class AttributesPanel extends LitElement {
     @state()
     protected loadedAssets: Asset[] = [];
 
+
     static get styles(): CSSResult[] {
         return [styling, style];
     }
@@ -194,6 +211,7 @@ export class AttributesPanel extends LitElement {
             this.attributeRefs = [];
         }
         if (changedProps.has("attributeRefs") && this.attributeRefs) {
+            this._assetsLoading = true;
             this.loadAssets().then(assets => {
 
                 // Only dispatch event when it CHANGED, so not from 'undefined' to [];
@@ -201,6 +219,8 @@ export class AttributesPanel extends LitElement {
                     this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs));
                 }
 
+            }).finally(() => {
+                this._assetsLoading = false;
             });
         }
     }
@@ -266,15 +286,15 @@ export class AttributesPanel extends LitElement {
                 ${when(this.attributeRefs.length > 0, () => html`
 
                     <div id="attribute-list">
-                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback], () => html`
+                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback, this._assetsLoading], () => html`
                             ${map(this.attributeRefs.map(attributeRef => {
                                 const asset = this.getLoadedAsset(attributeRef);
                                 const attribute = asset?.attributes?.[attributeRef.name!];
                                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset?.type, attributeRef.name, attribute);
                                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset?.type, true);
                                 return { asset, attribute, attributeRef, label };
-                                
-                            }).sort(Util.sortByString(x => x.label)), ({asset, attribute, attributeRef, label}) => {
+
+                            }).sort(Util.sortByString(x => x.label || x.attributeRef.name || "")), ({asset, attribute, attributeRef, label}) => {
                                 if (asset && attribute && attributeRef && label) {
                                     return html`
                                         <div class="attribute-list-item">
@@ -296,9 +316,23 @@ export class AttributesPanel extends LitElement {
                                             ${this._getAttributeActionsTemplate(asset, attributeRef)}
                                         </div>
                                     `;
-                                } else {
-                                    return undefined;
                                 }
+                                // Reference points to an attribute that no longer resolves.
+                                if (!this._assetsLoading && attributeRef) {
+                                    return html`
+                                        <div class="attribute-list-item broken">
+                                            <div class="attribute-list-item-icon">
+                                                <or-icon icon="link-variant-off"></or-icon>
+                                            </div>
+                                            <div class="attribute-list-item-label">
+                                                <span class="broken-label">${i18next.t("brokenReference")}</span>
+                                                <span style="color:grey;">${attributeRef.name ?? ""}</span>
+                                            </div>
+                                            ${this._getBrokenAttributeActionsTemplate(attributeRef)}
+                                        </div>
+                                    `;
+                                }
+                                return undefined;
                             })}
                         `)}
                     </div>
@@ -324,6 +358,16 @@ export class AttributesPanel extends LitElement {
                         action => this._getAttributeActionTemplate(action, asset, attributeRef)
                 ))}
                 <!-- Remove attribute button -->
+                <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                    <or-icon icon="close-circle"></or-icon>
+                </button>
+            </div>
+        `;
+    }
+
+    protected _getBrokenAttributeActionsTemplate(attributeRef: AttributeRef): TemplateResult {
+        return html`
+            <div class="attribute-list-item-actions">
                 <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                     <or-icon icon="close-circle"></or-icon>
                 </button>

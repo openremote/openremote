@@ -159,6 +159,7 @@
   "loading": "Loading...",
   "noResults": "No results found.",
   "noAssetsFound": "No assets found",
+  "brokenReference": "Broken Reference",
   "filterInvite": "Filter with at least 3 characters",
   "location": "Location",
   "longPressSetLoc": "Long press to set location",
