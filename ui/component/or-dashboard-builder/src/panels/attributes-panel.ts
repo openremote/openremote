@@ -198,6 +198,8 @@ export class AttributesPanel extends LitElement {
     @state()
     protected loadedAssets: Asset[] = [];
 
+    @state()
+    protected _assetsLoading = false;
 
     static get styles(): CSSResult[] {
         return [styling, style];
