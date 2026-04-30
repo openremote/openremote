@@ -13,7 +13,6 @@ import {
     WellknownAssets,
     NotificationTargetType, PushNotificationMessage, EmailNotificationMessage, LocalizedNotificationMessage
 } from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import "./modals/or-rule-notification-modal";
 import "./forms/or-rule-form-email-message";
@@ -23,12 +22,13 @@ import "./or-rule-action-attribute";
 import {i18next} from "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
 import {OrRulesNotificationModalCancelEvent, OrRulesNotificationModalOkEvent} from "./modals/or-rule-notification-modal";
+import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 
 // language=CSS
 const style = css`
     :host {
         display: flex;
-        align-items: center;
+        align-items: baseline;
     }
 
     :host > * {
@@ -36,7 +36,7 @@ const style = css`
     }
 
     .min-width {
-        min-width: 200px;
+        flex: 0 0 240px;
     }
 `;
 
@@ -113,11 +113,11 @@ export class OrRuleActionNotification extends LitElement {
 
     protected static getActionTargetTemplate(targetTypeMap: [string, string?][], action: RuleAction, actionType: ActionType, readonly: boolean, config: RulesConfig | undefined, baseAssetQuery: AssetQuery | undefined, onTargetTypeChangedCallback: (type: NotificationTargetType) => void, onTargetChangedCallback: (type: NotificationTargetType, value: string | undefined) => void): PromiseLike<TemplateResult> | undefined {
 
-        let allowedTargetTypes: [NotificationTargetType, string][] = [
-            [NotificationTargetType.USER, i18next.t("user_plural")],
-            [NotificationTargetType.ASSET, i18next.t("asset_plural")],
-            [NotificationTargetType.REALM, i18next.t("realm_plural")],
-            [NotificationTargetType.CUSTOM, i18next.t("custom")]
+        let allowedTargetTypes: {value: any, label: string}[] = [
+            {value: NotificationTargetType.USER, label: i18next.t("user_plural")},
+            {value: NotificationTargetType.ASSET, label: i18next.t("asset_plural")},
+            {value: NotificationTargetType.REALM, label: i18next.t("realm_plural")},
+            {value: NotificationTargetType.CUSTOM, label: i18next.t("custom")}
         ];
 
         if (config && config.controls && config.controls.allowedActionTargetTypes) {
@@ -130,7 +130,7 @@ export class OrRuleActionNotification extends LitElement {
             }
 
             if (configTypes) {
-                allowedTargetTypes = allowedTargetTypes.filter((allowedType) => configTypes?.includes(allowedType[0]));
+                allowedTargetTypes = allowedTargetTypes.filter((allowedType) => configTypes?.includes(allowedType.value));
             }
         }
 
@@ -153,20 +153,22 @@ export class OrRuleActionNotification extends LitElement {
 
         let targetValueTemplate: PromiseLike<TemplateResult>;
 
-        if (!allowedTargetTypes.find((allowedTargetType) => allowedTargetType[0] === targetType)) {
+        if (!allowedTargetTypes.find((allowedTargetType) => allowedTargetType.value === targetType)) {
             targetType = undefined;
         }
 
         if (targetType === NotificationTargetType.CUSTOM) {
 
             const template = html`
-                <or-mwc-input class="min-width" .type="${InputType.TEXT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-mwc-input>            
+                <or-vaadin-text-field class="min-width" ?readonly=${readonly} value=${action.target!.custom}
+                                      @change=${(ev: Event) => onTargetChangedCallback(targetType, (ev.currentTarget as HTMLInputElement).value)}>
+                </or-vaadin-text-field>
             `;
             targetValueTemplate = Promise.resolve(template);
 
         } else {
 
-            let targetValuesGenerator: PromiseLike<[string, string][]>;
+            let targetValuesGenerator: PromiseLike<{value: any, label: string}[]>;
             let label: string | undefined;
             let value: string | undefined;
 
@@ -184,9 +186,13 @@ export class OrRuleActionNotification extends LitElement {
 
                         // Get realm roles and add as options
                         const realm = await manager.rest.api.RealmResource.get(manager.displayRealm);
-                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
-                        let values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
-                        return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values.sort(Util.sortByString(user => user[1]))];
+                        let realmRoleOpts: {value: any, label: string}[] = realm.data.realmRoles!.map(r =>
+                            ({value: `linked-${r.name!}`, label: linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))})
+                        );
+                        let values: {value: any, label: string}[] = usersResponse.data.map((user) =>
+                            ({value: user.id!, label: user.username! })
+                        );
+                        return [{value: "linkedUsers", label: linkedLabel}, ...realmRoleOpts, ...values.sort(Util.sortByString(user => user.label))];
                     }
                 );
                 label = i18next.t("user_plural");
@@ -229,14 +235,14 @@ export class OrRuleActionNotification extends LitElement {
 
                 targetValuesGenerator = manager.rest.api.AssetResource.queryAssets(assetQuery).then(
                     (response) => {
-                        let values: [string, string][] = response.data.map((asset) => [asset.id!, asset.name! + " (" + asset.id! + ")"]);
+                        let values: {value: any, label: string}[] = response.data.map((asset) => ({value: asset.id!, label: asset.name! + " (" + asset.id! + ")"}));
 
                         // Add additional options for assets
-                        const additionalValues: [string, string][] = [["allMatched", i18next.t("matched")]];
+                        const additionalValues: {value: any, label: string}[] = [{value: "allMatched", label: i18next.t("matched")}];
                         if (targetTypeMap && targetTypeMap.length > 1) {
                             targetTypeMap.forEach((typeAndTag) => {
-                                if (!additionalValues.find((av) => av[0] === typeAndTag[0])) {
-                                    additionalValues.push([typeAndTag[0], i18next.t("matchedOfType", {type: Util.getAssetTypeLabel(typeAndTag[0])})]);
+                                if (!additionalValues.find((av) => av.value === typeAndTag[0])) {
+                                    additionalValues.push({value: typeAndTag[0], label: i18next.t("matchedOfType", {type: Util.getAssetTypeLabel(typeAndTag[0])})});
                                 }
                             });
                         }
@@ -274,26 +280,20 @@ export class OrRuleActionNotification extends LitElement {
             targetValueTemplate = targetValuesGenerator.then((values) => {
 
                 return html`
-                    <or-mwc-input type="${InputType.SELECT}" 
-                        class="min-width"
-                        .options="${values}"
-                        .label="${label}"
-                        .value="${value}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" 
-                        ?readonly="${readonly}"></or-mwc-input>
+                    <or-vaadin-combo-box class="min-width" .items=${values} value=${value} ?readonly=${readonly}
+                                         @change=${(ev: Event) => onTargetChangedCallback(targetType!, (ev.currentTarget as OrVaadinComboBox).value)}>
+                        <or-translate slot="label" value=${label}></or-translate>
+                    </or-vaadin-combo-box>
                 `;
             });
         }
 
         targetValueTemplate = targetValueTemplate.then((valueTemplate) => {
             return html`
-                <or-mwc-input type="${InputType.SELECT}" 
-                    class="min-width"
-                    .options="${allowedTargetTypes}"
-                    .value="${targetType}"
-                    .label="${i18next.t("recipients")}"
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as NotificationTargetType)}" 
-                    ?readonly="${readonly}"></or-mwc-input>
+                <or-vaadin-combo-box class="min-width" .items=${allowedTargetTypes} value=${targetType} ?readonly=${readonly}
+                                     @change=${(ev: Event) => onTargetTypeChangedCallback((ev.currentTarget as OrVaadinComboBox).value as NotificationTargetType)}>
+                    <or-translate slot="label" value="recipients"></or-translate>
+                </or-vaadin-combo-box>
                 ${valueTemplate}
             `;
         });

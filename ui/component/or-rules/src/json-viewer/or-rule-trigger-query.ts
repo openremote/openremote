@@ -10,6 +10,10 @@ import {Util} from "@openremote/core";
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMap, OrMapClickedEvent} from "@openremote/or-map";
 import {i18next} from "@openremote/or-translate";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import { when } from "lit/directives/when.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import {OrVaadinTimePicker} from "@openremote/or-vaadin-components/or-vaadin-time-picker";
 
 // language=CSS
 const style = css`
@@ -23,12 +27,12 @@ const style = css`
     .trigger-group {
         flex-grow: 1;
         display: flex;
-        align-items: center;
+        align-items: baseline;
         flex-direction: row;
         flex-wrap: wrap;
     }
     .min-width {
-        min-width: 200px;
+        flex: 0 0 200px;
     }
     .width {
         width: 200px;
@@ -141,22 +145,34 @@ export class OrRuleTriggerQuery extends LitElement {
 
         return html`
             <div class="trigger-group">
-                <or-mwc-input class="min-width" type="${InputType.SELECT}" .options="${this.triggerOptions.map((t) => t.value)}" .value="${this.selectedTrigger.value}" label="${i18next.t('triggerType')}"
-                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTrigger(this.triggerOptions.find((t) => t.value == ev.detail.value)!); }}">
-                </or-mwc-input>
-                ${this.selectedTrigger ? html`
+                <or-vaadin-select class="min-width" value=${this.selectedTrigger.key}
+                                  .items=${this.triggerOptions.map(t => ({value: t.key, label: t.value}))}
+                                  @change=${(ev: Event) => this.setTrigger(this.triggerOptions.find(o => o.key === ((ev.currentTarget as OrVaadinSelect).value))!)}>
+                    <or-translate slot="label" value="triggerType"></or-translate>
+                </or-vaadin-select>
+                ${when(this.selectedTrigger, () => html`
                     ${this.selectedTrigger.key == this.triggerOptions[0].key ? html`
-                        <or-mwc-input class="min-width" type="${InputType.TIME}" .value="${(this.condition.cron ? moment(Util.cronStringToISOString(this.condition.cron, true)).format('HH:mm') : undefined)}" label="${i18next.t('timeOfDay')}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTime(ev.detail.value) }}">
-                        </or-mwc-input>
+                        <!-- Time picker -->
+                        <or-vaadin-time-picker class="min-width" step="900" auto-open-disabled
+                                               value=${ifDefined(this.condition.cron ? moment(Util.cronStringToISOString(this.condition.cron, true)).format("HH:mm:ss") : undefined)}
+                                               @change=${(ev: Event) => this.setTime((ev.currentTarget as OrVaadinTimePicker).value)}>
+                            <or-translate slot="label" value="timeOfDay"></or-translate>
+                        </or-vaadin-time-picker>
                     ` : html`
-                        <or-mwc-input class="min-width width" type="${InputType.NUMBER}" .value="${this.condition.sun?.offsetMins}" label="${i18next.t('offsetInMinutes')}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setOffset(ev.detail.value) }}">
-                        </or-mwc-input>
-                        <or-mwc-input type="${InputType.BUTTON}" class="min-width" @or-mwc-input-changed="${onMapModalOpen}" label="location"></or-mwc-input>
+                        <!-- Sun position selection -->
+                        <or-vaadin-number-field class="min-width width" value=${this.condition.sun?.offsetMins} min="0"
+                                                @change=${(ev: Event) => {
+                                                    const elem = ev.currentTarget as HTMLInputElement;
+                                                    if(elem.checkValidity()) this.setOffset(Number(elem.value))
+                                                }}>
+                            <or-translate slot="label" value="offsetInMinutes"></or-translate>
+                        </or-vaadin-number-field>
+                        <or-vaadin-button class="min-width" @click=${() => onMapModalOpen()}>
+                            <or-translate value="location"></or-translate>
+                        </or-vaadin-button>
                         <or-mwc-dialog id="map-modal" heading="${i18next.t('pickLocation')}" .actions="${modalActions}"></or-mwc-dialog>
                     `}
-                ` : undefined}
+                `)}
             </div>
         `
     }
@@ -194,6 +210,7 @@ export class OrRuleTriggerQuery extends LitElement {
             const date = new Date();
             date.setHours(Number(splittedTime[0]));
             date.setMinutes(Number(splittedTime[1]));
+            console.debug(date.toString());
             this.condition.cron = Util.formatCronString(undefined, undefined, undefined, date.getUTCHours().toString(), date.getUTCMinutes().toString());
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();

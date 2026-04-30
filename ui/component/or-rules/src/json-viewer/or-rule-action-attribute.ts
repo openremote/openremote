@@ -11,12 +11,13 @@ import {
 } from "@openremote/model";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {when} from "lit/directives/when.js";
+import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 
 // language=CSS
 const style = css`
@@ -32,7 +33,7 @@ const style = css`
     }
 
     .min-width {
-        min-width: 200px;
+        flex: 0 0 240px;
     }
 `;
 
@@ -114,59 +115,32 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         // TODO: Add multiselect support
         const ids = getAssetIdsFromQuery(query);
         const idValue = ids && ids.length > 0 ? ids[0] : "*";
-        const idOptions: Map<string, string> = new Map([
-            ["*", i18next.t("matched")]
-        ]);
-
-        // Set list of displayed assets, and filtering assets out if needed.
-        // If <= 25 assets: display everything
-        // If between 25 and 100 assets: display everything with search functionality
-        // If >= 100 assets: only display if in line with search input
+        const idOptions: {value: any, label: string}[] = [
+            {value: "*", label: i18next.t("matched")}
+        ];
         const assets: Asset[] = this._cache ? this._cache.assets : [];
-        const searchable = assets.length > 25;
-        if (searchable && this._selected) {
-            idOptions.set(this._selected.id!, this._selected.name!);
-        }
-
-        let searchProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             
             <!-- Show SELECT input with 'loading' until the assets are retrieved -->
             ${when((!this._cache || this._loading), () => html`
-                <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t("loading")}"></or-mwc-input>
+                <or-vaadin-combo-box id="matchSelect" class="min-width" readonly>
+                    <or-translate slot="label" value="loading"></or-translate>
+                </or-vaadin-combo-box>
             `, () => {
-                if (!searchable) {
-                    assets.forEach(a => idOptions.set(a.id!, a.name!));
-                } else {
-                    searchProvider = async (search?: string) => {
-                        await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
-                        if (search) {
-                            return assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
-                        } else if (assets.length <= 100) {
-                            assets.forEach(a => idOptions.set(a.id!, a.name!));
-                            return [...idOptions];
-                        } else {
-                            const selected = assets.find(a => a.id === idValue);
-                            if (selected && !Array.from(idOptions.keys()).includes(selected.id!)) {
-                                idOptions.set(selected.id!, selected.name!); // add selected asset if there is one.
-                            }
-                            return [...idOptions];
-                        }
-                    };
-                }
+                assets.forEach(a => idOptions.push({value: a.id!, label: a.name!}));
                 
                 // Get selected asset and its descriptors
                 const asset = idValue && idValue !== "*" ? this._cache!.assets.find(a => a.id === idValue) : undefined;
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName, asset && asset.attributes && this.action.attributeName ? asset.attributes[this.action.attributeName] : undefined);
 
                 // Only RW attributes can be used in actions
-                let attributes: [string, string][] = [];
+                let attributes: {value: any, label: string}[] = [];
                 if (asset && asset.attributes) {
                     attributes = Object.values(asset.attributes)
                             .map((attr) => {
                                 const label = Util.getAttributeLabel(attr, descriptors[0], assetType, false);
-                                return [attr.name!, label];
+                                return {value: attr.name!, label};
                             });
                 } else if (assetDescriptor) {
                     const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(assetDescriptor);
@@ -176,11 +150,11 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                                     ? []
                                     : assetTypeInfo.attributeDescriptors.map((ad) => {
                                         const label = Util.getAttributeLabel(ad, descriptors[0], assetType, false);
-                                        return [ad.name!, label];
+                                        return {value: ad.name!, label};
                                     });
                 }
 
-                attributes.sort(Util.sortByString((attr) => attr[1]));
+                attributes.sort(Util.sortByString((attr) => attr.label));
                 let attributeInput: TemplateResult | undefined;
                 if (this.action.attributeName) {
                     const label = descriptors[1] && (descriptors[1].name === WellknownValueTypes.BOOLEAN) ? "" : i18next.t("value");
@@ -190,16 +164,21 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 }
                 
                 return html`
-                    <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
-                                  .options="${[...idOptions]}" .searchProvider="${searchProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); }}"
-                    ></or-mwc-input>
-                    ${attributes.length > 0 ? html`
-                        <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
+                    <or-vaadin-combo-box id="matchSelect" class="min-width"
+                                         .items=${idOptions} value=${idValue} ?readonly=${this.readonly}
+                                         @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
+                        <or-translate slot="label" value="asset"></or-translate>
+                    </or-vaadin-combo-box>
+                    ${when(attributes.length > 0, () => html`
+                        <or-vaadin-combo-box id="attributeSelect" class="min-width"
+                                             .items=${attributes} value=${this.action.attributeName}
+                                             @change=${(ev: Event) => this.setActionAttributeName((ev.currentTarget as OrVaadinComboBox).value)}>
+                            <or-translate slot="label" value="attribute"></or-translate>
+                        </or-vaadin-combo-box>
                         ${attributeInput}
-                    ` : html`
+                    `, () => html`
                         <or-translate value="No attributes with write permission"></or-translate>
-                    `}
+                    `)}
                 `;
             })}
         `;

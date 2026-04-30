@@ -1,10 +1,29 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {html, LitElement, css} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {i18next, translate} from "@openremote/or-translate"
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {EmailNotificationMessage} from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 @customElement("or-rule-form-email-message")
 export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
@@ -14,7 +33,10 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
 
     static get styles() {
         return css`
-            or-mwc-input {
+            #form-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
                 margin-bottom: 20px;
                 min-width: 420px;
                 width: 100%;
@@ -28,10 +50,16 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
         }
         
         return html`
-            <form style="display:grid">
-                <or-mwc-input value="${this.message.subject || ''}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "subject")}" .label="${i18next.t("subject")}" type="${InputType.TEXT}" required placeholder=" "></or-mwc-input>
-                <or-mwc-input value="${this.message.html || ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "html")}" .label="${i18next.t("message")}" type="${InputType.TEXTAREA}" required placeholder=" " ></or-mwc-input>
-            </form>
+            <div id="form-container">
+                <or-vaadin-text-field value=${this.message?.subject} required
+                                      @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as OrVaadinTextField).value, "subject")}>
+                    <or-translate slot="label" value="subject"></or-translate>
+                </or-vaadin-text-field>
+                <or-vaadin-text-area value=${this.message?.html} required style="min-height: 200px;" 
+                                     @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as OrVaadinTextField).value, "html")}>
+                    <or-translate slot="label" value="message"></or-translate>
+                </or-vaadin-text-area>
+            </div>
         `
     }
 
