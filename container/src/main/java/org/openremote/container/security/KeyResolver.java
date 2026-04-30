@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public class KeyResolver {
 
-    private String keycloakBaseUrl;
+    private final String keycloakBaseUrl;
     private final ConcurrentMap<String, JWKSource<SecurityContext>> jwkSources = new ConcurrentHashMap<>();
 
     public KeyResolver(String keycloakBaseUrl) {

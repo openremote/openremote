@@ -351,10 +351,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             }).orElse(null);
     }
 
-    public static boolean isSuperUser(KeycloakSecurityContext securityContext) {
-        return securityContext != null && Constants.MASTER_REALM.equals(securityContext.getRealm()) && securityContext.getToken().getRealmAccess().isUserInRole(Constants.SUPER_USER_REALM_ROLE);
-    }
-
     @Override
     public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) {
        return getReactiveTokenService().grantToken(

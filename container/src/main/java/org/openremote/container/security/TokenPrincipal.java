@@ -83,7 +83,6 @@ public class TokenPrincipal implements Principal, AuthContext {
         return resourceRoles.get(resource);
     }
 
-    // TODO: Decide the role lookup logic
     public boolean isUserInRole(String role) {
         return realmRoles.contains(role) || resourceRoles.values().stream().anyMatch(roles -> roles.contains(role));
     }

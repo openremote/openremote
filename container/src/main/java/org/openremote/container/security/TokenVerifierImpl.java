@@ -63,7 +63,7 @@ public class TokenVerifierImpl implements TokenVerifier {
         // 1. Get the JWK source for the realm from our service
         JWKSource<SecurityContext> keySource = keyResolverService.getJwkSource(realm);
 
-        // 3. Configure the processor with a key selector for the appropriate JWS algorithm (e.g., RS256)
+        // 2. Configure the processor with a key selector for the appropriate JWS algorithm (e.g., RS256)
         // The key selector will use the JWK source to find the right public key by 'kid'
         JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, keySource);
         processor.setJWSKeySelector(keySelector);
@@ -76,7 +76,7 @@ public class TokenVerifierImpl implements TokenVerifier {
             // Preserve Nimbus built-in checks for exp / nbf validation.
             defaultClaimsVerifier.verify(claims, context);
 
-            // 1) issuer check (keep/remove depending on your policy)
+            // Issuer check
             if (claims.getIssuer() == null || !expectedIssuer.equals(claims.getIssuer())) {
                 throw new BadJWTException("Invalid token issuer");
             }
@@ -113,7 +113,7 @@ public class TokenVerifierImpl implements TokenVerifier {
     public TokenPrincipal verify(String realm, String token) throws AuthenticationException {
 
         if (realm == null || realm.isBlank()) {
-            throw new AuthenticationException("Invalid token");
+            throw new AuthenticationException("Invalid realm");
         }
         if (token == null || token.isBlank()) {
             throw new AuthenticationException("Invalid token");

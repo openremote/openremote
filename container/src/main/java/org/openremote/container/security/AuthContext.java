@@ -58,10 +58,6 @@ public interface AuthContext {
 
     boolean hasResourceRole(String role, String resource);
 
-    default boolean hasResourceRoleOrIsSuperUser(String role, String resource) {
-        return hasResourceRole(role, resource) || isSuperUser();
-    }
-
     /**
      * @return <code>true</code> if the user is authenticated in the same realm or if the user is the superuser (admin).
      */
