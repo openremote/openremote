@@ -36,6 +36,7 @@ jobs:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
       - name: Build snapshot image
+        timeout-minutes: 20
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           context: manager/build/install/manager
