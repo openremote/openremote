@@ -264,7 +264,7 @@ public abstract class AbstractLoRaWANProtocol<S extends AbstractLoRaWANProtocol<
             return false;
         }
         getAgentConfigJsonPath(attribute).ifPresent(
-            jsonPath -> agentLink.setValueFilters(new ValueFilter[] {new JsonPathFilter(jsonPath, true, false)})
+            jsonPath -> agentLink.setValueFilters(new ValueFilter[] {new JsonPathFilter(jsonPath, false, false)})
         );
         getAgentConfigRegex(attribute).ifPresent(
             pattern -> agentLink.setValueFilters(new ValueFilter[] {new RegexValueFilter(pattern, false, false, 1, 0)})
