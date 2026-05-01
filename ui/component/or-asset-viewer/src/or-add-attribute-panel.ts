@@ -1,10 +1,12 @@
 import {html, LitElement, css, PropertyValues} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {customElement, property} from "lit/decorators.js";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 import {i18next} from "@openremote/or-translate"
 import {Asset, Attribute, AssetModelUtil} from "@openremote/model";
 import {Util} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
 
 export class OrAddAttributePanelAttributeChangedEvent extends CustomEvent<Attribute<any>> {
 
@@ -42,21 +44,21 @@ export class OrAddAttributePanel extends LitElement {
     @property()
     public arrayDimensions: number = 1;
 
-    @query("#array-input")
-    protected arrayInput!: OrMwcInput;
-
     protected customAttribute: boolean = true;
     protected attributeTypes?: [string, string][];
     protected attributeValueTypes?: [string, string][];
     protected arrayRegex: RegExp = /\[\]/g;
 
     public static get styles() {
-        return css`                        
-            or-mwc-input {
-                width: 300px;
-                display: block;
-                padding: 10px 20px;
-            }`;
+        return css`
+            #attribute-creator {
+                min-width: 300px;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+        `;
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues) {
@@ -99,14 +101,34 @@ export class OrAddAttributePanel extends LitElement {
         if (!this.attributeTypes || !this.attributeValueTypes) {
             return;
         }
+        const nameItems = this.attributeTypes.map(type => ({key: type[0], value: type[1]}));
+        const nameSelected = nameItems.find(n => n.key === this.attribute.name) ?? nameItems[0];
+        const typeItems = this.attributeValueTypes.map(type => ({key: type[0], value: type[1]}));
+        const typeSelected = typeItems.find(i => i.key === this.attribute?.type?.replace(this.arrayRegex, ""));
 
         return html`
             <div id="attribute-creator">
-                <or-mwc-input .type="${InputType.SELECT}" .options="${this.attributeTypes}" .label="${i18next.t("type")}" .value="${"@custom"}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-mwc-input>
-                <or-mwc-input id="name-input" .type="${InputType.TEXT}" ?disabled="${!this.customAttribute}" .value="${(this.attribute && this.attribute.name) ? this.attribute.name : undefined}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrMwcInput).currentValue)}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-mwc-input>
-                <or-mwc-input id="type-input" .type="${InputType.SELECT}" ?disabled="${!this.customAttribute}" .value="${this.attribute && this.attribute.type ? this.attribute.type.replace(this.arrayRegex, "") : undefined}" .options="${this.attributeValueTypes}" .label="${i18next.t("valueType")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-mwc-input>
-                <or-mwc-input id="array-checkbox" .type="${InputType.CHECKBOX}" ?disabled="${!this.customAttribute}" .value="${this.isArray}" .label="${i18next.t("array")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onArrayChanged(ev.detail.value, 1)}"></or-mwc-input>
-                <or-mwc-input id="array-input" .type="${InputType.NUMBER}" ?disabled="${!this.isArray || !this.customAttribute}" .value="${this.arrayDimensions}" min="1" max="2" .label="${i18next.t("arrayDimensions")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onArrayChanged(true, ev.detail.value)}"></or-mwc-input>
+                <or-vaadin-combo-box .items=${nameItems} .selectedItem=${nameSelected} item-value-path="key" item-label-path="value"
+                                     @change=${(ev: CustomEvent) => this.onTypeChanged((ev.currentTarget as OrVaadinComboBox).value)}>
+                    <or-translate slot="label" value="type"></or-translate>
+                </or-vaadin-combo-box>
+                <or-vaadin-text-field id="name-input" ?readonly=${!this.customAttribute} value=${this.attribute?.name} pattern="\\w+" required
+                                      @input=${(ev: InputEvent) => this.onNameChanged((ev.currentTarget as OrVaadinTextField).value)}>
+                    <or-translate slot="label" value="name"></or-translate>
+                </or-vaadin-text-field>
+                <or-vaadin-combo-box id="type-input" ?readonly=${!this.customAttribute} item-value-path="key" item-label-path="value"
+                                     .items=${typeItems} .selectedItem=${typeSelected}
+                                     @change=${(ev: CustomEvent) => this.onValueTypeChanged((ev.currentTarget as OrVaadinComboBox).value)}>
+                    <or-translate slot="label" value="valueType"></or-translate>
+                </or-vaadin-combo-box>
+                <or-vaadin-checkbox id="array-checkbox" ?readonly=${!this.customAttribute} ?checked=${this.isArray} 
+                                    @change=${(ev: Event) => this.onArrayChanged((ev.currentTarget as OrVaadinCheckbox).checked, 1)}>
+                    <or-translate slot="label" value="array"></or-translate>
+                </or-vaadin-checkbox>
+                <or-vaadin-number-field id="array-input" ?disabled=${!this.isArray} ?readonly=${!this.customAttribute} value=${this.arrayDimensions} min="1" max="2" 
+                                        @change=${(ev: Event) => this.onArrayChanged(true, Number((ev.currentTarget as OrVaadinNumberField).value))}>
+                    <or-translate slot="label" value="arrayDimensions"></or-translate>
+                </or-vaadin-number-field>
             </div>
         `;
     }

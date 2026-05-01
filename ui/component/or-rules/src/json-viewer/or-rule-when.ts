@@ -5,7 +5,6 @@ import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
 import {i18next, translate} from "@openremote/or-translate"
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
@@ -201,8 +200,12 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             addTemplate = html`
                 <span class="add-button-wrapper">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                           .label="${i18next.t("rulesEditorAddCondition")}"></or-mwc-input>`,
+                        html`
+                            <or-vaadin-button theme="tertiary">
+                                <or-icon slot="prefix" icon="plus"></or-icon>
+                                <or-translate value="rulesEditorAddCondition"></or-translate>
+                            </or-vaadin-button>
+                        `,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         undefined,
                         (value) => this.addCondition(group, value as string))}
@@ -257,7 +260,12 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                     <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
                     <span class="add-button-wrapper">
                         ${getContentWithMenuTemplate(
-                            html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
+                            html`
+                                <or-vaadin-button theme="tertiary">
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="rulesEditorAddCondition"></or-translate>
+                                </or-vaadin-button>
+                            `,
                             getWhenTypesMenu(this.config, this.assetInfos),
                             undefined,
                             (value) => this.addGroup(this.rule!.when!, value as string))}

@@ -20,7 +20,7 @@ import {
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
@@ -31,6 +31,8 @@ import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from "lit/directives/when.js";
 import moment from "moment";
+import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 // language=CSS
 const style = css`
@@ -50,7 +52,7 @@ const style = css`
     }
 
     .min-width {
-        min-width: 200px;
+        flex: 0 0 200px;
     }
     
     .attribute-group > * {
@@ -68,22 +70,22 @@ const style = css`
     }
     .attribute {
         display: flex;
-        align-items: center;
+        align-items: baseline;
     }
     .attribute > div {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: baseline;
         gap: 6px;
     }
     .attribute > div > or-rule-radial-modal {
         min-width: auto;
     }
-    .attribute > div > or-mwc-input[type="button"] {
+    .attribute > div > or-vaadin-button {
         min-width: auto;
     }
-    .attribute > div > or-mwc-input:not([type="button"]) {
+    .attribute > div > :is(or-vaadin-combo-box, or-vaadin-number-field) {
         width: 200px;
     }
     .attribute > div > or-attribute-input {
@@ -101,8 +103,7 @@ const style = css`
     
     .invalidLabel {
         display: flex;
-        align-items: center;
-        margin: 14px 3px auto 0;
+        align-items: baseline;
         height: 48px; /* Same as the icon size */
     }
 `;
@@ -217,7 +218,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operator = this.getOperator(attributePredicate);
         const attributeName = this.getAttributeName(attributePredicate);
         const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
-        let attributes: [string, string][] = [];
+        let attributes: {value: any, label: string}[] = [];
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset ? asset.type : assetDescriptor.name, attribute || attributeName, attribute);
 
         if (asset && asset.attributes) {
@@ -226,7 +227,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 .map(attr => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
                     const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, false);
-                    return [attr.name!, label];
+                    return {value: attr.name!, label: label};
                 });
         } else {
             attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] :
@@ -234,18 +235,26 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     .map(ad => {
                         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetDescriptor.name, ad);
                         const label = Util.getAttributeLabel(undefined, descriptors ? descriptors[0] : undefined, assetDescriptor.name, false);
-                        return [ad.name!, label];
+                        return {value: ad.name!, label: label};
                     });
         }  
         
-        attributes.sort(Util.sortByString(attr => attr[1]));
+        attributes.sort(Util.sortByString(attr => attr.label));
 
-        const operators = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
+        const operators: {value: any, label: string}[] = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
 
         return html`
-            <or-mwc-input type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
-            ${attributeName ? html`<or-mwc-input type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-mwc-input>` : ``}
-            ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate) : ``}
+            <or-vaadin-combo-box ?readonly=${this.readonly} .items=${attributes} value=${attributeName}
+                                 @change=${(ev: Event) => this.setAttributeName(attributePredicate, (ev.currentTarget as OrVaadinComboBox).value)}>
+                <or-translate slot="label" value="attribute"></or-translate>
+            </or-vaadin-combo-box>
+            ${when(attributeName, () => html`
+                <or-vaadin-combo-box ?readonly=${this.readonly} .items=${operators} value="${operator}"
+                                     @change=${(ev: Event) => this.setOperator(assetDescriptor, attribute, attributeName!, attributePredicate, (ev.currentTarget as OrVaadinComboBox).value)}>]
+                    <or-translate slot="label" value="operator"></or-translate>
+                </or-vaadin-combo-box>
+            `)}
+            ${when(attributePredicate, () => this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate))}
         `;
     }
 
@@ -256,18 +265,20 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             const duration = attributePredicate.timestampOlderThan ? 
                 moment.duration(attributePredicate.timestampOlderThan) : undefined;
             return html`
-                <or-mwc-input type="${InputType.NUMBER}" 
-                              min="0"
-                              .value="${duration?.asMinutes()}"
-                              label="${i18next.t("rulesEditorDuration")}"
-                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                  const minutes = ev.detail.value;
-                                  const newDuration = moment.duration(minutes, "minutes");
-                                  attributePredicate.timestampOlderThan = minutes > 0 ? 
-                                      newDuration.toISOString() : undefined;
-                                  this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-                              }}">
-                </or-mwc-input>`;
+                <or-vaadin-number-field min="0" value=${duration?.asMinutes()}
+                                        @change=${(ev: Event) => {
+                                            const elem = ev.currentTarget as OrVaadinNumberField;
+                                            if(elem.checkValidity()) {
+                                                const minutes = Number(elem.value);
+                                                const newDuration = moment.duration(minutes, "minutes");
+                                                attributePredicate.timestampOlderThan = minutes > 0 ?
+                                                        newDuration.toISOString() : undefined;
+                                                this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+                                            }
+                                        }}>
+                    <or-translate slot="label" value="rulesEditorDuration"></or-translate>
+                </or-vaadin-number-field>
+            `;
         }
 
         const valuePredicate = attributePredicate.value;
@@ -341,23 +352,27 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             const isoDuration = durationMap.get(index);
             const duration = isoDuration ? moment.duration(isoDuration) : undefined;
             return html`
-                <or-mwc-input type="${InputType.NUMBER}" min="0" .readonly="${this.readonly || false}"
-                              .value="${duration?.asMinutes()}" label="${i18next.t("rulesEditorDuration")}"
-                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                  const newDuration = moment.duration(ev.detail.value, "minutes");
-                                  if(newDuration.asMinutes() > 0) {
-                                      onChange(index, newDuration.toISOString());
-                                  } else {
-                                      onChange(index, undefined);
-                                  }
-                              }}"
-                ></or-mwc-input>
+                <or-vaadin-number-field min="0" ?readonly=${this.readonly} value=${duration?.asMinutes()}
+                                        @change=${(ev: Event) => {
+                                            const elem = ev.currentTarget as OrVaadinNumberField;
+                                            if(elem.checkValidity()) {
+                                                const newDuration = moment.duration(elem.value, "minutes");
+                                                if(newDuration.asMinutes() > 0) {
+                                                    onChange(index, newDuration.toISOString());
+                                                } else {
+                                                    onChange(index, undefined);
+                                                }
+                                            }
+                                        }}>
+                    <or-translate slot="label" value="rulesEditorDuration"></or-translate>
+                </or-vaadin-number-field>
             `;
         } else {
             return html`
-                <or-mwc-input type="${InputType.BUTTON}" .readonly="${this.readonly || false}" icon="clock-plus-outline"
-                              title="${i18next.t("rulesEditorAddDuration")}" @or-mwc-input-changed="${() => onAdd(index)}"
-                ></or-mwc-input>
+                <or-vaadin-button theme="icon" ?disabled=${this.readonly} title=${i18next.t("rulesEditorAddDuration")}
+                                  @click=${() => onAdd(index)}>
+                    <or-icon icon="clock-plus-outline"></or-icon>
+                </or-vaadin-button>
             `;
         }
     }
@@ -432,19 +447,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         // TODO: Add multiselect support
         const ids = getAssetIdsFromQuery(this.query);
         const idValue = ids && ids.length > 0 ? ids[0] : "*";
-        const idOptions: Map<string, string> = new Map([
-            ["*", i18next.t("anyOfThisType")]
-        ]);
+        const idOptions: {value: any, label: string}[] = [
+            {value: "*", label: i18next.t("anyOfThisType")}
+        ];
 
         // Set list of displayed assets, and filtering assets out if needed.
         // If <= 25 assets: display everything
         // If between 25 and 100 assets: display everything with search functionality
         // If >= 100 assets: only display if in line with search input
         const assets: Asset[] = this._cache ? this._cache.assets : [];
-        const searchable = assets.length > 25;
-        if (searchable && this._selected) {
-            idOptions.set(this._selected.id!, this._selected.name!);
-        }
 
         let searchProvider: (search?: string) => Promise<[any, string][]>;
 
@@ -453,27 +464,11 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             
                 <!-- Show SELECT input with 'loading' until the assets are retrieved -->
                 ${when((!this._cache || this._loading), () => html`
-                    <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t("loading")}"></or-mwc-input>
+                    <or-vaadin-combo-box id="idSelect" class="min-width" readonly>
+                        <or-translate slot="label" value="loading"></or-translate>
+                    </or-vaadin-combo-box>
                 `, () => {
-                    if (!searchable) {
-                       assets.forEach(a => idOptions.set(a.id!, a.name!));
-                    } else {
-                        searchProvider = async (search?: string) => {
-                            await this.loadAssets(assetType, search, idValue); // Wait for asset retrieval based on search
-                            if (search) {
-                                return assets.filter(a => a.name?.toLowerCase().includes(search.toLowerCase())).map(a => [a.id!, a.name!] as [string, string]);
-                            } else if (assets.length <= 100) {
-                                assets.forEach(a => idOptions.set(a.id!, a.name!));
-                                return [...idOptions];
-                            } else {
-                                const asset = assets.find(a => a.id === idValue);
-                                if (asset && !Array.from(idOptions.keys()).includes(asset.id!)) {
-                                    idOptions.set(asset.id!, asset.name!); // add selected asset if there is one.
-                                }
-                                return [...idOptions];
-                            }
-                        };
-                    }
+                    assets.forEach(a => idOptions.push({value: a.id!, label: a.name!}));
 
                     const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
                     
@@ -489,10 +484,10 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     };
                     
                     return html`
-                        <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
-                                      .options="${[...idOptions]}" .value="${idValue}" .searchProvider="${searchProvider}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); }}"
-                        ></or-mwc-input>
+                        <or-vaadin-combo-box id="idSelect" class="min-width" ?readonly=${this.readonly} .items=${idOptions} value=${idValue}
+                                             @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
+                            <or-translate slot="label" value="asset"></or-translate>
+                        </or-vaadin-combo-box>
                         <div class="attributes">
                             ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate, index) => {
                                 return html`
@@ -507,10 +502,12 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                     </div>` : ``}
                                 `;
                             }) : ``}
-                            ${showAddAttribute ? html`
-                                <or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                              label="rulesEditorAddAttribute" @or-mwc-input-changed="${(_ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
-                            `: ``}
+                            ${when(showAddAttribute, () => html`
+                                <or-vaadin-button class="plus-button" @click=${() => this.addAttributePredicate(this.query!.attributes!)}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="rulesEditorAddAttribute"></or-translate>
+                                </or-vaadin-button>
+                            `)}
                         </div>
                     `;
                 })}
@@ -572,7 +569,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
     
-    protected getOperators(_assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, _attribute: Attribute<any> | undefined, attributeName: string): [string, string][] {
+    protected getOperators(_assetDescriptor: AssetDescriptor, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor | undefined, _attribute: Attribute<any> | undefined, attributeName: string): {value: any, label: string}[] {
 
         let operators: AssetQueryOperator[] | undefined;
 
@@ -584,7 +581,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             operators = this.getOperatorMapValue(this._queryOperatorsMap, getAssetTypeFromQuery(this.query), attributeName, attributeDescriptor, valueDescriptor);
         }
 
-        return operators ? operators.map(v => [v, i18next.t(v)]) : [];
+        return operators ? operators.map(v => ({value: v, label: i18next.t(v) })) : [];
     }
 
     protected getOperator(attributePredicate: AttributePredicate): string | undefined {

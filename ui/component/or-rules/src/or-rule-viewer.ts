@@ -35,13 +35,13 @@ import "./or-rule-text-viewer";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-scheduler";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
 import { INTUITIVE_NOT_APPLICABLE, OrSchedulerChangedEvent, RRulePartKeys } from "@openremote/or-scheduler";
 import {when} from "lit/directives/when.js";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 
 const DISABLED_RRULE_PARTS = [
     "interval",
@@ -90,7 +90,7 @@ export const style = css`
     
     #rule-header {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         width: 100%;
         box-sizing: border-box;
         min-height: var(--internal-or-rules-header-height);
@@ -179,7 +179,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected wrapperElem!: HTMLDivElement;
 
     @query("#save-btn")
-    protected saveBtnElem!: OrMwcInput;
+    protected saveBtnElem!: OrVaadinButton;
 
     protected _focusName = false;
 
@@ -264,13 +264,23 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
-                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${readonly}" required minlength="1" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
-                    <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
-                    <span id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</span>
+                    <or-vaadin-text-field id="rule-name" value=${this.ruleset?.name} required
+                                          ?focused=${this._focusName} ?readonly=${readonly}
+                                          minlength="1" maxlength="255"
+                                          @change=${(ev: Event) => {
+                                              const elem = ev.currentTarget as HTMLInputElement;
+                                              if(elem?.checkValidity()) this._changeName((ev.currentTarget as HTMLInputElement).value)
+                                          }}>
+                        <or-translate slot="label" value="ruleName"></or-translate>
+                    </or-vaadin-text-field>
+                    <div style="display: flex; align-items: center;">
+                        <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
+                        <span id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</span>
+                    </div>
                     <div id="rule-header-controls">
                         <span id="active-wrapper">
-                            <or-translate value="enabled"></or-translate>
-                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${readonly || !this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
+                            <span style="margin-right: 4px;"><or-translate value="enabled"></or-translate></span>
+                            <or-vaadin-checkbox ?checked=${this.ruleset?.enabled} ?disabled=${readonly || !this.ruleset.id} @change=${() => this._toggleEnabled()}></or-vaadin-checkbox>
                         </span>
                         ${when(!readonly, () => html`
                             <or-scheduler
@@ -284,7 +294,9 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                                     @or-scheduler-changed="${this._onSchedulerChanged}"
                             ></or-scheduler>
                         `)}
-                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
+                        <or-vaadin-button id="save-btn" theme="primary" ?disabled=${this._cannotSave()} @click=${() => this._onSaveClicked()}>
+                            <or-translate value="save"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 </div>
 

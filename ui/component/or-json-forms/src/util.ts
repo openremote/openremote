@@ -21,7 +21,6 @@ import {
     StatePropsOfCombinator,
 } from "@jsonforms/core";
 import {DefaultColor5, Util} from "@openremote/core";
-import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-ace-editor";
 import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
@@ -29,6 +28,8 @@ import {html, TemplateResult, unsafeCSS} from "lit";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {unknownTemplate} from "./standard-renderers";
 import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {
@@ -132,14 +133,16 @@ export function getSchemaConst(schema: JsonSchema): any {
 
 export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchemas: JsonSchema[], label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
     const combinatorInfos = getCombinatorInfos(resolvedSchemas, rootSchema);
-    const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})]);
+    const options: SelectItem[] = combinatorInfos.map((combinatorInfo, index) => ({value: index+"", label: combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})}));
     const pickerUpdater = (index: number) => {
         const matchedInfo = combinatorInfos[index];
         selectedCallback(matchedInfo);
     };
     const pickerLabel = label ? i18next.t("schema.anyOfPickerLabel", {label: label}) : i18next.t("type");
-    return html`                
-        <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
+    return html`
+        <or-vaadin-select class="any-of-picker" .items=${options} @change=${(ev: Event) => pickerUpdater(Number((ev.currentTarget as OrVaadinSelect).value))}>
+            <span slot="label">${pickerLabel}</span>
+        </or-vaadin-select>
     `;
 }
 
@@ -341,7 +344,7 @@ export const controlWithoutLabel = (scope: string): ControlElement => ({
 export const showJsonEditor = (title: string, value: any, updateCallback: (newValue: string) => void): void => {
 
     const editorRef: Ref<OrAceEditor> = createRef();
-    const updateBtnRef: Ref<OrMwcInput> = createRef();
+    const updateBtnRef: Ref<OrVaadinButton> = createRef();
     const onEditorEdit = () => {
         // Disable update button whilst edit in progress
         updateBtnRef.value!.disabled = true;
@@ -370,7 +373,11 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                             updateCallback(data);
                         }
                     },
-                    content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" label="update"></or-mwc-input>`
+                    content: html`
+                        <or-vaadin-button ${ref(updateBtnRef)} disabled>
+                            <or-translate value="update"></or-translate>
+                        </or-vaadin-button>
+                    `
                 }
             ])
         .setHeading(title)

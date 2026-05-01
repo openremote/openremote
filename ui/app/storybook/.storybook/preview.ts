@@ -22,7 +22,7 @@ import {setStorybookHelpersConfig} from "@wc-toolkit/storybook-helpers";
 import {themes} from "storybook/theming";
 import "./styles.css";
 
-setStorybookHelpersConfig({ hideArgRef: true, categoryOrder: ["attributes", "cssProps", "cssParts", "events", "methods"] });
+setStorybookHelpersConfig({ hideArgRef: true, categoryOrder: ["attributes", "slots", "cssProps", "cssParts", "events", "methods"] });
 
 const style = globalThis.getComputedStyle(document.documentElement);
 const preview: Preview = {

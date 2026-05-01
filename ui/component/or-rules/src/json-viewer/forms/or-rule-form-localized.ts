@@ -1,8 +1,7 @@
 import {i18next, translate} from "@openremote/or-translate";
-import {LitElement, PropertyValues, TemplateResult, css, html} from "lit";
+import {LitElement, TemplateResult, css, html} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {AbstractNotificationMessageUnion, LocalizedNotificationMessage} from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 import {when} from "lit/directives/when.js";
@@ -12,6 +11,7 @@ import "./or-rule-form-email-message";
 import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
 import {DefaultColor6} from "@openremote/core";
+import { SelectItem } from "@openremote/or-vaadin-components/or-vaadin-select";
 
 @customElement("or-rule-form-localized")
 export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
@@ -39,7 +39,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
 
     static get styles() {
         return css`
-            or-mwc-input {
+            or-vaadin-select {
                 margin-bottom: 20px;
                 min-width: 420px;
                 width: 100%;
@@ -81,10 +81,9 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      */
     protected async _getWrongLanguageTemplate(): Promise<TemplateResult> {
         return html`
-            <or-mwc-input .type="${InputType.BUTTON}" fullWidth outlined
-                          label="defaultLanguageChangedError" style="margin-top: 10px;"
-                          @or-mwc-input-changed="${this._fixDefaultLanguage}"
-            ></or-mwc-input>
+            <or-vaadin-button style="width: 100%; margin: 10px 0;" @click=${() => this._fixDefaultLanguage()}>
+                <or-translate value="defaultLanguageChangedError"></or-translate>
+            </or-vaadin-button>
         `;
     }
 
@@ -110,12 +109,12 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      * Based on {@link languageCodes}, it lists all languages of the ISO6391 specification.
      */
     protected async _getLanguageSelectForm(selected: string, languageCodes: string[] = [this._selectedLanguage], divider = true): Promise<TemplateResult> {
-        const languages = languageCodes.map(key => [key, ISO6391.getName(key)]);
+        const languages: SelectItem[] = languageCodes.map(key => ({value: key, label: ISO6391.getName(key)}));
         return html`
             <div style="display: flex; justify-content: space-between;">
-                <or-mwc-input .type="${InputType.SELECT}" .options="${languages}" .value="${selected}"
-                              @or-mwc-input-changed="${this._onLanguageChange}"
-                ></or-mwc-input>
+                <or-vaadin-select value=${selected} .items=${languages}
+                                  @change=${(ev: Event) => this._onLanguageChange(ev)}
+                ></or-vaadin-select>
             </div>
             ${when(divider, () => html`
                 <div class="divider"></div>`)}
@@ -125,8 +124,11 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
     /**
      * HTML callback for when the selected language changes.
      */
-    protected _onLanguageChange(ev: OrInputChangedEvent) {
-        this._selectedLanguage = ev.detail.value;
+    protected _onLanguageChange(ev: Event) {
+        const elem = ev.currentTarget as HTMLInputElement;
+        if(elem.checkValidity()) {
+            this._selectedLanguage = elem.value;
+        }
     }
 
     /**

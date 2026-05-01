@@ -56,7 +56,7 @@ assets.forEach(({ type, name, attributes }) => {
         const item = page.locator(`#field-${attribute3} input[type="${type}"]`);
         if (await item.isEditable()) {
             await item.fill(value3);
-            await page.click(`#field-${attribute3} #send-btn span`);
+            await page.click(`#field-${attribute3} #send-btn`);
         }
 
         await assetViewer.switchMode("modify");

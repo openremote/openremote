@@ -1,12 +1,32 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {Dashboard, DashboardAccess, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
 import {css, html, LitElement} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {style} from './style';
 import {i18next} from "@openremote/or-translate";
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {when} from "lit/directives/when.js";
 import {dashboardAccessToString, scalingPresetToString, sortScreenPresets} from ".";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 //language=css
 const boardSettingsStyling = css`
@@ -57,12 +77,9 @@ export class OrDashboardBoardsettings extends LitElement {
     protected render() {
         if (this.dashboard.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
-            const accessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({key: access, value: dashboardAccessToString(access)}));
-            const refreshIntervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR].map(interval => ({key: interval, value: `dashboard.interval.${interval.toLowerCase()}`}))
-            const scalingPresets: { key: DashboardScalingPreset, value: string }[] = [];
-            [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE].forEach((preset: DashboardScalingPreset) => {
-                scalingPresets.push({key: preset, value: scalingPresetToString(preset)});
-            });
+            const accessOptions: SelectItem[] = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({value: access, label: dashboardAccessToString(access)}));
+            const refreshIntervalOptions: SelectItem[] = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR].map(interval => ({value: interval, label: i18next.t(`dashboard.interval.${interval.toLowerCase()}`)}))
+            const scalingPresets: SelectItem[] = [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE].map((preset) => ({value: preset, label: scalingPresetToString(preset)}));
             return html`
 
                 <!-- Permissions panel, to set who can view/edit the selected dashboard -->
@@ -72,13 +89,9 @@ export class OrDashboardBoardsettings extends LitElement {
                             <div class="label">
                                 ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
                             </div>
-                            <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
-                                          .options="${accessOptions.map((access) => access.value)}"
-                                          .value="${dashboardAccessToString(this.dashboard.access!)}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.setAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!);
-                                          }}"
-                            ></or-mwc-input>
+                            <or-vaadin-select .items=${accessOptions} value=${this.dashboard.access}
+                                              @change=${(ev: Event) => this.setAccess((ev.currentTarget as OrVaadinSelect).value as DashboardAccess)}
+                            ></or-vaadin-select>
                         </div>
                     </settings-panel>
                 `)}
@@ -90,12 +103,15 @@ export class OrDashboardBoardsettings extends LitElement {
                         <!-- Number of Columns control -->
                         <div style="margin-bottom: 24px; display: flex; align-items: center;">
                             <span style="min-width: 180px;"><or-translate value="dashboard.numberOfColumns"></or-translate></span>
-                            <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.columns}" min="1" max="24" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                if (this.dashboard.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
-                                    this.dashboard.template.columns = event.detail.value as number;
-                                    this.forceParentUpdate(true);
-                                }
-                            }}"></or-mwc-input>
+                            <or-vaadin-number-field value=${this.dashboard.template.columns} min="1" max="24"
+                                                    @change=${(ev: Event) => {
+                                                        const elem = ev.currentTarget as OrVaadinNumberField;
+                                                        if (elem.checkValidity() && this.dashboard.template != null) {
+                                                            this.dashboard.template.columns = Number(elem.value);
+                                                            this.forceParentUpdate(true);
+                                                        }
+                                                    }}
+                            ></or-vaadin-number-field>
                         </div>
                         
                         <!-- Scaling preset -->
@@ -111,27 +127,21 @@ export class OrDashboardBoardsettings extends LitElement {
                         <!-- Max Screen Width control-->
                         <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
                             <span style="min-width: 150px;"><or-translate value="dashboard.maxScreenWidth"></or-translate></span>
-                            <div>
-                                <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" style="width: 70px;"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  if (this.dashboard.template != null) {
-                                                      this.dashboard.template.maxScreenWidth = event.detail.value as number;
-                                                      this.forceParentUpdate(true);
-                                                  }
-                                              }}">
-                                </or-mwc-input>
-                                <span style="margin-left: 2px;">px</span>
-                            </div>
+                            <or-vaadin-number-field value=${this.dashboard.template.maxScreenWidth} min="0" style="width: 110px;" @change=${(ev: Event) => {
+                                const elem = ev.currentTarget as OrVaadinNumberField;
+                                if (elem.checkValidity() && this.dashboard.template != null) {
+                                    this.dashboard.template.maxScreenWidth = Number(elem.value);
+                                    this.forceParentUpdate(true);
+                                }
+                            }}>
+                                <span slot="suffix">px</span>
+                            </or-vaadin-number-field>
                         </div>
                         
                         <!-- "Set to mobile" preset button, for ease of use -->
-                        <div>
-                            <or-mwc-input type="${InputType.BUTTON}" comfortable label="dashboard.setToMobilePreset"
-                                          @or-mwc-input-changed="${() => {
-                                              this.setToMobilePreset();
-                                          }}">
-                            </or-mwc-input>
-                        </div>
+                        <or-vaadin-button @click=${() => this.setToMobilePreset()}>
+                            <or-translate value="dashboard.setToMobilePreset"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 </settings-panel>
 
@@ -141,15 +151,16 @@ export class OrDashboardBoardsettings extends LitElement {
                         <div class="label">
                             <span><or-translate value="dashboard.defaultRefreshInterval"></or-translate></span>
                         </div>
-                        <or-mwc-input type="${InputType.SELECT}" comfortable .options="${refreshIntervalOptions.map(o => o.value)}" style="width: 100%;"
-                                      .value="${`dashboard.interval.${this.dashboard.template.refreshInterval?.toLowerCase() || `off`}`}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                          const intervalEntry = refreshIntervalOptions.find(o => o.value === ev.detail.value);
-                                          if(intervalEntry) {
-                                              this.setRefreshInterval(intervalEntry.key)
-                                          }
-                                      }}">
-                        </or-mwc-input>
+                        <or-vaadin-select .items=${refreshIntervalOptions} value=${this.dashboard.template.refreshInterval}
+                                          @change=${(ev: Event) => {
+                                              const elem = ev.currentTarget as OrVaadinSelect;
+                                              const intervalEntry = refreshIntervalOptions.find(o => o.value === elem.value)?.value;
+                                              console.debug(intervalEntry);
+                                              if(intervalEntry) {
+                                                  this.setRefreshInterval(intervalEntry as DashboardRefreshInterval);
+                                              }
+                                          }}>
+                        </or-vaadin-select>
                     </div>
                 </settings-panel>
                 
@@ -177,7 +188,7 @@ export class OrDashboardBoardsettings extends LitElement {
 
     /* ======================== */
 
-    scalingPresetTemplate(screenPresets: DashboardScreenPreset[], scalingPresets: { key: DashboardScalingPreset, value: string }[]) {
+    scalingPresetTemplate(screenPresets: DashboardScreenPreset[], scalingPresets: SelectItem[]) {
         return html`
             ${screenPresets.map((preset) => {
                 return html`
@@ -185,15 +196,13 @@ export class OrDashboardBoardsettings extends LitElement {
                         <div class="label">
                             ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + i18next.t(preset.displayName!) + "</b>")))}</span>`}
                         </div>
-                        <or-mwc-input class="displayInput" type="${InputType.SELECT}" comfortable style="width: 100%;"
-                                      .options="${scalingPresets.map((x) => x.value)}"
-                                      .value="${scalingPresets.find((p) => p.key == preset.scalingPreset)?.value}"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                          preset.scalingPreset = scalingPresets.find((p) => p.value == event.detail.value)?.key;
-                                          this.forceParentUpdate(true);
-                                          this.requestUpdate();
-                                      }}"
-                        ></or-mwc-input>
+                        <or-vaadin-select .items=${scalingPresets} value=${preset.scalingPreset}
+                                          @change=${(ev: Event) => {
+                                              preset.scalingPreset = (ev.currentTarget as OrVaadinSelect).value as DashboardScalingPreset;
+                                              this.forceParentUpdate(true);
+                                              this.requestUpdate();
+                                          }}
+                        ></or-vaadin-select>
                     </div>
                 `
             })}
@@ -206,16 +215,15 @@ export class OrDashboardBoardsettings extends LitElement {
                 return html`
                     <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                         <span style="min-width: 140px;">${customLabels ? customLabels[index] : (preset.displayName + " " + i18next.t('screen'))}</span>
-                        <div>
-                            <span style="margin-right: 4px;">${(screenPresets.indexOf(preset) == 0) ? '>' : '<'}</span>
-                            <or-mwc-input type="${InputType.NUMBER}" comfortable .disabled="${(screenPresets.length > 1 && screenPresets.indexOf(preset) == 0)}" style="width: 70px;"
-                                          .value="${(screenPresets.length > 1 && screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.setBreakpoint(screenPresets.indexOf(preset), event.detail.value)
-                                          }}"
-                            ></or-mwc-input>
-                            <span style="margin-left: 2px;">px</span>
-                        </div>
+                        <or-vaadin-number-field value=${(screenPresets.length > 1 && screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)} 
+                                                ?disabled=${(screenPresets.length > 1 && screenPresets.indexOf(preset) == 0)}
+                                                min="0" style="width: 110px;" @change=${(ev: Event) => {
+                                                    const elem = ev.currentTarget as OrVaadinNumberField;
+                                                    if(elem.checkValidity()) this.setBreakpoint(screenPresets.indexOf(preset), Number(elem.value))
+                                                }}>
+                            <span slot="prefix">></span>
+                            <span slot="suffix">px</span>
+                        </or-vaadin-number-field>
                     </div>
                 `
             })}

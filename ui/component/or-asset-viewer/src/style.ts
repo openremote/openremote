@@ -259,9 +259,10 @@ export const style = css`
 
     #fileupload, #discovery {
         display: flex;
-        align-items: center;
+        align-items: end;
         width: 100%;
         margin-bottom: 10px;
+        gap: 10px;
     }
 
     .hidden {

@@ -1,4 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+
 declare function require(name: string): any;
 
 import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
@@ -13,12 +15,14 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {translate} from "@openremote/or-translate";
+import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util} from "@openremote/core";
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import {type OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {
     AgentDescriptor,
     Asset,
@@ -45,7 +49,10 @@ import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {progressCircular} from "@openremote/or-mwc-components/style";
-import { when } from "lit/directives/when.js";
+import {when} from "lit/directives/when.js";
+import {ifDefined} from "lit/directives/if-defined.js";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import {OrVaadinInput} from "@openremote/or-vaadin-components/or-vaadin-input";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "linkedUsers" | "alarm.linkedAlarms";
@@ -397,7 +404,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         const updateFileName = () => {
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
-            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrVaadinButton;
             const str = fileInputElem.value;
 
             if (!str) {
@@ -416,8 +423,8 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
 
         const discoverAssets = () => {
-            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
-                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            const discoverBtn = hostElement.shadowRoot!.getElementById("discover-btn") as OrVaadinButton,
+                cancelBtn = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrVaadinButton;
 
             if (!discoverBtn || !cancelBtn) {
                 return false;
@@ -425,7 +432,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
             cancelBtn.hidden = false;
             discoverBtn.disabled = true;
-            discoverBtn.label = i18next.t("discovering") + '...';
+            (discoverBtn.firstElementChild as OrTranslate).value = "discovering"
 
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
@@ -443,16 +450,16 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 .finally(() => {
                     cancelBtn.hidden = true;
                     discoverBtn.disabled = false;
-                    discoverBtn.label = i18next.t("discoverAssets");
+                    (discoverBtn.firstElementChild as OrTranslate).value = "discoverAssets";
                 });
         }
 
         const cancelDiscovery = () => {
-            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
-                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            const discoverBtn = hostElement.shadowRoot!.getElementById("discover-btn") as OrVaadinButton,
+                cancelBtn = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrVaadinButton;
 
             discoverBtn.disabled = false;
-            discoverBtn.label = i18next.t("discoverAssets");
+            (discoverBtn.firstElementChild as OrTranslate).value = "discoverAssets";
             cancelBtn.hidden = true;
 
             // TODO: cancel the request to the manager
@@ -460,7 +467,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
         const doImport = () => {
             const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
-            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrVaadinButton;
             const progressElement = hostElement.shadowRoot!.getElementById("progress-circular") as HTMLProgressElement;
 
             if (!fileUploadBtn || !progressElement) {
@@ -525,18 +532,29 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         return html`
             ${when(descriptor.assetImport, () => html`
                 <div id="fileupload">
-                    <or-mwc-input style="flex: 0 1 auto;" outlined label="selectFile" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
-                        <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
-                    </or-mwc-input>
-                    <or-mwc-input style="flex: 1 1 auto; margin: 0 4px 0 10px;" id="filename-elem" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input style="flex: 0 1 auto;" id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
-                    <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
+                    <or-vaadin-button @click=${() => hostElement.shadowRoot?.getElementById('fileupload-elem')!.click()}>
+                        <or-translate value="selectFile"></or-translate>
+                        <input id="fileupload-elem" slot="invisible" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
+                    </or-vaadin-button>
+                    <or-vaadin-text-field id="filename-elem" readonly style="flex: 1 1 auto;">
+                        <or-translate slot="label" value="file"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-button id="fileupload-btn" theme="icon" @click=${() => doImport()} disabled>
+                        <or-icon icon="upload"></or-icon>
+                    </or-vaadin-button>
+                    <div id="progress-circular" class="hidden" style="flex: 0 0 48px;">
+                        <progress class="pure-material-progress-circular"></progress>
+                    </div>
                 </div>
             `)}
             ${when(descriptor.assetDiscovery, () => html`
                 <div id="discovery">
-                    <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
-                    <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                    <or-vaadin-button id="discover-btn" @click=${() => discoverAssets()}>
+                        <or-translate value="discoverAssets"></or-translate>
+                    </or-vaadin-button>
+                    <or-vaadin-button id="cancel-discover-btn" hidden theme="tertiary" @click=${() => cancelDiscovery()}>
+                        <or-translate value="cancel"></or-translate>
+                    </or-vaadin-button>
                 </div>
             `)}
         `;
@@ -576,12 +594,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         const options = historyAttrs.map((attr) => {
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
-            return [attr.name, label];
-            }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
+            return { value: attr.name, label: label };
+            }).sort(Util.sortByString((item) => item.label ?? item.value));
 
         let attrTemplate = html`
                 <div id="attribute-picker">
-                    <or-mwc-input .checkAssetWrite="${false}" .label="${i18next.t("attribute")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-mwc-input>
+                    <or-vaadin-select .items=${options} @change=${(ev: Event) => attributeChanged((ev.currentTarget as OrVaadinSelect).value)}>
+                        <or-translate slot="label" value="attribute"></or-translate>
+                    </or-vaadin-select>
                 </div>`;
 
         return html`
@@ -593,7 +613,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    z-index: 1;
                }
                
-               #attribute-picker > or-mwc-input {
+               #attribute-picker > or-vaadin-select {
                    width: 250px;
                }
                 
@@ -603,7 +623,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     --or-attribute-history-controls-justify-content: flex-start;
                 }
 
-               @media screen and (min-width: 1900px) {
+               @media screen and (min-width: 2050px) {
                    #attribute-picker {
                        position: absolute;
                    }
@@ -733,11 +753,16 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 html`
                     <div style="display: flex; flex-direction: column;">
                         ${availableAttributes.sort().map((attribute) => html`
-                            <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" style="display: inline-flex;"
-                                          .value="${!!selectedAttributes.find((selected) => selected === attribute)}" 
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => 
-                                                  evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"
-                            ></or-mwc-input>
+                            <or-vaadin-checkbox label=${i18next.t(Util.camelCaseToSentenceCase(attribute))} style="display: inline-flex;"
+                                                .checked=${!!selectedAttributes.find((selected) => selected === attribute)}
+                                                @change=${(ev: Event) => {
+                                                    if((ev.currentTarget as OrVaadinCheckbox).checked) {
+                                                        newlySelectedAttributes.push(attribute);
+                                                    } else {
+                                                        newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1);
+                                                    }
+                                                }}
+                            ></or-vaadin-checkbox>
                         `)}
                     </div>
                 `
@@ -755,7 +780,6 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 <style>
                     .asset-group-add-remove-button {
                         position: absolute;
-                        --or-mwc-input-color: currentColor;
                         top: calc(var(--internal-or-asset-viewer-panel-padding) - 15px);
                         right: calc(var(--internal-or-asset-viewer-panel-padding) - 15px);
                     }
@@ -764,7 +788,9 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         opacity: 1;
                     }
                 </style>
-                <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @or-mwc-input-changed="${() => attributePickerModalOpen()}"></or-mwc-input>
+                <or-vaadin-button theme="icon" class="asset-group-add-remove-button" @click=${() => attributePickerModalOpen()}>
+                    <or-icon icon="pencil"></or-icon>
+                </or-vaadin-button>
                 <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{stickyFirstColumn: true}}"></or-mwc-table>
             `;
     }
@@ -881,9 +907,9 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
                     (names) => {
                         if (names) {
                             if (hostElement && hostElement.shadowRoot) {
-                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
+                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrVaadinInput;
                                 if (pathField) {
-                                    pathField.value = names.join(" > ");
+                                    pathField.setAttribute("value", names.join(" > "));
                                 }
                             }
                         }
@@ -900,7 +926,12 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             break;
     }
 
-    return html`<or-mwc-input id="property-${property}" .type="${type}" dense .value="${value}" .readonly="${itemConfig.readonly !== undefined ? itemConfig.readonly : true}" .label="${itemConfig.label}"></or-mwc-input>`;
+    return html`
+        <or-vaadin-input id="property-${property}" type=${type} value=${value}
+                         ?readonly=${itemConfig.readonly !== undefined ? itemConfig.readonly : true}
+                         label=${ifDefined(itemConfig.label)}
+        ></or-vaadin-input>
+    `;
 }
 
 export function getField(name: string, itemConfig?: InfoPanelItemConfig, content?: TemplateResult): TemplateResult {
@@ -1020,6 +1051,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
             if (!asset.id) {
                 throw new Error("Request to update existing asset but asset ID is not set");
             }
+            console.debug("Updating asset to", asset);
             const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
             success = response.status === 200;
             savedAsset = response.data;
@@ -1155,10 +1187,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected wrapperElem!: HTMLDivElement;
 
     @query("#save-btn")
-    protected saveBtnElem!: OrMwcInput;
+    protected saveBtnElem!: OrVaadinButton;
 
     @query("#edit-btn")
-    protected editBtnElem!: OrMwcInput;
+    protected editBtnElem!: OrVaadinButton;
 
     @query("#editor")
     protected editor!: OrEditAssetPanel;
@@ -1383,17 +1415,35 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
-                        ${editMode 
-                                ? html`
-                                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {asset!.name = e.detail.value; this._assetInfo!.modified = true; this._doValidation();}}"></or-mwc-input>
-                                `
-                                : html`<span>${asset.name}</span>`}
+                        ${when(editMode, () => html`
+                            <or-vaadin-text-field minlength="1" maxlength="1023" value=${asset.name}
+                                                  @change=${(ev: CustomEvent) => {
+                                                      const elem = ev.currentTarget as OrVaadinTextField;
+                                                      if(elem.checkValidity()) {
+                                                          asset!.name = elem.value;
+                                                          this._assetInfo!.modified = true;
+                                                          this._doValidation();
+                                                      }
+                                                  }}>
+                                <or-translate slot="label" value="name"></or-translate>
+                            </or-vaadin-text-field>
+                        `, () => html`
+                            <span>${asset.name}</span>
+                        `)}
                     </div>
                     <div id="right-wrapper" class="mobileHidden">
                         ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
-                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" label="save" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
-                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" .disabled="${!this._assetInfo.asset.id}" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("viewAsset") : i18next.t("editAsset")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
-                        `: ``}
+                        ${when(editMode, () => html`
+                            <or-vaadin-button id="save-btn" theme="primary" ?disabled=${!this.isModified()} @click=${() => this._onSaveClicked()}>
+                                <or-translate value="save"></or-translate>
+                            </or-vaadin-button>
+                        `)}
+                        ${when(!this._isReadonly(), () => html`
+                            <or-vaadin-button id="edit-btn" ?disabled=${!this._assetInfo?.asset.id} @click=${() => this._onEditToggleClicked(!this.editMode)}>
+                                <or-icon slot="prefix" icon=${this.editMode ? "eye" : "pencil"}></or-icon>
+                                <or-translate value=${this.editMode ? "viewAsset" : "editAsset"}></or-translate>
+                            </or-vaadin-button>
+                        `)}
                     </div>
                 </div>
                 ${content}
@@ -1416,8 +1466,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 (detail) => {
                     if (detail.allow) {
                         this._doEditToggle(edit);
-                    } else {
-                        this.editBtnElem.value = !edit;
                     }
                 });
     }
@@ -1446,6 +1494,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const asset = this._assetInfo.asset;
+        console.debug("Asset to be saved:", asset);
         this.saveBtnElem.disabled = true;
         this._saveInProgress = true;
         this.wrapperElem.classList.add("saving");

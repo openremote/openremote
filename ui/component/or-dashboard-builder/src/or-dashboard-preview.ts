@@ -1,23 +1,41 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import manager, {DefaultColor4, DefaultColor5} from "@openremote/core";
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
 import "./or-dashboard-widgetcontainer";
 import debounce from "lodash.debounce";
 import {DashboardGridItem, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
 import {getActivePreset} from "./index";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {i18next} from "@openremote/or-translate";
 import {when} from "lit/directives/when.js";
-import {cache} from "lit/directives/cache.js";
 import {guard} from "lit/directives/guard.js";
 import {OrDashboardEngine} from "./or-dashboard-engine";
 import {WidgetService} from "./service/widget-service";
 import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -38,7 +56,7 @@ const editorStyling = css`
         padding: 24px;
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: baseline;
     }
     /* Margins on view options */
     #fit-btn { margin-right: 10px; }
@@ -507,25 +525,52 @@ export class OrDashboardPreview extends LitElement {
             <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%; position: relative;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
                 ${this.editMode && !this.fullscreen ? html`
                     <div id="view-options">
-                        <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
-                                      @or-mwc-input-changed="${() => this.onFitToScreenClick()}">
-                        </or-mwc-input>
-                        <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
-                                      @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }, 50)}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" style="min-width: 220px;"
-                                      .value="${this.previewSize == undefined ? customPreset : this.previewSize.displayName}" .options="${this.availablePreviewSizes?.map((x) => x.displayName)}"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = this.availablePreviewSizes?.find(s => s.displayName == event.detail.value); }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="${i18next.t('width')}" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
-                                      @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }, 550)}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="${i18next.t('height')}" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value + 'px'; }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
-                                      @or-mwc-input-changed="${() => { const newWidth = this.previewHeight; const newHeight = this.previewWidth; this.previewWidth = newWidth; this.previewHeight = newHeight; }}">
-                        </or-mwc-input>
+                        <!-- Fit to screen button-->
+                        <or-vaadin-button id="fit-btn" theme="icon" @click=${() => this.onFitToScreenClick()}>
+                            <or-icon icon="fit-to-screen"></or-icon>
+                        </or-vaadin-button>
+                        <!-- Zoom level -->
+                        <or-vaadin-number-field id="zoom-input" min="25" value=${this.previewZoom * 100} style="width: 90px;"
+                                                @change=${(ev: Event) => {
+                                                    const elem = ev.currentTarget as OrVaadinNumberField;
+                                                    if(elem.checkValidity()) this.previewZoom = Number(elem.value) / 100;
+                                                }}>
+                            <or-translate slot="label" value="dashboard.zoomPercent"></or-translate>
+                            <span slot="suffix">%</span>
+                        </or-vaadin-number-field>
+                        <!-- Select device size preset -->
+                        <or-vaadin-select id="view-preset-select" .items=${this.availablePreviewSizes?.map(s => ({value: s.displayName, label: s.displayName}) as SelectItem)}
+                                          value=${this.previewSize == undefined ? customPreset : this.previewSize.displayName} style="width: 220px;"
+                                          @change=${(ev: Event) => {
+                                              const name = (ev.currentTarget as OrVaadinSelect).value;
+                                              this.previewSize = this.availablePreviewSizes?.find(s => s.displayName == name)
+                                          }}>
+                            <or-translate slot="label" value="dashboard.presetSize"></or-translate>
+                        </or-vaadin-select>
+                        <!-- Height width input fields -->
+                        <or-vaadin-number-field id="width-input" value=${this.previewWidth?.replace('px', '')} min="100" style="width: 90px;"
+                                                @change=${(ev: Event) => {
+                                                    const elem = ev.currentTarget as OrVaadinNumberField;
+                                                    if(elem.checkValidity()) this.previewWidth = (elem.value + "px");
+                                                }}>
+                            <or-translate slot="label" value="width"></or-translate>
+                        </or-vaadin-number-field>
+                        <or-vaadin-number-field id="height-input" value=${this.previewHeight?.replace('px', '')} min="100" style="width: 90px;"
+                                                @change=${(ev: Event) => {
+                                                    const elem = ev.currentTarget as OrVaadinNumberField;
+                                                    if(elem.checkValidity()) this.previewHeight = (elem.value + "px");
+                                                }}>
+                            <or-translate slot="label" value="width"></or-translate>
+                        </or-vaadin-number-field>
+                        <!-- Rotate button -->
+                        <or-vaadin-button id="rotate-btn" theme="icon" @click=${() => {
+                            const newWidth = this.previewHeight;
+                            const newHeight = this.previewWidth;
+                            this.previewWidth = newWidth;
+                            this.previewHeight = newHeight;
+                        }}>
+                            <or-icon icon="screen-rotation"></or-icon>
+                        </or-vaadin-button>
                     </div>
                 ` : undefined}
                 ${this.rerenderActive ? html`

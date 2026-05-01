@@ -28,9 +28,10 @@ import {
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
-
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+
 const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
     if(form) {
         const inputs = form.querySelectorAll('or-mwc-input');
@@ -66,13 +67,13 @@ const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
 const style = css`
     :host {
         display: flex;
-        align-items: center;
+        align-items: baseline;
     }
     :host > * {
         margin: 0 3px 6px;
     }
     .min-width {
-        min-width: 200px;
+        flex: 0 0 240px;
     }
 `;
 
@@ -164,9 +165,20 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
             }
         };
 
+        const severityOptions: SelectItem[] = [
+            {value: AlarmSeverity.LOW, label: i18next.t("alarm.severity_LOW")},
+            {value: AlarmSeverity.MEDIUM, label: i18next.t("alarm.severity_MEDIUM")},
+            {value: AlarmSeverity.HIGH, label: i18next.t("alarm.severity_HIGH")}
+        ]
+
         return html`
-            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .value="${this.action.alarm?.severity}" .label="${i18next.t("alarm.severity")}" .options="${[[AlarmSeverity.LOW, i18next.t("alarm.severity_LOW")], [AlarmSeverity.MEDIUM, i18next.t("alarm.severity_MEDIUM")], [AlarmSeverity.HIGH, i18next.t("alarm.severity_HIGH")]]}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmSeverity(e.detail.value)}"></or-mwc-input>
-            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("settings")}" @or-mwc-input-changed="${alarmPickerModalOpen}"></or-mwc-input>
+            <or-vaadin-select value=${this.action.alarm?.severity} .items=${severityOptions} style="width: 240px;"
+                              @click=${(ev: Event) => this.setActionAlarmSeverity((ev.currentTarget as OrVaadinSelect).value)}>
+                <or-translate slot="label" value="alarm.severity"></or-translate>
+            </or-vaadin-select>
+            <or-vaadin-button @click=${() => alarmPickerModalOpen()}>
+                <or-translate value="settings"></or-translate>
+            </or-vaadin-button>
             <or-mwc-dialog id="alarm-modal" heading="${this.title}" .actions="${alarmPickerModalActions}"></or-mwc-dialog>
             <slot class="alarm-form-slot"></slot>
         `

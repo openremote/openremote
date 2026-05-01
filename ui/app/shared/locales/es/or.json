@@ -461,7 +461,7 @@
   "yes": "Sí",
   "no": "No",
   "filter": {
-    "action": "FILTER",
+    "action": "Filter",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",

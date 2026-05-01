@@ -6,8 +6,8 @@ export const location = { name: "location", type: "GEO_JSONPoint" };
 export const commonAttrs = { notes, location };
 
 export const assetMap = {
-    Battery: "ElectricityBatteryAsset",
-    "Solar Panel": "ElectricityProducerSolarAsset",
+    "Battery": "Electricity Battery Asset",
+    "Solar Panel": "PV Solar Asset"
 };
 const assets = [
     {

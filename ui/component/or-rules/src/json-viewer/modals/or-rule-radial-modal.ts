@@ -149,7 +149,9 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         this.renderDialogHTML(value);
         
         return html`
-            <or-mwc-input .type="${InputType.BUTTON}" label="area" @or-mwc-input-changed="${radialPickerModalOpen}"></or-mwc-input>
+            <or-vaadin-button @click=${() => radialPickerModalOpen()}>
+                <or-translate value="area"></or-translate>
+            </or-vaadin-button>
             <or-mwc-dialog id="radial-modal" heading="area" .actions="${radiusPickerModalActions}"></or-mwc-dialog>
         `
     }

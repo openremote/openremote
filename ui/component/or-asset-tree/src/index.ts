@@ -1,7 +1,9 @@
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
-import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {type OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import {comboBoxRenderer, ComboBoxLitRenderer, OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -29,7 +31,6 @@ import manager, {EventCallback, subscribe, Util} from "@openremote/core";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
@@ -321,15 +322,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @query("#clearIconContainer")
     protected _clearIconContainer!: HTMLElement;
     @query("#filterInput")
-    protected _filterInput!: OrMwcInput;
+    protected _filterInput!: OrVaadinTextField;
     @state()
     protected _filterSettingOpen: boolean = false;
     @state()
     protected _assetTypes: AssetDescriptor[] = [];
+    @query("#attributeTypeFilter")
+    protected _attributeTypeFilter!: OrVaadinComboBox;
     @query("#attributeNameFilter")
-    protected _attributeNameFilter!: OrMwcInput;
+    protected _attributeNameFilter!: OrVaadinTextField;
     @query("#attributeValueFilter")
-    protected _attributeValueFilter!: OrMwcInput;
+    protected _attributeValueFilter!: OrVaadinTextField;
     @state()
     protected _assetTypeFilter!: string;
     protected _uniqueAssetTypes: string[] = [];
@@ -424,27 +427,24 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
 
 
-    protected getSelectHeader(): TemplateResult {
-        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
+    protected _getSelectHeader(selected?: AssetDescriptor, descriptors: AssetDescriptor[] = [], disabled = this._loading): TemplateResult {
+        const itemRenderer: ComboBoxLitRenderer<AssetDescriptor> = (descriptor: AssetDescriptor) => html`
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <or-icon icon=${descriptor.icon} style="--or-icon-fill: #${descriptor.colour ?? "000000"}; min-width: 24px;"></or-icon>
+                <or-translate value=${Util.getAssetTypeLabel(descriptor)}></or-translate>
+            </div>
+        `;
+        return html`
+            <or-vaadin-combo-box id="attributeTypeFilter" ?disabled=${disabled} .items=${descriptors} .selectedItem=${selected}
+                                 style="width: 100%; --vaadin-combo-box-overlay-width: 350px; padding-top: 0px;"
+                                 .itemLabelGenerator=${(descriptor: AssetDescriptor) => Util.getAssetTypeLabel(descriptor)} item-value-path="name"
+                                 ${comboBoxRenderer(itemRenderer, [])}
+                                 @change=${(ev: CustomEvent) => { this._assetTypeFilter = (ev.currentTarget as OrVaadinComboBox).value; }}>
+                <or-icon slot="prefix" icon=${selected?.icon ?? "selection-ellipse"} style="color: var(--or-icon-fill); --or-icon-fill: #${selected?.colour ?? "inherit"}"></or-icon>
+                <or-translate slot="label" value="filter.assetTypeLabel"></or-translate>
+            </or-vaadin-combo-box>
+        `;
     }
-
-    protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
-        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
-    }
-
-    protected assetTypeSelect(): TemplateResult {
-        if (this._assetTypeFilter) {
-            const descriptor: AssetDescriptor | undefined = this._assetTypes.find((at: AssetDescriptor) => { return at.name === this._assetTypeFilter });
-            if (descriptor) {
-                return this.getSelectedHeader(descriptor);
-            } else {
-                return this.getSelectHeader();
-            }
-        } else {
-            return this.getSelectHeader();
-        }
-    }
-
 
     protected atLeastOneNodeToBeShown(): boolean {
         let atLeastOne: boolean = false;
@@ -459,6 +459,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected render() {
 
         const canAdd = this._canAdd();
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-icon icon="sort-variant"></or-icon>`),
+            children: [
+                { className: "name", checked: this.sortBy === "name", component: createMenuBarItem(html`<or-translate value="name"></or-translate>`) },
+                { className: "type", checked: this.sortBy === "type", component: createMenuBarItem(html`<or-translate value="type"></or-translate>`) },
+                { className: "createdOn", checked: this.sortBy === "createdOn", component: createMenuBarItem(html`<or-translate value="createdOn"></or-translate>`) }
+            ]
+        }];
 
         return html`
             <div id="header">
@@ -467,35 +475,35 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">
-                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" title="${i18next.t("deselect")}" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}" type="${InputType.BUTTON}" icon="content-copy" title="${i18next.t("duplicate")}" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}" type="${InputType.BUTTON}" icon="delete" title="${i18next.t("delete")}" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" title="${i18next.t("addAsset")}" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
-                    
-                    ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant" title="${i18next.t("sort")}" ></or-mwc-input>`,
-                            ["name", "type", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
-                            this.sortBy,
-                            (v) => this._onSortClicked(v as string))}
+                    <or-vaadin-button theme="icon" ?hidden=${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}
+                                      title=${i18next.t("deselect")} @click=${() => this._onDeselectClicked()}>
+                        <or-icon icon="close"></or-icon>
+                    </or-vaadin-button>
+                    <or-vaadin-button theme="icon" ?hidden=${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}
+                                      title=${i18next.t("duplicate")} @click=${() => this._onCopyClicked()}>
+                        <or-icon icon="content-copy"></or-icon>
+                    </or-vaadin-button>
+                    <or-vaadin-button theme="icon" ?hidden=${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}
+                                      title=${i18next.t("delete")} @click=${() => this._onDeleteClicked()}>
+                        <or-icon icon="delete"></or-icon>
+                    </or-vaadin-button>
+                    <or-vaadin-button theme="icon" ?hidden=${this._isReadonly() || !canAdd}
+                                      title=${i18next.t("addAsset")} @click=${() => this._onAddClicked()}>
+                        <or-icon icon="plus"></or-icon>
+                    </or-vaadin-button>
+                    <or-vaadin-menu-bar theme="icon" .items=${menuItems}
+                                        @item-selected=${(ev: CustomEvent)=> this._onSortClicked((ev.detail.value as MenuBarItem).className)}
+                    ></or-vaadin-menu-bar>
                 </div>
             </div>
             
             ${when(this.showFilter, () => html`
                 <div id="asset-tree-filter">
-                    <or-mwc-input id="filterInput"
-                                  ?disabled="${this._loading}"
-                                  style="width: 100%;"
-                                  type="${InputType.TEXT}"
-                                  placeholder="${i18next.t("filter.filter")}..."
-                                  compact="true"
-                                  outlined="true"
-                                  @input="${debounce(() => {
-                                      // Means some input is occurring so delay filter
-                                      this._onFilterInput(this._filterInput.nativeValue);
-                                  }, 200)}">
-                    </or-mwc-input>
+                    <or-vaadin-text-field id="filterInput" ?disabled=${this._loading} style="width: 100%;" placeholder="${i18next.t("filter.filter")}..."
+                                         @input=${debounce(() => { this._onFilterInput(this._filterInput.value); }, 200)}
+                    ></or-vaadin-text-field>
                     ${when(this.showFilterIcon, () => html`
-                        <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" title="${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")}" @click="${() => {
+                        <or-vaadin-button id="filterSettingsIcon" theme="icon" title=${i18next.t(this._filterSettingOpen ? "filter.close" : "filter.open")} @click=${() => {
                             if (this._filterSettingOpen) {
                                 this._filterSettingOpen = false;
                             } else {
@@ -521,46 +529,34 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     this._assetTypeFilter = '';
                                 }
                             }
-                        }}"></or-icon>
+                        }}>
+                            <or-icon icon=${this._filterSettingOpen ? "window-close" : "tune"}></or-icon>
+                        </or-vaadin-button>
                     `)}
                 </div>
                 <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                     <div class="advanced-filter">
-                        ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
-                                this.assetTypeSelect(),
-                                this.mapDescriptors(this._assetTypes, {text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse"}),
-                                undefined,
-                                (v: string[] | string) => {
-                                    this._assetTypeFilter = (v as string);
-                                },
-                                undefined,
-                                false,
-                                true,
-                                true) : html``
-                        }
-                        <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
-
-                                      .type="${InputType.TEXT}"
-                                      style="margin-top: 10px;"
-                                      ?disabled="${this._loading}"
-                                      @input="${(e: KeyboardEvent) => {
-                                          this._shouldEnableAttrTypeEvent(e);
-                                      }}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                          this._shouldEnableAttrType((e.detail.value as string) || undefined);
-                                      }}"></or-mwc-input>
-                        <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
-
-                                      .type="${InputType.TEXT}"
-                                      style="margin-top: 10px;"
-                                      disabled></or-mwc-input>
+                        ${when(this._assetTypes.length > 0, () => this._getSelectHeader(
+                            this._assetTypes?.find((at: AssetDescriptor) => { return at.name === this._assetTypeFilter }),
+                            this._assetTypes
+                        ))}
+                        <or-vaadin-text-field id="attributeNameFilter" style="margin-top: 10px;" ?disabled=${this._loading}
+                                              @input=${(e: KeyboardEvent) => this._shouldEnableAttrTypeEvent(e)}
+                                              @change=${(e: CustomEvent) => this._shouldEnableAttrType((e.currentTarget as OrVaadinTextField).value)}>
+                            <or-translate slot="label" value="filter.attributeLabel"></or-translate>
+                        </or-vaadin-text-field>
+                        <or-vaadin-text-field id="attributeValueFilter" style="margin-top: 10px;" disabled>
+                            <or-translate slot="label" value="filter.attributeValueLabel"></or-translate>
+                        </or-vaadin-text-field>
+                        
                         <div style="margin-top: 10px;">
-                            <or-mwc-input style="float:left;" type="${InputType.BUTTON}" label="filter.clear" @or-mwc-input-changed="${() => {
+                            <or-vaadin-button style="float: left" @click=${() => {
                                 // Wipe the current value and hide the clear button
-                                this._filterInput.value = undefined;
+                                this._filterInput.toggleAttribute("value", false);
 
-                                this._attributeValueFilter.value = undefined;
-                                this._attributeNameFilter.value = undefined;
+                                this._attributeTypeFilter?.clear();
+                                this._attributeValueFilter.clear();
+                                this._attributeNameFilter.clear();
 
                                 this._attributeValueFilter.disabled = true;
 
@@ -570,10 +566,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                                 // Call filtering
                                 this._doFiltering();
-                            }}"></or-mwc-input>
-                            <or-mwc-input style="float: right;" type="${InputType.BUTTON}" label="filter.action" raised @or-mwc-input-changed="${() => {
-                                this._filterFromSettings();
-                            }}"></or-mwc-input>
+                            }}>
+                                <or-translate value="filter.clear"></or-translate>
+                            </or-vaadin-button>
+                            <or-vaadin-button style="float: right;" theme="primary" @click=${() => {this._filterFromSettings()}}>
+                                <or-translate value="filter.action"></or-translate>
+                            </or-vaadin-button>
                         </div>
                     </div>
                 </div>
@@ -593,11 +591,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                         <div class="end-element loadmore-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }}
                                              @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}"
                                              @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
-                                            <or-mwc-input type=${InputType.BUTTON} label="loadMore" outlined compact @or-mwc-input-changed=${() => {
+                                            <or-vaadin-button @click=${() => {
                                                 const cache: Asset[] = [];
                                                 OrAssetTree._forEachNodeRecursive(this._nodes ?? [], n => n.asset && cache.push(n.asset));
                                                 this._loadAssets(undefined, this._nodes?.length ?? 0, cache);
-                                            }}></or-mwc-input>
+                                            }}>
+                                                <or-translate value="loadMore"></or-translate>
+                                            </or-vaadin-button>
                                         </div>
                                     </li>
                                 `)}
@@ -824,7 +824,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const isExpander = evt && (evt.target as HTMLElement).className.indexOf("expander") >= 0;
         const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
-        const isLoadMoreButton = evt && (evt.target as OrMwcInput)?.parentElement?.classList.contains("loadmore-element");
+        const isLoadMoreButton = evt && (
+            (evt.target as OrVaadinButton)?.parentElement?.classList.contains("loadmore-element") ||
+            (evt.target as HTMLElement)?.parentElement?.parentElement?.classList.contains("loadmore-element"));
 
         if (isExpander) {
             this._toggleExpander((evt.target as HTMLElement), node);
@@ -1274,7 +1276,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let foundAssetIds: string[];
 
         try {
-            console.debug(`Querying assets using filter '${this._filterInput.nativeValue}'...`);
+            console.debug(`Querying assets using filter '${this._filterInput.value}'...`);
             const promises = assetQueries.map(q => manager.rest.api.AssetResource.queryAssetTree(q));
             const responses = await Promise.all(promises);
             foundAssets = responses.flatMap(r => r.data.assets ?? []);
@@ -1468,7 +1470,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
             const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
-            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput;
+            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrVaadinButton;
             addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 
@@ -1480,11 +1482,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             .setActions([
                     {
                         actionName: "cancel",
-                        content: "cancel"
+                        content: html`<or-vaadin-button><or-translate value="cancel"></or-translate></or-vaadin-button>`
                     },
                     {
                         actionName: "add",
-                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="add" disabled></or-mwc-input>`,
+                        content: html`
+                            <or-vaadin-button id="add-btn" theme="primary" disabled>
+                                <or-translate value="add"></or-translate>
+                            </or-vaadin-button>`,
                         action: () => {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
@@ -1583,7 +1588,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected _onSortClicked(sortBy: string) {
+    protected _onSortClicked(sortBy?: string) {
         this.sortBy = sortBy;
     }
 
@@ -2192,7 +2197,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
                     ${when(treeNode.asset?.id && this._incompleteParentIds.includes(treeNode.asset.id), () => html`
                         <li class="asset-list-element loadmore-element">
-                            <or-mwc-input type=${InputType.BUTTON} outlined label="loadMore" style="padding-left: ${(level + 1) * 22}px;"></or-mwc-input>
+                            <or-vaadin-button style="padding-left: ${(level + 1) * 22}px;">
+                                <or-translate value="loadMore"></or-translate>
+                            </or-vaadin-button>
                         </li>
                     `)}
                 </ol>

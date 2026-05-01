@@ -21,7 +21,12 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import { when } from "lit/directives/when.js";
+import {DatapointInterval, SyslogLevel} from "@openremote/model";
+import { ifDefined } from "lit/directives/if-defined.js";
 
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -64,7 +69,7 @@ const style = css`
         height: 100%;
         width: 100%;
         justify-content: center;
-        align-items: center;
+        align-items: baseline;
         text-align: center;
     }
     
@@ -77,6 +82,7 @@ const style = css`
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
+        align-items: baseline;
         margin: var(--internal-or-log-viewer-controls-margin);
         padding: 0 20px 20px 20px;
     }
@@ -87,35 +93,20 @@ const style = css`
     
     #time-controls {
         display: flex;
-        align-items: center;
+        align-items: baseline;
     }
     
     #live-button {
         margin-right: 40px;
     }
     
-/*  min-width of selects is 200px somehow
-    #period-select {
-        width: 90px;
-    }
-    
-    #level-select {
-        width: 120px;
-    }
-    
-    #limit-select {
-        width: 80px;
-    }
-*/
-    
     #log-controls, #ending-controls, #page-controls {
         display: flex;
         max-width: 100%;
-        align-items: center;
+        align-items: baseline;
     }
     
     #ending-controls {
-        float: right;
         margin: 0 10px;
     }
     
@@ -149,14 +140,6 @@ const style = css`
     #table th:not(.icon-cell), #table td:not(.icon-cell) {
         word-wrap: break-word;
         white-space: pre-wrap;
-    }
-    
-    .copy-button {
-        --or-mwc-input-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-    }
-    
-    .copy-button:hover {
-        --or-mwc-input-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
     }
 `;
 
@@ -302,23 +285,65 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                             () => this._onCategoriesClosed(),
                             true
                         )}
-                        <or-mwc-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-mwc-input>
-                        <or-mwc-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" ?disabled="${disabled}" .label="${i18next.t("level")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${"" + this.getLimit()}" .options="${this._getLimitOptions()}"></or-mwc-input>
+                        <!-- Filter by subcategory string -->
+                        <or-vaadin-text-field id="subcategory-field" ?hidden=${hideFilter} ?disabled=${disabled} value=${this.filter} style="width: 200px;"
+                                              @change=${(ev: Event) => this._onFilterChanged(ev)}>
+                            <or-translate slot="label" value="subCategoryFilters"></or-translate>
+                            <or-icon slot="suffix" icon="magnify"></or-icon>
+                        </or-vaadin-text-field>
+                        
+                        <!-- Filter by log level -->
+                        <or-vaadin-select id="level-select" ?hidden=${hideLevel} ?disabled=${disabled} value=${this.level} .items=${this._getLevelOptions()} style="width: 120px;"
+                                          @change=${(ev: Event) => this._onLevelChanged((ev.currentTarget as OrVaadinSelect).value as SyslogLevel)}>
+                            <or-translate slot="label" value="level"></or-translate>
+                        </or-vaadin-select>
+                        
+                        <!-- Limit select -->
+                        <or-vaadin-select id="limit-select" ?disabled=${disabled} value=${this.getLimit().toString()} .items=${this._getLimitOptions()} style="width: 80px;"
+                                          @change=${(ev: Event) => this._onLimitChanged((ev.currentTarget as OrVaadinSelect).value)}>
+                            <or-translate slot="label" value="limit"></or-translate>
+                        </or-vaadin-select>
                     </div>
+                    
                     <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
-                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @or-mwc-input-changed="${() => this._updatePage(false)}"></or-mwc-input>
+                        <or-vaadin-button theme="icon" ?disabled=${disabled || isLive || this._currentPage === 1}
+                                          @click=${() => this._updatePage(false)}>
+                            <or-icon icon="chevron-left"></or-icon>
+                        </or-vaadin-button>
                         <span>${this._currentPage}</span><or-translate value="of"></or-translate><span>${this._pageCount}</span>
-                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < this.getLimit())}" icon="chevron-right" @or-mwc-input-changed="${() => this._updatePage(true)}"></or-mwc-input>
+                        <or-vaadin-button theme="icon" ?disabled=${disabled || isLive || this._currentPage === this._pageCount  || (this._data && this._data.length < this.getLimit())}
+                                          @click=${() => this._updatePage(true)}>
+                            <or-icon icon="chevron-right"></or-icon>
+                        </or-vaadin-button>
                     </div>
+                    
                     <div id="time-controls">
-                        <or-mwc-input id="live-button" .type="${InputType.CHECKBOX}" ?disabled="${disabled}" .label="${i18next.t("live")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLiveChanged(evt.detail.value)}" .value="${this.live}"></or-mwc-input>
-                        <or-mwc-input .type="${InputType.SELECT}" id="period-select" ?disabled="${disabled || isLive}" .label="${i18next.t("period")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-mwc-input>
+                        <!-- Live logging on/off toggle -->
+                        <or-vaadin-checkbox id="live-button" ?disabled=${disabled} ?checked=${this.live}
+                                            @change=${(ev: Event) => this._onLiveChanged((ev.currentTarget as OrVaadinCheckbox).checked)}>
+                            <or-translate slot="label" value="live"></or-translate>
+                        </or-vaadin-checkbox>
+                        <!-- Period select -->
+                        <or-vaadin-select id="period-select" ?disabled=${disabled || isLive} value=${this.interval} .items=${this._getIntervalOptions()} style="min-width: 120px;"
+                                          @change=${(ev: Event) => this.interval = (ev.currentTarget as OrVaadinSelect).value as DatapointInterval}>
+                            <or-translate slot="label" value="period"></or-translate>
+                        </or-vaadin-select>
+                        
                         <div id="ending-controls">
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-left" @or-mwc-input-changed="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}"></or-mwc-input>
-                            <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled || isLive}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._calculateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-right" @or-mwc-input-changed="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}"></or-mwc-input>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-double-right" @or-mwc-input-changed="${() => this.timestamp = this._calculateTimestamp(new Date())}"></or-mwc-input>
+                            <or-vaadin-button theme="icon" ?disabled=${disabled || isLive} @click=${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}>
+                                <or-icon icon="chevron-left"></or-icon>
+                            </or-vaadin-button>
+                            <or-vaadin-date-time-picker id="ending-date" ?disabled=${disabled || isLive} style="width: 280px; align-items: end;"
+                                                        value=${ifDefined(OrVaadinDateTimePicker.getLocalizedISOString(this.timestamp))}
+                                                        @change=${(ev: CustomEvent) => this.timestamp = this._calculateTimestamp(moment((ev.currentTarget as OrVaadinDateTimePicker).value).toDate())}>
+                                <or-translate slot="label" value="ending"></or-translate>
+                            </or-vaadin-date-time-picker>
+                            <or-vaadin-button theme="icon" ?disabled=${disabled || isLive}@click=${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}>
+                                <or-icon icon="chevron-right"></or-icon>
+                            </or-vaadin-button>
+                            <or-vaadin-button theme="icon" ?disabled=${disabled || isLive} @click=${() => this.timestamp = this._calculateTimestamp(new Date())}>
+                                <or-icon icon="chevron-double-right"></or-icon>
+                            </or-vaadin-button>
                         </div>
                     </div>
                 </div>
@@ -331,12 +356,12 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected _getLimitOptions() {
-        return ["25", "50", "100", "200"];
+    protected _getLimitOptions(): {value: any, label: string}[] {
+        return ["25", "50", "100", "200"].map(o => ({value: o, label: o}));
     }
 
-    protected _getLevelOptions() {
-        return Object.keys((Model as any)["SyslogLevel"]).map((key) => [key, i18next.t(key.toLocaleLowerCase())]);
+    protected _getLevelOptions(): {value: any, label: string}[] {
+        return Object.keys((Model as any)["SyslogLevel"]).map(key => ({value: key, label: i18next.t(key.toLocaleLowerCase())}));
     }
 
     protected _getCategoryMenuItems(): ListItem[] {
@@ -394,8 +419,12 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _onFilterChanged(filter: string) {
-        this.filter = filter;
+    protected _onFilterChanged(ev: Event) {
+        const elem = ev.currentTarget as HTMLInputElement;
+        if(!elem.checkValidity()) {
+            return;
+        }
+        this.filter = elem.value;
 
         if (!this.filter) {
             return;
@@ -444,7 +473,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${ev.message}</td>
                                     <td class="mdc-data-table__cell icon-cell">
                                         ${when(window.isSecureContext, () => html`
-                                            <or-mwc-input type="${InputType.BUTTON}" class="copy-button" icon="content-copy" @or-mwc-input-changed=${() => this._copyRow(ev)}></or-mwc-input>
+                                            <or-vaadin-button class="copy-button" theme="icon" @click=${() => this._copyRow(ev)}>
+                                                <or-icon icon="content-copy"></or-icon>
+                                            </or-vaadin-button>
                                         `)}
                                     </td>
                                 </tr>
@@ -467,7 +498,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getIntervalOptions(): [string, string][] {
+    protected _getIntervalOptions(): {value: string, label: string}[] {
         return [
             Model.DatapointInterval.HOUR,
             Model.DatapointInterval.DAY,
@@ -475,7 +506,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             Model.DatapointInterval.MONTH,
             Model.DatapointInterval.YEAR
         ].map((interval) => {
-            return [interval, i18next.t(interval.toLowerCase())];
+            return ({value: interval, label: i18next.t(interval.toLowerCase())});
         });
     }
 

@@ -4,10 +4,10 @@ import {PropertyValues, html, unsafeCSS} from "lit";
 import {DefaultColor5, Util} from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {AssetDescriptor, AssetModelUtil, AssetTypeInfo, AttributeDescriptor, WellknownMetaItems} from "@openremote/model";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import "./assettype-list";
+import {ListItem} from "@openremote/or-vaadin-components/or-vaadin-list-box";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { styleMap } from "lit/directives/style-map.js";
 
 /**
  * Custom Event that is dispatched upon closing the dialog.
@@ -136,10 +136,19 @@ export class OrAssetTypeAttributePicker extends AttributePicker {
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 320px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
-                    <asset-type-list .listItems="${assetTypeItems}" style="--or-icon-fill: #000000;" @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
-                        if (evt.detail.length === 1) this._onAssetTypeItemClick(evt.detail[0] as ListItem);
-                    }}"
-                    ></asset-type-list>
+                    
+                    <or-vaadin-list-box @selected-changed=${(ev: CustomEvent) => this._onAssetTypeItemClick(assetTypeItems[ev.detail.value])}>
+                        ${assetTypeItems.map(item => html`
+                            <or-vaadin-item style=${styleMap(item.styleMap ?? {})}>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <or-icon icon=${ifDefined(item.icon)}></or-icon>
+                                    <span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                                        ${item.text ?? item.value ?? html`<or-translate value="unknown"></or-translate>`}
+                                    </span>
+                                </div>
+                            </or-vaadin-item>
+                        `)}
+                    </or-vaadin-list-box>
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 320px;overflow: auto;">
                     ${when(attributeTypes && attributeTypes.length > 0, () => {
@@ -176,12 +185,19 @@ export class OrAssetTypeAttributePicker extends AttributePicker {
         this.actions = [
             {
                 actionName: "cancel",
-                content: "cancel"
+                content: html`
+                    <or-vaadin-button class="button">
+                        <or-translate value="cancel"></or-translate>
+                    </or-vaadin-button>
+                `
             },
             {
                 actionName: "add",
                 content: html`
-                    <or-mwc-input id="add-btn" class="button" label="add" .type="${InputType.BUTTON}"></or-mwc-input>`,
+                    <or-vaadin-button id="add-btn" theme="primary" class="button">
+                        <or-translate value="add"></or-translate>
+                    </or-vaadin-button>
+                `,
                 action: () => {
                     if (!this.addBtn.disabled) {
                         this.dispatchEvent(new OrAssetTypeAttributePickerPickedEvent(this.selectedAttributes));
@@ -196,6 +212,7 @@ export class OrAssetTypeAttributePicker extends AttributePicker {
      * HTML Callback function when the selected asset type has been updated.
      */
     protected _onAssetTypeItemClick(listItem: ListItem) {
+        console.debug(listItem);
         this._selectedAssetType = (listItem.data as AssetDescriptor).name;
     }
 

@@ -1,9 +1,28 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {TableWidgetConfig} from "../widgets/table-widget";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetAllOfTypeSwitchEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 
 const styling = css`
   .customMwcInputContainer {
@@ -17,29 +36,29 @@ const styling = css`
 export class TableSettings extends AssetWidgetSettings {
 
     protected widgetConfig!: TableWidgetConfig;
+    protected static _config: AssetTypesFilterConfig = {
+        assets: {
+            enabled: true,
+            multi: true,
+            allOfTypeOption: true
+        },
+        attributes: {
+            enabled: true,
+            multi: true
+        }
+    };
 
     static get styles() {
         return [...super.styles, styling];
     }
 
     protected render(): TemplateResult {
-        const config = {
-            assets: {
-                enabled: true,
-                multi: true,
-                allOfTypeOption: true
-            },
-            attributes: {
-                enabled: true,
-                multi: true
-            }
-        } as AssetTypesFilterConfig
         return html`
             <div>
                 <!-- Asset type, assets, and attribute picker -->
                 <settings-panel displayName="attributes" expanded="${true}">
                     <div style="padding-bottom: 12px;">
-                        <assettypes-panel .assetType="${this.widgetConfig.assetType}" .config="${config}"
+                        <assettypes-panel .assetType="${this.widgetConfig.assetType}" .config="${TableSettings._config}"
                                           .assetIds="${this.widgetConfig.assetIds}" .attributeNames="${this.widgetConfig.attributeNames}"
                                           .allOfType="${this.widgetConfig.allOfType}"
                                           @assettype-select="${(ev: AssetTypeSelectEvent) => this.onAssetTypeSelect(ev)}"
@@ -55,9 +74,9 @@ export class TableSettings extends AssetWidgetSettings {
                     <div style="padding-bottom: 12px;">
                         <div class="customMwcInputContainer">
                             <span style="min-width: 180px"><or-translate value="dashboard.numberOfRows"></or-translate></span>
-                            <or-mwc-input type="${InputType.SELECT}" .options="${[10, 25, 100]}" .value="${this.widgetConfig.tableSize}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTableSizeSelect(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-select .items=${['10', '25', '100'].map(i => ({value: i, label: i}))}
+                                              value=${this.widgetConfig.tableSize} @change=${(ev: Event) => this.onTableSizeSelect(ev)}>
+                            </or-vaadin-select>
                         </div>
                     </div>
                 </settings-panel>
@@ -87,9 +106,11 @@ export class TableSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onTableSizeSelect(ev: OrInputChangedEvent) {
-        const value = ev.detail.value || 10;
+    protected onTableSizeSelect(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinSelect;
+        const value = Number(elem.value || 10);
         this.widgetConfig.tableSize = value;
+        console.debug(this.widgetConfig.tableSize);
         if(value !== 10) {
             this.widgetConfig.tableOptions = [value];
         } else {

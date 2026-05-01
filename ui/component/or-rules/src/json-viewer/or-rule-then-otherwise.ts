@@ -21,7 +21,6 @@ import {
     WellknownAssets
 } from "@openremote/model";
 import {i18next, translate} from "@openremote/or-translate"
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {manager, Util} from "@openremote/core";
@@ -223,7 +222,6 @@ const style = css`
     
     #type {
         white-space: nowrap;
-        margin: 4px 3px auto 0;
         text-transform: capitalize;
     }
     
@@ -265,7 +263,6 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined, readonly?: boolean) {
         let recurrenceTemplate: TemplateResult | string = ``;
-        const buttonColor = "inherit";
         let value = RecurrenceOption.ONCE;
 
         if (reset) {
@@ -283,15 +280,17 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         }
         if(readonly) {
             recurrenceTemplate = html`
-                <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
-                    <or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>
+                <div style="margin-right: 6px;">
+                    <or-vaadin-button>
+                        <or-translate value=${value}></or-translate>
+                    </or-vaadin-button>
                 </div>
             `;
         } else {
         recurrenceTemplate = html`
-                <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
+                <div style="margin-right: 6px;">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>`,
+                        html`<or-vaadin-button><or-translate value="${value}"></or-translate></or-vaadin-button>`,
                         getRecurrenceMenu(this.config),
                         value,
                         (value) => this.setRecurrenceOption(value as RecurrenceOption))}
@@ -357,15 +356,17 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
             if (readonly) {
                 typeTemplate = html`
-                    <div id="type" style="--or-mwc-input-color: #${buttonColor}">
-                        <or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
+                    <div id="type" style="--or-icon-fill: #${buttonColor}">
+                        <or-vaadin-button theme="icon tertiary" disabled>
+                            <or-icon icon=${buttonIcon ?? ""}></or-icon>
+                        </or-vaadin-button>
                     </div>
                 `;
             } else {
                 typeTemplate = html`
-                    <div id="type" style="--or-mwc-input-color: #${buttonColor}">
+                    <div id="type" style="--or-icon-fill: #${buttonColor}">
                         ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
+                            html`<or-vaadin-button theme="icon tertiary"><or-icon icon=${buttonIcon ?? ""}></or-icon></or-vaadin-button>`,
                             getActionTypesMenu(this.config, this.assetInfos),
                             action.action,
                             (value) => this.setActionType(actions, action, value as string))}
@@ -423,9 +424,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action, this.readonly))}
                     ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
-                            ${getContentWithMenuTemplate(
-                                html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                                   .label="${i18next.t("rulesEditorAddAction")}"></or-mwc-input>`,
+                            ${getContentWithMenuTemplate(html`
+                                        <or-vaadin-button theme="tertiary">
+                                            <or-icon slot="prefix" icon="plus"></or-icon>
+                                            <or-translate value="rulesEditorAddAction"></or-translate>
+                                        </or-vaadin-button>`,
                                 getActionTypesMenu(this.config, this.assetInfos),
                                 undefined,
                                 (value) => this.addAction(value as string))}

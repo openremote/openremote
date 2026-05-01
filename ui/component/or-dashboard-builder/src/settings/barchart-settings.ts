@@ -30,6 +30,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {BarChartAttributeConfig, BarChartInterval, IntervalConfig, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 import {OrChart} from "@openremote/or-chart";
@@ -37,6 +38,7 @@ import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import debounce from "lodash.debounce";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 const styling = css`
     .switch-container {
@@ -146,8 +148,9 @@ export class BarChartSettings extends WidgetSettings {
                 }
             ];
         };
-        const timeWindowOpts = Array.from(this.timeWindowOptions.keys()).map(o => ([o, i18next.t(o.toLowerCase())] as [string, string]));
-        const intervalOpts = Array.from(this.intervalOptions.keys()).map(o => ([o, i18next.t(`intervalBy${o.toLowerCase()}`)] as [string, string]));
+        const timePrefixOpts: SelectItem[] = this.timePrefixOptions.map(o => ({ value: o, label: i18next.t(o) }))
+        const timeWindowOpts: SelectItem[] = Array.from(this.timeWindowOptions.keys()).map(o => ({ value: o, label: i18next.t(o.toLowerCase()) }));
+        const intervalOpts: SelectItem[] = Array.from(this.intervalOptions.keys()).map(o => ({ value: o, label: i18next.t(`intervalBy${o.toLowerCase()}`)}));
         return html`
             <div>
                 <!-- Attribute selection -->
@@ -164,18 +167,18 @@ export class BarChartSettings extends WidgetSettings {
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         
                         <!-- Timeframe & interval -->
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("prefixDefault")}" style="width: 100%;"
-                                      .options="${this.timePrefixOptions}" value="${this.widgetConfig.defaultTimePrefixKey}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePrefixSelect(ev)}"
-                        ></or-mwc-input>
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("timeframeDefault")}" style="width: 100%;"
-                                      .options="${timeWindowOpts}" value="${this.widgetConfig.defaultTimeWindowKey}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
-                        ></or-mwc-input>
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("withInterval")}" style="width: 100%;"
-                                      .options="${intervalOpts}" value="${this.widgetConfig.defaultInterval}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onIntervalSelect(ev)}"
-                        ></or-mwc-input>
+                        <or-vaadin-select .items=${timePrefixOpts} value=${this.widgetConfig.defaultTimePrefixKey}
+                                          @change=${(ev: Event) => this.onTimePrefixSelect(ev)}>
+                            <or-translate slot="label" value="prefixDefault"></or-translate>
+                        </or-vaadin-select>
+                        <or-vaadin-select .items=${timeWindowOpts} value=${this.widgetConfig.defaultTimeWindowKey}
+                                          @change=${(ev: Event) => this.onTimeWindowSelect(ev)}>
+                            <or-translate slot="label" value="timeframeDefault"></or-translate>
+                        </or-vaadin-select>
+                        <or-vaadin-select .items=${intervalOpts} value=${this.widgetConfig.defaultInterval}
+                                          @change=${(ev: Event) => this.onIntervalSelect(ev)}>
+                            <or-translate slot="label" value="withInterval"></or-translate>
+                        </or-vaadin-select>
                     </div>
                 </settings-panel>
                 
@@ -205,9 +208,10 @@ export class BarChartSettings extends WidgetSettings {
                         </div>
                         <!-- Decimal places -->
                         <div>
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t("decimals")}" .min="${0}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDecimalsChange(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-number-field min="0" value=${this.widgetConfig.decimals}
+                                                    @change=${(ev: Event) => this.onDecimalsChange(ev)}>
+                                <or-translate slot="label" value="decimals"></or-translate>
+                            </or-vaadin-number-field>
                         </div>
                     </div>
                 </settings-panel>
@@ -223,25 +227,29 @@ export class BarChartSettings extends WidgetSettings {
                                     <span><or-translate value="dashboard.leftAxis"></or-translate></span>
                                 </div>
                             `)}
-                            <div style="display: flex;">
+                            <div style="display: flex; align-items: baseline;">
                                 ${when(max !== undefined, () => html`
-                                    <or-mwc-input .type="${InputType.NUMBER}" label="${`${i18next.t("yAxis")} ${i18next.t("max")}`}" .value="${max}" style="width: 100%;"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange("left", "max", ev)}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-number-field value=${max} @change=${(ev: Event) => this.onMinMaxValueChange("left", "max", ev)}>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                    </or-vaadin-number-field>
                                 `, () => html`
-                                    <or-mwc-input .type="${InputType.TEXT}" label="${`${i18next.t("yAxis")} ${i18next.t("max")}`}" disabled value="auto" style="width: 100%;"></or-mwc-input>
+                                    <or-vaadin-text-field value="auto" readonly>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                    </or-vaadin-text-field>
                                 `)}
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle("left", "max", ev)}"
                                 ></or-mwc-input>
                             </div>
-                            <div style="display: flex; margin-top: 12px;">
+                            <div style="display: flex; align-items: baseline; margin-top: 12px;">
                                 ${when(min !== undefined, () => html`
-                                    <or-mwc-input .type="${InputType.NUMBER}" label="${`${i18next.t("yAxis")} ${i18next.t("min")}`}" .value="${min}" style="width: 100%;"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange("left", "min", ev)}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-number-field value=${min} @change=${(ev: Event) => this.onMinMaxValueChange("left", "min", ev)}>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                    </or-vaadin-number-field>
                                 `, () => html`
-                                    <or-mwc-input .type="${InputType.TEXT}" label="${`${i18next.t("yAxis")} ${i18next.t("min")}`}" disabled value="auto" style="width: 100%;"></or-mwc-input>
+                                    <or-vaadin-text-field value="auto" readonly>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                    </or-vaadin-text-field>
                                 `)}
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle("left", "min", ev)}"
@@ -258,27 +266,29 @@ export class BarChartSettings extends WidgetSettings {
                                     <div style="margin-bottom: 8px;">
                                         <span><or-translate value="dashboard.rightAxis"></or-translate></span>
                                     </div>
-                                    <div style="display: flex;">
+                                    <div style="display: flex; align-items: baseline;">
                                         ${when(rightMax !== undefined, () => html`
-                                            <or-mwc-input .type="${InputType.NUMBER}" label="${`${i18next.t("yAxis")} ${i18next.t("max")}`}" .value="${rightMax}" style="width: 100%;"
-                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange("right", "max", ev)}"
-                                            ></or-mwc-input>
+                                            <or-vaadin-number-field value=${rightMax} @change=${(ev: Event) => this.onMinMaxValueChange("right", "max", ev)}>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                            </or-vaadin-number-field>
                                         `, () => html`
-                                            <or-mwc-input .type="${InputType.TEXT}" label="${`${i18next.t("yAxis")} ${i18next.t("max")}`}" disabled="true" value="auto"
-                                                          style="width: 100%;"></or-mwc-input>
+                                            <or-vaadin-text-field value="auto" readonly>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                            </or-vaadin-text-field>
                                         `)}
                                         <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMax !== undefined}"
                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle("right", "max", ev)}"
                                         ></or-mwc-input>
                                     </div>
-                                    <div style="display: flex; margin-top: 12px;">
+                                    <div style="display: flex; margin-top: 12px; align-items: baseline;">
                                         ${when(rightMin !== undefined, () => html`
-                                            <or-mwc-input .type="${InputType.NUMBER}" label="${`${i18next.t("yAxis")} ${i18next.t("min")}`}" .value="${rightMin}" style="width: 100%;"
-                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange("right", "min", ev)}"
-                                            ></or-mwc-input>
+                                            <or-vaadin-number-field value=${rightMin} @change=${(ev: Event) => this.onMinMaxValueChange("right", "min", ev)}>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                            </or-vaadin-number-field>
                                         `, () => html`
-                                            <or-mwc-input .type="${InputType.TEXT}" label="${`${i18next.t("yAxis")} ${i18next.t("min")}`}" disabled="true" value="auto"
-                                                          style="width: 100%;"></or-mwc-input>
+                                            <or-vaadin-text-field value="auto" readonly>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                            </or-vaadin-text-field>
                                         `)}
                                         <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMin !== undefined}"
                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle("right", "min", ev)}"
@@ -507,18 +517,18 @@ export class BarChartSettings extends WidgetSettings {
             .setDismissAction(null));
     }
 
-    protected onTimePrefixSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultTimePrefixKey = ev.detail.value.toString();
+    protected onTimePrefixSelect(ev: Event) {
+        this.widgetConfig.defaultTimePrefixKey = (ev.currentTarget as OrVaadinSelect).value;
         this.notifyConfigUpdate();
     }
 
-    protected onTimeWindowSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultTimeWindowKey = ev.detail.value.toString();
+    protected onTimeWindowSelect(ev: Event) {
+        this.widgetConfig.defaultTimeWindowKey = (ev.currentTarget as OrVaadinSelect).value;
         this.notifyConfigUpdate();
     }
 
-    protected onIntervalSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.defaultInterval = ev.detail.value.toString();
+    protected onIntervalSelect(ev: Event) {
+        this.widgetConfig.defaultInterval = (ev.currentTarget as OrVaadinSelect).value as BarChartInterval;
         this.notifyConfigUpdate();
     }
 
@@ -546,16 +556,22 @@ export class BarChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onMinMaxValueChange(axis: "left" | "right", type: "min" | "max", ev: OrInputChangedEvent) {
-        this.setAxisMinMaxValue(axis, type, ev.detail.value);
+    protected onMinMaxValueChange(axis: "left" | "right", type: "min" | "max", ev: Event) {
+        const elem = ev.currentTarget as OrVaadinNumberField;
+        if(elem.checkValidity()) {
+            this.setAxisMinMaxValue(axis, type, Number(elem.value));
+        }
     }
 
     protected onMinMaxValueToggle(axis: "left" | "right", type: "min" | "max", ev: OrInputChangedEvent) {
         this.setAxisMinMaxValue(axis, type, (ev.detail.value ? (type === "min" ? 0 : 100) : undefined));
     }
 
-    protected onDecimalsChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.decimals = ev.detail.value;
-        this.notifyConfigUpdate();
+    protected onDecimalsChange(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinNumberField;
+        if(elem.checkValidity()) {
+            this.widgetConfig.decimals = Number(elem.value);
+            this.notifyConfigUpdate();
+        }
     }
 }

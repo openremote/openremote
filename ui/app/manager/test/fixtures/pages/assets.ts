@@ -23,7 +23,7 @@ export class AssetsPage implements BasePage {
    */
   async addAsset(type: string, name: string) {
     await this.page.click(".mdi-plus");
-    await this.page.click(`li[data-value="${type}"]`);
+    await this.page.getByRole("option", { name: type }).click();
     await this.page.fill('#name-input input[type="text"]', name);
     await this.shared.interceptResponse<Asset>("**/asset", (asset) => {
       if (asset) this.manager.assets.push(asset);

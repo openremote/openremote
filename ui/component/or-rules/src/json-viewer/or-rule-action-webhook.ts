@@ -16,7 +16,7 @@ const style = css`
     }
 
     .min-width {
-        min-width: 200px;
+        flex: 0 0 240px;
     }
 `;
 

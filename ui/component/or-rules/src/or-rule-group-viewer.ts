@@ -41,7 +41,7 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
     protected _lastSaved?: string;
 
     @query("#rule-name")
-    protected _groupNameInput?: OrMwcInput;
+    protected _groupNameInput?: HTMLInputElement;
 
     static get styles() {
         return [style];
@@ -58,31 +58,30 @@ export class OrRuleGroupViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="main-wrapper" class="wrapper">
                 <div id="rule-header">
-                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleGroupName")}" focused
-                                  .value="${this.group}" ?disabled="${this.readonly}" required minlength="1" maxlength="255" @input="${this._onGroupNameInput}"
-                    ></or-mwc-input>
+                    <or-vaadin-text-field id="rule-name" value=${this.group} ?readonly=${this.readonly} required minlength="1" maxlength="255" autofocus
+                                          @input=${(ev: Event) => this._onGroupNameChange(ev)}>
+                        <or-translate slot="label" value="ruleGroupName"></or-translate>
+                    </or-vaadin-text-field>
                     <div id="rule-header-controls">
-                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
+                        <or-vaadin-button id="save-btn" theme="primary" ?disabled=${this._cannotSave()}
+                                          @click=${() => this._onSaveClicked()}>
+                            <or-translate value="save"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 </div>
             </div>
         `
     }
 
-    protected _onGroupNameInput(ev: InputEvent) {
-        const value = this._groupNameInput?.nativeValue;
-        if(value) this._changeName(value);
-        this.requestUpdate();
-    }
-
-    protected _changeName(name: string) {
-        if(name.length >= 3 && name.length <= 255) {
-            this.group = name;
+    protected _onGroupNameChange(ev: Event) {
+        const elem = ev.currentTarget as HTMLInputElement;
+        if(elem.checkValidity()) {
+            this.group = elem.value;
         }
     }
 
     protected _cannotSave() {
-        return this.readonly || !this._groupNameInput?.nativeValue || !this._groupNameInput?.valid || (this._groupNameInput?.nativeValue || "") === this._lastSaved;
+        return this.readonly || !this._groupNameInput?.checkValidity() || (this._groupNameInput?.value ?? "") === this._lastSaved;
     }
 
     protected _onSaveClicked(): void {
