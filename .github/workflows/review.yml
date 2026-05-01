@@ -2,11 +2,6 @@ name: Review
 
 on:
   pull_request:
-  workflow_dispatch:
-    inputs:
-      PUSH_SNAPSHOT:
-        description: "Push snapshot Docker image to AWS ECR"
-        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
