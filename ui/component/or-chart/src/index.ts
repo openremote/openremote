@@ -639,6 +639,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                         scale: true,
                         min: (this.chartOptions?.options as any)?.scales?.y?.min,
                         max: (this.chartOptions?.options as any)?.scales?.y?.max,
+                        splitNumber: this._computeNiceSplitNumber(
+                            (this.chartOptions?.options as any)?.scales?.y?.min,
+                            (this.chartOptions?.options as any)?.scales?.y?.max
+                        ),
                         axisLabel: { hideOverlap: true }
                     },
                     {
@@ -650,6 +654,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                         scale: true,
                         min: (this.chartOptions?.options as any)?.scales?.y1?.min,
                         max: (this.chartOptions?.options as any)?.scales?.y1?.max,
+                        splitNumber: this._computeNiceSplitNumber(
+                            (this.chartOptions?.options as any)?.scales?.y1?.min,
+                            (this.chartOptions?.options as any)?.scales?.y1?.max
+                        ),
                         axisLabel: { hideOverlap: true }
                     }
                 ],
@@ -1223,6 +1231,31 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.timeframe = [newStart.toDate(), newEnd.toDate()];
     }
 
+    /**
+     * Internal function to calculate a y-axis splitNumber that fits user defined bounds {@link min} {@link max},
+     * Aims for {@link target} as a splitNumber.
+     * Returns undefined when bounds are not both defined, leaving ECharts to auto-pick.
+     * @param min - lower bound of y-axis
+     * @param max - upper bound of y-axis
+     * @param target - desired amount of splits as a target
+     */
+    protected _computeNiceSplitNumber(min: number | undefined, max: number | undefined, target = 5): number | undefined {
+        if (min === undefined || max === undefined) return undefined;
+        const range = Math.abs(max - min);
+        if (range === 0 || !isFinite(range)) return undefined;
+        const rough = range / target;
+        const power = Math.pow(10, Math.floor(Math.log10(rough)));
+        const fraction = rough / power;
+        let niceFraction: number;
+        if (fraction < 1.5) niceFraction = 1;
+        else if (fraction < 2.25) niceFraction = 2;
+        else if (fraction < 3.5) niceFraction = 2.5;
+        else if (fraction < 7) niceFraction = 5;
+        else niceFraction = 10;
+        const niceInterval = niceFraction * power;
+        return Math.max(1, Math.round(range / niceInterval));
+    }
+
     protected _getInterval(diffInHours: number): [number, DatapointInterval] {
 
         if (diffInHours <= 1) {
@@ -1280,6 +1313,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             } else {
                 this._dataAbortController = new AbortController();
                 const isZoomed = this._zoomStartOfPeriod !== undefined && this._zoomEndOfPeriod !== undefined
+                    && (this._zoomStartOfPeriod !== this._startOfPeriod || this._zoomEndOfPeriod !== this._endOfPeriod);
                 promises = this.assetAttributes?.map(async ([assetIndex, attribute], index) => {
 
                     const lineData: LineChartData[] = [];
