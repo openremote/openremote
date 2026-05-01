@@ -30,6 +30,10 @@ on:
       INPUTS:
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   is_main_repo:
     runs-on: ubuntu-latest
