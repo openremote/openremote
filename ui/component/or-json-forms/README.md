@@ -29,29 +29,15 @@ The following keywords are not (fully) supported:
 
 ### Behavior Specification
 
-The types in a JSON Schema will have the following effects on what is rendered:
-
 - `{ "type": "string" }`  - Displays a text input field.
 - `{ "type": "number" }`  - Displays a number input field.
 - `{ "type": "integer" }` - Displays a number input field.
 - `{ "type": "array" }`   - Displays a wrapper with a button to add items.
-- `{ "type": "object" }`  - Displays a wrapper with a button to add properties and decorates each property with a delete button.
-
-The following formats will change type of input which is shown:
-
-- `{ "type": "string", "format": "date-time" }` - Displays a date and time input field.
-- `{ "type": "string", "format": "color" }` - Displays a color picker input field and hides the label.
-- `{ "type": "string", "format": "date" }` - Displays a date input field.
-- `{ "type": "string", "format": "time" }` - Displays a time input field.
-- `{ "type": "string", "format": "email" }` - Displays an email input field.
-- `{ "type": "string", "format": "tel" }` - Displays a telephone input field.
-- `{ "type": "string", "format": "or-multiline" }` - Displays a multiline text area.
-- `{ "type": "string", "format": "or-password" }` (or `{ "writeOnly": true }`) - Displays a password input field.
-- `{ "type": "string", "format": "timezone" }` - Displays a select dropdown menu.
+- `{ "type": "object" }`  - Displays a wrapper with a button to add properties.
 
 #### Renderers & Testers
 
-<!--#### Polymorphism -->
+<!--#### Polymorphism-->
 
 <!--'oneOf', 'anyOf', 'allOf'-->
 
@@ -74,15 +60,15 @@ It derives the type from the schema's `type` property, or from properties that a
 
 Depending on the type, it derives the default value as follows:
 
-| type                    | value   | formats                | Formatted default |
-| ----------------------- | ------- | ---------------------- | ----------------- |
-| [...] (array of values) | [...]   |                        |                   |
-| string                  | `""`    | date, date-time, time | `new Date()`      |
-| integer, number         | `0`     |                        |                   |
-| boolean                 | `false` |                        |
-| array                   | `[]`    |                        |
+| type                    | value | formats | Formatted default |
+| ----------------------- | ----- | ------- | ------- |
+| [...] (array of values) | [...]    |  |       | 
+| string                  | `""`    |  date-time, date, time       | `new Date()` |
+| integer, number         | `0`     |         |  |
+| boolean                 | `false` |         |
+| array                   | `[]`    |         |
 | object                  | An object with the required properties, otherwise an empty object |         |
-| null                    | `null`  |                        |
+| null                    | `null`  |         |
 
 ### Example usage
 
