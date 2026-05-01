@@ -42,7 +42,7 @@ function getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationC
 }
 
 function getDefaultTimePrefixOptions(): string[] {
-    return ["this", "last"];
+    return ["this", "last", "next"];
 }
 
 function getDefaultSamplingOptions(): Map<string, string> {

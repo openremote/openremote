@@ -426,18 +426,21 @@ export class BarChartSettings extends WidgetSettings {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
 
-            // Listen for changes
-            inputElem.addEventListener("input", debounce(() => {
+            const handler = debounce(() => {
                 const color = inputElem.value;
                 this.widgetConfig.attributeColors ??= [];
-                const existingColor = this.widgetConfig.attributeColors.find(x => x[0].id === attributeRef.id && x[0].name === attributeRef.name);
-                if(existingColor) {
-                    existingColor[1] = color;
+                const existing = this.widgetConfig.attributeColors.find(x => x[0].id === attributeRef.id && x[0].name === attributeRef.name);
+                if(existing) {
+                    existing[1] = color;
                 } else {
                     this.widgetConfig.attributeColors.push([attributeRef, color]);
                 }
+                this.widgetConfig.attributeColors = [...this.widgetConfig.attributeColors];
+                inputElem.removeEventListener("input", handler);
                 this.notifyConfigUpdate();
-            }, 200));
+            }, 200);
+
+            inputElem.addEventListener("input", handler);
 
             // Open color picker
             inputElem.click();

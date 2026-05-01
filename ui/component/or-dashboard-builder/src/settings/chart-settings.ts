@@ -147,7 +147,7 @@ export class ChartSettings extends WidgetSettings {
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="attributes" expanded>
-                    <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
+                    <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs includePredictedDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       .attributeIconCallback="${attributeIconCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
@@ -446,25 +446,30 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected removeFromAttributeColors(attributeRef: AttributeRef) {
-        this.widgetConfig.attributeColors = this.widgetConfig.attributeColors.filter(x => x[0] !== attributeRef);
+        this.widgetConfig.attributeColors = this.widgetConfig.attributeColors.filter(
+            ([ref, _]) => ref.id !== attributeRef.id || ref.name !== attributeRef.name
+        );
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
 
-            // Listen for changes
-            inputElem.addEventListener("input", debounce(() => {
+            const handler = debounce(() => {
                 const color = inputElem.value;
                 this.widgetConfig.attributeColors ??= [];
-                const existingColor = this.widgetConfig.attributeColors.find(x => x[0] === attributeRef);
-                if(existingColor) {
-                    existingColor[1] = color;
+                const existing = this.widgetConfig.attributeColors.find(x => x[0].id === attributeRef.id && x[0].name === attributeRef.name);
+                if(existing) {
+                    existing[1] = color;
                 } else {
                     this.widgetConfig.attributeColors.push([attributeRef, color]);
                 }
+                this.widgetConfig.attributeColors = [...this.widgetConfig.attributeColors];
+                inputElem.removeEventListener("input", handler);
                 this.notifyConfigUpdate();
-            }, 200));
+            }, 200);
+
+            inputElem.addEventListener("input", handler);
 
             // Open color picker
             inputElem.click();
