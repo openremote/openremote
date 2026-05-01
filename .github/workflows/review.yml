@@ -8,6 +8,10 @@ on:
         description: "Push snapshot Docker image to AWS ECR"
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   detect-changes:
     name: Detect whether code changed
