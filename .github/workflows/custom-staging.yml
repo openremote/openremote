@@ -1,11 +1,7 @@
 name: Custom staging
 
 on:
-  workflow_dispatch:
-    inputs:
-      PUSH_SNAPSHOT:
-        description: "Push snapshot Docker image to AWS ECR"
-        type: boolean
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
