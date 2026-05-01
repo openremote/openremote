@@ -24,13 +24,16 @@ import "@openremote/or-vaadin-components/or-vaadin-input";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";
 import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
-import {getValueHolderInputTemplateProvider, type ValueInputProvider, type ValueInputProviderOptions, type ValueInputTemplateFunction} from "@openremote/or-vaadin-components/value-input-provider";
-import type {InputType} from "@openremote/or-vaadin-components/util";
+import {
+    getValueHolderInputTemplateProvider, type ValueInputProvider,
+    ValueInputProviderGenerator, type ValueInputProviderOptions, type ValueInputTemplateFunction
+} from "@openremote/or-vaadin-components/value-input-provider";
+import {InputType, SUPPORTED_WELLKNOWN_VALUE_TYPES, SupportedWellknownValueTypes} from "@openremote/or-vaadin-components/util";
 import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
-import {OrInputChangedEventDetail, type ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
+import {type OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import {agentIdRendererRegistryEntry} from "./renderers/agent-link";
 import {schedulerRendererRegistryEntry} from "./renderers/scheduler";
 
