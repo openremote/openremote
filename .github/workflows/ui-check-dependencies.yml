@@ -14,4 +14,5 @@ jobs:
           java-version: "21"
           cache: "gradle"
       - name: Check UI dependencies
+        timeout-minutes: 20
         run: ./gradlew knip
