@@ -3,6 +3,24 @@ name: Staging
 on:
   push:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      ENVIRONMENT:
+        description: 'Environment to use (if any)'
+      MANAGER_TAG:
+        description: 'Manager docker tag to pull'
+      CLEAN_INSTALL:
+        description: 'Delete data before starting'
+        type: boolean
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
+        type: boolean
+      COMMIT:
+        description: 'Repo branch or commit SHA to checkout'
+      OR_HOSTNAME:
+        description: 'Host to deploy to (e.g. demo.openremote.app)'
+      OR_ADMIN_PASSWORD:
+        description: 'Admin password override'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -54,9 +72,23 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_modified == 'true'
     uses: "./.github/workflows/install-browsers.yml"
 
-  install-dist:
+  get-version-details:
     name: Build
     needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/get-version-details.yml"
+
+  update-package-json:
+    name: Build
+    needs: [detect-changes, get-version-details]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/update-package-json.yml"
+    with:
+      version: ${{ needs.get-version-details.outputs.version }}
+
+  install-dist:
+    name: Build
+    needs: [detect-changes, update-package-json]
     if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/install-dist.yml"
 
@@ -107,20 +139,6 @@ jobs:
   #     AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
   #     AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
 
-  update-package-json:
-    name: Build
-    needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
-    uses: "./.github/workflows/update-package-json.yml"
-    with:
-      version: ${{ needs.get-version-details.outputs.version }}
-
-  get-version-details:
-    name: Build
-    needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
-    uses: "./.github/workflows/get-version-details.yml"
-
   # publish-maven:
   #   name: Publish
   #   needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
@@ -153,9 +171,6 @@ jobs:
     # needs: [detect-changes, build-deployment-image, build-manager-image]
     if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/deployment.yml"
-    with: # TODO: the following values should be a serialized JSON object that are passed to the `INPUT` input.
-      OR_HOSTNAME: 'test1.openremote.app'
-      CLEAN_INSTALL: false
-      VERSION: ${{ needs.get-version-details.outputs.version }}
-      MANAGER_TAG: 'develop'
+    with:
+      INPUTS: ${{ toJSON(inputs) }}
     secrets: inherit
