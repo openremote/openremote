@@ -28,6 +28,7 @@ public class NodeExecutionRequestInfo {
     private Notifications notifications;
     private HistoricDatapoints historicDatapoints;
     private PredictedDatapoints predictedDatapoints;
+
     protected Logger LOG;
 
     public NodeExecutionRequestInfo() {
@@ -102,9 +103,14 @@ public class NodeExecutionRequestInfo {
     public Object getValueFromInput(int index) {
         NodeSocket aSocket = getInputs()[index];
         Node aNode = getCollection().getNodeById(aSocket.getNodeId());
-        return NodeModel.getImplementationFor(aNode.getName()).execute(
+        NodeExecutionResult result = NodeModel.getImplementationFor(aNode.getName()).execute(
             new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
         );
+        if (result == null) {
+            return null;
+        }
+        facts.cacheNodeExecutionResult(result);
+        return result.getValue();
     }
 
     public NodeDataType getTypeFromInput(int index) {

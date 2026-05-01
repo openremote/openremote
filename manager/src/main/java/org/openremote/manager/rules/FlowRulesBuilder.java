@@ -4,10 +4,7 @@ import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.core.RuleBuilder;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.rules.flow.NodeExecutionRequestInfo;
-import org.openremote.manager.rules.flow.NodeModel;
-import org.openremote.manager.rules.flow.NodeTriggerFunction;
-import org.openremote.manager.rules.flow.NodeTriggerParameters;
+import org.openremote.manager.rules.flow.*;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.Node;
 import org.openremote.model.rules.flow.NodeCollection;
@@ -29,7 +26,7 @@ public class FlowRulesBuilder {
     protected final HistoricDatapoints historicDatapointsFacade;
     protected final PredictedDatapoints predictedDatapointsFacade;
     protected final TimerService timerService;
-  
+
     public FlowRulesBuilder(
         Logger logger,
         TimerService timerService,
@@ -72,9 +69,10 @@ public class FlowRulesBuilder {
     }
 
     private Rule createRule(String name, NodeCollection collection, Node outputNode) throws Exception {
-        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade, LOG));
+        NodeExecutionResult implementationResult = NodeModel.getImplementationFor(outputNode.getName())
+                .execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade, LOG));
 
-        if (!(implementationResult instanceof RulesBuilder.Action action))
+        if (implementationResult == null || !(implementationResult.getValue() instanceof RulesBuilder.Action action))
             throw new Exception(outputNode.getName() + " node does not return an action");
 
         RulesBuilder.Condition condition = facts -> {
