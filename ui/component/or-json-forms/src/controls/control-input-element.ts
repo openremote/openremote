@@ -13,6 +13,7 @@ import {
     JsonSchema
 } from "@jsonforms/core";
 import {isEnumArray} from "../standard-renderers";
+import {Util} from "@openremote/core";
 
 let defaultTz: string;
 
@@ -52,6 +53,7 @@ export class ControlInputElement extends ControlBaseElement {
         let options: [string, string][] | undefined;
         let multiple = false;
         let value: any = this.data ?? schema.default;
+        let showLabel = true;
         let searchable: boolean | undefined;
         let searchProvider!: (search?: string) => [any, string][] | undefined;
         let onValueChanged = (e: OrInputChangedEvent) => this.onValueChanged(e);
@@ -119,7 +121,7 @@ export class ControlInputElement extends ControlBaseElement {
                 this.inputType = InputType.DATETIME;
             } else if (format === "color") {
                 this.inputType = InputType.COLOUR;
-                this.label = "";
+                showLabel = !Util.objectsEqual(schema, context.rootSchema);
             } else if (format === "date") {
                 this.inputType = InputType.DATE;
             } else if (format === "time") {
@@ -151,7 +153,7 @@ export class ControlInputElement extends ControlBaseElement {
         }
 
         return html`<or-mwc-input
-                .label="${this.label}"
+                .label="${showLabel ? this.label : ''}"
                 .type="${this.inputType}"
                 .disabled="${!this.enabled}"
                 .required="${!!this.required}"
