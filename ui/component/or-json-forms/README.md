@@ -37,9 +37,9 @@ The following keywords are not (fully) supported:
 
 #### Renderers & Testers
 
-<!--#### Polymorphism
+<!--#### Polymorphism-->
 
-<!--'oneOf', 'anyOf', 'allOf'-->-->
+<!--'oneOf', 'anyOf', 'allOf'-->
 
 #### Default values
 
