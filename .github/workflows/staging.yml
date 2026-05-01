@@ -1,13 +1,8 @@
 name: Staging
 
 on:
-  # push:
-  #   branches: [master]
-  workflow_dispatch:
-    inputs:
-      PUSH_SNAPSHOT:
-        description: "Push snapshot Docker image to AWS ECR"
-        type: boolean
+  push:
+    branches: [master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
