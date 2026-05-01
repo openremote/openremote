@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 @JsonSubTypes({
     @JsonSubTypes.Type(GeoJSONFeatureCollection.class),
@@ -42,5 +43,18 @@ public abstract class GeoJSON implements Serializable {
 
     protected GeoJSON(String type) {
         this.type = type;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GeoJSON)) return false;
+        GeoJSON that = (GeoJSON) o;
+        return Objects.equals(type, that.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type);
     }
 }
