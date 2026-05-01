@@ -22,6 +22,7 @@ export abstract class AttributePickerPickedEvent extends CustomEvent<any> {
  * @attribute {boolean} multiSelect - Whether selecting multiple attributes is allowed or not.
  * @attribute {boolean} showOnlyDatapointAttrs - Whether only attributes with the 'STORE_DATAPOINT' meta item should be shown.
  * @attribute {boolean} showOnlyRuleStateAttrs - Whether only attributes with the 'RULE_STATE' meta item should be shown.
+ * @attribute {boolean} showPredictedDataAttrs - Whether attributes with the 'HAS_PREDICTED_DATA_POINTS' meta item should be shown. Composes additively with the other flags.
  *
  * @remarks This class is abstract
  */
@@ -40,6 +41,9 @@ export abstract class AttributePicker extends OrMwcDialog {
 
     @property({type: Boolean})
     public showOnlyRuleStateAttrs?: boolean = false;
+
+    @property({type: Boolean})
+    public showPredictedDataAttrs?: boolean = false;
 
     @query("#add-btn")
     protected addBtn!: OrMwcInput;
@@ -61,6 +65,11 @@ export abstract class AttributePicker extends OrMwcDialog {
 
     public setShowOnlyRuleStateAttrs(showOnlyRuleStateAttrs: boolean | undefined): this {
         this.showOnlyRuleStateAttrs = showOnlyRuleStateAttrs;
+        return this;
+    }
+
+    public setShowPredictedDataAttrs(showPredictedDataAttrs: boolean | undefined): this {
+        this.showPredictedDataAttrs = showPredictedDataAttrs;
         return this;
     }
 

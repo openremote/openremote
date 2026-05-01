@@ -161,15 +161,14 @@ export class OrAssetAttributePicker extends AttributePicker {
                     this._assetAttributes = this._assetAttributes.filter((attr) => this.attributeFilter!(attr))
                 }
 
-                if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
+                if (this.showOnlyDatapointAttrs || this.showOnlyRuleStateAttrs || this.showPredictedDataAttrs) {
                     this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
-                } else if (this.showOnlyDatapointAttrs) {
-                    this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
-                } else if (this.showOnlyRuleStateAttrs) {
-                    this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
+                        .filter(e => e.meta && (
+                            e.meta[WellknownMetaItems.AGENTLINK]
+                            || (this.showOnlyDatapointAttrs && e.meta[WellknownMetaItems.STOREDATAPOINTS])
+                            || (this.showOnlyRuleStateAttrs && e.meta[WellknownMetaItems.RULESTATE])
+                            || (this.showPredictedDataAttrs && e.meta[WellknownMetaItems.HASPREDICTEDDATAPOINTS])
+                        ));
                 }
             }
         }
