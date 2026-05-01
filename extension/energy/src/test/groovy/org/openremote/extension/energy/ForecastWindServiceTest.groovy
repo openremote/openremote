@@ -33,7 +33,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
 
     @Shared
     def mockServer = new ClientRequestFilter() {
-        boolean finished = true
+        boolean finished = false
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {

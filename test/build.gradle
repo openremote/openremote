@@ -39,6 +39,12 @@ dependencies {
 
     testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
     testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+
+    testImplementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
+    testImplementation "io.grpc:grpc-stub:$grpcVersion"
+
+    testImplementation "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion"
 }
 
 tasks.withType(Test) {

@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.PersistenceEvent;
@@ -132,17 +131,15 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.finest("Identity provider is not keycloak");
             return false;
         }
 
-        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
-
         if (authContext == null) {
-            LOG.finest("Anonymous connection not supported: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.finest("Anonymous connection not supported: topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
@@ -156,7 +153,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         if (isAssetTopic) {
             if (topic.getTokens().length < 4 || topic.getTokens().length > 5) {
-                LOG.finest("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().length == 4) {
@@ -234,14 +231,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     // We make heavy use of authorisation caching as clients can hit this a lot and it is currently quite slow with DB calls
     @Override
-    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
         }
-
-        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
             LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + connectionToString(connection));

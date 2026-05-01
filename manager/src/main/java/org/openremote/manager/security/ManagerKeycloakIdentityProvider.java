@@ -30,11 +30,10 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.utils.URIBuilder;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
-import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -52,7 +51,6 @@ import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
-import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.query.AssetQuery;
@@ -78,9 +76,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.getBoolean;
 import static org.openremote.model.util.MapAccess.getString;
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 
 /**
@@ -473,7 +471,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             if (realmResource.toRepresentation().getSmtpServer().isEmpty())
                 throw new IllegalStateException("SMTP server is not configured for realm: " + realm);
             realmResource.users().get(userId).executeActionsEmail(
-                Collections.singletonList(UserModel.RequiredAction.UPDATE_PASSWORD.toString())
+                Collections.singletonList("UPDATE_PASSWORD")
             );
             return null;
         });
@@ -1220,44 +1218,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isRestrictedUser(AuthContext authContext) {
-        return authContext != null && authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
+        return authContext != null && authContext.isRestrictedUser();
     }
 
     @Override
     public boolean isUserInRealm(String userId, String realm) {
         return ManagerIdentityProvider.userInRealmFromDb(persistenceService, userId, realm);
-    }
-
-    @Override
-    public boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles) {
-        // Superuser can always subscribe
-        if (auth.isSuperUser())
-            return true;
-
-        // Restricted users get nothing
-        if (isRestrictedUser(auth))
-            return false;
-
-        // User must have role
-        if (requiredRoles != null) {
-            for (ClientRole requiredRole : requiredRoles) {
-                if (!auth.hasResourceRole(requiredRole.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                    return false;
-                }
-            }
-        }
-
-        // Ensure filter matches authenticated realm
-        if (filter != null) {
-            String authenticatedRealm = auth.getAuthenticatedRealmName();
-
-            if (TextUtil.isNullOrEmpty(authenticatedRealm))
-                return false;
-            if (authenticatedRealm.equals(filter.getName()))
-                return true;
-        }
-
-        return false;
     }
 
     @Override

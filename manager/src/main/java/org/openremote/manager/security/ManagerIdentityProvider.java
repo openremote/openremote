@@ -99,14 +99,6 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     boolean realmExists(String realm);
 
     /**
-     * Superusers can subscribe to all events, regular users must be in the same realm as the filter and any
-     * required roles must match. If the authenticated party is a restricted user, this returns <code>false.</code>
-     *
-     * @return <code>true</code> if the authenticated party can subscribe to events with the given filter.
-     */
-    boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles);
-
-    /**
      * Returns the frontend URL to be used for frontend apps to authenticate
      */
     String getFrontendURI();

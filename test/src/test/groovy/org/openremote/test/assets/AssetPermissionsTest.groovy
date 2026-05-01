@@ -3,6 +3,7 @@ package org.openremote.test.assets
 import jakarta.ws.rs.ForbiddenException
 import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.BuildingAsset
@@ -122,6 +123,18 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         demoSmartBuilding.id == managerTestSetup.smartBuildingId
 
+        when: "the realm is removed from the request and a request is made"
+        def assetResourceNoRealm = getClientTarget(serverUri(serverPort).clone().replacePath(ManagerWebService.API_PATH), accessToken).proxy(AssetResource.class)
+        demoSmartBuilding = assetResourceNoRealm.get(null, managerTestSetup.smartBuildingId)
+
+        then: "the request should fail as the asset resource path is used as the realm path"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+           assert r.status == 401
+           return true
+        }
+
+
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
@@ -166,7 +179,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetResource.get(null, managerTestSetup.thingId)
 
         then: "the asset should not be found"
-        WebApplicationException ex = thrown()
+        ex = thrown()
         ex.response.withCloseable { r ->
             assert r.status == 404
             return true
@@ -294,7 +307,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "a not authorized exception should be thrown"
         WebApplicationException ex = thrown()
-        assert ex instanceof ForbiddenException
+        ex.response.withCloseable { r ->
+           assert r.status == 403
+           return true
+        }
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -1002,7 +1018,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the request should be forbidden and no asset should be moved"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+           assert r.status == 403
+           return true
+        }
         (assetResource.get(null, asset1.id) as RoomAsset).parentId == null
     }
 
@@ -1030,7 +1049,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the request should be forbidden and no asset should be moved"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+           assert r.status == 403
+           return true
+        }
         (assetResource.get(null, asset1.id) as RoomAsset).parentId == null
     }
 
@@ -1055,7 +1077,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the request should be forbidden and the parent should remain unchanged"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+           assert r.status == 403
+           return true
+        }
         (assetResource.get(null, managerTestSetup.apartment1LivingroomId) as RoomAsset).parentId == managerTestSetup.apartment1Id
     }
 
@@ -1080,7 +1105,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the request should be forbidden and the parent should remain unchanged"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.withCloseable { r ->
+           assert r.status == 403
+           return true
+        }
         (assetResource.get(null, managerTestSetup.apartment1LivingroomId) as RoomAsset).parentId == managerTestSetup.apartment1Id
     }
 
