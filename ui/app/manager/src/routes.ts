@@ -48,9 +48,18 @@ export function getAlarmsRoute(alarmId?: string) {
     }
     return route;
 }
+
+export function getNotificationsRoute(notificationId?: string) {
+    let route = "notifications";
+    if (notificationId) {
+        route += "/" + notificationId;
+    }
+    return route;
+}
+
 export function getServicesRoute(serviceId?: string) {
     let route = "services";
-    if(serviceId) {
+    if (serviceId) {
         route += "/" + serviceId;
     }
     return route;

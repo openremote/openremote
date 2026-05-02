@@ -1,7 +1,7 @@
 import { manager } from "@openremote/core";
 import { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import {AnyAction} from "@reduxjs/toolkit";
-import { getMapRoute } from "./routes";
+import { getMapRoute, getNotificationsRoute } from "./routes";
 
 export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
@@ -98,6 +98,17 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
         roles: ["write:logs", "read:logs"]
     };
 }
+
+export function headerItemNotifications<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "message",
+        value: "notifications",
+        href: getNotificationsRoute(),
+        text: "notification_other",
+        roles: ["write:admin", "read:admin"]
+    }
+}
+
 export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "account",
