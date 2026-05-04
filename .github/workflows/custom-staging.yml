@@ -2,6 +2,9 @@ name: Custom staging
 
 on:
   workflow_call:
+    inputs:
+      INPUTS:
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
