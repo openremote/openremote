@@ -1,0 +1,200 @@
+name: Staging
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      ENVIRONMENT:
+        description: 'Environment to use (if any)'
+      MANAGER_TAG:
+        description: 'Manager docker tag to pull'
+      CLEAN_INSTALL:
+        description: 'Delete data before starting'
+        type: boolean
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
+        type: boolean
+      COMMIT:
+        description: 'Repo branch or commit SHA to checkout'
+      OR_HOSTNAME:
+        description: 'Host to deploy to (e.g. demo.openremote.app)'
+      OR_ADMIN_PASSWORD:
+        description: 'Admin password override'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detect whether code changed
+    runs-on: ubuntu-latest
+    outputs:
+      # Code changes
+      # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
+      any_modified: 'true'
+      # any_modified: ${{ steps.changed-files.outputs.backend_any_modified == 'true' || steps.changed-files.outputs.ui_any_modified == 'true' }}
+      backend_any_modified: 'true'
+      # backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
+      ui_any_modified: 'true'
+      # ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
+      # Version details
+      version: ${{ steps.get-version-details.outputs.version }}
+      version_with_qualifier: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+      is_release: ${{ steps.get-version-details.outputs.is_release }}
+      # Processed ci_cd.json outputs
+      dockerTags: ${{ steps.ci-cd-output.outputs.dockerTags }}
+      mavenTag: ${{ steps.ci-cd-output.outputs.mavenTag }}
+      npmTag: ${{ steps.ci-cd-output.outputs.npmTag }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        # with:
+        #   fetch-depth: 2 # Must be 2 for push events to compare to previous commit
+
+      - name: Detect changes
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files_yaml: |
+            ui:
+              - 'ui/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+            backend:
+              - '!.ci_cd/**'
+              - '!deployment/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!yarn.lock'
+
+      - name: Get version details
+        id: get-version-details
+        uses: ./.github/actions/get-version-details
+
+      - name: Check ci_cd existence
+        id: check_cicd_json
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          files: ".ci_cd/ci_cd.json"
+
+      - name: Check if main repo
+        id: is_main_repo
+        uses: ./.github/actions/check-if-main-repo
+
+      - name: Process ci_cd.json file
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
+        id: ci-cd-output
+        uses: ./.github/actions/process-cicd-json
+        with:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
+          IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
+          VERSION: ${{ steps.get-version-details.outputs.version }}
+
+  ui-check-dependencies:
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/ui-check-dependencies.yml"
+
+  ui-check-outdated-translations:
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/ui-check-outdated-translations.yml"
+
+  install-browsers:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/install-browsers.yml"
+
+  install-dist:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_modified == 'true'
+    uses: "./.github/workflows/install-dist.yml"
+    with:
+      VERSION_WITH_QUALIFIER: ${{ needs.detect-changes.outputs.version_with_qualifier }}
+
+  unit-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/unit-tests.yml"
+
+  integration-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/integration-tests.yml"
+
+  ui-component-tests:
+    name: Test
+    needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/ui-component-tests.yml"
+
+  ui-app-tests:
+    name: Test
+    needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/ui-app-tests.yml"
+
+  build-manager-image:
+     name: Build
+     needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+     if: needs.detect-changes.outputs.any_modified == 'true'
+     uses: "./.github/workflows/build-manager-image.yml"
+     with:
+       tags: ${{ needs.detect-changes.outputs.dockerTags }}
+     secrets:
+       DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
+       DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
+
+  # build-deployment-image: # TODO: enable when we have private registries for custom projects
+  #   name: Build
+  #   needs: [install-dist]
+  #   uses: "./.github/workflows/build-deployment-image.yml"
+
+  # build-snapshot-image:
+  #   name: Build
+  #   if: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
+  #   needs: [install-dist]
+  #   uses: "./.github/workflows/build-snapshot-image.yml"
+  #   secrets:
+  #     AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
+  #     AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
+
+  # publish-maven:
+  #   name: Publish
+  #   needs: [install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  #   if: needs.detect-changes.outputs.any_modified == 'true'
+  #   uses: "./.github/workflows/publish-maven.yml"
+  #   with:
+  #     MAVEN_TAG: ${{ steps.detect-changes.outputs.mavenTag }}
+  #   secrets:
+  #     MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
+  #     MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
+  #     MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
+  #     MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
+
+  # publish-npm:
+  #   name: Publish
+  #   needs: [install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+  #   if: needs.detect-changes.outputs.ui_any_modified == 'true'
+  #   uses: "./.github/workflows/publish-npm.yml"
+  #   with:
+  #     tag: ${{ needs.install-dist.outputs.npmTag }}
+  #   secrets:
+  #     NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
+
+  deployment:
+    name: Deploy
+    needs: [detect-changes, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    if: needs.detect-changes.outputs.any_modified == 'true'
+    uses: "./.github/workflows/deployment.yml"
+    with:
+      INPUTS: ${{ toJSON(inputs) }}
+    secrets: inherit

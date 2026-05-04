@@ -1,0 +1,17 @@
+name: Install browsers
+on: workflow_call
+
+jobs:
+  install-browsers:
+    name: Install browsers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Playwright browsers
+        timeout-minutes: 20
+        run: npx playwright@$(jq -r ".devDependencies.playwright" ui/test/package.json) install chromium-headless-shell
+      - name: Upload Playwright browsers
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-browsers
+          path: /home/runner/.cache/ms-playwright

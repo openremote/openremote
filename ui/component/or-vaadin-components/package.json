@@ -4,8 +4,6 @@
   "description": "Vaadin Components packaged as components aligned with the OpenRemote design system",
   "customElements": "custom-elements.json",
   "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
-  "types": "src/index.d.ts",
   "exports": {
     ".": "./lib/index.js",
     "./*": "./lib/*.js",

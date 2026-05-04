@@ -75,13 +75,21 @@ tasks.register('npmBuild', Exec) {
     commandLine npmCommand("yarn"), "run", "build"
 }
 
+tasks.register('installTestDeps', Exec) {
+    onlyIf {
+        !gradle.taskGraph.hasTask(":yarnInstall")
+    }
+    commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core"
+}
+
 tasks.register('npmTest', Exec) {
-    dependsOn getYarnInstallTask(), resolveTask(":ui:test:clean")
+    dependsOn installTestDeps, resolveTask(":ui:test:clean")
     commandLine npmCommand("yarn"), "run", "test"
+    args((findProperty('args')?.toString()?.tokenize()) ?: [])
 }
 
 tasks.register('npmTestUI', Exec) {
-    dependsOn getYarnInstallTask(), resolveTask(":ui:test:clean")
+    dependsOn installTestDeps, resolveTask(":ui:test:clean")
     commandLine npmCommand("yarn"), "run", "test", "--ui"
 }
 

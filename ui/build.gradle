@@ -15,6 +15,17 @@ afterEvaluate {
     }
 }
 
-task modelWatch {
+tasks.register("modelWatch") {
     dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+}
+
+tasks.register("installStorybookDeps", Exec) {
+    // Required to load the `rsbuild.config.ts` file, ref https://knip.dev/reference/known-issues#exceptions-from-config-files
+    commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/storybook"
+}
+
+tasks.register("knip", Exec) {
+    dependsOn installStorybookDeps
+    workingDir project.rootDir
+    commandLine npmCommand("npx"), "knip@5.88.0", "-c", "ui/knip.jsonc"
 }

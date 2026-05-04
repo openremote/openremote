@@ -1,0 +1,101 @@
+name: Install Dist
+
+on:
+  workflow_call:
+    inputs:
+      VERSION_WITH_QUALIFIER:
+        type: string
+    outputs:
+      npmTag:
+        description: The NPM package.json version
+        value: ${{ jobs.install-dist.outputs.npmTag }}
+
+jobs:
+  install-dist:
+    name: Install Dist
+    runs-on: ubuntu-latest
+    outputs:
+      npmTag: ${{ steps.update-package-json.outputs.tag }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          lfs: true # Enable Git LFS plugin to fetch *.mbtiles
+
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+
+      - name: Update version in package.json files
+        id: update-package-json
+        if: ${{ inputs.VERSION_WITH_QUALIFIER != '' }}
+        run: |
+          VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
+
+          QUALIFIER=$(sed -E 's/.+-([a-z]+).*/\1/g' <<< $VERSION)
+          if [ "$QUALIFIER" == "$VERSION" ]; then
+            QUALIFIER=""
+          fi
+
+          if [ "$QUALIFIER" == "" ]; then
+            TAG="latest"
+          else
+            if [ "$QUALIFIER" == "snapshot" ]; then
+              # Add a timestamp to snapshot versions
+              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
+            else
+              # Separate qualifiers from numbers of alpha, beta, rc versions
+              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
+            fi
+            TAG="$QUALIFIER"
+          fi
+
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+        env:
+          VERSION: ${{ inputs.VERSION_WITH_QUALIFIER }}
+
+      - name: Run Install Dist
+        timeout-minutes: 20
+        run: ./gradlew installDist
+
+      - name: Archive manager build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: or-manager-build
+          if-no-files-found: error
+          path: |
+            manager/build
+
+      - name: Archive deployment build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: or-deployment-build
+          if-no-files-found: error
+          path: |
+            deployment/build
+
+      - name: Archive UI component build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: or-ui-component-build
+          if-no-files-found: error
+          path: |
+            ui/component/model/src/model.ts
+            ui/component/rest/src/restclient.ts
+            ui/component/**/custom-elements.json
+            ui/component/**/custom-elements-jsx.d.ts
+            ui/component/**/dist
+            ui/component/**/lib
+            ui/component/**/tsconfig.tsbuildinfo
+
+      - name: Archive MDI fonts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mdi-fonts
+          if-no-files-found: error
+          path: |
+            ui/app/shared/fonts/Material Design Icons

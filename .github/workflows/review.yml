@@ -1,0 +1,123 @@
+name: Review
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detect whether code changed
+    runs-on: ubuntu-latest
+    outputs: # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
+      any_modified: ${{ steps.changed-files.outputs.backend_any_modified == 'true' || steps.changed-files.outputs.ui_any_modified == 'true' }}
+      backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
+      ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Detect changes
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files_yaml: |
+            ui:
+              - 'ui/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+            backend:
+              - '!.ci_cd/**'
+              - '!deployment/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!yarn.lock'
+
+  ui-check-dependencies:
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/ui-check-dependencies.yml"
+
+  ui-check-outdated-translations:
+    name: Lint
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/ui-check-outdated-translations.yml"
+
+  install-browsers:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/install-browsers.yml"
+
+  install-dist:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_modified == 'true'
+    uses: "./.github/workflows/install-dist.yml"
+
+  unit-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/unit-tests.yml"
+
+  integration-tests:
+    name: Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/integration-tests.yml"
+
+  code-coverage:
+    name: Test
+    needs: [unit-tests, integration-tests]
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/code-coverage.yml"
+
+  ui-component-tests:
+    name: Test
+    needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/ui-component-tests.yml"
+
+  ui-app-tests:
+    name: Test
+    needs: [detect-changes, install-dist, install-browsers]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/ui-app-tests.yml"
+
+  build-manager-image:
+     name: Build
+     needs: [detect-changes, install-dist]
+     if: needs.detect-changes.outputs.any_modified == 'true'
+     uses: "./.github/workflows/build-manager-image.yml"
+     with:
+       tags: develop
+     secrets:
+       DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
+       DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
+
+  build-deployment-image: # Only here to check if it can build successfully
+    name: Build
+    needs: [detect-changes, install-dist]
+    if: needs.detect-changes.outputs.any_modified == 'true'
+    uses: "./.github/workflows/build-deployment-image.yml"
+    with:
+      tag: develop
+
+  publish-npm-dry-run:
+    name: Publish
+    needs: [detect-changes, install-dist]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/publish-npm-dry-run.yml"
+
+  get-version-details: # Only here to check if it can build successfully
+    name: Build
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Get version details
+        id: get-version-details
+        uses: ./.github/actions/get-version-details

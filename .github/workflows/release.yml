@@ -58,7 +58,7 @@ jobs:
       - name: Create release
         run: |
           git push --follow-tags
-          gh workflow run ci_cd.yml --ref $RELEASED_VERSION
+          gh workflow run staging.yml --ref $RELEASED_VERSION
           gh release create $RELEASED_VERSION --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}

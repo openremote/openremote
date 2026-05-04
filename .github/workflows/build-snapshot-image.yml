@@ -1,0 +1,48 @@
+name: Build snapshot image
+
+on:
+  workflow_call:
+    secrets:
+      AWS_DEVELOPERS_ACCOUNT_ID:
+        required: true
+      AWS_ECR_PUSH_ROLE:
+        required: true
+    inputs:
+      tag:
+        type: string
+        required: true
+
+permissions:
+  id-token: write
+
+jobs:
+  snapshot-image:
+    name: Snapshot image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: or-manager-build
+          path: manager/build
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        with:
+          platforms: linux/amd64,linux/aarch64
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          aws-region: eu-west-1
+          role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
+      - name: Build snapshot image
+        timeout-minutes: 20
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: manager/build/install/manager
+          platforms: linux/amd64,linux/aarch64
+          load: false
+          push: false
+          tags: ${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-${{ inputs.tag }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
