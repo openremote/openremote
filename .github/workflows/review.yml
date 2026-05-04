@@ -48,7 +48,7 @@ jobs:
   install-browsers:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/install-browsers.yml"
 
   install-dist:
@@ -84,7 +84,7 @@ jobs:
   ui-app-tests:
     name: Test
     needs: [detect-changes, install-dist, install-browsers]
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/ui-app-tests.yml"
 
   build-manager-image:

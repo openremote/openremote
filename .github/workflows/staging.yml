@@ -106,13 +106,12 @@ jobs:
   install-browsers:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/install-browsers.yml"
 
   install-dist:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/install-dist.yml"
     with:
       VERSION_WITH_QUALIFIER: ${{ needs.detect-changes.outputs.version_with_qualifier }}
@@ -138,13 +137,15 @@ jobs:
   ui-app-tests:
     name: Test
     needs: [detect-changes, install-dist, install-browsers]
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: needs.detect-changes.outputs.any_modified == 'true'
     uses: "./.github/workflows/ui-app-tests.yml"
 
   build-manager-image:
     name: Build
     needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: | # If a dependency isn't successful (e.g. skipped) the condition isn't evaluated without always()
+      always() &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     uses: "./.github/workflows/build-manager-image.yml"
     with:
       tags: ${{ needs.detect-changes.outputs.dockerTags }}
@@ -160,10 +161,12 @@ jobs:
   publish-maven:
     name: Publish
     needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: | # If a dependency isn't successful (e.g. skipped) the condition isn't evaluated without always()
+      always() &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     uses: "./.github/workflows/publish-maven.yml"
     with:
-      MAVEN_TAG: ${{ steps.detect-changes.outputs.mavenTag }}
+      MAVEN_TAG: ${{ needs.detect-changes.outputs.mavenTag }}
     secrets:
       MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
       MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
@@ -173,7 +176,9 @@ jobs:
   publish-npm:
     name: Publish
     needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: | # If a dependency isn't successful (e.g. skipped) the condition isn't evaluated without always()
+      always() &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     uses: "./.github/workflows/publish-npm.yml"
     with:
       tag: ${{ needs.install-dist.outputs.npmTag }}
@@ -183,7 +188,9 @@ jobs:
   deployment:
     name: Deploy
     needs: [detect-changes, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: | # If a dependency isn't successful (e.g. skipped) the condition isn't evaluated without always()
+      always() &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     uses: "./.github/workflows/deployment.yml"
     with:
       INPUTS: ${{ toJSON(inputs) }}
