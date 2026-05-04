@@ -157,37 +157,28 @@ jobs:
   #   needs: [install-dist]
   #   uses: "./.github/workflows/build-deployment-image.yml"
 
-  # build-snapshot-image:
-  #   name: Build
-  #   if: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
-  #   needs: [install-dist]
-  #   uses: "./.github/workflows/build-snapshot-image.yml"
-  #   secrets:
-  #     AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
-  #     AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
+  publish-maven:
+    name: Publish
+    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    if: needs.detect-changes.outputs.any_modified == 'true'
+    uses: "./.github/workflows/publish-maven.yml"
+    with:
+      MAVEN_TAG: ${{ steps.detect-changes.outputs.mavenTag }}
+    secrets:
+      MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
+      MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
+      MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
+      MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
 
-  # publish-maven:
-  #   name: Publish
-  #   needs: [install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-  #   if: needs.detect-changes.outputs.any_modified == 'true'
-  #   uses: "./.github/workflows/publish-maven.yml"
-  #   with:
-  #     MAVEN_TAG: ${{ steps.detect-changes.outputs.mavenTag }}
-  #   secrets:
-  #     MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
-  #     MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
-  #     MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
-  #     MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
-
-  # publish-npm:
-  #   name: Publish
-  #   needs: [install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
-  #   if: needs.detect-changes.outputs.ui_any_modified == 'true'
-  #   uses: "./.github/workflows/publish-npm.yml"
-  #   with:
-  #     tag: ${{ needs.install-dist.outputs.npmTag }}
-  #   secrets:
-  #     NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
+  publish-npm:
+    name: Publish
+    needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
+    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    uses: "./.github/workflows/publish-npm.yml"
+    with:
+      tag: ${{ needs.install-dist.outputs.npmTag }}
+    secrets:
+      NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
 
   deployment:
     name: Deploy
