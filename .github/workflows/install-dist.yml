@@ -7,13 +7,15 @@ on:
         type: string
     outputs:
       npmTag:
-        description: "Update package json"
-        value: ${{ steps.update-package-json.outputs.tag }}
+        description: The NPM package.json version
+        value: ${{ jobs.install-dist.outputs.npmTag }}
 
 jobs:
   install-dist:
     name: Install Dist
     runs-on: ubuntu-latest
+    outputs:
+      npmTag: ${{ steps.update-package-json.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
