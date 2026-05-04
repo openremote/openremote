@@ -133,16 +133,12 @@ export class OrHeader extends LitElement {
                 height: 100%;
             }
             
-            #menu-btn-mobile {
+            #mobile-right {
                 display: flex;
                 align-items: center;
                 margin-left: auto;
                 --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
                 --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
-            }
-    
-            #menu-btn-desktop {
-                display: none;
             }
             
             #desktop-right {
@@ -216,11 +212,7 @@ export class OrHeader extends LitElement {
             /* Wide layout: when the viewport width is bigger than 768px, layout
             changes to a wide layout. */
             @media (min-width: 900px) {
-                #menu-btn-desktop {
-                    display: block;
-                }          
-    
-                #menu-btn-mobile {
+                #mobile-right {
                     display: none;
                 }
     
@@ -385,7 +377,7 @@ export class OrHeader extends LitElement {
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
                         ${when(secondaryItems, () => this._getSecondaryMenu(secondaryItems ?? []))}
                     </div>
-                    <div id="menu-btn-mobile">
+                    <div id="mobile-right">
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
                         ${when(secondaryItems, () => this._getSecondaryMenu(secondaryItems ?? []))}
                     </div>
@@ -400,7 +392,7 @@ export class OrHeader extends LitElement {
         const items = this.realms.map(r => ({value: r.name, label: r.displayName}));
         return html`
             <or-vaadin-select id="realm-picker" .items=${items} .value=${currentRealm?.name}
-                              ?readonly=${!manager.isSuperUser() || !this.realms?.length}
+                              ?readonly=${!manager.isSuperUser()} ?disabled=${(items?.length ?? 0) <= 1}
                               @change="${(ev: CustomEvent) => callback((ev.currentTarget as OrVaadinSelect).value)}"
             ></or-vaadin-select>
         `;

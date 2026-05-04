@@ -392,6 +392,8 @@ export class PageRealms extends Page<AppStateKeyed> {
         try {
             await manager.rest.api.RealmResource.delete(realm.name);
             this._realms = this._realms.filter(r => r !== realm);
+            //TODO improve this so that header realm picker is updated
+            window.location.reload();
         } catch (e) {
             showSnackbar(undefined, "realmDeleteFailed", "dismiss");
         }

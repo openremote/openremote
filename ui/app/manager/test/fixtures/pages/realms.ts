@@ -13,15 +13,18 @@ export class RealmsPage implements BasePage {
    * @param name The realm name
    */
   async addRealm(name: string) {
-    const locator = this.page.getByRole("cell", { name, exact: true });
-    await this.page.getByRole("cell", { name: "Master", exact: true }).waitFor();
+    const locator = this.page.getByRole("button", { name, exact: true });
+    await this.page.getByRole("button", { name: "Master", exact: true }).waitFor();
     if (await locator.isVisible()) {
       console.warn(`Realm "${name}" already present`);
     } else {
       await this.page.click("text=Add Realm");
       await this.page.locator("#realm-row-1 label").filter({ hasText: "Realm" }).fill(name);
       await this.page.locator("#realm-row-1 label").filter({ hasText: "Friendly name" }).fill(name);
-      await this.page.getByRole("button", { name: "create" }).click();
+      await Promise.all([
+        this.page.waitForLoadState('networkidle'), // Wait for reload to take place after adding realm
+        this.page.getByRole("button", { name: "create" }).click()
+      ]);
     }
   }
 
@@ -34,5 +37,6 @@ export class RealmsPage implements BasePage {
     await this.page.getByRole("button", { name: "Delete" }).click();
     await this.page.getByRole("alertdialog").getByRole("textbox", { name: "Realm" }).fill(realm);
     await this.page.getByRole("button", { name: "OK" }).click();
+    await this.page.waitForLoadState('networkidle') // Wait for reload to take place after deleting realm
   }
 }

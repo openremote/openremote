@@ -65,7 +65,7 @@ test("Create a Line Chart widget", async ({ manager, shared, page, insightsPage 
     await expect(insightsPage.getWidgetAttributes().last()).toContainText("Power");
 });
 
-test("Create a Map widget with text thresholds", async ({ manager, shared, page, insightsPage, mwcMenu, mwcInput }) => {
+test("Create a Map widget with text thresholds", async ({ manager, shared, page, insightsPage, mwcInput }) => {
     await shared.interceptResponse<Dashboard>("**/dashboard", (dashboard) => {
         if (dashboard) manager.dashboards.push(dashboard.id!);
     });
@@ -105,16 +105,16 @@ test("Create a Map widget with text thresholds", async ({ manager, shared, page,
     await mapWidget.click();
     await expect(insightsPage.getBrowser()).toBeHidden();
     await expect(insightsPage.getWidgetSettings({ hasText: "Map" })).toBeVisible();
-    await page.getByRole("textbox", { name: "Asset type" }).click();
-    await mwcMenu.getMenuItem("Thing asset").click();
+    await page.getByRole("combobox", { name: "Asset type" }).fill("Thing");
+    await page.getByRole("option", { name: "Thing asset" }).click();
     await expect(thresholdPanel).toBeHidden();
-    await insightsPage.getWidgetSettings().getByRole("button", { name: "Attribute" }).click();
-    await mwcInput.getSelectInputOption("Notes", insightsPage.getWidgetSettings()).click();
+    await insightsPage.getWidgetSettings().getByRole("combobox", { name: "Attribute" }).click();
+    await insightsPage.getWidgetSettings().getByRole("option", { name: "Notes" }).click();
     await expect(page.locator(".or-map-marker")).toBeVisible();
     await expect(thresholdPanel).toBeVisible();
 
     // Check default text configuration is correct
-    const textThresholds = mwcInput.getInputByType("text", thresholdPanel);
+    const textThresholds = thresholdPanel.locator("input[type='text']"); // mwcInput.getInputByType("text", thresholdPanel);
     const thresholdsColors = mwcInput.getInputByType("color", thresholdPanel);
     await expect(textThresholds).toHaveCount(2);
     await expect(textThresholds.first()).toHaveValue("example1");

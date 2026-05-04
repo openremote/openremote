@@ -20,7 +20,7 @@
 import {customElement} from "lit/decorators.js";
 import {ComboBox} from "@vaadin/combo-box";
 import {OrVaadinComponent} from "./util";
-import {type LitElement} from "lit";
+import {PropertyValues, type LitElement} from "lit";
 
 /**
  * Vaadin uses custom directives for rendering the dialog content.
@@ -32,4 +32,11 @@ export {comboBoxRenderer, ComboBoxLitRenderer} from "@vaadin/combo-box/lit";
 @customElement("or-vaadin-combo-box")
 export class OrVaadinComboBox extends (ComboBox as new () => ComboBox & LitElement) implements OrVaadinComponent {
 
+    override shouldUpdate(changedProps: PropertyValues) {
+        if(changedProps.has("items")) {
+            // To prevent unnecessary component updates, we do a strict JSON check on the list of items.
+            return JSON.stringify(this.items) !== JSON.stringify(changedProps.get("items")) && super.shouldUpdate(changedProps);
+        }
+        return super.shouldUpdate(changedProps);
+    }
 }

@@ -20,7 +20,6 @@ import {
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
@@ -33,6 +32,7 @@ import {when} from "lit/directives/when.js";
 import moment from "moment";
 import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
+import {InputType} from "@openremote/or-vaadin-components/util";
 
 // language=CSS
 const style = css`

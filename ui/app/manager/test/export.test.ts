@@ -61,7 +61,7 @@ async function addAttributeViaPicker(page: import("@playwright/test").Page, asse
   const attributeList = dialog.locator("#attribute-selector");
   await attributeList.waitFor();
   const displayName = attributeName.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
-  const attributeCheckbox = attributeList.locator("li.mdc-list-item").filter({ hasText: displayName });
+  const attributeCheckbox = attributeList.getByRole("option", { name: displayName });
   await attributeCheckbox.click();
 
   await dialog.locator("#add-btn").click();
