@@ -14,6 +14,121 @@ jobs:
         with:
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
 
+      - name: Get version details
+        id: get-version-details
+        uses: ./.github/actions/get-version-details
+
+      - name: Check ci_cd existence
+        id: check_cicd_json
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          files: ".ci_cd/ci_cd.json"
+
+      - name: Check if main repo
+        id: is_main_repo
+        uses: ./.github/actions/check-if-main-repo
+
+      - name: Checkout main repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: ${{ steps.is_main_repo.outputs.value == 'false' }}
+        with:
+          repository: ${{ steps.is_main_repo.outputs.repository }}
+          path: openremote
+          ref: ${{ steps.is_main_repo.outputs.version }}
+          sparse-checkout: |
+            .ci_cd
+            profile
+          sparse-checkout-cone-mode: false
+
+      - name: Process ci_cd.json file
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
+        id: ci-cd-output
+        uses: ./.github/actions/process-cicd-json
+        with:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
+          IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
+          VERSION: ${{ steps.get-version-details.outputs.version }}
+
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        with:
+          platforms: linux/aarch64 #,linux/amd64 Only ARM is currently in use
+
+      - name: Install Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      # --------------------------------------------------------------------------------------
+      # Download manager build directory
+      # --------------------------------------------------------------------------------------
+
+      - name: Define manager build path
+        id: define-manager-build-path
+        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        shell: bash
+        run: |
+          buildPath="manager/build/install/manager"
+          echo "value=$buildPath" >> $GITHUB_OUTPUT
+
+      - name: Download manager build directory
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        with:
+          name: or-manager-build
+          path: manager/build
+        continue-on-error: true
+
+      # --------------------------------------------------------------------------------------
+      # Download/build deployment build directory
+      # --------------------------------------------------------------------------------------
+
+      - name: Check deployment build.gradle
+        id: check_deployment_gradle
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          files: "deployment/build.gradle"
+
+      - name: Check deployment dockerfile
+        id: check_deployment_dockerfile
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          files: "deployment/Dockerfile"
+
+      - name: Define deployment build path
+        id: define-deployment-build-path
+        shell: bash
+        run: |
+          if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ]; then
+            if [ "$DEPLOYMENT_GRADLE_EXISTS" != 'true' ]; then
+              echo "Deployment must have a build.gradle file to prepare the deployment files in the deployment/build dir"
+              exit 1
+            fi
+            echo "value=deployment/build" >> $GITHUB_OUTPUT
+          fi
+        env:
+          DEPLOYMENT_DOCKERFILE_EXISTS: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
+          DEPLOYMENT_GRADLE_EXISTS: ${{ steps.check_deployment_gradle.outputs.files_exists }}
+
+      - name: Download deployment build directory
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: or-deployment-build # Shouldn't exist in custom projects
+          path: deployment/build
+        continue-on-error: true
+
+      # This step is only meant to be run for projects which don't build the manager beforehand i.e.
+      # custom projects, as they wouldn't have a deployment/build dir
+      - name: Build deployment if missing
+        if: hashFiles('deployment/build/**') == ''
+        shell: bash
+        run: |
+          ./gradlew -p deployment installDist # TODO: optimize the task graph
+
+      # --------------------------------------------------------------------------------------
+      # Deploy
+      # --------------------------------------------------------------------------------------
+
       - name: Get inputs and secrets
         id: inputs-and-secrets
         shell: python
@@ -90,150 +205,6 @@ jobs:
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
-      - name: Check if main repo
-        id: is_main_repo
-        uses: ./.github/actions/check-if-main-repo
-
-      - name: Check ci_cd existence
-        id: check_cicd_json
-        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
-        with:
-          files: ".ci_cd/ci_cd.json"
-
-      - name: Set up JDK 21 and gradle cache
-        id: java
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: gradle
-
-      - name: Get version details
-        id: get-version-details
-        run: |
-          set -o pipefail # exit build with error when pipes fail
-          ./gradlew currentVersion | tee /tmp/currentVersion
-          versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
-          version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
-          isRelease=false
-          if [ "$version" == "$versionWithQualifier" ]; then
-            isRelease=true
-          fi
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
-          echo "is_release=$isRelease" >> $GITHUB_OUTPUT
-
-      - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
-        id: ci-cd-output
-        shell: python
-        run: |
-          import json
-          import os
-
-          eventName = os.getenv('GITHUB_EVENT_NAME')
-          refName = os.getenv('GITHUB_REF_NAME')
-          refType = os.getenv('GITHUB_REF_TYPE')
-          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
-          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
-          isRelease = os.getenv('IS_RELEASE') == 'true'
-          managerVersion = os.getenv('MANAGER_VERSION')
-          version = os.getenv('VERSION')
-          deploys = None
-          dockerPublishTags = None
-          mavenPublishTag = None
-          npmPublishTag = None
-          deployEnvironment = None
-          eventConfig = ()
-
-          f = open(".ci_cd/ci_cd.json")
-          data = json.load(f)
-          f.close()
-
-          if isRelease:
-            eventName = "release"
-
-          if data is not None and eventName in data:
-            eventConfig = data[eventName]
-
-          if eventName == "push" and refType == "branch" and refName in eventConfig:
-            eventConfig = eventConfig[refName]
-
-          if eventConfig is not None:
-            deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
-            if 'distribute' in eventConfig:
-              if 'docker' in eventConfig['distribute']:
-                 dockerPublishTags = eventConfig['distribute']['docker']
-              if 'maven' in eventConfig['distribute']:
-                 mavenPublishTag = eventConfig['distribute']['maven']
-              if 'npm' in eventConfig['distribute']:
-                 npmPublishTag = eventConfig['distribute']['npm']
-
-          if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
-
-            if dockerPublishTags is not None:
-              if "$version" in dockerPublishTags:
-                 firstDockerTag = version
-                 dockerPublishTags = dockerPublishTags.replace("$version", version)
-              else:
-                dockerPublishTags = dockerPublishTags.replace("$version", version)
-                firstDockerTag = dockerPublishTags.split(",")[0]
-
-              os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-              os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
-              dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-              if repoOwner == 'openremote':
-                os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
-
-            if mavenPublishTag is not None and repoOwner == 'openremote':
-              mavenPublishTag = mavenPublishTag.replace("$version", version)
-              os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-              os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
-
-            if npmPublishTag is not None and repoOwner == 'openremote':
-              npmPublishTag = npmPublishTag.replace("$version", version)
-              os.system(f" echo 'npm publish version: {npmPublishTag}'")
-              os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
-
-          deployStr = None
-          if deploys is not None and repoOwner == 'openremote':
-            if not isinstance(deploys, list):
-              deploys = [deploys]
-
-            deployStr = ""
-            managerTagDefault = '#ref'
-
-            for deploy in deploys:
-              if 'environment' in deploy:
-                deployStr += deploy['environment']
-              deployStr += ":"
-              if 'managerTag' in deploy:
-                if isMainRepo:
-                  deployStr += deploy['managerTag']
-                else:
-                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += managerVersion
-              else:
-                if isMainRepo:
-                  os.system("echo 'Manager tag not specified so using commit SHA'")
-                  deployStr += managerTagDefault
-                else:
-                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += managerVersion
-
-              deployStr += ";"
-
-            deployStr = deployStr.rstrip(";")
-
-          if deployStr is not None and len(deployStr) > 0:
-            print(f"Deployments to deploy: {deployStr}")
-            os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
-          IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
-          VERSION: ${{ steps.get-version-details.outputs.version }}
-
       - name: Sanitize deployments value
         id: deployments
         shell: python
@@ -273,7 +244,7 @@ jobs:
             os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
@@ -284,90 +255,6 @@ jobs:
         shell: bash
         run: |
           echo "refTag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Install QEMU
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
-        with:
-          platforms: linux/aarch64 #,linux/amd64 Only ARM is currently in use
-
-      - name: Install Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-
-      # --------------------------------------------------------------------------------------
-      # Download manager build directory
-      # --------------------------------------------------------------------------------------
-
-      - name: Define manager build path
-        id: define-manager-build-path
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
-        shell: bash
-        run: |
-          buildPath="manager/build/install/manager"
-          echo "value=$buildPath" >> $GITHUB_OUTPUT
-        env:
-          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
-          PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
-
-      - name: Download manager build directory
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
-        with:
-          name: or-manager-build
-          path: manager/build
-        continue-on-error: true
-
-      # --------------------------------------------------------------------------------------
-      # Download/build deployment build directory
-      # --------------------------------------------------------------------------------------
-
-      - name: Check deployment build.gradle
-        id: check_deployment_gradle
-        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
-        with:
-          files: "deployment/build.gradle"
-
-      - name: Check deployment dockerfile
-        id: check_deployment_dockerfile
-        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
-        with:
-          files: "deployment/Dockerfile"
-
-      - name: Define deployment build path
-        id: define-deployment-build-path
-        shell: bash
-        run: |
-          if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ]; then
-            if [ "$DEPLOYMENT_GRADLE_EXISTS" != 'true' ]; then
-              echo "Deployment must have a build.gradle file to prepare the deployment files in the deployment/build dir"
-              exit 1
-            fi
-            echo "value=deployment/build" >> $GITHUB_OUTPUT
-          fi
-        env:
-          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          DEPLOYMENT_DOCKERFILE_EXISTS: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
-          DEPLOYMENT_GRADLE_EXISTS: ${{ steps.check_deployment_gradle.outputs.files_exists }}
-
-      - name: Download deployment build directory
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: or-deployment-build # Shouldn't exist in custom projects
-          path: deployment/build
-        continue-on-error: true
-
-      # This step is only meant to be run for projects which don't build the manager beforehand i.e.
-      # custom projects, as they wouldn't have a deployment/build dir
-      - name: Build deployment if missing
-        if: hashFiles('deployment/build/**') == ''
-        shell: bash
-        run: |
-          ./gradlew -p deployment installDist # TODO: optimize the task graph
-
-      # --------------------------------------------------------------------------------------
-      # Deploy
-      # --------------------------------------------------------------------------------------
 
       - name: Do deployments
         shell: python

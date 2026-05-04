@@ -8,12 +8,10 @@ on:
       DOCKERHUB_PASSWORD:
         required: true
     inputs:
-      tag:
+      tags:
         type: string
-        required: true
-      dispatched:
-        type: boolean
-        default: false
+        required: false
+        default: ""
 
 jobs:
   build-manager-image:
@@ -21,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # One run per architecture to allow 'type=docker' export
         arch: [amd64, aarch64]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -38,11 +35,36 @@ jobs:
       - name: Install Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
-      - name: Login to DockerHub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Parse tags and evaluate conditions
+        id: meta
+        shell: bash
+        run: |
+          COMMIT_SHA_SHORT=$(git rev-parse --short HEAD)
+
+          FORMATTED_TAGS="openremote/manager:$COMMIT_SHA_SHORT"
+          FIRST_TAG="openremote/manager:$COMMIT_SHA_SHORT"
+          SHOULD_PUSH="false"
+
+          if [ -n "${{ inputs.tags }}" ]; then
+            SHOULD_PUSH="true"
+
+            IFS=',' read -ra TAGS <<< "${{ inputs.tags }}"
+            for tag in "${TAGS[@]}"; do
+              CLEAN_TAG=$(echo "$tag" | xargs)
+              FULL_TAG="openremote/manager:$CLEAN_TAG"
+
+              # Make the first explicit tag our primary reference
+              if [ "$FIRST_TAG" == "openremote/manager:$COMMIT_SHA_SHORT" ]; then
+                FIRST_TAG=$FULL_TAG
+              fi
+
+              FORMATTED_TAGS="$FORMATTED_TAGS,$FULL_TAG"
+            done
+          fi
+
+          echo "formatted_tags=$FORMATTED_TAGS" | tee -a $GITHUB_OUTPUT
+          echo "first_tag=$FIRST_TAG" | tee -a $GITHUB_OUTPUT
+          echo "should_push=$SHOULD_PUSH" | tee -a $GITHUB_OUTPUT
 
       - name: Build manager image
         timeout-minutes: 20
@@ -50,11 +72,9 @@ jobs:
         with:
           context: manager/build/install/manager
           platforms: linux/${{ matrix.arch }}
-          tags: openremote/manager:${{ inputs.tag }}
-          load: false
-          push: false
-          outputs: |
-          # ${{ github.event.inputs.push_to_registry == 'true' && 'type=registry' || '' }}
+          tags: ${{ steps.parse-tags.outputs.formatted_tags }}
+          load: true  # Keeps the image local
+          push: false # Prevents pushing before the scan
           build-args: |
             GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=manager-${{ matrix.arch }}
@@ -67,15 +87,31 @@ jobs:
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         id: manager-anchore-scan
         with:
-          image: openremote/manager:${{ inputs.tag }}
-          fail-build: false
+          image: ${{ steps.manager-docker-command.outputs.first_tag }}
+          fail-build: true
           severity-cutoff: critical
 
       - name: Upload Anchore scan SARIF report
         uses: github/codeql-action/upload-sarif@b8bb9f28b8d3f992092362369c57161b755dea45 # v4.35.0
+        if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
           category: grype-${{ matrix.arch }}
 
       - name: Inspect Anchore scan SARIF report
+        if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
         run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        if: ${{ success() && steps.meta.outputs.should_push == 'true' }}
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Push arch images
+        if: ${{ success() && steps.meta.outputs.should_push == 'true' }}
+        shell: bash
+        run: |
+          echo "Pushing all newly built tags for openremote/manager"
+          docker push --all-tags openremote/manager

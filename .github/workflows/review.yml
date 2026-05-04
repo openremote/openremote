@@ -92,8 +92,6 @@ jobs:
      needs: [detect-changes, install-dist]
      if: needs.detect-changes.outputs.any_modified == 'true'
      uses: "./.github/workflows/build-manager-image.yml"
-     with:
-       tag: develop
      secrets:
        DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
        DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
@@ -112,8 +110,12 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_modified == 'true'
     uses: "./.github/workflows/publish-npm-dry-run.yml"
 
-  get-version-details:
-    name: Build
+  get-version-details: # Only here to check if it can build successfully
+    name: Build / Get version details
     needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
-    uses: "./.github/workflows/get-version-details.yml"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Get version details
+        id: get-version-details
+        uses: ./.github/actions/get-version-details

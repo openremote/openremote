@@ -35,7 +35,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  is_main_repo:
+  is-main-repo:
+    name: Is main repository
     runs-on: ubuntu-latest
     outputs:
       value: ${{ steps.is_main_repo.outputs.value }}
@@ -47,8 +48,8 @@ jobs:
 
   install-dist:
     name: Build
-    needs: is_main_repo
-    if: ${{ needs.is_main_repo.outputs.value == 'true' }}
+    needs: is-main-repo
+    if: ${{ needs.is-main-repo.outputs.value == 'true' }}
     uses: "./.github/workflows/install-dist.yml"
 
   deployment:
