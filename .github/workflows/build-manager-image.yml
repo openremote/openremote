@@ -8,7 +8,7 @@ on:
       DOCKERHUB_PASSWORD:
         required: true
     inputs:
-      tag:
+      tags:
         type: string
         required: true
       pushToDockerHub:
@@ -43,7 +43,7 @@ jobs:
         with:
           context: manager/build/install/manager
           platforms: linux/${{ matrix.arch }}
-          tags: openremote/manager:${{ inputs.tag }}
+          tags: openremote/manager:develop # ${{ inputs.tag }} # TODO: fix
           load: false
           push: false
           outputs: |

@@ -145,7 +145,7 @@ jobs:
      if: needs.detect-changes.outputs.any_modified == 'true'
      uses: "./.github/workflows/build-manager-image.yml"
      with:
-       tag: ${{ needs.detect-changes.outputs. }}
+       tags: ${{ needs.detect-changes.outputs.dockerTags }}
      secrets:
        DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
        DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
