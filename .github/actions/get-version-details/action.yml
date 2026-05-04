@@ -1,0 +1,30 @@
+name: Get version details
+
+outputs:
+  version:
+    description: "The base version extracted or determined by the workflow"
+    value: ${{ steps.get-version-details.outputs.version }}
+  version_with_qualifier:
+    description: "The complete version string including any qualifiers (e.g., -SNAPSHOT, -beta)"
+    value: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+  is_release:
+    description: "A boolean indicating whether this build is a production release"
+    value: ${{ steps.get-version-details.outputs.is_release }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get version details
+      id: get-version-details
+      run: |
+        set -o pipefail # exit build with error when pipes fail
+        ./gradlew currentVersion | tee /tmp/currentVersion
+        versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
+        version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
+        isRelease=false
+        if [ "$version" == "$versionWithQualifier" ]; then
+          isRelease=true
+        fi
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
+        echo "is_release=$isRelease" >> $GITHUB_OUTPUT

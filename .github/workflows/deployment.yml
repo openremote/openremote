@@ -123,112 +123,15 @@ jobs:
           echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
           echo "is_release=$isRelease" >> $GITHUB_OUTPUT
 
+      - name: Get version details
+        id: get-version-details
+        uses: ./.github/actions/get-version-details
+
       - name: Process ci_cd.json file
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
         id: ci-cd-output
-        shell: python
-        run: |
-          import json
-          import os
-
-          eventName = os.getenv('GITHUB_EVENT_NAME')
-          refName = os.getenv('GITHUB_REF_NAME')
-          refType = os.getenv('GITHUB_REF_TYPE')
-          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
-          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
-          isRelease = os.getenv('IS_RELEASE') == 'true'
-          managerVersion = os.getenv('MANAGER_VERSION')
-          version = os.getenv('VERSION')
-          deploys = None
-          dockerPublishTags = None
-          mavenPublishTag = None
-          npmPublishTag = None
-          deployEnvironment = None
-          eventConfig = ()
-
-          f = open(".ci_cd/ci_cd.json")
-          data = json.load(f)
-          f.close()
-
-          if isRelease:
-            eventName = "release"
-
-          if data is not None and eventName in data:
-            eventConfig = data[eventName]
-
-          if eventName == "push" and refType == "branch" and refName in eventConfig:
-            eventConfig = eventConfig[refName]
-
-          if eventConfig is not None:
-            deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
-            if 'distribute' in eventConfig:
-              if 'docker' in eventConfig['distribute']:
-                 dockerPublishTags = eventConfig['distribute']['docker']
-              if 'maven' in eventConfig['distribute']:
-                 mavenPublishTag = eventConfig['distribute']['maven']
-              if 'npm' in eventConfig['distribute']:
-                 npmPublishTag = eventConfig['distribute']['npm']
-
-          if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
-
-            if dockerPublishTags is not None:
-              if "$version" in dockerPublishTags:
-                 firstDockerTag = version
-                 dockerPublishTags = dockerPublishTags.replace("$version", version)
-              else:
-                dockerPublishTags = dockerPublishTags.replace("$version", version)
-                firstDockerTag = dockerPublishTags.split(",")[0]
-
-              os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-              os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
-              dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-              if repoOwner == 'openremote':
-                os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
-
-            if mavenPublishTag is not None and repoOwner == 'openremote':
-              mavenPublishTag = mavenPublishTag.replace("$version", version)
-              os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-              os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
-
-            if npmPublishTag is not None and repoOwner == 'openremote':
-              npmPublishTag = npmPublishTag.replace("$version", version)
-              os.system(f" echo 'npm publish version: {npmPublishTag}'")
-              os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
-
-          deployStr = None
-          if deploys is not None and repoOwner == 'openremote':
-            if not isinstance(deploys, list):
-              deploys = [deploys]
-
-            deployStr = ""
-            managerTagDefault = '#ref'
-
-            for deploy in deploys:
-              if 'environment' in deploy:
-                deployStr += deploy['environment']
-              deployStr += ":"
-              if 'managerTag' in deploy:
-                if isMainRepo:
-                  deployStr += deploy['managerTag']
-                else:
-                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += managerVersion
-              else:
-                if isMainRepo:
-                  os.system("echo 'Manager tag not specified so using commit SHA'")
-                  deployStr += managerTagDefault
-                else:
-                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
-                  deployStr += managerVersion
-
-              deployStr += ";"
-
-            deployStr = deployStr.rstrip(";")
-
-          if deployStr is not None and len(deployStr) > 0:
-            print(f"Deployments to deploy: {deployStr}")
-            os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
-        env:
+        uses: ./.github/actions/process-cicd-json
+        with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}

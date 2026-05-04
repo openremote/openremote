@@ -121,6 +121,8 @@ jobs:
      needs: [detect-changes, install-dist, unit-tests, integration-tests, ui-check-outdated-translations, ui-component-tests, ui-app-tests]
      if: needs.detect-changes.outputs.any_modified == 'true'
      uses: "./.github/workflows/build-manager-image.yml"
+     with:
+       tag: ${{ needs. }}
      secrets:
        DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
        DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
