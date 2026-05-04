@@ -1,15 +1,16 @@
 name: Check if main repo
+description: Resolves- and checks if it is run from the main repository, and resolves the OpenRemote version
 
 outputs:
   value:
-    description: "Whether the workflow ran within the main_repo"
+    description: Whether this is the main repository which builds the manager
     value: ${{ steps.is_main_repo.outputs.value }}
   repository:
-    description: "The name of the current main repo"
+    description: The main GitHub repository name
     value: ${{ steps.is_main_repo.outputs.repository }}
-  ref:
-    description: "The openremote version defined in the main repo"
-    value: ${{ steps.is_main_repo.outputs.ref }}
+  version:
+    description: The openremote version defined in the main repo
+    value: ${{ steps.is_main_repo.outputs.version }}
 
 runs:
   using: composite
@@ -36,5 +37,5 @@ runs:
             exit 1
           fi
 
-          echo "ref=$version" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
         fi

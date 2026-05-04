@@ -36,6 +36,18 @@ jobs:
         id: is_main_repo
         uses: ./.github/actions/check-if-main-repo
 
+      - name: Checkout main repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: ${{ steps.is_main_repo.outputs.value == 'false' }}
+        with:
+          repository: ${{ steps.is_main_repo.outputs.repository }}
+          path: openremote
+          ref: ${{ steps.is_main_repo.outputs.ref }}
+          sparse-checkout: |
+            .ci_cd
+            profile
+          sparse-checkout-cone-mode: false
+
       - name: Process ci_cd.json file
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
         id: ci-cd-output
