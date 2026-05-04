@@ -112,8 +112,12 @@ jobs:
     if: needs.detect-changes.outputs.ui_any_modified == 'true'
     uses: "./.github/workflows/publish-npm-dry-run.yml"
 
-  get-version-details:
+  get-version-details: # Only here to check if it can build successfully
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
-    uses: "./.github/workflows/get-version-details.yml"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Get version details
+        id: get-version-details
+        uses: ./.github/actions/get-version-details
