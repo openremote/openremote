@@ -27,6 +27,8 @@ import {
 } from "../util";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import {i18next} from "@openremote/or-translate";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";

@@ -17,6 +17,7 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";

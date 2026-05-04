@@ -30,6 +30,9 @@ import {unknownTemplate} from "./standard-renderers";
 import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {
