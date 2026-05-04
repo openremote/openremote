@@ -8,7 +8,7 @@ on:
       DOCKERHUB_PASSWORD:
         required: true
     inputs:
-      tags:
+      TAGS:
         type: string
         required: false
         default: ""
@@ -45,10 +45,10 @@ jobs:
           FIRST_TAG="openremote/manager:$COMMIT_SHA_SHORT"
           SHOULD_PUSH="false"
 
-          if [ -n "${{ inputs.tags }}" ]; then
+          if [ -n "${{ inputs.TAGS }}" ]; then
             SHOULD_PUSH="true"
 
-            IFS=',' read -ra TAGS <<< "${{ inputs.tags }}"
+            IFS=',' read -ra TAGS <<< "${{ inputs.TAGS }}"
             for tag in "${TAGS[@]}"; do
               CLEAN_TAG=$(echo "$tag" | xargs)
               FULL_TAG="openremote/manager:$CLEAN_TAG"
