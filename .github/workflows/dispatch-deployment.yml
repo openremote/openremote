@@ -52,6 +52,17 @@ jobs:
     if: ${{ needs.is-main-repo.outputs.value == 'true' }}
     uses: "./.github/workflows/install-dist.yml"
 
+  build-snapshot-image:
+    name: Build
+    if: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
+    needs: [install-dist]
+    uses: "./.github/workflows/build-snapshot-image.yml"
+    with:
+      PUSH: ${{ inputs.PUSH_SNAPSHOT == 'true' }}
+    secrets:
+      AWS_DEVELOPERS_ACCOUNT_ID: ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}
+      AWS_ECR_PUSH_ROLE: ${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}
+
   deployment:
     name: Deployment
     needs: install-dist
