@@ -1,14 +1,15 @@
 name: Get version details
+description: Resolves the current base-, with qualifier and release version
 
 outputs:
   version:
-    description: "The base version extracted or determined by the workflow"
+    description: The base project version without qualifiers (like -SNAPSHOT)
     value: ${{ steps.get-version-details.outputs.version }}
   version_with_qualifier:
-    description: "The complete version string including any qualifiers (e.g., -SNAPSHOT, -beta)"
+    description: The complete version string including any qualifiers (e.g., -SNAPSHOT)
     value: ${{ steps.get-version-details.outputs.version_with_qualifier }}
   is_release:
-    description: "A boolean indicating whether this build is a production release"
+    description: Whether this is a release
     value: ${{ steps.get-version-details.outputs.is_release }}
 
 runs:
@@ -16,6 +17,7 @@ runs:
   steps:
     - name: Get version details
       id: get-version-details
+      shell: bash
       run: |
         set -o pipefail # exit build with error when pipes fail
         ./gradlew currentVersion | tee /tmp/currentVersion

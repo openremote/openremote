@@ -42,7 +42,7 @@ jobs:
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
           path: openremote
-          ref: ${{ steps.is_main_repo.outputs.ref }}
+          ref: ${{ steps.is_main_repo.outputs.version }}
           sparse-checkout: |
             .ci_cd
             profile
@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/actions/process-cicd-json
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
           VERSION: ${{ steps.get-version-details.outputs.version }}
 
@@ -173,7 +173,7 @@ jobs:
             os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
