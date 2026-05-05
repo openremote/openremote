@@ -109,7 +109,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::purgeDataPoints,
                 getFirstPurgeMillis(timerService.getNow()),
-                Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
+                Duration.ofDays(7).toMillis(), TimeUnit.MILLISECONDS
             );
         }
 
@@ -197,13 +197,12 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
                 LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + effectiveRetentionWeeks + " weeks retention)");
 
-                String dropChunksQuery = String.format(
-                    "SELECT public.drop_chunks('%s', older_than => '%s'::timestamp)",
-                    qualifiedTableName, cutoffTimestamp.toLocalDateTime().toString()
-                );
-                em.createNativeQuery(dropChunksQuery).getResultList();
+                Number dropped = (Number) em.createNativeQuery("SELECT count(*) FROM public.drop_chunks(CAST(:hypertable AS regclass), older_than => :cutoff)")
+                   .setParameter("hypertable", qualifiedTableName)
+                   .setParameter("cutoff", cutoffTimestamp)
+                   .getSingleResult();
 
-                LOG.info("Successfully purged data points using drop_chunks");
+                LOG.info("Successfully purged data points using drop_chunks, drop count = " + dropped);
             });
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to run data points purge", e);
