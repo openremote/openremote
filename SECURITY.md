@@ -13,7 +13,7 @@ To report a security vulnerability:
 You can report a security vulnerability either through email, or as a GitHub security advisory. If you are uncertain what you have 
 discovered is a vulnerability or you believe it is a critical issue please report using email (or both).
 
-To report through email send an email to developers@openremote.io 
+To report through email send an email to security@openremote.io 
 
 To report through GitHub go to [https://github.com/openremote/openremote/security/advisories/new](https://github.com/openremote/openremote/security/advisories/new)
 
