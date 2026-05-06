@@ -16,7 +16,7 @@ Instead of testing generic, hardcoded queries, this script dynamically adapts to
 * The script must be run on the host machine running the PostgreSQL Docker container.
 * The TimescaleDB instance must have the `timescaledb_toolkit` extension installed (required for the `lttb()` downsampling function).
 * The default Docker container name is expected to be `or-postgresql-1`. (This can be changed at the top of the script).
-* The DB must have the `datapoint_metric_query` function as added in this FlywayDB migration script (`V20260423_01__DatapointMetricQuery.sql`)
+* The DB must have the `datapoint_metric_query` function as added in this FlywayDB migration script (`V20260506_01__DatapointMetricQuery.sql`)
 
 ## How to Run
 
