@@ -31,8 +31,9 @@ BEGIN
     END IF;
 END $$;
 
--- 1. DROP ANY EXISTING LEGACY POLICY
-SELECT remove_compression_policy('asset_datapoint');
+-- 1. DROP ANY EXISTING LEGACY POLICY (use compression and columnstore for new and old timescale DB versions)
+SELECT public.remove_compression_policy('${schemaName}.asset_datapoint', if_exists => true);
+CALL public.remove_columnstore_policy('${schemaName}.asset_datapoint', if_exists => true);
 
 -- ENABLE COLUMNSTORE
 ALTER TABLE ${schemaName}.asset_datapoint SET (
@@ -42,5 +43,5 @@ ALTER TABLE ${schemaName}.asset_datapoint SET (
     timescaledb.chunk_interval = '7 days');
 
 -- ACTIVATE THE AUTOMATED POLICY
-CALL public.add_columnstore_policy('asset_datapoint', after => INTERVAL '7 days');
+CALL public.add_columnstore_policy('${schemaName}.asset_datapoint', after => INTERVAL '7 days');
 
