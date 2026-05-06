@@ -2,7 +2,7 @@
 #
 # It leverages existing reusable workflows similar to the staging.yml environment workflow but unlike the staging.yml workflow
 # it only includes the required jobs for deployments: install-dist, build-manager-image and deploy.
-name: Dispatch Deployment
+name: Deploy
 
 on:
   # Manual trigger
