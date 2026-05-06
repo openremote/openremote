@@ -76,7 +76,17 @@ public class GeoJSONPoint extends GeoJSONGeometry {
     }
 
     @JsonIgnore
+    public double getLongitude() {
+        return coordinates.x;
+    }
+
+    @JsonIgnore
     public double getY() {
+        return coordinates.y;
+    }
+
+    @JsonIgnore
+    public double getLatitude() {
         return coordinates.y;
     }
 
