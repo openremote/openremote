@@ -75,8 +75,24 @@ public class GeoJSONPoint extends GeoJSONGeometry {
         return coordinates.x;
     }
 
+    /**
+     * More intuitive than {@link #getX()} when working with map coordinates.
+     */
+    @JsonIgnore
+    public double getLongitude() {
+        return coordinates.x;
+    }
+
     @JsonIgnore
     public double getY() {
+        return coordinates.y;
+    }
+
+    /**
+     * More intuitive than {@link #getY()} when working with map coordinates.
+     */
+    @JsonIgnore
+    public double getLatitude() {
         return coordinates.y;
     }
 
