@@ -48,7 +48,6 @@ import org.openremote.model.util.TextUtil;
 import javax.security.auth.Subject;
 import java.net.URI;
 import java.security.Principal;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
