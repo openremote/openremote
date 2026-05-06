@@ -435,6 +435,7 @@ queries:
       SELECT count(*) AS idx_count
       FROM pg_stat_user_indexes
       WHERE schemaname IN ('openremote', 'public')
+      -- 1. NOISE FILTER: Only look at indexes larger than 10MB.
       AND pg_relation_size(indexrelid) > 10 * 1024 * 1024
       AND (pg_relation_size(indexrelid)::numeric / GREATEST(pg_relation_size(relid), 1)) > 1.50
       )
