@@ -84,11 +84,11 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -160,7 +160,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // This allows last will messages to be processed
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(3000, TimeUnit.MILLISECONDS)
+                .expireAfterWrite(Duration.ofMillis(3000))
                 .build();
 
         if (!identityService.isKeycloakEnabled()) {
