@@ -14,9 +14,6 @@ on:
       CLEAN_INSTALL:
         description: 'Delete data before starting'
         type: boolean
-      PUSH_SNAPSHOT:
-        description: 'Push SNAPSHOT docker image to ECR'
-        type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
       OR_HOSTNAME:
