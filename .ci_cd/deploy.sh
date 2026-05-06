@@ -29,9 +29,6 @@ if [ -f "temp/env" ]; then
   set -a
   . ./temp/env
   set +a
-
-  echo "Environment variables loaded:"
-  cat temp/env
 fi
 
 # Load temp environment variables into this session

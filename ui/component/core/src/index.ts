@@ -80,10 +80,17 @@ export const DEFAULT_LANGUAGES: Languages = {
     fr: "french",
     de: "german",
     it: "italian",
+    pl: "polish",
     pt: "portuguese",
     ro: "romanian",
     es: "spanish",
     uk: "ukrainian"
+};
+
+// Maps i18next language codes to Moment locale codes where they differ.
+// Add a new entry here when adding a language whose i18next code != Moment locale code.
+export const I18NEXT_TO_MOMENT_LOCALE: Record<string, string> = {
+    cn: "zh-cn",
 };
 
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
@@ -470,7 +477,7 @@ export class Manager implements EventProviderFactory {
         });
 
         i18next.on("languageChanged", (lng) => {
-            moment.locale(lng);
+            moment.locale(I18NEXT_TO_MOMENT_LOCALE[lng] ?? lng);
             this._emitEvent(OREvent.TRANSLATE_LANGUAGE_CHANGED);
         });
 
@@ -972,14 +979,14 @@ export class Manager implements EventProviderFactory {
                 this._name = this._keycloak.tokenParsed?.name;
                 this._username = this._keycloak.tokenParsed?.preferred_username;
 
-                this._createTokenUpdateInterval();
-
                 // If native shell is enabled store offline token
                 if (this.isMobile() && this._keycloak?.refreshTokenParsed?.typ === "Offline") {
                     console.debug("Storing offline refresh token");
                     this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
                 }
                 this._onAuthenticated();
+                this._createTokenUpdateInterval();
+
             } else if (this.config.autoLogin) {
                 this.login();
                 return false;
@@ -994,6 +1001,10 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _createTokenUpdateInterval() {
+        if (!this._authenticated) {
+            console.warn("User is not authenticated; skipping token update interval creation.")
+            return;
+        }
         if (!this._keycloakUpdateTokenInterval) {
             this._keycloakUpdateTokenInterval = window.setInterval(async () => {
                 await this._updateKeycloakAccessToken().catch(() => {
@@ -1091,6 +1102,17 @@ export class Manager implements EventProviderFactory {
 
         const tryReconnect = async () => {
             console.debug("Reconnecting to the Manager...");
+
+            // If the user was never authenticated (public access), skip token refresh and just reconnect the event provider.
+            if (!this._authenticated) {
+                console.debug("User is not authenticated, skipping token refresh");
+                const isEventsOnline = () => this.events?.status === EventProviderStatus.CONNECTED;
+                if (!isEventsOnline()) {
+                    await this.events?.connect();
+                }
+                return isEventsOnline();
+            }
+
             const keycloakOffline = !await this.isKeycloakReachable();
 
             if (keycloakOffline) {

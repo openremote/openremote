@@ -154,52 +154,88 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         LOG.info("Running data points purge daily task");
 
         try {
-            // Get list of attributes that have custom durations
+            // 1. Get list of attributes that have custom durations
             List<Asset<?>> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .attributes(
-                        new AttributePredicate().meta(
-                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                        )));
+                    new AssetQuery()
+                            .attributes(
+                                    new AttributePredicate().meta(
+                                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
+                                    )));
 
             List<Pair<String, Attribute<?>>> attributes = assets.stream()
-                .map(asset -> asset
-                    .getAttributes().stream()
-                    .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
-                    .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
-                    .collect(toList()))
-                .flatMap(List::stream)
-                .collect(toList());
+                    .map(asset -> asset
+                            .getAttributes().stream()
+                            .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
+                            .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
+                            .collect(toList()))
+                    .flatMap(List::stream)
+                    .toList();
 
-            // Purge data points not in the above list using default duration
-            LOG.fine("Purging data points of attributes that use default max age days of " + maxDatapointAgeDays);
+            // 2. Perform the purge using a temporary table and native SQL
+            persistenceService.doTransaction(em -> {
+                em.unwrap(Session.class).doWork(connection -> {
+                    String tempTableName = "tmp_purge_attributes";
 
-            persistenceService.doTransaction(em -> em.createQuery(
-                "delete from AssetDatapoint dp " +
-                    "where dp.timestamp < :dt" + buildWhereClause(attributes, true)
-            ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS))).executeUpdate());
+                    try (Statement statement = connection.createStatement()) {
+                        // Create temp table holding the asset ID, attribute name, and its custom max age
+                        statement.execute(
+                                "create temp table " + tempTableName + " (entity_id text, attribute_name text, max_age_days int) on commit drop"
+                        );
+                    }
 
-            if (!attributes.isEmpty()) {
-                // Purge data points that have specific age constraints
-                Map<Integer, List<Pair<String, Attribute<?>>>> ageAttributeRefMap = attributes.stream()
-                    .collect(groupingBy(attributeRef ->
-                        attributeRef.value
-                            .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
-                            .orElse(maxDatapointAgeDays)));
+                    // Batch insert the custom retention rules to avoid giant IN clauses
+                    if (!attributes.isEmpty()) {
+                        try (PreparedStatement insertStatement = connection.prepareStatement(
+                                "insert into " + tempTableName + " (entity_id, attribute_name, max_age_days) values (?, ?, ?)"
+                        )) {
+                            for (Pair<String, Attribute<?>> attributeRef : attributes) {
+                                insertStatement.setString(1, attributeRef.key);
+                                insertStatement.setString(2, attributeRef.value.getName());
 
-                ageAttributeRefMap.forEach((age, attrs) -> {
-                    LOG.fine("Purging data points of " + attrs.size() + " attributes that use a max age of " + age);
+                                int customAge = attributeRef.value
+                                        .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
+                                        .orElse(maxDatapointAgeDays);
+                                insertStatement.setInt(3, customAge);
 
-                    try {
-                        persistenceService.doTransaction(em -> em.createQuery(
-                            "delete from AssetDatapoint dp " +
-                                "where dp.timestamp < :dt" + buildWhereClause(attrs, false)
-                        ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(age, DAYS))).executeUpdate());
-                    } catch (Exception e) {
-                        LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen", e);
+                                insertStatement.addBatch();
+                            }
+                            insertStatement.executeBatch();
+                        }
+                    }
+
+                    // Purge default data points (NOT in the temp table)
+                    LOG.fine("Purging data points of attributes that use default max age days of " + maxDatapointAgeDays);
+                    long defaultEpochMillis = timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS).toEpochMilli();
+
+                    try (PreparedStatement defaultPurge = connection.prepareStatement(
+                            "delete from asset_datapoint ad " +
+                                    "where ad.timestamp < to_timestamp(?) " +
+                                    "and not exists (select 1 from " + tempTableName + " t where t.entity_id = ad.entity_id and t.attribute_name = ad.attribute_name)"
+                    )) {
+                        defaultPurge.setLong(1, defaultEpochMillis / 1000);
+                        defaultPurge.executeUpdate();
+                    }
+
+                    // Purge custom data points by joining against the temp table
+                    if (!attributes.isEmpty()) {
+                        LOG.fine("Purging data points with custom max age constraints");
+                        long currentEpochMillis = timerService.getNow().truncatedTo(DAYS).toEpochMilli();
+
+                        try (PreparedStatement customPurge = connection.prepareStatement(
+                                "delete from asset_datapoint ad " +
+                                        "using " + tempTableName + " t " +
+                                        "where ad.entity_id = t.entity_id " +
+                                        "and ad.attribute_name = t.attribute_name " +
+                                        // Delete where timestamp is older than (current date - custom age)
+                                        "and ad.timestamp < to_timestamp(? - (t.max_age_days * 86400))"
+                        )) {
+                            customPurge.setLong(1, currentEpochMillis / 1000);
+                            customPurge.executeUpdate();
+                        }
                     }
                 });
-            }
+            });
+
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to run data points purge", e);
         }

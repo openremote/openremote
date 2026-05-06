@@ -48,6 +48,7 @@ import org.openremote.model.util.TextUtil;
 import javax.security.auth.Subject;
 import java.net.URI;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -60,7 +61,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
