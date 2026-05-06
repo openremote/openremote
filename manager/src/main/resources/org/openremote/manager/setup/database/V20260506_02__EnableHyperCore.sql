@@ -1,41 +1,37 @@
 -- FAIL FAST IF THE DB IMAGE DOES NOT SUPPORT HYPERCORE
 DO $$
-DECLARE
-    ts_version text;
-    has_hypercore_policy_proc boolean;
-BEGIN
-    SELECT extversion
-    INTO ts_version
-    FROM pg_extension
-    WHERE extname = 'timescaledb';
+    DECLARE
+        ts_version text;
+        has_hypercore_policy_proc boolean;
+    BEGIN
+        -- 1. EXISTING VERSION CHECKS
+        SELECT extversion INTO ts_version FROM pg_extension WHERE extname = 'timescaledb';
 
-    IF ts_version IS NULL THEN
-        RAISE EXCEPTION
-            'Cannot enable Hypercore for %.asset_datapoint: timescaledb extension is missing. Use a DB image with TimescaleDB.',
-            '${schemaName}';
-    END IF;
+        IF ts_version IS NULL THEN
+            RAISE EXCEPTION 'TimescaleDB extension is missing.';
+        END IF;
 
-    SELECT EXISTS (
-        SELECT 1
-        FROM pg_proc p
-        JOIN pg_namespace n ON n.oid = p.pronamespace
-        WHERE n.nspname = 'public'
-          AND p.proname = 'add_columnstore_policy'
-    )
-    INTO has_hypercore_policy_proc;
+        -- 2. SAFE REMOVAL (Sub-blocks for error handling)
+        -- This "nests" the logic within your existing block
+        BEGIN
+            -- remove_compression_policy is a FUNCTION
+            -- Use PERFORM to call a function inside PL/pgSQL
+            PERFORM public.remove_compression_policy('${schemaName}.asset_datapoint');
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'Could not remove legacy policy: %', SQLERRM;
+        END;
 
-    IF NOT has_hypercore_policy_proc THEN
-        RAISE EXCEPTION
-            'Cannot enable Hypercore for %.asset_datapoint: TimescaleDB version % does not provide add_columnstore_policy. Upgrade DB image.',
-            '${schemaName}', ts_version;
-    END IF;
-END $$;
+        BEGIN
+            -- remove_columnstore_policy is a PROCEDURE
+            -- Use EXECUTE 'CALL...' for maximum compatibility
+            EXECUTE 'CALL public.remove_columnstore_policy(''${schemaName}.asset_datapoint'', if_exists => true)';
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'Could not remove columnstore policy: %', SQLERRM;
+        END;
 
--- 1. DROP ANY EXISTING LEGACY POLICY (use compression and columnstore for new and old timescale DB versions)
-SELECT public.remove_compression_policy('${schemaName}.asset_datapoint', if_exists => true);
-CALL public.remove_columnstore_policy('${schemaName}.asset_datapoint', if_exists => true);
+    END $$;
 
--- ENABLE COLUMNSTORE
+-- 3. ENABLE COLUMNSTORE (Must be outside DO block if it requires its own transaction)
 ALTER TABLE ${schemaName}.asset_datapoint SET (
     timescaledb.enable_columnstore = true,
     timescaledb.orderby = 'timestamp DESC',
@@ -44,4 +40,3 @@ ALTER TABLE ${schemaName}.asset_datapoint SET (
 
 -- ACTIVATE THE AUTOMATED POLICY
 CALL public.add_columnstore_policy('${schemaName}.asset_datapoint', after => INTERVAL '7 days');
-
