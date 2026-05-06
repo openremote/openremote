@@ -66,7 +66,7 @@ jobs:
 
       - name: Get version details
         id: get-version-details
-        uses: ./.github/actions/get-version-details
+        uses: openremote/openremote/.github/actions/get-version-details@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
 
       - name: Check ci_cd existence
         id: check_cicd_json
@@ -76,12 +76,12 @@ jobs:
 
       - name: Check if main repo
         id: is_main_repo
-        uses: ./.github/actions/check-if-main-repo
+        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
 
       - name: Process ci_cd.json file
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
         id: ci-cd-output
-        uses: ./.github/actions/process-cicd-json
+        uses: openremote/openremote/.github/actions/process-cicd-json@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
