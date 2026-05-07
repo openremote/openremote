@@ -42,12 +42,12 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -76,13 +76,13 @@ public class DefaultMQTTHandler extends MQTTHandler {
     // TODO: Switch to caffeine library once ActiveMQ has migrated
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
         .maximumSize(100000)
-        .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
+        .expireAfterWrite(Duration.ofMillis(300000))
         .build();
 
 
     // Intermediary cache for authorized event subscriptions created during the canSubscribe method to be used later in the onSubscribe method
     protected final Cache<String, EventSubscription<?>> eventSubscriptionCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(30000, TimeUnit.MILLISECONDS)
+        .expireAfterWrite(Duration.ofMillis(30000))
         .build();
 
     @Override

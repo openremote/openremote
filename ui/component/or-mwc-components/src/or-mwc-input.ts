@@ -182,6 +182,38 @@ function inputTypeSupportsLabel(inputType: InputType) {
     return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.BUTTON_MOMENTARY;
 }
 
+export const SUPPORTED_WELLKNOWN_VALUE_TYPES = [
+    WellknownValueTypes.TEXT,
+    WellknownValueTypes.EMAIL,
+    WellknownValueTypes.UUID,
+    WellknownValueTypes.ASSETID,
+    WellknownValueTypes.HOSTORIPADDRESS,
+    WellknownValueTypes.IPADDRESS,
+    WellknownValueTypes.BOOLEAN,
+    WellknownValueTypes.BIGNUMBER,
+    WellknownValueTypes.NUMBER,
+    WellknownValueTypes.POSITIVEINTEGER,
+    WellknownValueTypes.POSITIVENUMBER,
+    WellknownValueTypes.LONG,
+    WellknownValueTypes.INTEGER,
+    WellknownValueTypes.BYTE,
+    WellknownValueTypes.INTEGERBYTE,
+    WellknownValueTypes.DIRECTION,
+    WellknownValueTypes.TCPIPPORTNUMBER,
+    WellknownValueTypes.BIGINTEGER,
+    WellknownValueTypes.COLOURRGB,
+    WellknownValueTypes.DATEANDTIME,
+    WellknownValueTypes.TIMESTAMP,
+    WellknownValueTypes.TIMESTAMPISO8601,
+    WellknownValueTypes.CRONEXPRESSION,
+    WellknownValueTypes.TIMEDURATIONISO8601,
+    WellknownValueTypes.PERIODDURATIONISO8601,
+    WellknownValueTypes.TIMEANDPERIODDURATIONISO8601,
+    WellknownValueTypes.JSONOBJECT
+] as const;
+
+export type SupportedWellknownValueTypes = typeof SUPPORTED_WELLKNOWN_VALUE_TYPES[number];
+
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
     let inputType: InputType | undefined = options.inputType;
@@ -199,9 +231,13 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
+    // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
+    let _exhaustiveTypeCheck: never
+    const valueType = valueDescriptor.name as SupportedWellknownValueTypes;
+
     // Determine input type
     if (!inputType) {
-        switch (valueDescriptor.name) {
+        switch (valueType) {
             case WellknownValueTypes.TEXT:
             case WellknownValueTypes.EMAIL:
             case WellknownValueTypes.UUID:
@@ -284,6 +320,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             case WellknownValueTypes.JSONOBJECT:
                 inputType = InputType.JSON_OBJECT;
                 break;
+            default: _exhaustiveTypeCheck = valueType;
         }
 
         if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {

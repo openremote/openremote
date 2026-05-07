@@ -52,6 +52,7 @@ import org.openremote.model.util.TextUtil;
 import javax.security.auth.Subject;
 import java.net.URI;
 import java.security.Principal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -61,7 +62,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.util.MapAccess.getString;
@@ -368,7 +368,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         // TODO configurable? Or replace all of this with Observable.cache()?
         return CacheBuilder.newBuilder()
             .maximumSize(500)
-            .expireAfterWrite(10, MINUTES)
+            .expireAfterWrite(Duration.ofMinutes(10))
             .build(loader);
     }
 
