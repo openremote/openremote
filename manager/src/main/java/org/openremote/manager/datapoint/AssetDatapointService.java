@@ -3,11 +3,9 @@ package org.openremote.manager.datapoint;
 import org.hibernate.Session;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.OutdatedAttributeEvent;
-import org.openremote.model.datapoint.DatapointExportFormat;
-import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -17,27 +15,28 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.datapoint.DatapointExportFormat;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.time.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.Set;
-import java.util.TreeSet;
 
 import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.MapAccess.getInteger;
@@ -46,23 +45,19 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 /**
  * Store and retrieve datapoints for asset attributes and periodically purge data points using
  * TimescaleDB's {@code drop_chunks()} with week-based retention aligned to 7-day chunk intervals.
- * Retention defaults to {@value #OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT} weeks (~2 years).
+ * Retention defaults to inifinite.
  */
 public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
     public static final String OR_DATA_POINTS_MAX_AGE_WEEKS = "OR_DATA_POINTS_MAX_AGE_WEEKS";
-    public static final int OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT = 105;
     /** @deprecated Use {@link #OR_DATA_POINTS_MAX_AGE_WEEKS} instead. If set, value is converted to weeks (rounded up). */
     @Deprecated
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
-    /** @deprecated Use {@link #OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT} instead. */
-    @Deprecated
-    public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-    protected int maxDatapointAgeWeeks;
+    protected int maxDatapointAgeWeeks = -1;
     protected int datapointExportLimit;
 
     @Override
@@ -79,13 +74,13 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         );
 
         if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_WEEKS)) {
-            maxDatapointAgeWeeks = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_WEEKS, OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT);
+            maxDatapointAgeWeeks = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_WEEKS, -1);
         } else if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_DAYS)) {
-            int days = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
-            maxDatapointAgeWeeks = (int) Math.ceil(days / 7.0);
+            int days = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, -1);
+            maxDatapointAgeWeeks = days > 0 ? (int) Math.ceil(days / 7.0) : days;
             LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " is deprecated, use " + OR_DATA_POINTS_MAX_AGE_WEEKS + " instead. Converted " + days + " days to " + maxDatapointAgeWeeks + " weeks.");
         } else {
-            maxDatapointAgeWeeks = OR_DATA_POINTS_MAX_AGE_WEEKS_DEFAULT;
+            maxDatapointAgeWeeks = -1;
         }
 
         if (maxDatapointAgeWeeks <= 0) {
