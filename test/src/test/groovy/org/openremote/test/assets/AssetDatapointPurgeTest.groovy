@@ -41,7 +41,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
         and: "the schema name is retrieved"
         def schemaName = persistenceService.persistenceUnitProperties.getProperty(AvailableSettings.DEFAULT_SCHEMA)
-        println "Using schema: ${schemaName}"
+        getLOG().info("Using schema: ${schemaName}")
 
         and: "the clock is stopped and advanced to a known time"
         stopPseudoClock()
@@ -60,43 +60,48 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
         then: "the asset should be created"
         testAsset.id != null
-        println "Created test asset with ID: ${testAsset.id}"
+        getLOG().info("Created test asset with ID: ${testAsset.id}")
 
-        when: "25.000 datapoints are inserted across multiple attributes"
+        when: "25.000 datapoints are inserted across multiple attributes with some within the 4-week retention window"
         def totalDatapoints = 25_000
         def attributeNames = ["temperature", "humidity", "pressure", "co2"]
-        def datapointsPerAttribute = totalDatapoints / attributeNames.size()
-        // Use current container time as base, then go back in time for historical data
+        def datapointsPerAttribute = (totalDatapoints / attributeNames.size()) as int
+        def recentDatapointsPerAttribute = (datapointsPerAttribute * 0.2) as int
+        def oldDatapointsPerAttribute = datapointsPerAttribute - recentDatapointsPerAttribute
+        def expectedRecentDatapoints = recentDatapointsPerAttribute * attributeNames.size()
         def currentTime = getClockTimeOf(container)
-        def baseTimestamp = Instant.ofEpochMilli(currentTime).minus(365, ChronoUnit.DAYS)
+        def oldBaseTimestamp = Instant.ofEpochMilli(currentTime).minus(365, ChronoUnit.DAYS)
+        def recentBaseTimestamp = Instant.ofEpochMilli(currentTime).minus(7, ChronoUnit.DAYS)
 
-        println "Starting to insert ${totalDatapoints} datapoints..."
+        getLOG().info("Starting to insert ${totalDatapoints} datapoints...")
         def insertStartTime = System.currentTimeMillis()
 
         // Insert datapoints in batches for better performance
         def batchSize = 10000
         attributeNames.each { attributeName ->
-            println "Inserting ${datapointsPerAttribute} datapoints for attribute: ${attributeName}"
+            getLOG().info("Inserting ${datapointsPerAttribute} datapoints for attribute: ${attributeName}")
 
-            for (int batch = 0; batch < datapointsPerAttribute / batchSize; batch++) {
+            for (int batchStart = 0; batchStart < datapointsPerAttribute; batchStart += batchSize) {
+                def batchEnd = Math.min(batchStart + batchSize, datapointsPerAttribute)
                 def datapoints = []
-                for (int i = 0; i < batchSize; i++) {
-                    def index = batch * batchSize + i
-                    def timestamp = baseTimestamp.plus(index * 30, ChronoUnit.SECONDS).toEpochMilli()
+                for (int index = batchStart; index < batchEnd; index++) {
+                    def timestamp = index < oldDatapointsPerAttribute
+                            ? oldBaseTimestamp.plus(index * 30, ChronoUnit.SECONDS).toEpochMilli()
+                            : recentBaseTimestamp.plus((index - oldDatapointsPerAttribute) * 30, ChronoUnit.SECONDS).toEpochMilli()
                     def value = 20.0 + (Math.sin(index / 100.0) * 10.0) + (Math.random() * 2.0)
                     datapoints.add(new ValueDatapoint<>(timestamp, value))
                 }
                 assetDatapointService.upsertValues(testAsset.id, attributeName, datapoints)
 
-                if ((batch + 1) % 10 == 0) {
-                    println "  Progress: ${(batch + 1) * batchSize} / ${datapointsPerAttribute} datapoints inserted for ${attributeName}"
+                if (batchEnd % (batchSize * 10) == 0 || batchEnd == datapointsPerAttribute) {
+                    getLOG().info("  Progress: ${batchEnd} / ${datapointsPerAttribute} datapoints inserted for ${attributeName}")
                 }
             }
         }
 
         def insertEndTime = System.currentTimeMillis()
         def insertDuration = (insertEndTime - insertStartTime) / 1000.0
-        println "Finished inserting ${totalDatapoints} datapoints in ${insertDuration} seconds"
+        getLOG().info("Finished inserting ${totalDatapoints} datapoints in ${insertDuration} seconds")
 
         then: "datapoints should be stored"
         conditions.eventually {
@@ -106,7 +111,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
                 count += datapoints.size()
             }
             assert count >= totalDatapoints * 0.99 // Allow for 1% margin
-            println "Verified ${count} datapoints stored"
+            getLOG().info("Verified ${count} datapoints stored")
         }
 
         when: "storage usage is measured before enabling hypercore"
@@ -119,8 +124,8 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             return query.getSingleResult() as Long
         }
 
-        println "\n=== Storage BEFORE Hypercore ==="
-        println "\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeBefore / (1024.0 * 1024.0))}"
+        getLOG().info("\n=== Storage BEFORE Hypercore ===")
+        getLOG().info("\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeBefore / (1024.0 * 1024.0))}")
 
         and: "compression job is called manually"
         def job_id = persistenceService.doReturningTransaction { em ->
@@ -154,8 +159,8 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             return query.getSingleResult() as Long
         }
 
-        println "\n=== Storage AFTER Hypercore ==="
-        println "\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeAfter / (1024.0 * 1024.0))}"
+        getLOG().info("\n=== Storage AFTER Hypercore ===")
+        getLOG().info("\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeAfter / (1024.0 * 1024.0))}")
 
         then: "storage should be smaller after hypercore"
         orDatabaseSizeBefore > orDatabaseSizeAfter
@@ -166,7 +171,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             def dataPoints = assetDatapointService.getDatapoints(new AttributeRef(testAsset.id, attributeName))
             countBeforePurge += dataPoints.size()
         }
-        println "Datapoints before purge: ${countBeforePurge}"
+        getLOG().info("Datapoints before purge: ${countBeforePurge}")
 
         and: "the purge routine is executed"
         def deleteStartTime = System.currentTimeMillis()
@@ -174,7 +179,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         def deleteEndTime = System.currentTimeMillis()
         def deleteDuration = (deleteEndTime - deleteStartTime) / 1000.0
 
-        println "Purge completed in ${deleteDuration} seconds"
+        getLOG().info("Purge completed in ${deleteDuration} seconds")
 
         then: "data points beyond the 4-week retention window should be purged via drop_chunks"
         conditions.eventually {
@@ -185,12 +190,13 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             }
             def deletedCount = countBeforePurge - countAfterPurge
 
-            println "Datapoints after purge: ${countAfterPurge}"
-            println "Deleted ${deletedCount} datapoints"
-            println "Deletion rate: ${String.format('%.0f', deletedCount / deleteDuration)} datapoints/second"
+            getLOG().info("Datapoints after purge: ${countAfterPurge}")
+            getLOG().info("Deleted ${deletedCount} datapoints")
+            getLOG().info("Deletion rate: ${String.format('%.0f', deletedCount / deleteDuration)} datapoints/second")
 
             // With 365 days of data and 4-week (28-day) retention, most data should be purged
             assert countAfterPurge < countBeforePurge
+            assert countAfterPurge >= expectedRecentDatapoints
             assert deletedCount > 0
         }
 
@@ -204,8 +210,8 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
             return query.getSingleResult() as Long
         }
 
-        println "\n=== Storage AFTER Deletion ==="
-        println "\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeAfterDeletion / (1024.0 * 1024.0))}"
+        getLOG().info("\n=== Storage AFTER Deletion ===")
+        getLOG().info("\nDatabase size: ${String.format('%.2f MB', orDatabaseSizeAfterDeletion / (1024.0 * 1024.0))}")
 
         then: "final storage should be measured"
         true
@@ -219,20 +225,20 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         def actualDeleted = countBeforePurge - finalCount
         def compressionRatio = ((orDatabaseSizeBefore - orDatabaseSizeAfter) / (double) orDatabaseSizeBefore) * 100
 
-        println "\n=== Final Summary ==="
-        println "Total datapoints inserted: ${totalDatapoints}"
-        println "Datapoints before purge: ${countBeforePurge}"
-        println "Datapoints deleted by purge: ${actualDeleted}"
-        println "Datapoints remaining: ${finalCount}"
-        println "Deletion percentage: ${String.format('%.2f', (actualDeleted / totalDatapoints * 100.0))}%"
-        println "\nStorage Summary:"
-        println "  Before hypercore: ${String.format('%.2f MB', orDatabaseSizeBefore / (1024.0 * 1024.0))}"
-        println "  After hypercore:  ${String.format('%.2f MB', orDatabaseSizeAfter / (1024.0 * 1024.0))}"
-        println "  After deletion:   ${String.format('%.2f MB', orDatabaseSizeAfterDeletion / (1024.0 * 1024.0))}"
-        println "\nPerformance Summary:"
-        println "  Insert time: ${insertDuration} seconds"
-        println "  Purge time: ${deleteDuration} seconds"
-        println "  Compression: ${String.format('%.2f', compressionRatio)}%"
+        getLOG().info("\n=== Final Summary ===")
+        getLOG().info("Total datapoints inserted: ${totalDatapoints}")
+        getLOG().info("Datapoints before purge: ${countBeforePurge}")
+        getLOG().info("Datapoints deleted by purge: ${actualDeleted}")
+        getLOG().info("Datapoints remaining: ${finalCount}")
+        getLOG().info("Deletion percentage: ${String.format('%.2f', (actualDeleted / totalDatapoints * 100.0))}%")
+        getLOG().info("\nStorage Summary:")
+        getLOG().info("  Before hypercore: ${String.format('%.2f MB', orDatabaseSizeBefore / (1024.0 * 1024.0))}")
+        getLOG().info("  After hypercore:  ${String.format('%.2f MB', orDatabaseSizeAfter / (1024.0 * 1024.0))}")
+        getLOG().info("  After deletion:   ${String.format('%.2f MB', orDatabaseSizeAfterDeletion / (1024.0 * 1024.0))}")
+        getLOG().info("\nPerformance Summary:")
+        getLOG().info("  Insert time: ${insertDuration} seconds")
+        getLOG().info("  Purge time: ${deleteDuration} seconds")
+        getLOG().info("  Compression: ${String.format('%.2f', compressionRatio)}%")
 
         then: "No exception should have occurred"
         true

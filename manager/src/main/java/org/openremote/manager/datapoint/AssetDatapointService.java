@@ -197,7 +197,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
                 LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + effectiveRetentionWeeks + " weeks retention)");
 
-                Number dropped = (Number) em.createNativeQuery("SELECT count(*) FROM public.drop_chunks(CAST(:hypertable AS regclass), older_than => :cutoff)")
+                Number dropped = (Number) em.createNativeQuery("SELECT count(*) FROM public.drop_chunks(CAST(:hypertable AS regclass), older_than => CAST(:cutoff AS timestamp))")
                    .setParameter("hypertable", qualifiedTableName)
                    .setParameter("cutoff", cutoffTimestamp)
                    .getSingleResult();
