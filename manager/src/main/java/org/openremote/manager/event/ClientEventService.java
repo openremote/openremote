@@ -21,16 +21,15 @@ package org.openremote.manager.event;
 
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
+import jakarta.security.enterprise.AuthenticationException;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.undertow.UndertowComponent;
 import org.apache.camel.component.undertow.UndertowConstants;
 import org.apache.camel.component.undertow.UndertowHostKey;
-import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.basic.BasicAuthContext;
-import org.openremote.container.security.keycloak.AccessTokenAuthContext;
+import org.openremote.container.security.TokenPrincipal;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -44,11 +43,15 @@ import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.*;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.TextUtil;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +60,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.lang.System.Logger.Level.*;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
@@ -350,61 +354,65 @@ public class ClientEventService extends RouteBuilder implements ContainerService
       switch (eventType) {
          case ONOPEN -> {
             WebSocketHttpExchange httpExchange = exchange.getIn().getHeader(UndertowConstants.EXCHANGE, WebSocketHttpExchange.class);
-            String realm = httpExchange.getRequestHeader(Constants.REALM_PARAM_NAME);
-            Principal principal = httpExchange.getUserPrincipal();
+            String realm = getHeaderThenQueryParam(httpExchange, REALM_PARAM_NAME, REALM_PARAM_NAME);
+            Principal principal = null;
             AuthContext authContext = null;
+            String authorization = getHeaderThenQueryParam(httpExchange, AUTHORIZATION, AUTHORIZATION);
 
-            if (principal instanceof KeycloakPrincipal<?> keycloakPrincipal) {
-               authContext = new AccessTokenAuthContext(
-                  keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
-                  keycloakPrincipal.getKeycloakSecurityContext().getToken()
-               );
-            } else if (principal instanceof BasicAuthContext) {
-               authContext = (BasicAuthContext) principal;
-            } else if (principal != null) {
-               LOG.log(INFO, "Unsupported user principal type: " + principal);
+            if (!TextUtil.isNullOrEmpty(authorization)) {
+                authorization = RequestParams.getBearerAuth(authorization);
+                try {
+                    principal = identityService.verify(realm, authorization);
+                } catch (AuthenticationException e) {
+                    LOG.log(INFO, "Failed to verify client identity '" + e.getMessage() + "': " + webSocketChannel.getSourceAddress());
+                }
+
+                if (principal instanceof AuthContext ac) {
+                    LOG.log(DEBUG, "Client identity verified '" + ((TokenPrincipal) principal).getUsername() + "': " + webSocketChannel.getSourceAddress());
+                    authContext = ac;
+                }
             }
 
-            // Set an idle timeout value for service account connections; browsers don't reliably support
-            // ping/pong frames so we can't be too aggressive with those connections but other clients
-            // should implement ping/pong
-            if (authContext != null && authContext.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX)) {
-               webSocketChannel.setIdleTimeout(30000);
-            }
+             // Set an idle timeout value for service account connections; browsers don't reliably support
+             // ping/pong frames so we can't be too aggressive with those connections but other clients
+             // should implement ping/pong
+             if (authContext != null && authContext.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX)) {
+                 webSocketChannel.setIdleTimeout(30000);
+             }
 
-            // Push auth and realm into channel for future use
-            webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
-            webSocketChannel.setAttribute(Constants.REALM_PARAM_NAME, realm);
+             // Push auth and realm into channel for future use
+             webSocketChannel.setAttribute(AUTH_CONTEXT, authContext);
+             webSocketChannel.setAttribute(REALM_PARAM_NAME, realm);
 
-            exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-            exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-            exchange.getIn().setHeader(SESSION_OPEN, true);
-            sessionChannels.put(getSessionKey(exchange), webSocketChannel);
-            LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
+             exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+             exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
+             exchange.getIn().setHeader(SESSION_OPEN, true);
+             sessionChannels.put(getSessionKey(exchange), webSocketChannel);
+             LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
          }
          case ONCLOSE, ONERROR -> {
-            AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-            String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
-            String sessionKey = getSessionKey(exchange);
+             AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
+             String realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
+             String sessionKey = getSessionKey(exchange);
 
-            exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-            exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+             exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+             exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
 
-            if (eventType == UndertowConstants.EventType.ONCLOSE) {
-               LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
-               exchange.getIn().setHeader(SESSION_CLOSE, true);
-            } else {
-               LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
-               closeWebsocketChannel(sessionKey, webSocketChannel);
-               exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
-            }
+             if (eventType == UndertowConstants.EventType.ONCLOSE) {
+                 LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
+                 exchange.getIn().setHeader(SESSION_CLOSE, true);
+             } else {
+                 LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
+                 closeWebsocketChannel(sessionKey, webSocketChannel);
+                 exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
+             }
 
-            LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
-            sessionChannels.remove(getSessionKey(exchange));
-            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-               subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
-               return null;
-            });
+             LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
+             sessionChannels.remove(getSessionKey(exchange));
+             websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
+                 subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
+                 return null;
+             });
          }
       }
 
@@ -420,11 +428,11 @@ public class ClientEventService extends RouteBuilder implements ContainerService
    @SuppressWarnings({"unchecked", "rawtypes"})
    void procesInboundEvent(Exchange exchange) {
       WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
-      AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-      String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+      AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
+      String realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
 
-      exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-      exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+      exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+      exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
 
       // Pass to gateway interceptor and abort if it stops the exchange
       if (gatewayInterceptor != null) {
@@ -676,5 +684,50 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public String toString() {
         return getClass().getSimpleName() + "{" +
             '}';
+    }
+
+    protected static String getHeaderThenQueryParam(WebSocketHttpExchange exchange, String headerName, String queryParamName) {
+        if (exchange == null) {
+            return null;
+        }
+
+        String headerValue = exchange.getRequestHeader(headerName);
+        if (headerValue != null && !headerValue.isBlank()) {
+            return headerValue;
+        }
+
+        return getFirstQueryParam(exchange.getQueryString(), queryParamName);
+    }
+
+    protected static String getFirstQueryParam(String queryString, String name) {
+        if (queryString == null || queryString.isBlank() || name == null || name.isBlank()) {
+            return null;
+        }
+
+        // Undertow's queryString is typically the raw part after '?', e.g. "a=1&b=2"
+        String qs = queryString.startsWith("?") ? queryString.substring(1) : queryString;
+
+        for (String part : qs.split("&")) {
+            if (part.isEmpty()) continue;
+
+            int idx = part.indexOf('=');
+            String rawKey = idx >= 0 ? part.substring(0, idx) : part;
+            String rawVal = idx >= 0 ? part.substring(idx + 1) : "";
+
+            String key = urlDecode(rawKey);
+            if (!name.equals(key)) {
+                continue;
+            }
+
+            String val = urlDecode(rawVal);
+            return (val == null || val.isBlank()) ? null : val;
+        }
+
+        return null;
+    }
+
+    protected static String urlDecode(String s) {
+        if (s == null) return null;
+        return URLDecoder.decode(s, StandardCharsets.UTF_8);
     }
 }

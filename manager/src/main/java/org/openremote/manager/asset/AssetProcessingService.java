@@ -154,7 +154,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             // Users must have write attributes role
-            if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
+            if (authContext != null && !authContext.hasResourceRole(ClientRole.WRITE_ATTRIBUTES.getValue(),
                 Constants.KEYCLOAK_CLIENT_ID)) {
                 LOG.log(System.Logger.Level.DEBUG, "User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                 return false;
