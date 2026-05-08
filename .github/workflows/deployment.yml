@@ -92,13 +92,15 @@ jobs:
       - name: Build deployment
         shell: bash
         run: ./gradlew -p deployment installDist # TODO: optimize the task graph
+        env:
+          GFE_PASSWORD: ${{ secrets._TEMP_GFE_PASSWORD }}
 
       # --------------------------------------------------------------------------------------
       # Deploy
       # --------------------------------------------------------------------------------------
 
-      - name: Get inputs and secrets
-        id: inputs-and-secrets
+      - name: Process inputs
+        id: process-inputs
         shell: python
         run: |
           import os
@@ -107,15 +109,10 @@ jobs:
           # Overlay all inputs and secrets onto this jobs outputs
           callerInputs = os.getenv("CALLER_INPUTS")
           inputs = os.getenv("INPUTS")
-          secrets = os.getenv("SECRETS")
           eventName = os.getenv("GITHUB_EVENT_NAME")
-
-          print(eventName)
 
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
-          if secrets is not None and secrets != '':
-            secrets = json.loads(secrets)
           if eventName == 'workflow_call' and callerInputs is not None and callerInputs != 'null':
             os.system(f"echo 'Processing caller inputs'")
             inputs = json.loads(callerInputs)
@@ -123,24 +120,11 @@ jobs:
           if inputs is not None and 'INPUTS' in inputs:
             os.system("echo 'Processing inputs from caller'")
             inputs = json.loads(inputs['INPUTS'])
-          if 'SECRETS' in secrets:
-            os.system("echo 'Processing secrets from caller'")
-            secrets = json.loads(secrets['SECRETS'])
 
-          # Iterate over secrets then inputs and assign them as outputs on this step
-
-          if secrets is not None and secrets != 'null':
-            for key, value in secrets.items():
-              print(f"::add-mask::{value}")
-              lines = len(value.split("\n"))
-              if lines > 1:
-                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
-              else:
-                  os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
+          # Iterate over inputs and assign them as outputs on this step
 
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
-              print(f"::add-mask::{value}")
               os.system(f"echo 'Outputting input: {key}'")
               lines = len(value.split("\n"))
               if lines > 1:
@@ -150,7 +134,6 @@ jobs:
         env:
           CALLER_INPUTS: ${{ inputs.INPUTS }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
-          SECRETS: ${{ toJSON(secrets) }}
 
       - name: Public IP
         id: ip-address
@@ -203,20 +186,12 @@ jobs:
               os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
               sys.exit(1)
           os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
-
-          pushSnapshot = os.getenv('INPUT_PUSH_SNAPSHOT')
-          if pushSnapshot == 'true' and repoOwner != 'openremote':
-            os.system("echo 'Only Openremote organisation can push to ECR'")
-            sys.exit(1)
-          else:
-            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
-          INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
-          INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
-          INPUT_PUSH_SNAPSHOT: ${{ steps.inputs-and-secrets.outputs.PUSH_SNAPSHOT }}
+          INPUT_ENVIRONMENT: ${{ steps.process-inputs.outputs.ENVIRONMENT }}
+          INPUT_MANAGER_TAG: ${{ steps.process-inputs.outputs.MANAGER_TAG }}
 
       - name: Output image tag
         id: get-image-tag
@@ -237,7 +212,9 @@ jobs:
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
           isMainRepo = os.getenv("IS_MAIN_REPO") == 'true'
-          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          inputs = json.loads(os.getenv("INPUTS", "{}"))
+          secrets = json.loads(os.getenv("SECRETS", "{}"))
+          inputsAndSecrets = inputs | secrets
           ipv4 = os.getenv("IPV4")
           ipv6 = os.getenv("IPV6")
 
@@ -357,6 +334,7 @@ jobs:
           DEPLOYMENT_DOCKER_BUILD_PATH: deployment/build
           MANAGER_REF: ${{steps.get-image-tag.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.get-image-tag.outputs.refTag }}
-          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
+          INPUTS: ${{ toJSON(steps.process-inputs.outputs) }}
+          SECRETS: ${{ toJSON(secrets) }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
