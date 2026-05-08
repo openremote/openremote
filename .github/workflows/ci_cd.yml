@@ -901,7 +901,7 @@ jobs:
           isMainRepo = os.getenv("IS_MAIN_REPO") == 'true'
           inputs = json.loads(os.getenv("INPUTS", "{}"))
           secrets = json.loads(os.getenv("SECRETS", "{}"))
-          inputsAndSecrets = inputs | secrets
+          inputsAndSecrets = secrets | inputs
           ipv4 = os.getenv("IPV4")
           ipv6 = os.getenv("IPV6")
 
