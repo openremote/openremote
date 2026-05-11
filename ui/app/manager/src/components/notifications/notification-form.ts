@@ -36,7 +36,6 @@ export class NotificationForm extends LitElement {
         :host {
             height: 76vh;
             display: block;
-            min-width: 1024px;
         }
 
         .form-container {
