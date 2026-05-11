@@ -237,7 +237,8 @@ export class NotificationForm extends LitElement {
     protected async _loadUsers(): Promise<User[]> {
         try {
             const response = await manager.rest.api.UserResource.query({
-                realmPredicate: {name: manager.displayRealm}
+                realmPredicate: { name: manager.displayRealm },
+                serviceUsers: false
             });
             // filter out keycloak service account
             return this._users = response.data.filter((u) => u.username !== 'manager-keycloak');
