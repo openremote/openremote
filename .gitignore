@@ -21,6 +21,7 @@ deployment/manager/fcm.json
 .idea/
 .sts4-cache/
 .local/
+.direnv/
 .DS_*
 apminsight-javaagent/
 console/iOS/DerivedData
