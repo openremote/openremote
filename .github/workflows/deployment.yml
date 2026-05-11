@@ -168,8 +168,8 @@ jobs:
           deployments = os.getenv('DEPLOYMENTS')
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
-          inputTag = os.getenv('MANAGER_TAG')
-          inputEnv = os.getenv('ENVIRONMENT')
+          inputTag = os.getenv('INPUT_MANAGER_TAG')
+          inputEnv = os.getenv('INPUT_ENVIRONMENT')
           managerVersion = os.getenv('MANAGER_VERSION')
 
           if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
@@ -332,7 +332,7 @@ jobs:
           BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
           MANAGER_DOCKER_BUILD_PATH: manager/build/install/manager
           DEPLOYMENT_DOCKER_BUILD_PATH: deployment/build
-          MANAGER_REF: ${{steps.get-image-tag.outputs.refTag }}
+          MANAGER_REF: ${{ steps.get-image-tag.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.get-image-tag.outputs.refTag }}
           INPUTS: ${{ toJSON(steps.process-inputs.outputs) }}
           SECRETS: ${{ toJSON(secrets) }}
