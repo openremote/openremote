@@ -483,32 +483,40 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
+        Set<AttributeInfo> insertInfos;
+        Set<AttributeInfo> updateInfos;
+        Set<AttributeInfo> retractInfos;
+
         // Synchronise attribute events and states
-        synchronized (insertInfos) {
+        synchronized (this.insertInfos) {
+            insertInfos = new HashSet<>(this.insertInfos);
+            updateInfos = new HashSet<>(this.updateInfos);
+            retractInfos = new HashSet<>(this.retractInfos);
 
-            retractInfos.forEach(attributeInfo -> {
-                facts.removeAssetState(attributeInfo);
-                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
-                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
-            });
-
-            insertInfos.forEach(attributeInfo -> {
-                facts.putAssetState(attributeInfo);
-                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
-                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
-            });
-
-            updateInfos.forEach(attributeInfo -> {
-                facts.putAssetState(attributeInfo);
-                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.UPDATE, attributeInfo));
-            });
-
-            insertInfos.clear();
-            updateInfos.clear();
-            retractInfos.clear();
+            this.insertInfos.clear();
+            this.updateInfos.clear();
+            this.retractInfos.clear();
         }
+
+        retractInfos.forEach(attributeInfo -> {
+            facts.removeAssetState(attributeInfo);
+            // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+            trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+            notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
+        });
+
+        insertInfos.forEach(attributeInfo -> {
+            facts.putAssetState(attributeInfo);
+            // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+            trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+            notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
+        });
+
+        updateInfos.forEach(attributeInfo -> {
+            facts.putAssetState(attributeInfo);
+            notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.UPDATE, attributeInfo));
+        });
+
 
         if (trackLocationPredicates && assetLocationPredicatesConsumer != null) {
             facts.startTrackingLocationRules();
