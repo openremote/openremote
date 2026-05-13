@@ -34,6 +34,7 @@ services:
       service: postgresql
     volumes:
       - manager-data:/storage
+      - ../tmp/datapoint:/storage/datapoint
     # Access directly if needed on localhost
     ports:
       - "5432:5432"

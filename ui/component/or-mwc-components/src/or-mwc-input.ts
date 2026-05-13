@@ -154,7 +154,7 @@ export interface ValueInputProvider {
 
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
-export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail & { errors?: boolean } | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -179,8 +179,40 @@ function inputTypeSupportsHelperText(inputType: InputType) {
 }
 
 function inputTypeSupportsLabel(inputType: InputType) {
-    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX;
+    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.BUTTON_MOMENTARY;
 }
+
+export const SUPPORTED_WELLKNOWN_VALUE_TYPES = [
+    WellknownValueTypes.TEXT,
+    WellknownValueTypes.EMAIL,
+    WellknownValueTypes.UUID,
+    WellknownValueTypes.ASSETID,
+    WellknownValueTypes.HOSTORIPADDRESS,
+    WellknownValueTypes.IPADDRESS,
+    WellknownValueTypes.BOOLEAN,
+    WellknownValueTypes.BIGNUMBER,
+    WellknownValueTypes.NUMBER,
+    WellknownValueTypes.POSITIVEINTEGER,
+    WellknownValueTypes.POSITIVENUMBER,
+    WellknownValueTypes.LONG,
+    WellknownValueTypes.INTEGER,
+    WellknownValueTypes.BYTE,
+    WellknownValueTypes.INTEGERBYTE,
+    WellknownValueTypes.DIRECTION,
+    WellknownValueTypes.TCPIPPORTNUMBER,
+    WellknownValueTypes.BIGINTEGER,
+    WellknownValueTypes.COLOURRGB,
+    WellknownValueTypes.DATEANDTIME,
+    WellknownValueTypes.TIMESTAMP,
+    WellknownValueTypes.TIMESTAMPISO8601,
+    WellknownValueTypes.CRONEXPRESSION,
+    WellknownValueTypes.TIMEDURATIONISO8601,
+    WellknownValueTypes.PERIODDURATIONISO8601,
+    WellknownValueTypes.TIMEANDPERIODDURATIONISO8601,
+    WellknownValueTypes.JSONOBJECT
+] as const;
+
+export type SupportedWellknownValueTypes = typeof SUPPORTED_WELLKNOWN_VALUE_TYPES[number];
 
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
@@ -199,9 +231,13 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
+    // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
+    let _exhaustiveTypeCheck: never
+    const valueType = valueDescriptor.name as SupportedWellknownValueTypes;
+
     // Determine input type
     if (!inputType) {
-        switch (valueDescriptor.name) {
+        switch (valueType) {
             case WellknownValueTypes.TEXT:
             case WellknownValueTypes.EMAIL:
             case WellknownValueTypes.UUID:
@@ -225,7 +261,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     inputType = InputType.CHECKBOX;
                 }
 
-                if (format && format.asMomentary) {
+                if (format && format.asMomentary || (Util.getMetaValue(WellknownMetaItems.MOMENTARY, valueHolder, valueHolderDescriptor) === true) ) {
                     inputType = InputType.BUTTON_MOMENTARY;
                 }
                 break;
@@ -284,6 +320,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             case WellknownValueTypes.JSONOBJECT:
                 inputType = InputType.JSON_OBJECT;
                 break;
+            default: _exhaustiveTypeCheck = valueType;
         }
 
         if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
@@ -513,6 +550,9 @@ const style = css`
     .mdc-radio-container {
         display: flex;
         flex-direction: column;
+    }
+    .mdc-form-field:has(> .mdc-radio) {
+        height: 56px !important;
     }
     .mdc-text-field.mdc-text-field--invalid:not(.mdc-text-field--disabled) + .mdc-text-field-helper-line .mdc-text-field-helper-text {
         color: var(--mdc-theme-error, #b00020)
@@ -803,6 +843,18 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public resizeVertical: boolean = false;
 
+    /**
+     * Always censure text fields (like a password), and do not allow toggling
+     */
+    @property({type: Boolean})
+    public censored: boolean = false;
+
+    /**
+     * Toggles visibility state of the password InputType (true = shown, false = hidden)
+     */
+    @property({type: Boolean, reflect: true})
+    public advertised: boolean = false;
+
     public get nativeValue(): any {
         if (this._mdcComponent) {
             return (this._mdcComponent as any).value;
@@ -879,7 +931,7 @@ export class OrMwcInput extends LitElement {
     }
 
     public focus() {
-        if (this.type === InputType.RANGE && this._mdcComponent2) {
+        if (this.type === InputType.RANGE && this._mdcComponent2 && typeof (this._mdcComponent2 as any).focus === "function") {
             (this._mdcComponent2 as any).focus();
         } else if (this._mdcComponent && typeof (this._mdcComponent as any).focus === "function") {
             (this._mdcComponent as any).focus();
@@ -905,35 +957,29 @@ export class OrMwcInput extends LitElement {
             switch (this.type) {
                 case InputType.RADIO:
                     const optsRadio = this.resolveOptions(this.options);
-                    this._selectedIndex = -1;
                     return html`
                             <div class="mdc-radio-container">
-                                ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
-                                    if (this.value === optValue) {
-                                        this._selectedIndex = index;
-                                    }
+                                ${optsRadio ? optsRadio.map(([optValue, optDisplay]) => {
                                     return html`
                                     <div id="field" class="mdc-form-field">
                                         <div class="mdc-radio">
-                                            <input type="radio" 
+                                            <input type="radio"
                                                 id="elem-${optValue}"
                                                 name="${ifDefined(this.name)}"
                                                 value="${optValue}"
-                                                ?checked="${this.value && this.value.includes(optValue)}"
+                                                .checked="${this.value === optValue}"
                                                 ?required="${this.required}"
-                                                ?disabled="${this.disabled || this.readonly}"                            
+                                                ?disabled="${this.disabled || this.readonly}"
                                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), optValue)}"
                                                 class="mdc-radio__native-control"/>
-                                            <div class="mdc-radio__background">
-                                            <div class="mdc-radio__outer-circle"></div>
-                                            <div class="mdc-radio__inner-circle"></div>
-                                            </div>
+                                                <div class="mdc-radio__background">
+                                                    <div class="mdc-radio__outer-circle"></div>
+                                                    <div class="mdc-radio__inner-circle"></div>
+                                                </div>
                                             <div class="mdc-radio__ripple"></div>
                                         </div>
                                         <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
-                                    </div>
-
-                                    `;
+                                    </div>`;
                                 }) : ``}
                             </div>
                     `;
@@ -1128,7 +1174,7 @@ export class OrMwcInput extends LitElement {
                                             <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">
                                                 <or-translate .value="${this.searchLabel}"></or-translate>
                                             </span>
-                                            <input class="mdc-text-field__input" type="text"
+                                            <input id="searchable-input" class="mdc-text-field__input" type="text"
                                                    @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
                                             />
                                         </label>
@@ -1184,7 +1230,12 @@ export class OrMwcInput extends LitElement {
 
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
-                    let classes = {
+                    // If no action, label or icons are given, show as a circle.
+                    if (isIconButton && !this.iconTrailing && !this.icon ) {
+                        this.icon = "circle"
+                        }
+
+                    const classes = {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
                         "mdc-fab--extended": !isIconButton && this.action && !!this.label,
@@ -1192,7 +1243,7 @@ export class OrMwcInput extends LitElement {
                         "mdc-button": !isIconButton && !this.action,
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
-                        "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
+                        "mdc-button--outlined": !isIconButton && !this.action && (this.outlined || isMomentary),
                         "mdc-button--rounded": !isIconButton && !this.action && this.rounded,                        
                         "mdc-button--fullwidth": this.fullWidth,
                     };
@@ -1353,7 +1404,7 @@ export class OrMwcInput extends LitElement {
                                     format.momentJsFormat = "YYYY-MM-DDTHH:mm";
                                     break;
                                 case InputType.NUMBER:
-                                    format.maximumFractionDigits = 20; // default according to Web documentation
+                                    format.maximumFractionDigits ??= 20; // default according to Web documentation
                                     break;
                             }
 
@@ -1378,6 +1429,11 @@ export class OrMwcInput extends LitElement {
                     }
 
                     if (!(this.type === InputType.RANGE && this.disableSliderNumberInput)) {
+
+                        // Handle password toggling logic
+                        if(this.censored) type = InputType.PASSWORD;
+                        if(this.type === InputType.PASSWORD && this.advertised) type = InputType.TEXT;
+
                         const classes = {
                             "mdc-text-field": true,
                             "mdc-text-field--invalid": !this.valid,
@@ -1424,6 +1480,7 @@ export class OrMwcInput extends LitElement {
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                 ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
+                                ${this.type === InputType.PASSWORD && !this.censored ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon=${this.advertised ? 'eye' : 'eye-off'} style="pointer-events: auto;" @click=${() => this.advertised = !this.advertised}></or-icon>` : ``}
                                 ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                             </label>
                             ${hasHelper || showValidationMessage ? html`
@@ -1441,7 +1498,7 @@ export class OrMwcInput extends LitElement {
                             "mdc-slider": true,
                             "mdc-slider--range": this.continuous,
                             "mdc-slider--discreet": !this.continuous,
-                            "mdc-slider--disabled": this.disabled
+                            "mdc-slider--disabled": this.disabled || this.readonly
                         };
 
                         inputElem = html`

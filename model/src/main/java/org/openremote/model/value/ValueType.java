@@ -147,7 +147,7 @@ public final class ValueType {
 
     public static final ValueDescriptor<Integer> DIRECTION = new ValueDescriptor<>("direction", Integer.class,
         new ValueConstraint.Min(0),
-        new ValueConstraint.Max(359)
+        new ValueConstraint.Max(360)
     );
 
     public static final ValueDescriptor<Integer> PORT = new ValueDescriptor<>("TCP_IPPortNumber", Integer.class,

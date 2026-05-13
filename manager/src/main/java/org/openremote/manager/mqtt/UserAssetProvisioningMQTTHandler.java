@@ -27,8 +27,8 @@ import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.provisioning.ProvisioningService;
@@ -39,6 +39,7 @@ import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.protocol.mqtt.Topic;
 import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
@@ -60,7 +61,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -167,9 +167,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean checkCanSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         // Skip standard checks
-        if (!canSubscribe(connection, securityContext, topic)) {
+        if (!canSubscribe(connection, authContext, topic)) {
             getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
@@ -177,9 +177,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean checkCanPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         // Skip standard checks
-        if (!canPublish(connection, securityContext, topic)) {
+        if (!canPublish(connection, authContext, topic)) {
             getLogger().fine("Cannot publish to this topic, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
@@ -189,7 +189,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     @Override
     public boolean topicMatches(Topic topic) {
         return isProvisioningTopic(topic)
-            && topic.getTokens().size() == 3
+            && topic.getTokens().length == 3
             && (isRequestTopic(topic) || isResponseTopic(topic));
     }
 
@@ -199,7 +199,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -211,8 +211,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (allowed) {
             // Only allow if there is no existing subscription for this topic
-            RemotingConnection existingConnection = responseSubscribedConnections.get(topic.getString());
-            if (existingConnection != null) {
+            RemotingConnection existingConnection = responseSubscribedConnections.get(topic.toString());
+            if (existingConnection != null && existingConnection.getTransportConnection().isOpen()) {
                 LOG.warning("Subscription already exists possible eavesdropping");
                 allowed = false;
             }
@@ -223,12 +223,16 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        responseSubscribedConnections.put(topic.getString(), connection);
+        responseSubscribedConnections.put(topic.toString(), connection);
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-        responseSubscribedConnections.remove(topic.getString());
+        responseSubscribedConnections.computeIfPresent(topic.toString(), (t, existingConnection) -> {
+            // Don't remove the existing entry if it is for a different connection; this is a possibility if a client
+            // disconnects and quickly reconnects as we have no guaranteed ordering of subscribe/unsubscribe calls
+            return existingConnection == connection ? null : existingConnection;
+        });
     }
 
     @Override
@@ -239,7 +243,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+    public boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -272,12 +276,22 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
-        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> {
+            if (connections.remove(connection)) {
+                // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        });
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> {
+            if (connections.remove(connection)) {
+                // Remove sessions as durable sessions will never reconnect if client ID already subscribed to attribute topics
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        });
     }
 
     protected void processProvisioningRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -482,7 +496,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finest("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
-            identityProvider.updateUserRoles(
+            identityProvider.updateUserClientRoles(
                 realm,
                 serviceUser.getId(),
                 Constants.KEYCLOAK_CLIENT_ID,
@@ -494,7 +508,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningConfig.isRestrictedUser()) {
             LOG.finest("User will be made restricted: realm=" + realm + ", username=" + username);
-            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
+            identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addUserRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
         }
 
         // Inject secret
@@ -542,18 +556,16 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     protected void forceClientDisconnects(long provisioningConfigId) {
-        provisioningConfigAuthenticatedConnectionMap.computeIfPresent(provisioningConfigId, (id, connections) -> {
-            // Force disconnect of each connection and the disconnect handler will remove the connection from the map
-            connections.forEach(connection -> {
-                try {
-                    LOG.fine("Force disconnecting client that is using provisioning config ID '" + provisioningConfigId + "': " + MQTTBrokerService.connectionToString(connection));
-                    connection.disconnect(false);
-                } catch (Exception e) {
-                    getLogger().log(Level.WARNING, "Failed to disconnect client: " + MQTTBrokerService.connectionToString(connection), e);
-                }
-            });
-            connections.clear();
-            return connections;
+
+        Set<RemotingConnection> connections = provisioningConfigAuthenticatedConnectionMap.remove(provisioningConfigId);
+
+        // Force disconnect of each connection and the disconnect handler will remove the connection from the map
+        connections.forEach(connection -> {
+            try {
+                mqttBrokerService.doForceDisconnect(connection);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Failed to disconnect client: " + MQTTBrokerService.connectionToString(connection), e);
+            }
         });
     }
 }

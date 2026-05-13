@@ -1,0 +1,24 @@
+image:
+  tag: demo
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  periodSeconds: 5
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  periodSeconds: 5
+startupProbe:
+  httpGet:
+    path: /
+    port: 8080
+  failureThreshold: 30
+  periodSeconds: 5
+
+or:
+  env:
+    - name: OR_SETUP_TYPE
+      value: "demo"

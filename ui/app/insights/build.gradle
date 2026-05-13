@@ -51,8 +51,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -67,6 +67,12 @@ signing {
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign publishing.publications.maven
     }
+}
+
+tasks.register('npmBuild', Exec) {
+    mustRunAfter npmClean
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "run", "build"
 }
 
 tasks.register('cleanDist') {
@@ -98,3 +104,5 @@ clean.dependsOn(cleanDist)
 jar.dependsOn(generateSources)
 processResources.dependsOn(generateSources)
 sourcesJar.dependsOn(generateSources)
+
+gradle.startParameter.excludedTaskNames += ["${project.path}:test".toString()]

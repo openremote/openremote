@@ -20,10 +20,7 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
-
-import java.util.Date;
 
 /**
  * Used to indicate to a connected gateway should disconnect
@@ -32,27 +29,32 @@ import java.util.Date;
  */
 public class GatewayDisconnectEvent extends SharedEvent {
 
+    public static final String TYPE = "gateway-disconnect";
+
     public enum Reason {
         TERMINATING,
         DISABLED,
         ALREADY_CONNECTED,
         UNRECOGNISED,
-        PERMANENT_ERROR
+        PERMANENT_ERROR,
+        SYNC_ERROR
     }
 
     protected Reason reason;
 
     @JsonCreator
-    public GatewayDisconnectEvent(@JsonProperty("timestamp") Date timestamp, @JsonProperty("reason") Reason reason) {
-        super(timestamp != null ? timestamp.getTime() : new Date().getTime());
-        this.reason = reason;
-    }
-
     public GatewayDisconnectEvent(Reason reason) {
         this.reason = reason;
     }
 
     public Reason getReason() {
         return reason;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "reason=" + reason +
+            '}';
     }
 }

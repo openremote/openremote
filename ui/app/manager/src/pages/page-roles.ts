@@ -6,7 +6,7 @@ import {
   unsafeCSS,
 } from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import manager, { OREvent, DefaultColor3 } from "@openremote/core";
+import manager, {OREvent, DefaultColor3, OPENREMOTE_CLIENT_ID} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import { Store } from "@reduxjs/toolkit";
@@ -253,7 +253,7 @@ export class PageRoles extends Page<AppStateKeyed> {
   }
 
   protected async getRoles() {
-    const roleResponse = await manager.rest.api.UserResource.getRoles(this.realm);
+    const roleResponse = await manager.rest.api.UserResource.getClientRoles(this.realm, OPENREMOTE_CLIENT_ID);
     this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
     this._roles = [...roleResponse.data.filter(role => !role.composite)];
     this._roles.map(role => {
@@ -323,7 +323,7 @@ export class PageRoles extends Page<AppStateKeyed> {
         return html``;
     }
 
-    const readonly = !manager.hasRole(ClientRole.WRITE_USER);
+    const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
     const readRoles = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name))
     const writeRoles = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
     const otherRoles = this._roles.filter(role => !role.name.includes('read') && !role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
@@ -405,11 +405,11 @@ export class PageRoles extends Page<AppStateKeyed> {
                                     ${readonly ? html`` : html`
                                     <div class="row" style="margin-bottom: 0;">
                                         ${role.id ? html`
-                                        <or-mwc-input label="delete" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role, index)}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>
+                                        <or-mwc-input label="delete" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._deleteRole(role, index)}"></or-mwc-input>
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
                                         ` : html`
-                                        <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @click="${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>
+                                        <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}"></or-mwc-input>
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
                                         `}
                                     </div>
                                     `}

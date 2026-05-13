@@ -37,6 +37,9 @@ public class AttributePredicate extends NameValuePredicate {
     public NameValuePredicate[] meta;
     public ValuePredicate previousValue;
 
+    // ISO 8601 duration expression (e.g. PT5M)
+    public String timestampOlderThan;
+
     public AttributePredicate() {
     }
 

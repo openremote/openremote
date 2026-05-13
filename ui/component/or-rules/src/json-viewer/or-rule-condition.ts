@@ -1,6 +1,6 @@
 import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil} from "@openremote/model";
+import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil, AssetQuery} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "./or-rule-trigger-query";
@@ -143,7 +143,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
     public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
-    public assetProvider?: (type: string) => Promise<any[] | undefined>
+    public assetProvider?: (type: string, query?: AssetQuery) => Promise<any[] | undefined>
 
     @query("#asset-query")
     protected _assetQuery?: OrRuleAssetQuery;

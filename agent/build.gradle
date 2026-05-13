@@ -1,7 +1,17 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion"
+    }
+}
+
 apply plugin: "java-library"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
 apply plugin: "signing"
+apply plugin: "com.google.protobuf"
 
 dependencies {
 
@@ -27,17 +37,65 @@ dependencies {
 
     api("org.openremote:or-zwave:$zwaveVersion") {
         exclude group: "org.bidib.com.neuronrobotics"
+        exclude group: "jdom" // We don't want to bring jdom 1.x dependency from or-zwave, it contains vulnerabilities
     }
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    api "com.github.weliem:blessed-bluez:$bluetoothVersion"
+    api("com.github.weliem:blessed-bluez:$bluetoothVersion") {
+        exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
+    }
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
 
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
 
     implementation "org.jdom:jdom2:$jdomVersion"
+
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
+    implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    implementation "io.grpc:grpc-protobuf:$grpcVersion"
+    implementation "io.grpc:grpc-stub:$grpcVersion"
+
+    compileOnly "javax.annotation:javax.annotation-api:$grpcAnnotationsVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    implementation "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDirs.clear()
+            srcDirs = [
+                'src/main/proto/chirpstack',
+                'src/main/proto/tts',
+                'src/main/proto/shared'
+            ]
+        }
+    }
 }
 
 base {
@@ -91,8 +149,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")

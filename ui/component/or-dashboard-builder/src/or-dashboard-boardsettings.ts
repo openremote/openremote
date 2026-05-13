@@ -18,11 +18,11 @@ const boardSettingsStyling = css`
 @customElement("or-dashboard-boardsettings")
 export class OrDashboardBoardsettings extends LitElement {
 
-    @property()
-    protected readonly dashboard!: Dashboard;
+    @property({ type: Object })
+    public readonly dashboard!: Dashboard;
 
-    @property()
-    protected readonly showPerms?: boolean;
+    @property({ type: Boolean })
+    public readonly showPerms?: boolean;
 
     /* ------------------------- */
 
@@ -36,17 +36,8 @@ export class OrDashboardBoardsettings extends LitElement {
 
     /* -------------------------------- */
 
-    private setViewAccess(access: DashboardAccess) {
-        this.dashboard.viewAccess = access;
-        if (access === DashboardAccess.PRIVATE) {
-            this.dashboard.editAccess = DashboardAccess.PRIVATE; // if viewAccess changed to PRIVATE, make editAccess private as well.
-        }
-        this.requestUpdate();
-        this.forceParentUpdate(false);
-    }
-
-    private setEditAccess(access: DashboardAccess) {
-        this.dashboard.editAccess = access;
+    private setAccess(access: DashboardAccess) {
+        this.dashboard.access = access;
         this.requestUpdate();
         this.forceParentUpdate(false);
     }
@@ -66,8 +57,7 @@ export class OrDashboardBoardsettings extends LitElement {
     protected render() {
         if (this.dashboard.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
-            const viewAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({key: access, value: dashboardAccessToString(access)}));
-            const editAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED].map((access) => ({key: access, value: dashboardAccessToString(access)}));
+            const accessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({key: access, value: dashboardAccessToString(access)}));
             const refreshIntervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR].map(interval => ({key: interval, value: `dashboard.interval.${interval.toLowerCase()}`}))
             const scalingPresets: { key: DashboardScalingPreset, value: string }[] = [];
             [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE].forEach((preset: DashboardScalingPreset) => {
@@ -79,31 +69,16 @@ export class OrDashboardBoardsettings extends LitElement {
                 ${when(this.showPerms, () => html`
                     <settings-panel displayName="permissions" expanded="${true}">
                         <div>
-                            <div style="margin-bottom: 24px;">
-                                <div class="label">
-                                    ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
-                                </div>
-                                <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
-                                              .options="${viewAccessOptions.map((access) => access.value)}"
-                                              .value="${dashboardAccessToString(this.dashboard.viewAccess!)}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.setViewAccess(viewAccessOptions.find((access) => access.value == event.detail.value)?.key!);
-                                              }}"
-                                ></or-mwc-input>
+                            <div class="label">
+                                ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
                             </div>
-                            <div style="margin-bottom: 24px;">
-                                <div class="label">
-                                    ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanEdit').toString())}</span>`}
-                                </div>
-                                <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
-                                              .disabled="${(this.dashboard.viewAccess == DashboardAccess.PRIVATE)}"
-                                              .options="${editAccessOptions.map((access) => access.value)}"
-                                              .value="${dashboardAccessToString(this.dashboard.editAccess!)}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.setEditAccess(editAccessOptions.find((access) => access.value == event.detail.value)?.key!);
-                                              }}"
-                                ></or-mwc-input>
-                            </div>
+                            <or-mwc-input class="permissionInput" comfortable type="${InputType.SELECT}" style="width: 100%;"
+                                          .options="${accessOptions.map((access) => access.value)}"
+                                          .value="${dashboardAccessToString(this.dashboard.access!)}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              this.setAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!);
+                                          }}"
+                            ></or-mwc-input>
                         </div>
                     </settings-panel>
                 `)}

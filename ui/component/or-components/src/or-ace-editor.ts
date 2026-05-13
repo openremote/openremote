@@ -4,7 +4,6 @@ import ace, {Ace} from "ace-builds";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
-import "ace-builds/webpack-resolver";
 
 export class OrAceEditorChangedEvent extends CustomEvent<{ value: string, valid: boolean }> {
 
@@ -105,6 +104,10 @@ export class OrAceEditor extends LitElement {
                 this._lastValue = this.value !== undefined ? typeof this.value === "string" ? this.value : JSON.stringify(this.value, null, 2) : "";
                 this._aceEditor.setValue(this._lastValue);
             }
+        }
+
+        if (_changedProperties.has("readonly") && this._aceEditor) {
+            this._aceEditor.setReadOnly(!!this.readonly);
         }
     }
 

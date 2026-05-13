@@ -7,6 +7,9 @@
   "asset": "Актив",
   "asset_plural": "Активи",
   "assets": "Активи",
+  "users": "Користувачі",
+  "realms": "Області",
+  "provisioning": "Автоматичне налаштування",
   "attribute": "Атрибут",
   "attributes": "Атрибути",
   "attribute_plural": "Атрибути",
@@ -131,28 +134,12 @@
   "location": "Місце розташування",
   "longPressSetLoc": "Довге натискання, щоб встановити місце",
   "hour": "Година",
-  "lastHour": "Остання година",
-  "last24Hours": "Останні 24 години",
-  "thisHour": "Ця година",
   "day": "День",
-  "thisDay": "Сьогодні",
-  "thisDayLastWeek": "Цей день минулого тижня",
-  "yesterday": "Вчора",
-  "last7Days": "Останні 7 днів",
-  "last30Days": "Останні 30 днів",
-  "last90Days": "Останні 90 днів",
   "week": "Тиждень",
-  "thisWeek": "Цей тиждень",
-  "previousWeek": "Попередній тиждень",
   "month": "Місяць",
-  "thisMonth": "Цей місяць",
-  "previousMonth": "Попередній місяць",
-  "last6Months": "Останні 6 місяців",
   "year": "Рік",
-  "lastYear": "Минулий рік",
-  "thisYear": "Цей рік",
-  "previousYear": "Попередній рік",
   "period": "Період",
+  "beginning": "Початок",
   "ending": "Закінчення",
   "timeframe": "Вімір часу",
   "timeframeDefault": "Стандартний вімір часу",
@@ -167,25 +154,40 @@
   "export": "Експорт",
   "addAssetAttribute": "Додати атрибут активу",
   "add": "Додати",
-  "EQUALS_COMPARATOR": "Дорівнює",
-  "GREATER_THAN": "Більше ніж",
-  "LESS_THAN": "Менше ніж",
-  "READ_ATTRIBUTE": "Читати атрибут",
-  "WRITE_ATTRIBUTE": "Записати атрибут",
-  "BOOLEAN_INPUT": "Булеве значення",
-  "NUMBER_INPUT": "Число",
-  "TEXT_INPUT": "Текст",
-  "ADD_OPERATOR": "Додати",
-  "SUBTRACT_OPERATOR": "Відняти",
-  "COMBINE_TEXT": "Об'єднати текст",
-  "MULTIPLY_OPERATOR": "Помножити",
-  "DIVIDE_OPERATOR": "Ділення",
-  "AND_GATE": "І-вентиль",
-  "OR_GATE": "Або-вентиль",
-  "NOT_GATE": "Не-вентиль",
-  "NUMBER_SWITCH": "Перемикач чисел",
-  "TEXT_SWITCH": "Текстовий перемикач",
-  "ROUND_NODE": "Коло",
+  "flow": {
+    "EQUALS_COMPARATOR": "Дорівнює",
+    "GREATER_THAN": "Більше ніж",
+    "LESS_THAN": "Менше ніж",
+    "READ_ATTRIBUTE": "Читати атрибут",
+    "WRITE_ATTRIBUTE": "Записати атрибут",
+    "BOOLEAN_INPUT": "Булеве значення",
+    "NUMBER_INPUT": "Число",
+    "TEXT_INPUT": "Текст",
+    "ADD_OPERATOR": "Додати",
+    "SUBTRACT_OPERATOR": "Відняти",
+    "COMBINE_TEXT": "Об'єднати текст",
+    "MULTIPLY_OPERATOR": "Помножити",
+    "DIVIDE_OPERATOR": "Ділення",
+    "AND_GATE": "І-вентиль",
+    "OR_GATE": "Або-вентиль",
+    "NOT_GATE": "Не-вентиль",
+    "NUMBER_SWITCH": "Перемикач чисел",
+    "TEXT_SWITCH": "Текстовий перемикач",
+    "ROUND_NODE": "Коло",
+    "LOG_OUTPUT": "Write to Logs",
+    "DERIVATIVE": "Attribute derivative",
+    "INTEGRAL": "Attribute integral",
+    "HISTORIC_VALUE": "Attribute history",
+    "MAX_PROCESSOR": "Maximum",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
+    "SUM_OPERATOR": "Sum",
+    "max": "Max",
+    "min": "Min",
+    "avg": "Avg",
+    "med": "Med"
+  },
   "input": "Вхід",
   "processors": "Процесори",
   "output": "Вихід",
@@ -213,6 +215,7 @@
   "french": "Французька",
   "german": "Німецька",
   "italian": "Італійська",
+  "polish": "Польська",
   "portuguese": "Португальська",
   "romanian": "Румунська",
   "spanish": "Іспанська",
@@ -309,6 +312,7 @@
   "surname": "Прізвище",
   "deleteUser": "Видалити користувача",
   "deleteRole": "Видалити роль",
+  "roleAlreadyExists": "Роль із такою назвою вже існує",
   "deleteUserConfirm": "Ви впевнені, що хочете видалити користувача '{{userName}}'?",
   "deleteRoleConfirm": "Ви впевнені, що хочете видалити роль '{{roleName}}'?",
   "realmRules": "Область",
@@ -320,9 +324,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "З'єднання з менеджером",
-  "gateway": "З'єднання з менеджером",
-  "connectionDetails": "Деталі підключення",
+  "gateway": {
+    "": "З'єднання з менеджером",
+    "connectionDetails": "Деталі підключення"
+  },
   "secured": "Захищено",
   "clientSecret": "Секрет клієнта",
   "clientId": "Client ID",
@@ -353,6 +358,8 @@
   "sending": "Надсилання",
   "submit": "Надіслати",
   "password": "Пароль",
+  "resetPassword": "Скинути пароль",
+  "resetPasswordConfirmation": "На вашу електронну пошту надіслано лист для скидання пароля.",
   "repeatPassword": "Повторіть пароль",
   "details": "Деталі",
   "permissions": "Дозволи",
@@ -393,6 +400,8 @@
     "cubed": "³",
     "peak": "p",
     "mega": "М",
+    "giga": "G",
+    "tera": "T",
     "kilo": "k",
     "centi": "c",
     "milli": "m",
@@ -487,20 +496,22 @@
   },
   "validityType": "Тип розкладу",
   "validityAlways": "Завжди активний",
-  "validityPeriod": "Планувати випадок",
-  "validityRecurrence": "Планувати повторюваний випадок",
+  "planPeriod": "Планувати випадок",
+  "planRecurrence": "Планувати повторюваний випадок",
   "activeFromTo": "Активний від {{start}} до {{end}}",
   "fromTo": "Від {{start}} до {{end}}",
   "fromToDays": "від {{start}} до {{days}} днів пізніше {{end}}",
   "forDays": "на {{days}} днів",
   "scheduleRuleActivity": "Розклад дії правила",
+  "schedule": {
+    "_ends": "Повторення закінчується",
+    "repeat": "Повторювати випадок кожні"
+  },
   "allDay": "Увесь день",
   "apply": "Застосувати",
   "to": "до",
   "from": "з",
   "never": "Ніколи",
-  "repetitionEnds": "Повторення закінчується",
-  "repeatOccurrenceEvery": "Повторювати випадок кожні",
   "daysOfTheWeek": "днів тижня",
   "dismiss": "Відхилити",
   "createAssetFailed": "Не вдалося створити актив",
@@ -537,9 +548,10 @@
     "keyAlreadyExists": "Ключ вже існує"
   },
   "autoProvisioning": "Автоматичне налаштування",
+  "provisioningConfig": "Конфігурація автоматичного налаштування",
   "provisioningConfigs": "Конфігурації автоматичного налаштування",
   "loadFailedProvisioningConfigs": "Не вдалося завантажити конфігурації автоматичного налаштування",
-  "deleteProvisioningConfigConfirm":"Ви впевнені, що хочете видалити цю конфігурацію автоматичного налаштування?\nКлієнти, які використовують цю конфігурацію, більше не зможуть підключатися.",
+  "deleteProvisioningConfigConfirm": "Ви впевнені, що хочете видалити цю конфігурацію автоматичного налаштування?\nКлієнти, які використовують цю конфігурацію, більше не зможуть підключатися.",
   "assetTemplate": "Шаблон активу",
   "createAsRestrictedUser": "Створити обмеженого користувача",
   "ignoreExpiryDate": "Ігнорувати дату закінчення",
@@ -560,6 +572,7 @@
   "saveUserFailed": "Збереження користувача не вдалося",
   "saveUserSucceeded": "Користувача успішно збережено!",
   "userAlreadyExists": "Сталася помилка! Цей користувач вже існує.",
+  "realmAlreadyExists": "Назва області вже існує",
   "invalidUsername": "Ім'я користувача повинно містити від 3 до 255 буквено-цифрових символів",
   "invalidEmail": "Неправильна адреса електронної пошти",
   "yes": "Так",
@@ -664,8 +677,6 @@
     "showHelperText": "Показати час останнього оновлення",
     "tableSettings": "Налаштування таблиці",
     "deleteWidget": "Видалити віджет",
-    "myDashboards": "Мої панелі",
-    "createdByOthers": "Створені іншими",
     "showUnits": "Показати одиниці",
     "showLabels": "Показати мітки",
     "zoom": "Масштабування",
@@ -680,7 +691,7 @@
   "default": "За замовчуванням",
   "appearance": "Вигляд",
   "configuration": {
-    "" : "Вигляд",
+    "": "Вигляд",
     "main": "Головне",
     "realmStyling": "Стилізація області",
     "managerConfigNotFound": "Файл конфігурації менеджера не знайдено.",
@@ -723,6 +734,7 @@
     "addMapCustomization": "Додати налаштування карти"
   },
   "mqttSessions": "Сеанси MQTT",
+  "noMqttSessions": "Цей користувач не має активних сеансів MQTT",
   "address": "Адреса",
   "since": "З тих пір, як",
   "roles": "Ролі",
@@ -739,5 +751,167 @@
   "withInterval": "З інтервалом",
   "AVG": "Середнє (середнє значення)",
   "MIN": "Мінімум",
-  "MAX": "Максимум"
+  "MAX": "Максимум",
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              },
+              "writeValueFilters": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

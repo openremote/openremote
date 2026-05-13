@@ -72,7 +72,7 @@ public class FlowRulesBuilder {
     }
 
     private Rule createRule(String name, NodeCollection collection, Node outputNode) throws Exception {
-        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade));
+        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade, LOG));
 
         if (!(implementationResult instanceof RulesBuilder.Action action))
             throw new Exception(outputNode.getName() + " node does not return an action");

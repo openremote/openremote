@@ -28,7 +28,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Response;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -245,7 +244,7 @@ public interface AssetResource {
         @ApiResponse(description = "The result of the write operation",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = AttributeWriteResult.class)))})
-    Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
+    AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
 
     @PUT
     //TODO: Using {timestamp:(\\d+)?} does not correctly tokenize when using the assetResource proxy client in Groovy tests.
@@ -257,7 +256,7 @@ public interface AssetResource {
                     description = "The result of the write operation",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = AttributeWriteResult.class))
             )})
-    Response writeAttributeValue(@BeanParam RequestParams requestParams,
+    AttributeWriteResult writeAttributeValue(@BeanParam RequestParams requestParams,
                                  @PathParam("assetId") String assetId,
                                  @PathParam("attributeName") String attributeName,
                                  @PathParam("timestamp") Long timestamp,
@@ -319,6 +318,34 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "queryAssets", summary = "Retrieve assets using a query")
     Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+
+
+    /**
+     * Retrieve assets using an {@link AssetQuery}, returning an optimized structure for tree display.
+     * This wraps the existing {@link #queryAssets} endpoint, but returns an optimized structure for tree display.
+     * <p>
+     * If the authenticated user is the superuser then assets referenced in the query or returned by the query can be in
+     * any realm. Otherwise assets must be in the same realm as the authenticated user, and for a restricted user, the
+     * assets must be linked to the user. An empty result is returned if the user does not have access to the assets.
+     * What is populated on the returned assets is determined by the
+     * {@link AssetQuery#select} value.
+     */
+    @POST
+    @Path("tree")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "queryAssetTree", summary = "Retrieve part of the asset tree using a query, returns an optimized structure for tree display")
+    AssetTree queryAssetTree(@BeanParam RequestParams requestParams, AssetQuery query);
+
+    /**
+     * Retrieve the amount of assets using an {@link AssetQuery}.
+     */
+    @POST
+    @Path("count")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "queryCount", summary = "Counts the amount of assets using a query")
+    Integer queryCount(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
      * Change parent for a set of asset

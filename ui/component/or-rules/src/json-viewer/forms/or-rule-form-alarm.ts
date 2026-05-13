@@ -50,10 +50,10 @@ export class OrRuleFormAlarm extends LitElement {
 
     protected render() {
         const alarm: Alarm | undefined = this.action.alarm as Alarm;
-        const options: {value: string | undefined | null, label: string | undefined}[] = this.users.filter((u) => u.username != 'manager-keycloak').map((u) => {
+        const options: {value: string | undefined, label: string | undefined}[] = this.users.filter((u) => u.username !== 'manager-keycloak').map((u) => {
             return { value: u.id, label: u.username };
         });
-        options.unshift({value: null, label: i18next.t("none")})
+        options.unshift({value: undefined, label: i18next.t("none")})
         
         return html`
             <form style="display:grid">

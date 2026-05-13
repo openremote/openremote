@@ -1,0 +1,413 @@
+syntax = "proto3";
+
+package internal;
+
+import "common/common.proto";
+import "gw/gw.proto";
+import "google/protobuf/timestamp.proto";
+
+message DeviceSession {
+  // Device address.
+  bytes dev_addr = 2;
+
+  // LoRaWAN mac-version.
+  common.MacVersion mac_version = 4;
+
+  // FNwkSIntKey.
+  bytes f_nwk_s_int_key = 5;
+
+  // SNwkSIntKey.
+  bytes s_nwk_s_int_key = 6;
+
+  // NwkSEncKey.
+  bytes nwk_s_enc_key = 7;
+
+  // AppSKey envelope.
+  common.KeyEnvelope app_s_key = 8;
+
+  // JS Session Key ID.
+  bytes js_session_key_id = 42;
+
+  // Uplink frame-counter.
+  uint32 f_cnt_up = 9;
+
+  // Downlink frame-counter (ns).
+  uint32 n_f_cnt_down = 10;
+
+  // Downlink frame-counter (as).
+  uint32 a_f_cnt_down = 11;
+
+  // Frame-counter holding the last confirmed downlink frame (n_f_cnt_down or
+  // a_f_cnt_down).
+  uint32 conf_f_cnt = 12;
+
+  // Skip uplink frame-counter validation.
+  bool skip_f_cnt_check = 13;
+
+  // RX1 delay.
+  uint32 rx1_delay = 14;
+
+  // RX1 data-rate offset.
+  uint32 rx1_dr_offset = 15;
+
+  // RX2 data-rate.
+  uint32 rx2_dr = 16;
+
+  // RX2 frequency.
+  uint32 rx2_frequency = 17;
+
+  // Enabled uplink channels.
+  repeated uint32 enabled_uplink_channel_indices = 18;
+
+  // Extra user-defined uplink channels.
+  map<uint32, DeviceSessionChannel> extra_uplink_channels = 19;
+
+  // Class-B ping-slot data-rate.
+  uint32 class_b_ping_slot_dr = 20;
+
+  // Class-B ping-slot frequency.
+  uint32 class_b_ping_slot_freq = 21;
+
+  // Class-B ping-slot nb.
+  uint32 class_b_ping_slot_nb = 22;
+
+  // Nb. transmissions.
+  uint32 nb_trans = 23;
+
+  // TXPowerIndex which the node is using. The possible values are defined
+  // by the lorawan/band package and are region specific. By default it is
+  // assumed that the node is using TXPower 0. This value is controlled by
+  // the ADR engine.
+  uint32 tx_power_index = 24;
+
+  // DR defines the (last known) data-rate at which the node is operating.
+  // This value is controlled by the ADR engine.
+  uint32 dr = 25;
+
+  // ADR defines if the device has ADR enabled.
+  bool adr = 26;
+
+  // MaxSupportedTXPowerIndex defines the maximum supported tx-power index
+  // by the node, or 0 when not set.
+  uint32 max_supported_tx_power_index = 27;
+
+  // MinSupportedTXPowerIndex defines the minimum supported tx-power index
+  // by the node (default 0).
+  uint32 min_supported_tx_power_index = 28;
+
+  // Pending rejoin device-session contains a device-session which has not
+  // yet been activated by the device (by sending a first uplink).
+  DeviceSession pending_rejoin_device_session = 29;
+
+  // Uplink history for ADR (last 20 uplink transmissions).
+  // This table is reset in case one of parameters has changed:
+  //   * DR
+  //   * TxPower
+  //   * NbTrans
+  repeated UplinkAdrHistory uplink_adr_history = 30;
+
+  // Mac-command error count.
+  map<uint32, uint32> mac_command_error_count = 31;
+
+  // Last device-status request.
+  google.protobuf.Timestamp last_device_status_request = 32;
+
+  // RejoinRequestEnabled defines if the rejoin-request is enabled on the
+  // device.
+  bool rejoin_request_enabled = 33;
+
+  // RejoinRequestMaxCountN defines the 2^(C+4) uplink message interval for
+  // the rejoin-request.
+  uint32 rejoin_request_max_count_n = 34;
+
+  // RejoinRequestMaxTimeN defines the 2^(T+10) time interval (seconds)
+  // for the rejoin-request.
+  uint32 rejoin_request_max_time_n = 35;
+
+  // Rejoin counter (RJCount0).
+  // This counter is reset to 0 after each successful join-accept.
+  uint32 rejoin_count_0 = 36;
+
+  // Uplink dwell time.
+  bool uplink_dwell_time_400ms = 37;
+
+  // Downlink dwell time.
+  bool downlink_dwell_time_400ms = 38;
+
+  // Uplink max. EIRP index.
+  uint32 uplink_max_eirp_index = 39;
+
+  // Region configuration ID.
+  string region_config_id = 40;
+
+  // Relay state.
+  Relay relay = 41;
+
+  // Pending mac-commands.
+  map<uint32, bytes> mac_command_pending = 43;
+}
+
+message UplinkAdrHistory {
+  // Uplink frame-counter.
+  uint32 f_cnt = 1;
+
+  // Max SNR (of deduplicated frames received by one or multiple gateways).
+  float max_snr = 2;
+
+  // Max RSSI.
+  int32 max_rssi = 5;
+
+  // TX Power (as known by the network-server).
+  uint32 tx_power_index = 3;
+
+  // Number of receiving gateways.
+  uint32 gateway_count = 4;
+}
+
+message Relay {
+  // Devices provisioned on the relay.
+  repeated RelayDevice devices = 1;
+
+  // Filter list.
+  repeated RelayFilter filters = 2;
+
+  // Relay is enabled.
+  bool enabled = 3;
+
+  // CAD periodicity.
+  uint32 cad_periodicity = 4;
+
+  // Default channel index.
+  uint32 default_channel_index = 5;
+
+  // Second channel freq.
+  uint32 second_channel_freq = 6;
+
+  // Second channel DR.
+  uint32 second_channel_dr = 7;
+
+  // Second channel ACK offset.
+  uint32 second_channel_ack_offset = 8;
+
+  // End-device activation mode.
+  uint32 ed_activation_mode = 9;
+
+  // End-device smart-enable level.
+  uint32 ed_smart_enable_level = 10;
+
+  // End-device back-off.
+  uint32 ed_back_off = 11;
+
+  // Join-request limit reload rate.
+  uint32 join_req_limit_reload_rate = 12;
+
+  // Notify limit reload rate.
+  uint32 notify_limit_reload_rate = 13;
+
+  // Global uplink limit reload rate.
+  uint32 global_uplink_limit_reload_rate = 14;
+
+  // Overall limit reload rate.
+  uint32 overall_limit_reload_rate = 15;
+
+  // Join-request limit bucket size.
+  uint32 join_req_limit_bucket_size = 16;
+
+  // Notify limit bucket size.
+  uint32 notify_limit_bucket_size = 17;
+
+  // Global uplink limit bucket size.
+  uint32 global_uplink_limit_bucket_size = 18;
+
+  // Overall limit bucket size.
+  uint32 overall_limit_bucket_size = 19;
+
+  // End-device must communicate through relay only.
+  // This is stored in the device-session as we need to validate on retrieving
+  // the device-session.
+  bool ed_relay_only = 20;
+
+  // End-device WFCnt.
+  // This holds the last known WFCnt value. ChirpStack will periodically read
+  // this value from the Relay.
+  uint32 w_f_cnt = 21;
+}
+
+message RelayDevice {
+  // Index (used for filter and uplink filters).
+  // This must be between 0 - 15.
+  uint32 index = 1;
+
+  // JoinEUI (EUI64).
+  bytes join_eui = 2;
+
+  // DevEUI (EUI64).
+  bytes dev_eui = 3;
+
+  // DevAddr.
+  bytes dev_addr = 4;
+
+  // RootWorSKey.
+  bytes root_wor_s_key = 5;
+
+  // Provisioned.
+  bool provisioned = 6;
+
+  // Uplink limit bucket size.
+  uint32 uplink_limit_bucket_size = 7;
+
+  // Uplink limit reload rate.
+  uint32 uplink_limit_reload_rate = 8;
+
+  // Timestamp of the last WFCnt request.
+  // Note that ChirpStack periodically requests the WFCnt from the relay.
+  google.protobuf.Timestamp w_f_cnt_last_request = 9;
+}
+
+message RelayFilter {
+  // Index.
+  // This must be between 0 - 15.
+  uint32 index = 1;
+
+  // Action.
+  //  * 0: No Rule
+  //  * 1: Forward
+  //  * 2: Filter
+  uint32 action = 2;
+
+  // DevEUI (EUI64).
+  bytes dev_eui = 3;
+
+  // JoinEUI (EUI64).
+  bytes join_eui = 4;
+
+  // Provisioned.
+  bool provisioned = 5;
+}
+
+message DeviceSessionChannel {
+  // Frequency Hz.
+  uint32 frequency = 1;
+
+  // Min. data-rate.
+  uint32 min_dr = 2;
+
+  // Max. data-rate.
+  uint32 max_dr = 3;
+}
+
+message DeviceGatewayRxInfo {
+  // DevEUI (EUI64).
+  bytes dev_eui = 1;
+
+  // Data-rate.
+  uint32 dr = 2;
+
+  // Gateway RxInfo elements.
+  repeated DeviceGatewayRxInfoItem items = 3;
+}
+
+message DeviceGatewayRxInfoItem {
+  // Gateway ID (EUI64).
+  bytes gateway_id = 1;
+
+  // RSSI.
+  int32 rssi = 2;
+
+  // LoRa SNR.
+  float lora_snr = 3;
+
+  // Antenna.
+  uint32 antenna = 4;
+
+  // Board.
+  uint32 board = 5;
+
+  // Context blob.
+  bytes context = 6;
+
+  // Gateway is private (uplink).
+  bool is_private_up = 7;
+
+  // Gateway is private (downlink).
+  bool is_private_down = 8;
+
+  // Tenant ID (UUID).
+  bytes tenant_id = 9;
+}
+
+message DownlinkFrame {
+  // Downlink ID.
+  uint32 downlink_id = 1;
+
+  // DevEUI.
+  bytes dev_eui = 2;
+
+  // Device queue item ID.
+  bytes device_queue_item_id = 3;
+
+  // Multicast Group ID.
+  bytes multicast_group_id = 4;
+
+  // Multicast queue item ID.
+  bytes multicast_group_queue_item_id = 5;
+
+  // Downlink frames.
+  gw.DownlinkFrame downlink_frame = 6;
+
+  // Encrypted FOpts (LoRaWAN 1.1).
+  bool encrypted_fopts = 8;
+
+  // Network session encryption key (for FOpts and FRMPayload mac-commands).
+  bytes nwk_s_enc_key = 9;
+
+  // NFCntDown (for decrypting mac-commands).
+  uint32 n_f_cnt_down = 10;
+
+  // AFCntDown (for decrypting FRMPayload in case of Relay).
+  uint32 a_f_cnt_down = 11;
+
+  // DevEUI of relayed device.
+  bytes dev_eui_relayed = 12;
+}
+
+message LoraCloudGeolocBuffer {
+  // Uplinks in buffer.
+  repeated LoraCloudGeolocBufferUplink uplinks = 1;
+}
+
+message LoraCloudGeolocBufferUplink {
+  // RxInfo set for a single uplink.
+  repeated gw.UplinkRxInfo rx_info = 1;
+}
+
+message PassiveRoamingDeviceSession {
+  // Session ID (UUID).
+  // Unfortunately we can not use the DevEUI as unique identifier
+  // as the PRStartAns DevEUI field is optional.
+  bytes session_id = 1;
+
+  // NetID of the hNS.
+  bytes net_id = 2;
+
+  // DevAddr of the device.
+  bytes dev_addr = 3;
+
+  // DevEUI of the device (optional).
+  bytes dev_eui = 4;
+
+  // LoRaWAN 1.1.
+  bool lorawan_1_1 = 5;
+
+  // LoRaWAN 1.0 NwkSKey / LoRaWAN 1.1 FNwkSIntKey.
+  bytes f_nwk_s_int_key = 6;
+
+  // Lifetime.
+  google.protobuf.Timestamp lifetime = 7;
+
+  // Uplink frame-counter.
+  uint32 f_cnt_up = 8;
+
+  // Validate MIC.
+  bool validate_mic = 9;
+}

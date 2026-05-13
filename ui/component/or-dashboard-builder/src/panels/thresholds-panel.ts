@@ -133,7 +133,7 @@ export class ThresholdsPanel extends LitElement {
             <div id="thresholds-list" class="expanded-panel">
 
                 <!-- Thresholds by number -->
-                ${(this.valueType === 'number' || this.valueType === 'positiveInteger'
+                ${(this.valueType === 'number' || this.valueType === 'integer' || this.valueType === 'positiveInteger'
                         || this.valueType === 'positiveNumber' || this.valueType === 'negativeInteger'
                         || this.valueType === 'negativeNumber') ? html`
                     ${(this.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
@@ -221,22 +221,14 @@ export class ThresholdsPanel extends LitElement {
                                                   this.textColors[index][0] = event.detail.value;
                                                   this.requestUpdate('textColors');
                                               }}"
-
                                 ></or-mwc-input>
-                                ${index === 0 ? html`
-                                    <button class="button-clear"
-                                            style="margin-left: 8px;">
-                                        <or-icon icon="lock" style="--or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});"></or-icon>
-                                    </button>
-                                ` : html`
-                                    <button class="button-clear"
-                                            style="margin-left: 8px;"
-                                            @click="${() => {
-                                                this.removeThreshold(threshold);
-                                            }}">
-                                        <or-icon icon="close-circle"></or-icon>
-                                    </button>
-                                `}
+                                <button class="button-clear"
+                                        style="margin-left: 8px;"
+                                        @click="${() => {
+                                           this.removeThreshold(threshold);
+                                        }}">
+                                   <or-icon icon="close-circle"></or-icon>
+                               </button>
                             </div>
                         `
                     })}

@@ -19,7 +19,6 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -33,10 +32,8 @@ import jakarta.validation.constraints.Size;
 import org.openremote.model.persistence.PasswordPolicyConverter;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.*;
 
-import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
@@ -46,8 +43,9 @@ import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class Realm {
 
-    protected static Field[] propertyFields;
-
+    public static final List<RealmRole> DEFAULT_REALM_ROLES = List.of(
+            new RealmRole(null, RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+        );
     private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER = new PasswordPolicyConverter();
 
     public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
@@ -148,7 +146,7 @@ public class Realm {
     @Size(min = 3, max = 255, message = "{Realm.realm.Size}")
     @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Realm.realm.Pattern}")
     public String getName() {
-        return name;
+        return name != null ? name.toLowerCase() : null;
     }
 
     public Realm setName(String name) {
@@ -321,38 +319,9 @@ public class Realm {
         return realmRoles;
     }
 
-    @JsonIgnore
-    public Set<RealmRole> getNormalisedRealmRoles() {
-        Set<RealmRole> tempSet = new HashSet<>(getDefaultRealmRoles(getName()));
-        if (realmRoles != null) {
-            tempSet.addAll(realmRoles);
-        }
-        return tempSet;
-    }
-
     public Realm setRealmRoles(Set<RealmRole> realmRoles) {
         this.realmRoles = realmRoles;
         return this;
-    }
-
-    protected static List<RealmRole> getDefaultRealmRoles(String realm) {
-        if (MASTER_REALM.equals(realm)) {
-            return Arrays.asList(
-                new RealmRole("default-roles-master"),
-                new RealmRole("admin"),
-                new RealmRole("create-realm"),
-                new RealmRole("offline_access"),
-                new RealmRole("uma_authorization"),
-                new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
-            );
-        }
-
-        return Arrays.asList(
-            new RealmRole("default-roles-" + realm),
-            new RealmRole("offline_access"),
-            new RealmRole("uma_authorization"),
-            new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
-        );
     }
 
     @Override

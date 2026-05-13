@@ -394,7 +394,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
                     LOG.fine("Calculating forecast values for attribute: " + attr.getAttributeRef());
 
-                    Long offset = forecastTimestamps.get(0) - (now + weaConfig.getForecastPeriod().toMillis());
+                    Long offset = forecastTimestamps.getFirst() - (now + weaConfig.getForecastPeriod().toMillis());
                     List<List<Long>> allSampleTimestamps = calculateSampleTimestamps(weaConfig, offset);
                     List<DatapointBucket> historyDatapointBuckets = getHistoryDataFromDb(attr.getAttributeRef(), weaConfig, offset);
 
@@ -538,7 +538,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             if (Long.class == clazz || Integer.class == clazz || Short.class == clazz || Byte.class == clazz ||
                 Double.class == clazz || Float.class == clazz) {
                 if (values.size() == 1) {
-                    values.add(0, Double.valueOf(0));
+                    values.addFirst(Double.valueOf(0));
                 }
                 Optional<Number> value = values
                     .stream()
@@ -566,7 +566,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 return value;
             } else if (attribute.getTypeClass() == BigDecimal.class) {
                 if (values.size() == 1) {
-                    values.add(0, BigDecimal.valueOf(0));
+                    values.addFirst(BigDecimal.valueOf(0));
                 }
                 return values
                     .stream()
@@ -576,7 +576,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     );
             } else if (attribute.getTypeClass() == BigInteger.class) {
                 if (values.size() == 1) {
-                    values.add(0, BigInteger.valueOf(0));
+                    values.addFirst(BigInteger.valueOf(0));
                 }
                 // Attr(t) = Attr(t-p) * a + Attr(t-2p) * (1 - a)
                 // Attr(t) = (Attr(t-p) * 2 / (R + 1) + Attr(t-2p) * (1 - 2 / (R + 1))) * (R + 1)/(R + 1)
@@ -598,7 +598,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             forecastAttributes.forEach(attr -> {
                 List<Long> timestamps = attr.getForecastTimestamps();
                 if (timestamps != null && timestamps.size() > 0) {
-                    nextForecastCalculationMap.put(attr, timestamps.get(0));
+                    nextForecastCalculationMap.put(attr, timestamps.getFirst());
                 }
             });
         }
@@ -627,14 +627,14 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 if (oldTimestamps == null || oldTimestamps.size() == 0) {
                     if (newTimestamps.size() > 0) {
                         // force immediate forecast calculation
-                        newTimestamps.add(0, now);
+                        newTimestamps.addFirst(now);
                     }
                     attr.setForecastTimestamps(newTimestamps);
                 } else if (newTimestamps.size() > 0 && oldTimestamps.size() > 0) {
-                    long offset = oldTimestamps.get(0) - newTimestamps.get(0);
+                    long offset = oldTimestamps.getFirst() - newTimestamps.getFirst();
                     List<Long> newShiftedTimestamps = newTimestamps.stream().map(timestamp -> timestamp + offset).collect(Collectors.toList());
                     while(true) {
-                        if (newShiftedTimestamps.get(0) < now) {
+                        if (newShiftedTimestamps.getFirst() < now) {
                             newShiftedTimestamps = newShiftedTimestamps
                                 .stream()
                                 .map(timestamp -> timestamp + ((ForecastConfigurationWeightedExponentialAverage)config).getForecastPeriod().toMillis())
@@ -643,9 +643,9 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                             break;
                         }
                     }
-                    if (isServerRestart && (oldTimestamps.get(0) < now || newTimestamps.size() > oldTimestamps.size())) {
+                    if (isServerRestart && (oldTimestamps.getFirst() < now || newTimestamps.size() > oldTimestamps.size())) {
                         // force immediate forecast calculation
-                        newShiftedTimestamps.add(0, now);
+                        newShiftedTimestamps.addFirst(now);
                     }
                     attr.setForecastTimestamps(newShiftedTimestamps);
                 }

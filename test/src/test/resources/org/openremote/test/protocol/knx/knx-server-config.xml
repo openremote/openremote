@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Calimero 2 server settings -->
-<knxServer name="knx-server" friendlyName="Calimero KNXnet/IP Test Server">
+<knxServer name="knx-server" appData="./test/build" friendlyName="Calimero KNXnet/IP Test Server">
 
 	<!-- KNXnet/IP search & discovery -->
-	<discovery listenNetIf="lo" outgoingNetIf="lo" activate="false" />
+	<discovery listenNetIf="LOOPBACK_ADDRESS" outgoingNetIf="LOOPBACK_ADDRESS" activate="false" />
 
 	<!-- Provides the KNXnet/IP-side configuration for access to one KNX subnet -->
-	<serviceContainer activate="true" routing="false" networkMonitoring="false" udpPort="3671" listenNetIf="lo" reuseCtrlEP="false">
+	<serviceContainer activate="true" routing="false" networkMonitoring="false" udpPort="3671" listenNetIf="LOOPBACK_ADDRESS" reuseCtrlEP="false">
 		<knxAddress type="individual">1.1.1</knxAddress>
 		<knxSubnet type="user-supplied" class="org.openremote.test.protocol.KNXTestingNetworkLink">1.1.1</knxSubnet>
 

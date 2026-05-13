@@ -20,11 +20,14 @@
 package org.openremote.container.security;
 
 import org.openremote.model.Constants;
+import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
+
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
  * Services should use this interface to access a user's identity and perform authorization checks.
  */
-// TODO: Remove this and just use AccessToken from Subject's KeycloakPrincipal
 public interface AuthContext {
 
     String getAuthenticatedRealmName();
@@ -39,7 +42,16 @@ public interface AuthContext {
      * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
      */
     default boolean isSuperUser() {
-        return Constants.MASTER_REALM.equals(getAuthenticatedRealmName()) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
+        return Constants.MASTER_REALM.equals(getAuthenticatedRealmName()) && hasRealmRole(Constants.SUPER_USER_REALM_ROLE);
+    }
+
+    default boolean isRestrictedUser() {
+        return hasRealmRole(RESTRICTED_USER_REALM_ROLE);
+    }
+
+    default boolean isServiceAccount() {
+        String username = getUsername();
+        return username != null && username.startsWith(User.SERVICE_ACCOUNT_PREFIX);
     }
 
     boolean hasRealmRole(String role);
@@ -54,6 +66,6 @@ public interface AuthContext {
      * @return <code>true</code> if the user is authenticated in the same realm or if the user is the superuser (admin).
      */
     default boolean isRealmAccessibleByUser(String realm) {
-        return realm != null && realm.length() > 0 && (realm.equals(getAuthenticatedRealmName()) || isSuperUser());
+        return !TextUtil.isNullOrEmpty(realm) && (isSuperUser() || realm.equals(getAuthenticatedRealmName()));
     }
 }

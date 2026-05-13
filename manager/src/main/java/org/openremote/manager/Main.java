@@ -20,17 +20,24 @@
 package org.openremote.manager;
 
 import org.openremote.container.Container;
+import org.openremote.container.util.LogUtil;
 
 public class Main {
 
-    public static void main(String[] args) throws Exception {
+    static {
+        LogUtil.initialiseJUL();
+    }
 
-        Container container = new Container();
+    public static void main(String[] args) throws Exception {
+        Container container = null;
 
         try {
+            container = new Container();
             container.startBackground();
         } catch (Exception e) {
-            container.stop();
+            if (container != null) {
+                container.stop();
+            }
             System.exit(1);
         }
     }

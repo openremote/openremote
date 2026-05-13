@@ -186,6 +186,16 @@ public class User {
         return this;
     }
 
+    public User setAttribute(String key, List<String> values) {
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+        } else {
+            attributes.removeIf(attr -> attr.getName().equals(key));
+        }
+        values.forEach(value -> attributes.add(new UserAttribute(key, value)));
+        return this;
+    }
+
     public boolean hasAttribute(String key) {
         return attributes != null && attributes.stream().anyMatch(attr -> attr.getName().equals(key));
     }

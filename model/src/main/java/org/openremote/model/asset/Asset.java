@@ -47,6 +47,7 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.persistence.LTreeType;
+import org.openremote.model.util.HibernateUniqueIdentifierTypeAssignable;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetValid;
@@ -55,11 +56,11 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 // @formatter:off
 
@@ -77,6 +78,11 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * The {@link #getType()}} of the asset is the same value as {@link Class#getSimpleName()} and should correspond with an
  * {@link AssetDescriptor} registered within the running instance. If the corresponding {@link AssetDescriptor} cannot
  * be found then the fallback generic {@link ThingAsset#DESCRIPTOR} will be assumed.
+ * <p>
+ * The {@link #id} is BASE-62 encoded UUID (22 characters long) and can be supplied or auto generated; by allowing it
+ * to be supplied services have a predictable way to find a given asset and can use the
+ * {@link org.openremote.model.util.UniqueIdentifierGenerator#generateId( String)} to generate a constant ID from a
+ * given input string.
  * <p>
  * The {@link #path} is a list of parent asset identifiers, starting with the identifier of this asset, followed by
  * parent asset identifiers, and ending with the identifier of the root asset in the tree. This is a transient property
@@ -216,10 +222,9 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  */
 // @formatter:on
 @Entity
-@Table(name = "ASSET")
+@Table(name = "ASSET", check = @CheckConstraint(constraint = "ID != PARENT_ID"))
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
-@Check(constraints = "ID != PARENT_ID")
 @JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = ThingAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
 @AssetValid
@@ -228,6 +233,8 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
+
+    private static final java.util.regex.Pattern ASSET_ID_PATTERN = java.util.regex.Pattern.compile(Constants.ASSET_ID_REGEXP);
 
     /**
      * The purpose of this is to provide {@link org.openremote.model.attribute.Attribute.AttributeDeserializer} access
@@ -277,10 +284,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
     public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
 
-    @Id
+    @Id @HibernateUniqueIdentifierTypeAssignable
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
-    @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 
     @Version
@@ -288,10 +294,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "VERSION", nullable = false)
     protected long version;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn;
+    protected Instant createdOn;
 
     @NotBlank(message = "{Asset.name.NotBlank}")
     @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
@@ -355,11 +360,11 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return (T) this;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public T setCreatedOn(Date createdOn) {
+    public T setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return (T) this;
     }
@@ -422,10 +427,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
     /**
-     * NOTE: This is a transient and optional property, set only in database query results.
-     * <p>
-     * The identifiers of all parents representing the path in the tree. The first element is the identifier of this
-     * instance, the last is the root asset without a parent.
+     * The identifiers of all parents representing the path in the tree. The first element is the
+     * root asset without a parent, the last is the identifier of this instance.
      */
     public String[] getPath() {
         return path;
@@ -617,5 +620,28 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
                     }
                 }));
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Asset<?> asset = (Asset<?>) o;
+        return version == asset.version && accessPublicRead == asset.accessPublicRead && Objects.equals(id, asset.id) && Objects.equals(createdOn, asset.createdOn) && Objects.equals(name, asset.name) && Objects.equals(parentId, asset.parentId) && Objects.equals(realm, asset.realm) && Objects.equals(type, asset.type) && Objects.deepEquals(path, asset.path) && Objects.equals(attributes, asset.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, version, createdOn, name, accessPublicRead, parentId, realm, type, Arrays.hashCode(path), attributes);
+    }
+
+    /**
+     * Indicates if the given string matches the pattern for an Asset id.
+     *
+     * @param assetId String to validate. Must not be null or will throw a NullPointerException
+     * @return true if matches Asset id pattern, false otherwise.
+     */
+    public static boolean matchesAssetIdPattern(String assetId) {
+        return ASSET_ID_PATTERN.matcher(assetId).matches();
     }
 }

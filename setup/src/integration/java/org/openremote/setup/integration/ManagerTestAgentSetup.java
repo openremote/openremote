@@ -27,7 +27,7 @@ import org.openremote.model.security.Realm;
 
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.util.MapAccess.*;
 
 public class ManagerTestAgentSetup extends ManagerSetup {
 

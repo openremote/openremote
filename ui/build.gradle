@@ -1,6 +1,9 @@
 
 afterEvaluate {
     // Add dependencies on model and rest typescript generation
+    rootProject.getTasksByName('installDist', true).forEach {
+        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+    }
     rootProject.getTasksByName('prepareUi', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }

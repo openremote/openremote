@@ -28,7 +28,7 @@ public interface Constants {
     String MANAGER_CLIENT_ID = "manager-keycloak";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
-    String REALM_ADMIN_ROLE = "admin";
+    String SUPER_USER_REALM_ROLE = "admin";
     String READ_LOGS_ROLE = "read:logs";
     String READ_USERS_ROLE = "read:users";
     String READ_ADMIN_ROLE = "read:admin";
@@ -37,6 +37,8 @@ public interface Constants {
     String READ_RULES_ROLE = "read:rules";
     String READ_INSIGHTS_ROLE = "read:insights";
     String READ_ALARMS_ROLE = "read:alarms";
+    String READ_SERVICES_ROLE = "read:services";
+    String WRITE_SERVICES_ROLE = "write:services";
     String WRITE_USER_ROLE = "write:user";
     String WRITE_ADMIN_ROLE = "write:admin";
     String WRITE_LOGS_ROLE = "write:logs";
@@ -52,7 +54,6 @@ public interface Constants {
     String SESSION_CLOSE_ERROR = "connection.sessionCloseError";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "OPENREMOTE_SEQUENCE";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
 
     String OR_HOSTNAME = "OR_HOSTNAME";
     String OR_ADDITIONAL_HOSTNAMES = "OR_ADDITIONAL_HOSTNAMES";
@@ -96,6 +97,8 @@ public interface Constants {
     String UNITS_CUBED = "cubed";
     String UNITS_PEAK = "peak";
     String UNITS_MEGA = "mega";
+    String UNITS_GIGA = "giga";
+    String UNITS_TERA = "tera";
     String UNITS_KILO = "kilo";
     String UNITS_CENTI = "centi";
     String UNITS_HECTO = "hecto";

@@ -24,29 +24,22 @@ dependencies {
     implementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     implementation "io.swagger.core.v3:swagger-jaxrs2-jakarta:$swaggerVersion"
-    implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
     implementation "org.apache.camel:camel-undertow:$camelVersion"
 
-    implementation ("io.netty:netty-codec-http") {
-        version {
-            strictly "$nettyVersion"
-        }
-    }
-
-    // Exposed via MQTT API
+    // Indirect dep from org.apache.activemq:artemis-mqtt-protocol
     api ("io.netty:netty-codec-mqtt") {
         version {
             strictly "$nettyVersion"
         }
     }
 
-    implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
+    implementation("org.apache.artemis:artemis-mqtt-protocol:$artemisVersion") {
         exclude group: "org.osgi"
         exclude group: "org.jboss.logmanager"
     }
 
     // Needed for reference in tests
-    api("org.apache.activemq:artemis-server:$activeMQVersion") {
+    api("org.apache.artemis:artemis-server:$artemisVersion") {
         exclude group: "org.osgi"
         exclude group: "org.jboss.logmanager"
     }
@@ -57,10 +50,9 @@ dependencies {
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
+    implementation "io.prometheus:prometheus-metrics-exporter-httpserver:$prometheusVersion"
 
-    implementation "com.github.mwiede:jsch:$jSchVersion"
+    implementation "org.apache.sshd:sshd-netty:$apacheMINAVersion"
 }
 
 base {
@@ -100,7 +92,7 @@ distributions {
     main {
         contents {
             from(project.projectDir) {
-                include("*Dockerfile")
+                include("*Dockerfile", "entrypoint.sh")
             }
             into ("web") {
                 from("${rootDir}/LICENSE.txt")
@@ -159,8 +151,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
@@ -187,3 +179,25 @@ publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
+
+configurations {
+    demoExtension
+}
+
+dependencies {
+    demoExtension project(":extension:demo-setup")
+}
+
+tasks.named("run", JavaExec) {
+    def setupType = System.getenv("OR_SETUP_TYPE")
+    if (setupType != null) {
+        classpath += configurations.demoExtension
+        classpath += files({
+            def setupProject = project(':setup')
+            def targetSourceSet = setupProject.sourceSets.findByName(setupType)
+            if (targetSourceSet != null) {
+                return targetSourceSet.runtimeClasspath
+            }
+        })
+    }
+}

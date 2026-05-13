@@ -1,65 +1,64 @@
 package org.openremote.manager.datapoint;
 
+import org.hibernate.Session;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.datapoint.DatapointQueryTooLargeException;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
-import org.openremote.model.util.Pair;
+import org.openremote.model.datapoint.DatapointExportFormat;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Date;
-import java.time.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.syslog.SyslogCategory.DATA;
+import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
- * Store and retrieve datapoints for asset attributes and periodically purge data points based on
- * {@link MetaItemType#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
- * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
- * days.
+ * Store and retrieve datapoints for asset attributes and periodically purge data points using
+ * TimescaleDB's {@code drop_chunks()} with week-based retention aligned to 7-day chunk intervals.
+ * Retention defaults to inifinite.
  */
 public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
+    public static final String OR_DATA_POINTS_MAX_AGE_WEEKS = "OR_DATA_POINTS_MAX_AGE_WEEKS";
+    /** @deprecated Use {@link #OR_DATA_POINTS_MAX_AGE_WEEKS} instead. If set, value is converted to weeks (rounded up). */
+    @Deprecated
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
-    public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
-    protected static final String EXPORT_STORAGE_DIR_NAME = "datapoint";
-    protected int maxDatapointAgeDays;
+    private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
+    protected int maxDatapointAgeWeeks = -1;
     protected int datapointExportLimit;
-    protected Path exportPath;
 
     @Override
     public void init(Container container) throws Exception {
@@ -74,12 +73,20 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             )
         );
 
-        maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
-
-        if (maxDatapointAgeDays <= 0) {
-            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+        if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_WEEKS)) {
+            maxDatapointAgeWeeks = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_WEEKS, -1);
+        } else if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_DAYS)) {
+            int days = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, -1);
+            maxDatapointAgeWeeks = days > 0 ? (int) Math.ceil(days / 7.0) : days;
+            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " is deprecated, use " + OR_DATA_POINTS_MAX_AGE_WEEKS + " instead. Converted " + days + " days to " + maxDatapointAgeWeeks + " weeks.");
         } else {
-            LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
+            maxDatapointAgeWeeks = -1;
+        }
+
+        if (maxDatapointAgeWeeks <= 0) {
+            LOG.warning("Data point purge disabled");
+        } else {
+            LOG.log(Level.INFO, "Data point purge retention = " + maxDatapointAgeWeeks + " weeks");
         }
 
         datapointExportLimit = getInteger(container.getConfig(), OR_DATA_POINTS_EXPORT_LIMIT, OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT);
@@ -89,28 +96,21 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         } else {
             LOG.log(Level.INFO, "Data point export limit = " + datapointExportLimit);
         }
-
-        Path storageDir = persistenceService.getStorageDir();
-        exportPath = storageDir.resolve(EXPORT_STORAGE_DIR_NAME);
-        // Ensure export dir exists and is writable
-        Files.createDirectories(exportPath);
-        if (!exportPath.toFile().setWritable(true, false)) {
-            LOG.log(Level.WARNING, "Failed to set export dir write flag; data export may not work");
-        }
     }
 
     @Override
     public void start(Container container) throws Exception {
-        if (maxDatapointAgeDays > 0) {
+        if (maxDatapointAgeWeeks > 0) {
             dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::purgeDataPoints,
                 getFirstPurgeMillis(timerService.getNow()),
-                Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
+                Duration.ofDays(7).toMillis(), TimeUnit.MILLISECONDS
             );
         }
 
         ClientEventService clientEventService = container.getService(ClientEventService.class);
         clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(OutdatedAttributeEvent.class, null, this::onOutdatedAttributeEvent);
     }
 
     public static boolean attributeIsStoreDatapoint(MetaHolder attributeInfo) {
@@ -125,6 +125,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }
         }
+    }
+
+    public void onOutdatedAttributeEvent(OutdatedAttributeEvent outdatedAttributeEvent) {
+        // Store the outdated event for historical analysis
+        onAttributeEvent(outdatedAttributeEvent.getEvent());
     }
 
     @Override
@@ -143,114 +148,87 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected void purgeDataPoints() {
-        LOG.info("Running data points purge daily task");
+        LOG.info("Running data points purge task");
 
         try {
-            // Get list of attributes that have custom durations
-            List<Asset<?>> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .attributes(
-                        new AttributePredicate().meta(
-                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                        )));
+            persistenceService.doTransaction(em -> {
+                // Get the schema-qualified hypertable name
+                @SuppressWarnings("unchecked")
+                List<String> hypertables = em.createNativeQuery(
+                    "SELECT hypertable_schema || '.' || hypertable_name " +
+                    "FROM timescaledb_information.hypertables " +
+                    "WHERE hypertable_name = 'asset_datapoint'", String.class
+                ).getResultList();
 
-            List<Pair<String, Attribute<?>>> attributes = assets.stream()
-                .map(asset -> asset
-                    .getAttributes().stream()
-                    .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
-                    .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
-                    .collect(toList()))
-                .flatMap(List::stream)
-                .collect(toList());
+                if (hypertables.isEmpty()) {
+                    LOG.warning("asset_datapoint is not a TimescaleDB hypertable, skipping purge. " +
+                        "TimescaleDB with hypercore is required for data point storage.");
+                    return;
+                }
 
-            // Purge data points not in the above list using default duration
-            LOG.fine("Purging data points of attributes that use default max age days of " + maxDatapointAgeDays);
+                String qualifiedTableName = hypertables.getFirst();
 
-            persistenceService.doTransaction(em -> em.createQuery(
-                "delete from AssetDatapoint dp " +
-                    "where dp.timestamp < :dt" + buildWhereClause(attributes, true)
-            ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS))).executeUpdate());
+                // Find the maximum custom retention across all attributes with DATA_POINTS_MAX_AGE_DAYS meta
+                int effectiveRetentionWeeks = maxDatapointAgeWeeks;
+                Number maxCustomDays = (Number) em.createNativeQuery(
+                    "SELECT MAX((attr_val->'meta'->>'dataPointsMaxAgeDays')::integer) " +
+                    "FROM asset, jsonb_each(asset.attributes) AS a(attr_key, attr_val) " +
+                    "WHERE jsonb_exists(attr_val->'meta', 'dataPointsMaxAgeDays')"
+                ).getSingleResult();
 
-            if (!attributes.isEmpty()) {
-                // Purge data points that have specific age constraints
-                Map<Integer, List<Pair<String, Attribute<?>>>> ageAttributeRefMap = attributes.stream()
-                    .collect(groupingBy(attributeRef ->
-                        attributeRef.value
-                            .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
-                            .orElse(maxDatapointAgeDays)));
-
-                ageAttributeRefMap.forEach((age, attrs) -> {
-                    LOG.fine("Purging data points of " + attrs.size() + " attributes that use a max age of " + age);
-
-                    try {
-                        persistenceService.doTransaction(em -> em.createQuery(
-                            "delete from AssetDatapoint dp " +
-                                "where dp.timestamp < :dt" + buildWhereClause(attrs, false)
-                        ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(age, DAYS))).executeUpdate());
-                    } catch (Exception e) {
-                        LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen", e);
+                if (maxCustomDays != null) {
+                    int customRetentionWeeks = (int) Math.ceil(maxCustomDays.intValue() / 7.0);
+                    effectiveRetentionWeeks = Math.max(effectiveRetentionWeeks, customRetentionWeeks);
+                    if (customRetentionWeeks > maxDatapointAgeWeeks) {
+                        LOG.info("Custom attribute retention (" + maxCustomDays.intValue() + " days / " +
+                            customRetentionWeeks + " weeks) exceeds system default (" + maxDatapointAgeWeeks +
+                            " weeks), using " + effectiveRetentionWeeks + " weeks");
                     }
-                });
-            }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to run data points purge", e);
-        }
+                }
 
-        // Purge old exports
-        try {
-            long oneDayMillis = 24*60*60*1000;
-            File[] obsoleteExports = exportPath.toFile()
-                .listFiles(file ->
-                    file.isFile()
-                        && file.getName().endsWith("csv")
-                        && file.lastModified() < timerService.getCurrentTimeMillis() - oneDayMillis
-                );
+                // Compute cutoff from effective retention
+                Instant cutoff = timerService.getNow().minus(Duration.ofDays((long) effectiveRetentionWeeks * 7));
+                Timestamp cutoffTimestamp = Timestamp.from(cutoff);
 
-            if (obsoleteExports != null) {
-                Arrays.stream(obsoleteExports)
-                    .forEach(file -> {
-                        boolean success = false;
-                        try {
-                            success = file.delete();
-                        } catch (SecurityException e) {
-                            LOG.log(Level.WARNING, "Cannot access the export file to delete it", e);
-                        }
-                        if (!success) {
-                            LOG.log(Level.WARNING, "Failed to delete obsolete export '" + file.getName() + "'");
-                        }
-                    });
-            }
+                LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + effectiveRetentionWeeks + " weeks retention)");
+
+                Number dropped = (Number) em.createNativeQuery("SELECT count(*) FROM public.drop_chunks(CAST(:hypertable AS regclass), older_than => CAST(:cutoff AS timestamp))")
+                   .setParameter("hypertable", qualifiedTableName)
+                   .setParameter("cutoff", cutoffTimestamp)
+                   .getSingleResult();
+
+                LOG.info("Successfully purged data points using drop_chunks, drop count = " + dropped);
+            });
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to purge old exports", e);
+            LOG.log(Level.SEVERE, "Failed to run data points purge", e);
         }
     }
 
-    protected String buildWhereClause(List<Pair<String, Attribute<?>>> attributes, boolean negate) {
-
-        if (attributes.isEmpty()) {
-            return "";
-        }
-
-        String whereStr = attributes.stream()
-            .map(attributeRef -> "('" + attributeRef.key + "','" + attributeRef.value.getName() + "')")
-            .collect(Collectors.joining(","));
-
-        return " and (dp.assetId, dp.attributeName) " + (negate ? "not " : "") + "in (" + whereStr + ")";
+    /**
+     * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
+     * container so it can be accessed by this process.
+     * Backwards compatible overload with default format.
+     */
+    public PipedInputStream exportDatapoints(AttributeRef[] attributeRefs,
+                                                  long fromTimestamp,
+                                                  long toTimestamp) throws IOException {
+        return exportDatapoints(attributeRefs, fromTimestamp, toTimestamp, DatapointExportFormat.CSV);
     }
 
     /**
      * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
      * container so it can be accessed by this process.
      */
-    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
+    public PipedInputStream exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
-                                                  long toTimestamp) {
+                                                  long toTimestamp,
+                                                  DatapointExportFormat format) throws IOException {
         try {
-            String query = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
+            ExportQuery exportQuery = getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp);
 
             // Verify the query is 'legal' and can be executed
-            if(canQueryDatapoints(query, null, datapointExportLimit)) {
-                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            if(canQueryDatapoints(exportQuery.query, exportQuery.parameters, datapointExportLimit)) {
+                return doExportDatapoints(attributeRefs, fromTimestamp, toTimestamp, format);
             }
             throw new RuntimeException("Could not export datapoints.");
 
@@ -261,35 +239,194 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
     }
 
-    protected ScheduledFuture<File> doExportDatapoints(AttributeRef[] attributeRefs,
+    protected PipedInputStream doExportDatapoints(AttributeRef[] attributeRefs,
                                                        long fromTimestamp,
-                                                       long toTimestamp) {
+                                                       long toTimestamp,
+                                                       DatapointExportFormat format) throws IOException {
+        // Increase buffer size (default is only 1 KB)
+        PipedInputStream in = new PipedInputStream(1024 * 1024 * 4); // 4 MB
+        PipedOutputStream out = new PipedOutputStream(in);
 
-        return scheduledExecutorService.schedule(() -> {
-            String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder("copy (")
-                    .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
-                    .append(") to '/storage/")
-                    .append(EXPORT_STORAGE_DIR_NAME)
-                    .append("/")
-                    .append(fileName)
-                    .append("' delimiter ',' CSV HEADER;");
+        // Execute query asynchronously
+        scheduledExecutorService.schedule(() -> {
+            boolean success = false;
+            try {
+                persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+                    String tempTableName = "tmp_export_attributes";
 
-            persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+                    // Create temp table and insert attribute refs safely via PreparedStatement
+                    // to prevent SQL injection (instead of string-interpolating IDs into the query)
+                    try (Statement statement = connection.createStatement()) {
+                        statement.execute(
+                            "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
+                        );
+                    }
 
-            // The same path must resolve in both the postgresql container and the manager container
-            return exportPath.resolve(fileName).toFile();
+                    try (PreparedStatement insertStatement = connection.prepareStatement(
+                        "insert into " + tempTableName + " (entity_id, attribute_name) values (?, ?)"
+                    )) {
+                        for (AttributeRef attributeRef : attributeRefs) {
+                            insertStatement.setString(1, validateAssetId(attributeRef.getId()));
+                            insertStatement.setString(2, attributeRef.getName());
+                            insertStatement.addBatch();
+                        }
+                        insertStatement.executeBatch();
+                    }
+
+                    // Build the COPY ... TO STDOUT query based on format
+                    String copyQuery = buildCopyToStdoutQuery(tempTableName, fromTimestamp, toTimestamp, format, attributeRefs);
+
+                    try {
+                        PGConnection pgConnection = connection.unwrap(PGConnection.class);
+                        CopyManager copyManager = pgConnection.getCopyAPI();
+                        copyManager.copyOut(copyQuery, out);
+                        out.flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to export datapoints", e);
+                    }
+                }));
+                success = true;
+            } catch (Exception e) {
+                DATA_EXPORT_LOG.log(Level.SEVERE, "Datapoint export failed", e);
+            } finally {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    DATA_EXPORT_LOG.log(Level.WARNING, "Failed to close output stream", e);
+                }
+                if (!success) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to close piped input stream", e);
+                    }
+                }
+            }
         }, 0, TimeUnit.MILLISECONDS);
+
+        return in;
+    }
+
+    /**
+     * Builds a COPY ... TO STDOUT query for streaming CSV data based on the export format.
+     * Uses a temporary table for safe attribute filtering (SQL injection prevention).
+     */
+    private String buildCopyToStdoutQuery(String tempTableName, long fromTimestamp, long toTimestamp,
+                                          DatapointExportFormat format, AttributeRef[] attributeRefs) {
+        long fromSeconds = fromTimestamp / 1000;
+        long toSeconds = toTimestamp / 1000;
+        final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
+
+        if (format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+            Set<String> headers = getAttributeHeaders(attributeRefs);
+
+            // Category query using VALUES clause with dollar-quoting to avoid escaping issues
+            String categoryValues = headers.stream()
+                    .map(header -> "('" + header.replace("'", "''") + "')")
+                    .collect(Collectors.joining(", "));
+            String categoryQuery = "SELECT header FROM (VALUES " + categoryValues + ") AS t(header)";
+
+            // Column definitions for crosstab result
+            String attributeColumns = headers.stream()
+                    .map(header -> "\"" + header + "\" text")
+                    .collect(Collectors.joining(", "));
+
+            // Inner SELECT query for crosstab (uses escaped quotes since it's inside a string argument)
+            String innerQuery;
+            if (format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
+                innerQuery = String.format(
+                        "select public.time_bucket(''1 minute'', ad.timestamp) as bucket_timestamp, " +
+                        "a.name || '' : '' || ad.attribute_name as header, " +
+                        "CASE " +
+                        "  WHEN jsonb_typeof((array_agg(ad.value))[1]) = ''number'' THEN " +
+                        "    round(avg((ad.value#>>''{}'')::numeric) FILTER (WHERE jsonb_typeof(ad.value) = ''number''), 3)::text " +
+                        "  ELSE (array_agg(ad.value ORDER BY ad.timestamp DESC) FILTER (WHERE jsonb_typeof(ad.value) != ''number''))[1]#>>''{}''" +
+                        "END as value " +
+                        "from asset_datapoint ad " +
+                        "join asset a on ad.entity_id = a.id " +
+                        "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
+                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "group by bucket_timestamp, header " +
+                        "order by bucket_timestamp, header",
+                        tempTableName, fromSeconds, toSeconds);
+            } else {
+                innerQuery = String.format(
+                        "select ad.timestamp, a.name || '' : '' || ad.attribute_name as header, ad.value " +
+                        "from asset_datapoint ad " +
+                        "join asset a on ad.entity_id = a.id " +
+                        "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
+                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "order by ad.timestamp, header",
+                        tempTableName, fromSeconds, toSeconds);
+            }
+
+            return String.format(
+                    "copy (select * from crosstab('%s', $cat$%s$cat$) as ct(timestamp timestamp, %s)%s",
+                    innerQuery, categoryQuery, attributeColumns, TO_STDOUT_WITH_CSV_FORMAT);
+        } else {
+            // Plain CSV format using temp table join
+            String innerQuery = String.format(
+                    "select ad.timestamp, a.name, ad.attribute_name, value " +
+                    "from asset_datapoint ad " +
+                    "join asset a on ad.entity_id = a.id " +
+                    "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
+                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                    "order by ad.timestamp desc",
+                    tempTableName, fromSeconds, toSeconds);
+            return "copy (" + innerQuery + TO_STDOUT_WITH_CSV_FORMAT;
+        }
+    }
+
+    /**
+     * Function for building CSV attribute headers when format will make
+     * a separate column per attribute.
+     * Uses TreeSet for alphabetical ordering required by crosstab queries.
+     */
+    private Set<String> getAttributeHeaders(AttributeRef[] attributeRefs) {
+        Set<String> headers = new TreeSet<>();
+        Arrays.stream(attributeRefs).forEach(attr -> {
+            String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("(^\\[|\\]$)", "");
+            headers.add(assetName + " : " + attr.getName());
+        });
+        return headers;
     }
 
     /**
      * Function for building an SQL query that SELECTs the content for the data export.
      * Currently, it includes timestamp, asset name, attribute name, and the data point value.
      * Be aware: this SQL query does NOT contain any CSV-related statements.
+     *
+     * It returns a structure containing the parametrized query as a string and the parameter values.
      */
-    protected String getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
-        return new StringBuilder(String.format("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
-                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
-                .append(")").toString();
+    protected ExportQuery getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
+        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(?) and ad.timestamp <= to_timestamp(?) and ");
+        Map<Integer, Object> parameters = new HashMap<>();
+        int paramIndex = 1;
+        parameters.put(paramIndex++, fromTimestamp / 1000);
+        parameters.put(paramIndex++, toTimestamp / 1000);
+
+        sb.append("(ad.entity_id, ad.attribute_name) in (");
+        for (int i = 0; i < attributeRefs.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append("(?, ?)");
+            parameters.put(paramIndex++, validateAssetId(attributeRefs[i].getId()));
+            parameters.put(paramIndex++, attributeRefs[i].getName());
+        }
+        sb.append(") ");
+        sb.append("order by ad.timestamp desc");
+
+        return new ExportQuery(sb.toString(), parameters);
+    }
+
+    protected record ExportQuery(String query, Map<Integer, Object> parameters) {
+    }
+
+    private static String validateAssetId(String assetId) {
+        if (assetId == null || !Asset.matchesAssetIdPattern(assetId)) {
+            throw new IllegalArgumentException("Invalid asset id");
+        }
+        return assetId;
     }
 }

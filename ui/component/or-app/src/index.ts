@@ -7,7 +7,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -101,7 +101,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;
 
-                height: 100vh;
+                height: 100vh; /* Fallback */
+                height: 100dvh; /* Stretch to dynamic viewport height */
                 display: flex;
                 flex: 1;
                 flex-direction: column;
@@ -159,18 +160,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // TODO; Add an ConsoleProvider that listens to background/foreground changes, and dispatch the respective OREvent. This will improve responsiveness of logic attached to it.
     // For example used for triggering reconnecting logic once the UI becomes visible again.
     protected _handleVisibilityChange(ev: Event) {
+        console.debug("App visibility changed to", document.visibilityState);
 
         if(document.visibilityState === "visible") {
             this._store.dispatch((setVisibility(true)));
-
-            // When the manager appears on Mobile devices, but the connection is OFFLINE,
-            // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
-            // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
-            if(manager.console?.isMobile && this._offline) {
-                this._startOfflineFallbackTimer(true);
-            }
-            // Always try reconnecting (just in case we are disconnected)
-            manager.reconnect();
+            setTimeout(() => {
+                // When the manager appears on Mobile devices, but the connection is OFFLINE,
+                // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
+                // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
+                if(manager.console?.isMobile && this._offline) {
+                    this._startOfflineFallbackTimer(true);
+                }
+                // Always try reconnecting the event provider (just in case we are disconnected)
+                manager.reconnect();
+            }, 500);
         } else {
             this._store.dispatch((setVisibility(false)));
         }
@@ -269,7 +272,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     this._activeMenu = activeMenu;
                 };
                 router.hooks({
-                    before(done, match) {
+                    before: (done, match) => {
                         headerUpdater(match ? match.url.split('/')[0] : undefined);
                         done();
                     }
@@ -372,15 +375,15 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if (!this._config.logo) {
                 this._config.logo = DefaultLogo;
             }else{
-                this._config.logo = (MANAGER_URL || "")+this._config.logo
+                this._config.logo = (manager.managerUrl ?? "") + this._config.logo
             }
             if (!this._config.logoMobile) {
                 this._config.logoMobile = DefaultMobileLogo;
             }else{
-                this._config.logoMobile = (MANAGER_URL || "")+this._config.logoMobile
+                this._config.logoMobile = (manager.managerUrl ?? "") + this._config.logoMobile
             }
 
-            const favIcon = this._config && this._config.favicon ? (MANAGER_URL || "")+this._config.favicon : DefaultFavIcon;
+            const favIcon = this._config && this._config.favicon ? (manager.managerUrl || "") + this._config.favicon : DefaultFavIcon;
 
             let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 
@@ -411,6 +414,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return html`
             ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
+            <style>
+                :host > * {
+                    /* Vaadin + OR theme styles that are 'user configurable' need to be re-applied inside or-app. */
+                    --or-color-primary: var(--or-app-color4);
+                    --or-color-primary-50pct: hsl(from var(--or-color-primary) h s l / 0.76);
+                    --or-color-primary-10pct: hsl(from var(--or-color-primary) h s l / 0.13);
+                    --or-color-text-primary: var(--or-app-color4);
+                    --lumo-primary-color: var(--or-color-primary);
+                    --lumo-primary-color-50pct: var(--or-color-primary-50pct);
+                    --lumo-primary-color-10pct: var(--or-color-primary-10pct);
+                    --lumo-primary-text-color: var(--or-color-text-primary);
+                }
+            </style>
             ${this._config.header ? html`
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}

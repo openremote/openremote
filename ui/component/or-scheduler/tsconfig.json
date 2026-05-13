@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../model" },
+    { "path": "../core" },
+    { "path": "../or-translate" },
+    { "path": "../or-vaadin-components" }
+  ]
+}

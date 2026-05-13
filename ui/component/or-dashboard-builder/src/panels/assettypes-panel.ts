@@ -1,11 +1,11 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetDescriptor, AssetModelUtil, AssetQuery, AssetTypeInfo} from "@openremote/model";
+import {AssetDescriptor, AssetModelUtil, AssetTypeInfo} from "@openremote/model";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {i18next} from "@openremote/or-translate";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {Util} from "@openremote/core";
+import {Util} from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {AssetTreeConfig, OrAssetTree} from "@openremote/or-asset-tree";
@@ -22,6 +22,20 @@ export class AssetTypeSelectEvent extends CustomEvent<string> {
             detail: assetTypeName
         });
     }
+}
+
+export class AssetAllOfTypeSwitchEvent extends CustomEvent<boolean> {
+
+    public static readonly NAME = "alloftype-switch";
+
+    constructor (allOfType: boolean) {
+        super(AssetAllOfTypeSwitchEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: allOfType
+        });
+    }
+
 }
 
 export class AssetIdsSelectEvent extends CustomEvent<string | string[]> {
@@ -53,7 +67,8 @@ export class AttributeNamesSelectEvent extends CustomEvent<string | string[]> {
 export interface AssetTypesFilterConfig {
     assets?: {
         enabled?: boolean,
-        multi?: boolean
+        multi?: boolean,
+        allOfTypeOption?: boolean
     },
     attributes?: {
         enabled?: boolean,
@@ -83,6 +98,9 @@ export class AssettypesPanel extends LitElement {
         }
     }
 
+    @property() // Whether to include all assets of this type or if the user can choose specific assets
+    protected allOfType: boolean = false;
+
     @property() // IDs of assets; either undefined, a single entry, or multi select
     protected assetIds: undefined | string | string[];
 
@@ -107,6 +125,9 @@ export class AssettypesPanel extends LitElement {
         if (changedProps.has("assetType") && this.assetType) {
             this._attributeSelectList = this.getAttributesByType(this.assetType)!;
             this.dispatchEvent(new AssetTypeSelectEvent(this.assetType));
+        }
+        if (changedProps.has("allOfType")) {
+            this.dispatchEvent(new AssetAllOfTypeSwitchEvent(this.allOfType));
         }
         if (changedProps.has("assetIds") && this.assetIds) {
             this.dispatchEvent(new AssetIdsSelectEvent(this.assetIds));
@@ -141,12 +162,27 @@ export class AssettypesPanel extends LitElement {
                     }
                 </div>
 
+                <!-- Switch to include all assets of this type  -->
+                ${when(this.config.assets?.allOfTypeOption, () => {
+                    return html`
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><or-translate value="allAssetsofType"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                          .value="${this.allOfType}"
+                                          .disabled="${!this.assetType}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onAssetAllOfTypeToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                    `;
+                })}
+
                 <!-- Select one or more assets -->
                 ${when(this.config.assets?.enabled, () => {
                     const assetIds = (typeof this.assetIds === 'string') ? [this.assetIds] : this.assetIds;
+                    const label = this.allOfType ? i18next.t("allAssets") : ((this.assetIds?.length || 0) + ' ' + i18next.t('assets'));
                     return html`
                         <div>
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${(this.assetIds?.length || 0) + ' ' + i18next.t('assets')}" .disabled="${!this.assetType}" fullWidth outlined comfortable style="width: 100%;"
+                            <or-mwc-input .type="${InputType.BUTTON}" label="${label}" .disabled="${!this.assetType || this.allOfType}" fullWidth outlined comfortable style="width: 100%;"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._openAssetSelector(this.assetType!, assetIds, this.config.assets?.multi)}"
                             ></or-mwc-input>
                         </div>
@@ -245,6 +281,10 @@ export class AssettypesPanel extends LitElement {
         }
     }
 
+    protected onAssetAllOfTypeToggle(ev: OrInputChangedEvent) {
+        this.allOfType = ev.detail.value;
+    }
+
     protected _openAssetSelector(assetType: string, assetIds?: string[], multi = false) {
         const assetTreeRef: Ref<OrAssetTree> = createRef();
         const config = {
@@ -255,11 +295,16 @@ export class AssettypesPanel extends LitElement {
         } as AssetTreeConfig
         const dialog = showDialog(new OrMwcDialog()
             .setHeading(i18next.t("linkedAssets"))
+            .setStyles(html`<style>
+                or-asset-tree {
+                    min-height: 400px;
+                    max-height: 50vh;
+                }
+            </style>`)
             .setContent(html`
                 <div style="width: 400px;">
-                    <or-asset-tree ${ref(assetTreeRef)} .dataProvider="${this.assetTreeDataProvider}" expandAllNodes
-                                   id="chart-asset-tree" readonly .config="${config}" .selectedIds="${assetIds}"
-                                   .showSortBtn="${false}" .showFilter="${false}" .checkboxes="${multi}"
+                    <or-asset-tree ${ref(assetTreeRef)} id="chart-asset-tree" readonly disableSubscribe .config="${config}" .selectedIds="${assetIds}"
+                                   .showSortBtn="${false}" .showFilterIcon="${false}" .checkboxes="${multi}"
                     ></or-asset-tree>
                 </div>
             `)
@@ -285,27 +330,7 @@ export class AssettypesPanel extends LitElement {
                 }
             ])
             .setDismissAction({
-                actionName: "cancel",
+                actionName: "cancel"
             }));
     }
-
-    protected assetTreeDataProvider = async (): Promise<Asset[]> => {
-        const assetQuery: AssetQuery = {
-            realm: {
-                name: manager.displayRealm
-            },
-            select: { // Just need the basic asset info
-                attributes: []
-            }
-        };
-        // At first, just fetch all accessible assets without attribute info...
-        const assets = (await manager.rest.api.AssetResource.queryAssets(assetQuery)).data;
-
-        // After fetching, narrow down the list to assets with the same assetType.
-        // Since it is a tree, we also include the parents of those assets, based on the 'asset.path' variable.
-        const pathsOfAssetType = assets.filter(a => a.type === this.assetType).map(a => a.path!);
-        const filteredAssetIds = [...new Set([].concat(...pathsOfAssetType as any[]))] as string[];
-        return assets.filter(a => filteredAssetIds.includes(a.id!));
-    }
-
 }

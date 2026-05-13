@@ -4,6 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public class DashboardTemplate {
 
     // Fields
@@ -92,5 +95,17 @@ public class DashboardTemplate {
 
     public DashboardWidget[] getWidgets() {
         return widgets;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DashboardTemplate that)) return false;
+        return columns == that.columns && maxScreenWidth == that.maxScreenWidth && Objects.equals(id, that.id) && refreshInterval == that.refreshInterval && Objects.deepEquals(screenPresets, that.screenPresets) && Objects.deepEquals(widgets, that.widgets);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, columns, maxScreenWidth, refreshInterval, Arrays.hashCode(screenPresets), Arrays.hashCode(widgets));
     }
 }

@@ -13,7 +13,8 @@ import {
     JsonSchema
 } from "@jsonforms/core";
 import {isEnumArray} from "../standard-renderers";
-import {getSchemaConst} from "../util";
+
+let defaultTz: string;
 
 // language=CSS
 const style = css`
@@ -39,6 +40,7 @@ export class ControlInputElement extends ControlBaseElement {
         const uischema = this.uischema;
         const schema = this.schema;
         const format = this.schema.format;
+        const context = { rootSchema: this.rootSchema, config: this.config };
 
         this.inputType = InputType.TEXT;
         let step: number | undefined;
@@ -50,13 +52,16 @@ export class ControlInputElement extends ControlBaseElement {
         let options: [string, string][] | undefined;
         let multiple = false;
         let value: any = this.data ?? schema.default;
+        let searchable: boolean | undefined;
+        let searchProvider!: (search?: string) => [any, string][] | undefined;
+        let onValueChanged = (e: OrInputChangedEvent) => this.onValueChanged(e);
 
         if (Array.isArray(schema.type)) {
             this.inputType = InputType.JSON;
-        } else if (isBooleanControl(uischema, schema)) {
+        } else if (isBooleanControl(uischema, schema, context)) {
             this.inputType = InputType.CHECKBOX;
-        } else if (isNumberControl(uischema, schema) || isIntegerControl(uischema, schema)) {
-            step = isNumberControl(uischema, schema) ? 0.1 : 1;
+        } else if (isNumberControl(uischema, schema, context) || isIntegerControl(uischema, schema, context)) {
+            step = isNumberControl(uischema, schema, context) ? 0.1 : 1;
             this.inputType = InputType.NUMBER;
             min = schema.minimum;
             max = schema.maximum;
@@ -71,17 +76,17 @@ export class ControlInputElement extends ControlBaseElement {
             }
 
         } else if (
-            isEnumControl(uischema, schema)
-            || isOneOfEnumControl(uischema, schema)
-            || isEnumArray(uischema, schema)) {
+            isEnumControl(uischema, schema, context)
+            || isOneOfEnumControl(uischema, schema, context)
+            || isEnumArray(uischema, schema, context)) {
 
             this.inputType = InputType.SELECT;
 
-            if (isEnumControl(uischema, schema)) {
+            if (isEnumControl(uischema, schema, context)) {
                 options = schema.enum!.map(enm => {
                     return [JSON.stringify(enm), String(enm)];
                 });
-            } else if (isOneOfEnumControl(uischema, schema)) {
+            } else if (isOneOfEnumControl(uischema, schema, context)) {
                 options = (schema.oneOf as JsonSchema[]).map(s => {
                     return [JSON.stringify(s.const), String(s.const)];
                 })
@@ -105,7 +110,7 @@ export class ControlInputElement extends ControlBaseElement {
             } else {
                 value = value !== undefined ? JSON.stringify(value) : undefined;
             }
-        } else if (isStringControl(uischema, schema)) {
+        } else if (isStringControl(uischema, schema, context)) {
             minLength = schema.minLength;
             maxLength = schema.maxLength;
             pattern = schema.pattern;
@@ -124,6 +129,21 @@ export class ControlInputElement extends ControlBaseElement {
                 this.inputType = InputType.TEXTAREA;
             } else if (format === "or-password" || (schema as any).writeOnly) {
                 this.inputType = InputType.PASSWORD;
+            } else if (format === "timezone") {
+                this.inputType = InputType.SELECT;
+                options = Intl.supportedValuesOf("timeZone").map(z => [z, z]);
+                if (!(defaultTz && value)) {
+                    defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    this.handleChange(this.path, defaultTz);
+                }
+                searchable = true;
+                onValueChanged = (e: OrInputChangedEvent) => this.handleChange(this.path, e.detail.value);
+                searchProvider = (search?: string) => {
+                    if (search) {
+                        return options?.filter(([,name]) => name.toLowerCase().includes(search.toLowerCase()));
+                    }
+                    return options?.filter(([,name]) => name.toLowerCase().includes((value ?? defaultTz).toLowerCase().split("/")[0]));
+                };
             }
         }
 
@@ -135,7 +155,9 @@ export class ControlInputElement extends ControlBaseElement {
                 .id="${this.id}"
                 .options="${options}"
                 .multiple="${multiple}"
-                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onValueChanged(e)}"
+                ?searchable="${searchable}"
+                .searchProvider="${searchProvider}"
+                @or-mwc-input-changed="${onValueChanged}"
                 .maxLength="${maxLength}"
                 .minLength="${minLength}"
                 .pattern="${pattern}"

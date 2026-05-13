@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.app;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -30,7 +29,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.manager.ManagerAppConfig;
-import org.openremote.model.manager.ManagerAppRealmConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -40,13 +38,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 
@@ -109,7 +109,7 @@ public class ConfigurationService implements ContainerService {
         LOG.info("Configuration Service Used files:");
         LOG.info("\t- manager_config.json: " + managerConfigPath);
         LOG.info("\t- mapsettings.json: " + mapSettingsPath);
-        LOG.info("\t- mapdata.mbtiles: " + mapTilesPath);
+        LOG.info("\t- mapdata.mbtiles: " + Optional.of(getCustomMapTilesPath(true)).map(p -> p.toFile().isDirectory() ? null : p).orElse(mapTilesPath));
     }
 
     @Override
@@ -162,6 +162,39 @@ public class ConfigurationService implements ContainerService {
 
     public Path getMapTilesPath() {
         return mapTilesPath;
+    }
+
+    /**
+     * Must be called after {@link #mapTilesPath} is initialized.
+     * @return the parent directory path for custom mbtiles, or the custom mbtiles file if findMBTilesFile is true. If
+     * no custom mbtiles file is found or it is the same file as {@link #mapTilesPath} then the parent directory path
+     * is returned (i.e. as if no custom mbtiles file can be found).
+     * @throws IOException if persistence directory cannot be created or read
+     */
+    public Path getCustomMapTilesPath(boolean findMBTilesFile) throws IOException {
+        Path parentDir = getPersistedCustomTilesPath();
+
+        try {
+            if (!Files.exists(parentDir)) Files.createDirectories(parentDir);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Could not create parent directory for custom tiles", e);
+            throw e;
+        }
+
+        if (!findMBTilesFile) {
+            return parentDir;
+        }
+
+        // If mapTilesPath has resolved to an mbtiles file in the persistence dir then it isn't considered a custom file
+        Path defaultMapTilesFilename = Optional.ofNullable(this.mapTilesPath)
+                .map(Path::toAbsolutePath)
+                .orElse(null);
+
+        return Arrays.stream(Objects.requireNonNull(parentDir.toFile().listFiles((dir, name) -> name.endsWith(".mbtiles"))))
+                .map(File::toPath)
+                .filter(p -> !p.toAbsolutePath().equals(defaultMapTilesFilename))
+                .findFirst()
+                .orElse(parentDir);
     }
 
     public ManagerAppConfig getManagerConfig() {
@@ -263,6 +296,10 @@ public class ConfigurationService implements ContainerService {
         return persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json");
     }
 
+    protected Path getPersistedCustomTilesPath() {
+        return persistenceService.getStorageDir().resolve("map");
+    }
+
     protected Path getPersistedManagerConfigImagePath() {
         return this.persistenceService.resolvePath("manager").resolve("images");
     }
@@ -276,10 +313,10 @@ public class ConfigurationService implements ContainerService {
                     managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getLogo()));
                 }
                 if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getLogoMobile())) {
-                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getLogoMobile()));
+                    managerAppRealmConfig.setLogoMobile(fixImageRef(managerAppRealmConfig.getLogoMobile()));
                 }
                 if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getFavicon())) {
-                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getFavicon()));
+                    managerAppRealmConfig.setFavicon(fixImageRef(managerAppRealmConfig.getFavicon()));
                 }
             });
         }
@@ -287,6 +324,7 @@ public class ConfigurationService implements ContainerService {
     }
 
     protected String fixImageRef(String image) {
+        String originalString = image;
         if (!image.isBlank()) {
             image = image.replace("/api/master/configuration/manager/image/", "");
             image = image.replace("images/", "");
@@ -303,11 +341,13 @@ public class ConfigurationService implements ContainerService {
                         // Change the reference in the config to the typical API-like reference:
                         image = "/api/master/configuration/manager/image/" + imagePath;
                     } catch (Exception e) {
-                        LOG.warning("Error occurred whilst copying manager config image to persisted path: " + imagePath);
+                        LOG.warning("Error occurred whilst copying manager config image to persisted path: " + persistedImagePath);
                     }
                 } else {
                     LOG.warning("manager_config.json image reference doesn't exist: " + imagePath);
                 }
+            } else {
+                return originalString;
             }
         }
         return image;

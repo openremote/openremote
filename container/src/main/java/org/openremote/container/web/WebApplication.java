@@ -19,17 +19,15 @@
  */
 package org.openremote.container.web;
 
+import jakarta.ws.rs.core.Application;
 import org.openremote.model.Container;
 
-import jakarta.ws.rs.core.Application;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.logging.Logger;
 
 public class WebApplication extends Application {
-
-    private static final Logger LOG = Logger.getLogger(WebApplication.class.getName());
 
     protected final Container container;
     protected final Set<Class<?>> classes;
@@ -38,7 +36,7 @@ public class WebApplication extends Application {
     public WebApplication(Container container, Collection<Class<?>> apiClasses, Collection<Object> apiSingletons) {
         this.container = container;
         this.classes = apiClasses != null ? new HashSet<>(apiClasses) : null;
-        this.singletons = apiSingletons != null ? new HashSet<>(apiSingletons) : null;
+        this.singletons = apiSingletons != null ? new LinkedHashSet<>(apiSingletons) : null;
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.openremote.model.auth;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -49,6 +50,7 @@ public abstract class OAuthGrant implements Serializable {
     protected Map<String, List<String>> additionalValueMap = null;
     @JsonProperty(VALUE_KEY_GRANT_TYPE)
     protected String grantType;
+    @NotNull
     @JsonProperty(VALUE_KEY_CLIENT_ID)
     String clientId;
     @JsonProperty(VALUE_KEY_CLIENT_SECRET)
@@ -57,7 +59,6 @@ public abstract class OAuthGrant implements Serializable {
     String scope;
 
     protected OAuthGrant(String tokenEndpointUri, String grantType, String clientId, String clientSecret, String scope) {
-        requireNonNullAndNonEmpty(tokenEndpointUri);
         requireNonNullAndNonEmpty(grantType);
         requireNonNullAndNonEmpty(clientId);
         this.grantType = grantType;
@@ -142,7 +143,6 @@ public abstract class OAuthGrant implements Serializable {
             ", basicAuthHeader=" + basicAuthHeader +
             ", grantType='" + grantType + '\'' +
             ", clientId='" + clientId + '\'' +
-            ", clientSecret='" + clientSecret + '\'' +
             ", scope='" + scope + '\'' +
             '}';
     }

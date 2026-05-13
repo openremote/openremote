@@ -80,7 +80,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         this.visible = false;
     }
 
-    protected markerColor?: string;
+    protected _markerColor?: string;
 
     protected set type(type: string | undefined) {
 
@@ -106,8 +106,8 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             this.icon = iconAndColour.icon;
         }
 
-        this.markerColor = (Array.isArray(iconAndColour.color)) ? iconAndColour.color[0].colour : iconAndColour.color || undefined;
-        this.updateColor(this.markerContainer);
+        this._markerColor = (Array.isArray(iconAndColour.color)) ? iconAndColour.color[0].colour : iconAndColour.color || undefined;
+        this._updateColor(this.markerContainer);
         this.visible = true;
     }
 
@@ -128,7 +128,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
         if (_changedProperties.has("asset")) {
             try {
-                this.onAssetChanged(this.asset);
+                this._onAssetChanged(this.asset);
             } catch (e) {
                 console.error(e);
             }
@@ -166,16 +166,16 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
                 case AssetEventCause.READ:
                 case AssetEventCause.CREATE:
                 case AssetEventCause.UPDATE:
-                    this.onAssetChanged(assetEvent.asset);
+                    this._onAssetChanged(assetEvent.asset);
                     break;
                 case AssetEventCause.DELETE:
-                    this.onAssetChanged(undefined);
+                    this._onAssetChanged(undefined);
                     break;
             }
         }
     }
 
-    protected async onAssetChanged(asset?: Asset) {
+    protected async _onAssetChanged(asset?: Asset) {
         if (asset) {
             this.direction = undefined;
             this.displayValue = undefined;
@@ -215,17 +215,17 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         this.lng = location && location.coordinates ? (location.coordinates as any)[0] : undefined;
     }
 
-    protected getColor() {
-        if (this.markerColor && !this.color) {
-            return "#" + this.markerColor;
+    protected _getColor() {
+        if (this._markerColor && !this.color) {
+            return "#" + this._markerColor;
         }
-        return super.getColor();
+        return super._getColor();
     }
 
-    protected getActiveColor() {
-        if (this.markerColor && !this.activeColor) {
-            return "#" + this.markerColor;
+    protected _getActiveColor() {
+        if (this._markerColor && !this.activeColor) {
+            return "#" + this._markerColor;
         }
-        return super.getActiveColor();
+        return super._getActiveColor();
     }
 }

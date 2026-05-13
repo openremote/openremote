@@ -102,12 +102,18 @@ services:
       PROXY_HOST_REDIRECT_10_NAME:
       PROXY_HOST_REDIRECT_10_TARGET:
 
+      # The proxy removes path prefixes when configured before sending the request to the manager or keycloak.
+      #MANAGER_PATH_PREFIX: /openremote
+      #KEYCLOAK_PATH_PREFIX: /keycloak
+
     # Expose public services (web server, MQTT broker)
     ports:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
       - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
 
   # The OpenRemote Manager
   manager:
@@ -133,6 +139,8 @@ services:
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
     #  - "127.0.0.1:8405:8405" # Localhost metrics access
+    #  - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                              # intended to be IP of the interface of the private subnet of the EC2 VM
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -225,6 +233,12 @@ services:
       # Manager web server maximum IO thread count; default: Processor core count or 2
       OR_WEBSERVER_IO_THREADS_MAX:
 
+      # Manager web server max request entity size in bytes; default: 30000000
+      OR_WEBSERVER_MAX_ENTITY_SIZE:
+
+      # Manager web server max multipart request entity size in bytes; default: 30000000
+      OR_WEBSERVER_MULTIPART_MAX_ENTITY_SIZE:
+
       # Database settings
       OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
       OR_DB_HOST: ${OR_DB_HOST:-postgresql}
@@ -267,6 +281,9 @@ services:
       # manager's map, as well as other style details and colours.
       OR_MAP_SETTINGS_PATH: ${OR_MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
 
+      # Override the maximum allowed custom map tiles database file size in bytes.
+      OR_CUSTOM_MAP_SIZE_LIMIT: ${OR_CUSTOM_MAP_SIZE_LIMIT:-30000000}
+
       # Set the tileserver host name and port; the manager will reverse proxy to this server
       # to provide raster map tiles to frontend apps
       OR_MAP_TILESERVER_HOST:
@@ -290,11 +307,6 @@ services:
       OR_AUTO_PROVISIONING_THREADS_MIN:
       # The maximum number of threads that will be used to process incoming auto provisioning messages
       OR_AUTO_PROVISIONING_THREADS_MAX:
-
-      # When asset attributes are enabled for rule events, each value update will be a temporary
-      # fact in rules. You can set the global default expiration time span used when no other
-      # attribute-level configuration exists. Default is 1 hour.
-      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-PT1H}
 
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
@@ -347,6 +359,9 @@ services:
 
       # API key for the API of ForecastSolar: https://forecast.solar
       # OR_FORECAST_SOLAR_API_KEY
+
+      # When using path based proxying this prefix is added to the URLs returned via the REST API.
+      # OR_PATH_PREFIX: /openremote
 
       # Custom JVM options (override default manager options)
   #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
@@ -415,12 +430,16 @@ services:
       # exposed then the proxy should be configured to validate the host header to prevent abuse
       #KEYCLOAK_ISSUER_BASE_URI: 'https://192.168.1.2/auth'
 
+      # Configuration for roles to be assigned to self-registered users (when the listener is enabled)
+      # Example is "{\"realmRoles\":[\"restricted_user\"],\"clientRoles\":[{\"client\":\"openremote\",\"roles\":[\"read:assets\",\"write:attributes\"]}]}"
+      KEYCLOAK_SELF_REGISTERED_USER_ROLES: "{ }"
+
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:-}
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     restart: always
     # Shared memory should be increased for any reasonable DB size this should be increased further
     shm_size: 128mb
@@ -450,6 +469,35 @@ services:
       # preserved then the container will REINDEX the DB automatically unless the following
       # is set to false
       #OR_DISABLE_REINDEX=${OR_DISABLE_REINDEX:-false}
+
+  # Query Exporter - Prometheus metrics from PostgreSQL queries
+  # Documentation: https://github.com/albertodonato/query-exporter
+  query-exporter:
+    image: adonato/query-exporter:latest
+    restart: always
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      manager:
+        condition: service_healthy
+    volumes:
+      # Mount deployment-data volume containing config.yaml for query-exporter configuration
+      # Config file should be at: /deployment/query-exporter/config.yaml
+        - deployment-data:/deployment
+    ports:
+      - "127.0.0.1:8406:9560" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8406:9560" # Allows to also expose metrics on a given IP address,
+      # intended to be IP of the interface of the private subnet of the EC2 VM
+    environment:
+      TZ: ${TZ:-Europe/Amsterdam}
+      # Database connection settings (matches postgresql service)
+      # These can be referenced in the config.yaml file using !env tag
+      POSTGRES_HOST: ${OR_DB_HOST:-postgresql}
+      POSTGRES_PORT: ${OR_DB_PORT:-5432}
+      POSTGRES_DB: ${OR_DB_NAME:-openremote}
+      POSTGRES_USER: ${OR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      QE_CONFIG: /deployment/query-exporter/config.yaml
 
   # Map tile server
   tileserver:

@@ -52,11 +52,13 @@ public abstract class AbstractKeycloakSetup implements Setup {
         ClientRole.READ_RULES,
         ClientRole.READ_INSIGHTS,
         ClientRole.READ_ALARMS,
+        ClientRole.READ_SERVICES,
         ClientRole.WRITE_ASSETS,
         ClientRole.WRITE_ATTRIBUTES,
         ClientRole.WRITE_RULES,
         ClientRole.WRITE_INSIGHTS,
-        ClientRole.WRITE_ALARMS
+        ClientRole.WRITE_ALARMS,
+        ClientRole.WRITE_SERVICES
     };
 
     final protected Container container;
@@ -108,7 +110,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
             return null;
         }
         if (roles != null && roles.length > 0) {
-            keycloakProvider.updateUserRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
+            keycloakProvider.updateUserClientRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
         }
         return user;
     }

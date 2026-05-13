@@ -1,6 +1,4 @@
-import { NodeDataType } from "@openremote/model";
-
-// TODO this should be defined in the back end
+import {NodeDataType} from "@openremote/model";
 
 export class SocketTypeMatcher {
 
@@ -15,6 +13,7 @@ export class SocketTypeMatcher {
             matches: [
                 NodeDataType.NUMBER,
                 NodeDataType.STRING,
+                NodeDataType.NUMBER_ARRAY
             ]
         },
         {
@@ -43,5 +42,11 @@ export class SocketTypeMatcher {
                 NodeDataType.STRING,
             ]
         },
+        {
+            type: NodeDataType.NUMBER_ARRAY,
+            matches: [
+                NodeDataType.NUMBER
+            ]
+        }
     ];
 }

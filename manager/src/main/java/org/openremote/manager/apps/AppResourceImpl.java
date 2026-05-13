@@ -32,6 +32,7 @@ import jakarta.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -55,18 +56,19 @@ public class AppResourceImpl extends WebResource implements AppResource {
     }
 
     @Override
-    public Response getAppInfos(RequestParams requestParams) {
-        if (!Files.isDirectory(consoleAppService.consoleAppDocRoot)) {
-            return Response
+    public Map<String, Object> getAppInfos(RequestParams requestParams) {
+        Path consoleAppDocRoot = consoleAppService.getConsoleAppDocRoot();
+        if (consoleAppDocRoot == null || !Files.isDirectory(consoleAppDocRoot)) {
+            throw new WebApplicationException(Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(String.format("%s is not a directory", consoleAppService.consoleAppDocRoot))
+                    .entity(String.format("%s is not a directory", consoleAppDocRoot))
                     .type(MediaType.APPLICATION_JSON_TYPE)
-                    .build();
+                    .build());
         }
 
         if (consoleAppInfoMap == null) {
             try {
-                consoleAppInfoMap = Files.find(consoleAppService.consoleAppDocRoot,
+                consoleAppInfoMap = Files.find(consoleAppDocRoot,
                                 2,
                                 (filePath, fileAttr) -> filePath.getFileName().toString().endsWith("info.json") && fileAttr.isRegularFile())
                         .collect(Collectors.toMap(dir -> dir.getName(dir.getNameCount() - 2).toString(), dir -> {
@@ -81,43 +83,45 @@ public class AppResourceImpl extends WebResource implements AppResource {
             }
         }
 
-        return Response.ok(consoleAppInfoMap, MediaType.APPLICATION_JSON).build();
+        return consoleAppInfoMap;
     }
 
     @Override
-    public Response getConsoleConfig(RequestParams requestParams) {
-        if (!Files.isDirectory(consoleAppService.consoleAppDocRoot)) {
-            return Response
+    public Object getConsoleConfig(RequestParams requestParams) {
+        Path consoleAppDocRoot = consoleAppService.getConsoleAppDocRoot();
+        if (consoleAppDocRoot == null || !Files.isDirectory(consoleAppDocRoot)) {
+            throw new WebApplicationException(Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(String.format("%s is not a directory", consoleAppService.consoleAppDocRoot))
+                    .entity(String.format("%s is not a directory", consoleAppDocRoot))
                     .type(MediaType.APPLICATION_JSON_TYPE)
-                    .build();
+                    .build());
         }
 
-        if (!Files.exists(consoleAppService.consoleAppDocRoot.resolve("console_config.json"))) {
-            return Response
+        if (!Files.exists(consoleAppDocRoot.resolve("console_config.json"))) {
+            throw new WebApplicationException(Response
                     .status(Response.Status.NOT_FOUND)
-                    .build();
+                    .build());
         }
 
         if (consoleConfig == null) {
             try {
-                consoleConfig = ValueUtil.JSON.readValue(new File(consoleAppService.consoleAppDocRoot.resolve("console_config.json").toString()), Object.class);
+                consoleConfig = ValueUtil.JSON.readValue(new File(consoleAppDocRoot.resolve("console_config.json").toString()), Object.class);
             } catch (IOException e) {
                 throw new WebApplicationException(e);
             }
         }
-        return Response.ok(consoleConfig, MediaType.APPLICATION_JSON).build();
+        return consoleConfig;
     }
 
     @Deprecated
     protected ConsoleAppConfig getAppConfig(String realm) {
         try {
-            if (!Files.isDirectory(consoleAppService.consoleAppDocRoot)) {
+            Path consoleAppDocRoot = consoleAppService.getConsoleAppDocRoot();
+            if (consoleAppDocRoot == null || !Files.isDirectory(consoleAppDocRoot)) {
                 return null;
             }
 
-            return Files.list(consoleAppService.consoleAppDocRoot)
+            return Files.list(consoleAppDocRoot)
                     .filter(dir -> dir.getFileName().toString().startsWith(realm))
                     .map(dir -> {
                         try {

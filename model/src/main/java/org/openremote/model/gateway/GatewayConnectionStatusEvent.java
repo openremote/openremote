@@ -19,6 +19,7 @@
  */
 package org.openremote.model.gateway;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.event.shared.RealmScopedEvent;
 
@@ -29,11 +30,9 @@ public class GatewayConnectionStatusEvent extends RealmScopedEvent {
 
     protected ConnectionStatus connectionStatus;
 
-    protected GatewayConnectionStatusEvent() {
-    }
-
-    public GatewayConnectionStatusEvent(long timestamp, String realm, ConnectionStatus connectionStatus) {
-        super(timestamp, realm);
+    @JsonCreator
+    public GatewayConnectionStatusEvent(String realm, ConnectionStatus connectionStatus) {
+        super(realm);
         this.connectionStatus = connectionStatus;
     }
 

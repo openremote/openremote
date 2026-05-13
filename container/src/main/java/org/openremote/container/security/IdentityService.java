@@ -19,20 +19,18 @@
  */
 package org.openremote.container.security;
 
-import io.undertow.server.HandlerWrapper;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.util.HttpString;
-import org.jboss.resteasy.spi.CorsHeaders;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
+import jakarta.security.enterprise.AuthenticationException;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.ServletContext;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-public abstract class IdentityService implements ContainerService {
+public abstract class IdentityService implements ContainerService, TokenVerifier {
 
     public static final int PRIORITY = PersistenceService.PRIORITY + 10;
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
@@ -65,36 +63,9 @@ public abstract class IdentityService implements ContainerService {
         identityProvider.stop(container);
     }
 
-    public void secureDeployment(DeploymentInfo deploymentInfo) {
-        LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
-        deploymentInfo.addInitialHandlerChainWrapper(AuthOverloadHandler::new);
-        deploymentInfo.setSecurityDisabled(false);
-        identityProvider.secureDeployment(deploymentInfo);
-
-        if (devMode) {
-            // We need to add an undertow handler wrapper to inject CORS headers on 401/403 responses as the authentication
-            // handler doesn't include headers set by deployment filters
-            deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
-                @Override
-                public HttpHandler wrap(HttpHandler handler) {
-                    return new HttpHandler() {
-                        @Override
-                        public void handleRequest(HttpServerExchange exchange) throws Exception {
-
-                            if (exchange.isInIoThread()) {
-                                exchange.dispatch(this);
-                                return;
-                            }
-
-                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
-                            handler.handleRequest(exchange);
-                        }
-                    };
-                }
-            });
-        }
+    public FilterRegistration.Dynamic secureDeployment(ServletContext servletContext) {
+        LOG.info("Securing servlet context: " + servletContext.getContextPath());
+        return identityProvider.secureDeployment(servletContext);
     }
 
     /**
@@ -102,6 +73,14 @@ public abstract class IdentityService implements ContainerService {
      */
     public boolean isKeycloakEnabled() {
         return identityProvider instanceof KeycloakIdentityProvider;
+    }
+
+    public TokenPrincipal verify(String realm, String accessToken) throws AuthenticationException {
+        return identityProvider.verify(realm, accessToken);
+    }
+
+    public CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) throws AuthenticationException {
+        return identityProvider.authenticate(realm, clientId, clientSecret);
     }
 
     /**

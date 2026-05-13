@@ -1,0 +1,71 @@
+// Copyright © 2023 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message EmailValidation {
+  string id = 1 [(validate.rules).string = {
+    max_len: 64,
+    min_len: 1
+  }];
+  string token = 2 [(validate.rules).string = {
+    max_len: 64,
+    min_len: 1
+  }];
+  string address = 3 [(validate.rules).string.email = true];
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message ValidateEmailRequest {
+  string id = 1 [(validate.rules).string = {
+    max_len: 64,
+    min_len: 1
+  }];
+  string token = 2 [(validate.rules).string = {
+    max_len: 64,
+    min_len: 1
+  }];
+}
+
+// The EmailValidationRegistry service, exposed by the Identity Server, is used for validating a user's primary email.
+service EmailValidationRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Validate a user's primary email."};
+  // Request validation for the non-validated contact info for the given entity.
+  rpc RequestValidation(UserIdentifiers) returns (EmailValidation) {
+    option (google.api.http) = {
+      post: "/email/validation"
+      body: "*"
+    };
+  }
+  // Validate confirms a contact info validation.
+  rpc Validate(ValidateEmailRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      patch: "/email/validation"
+      body: "*"
+    };
+  }
+}

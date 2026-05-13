@@ -2,6 +2,7 @@
 import {pageProvisioningProvider} from "./pages/page-provisioning";
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
+import themeCss from "@openremote/theme";
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
     headerItemAccount,
@@ -11,6 +12,7 @@ import {
     headerItemGatewayConnection,
     headerItemGatewayTunnel,
     headerItemInsights,
+    headerItemServices,
     headerItemLanguage,
     headerItemLogout,
     headerItemLogs,
@@ -29,6 +31,8 @@ import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
 import "./pages/page-insights";
 import {PageInsightsConfig, pageInsightsProvider} from "./pages/page-insights";
+import "./pages/page-services";
+import {pageServicesProvider} from "./pages/page-services";
 import "./pages/page-rules";
 import {PageRulesConfig, pageRulesProvider} from "./pages/page-rules";
 import "./pages/page-logs";
@@ -47,7 +51,6 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var CONFIG_URL_PREFIX: string | undefined;
 declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
@@ -59,7 +62,9 @@ const rootReducer = combineReducers({
 type RootState = ReturnType<typeof rootReducer>;
 
 export const store = configureStore({
-    reducer: rootReducer
+    reducer: rootReducer,
+    // Disable serializableCheck to improve performance in developement (normally disabled in production)
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });
 
 const orApp = new OrApp(store);
@@ -71,6 +76,7 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageGatewayTunnelProvider(store),
     pageLogsProvider(store),
     pageInsightsProvider(store),
+    pageServicesProvider(store),
     pageRulesProvider(store),
     pageAccountProvider(store),
     pageRolesProvider(store),
@@ -86,11 +92,12 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
     map: headerItemMap(orApp),
     assets: headerItemAssets(orApp),
     rules: headerItemRules(orApp),
-    insights: headerItemInsights(orApp)
+    services: headerItemServices(orApp),
+    insights: headerItemInsights(orApp),
 };
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
-    gateway: headerItemGatewayConnection(orApp),
+    gatewayConnection: headerItemGatewayConnection(orApp),
     gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
@@ -100,7 +107,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     realms: headerItemRealms(orApp),
     export: headerItemExport(orApp),
     provisioning: headerItemProvisioning(orApp),
-    configuration: headerItemConfiguration(orApp),
+    appearance: headerItemConfiguration(orApp),
     logout: headerItemLogout(orApp)
 };
 
@@ -114,30 +121,19 @@ export const DefaultRealmConfig: RealmAppConfig = {
     header: DefaultHeaderConfig
 };
 
-export const DefaultAppConfig: AppConfig<RootState> = {
-    pages: DefaultPagesConfig,
-    superUserHeader: DefaultHeaderConfig,
-    realms: {
-        default: DefaultRealmConfig
-    }
-};
-
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
+const managerURL = MANAGER_URL || window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "")
+    + window.location.pathname.replace(/\/[^/]+\/?$/, '');
+const configURL = managerURL + "/api/master/configuration/manager";
 
-fetch(configURL).then(async (result) => {
-    if (!result.ok || result.status === 204) {
-        return DefaultAppConfig;
+fetch(configURL).then<ManagerAppConfig>(async (result) => {
+    let appConfig: ManagerAppConfig;
+
+    if (result.status === 200) {
+        appConfig = await result.json() as ManagerAppConfig;
     }
 
-    const appConfig = await result.json() as ManagerAppConfig;
-
-    if (appConfig === null) {
-        return DefaultAppConfig;
-    }
-
-    return appConfig;
-
+    return {...appConfig};
 }).then((appConfig: ManagerAppConfig) => {
 
     // Set locales and load path
@@ -150,13 +146,6 @@ fetch(configURL).then(async (result) => {
 
         if (!appConfig.manager.translationsLoadPath) {
             appConfig.manager.translationsLoadPath = "/locales/{{lng}}/{{ns}}.json";
-        }
-    }
-
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
         }
     }
 
@@ -277,12 +266,19 @@ fetch(configURL).then(async (result) => {
                     }
                 }).catch(reason => {
                     console.error("Failed to initialise app: " + reason);
-                })
+                });
             }
-        })
+        });
 
         return orAppConfig;
     };
 
+    // Apply theme to the Manager app
+    const style = document.createElement("style");
+    style.id = "orDefaultTheme";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    // Load app
     document.body.appendChild(orApp);
 });

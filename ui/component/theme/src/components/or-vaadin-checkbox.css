@@ -1,0 +1,73 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+@import "@vaadin/vaadin-lumo-styles/components/checkbox.css";
+
+@media lumo_checkbox_toggle_button {
+    :host([theme~='button']) {
+        &::part(checkbox),
+        &::part(required-indicator) {
+            display: none;
+        }
+        &::part(label) {
+            background: var(--lumo-contrast-5pct);
+            border-radius: var(--lumo-border-radius-m);
+            color: var(--lumo-primary-color);
+            cursor: var(--lumo-clickable-cursor);
+            transition:
+                background-color 0.2s,
+                color 0.2s,
+                filter 0.2s,
+                transform 0.1s,
+                box-shadow 0.2s;
+            user-select: none;
+            --vaadin-checkbox-label-padding: 8px 14px;
+        }
+        &:active:not([disabled])::part(label) {
+            filter: brightness(0.9);
+            transform: scale(0.96);
+            transition: transform 0.05s;
+        }
+    }
+
+    :host([theme~='button'][checked])::part(label) {
+        background: var(--lumo-primary-color);
+        color: white;
+    }
+
+    @media (hover: hover) {
+        :host([theme~='button']:hover:not([checked]))::part(label) {
+            background: var(--lumo-contrast-10pct);
+        }
+
+        :host([theme~='button'][checked]:hover)::part(label) {
+            filter: brightness(1.1);
+        }
+    }
+
+}
+
+:root::before,
+:host::before {
+    --_lumo-vaadin-checkbox-inject: 1;
+    --_lumo-vaadin-checkbox-inject-modules:
+    lumo_mixins_checkable-field,
+    lumo_components_checkbox,
+    lumo_checkbox_toggle_button;
+}

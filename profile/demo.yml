@@ -57,7 +57,7 @@ services:
 
   postgresql:
     restart: always
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
@@ -76,6 +76,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_LOG_CONSOLE_FORMAT: '%-5p [%c] (%t) %s%e%n'
     <<: *awslogs
 
   manager:

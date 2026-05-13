@@ -21,6 +21,7 @@ package org.openremote.model.datapoint.query;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.io.Serializable;
@@ -30,7 +31,9 @@ import java.util.HashMap;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AssetDatapointAllQuery.class, name = "all"),
         @JsonSubTypes.Type(value = AssetDatapointLTTBQuery.class, name = "lttb"),
-        @JsonSubTypes.Type(value = AssetDatapointIntervalQuery.class, name = "interval")
+        @JsonSubTypes.Type(value = AssetDatapointIntervalQuery.class, name = "interval"),
+        @JsonSubTypes.Type(value = AssetDatapointNearestQuery.class, name = "nearest")
+
 })
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -41,7 +44,9 @@ public abstract class AssetDatapointQuery implements Serializable {
 
     public long fromTimestamp;
     public long toTimestamp;
+    @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
     public LocalDateTime fromTime;
+    @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
     public LocalDateTime toTime;
 
     public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {

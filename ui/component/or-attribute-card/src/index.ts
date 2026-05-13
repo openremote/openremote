@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, state, query} from "lit/decorators.js";
-import i18next from "i18next";
+import {i18next} from "@openremote/or-translate"
 import {
     Asset,
     AssetEvent,
@@ -26,10 +26,10 @@ import "@openremote/or-attribute-picker";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import {OrAssetAttributePicker, OrAssetAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {when} from "lit/directives/when.js";
-import {debounce} from "lodash";
+import debounce from "lodash.debounce";
 
 export type ContextMenuOption = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
 
@@ -454,7 +454,14 @@ export class OrAttributeCard extends LitElement {
                                                     return option;
                                                 }),
                                                 this.period,
-                                                (value) => this._setPeriodOption(value)
+                                                (value) => this._setPeriodOption(value),
+                                                undefined,      // closedCallback
+                                                false,          // multiSelect
+                                                true,           // translateValues
+                                                false,          // midHeight
+                                                false,          // fullWidth
+                                                "kpi-menu-id",  // Menu Id
+                                                true            // fixToHost
                                         )}
                                     </div>
                                 ` : html`
@@ -536,10 +543,10 @@ export class OrAttributeCard extends LitElement {
                 });
                 break;
             default:
-                dialog = new OrAttributePicker()
+                dialog = new OrAssetAttributePicker()
                     .setHeading(i18next.t("selectAttribute"));
 
-                dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
+                dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
                     // handle selected attrs
                     const attrRef = ev.detail[0];
                     try {

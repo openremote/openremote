@@ -30,6 +30,7 @@ import {
     DefaultColor5,
     DefaultColor6,
     DefaultColor8,
+    manager,
     Util,
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
@@ -37,8 +38,7 @@ import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
 import ISO6391 from 'iso-639-1';
-
-declare const MANAGER_URL: string
+import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
@@ -131,30 +131,8 @@ export class OrConfRealmCard extends LitElement {
     protected logo:string = this.realm.logo;
     protected logoMobile:string = this.realm.logoMobile;
     protected favicon:string = this.realm.favicon;
-
-    protected headerListPrimary: string[] = [
-        "map",
-        "assets",
-        "rules",
-        "insights",
-    ];
-
-
-    protected headerListSecondary: string[] = [
-        "gatewayHeaderItem",
-        "export",
-        "logs",
-        "realms",
-
-        "users",
-        "roles",
-
-        "account",
-        "language",
-        "appearance",
-        "logout"
-
-    ];
+    protected headerListPrimary: string[] = Object.keys(DefaultHeaderMainMenu);
+    protected headerListSecondary: string[] = Object.keys(DefaultHeaderSecondaryMenu);
 
     protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]));
     protected _languages: string[][] = [];
@@ -290,7 +268,7 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
-        const managerUrl = (MANAGER_URL || "");
+        const managerUrl = (manager.managerUrl ?? "");
 
         // On an empty search; return the common language as set in DEFAULT_LANGUAGES
         // If searching, compare strings using lowercase. (with no maximum)
@@ -434,7 +412,7 @@ export class OrConfRealmCard extends LitElement {
                     ${when(app.canRemove, () => html`
                         <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
                                       label="configuration.deleteRealmCustomization"
-                                      @click="${() => { app._showRemoveRealmDialog(); }}"
+                                      @or-mwc-input-changed="${() => { app._showRemoveRealmDialog(); }}"
                         ></or-mwc-input>
                     `)}
                 </div>

@@ -3,7 +3,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import {TemplateResult, html} from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
-import {Asset, AssetQuery, GatewayTunnelInfoType} from "@openremote/model";
+import {Asset, AssetQuery, AttributeRef, GatewayTunnelInfoType} from "@openremote/model";
 import {GatewayWidgetConfig} from "../widgets/gateway-widget";
 import {Task} from "@lit/task";
 import manager from "@openremote/core";
@@ -35,7 +35,7 @@ export class GatewaySettings extends WidgetSettings {
                                     ></or-mwc-input>
                                 `,
                                 complete: (gatewayAssets) => {
-                                    const options: [string, string][] = gatewayAssets.map(a => [a.id, a.name]);
+                                    const options: [string, string][] = gatewayAssets.map(a => [a.id!, a.name!]);
                                     const selected = gatewayAssets.find(a => a.id === this.widgetConfig.gatewayId);
                                     const value = selected ? [selected.id, selected.name] as [string, string] : undefined;
                                     return html`
@@ -82,6 +82,7 @@ export class GatewaySettings extends WidgetSettings {
 
     protected _onAssetSelect(ev: OrInputChangedEvent): void {
         this.widgetConfig.gatewayId = ev.detail.value;
+        this.widgetConfig.attributeRefs = [{id: ev.detail.value, name: undefined} as AttributeRef]; // Add to attributeRefs object, so the backend is aware of asset permissions
         this.notifyConfigUpdate();
     }
 

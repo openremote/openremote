@@ -1,0 +1,492 @@
+// Copyright © 2021 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/contact_info.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/gateway.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/messages.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The GsPba service connects a Gateway Server to a Packet Broker Agent.
+service GsPba {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The GsPba service connects a Gateway Server to a Packet Broker Agent. This is an inter-component service and is not intended to be used by end users."};
+  rpc PublishUplink(GatewayUplinkMessage) returns (google.protobuf.Empty);
+
+  // Update the gateway, changing the fields specified by the field mask to the provided values.
+  // To mark a gateway as online, call this rpc setting online to true, include status_public in field_mask and
+  // keep calling this rpc before the returned online_ttl passes to keep the gateway online.
+  rpc UpdateGateway(UpdatePacketBrokerGatewayRequest) returns (UpdatePacketBrokerGatewayResponse);
+}
+
+// Gateway respresentation for Packet Broker.
+// This is a subset and superset of the Gateway message using the same data types and field tags to achieve initial wire compatibility.
+// There is no (longer) wire compatibility needed; new fields may use any tag.
+message PacketBrokerGateway {
+  message GatewayIdentifiers {
+    string gateway_id = 1 [(validate.rules).string = {
+      pattern: "^[a-z0-9](?:[_-]?[a-z0-9]){2,}$",
+      max_len: 36
+    }];
+    bytes eui = 2 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+  }
+  GatewayIdentifiers ids = 1 [(validate.rules).message.required = true];
+  // This field is deprecated. Use administrative_contact and technical_contact instead.
+  repeated ContactInfo contact_info = 7 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+  OrganizationOrUserIdentifiers administrative_contact = 10;
+  OrganizationOrUserIdentifiers technical_contact = 11;
+  repeated GatewayAntenna antennas = 13 [(validate.rules).repeated.max_items = 8];
+  bool status_public = 14;
+  bool location_public = 15;
+  repeated string frequency_plan_ids = 20 [(validate.rules).repeated = {
+    max_items: 8,
+    items: {
+      string: {max_len: 64}
+    }
+  }];
+  bool update_location_from_status = 21;
+  bool online = 28;
+  // Received packets rate (number of packets per hour).
+  // This field gets updated when a value is set.
+  google.protobuf.FloatValue rx_rate = 29;
+  // Transmitted packets rate (number of packets per hour).
+  // This field gets updated when a value is set.
+  google.protobuf.FloatValue tx_rate = 30;
+}
+
+message UpdatePacketBrokerGatewayRequest {
+  PacketBrokerGateway gateway = 1 [(validate.rules).message.required = true];
+
+  // The names of the gateway fields that are considered for update.
+  //
+  // Online status is only updated if status_public is set. If status_public is set and false, the status will be reset.
+  // If status_public is set and true, the online status is taken from the online field. The return message contains
+  // the duration online_ttl for how long the gateway is considered online.
+  //
+  // Location is only updated if location_public is set. If location_public is set and false, the location will be reset.
+  // If location_public is set and true, the first antenna location will be used as gateway location.
+  google.protobuf.FieldMask field_mask = 5;
+}
+
+message UpdatePacketBrokerGatewayResponse {
+  // Time to live of the online status.
+  google.protobuf.Duration online_ttl = 1;
+}
+
+// The NsPba service connects a Network Server to a Packet Broker Agent.
+service NsPba {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The NsPba service connects a Network Server to a Packet Broker Agent. This is an inter-component service and is not intended to be used by end users."};
+  // PublishDownlink instructs the Packet Broker Agent to publish a downlink
+  // message to Packet Broker Router.
+  rpc PublishDownlink(DownlinkMessage) returns (google.protobuf.Empty);
+}
+
+message PacketBrokerNetworkIdentifier {
+  // LoRa Alliance NetID.
+  uint32 net_id = 1;
+  // Tenant identifier if the registration leases DevAddr blocks from a NetID.
+  string tenant_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+}
+
+message PacketBrokerDevAddrBlock {
+  DevAddrPrefix dev_addr_prefix = 1;
+  string home_network_cluster_id = 2;
+}
+
+message PacketBrokerNetwork {
+  // Packet Broker network identifier.
+  PacketBrokerNetworkIdentifier id = 1;
+  // Name of the network.
+  string name = 2;
+  // DevAddr blocks that are assigned to this registration.
+  repeated PacketBrokerDevAddrBlock dev_addr_blocks = 3;
+  // Contact information.
+  // This field is deprecated. Use administrative_contact and technical_contact instead.
+  repeated ContactInfo contact_info = 4 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+  ContactInfo administrative_contact = 6;
+  ContactInfo technical_contact = 7;
+  // Whether the network is listed so it can be viewed by other networks.
+  bool listed = 5;
+
+  // next: 8
+}
+
+message PacketBrokerNetworks {
+  repeated PacketBrokerNetwork networks = 1;
+}
+
+message PacketBrokerInfo {
+  // The current registration, unset if there isn't a registration.
+  PacketBrokerNetwork registration = 1;
+  // Whether the server is configured as Forwarder (with gateways).
+  bool forwarder_enabled = 2;
+  // Whether the server is configured as Home Network (with end devices).
+  bool home_network_enabled = 3;
+  // Whether the registration can be changed.
+  bool register_enabled = 4;
+}
+
+message PacketBrokerRegisterRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Whether the network should be listed in Packet Broker.
+  // If unset, the value is taken from the registration settings.
+  google.protobuf.BoolValue listed = 1;
+}
+
+message PacketBrokerRoutingPolicyUplink {
+  // Forward join-request messages.
+  bool join_request = 1;
+  // Forward uplink messages with FPort of 0.
+  bool mac_data = 2;
+  // Forward uplink messages with FPort between 1 and 255.
+  bool application_data = 3;
+  // Forward RSSI and SNR.
+  bool signal_quality = 4;
+  // Forward gateway location, RSSI, SNR and fine timestamp.
+  bool localization = 5;
+}
+
+message PacketBrokerRoutingPolicyDownlink {
+  // Allow join-accept messages.
+  bool join_accept = 1;
+  // Allow downlink messages with FPort of 0.
+  bool mac_data = 2;
+  // Allow downlink messages with FPort between 1 and 255.
+  bool application_data = 3;
+}
+
+message PacketBrokerDefaultRoutingPolicy {
+  // Timestamp when the policy got last updated.
+  google.protobuf.Timestamp updated_at = 1;
+  // Uplink policy.
+  PacketBrokerRoutingPolicyUplink uplink = 2;
+  // Downlink policy.
+  PacketBrokerRoutingPolicyDownlink downlink = 3;
+}
+
+message PacketBrokerRoutingPolicy {
+  // Packet Broker identifier of the Forwarder.
+  PacketBrokerNetworkIdentifier forwarder_id = 1;
+  // Packet Broker identifier of the Home Network.
+  PacketBrokerNetworkIdentifier home_network_id = 2;
+  // Timestamp when the policy got last updated.
+  google.protobuf.Timestamp updated_at = 3;
+  // Uplink policy.
+  PacketBrokerRoutingPolicyUplink uplink = 4;
+  // Downlink policy.
+  PacketBrokerRoutingPolicyDownlink downlink = 5;
+}
+
+message SetPacketBrokerDefaultRoutingPolicyRequest {
+  // Uplink policy.
+  PacketBrokerRoutingPolicyUplink uplink = 1 [(validate.rules).message.required = true];
+  // Downlink policy.
+  PacketBrokerRoutingPolicyDownlink downlink = 2 [(validate.rules).message.required = true];
+}
+
+message ListHomeNetworkRoutingPoliciesRequest {
+  // Limit the number of results per page.
+  uint32 limit = 1 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 2;
+}
+
+message PacketBrokerRoutingPolicies {
+  repeated PacketBrokerRoutingPolicy policies = 1;
+}
+
+message SetPacketBrokerRoutingPolicyRequest {
+  // Packet Broker identifier of the Home Network.
+  PacketBrokerNetworkIdentifier home_network_id = 1;
+  // Uplink policy.
+  PacketBrokerRoutingPolicyUplink uplink = 2 [(validate.rules).message.required = true];
+  // Downlink policy.
+  PacketBrokerRoutingPolicyDownlink downlink = 3 [(validate.rules).message.required = true];
+}
+
+message PacketBrokerGatewayVisibility {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+  // Show location.
+  bool location = 1;
+  // Show antenna placement (indoor/outdoor).
+  bool antenna_placement = 2;
+  // Show antenna count.
+  bool antenna_count = 3;
+  // Show whether the gateway produces fine timestamps.
+  bool fine_timestamps = 4;
+  // Show contact information.
+  bool contact_info = 5;
+  // Show status (online/offline).
+  bool status = 6;
+  // Show frequency plan.
+  bool frequency_plan = 8;
+  // Show receive and transmission packet rates.
+  bool packet_rates = 9;
+}
+
+message PacketBrokerDefaultGatewayVisibility {
+  // Timestamp when the policy got last updated.
+  google.protobuf.Timestamp updated_at = 1;
+  PacketBrokerGatewayVisibility visibility = 2;
+}
+
+message SetPacketBrokerDefaultGatewayVisibilityRequest {
+  PacketBrokerGatewayVisibility visibility = 1 [(validate.rules).message.required = true];
+}
+
+message ListPacketBrokerNetworksRequest {
+  // Limit the number of results per page.
+  uint32 limit = 1 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 2;
+  // If true, list only the Forwarders and Home Networks with whom a routing policy has been defined in either direction.
+  bool with_routing_policy = 3;
+  // Filter by tenant ID.
+  string tenant_id_contains = 4 [(validate.rules).string.max_len = 100];
+  // Filter by name.
+  string name_contains = 5 [(validate.rules).string.max_len = 100];
+}
+
+message ListPacketBrokerHomeNetworksRequest {
+  // Limit the number of results per page.
+  uint32 limit = 1 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 2;
+  // Filter by tenant ID.
+  string tenant_id_contains = 3 [(validate.rules).string.max_len = 100];
+  // Filter by name.
+  string name_contains = 4 [(validate.rules).string.max_len = 100];
+}
+
+message ListForwarderRoutingPoliciesRequest {
+  // Packet Broker identifier of the Home Network.
+  PacketBrokerNetworkIdentifier home_network_id = 1;
+  // Limit the number of results per page.
+  uint32 limit = 2;
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+}
+
+// The Pba service allows clients to manage peering through Packet Broker.
+service Pba {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage peering via Packet Broker."};
+  // Get information about the Packet Broker registration.
+  // Viewing Packet Packet information requires administrative access.
+  rpc GetInfo(google.protobuf.Empty) returns (PacketBrokerInfo) {
+    option (google.api.http) = {get: "/pba/info"};
+  }
+
+  // Register with Packet Broker. If no registration exists, it will be created. Any existing registration will be updated.
+  // Registration settings not in the request message are taken from Packet Broker Agent configuration and caller context.
+  // Packet Broker registration requires administrative access.
+  // Packet Broker registration is only supported for tenants and requires Packet Broker Agent to be configured with
+  // NetID level authentication. Use rpc GetInfo and check register_enabled to check whether this rpc is enabled.
+  rpc Register(PacketBrokerRegisterRequest) returns (PacketBrokerNetwork) {
+    option (google.api.http) = {
+      put: "/pba/registration"
+      body: "*"
+      additional_bindings {
+        post: "/pba/registration"
+        body: "*"
+      }
+    };
+  }
+
+  // Deregister from Packet Broker.
+  // Packet Broker deregistration requires administrative access.
+  // Packet Broker deregistration is only supported for tenants and requires Packet Broker Agent to be configured with
+  // NetID level authentication. Use rpc GetInfo and check register_enabled to check whether this rpc is enabled.
+  rpc Deregister(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/pba/registration"};
+  }
+
+  // List the routing policies that Packet Broker Agent as Forwarder configured with Home Networks.
+  // Listing routing policies requires administrative access.
+  rpc ListHomeNetworkRoutingPolicies(ListHomeNetworkRoutingPoliciesRequest) returns (PacketBrokerRoutingPolicies) {
+    option (google.api.http) = {get: "/pba/home-networks/policies"};
+  }
+
+  // Get the routing policy for the given Home Network.
+  // Getting routing policies requires administrative access.
+  rpc GetHomeNetworkRoutingPolicy(PacketBrokerNetworkIdentifier) returns (PacketBrokerRoutingPolicy) {
+    option (google.api.http) = {
+      get: "/pba/home-networks/policies/{net_id}"
+      additional_bindings {get: "/pba/home-networks/policies/{net_id}/{tenant_id}"}
+    };
+  }
+
+  // Set the routing policy for the given Home Network.
+  // Setting routing policies requires administrative access.
+  rpc SetHomeNetworkRoutingPolicy(SetPacketBrokerRoutingPolicyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/pba/home-networks/policies/{home_network_id.net_id}"
+      body: "*"
+      additional_bindings {
+        post: "/pba/home-networks/policies/{home_network_id.net_id}"
+        body: "*"
+      }
+      additional_bindings {
+        put: "/pba/home-networks/policies/{home_network_id.net_id}/{home_network_id.tenant_id}"
+        body: "*"
+      }
+      additional_bindings {
+        post: "/pba/home-networks/policies/{home_network_id.net_id}/{home_network_id.tenant_id}"
+        body: "*"
+      }
+    };
+  }
+
+  // Delete the routing policy for the given Home Network.
+  // Deleting routing policies requires administrative access.
+  rpc DeleteHomeNetworkRoutingPolicy(PacketBrokerNetworkIdentifier) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/pba/home-networks/policies/{net_id}"
+      additional_bindings {delete: "/pba/home-networks/policies/{net_id}/{tenant_id}"}
+    };
+  }
+
+  // Get the default routing policy.
+  // Getting routing policies requires administrative access.
+  rpc GetHomeNetworkDefaultRoutingPolicy(google.protobuf.Empty) returns (PacketBrokerDefaultRoutingPolicy) {
+    option (google.api.http) = {get: "/pba/home-networks/policies/default"};
+  }
+
+  // Set the default routing policy.
+  // Setting routing policies requires administrative access.
+  rpc SetHomeNetworkDefaultRoutingPolicy(SetPacketBrokerDefaultRoutingPolicyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/pba/home-networks/policies/default"
+      body: "*"
+      additional_bindings {
+        post: "/pba/home-networks/policies/default"
+        body: "*"
+      }
+    };
+  }
+
+  // Deletes the default routing policy.
+  // Deleting routing policies requires administrative access.
+  rpc DeleteHomeNetworkDefaultRoutingPolicy(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/pba/home-networks/policies/default"};
+  }
+
+  // Get the default gateway visibility.
+  // Getting gateway visibilities requires administrative access.
+  rpc GetHomeNetworkDefaultGatewayVisibility(google.protobuf.Empty) returns (PacketBrokerDefaultGatewayVisibility) {
+    option (google.api.http) = {get: "/pba/home-networks/gateway-visibilities/default"};
+  }
+
+  // Set the default gateway visibility.
+  // Setting gateway visibilities requires administrative access.
+  rpc SetHomeNetworkDefaultGatewayVisibility(SetPacketBrokerDefaultGatewayVisibilityRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/pba/home-networks/gateway-visibilities/default"
+      body: "*"
+      additional_bindings {
+        post: "/pba/home-networks/gateway-visibilities/default"
+        body: "*"
+      }
+    };
+  }
+
+  // Deletes the default gateway visibility.
+  // Deleting gateway visibilities requires administrative access.
+  rpc DeleteHomeNetworkDefaultGatewayVisibility(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/pba/home-networks/gateway-visibilities/default"};
+  }
+
+  // List all listed networks.
+  // Listing networks requires administrative access.
+  rpc ListNetworks(ListPacketBrokerNetworksRequest) returns (PacketBrokerNetworks) {
+    option (google.api.http) = {get: "/pba/networks"};
+  }
+
+  // List the listed home networks for which routing policies can be configured.
+  // Listing home networks requires administrative access.
+  rpc ListHomeNetworks(ListPacketBrokerHomeNetworksRequest) returns (PacketBrokerNetworks) {
+    option (google.api.http) = {get: "/pba/home-networks"};
+  }
+
+  // List the routing policies that Forwarders configured with Packet Broker Agent as Home Network.
+  // Listing routing policies requires administrative access.
+  rpc ListForwarderRoutingPolicies(ListForwarderRoutingPoliciesRequest) returns (PacketBrokerRoutingPolicies) {
+    option (google.api.http) = {get: "/pba/forwarders/policies"};
+  }
+}
+
+message PacketBrokerAgentUplinkToken {
+  bytes forwarder_net_id = 1;
+  string forwarder_tenant_id = 2;
+  string forwarder_cluster_id = 3;
+}
+
+message PacketBrokerAgentGatewayUplinkToken {
+  string gateway_uid = 1;
+  bytes token = 2;
+}
+
+message PacketBrokerAgentCompoundUplinkToken {
+  bytes gateway = 1;
+  bytes forwarder = 2;
+  PacketBrokerAgentUplinkToken agent = 3;
+}
+
+message PacketBrokerAgentEncryptedPayload {
+  bytes ciphertext = 1;
+  bytes nonce = 2;
+}

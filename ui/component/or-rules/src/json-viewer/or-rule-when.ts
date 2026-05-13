@@ -1,15 +1,14 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset} from "@openremote/model";
+import {JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset, AssetQuery} from "@openremote/model";
 import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import { translate } from "@openremote/or-translate";
 
 enum ResetOption {
     NO_LONGER_MATCHES = "noLongerMatches",
@@ -116,7 +115,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
     public readonly?: boolean;
 
     @property({type: Object})
-    public assetProvider?: (type: string) => Promise<Asset[]>
+    public assetProvider?: (type: string, query?: AssetQuery) => Promise<Asset[]>
 
     public config?: RulesConfig;
 

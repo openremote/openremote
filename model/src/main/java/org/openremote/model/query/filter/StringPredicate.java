@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.NameHolder;

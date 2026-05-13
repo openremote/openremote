@@ -7,6 +7,10 @@
   "asset": "Ressource",
   "asset_plural": "Ressources",
   "assets": "Ressources",
+  "users": "Utilisateurs",
+  "realms": "Locataires",
+  "provisioning": "Provisionnement automatique",
+  "provisioningConfig": "Configuration de provisionnement",
   "attribute": "Attribut",
   "attributes": "Attributs",
   "attribute_plural": "Attributs",
@@ -107,6 +111,7 @@
   "month": "Mois",
   "year": "Année",
   "period": "Période",
+  "beginning": "Début",
   "ending": "Se terminant",
   "timeframe": "Plage de temps",
   "addAttribute": "Ajouter un attribut",
@@ -115,25 +120,40 @@
   "clearTable": "Effacer",
   "addAssetAttribute": "Ajouter un attribut de ressource",
   "add": "Ajouter",
-  "EQUALS_COMPARATOR": "Équivaut à",
-  "GREATER_THAN": "Plus grand que",
-  "LESS_THAN": "Plus petit que",
-  "READ_ATTRIBUTE": "Attribut de lecture",
-  "WRITE_ATTRIBUTE": "Attribut d'écriture",
-  "BOOLEAN_INPUT": "Booléens",
-  "NUMBER_INPUT": "Nombre",
-  "TEXT_INPUT": "Texte",
-  "ADD_OPERATOR": "Ajouter",
-  "SUBTRACT_OPERATOR": "Soustraire",
-  "COMBINE_TEXT": "Combiner du texte",
-  "MULTIPLY_OPERATOR": "Multiplier",
-  "DIVIDE_OPERATOR": "Diviser",
-  "AND_GATE": "Porte and",
-  "OR_GATE": "Porte or",
-  "NOT_GATE": "Porte not",
-  "NUMBER_SWITCH": "Commutateur de numéro",
-  "TEXT_SWITCH": "Commutateur de texte",
-  "ROUND_NODE": "Arrondir",
+  "flow": {
+    "EQUALS_COMPARATOR": "Équivaut à",
+    "GREATER_THAN": "Plus grand que",
+    "LESS_THAN": "Plus petit que",
+    "READ_ATTRIBUTE": "Attribut de lecture",
+    "WRITE_ATTRIBUTE": "Attribut d'écriture",
+    "BOOLEAN_INPUT": "Booléens",
+    "NUMBER_INPUT": "Nombre",
+    "TEXT_INPUT": "Texte",
+    "ADD_OPERATOR": "Ajouter",
+    "SUBTRACT_OPERATOR": "Soustraire",
+    "COMBINE_TEXT": "Combiner du texte",
+    "MULTIPLY_OPERATOR": "Multiplier",
+    "DIVIDE_OPERATOR": "Diviser",
+    "AND_GATE": "Porte and",
+    "OR_GATE": "Porte or",
+    "NOT_GATE": "Porte not",
+    "NUMBER_SWITCH": "Commutateur de numéro",
+    "TEXT_SWITCH": "Commutateur de texte",
+    "ROUND_NODE": "Arrondir",
+    "LOG_OUTPUT": "Write to Logs",
+    "DERIVATIVE": "Attribute derivative",
+    "INTEGRAL": "Attribute integral",
+    "HISTORIC_VALUE": "Attribute history",
+    "MAX_PROCESSOR": "Maximum",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
+    "SUM_OPERATOR": "Sum",
+    "max": "Max",
+    "min": "Min",
+    "avg": "Avg",
+    "med": "Med"
+  },
   "input": "Champs de saisie",
   "processors": "Processeurs",
   "output": "Champs de sortie",
@@ -157,6 +177,7 @@
   "french": "Français",
   "german": "Allemand",
   "italian": "Italien",
+  "polish": "Polonais",
   "portuguese": "Portugais",
   "romanian": "Roumain",
   "spanish": "Espagnol",
@@ -215,8 +236,8 @@
   "custom": "Saisie manuelle",
   "realm": "Locataire",
   "realm_plural": "Locataires",
-  "displayName":"Nom familier",
-  "deleteRealmConfirm":"Êtes-vous sûr de vouloir supprimer ce realm?",
+  "displayName": "Nom familier",
+  "deleteRealmConfirm": "Êtes-vous sûr de vouloir supprimer ce realm?",
   "user_plural": "Utilisateurs",
   "regularUser_plural": "Utilisateurs",
   "serviceUser_plural": "Utilisateurs de services",
@@ -224,12 +245,12 @@
   "role": "Rôle",
   "role_plural": "Les rôles",
   "description": "La description",
-  "passwordMismatch":"Les mots de passe ne correspondent pas",
-  "username":"Nom d'utilisateur",
-  "firstName":"Prénom",
-  "surname":"Nom de famille",
-  "deleteUserConfirm":"Êtes-vous sûr de vouloir supprimer cet utilisateur?",
-  "deleteRoleConfirm":"Voulez-vous vraiment supprimer ce rôle?",
+  "passwordMismatch": "Les mots de passe ne correspondent pas",
+  "username": "Nom d'utilisateur",
+  "firstName": "Prénom",
+  "surname": "Nom de famille",
+  "deleteUserConfirm": "Êtes-vous sûr de vouloir supprimer cet utilisateur?",
+  "deleteRoleConfirm": "Voulez-vous vraiment supprimer ce rôle?",
   "realmRules": "Realm",
   "globalRules": "Global",
   "recipients": "Destinataires",
@@ -239,8 +260,10 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
-  "gatewayConnection": "Interconnexion du Manager",
-  "connectionDetails": "DÉTAILS DE CONNEXION",
+  "gateway": {
+    "": "Interconnexion du Manager",
+    "connectionDetails": "DÉTAILS DE CONNEXION"
+  },
   "secured": "Sécurisé",
   "clientSecret": "Secret du client",
   "clientId": "ID du client",
@@ -266,10 +289,12 @@
   "sending": "Envoi en cours",
   "submit": "Soumettre",
   "password": "Mot de passe",
+  "resetPassword": "Réinitialiser le mot de passe",
+  "resetPasswordConfirmation": "Un e-mail a été envoyé pour réinitialiser votre mot de passe.",
   "repeatPassword": "Répéter le mot de passe",
   "details": "Des détails",
-  "permissions":"Autorisations",
-  "fullAccessLabel":"Admin: accès complet ; gérer les utilisateurs et les rôles",
+  "permissions": "Autorisations",
+  "fullAccessLabel": "Admin: accès complet ; gérer les utilisateurs et les rôles",
   "noChildAssets": "Aucune ressource enfant",
   "account": "Compte",
   "editAttribute": "Modifier l'attribut",
@@ -294,6 +319,8 @@
     "cubed": "³",
     "peak": "p",
     "mega": "M",
+    "giga": "G",
+    "tera": "T",
     "kilo": "k",
     "centi": "c",
     "milli": "m",
@@ -343,42 +370,31 @@
     "hertz": "Hz",
     "rpm": "tr/min",
     "carbon": "CO2",
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "format": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "constraints": {
-    "meta": {
-    },
-    "attribute": {
-    }
+    "meta": {},
+    "attribute": {}
   },
   "label": {
     "asset": {
       "ElectricityProducerSolarAsset": "Ressource solaire PV",
       "ElectricityProducerWindAsset": "Ressource éolienne"
     },
-    "meta": {
-    },
-    "attribute": {
-    },
-    "value": {
-    }
+    "meta": {},
+    "attribute": {},
+    "value": {}
   },
   "metaOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "attributeOverrides": {
-    "label": {
-    }
+    "label": {}
   },
   "addMetaItems": "Ajouter des éléments de configuration",
   "loseChanges": "Annuler les modifications?",
@@ -395,26 +411,27 @@
   },
   "validityType": "Type d'horaire",
   "validityAlways": "Toujours actif",
-  "validityPeriod": "Planifier une occurrence",
-  "validityRecurrence": "Planifier une occurrence répétée",
+  "planPeriod": "Planifier une occurrence",
+  "planRecurrence": "Planifier une occurrence répétée",
   "activeFromTo": "Actif du {{start}} au {{end}}",
-  "fromTo": "Du {{start}} au {{end}}",
+  "fromTo": "du {{start}} au {{end}}",
   "fromToDays": "de {{start}} à {{days}} jours plus tard {{end}}",
-  "forDays":"pour {{days}} jours",
+  "forDays": "pour {{days}} jours",
   "scheduleRuleActivity": "Planifier l'activité de la règle",
+  "schedule": {
+    "_ends": "La répétition se termine",
+    "repeat": "Répéter l'occurrence tous les"
+  },
   "allDay": "Toute la journée",
   "apply": "appliquer",
   "to": "à",
   "from": "de",
   "never": "jamais",
-  "repetitionEnds": "La répétition se termine",
-  "repeatOccurrenceEvery": "Répéter l'occurrence tous les",
   "daysOfTheWeek": "jours de la semaine",
   "dismiss": "rejeter",
   "createAssetFailed": "Impossible de créer la ressource",
   "moveAssetFailed": "Impossible de déplacer la ressource",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "Autorisations de lire",
   "writePermissions": "Autorisations d'écrire",
   "valueType": "Type de valeur",
@@ -453,5 +470,171 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
-  }
+  },
+  "mapPage": {
+    "legendTitle": "Légende"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RadialGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ValueAnyPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "CalendarEventPredicate": {
+              "label": "",
+              "description": ""
+            },
+            "RectangularGeofencePredicate": {
+              "label": "",
+              "description": ""
+            },
+            "ArrayPredicate": {
+              "description": ""
+            },
+            "StringPredicate": {
+              "description": ""
+            },
+            "NumberPredicate": {
+              "description": ""
+            },
+            "DateTimePredicate": {
+              "description": ""
+            },
+            "BooleanPredicate": {
+              "description": ""
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "",
+              "description": ""
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": ""
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": ""
+          },
+          "SubStringValueFilter": {
+            "label": ""
+          },
+          "JsonPathFilter": {
+            "label": ""
+          },
+          "RegexValueFilter": {
+            "label": ""
+          },
+          "ValueConstraint": {
+            "description": "",
+            "Size": {
+              "description": ""
+            },
+            "Min": {
+              "description": ""
+            },
+            "Max": {
+              "description": ""
+            },
+            "Pattern": {
+              "description": ""
+            },
+            "AllowedValues": {
+              "description": ""
+            },
+            "Past": {
+              "description": ""
+            },
+            "PastOrPresent": {
+              "description": ""
+            },
+            "Future": {
+              "description": ""
+            },
+            "FutureOrPresent": {
+              "description": ""
+            },
+            "NotEmpty": {
+              "description": ""
+            },
+            "NotBlank": {
+              "description": ""
+            },
+            "NotNull": {
+              "description": ""
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": ""
+              },
+              "valueConverter": {
+                "description": ""
+              },
+              "writeValueConverter": {
+                "description": ""
+              },
+              "writeValue": {
+                "description": ""
+              },
+              "messageMatchPredicate": {
+                "description": ""
+              },
+              "messageMatchFilters": {
+                "description": ""
+              },
+              "updateOnWrite": {
+                "description": ""
+              },
+              "writeValueFilters": {
+                "description": ""
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "",
+                "description": ""
+              },
+              "replayData": {
+                "description": ""
+              },
+              "timezone": {
+                "description": ""
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "realmAlreadyExists": "Le nom du domaine existe déjà"
 }

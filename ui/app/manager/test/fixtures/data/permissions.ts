@@ -1,0 +1,18 @@
+export default [
+  "write:assets",
+  "write:alarms",
+  "write:attributes",
+  "read:assets",
+  "write:logs",
+  "write:user",
+  "write:admin",
+  "read:users",
+  "read:insights",
+  "write:rules",
+  "read:map",
+  "read:admin",
+  "read:alarms",
+  "read:rules",
+  "read:logs",
+  "write:insights",
+];

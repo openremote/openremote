@@ -14,7 +14,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
@@ -47,7 +47,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         expect: "the rules engines to be ready"
         conditions.eventually {
@@ -162,7 +162,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.get().deployments.size() == 3
             assert rulesService.globalEngine.get().running
             assert !rulesService.globalEngine.get().isError()
-            assert rulesService.globalEngine.get().error instanceof RuntimeException
+            assert rulesService.globalEngine.get().getError() instanceof RuntimeException
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some broken global rules" && it.status == COMPILATION_ERROR})
@@ -176,7 +176,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.get().deployments.size() == 2
             assert rulesService.globalEngine.get().running
             assert !rulesService.globalEngine.get().isError()
-            assert rulesService.globalEngine.get().error == null
+            assert rulesService.globalEngine.get().getError() == null
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
             assert rulesService.globalEngine.get().deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }

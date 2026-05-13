@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package stream;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/stream";
+option java_package = "io.chirpstack.api.stream";
+option java_multiple_files = true;
+option java_outer_classname = "MetaProto";
+option csharp_namespace = "Chirpstack.Stream";
+option php_namespace = "Chirpstack\\Stream";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Stream";
+
+import "common/common.proto";
+import "gw/gw.proto";
+
+message UplinkMeta {
+  // Device EUI (EUI64).
+  string dev_eui = 1;
+
+  // TX meta-data.
+  gw.UplinkTxInfo tx_info = 2;
+
+  // RX meta-data.
+  repeated gw.UplinkRxInfo rx_info = 3;
+
+  // PHYPayload byte count.
+  uint32 phy_payload_byte_count = 4;
+
+  // MAC-Command byte count.
+  uint32 mac_command_byte_count = 5;
+
+  // Application payload byte count.
+  uint32 application_payload_byte_count = 6;
+
+  // Frame type.
+  common.FType frame_type = 7;
+}
+
+message DownlinkMeta {
+  // Device EUI (EUI64).
+  string dev_eui = 1;
+
+  // Multicast Group ID (UUID).
+  string multicast_group_id = 2;
+
+  // TX meta-data.
+  gw.DownlinkTxInfo tx_info = 3;
+
+  // PHYPayload byte count.
+  uint32 phy_payload_byte_count = 4;
+
+  // MAC-Command byte count.
+  uint32 mac_command_byte_count = 5;
+
+  // Application payload byte count.
+  uint32 application_payload_byte_count = 6;
+
+  // Frame type.
+  common.FType frame_type = 7;
+
+  // Gateway ID (EUI64).
+  string gateway_id = 8;
+}

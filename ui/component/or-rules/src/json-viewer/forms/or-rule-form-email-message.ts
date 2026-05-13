@@ -1,12 +1,10 @@
 import {html, LitElement, css} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {EmailNotificationMessage} from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
+import "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("or-rule-form-email-message")
 export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {

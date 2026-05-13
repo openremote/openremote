@@ -1,21 +1,23 @@
 const fs = require("fs");
 const path = require("path");
-const webpack = require("webpack");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
+const { rspack } = require('@rspack/core');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const ForkTsCheckerNotifierWebpackPlugin = require("fork-ts-checker-notifier-webpack-plugin");
-const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 function getStandardModuleRules() {
     return {
         rules: [
             {
-                test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
+                test: /(maplibre|@material|gridstack|@mdi).*\.css$/, //output css as strings
                 type: "asset/source"
             },
             {
+                test: /\.wasm$/,
+                type: "asset/resource"
+            },
+            {
                 test: /\.css$/, //
-                exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
+                exclude: /(maplibre|@material|gridstack|@mdi).*\.css$/,
                 use: [
                     { loader: "css-loader" }
                 ]
@@ -31,6 +33,7 @@ function getStandardModuleRules() {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
                 use: {
+                    // TODO: Switch to builtin:swc-loader, and remove ts-loader / webpack dependency
                     loader: "ts-loader",
                     options: {
                         projectReferences: true
@@ -66,7 +69,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         },
         output: {
             path: dirname + "/dist",
-            publicPath: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
+            publicPath: isDevServer ? "/" + dirname.split(path.sep).slice(-1)[0] + "/" : "./",
             filename: production ? "[name].[contenthash].js" : "[name].js"
         },
         module: {...getStandardModuleRules()},
@@ -84,12 +87,15 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
                 "vm": false,
                 "querystring": require.resolve("querystring-es3")
             }
+        },
+        experiments: {
+            asyncWebAssembly: true
         }
     };
 
     config.plugins = [
         // Conditional compilation variables
-        new webpack.DefinePlugin({
+        new rspack.DefinePlugin({
             PRODUCTION: JSON.stringify(production),
             MANAGER_URL: JSON.stringify(managerUrl),
             KEYCLOAK_URL: JSON.stringify(keycloakUrl),
@@ -102,44 +108,23 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
-        })
+        }),
+        // Remove any unused locales
+        new MomentLocalesPlugin({
+          localesToKeep: ['ar', 'zh-cn', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'uk'],
+        }),
     ];
 
     if (production) {
-        config.plugins = [
-            // new ForkTsCheckerWebpackPlugin({
-            //     async: false,
-            //     typescript: {
-            //         memoryLimit: 4096
-            //     }
-            // }),
-            ...config.plugins
-        ];
-
-        // Only use babel for production otherwise source maps don't work
         config.module.rules.push(
             {
                 test: /\.js$/,
                 include: function(modulePath) {
                     return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-element|lit-html|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
                 },
-                use: [
-                    {
-                        loader: 'babel-loader'
-                    }
-                ]
+                loader: 'builtin:swc-loader',
             },
         );
-    } else {
-        config.plugins = [
-            // new ForkTsCheckerWebpackPlugin({
-            //     typescript: {
-            //         memoryLimit: 4096
-            //     }
-            // }),
-            // new ForkTsCheckerNotifierWebpackPlugin({ title: 'TypeScript', excludeWarnings: false }),
-            ...config.plugins
-        ];
     }
 
     if (isDevServer) {
@@ -208,13 +193,21 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
 
     // Copy unprocessed files
     config.plugins.push(
-        new CopyWebpackPlugin({
+        new rspack.CopyRspackPlugin({
             patterns: patterns
         })
     );
 
     config.devtool = !isDevServer ? false : "inline-source-map";
     config.devServer = {
+        client: {
+          overlay: {
+            runtimeErrors: (e) => {
+              console.error(e);
+              return false;
+            }
+          }
+        },
         historyApiFallback: {
             index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
         },
@@ -239,11 +232,11 @@ function getLibName(componentName) {
     return "OR" + componentName.charAt(0).toUpperCase() + componentName.substring(1);
 }
 
-function ORExternals(context, request, callback) {
-    const match = request.match(/^@openremote\/([^\/]*)$/);
+function ORExternals(context, callback) {
+    const match = context.request.match(/^@openremote\/([^\/]*)$/);
     if (match) {
         let component = getLibName(match[1]);
-        console.log(request + " => " + component);
+        console.log(context.request + " => " + component);
         return callback(null, "umd " + component);
     }
     callback();
@@ -274,7 +267,7 @@ function generateExports(dirname) {
         const entry = {};
         entry[name] = "./src/index.ts";
 
-        return {
+        const config = {
             entry: entry,
             mode: "production",
             output: {
@@ -290,11 +283,14 @@ function generateExports(dirname) {
             module: {...getStandardModuleRules()},
             externals: generateExternals(bundle)
         };
+
+        return config;
     });
 }
 
 module.exports = {
     getLibName: getLibName,
     generateExports: generateExports,
+    getStandardModuleRules: getStandardModuleRules,
     getAppConfig: getAppConfig
 };

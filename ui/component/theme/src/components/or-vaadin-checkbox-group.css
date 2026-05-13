@@ -1,0 +1,45 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+@import "@vaadin/vaadin-lumo-styles/components/checkbox-group.css";
+
+@media lumo_components_checkbox-group-internal {
+    :host {
+        [part="group-field"] ::slotted([theme~="button"]) {
+            margin-left: 6px;
+        }
+        [part="group-field"] ::slotted([theme~="button"]:first-child) {
+            margin-left: 0;
+        }
+    }
+}
+
+:root::before,
+:host::before {
+  --_lumo-vaadin-checkbox-group-inject: 1;
+  --_lumo-vaadin-checkbox-group-inject-modules:
+    lumo_mixins_group-field,
+    lumo_mixins_field-label,
+    lumo_mixins_field-required,
+    lumo_mixins_field-error-message,
+    lumo_mixins_field-helper,
+    lumo_components_checkbox-group,
+    lumo_components_checkbox-group-internal,
+    lumo_mixins_field-internal;
+}

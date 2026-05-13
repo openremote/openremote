@@ -48,3 +48,10 @@ export function getAlarmsRoute(alarmId?: string) {
     }
     return route;
 }
+export function getServicesRoute(serviceId?: string) {
+    let route = "services";
+    if(serviceId) {
+        route += "/" + serviceId;
+    }
+    return route;
+}

@@ -1,0 +1,213 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "ttn/lorawan/v3/user.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// The UserRegistry service, exposed by the Identity Server, is used to manage
+// user registrations.
+service UserRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage users."};
+  // Register a new user. This method may be restricted by network settings.
+  rpc Create(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/users"
+      body: "*"
+    };
+  }
+
+  // Get the user with the given identifiers, selecting the fields given by the
+  // field mask. The method may return more or less fields, depending on the rights
+  // of the caller.
+  rpc Get(GetUserRequest) returns (User) {
+    option (google.api.http) = {get: "/users/{user_ids.user_id}"};
+  }
+
+  // List users of the network. This method is typically restricted to admins only.
+  rpc List(ListUsersRequest) returns (Users) {
+    option (google.api.http) = {get: "/users"};
+  }
+
+  // Update the user, changing the fields specified by the field mask to the provided values.
+  // This method can not be used to change the password, see the UpdatePassword method for that.
+  rpc Update(UpdateUserRequest) returns (User) {
+    option (google.api.http) = {
+      put: "/users/{user.ids.user_id}"
+      body: "*"
+    };
+  }
+
+  // Create a temporary password that can be used for updating a forgotten password.
+  // The generated password is sent to the user's email address.
+  rpc CreateTemporaryPassword(CreateTemporaryPasswordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/users/{user_ids.user_id}/temporary_password"};
+  }
+
+  // Update the password of the user.
+  rpc UpdatePassword(UpdateUserPasswordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/users/{user_ids.user_id}/password"
+      body: "*"
+    };
+  }
+
+  // Delete the user. This may not release the user ID for reuse.
+  rpc Delete(UserIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/users/{user_id}"};
+  }
+
+  // Restore a recently deleted user.
+  //
+  // Deployment configuration may specify if, and for how long after deletion,
+  // entities can be restored.
+  rpc Restore(UserIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/users/{user_id}/restore"};
+  }
+
+  // Purge the user. This will release the user ID for reuse.
+  // The user is responsible for clearing data from any (external) integrations
+  // that may store and expose data by user or organization ID.
+  rpc Purge(UserIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/users/{user_id}/purge"};
+  }
+}
+
+// The UserAccess service, exposed by the Identity Server, is used to manage
+// API keys of users.
+service UserAccess {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage user access."};
+  // List the rights the caller has on this user.
+  rpc ListRights(UserIdentifiers) returns (Rights) {
+    option (google.api.http) = {get: "/users/{user_id}/rights"};
+  }
+
+  // Create an API key scoped to this user.
+  // User API keys can give access to the user itself, as well as
+  // any organization, application, gateway and OAuth client this user is a collaborator of.
+  rpc CreateAPIKey(CreateUserAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      post: "/users/{user_ids.user_id}/api-keys"
+      body: "*"
+    };
+  }
+
+  // List the API keys for this user.
+  rpc ListAPIKeys(ListUserAPIKeysRequest) returns (APIKeys) {
+    option (google.api.http) = {get: "/users/{user_ids.user_id}/api-keys"};
+  }
+
+  // Get a single API key of this user.
+  rpc GetAPIKey(GetUserAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {get: "/users/{user_ids.user_id}/api-keys/{key_id}"};
+  }
+
+  // Update the rights of an API key of the user.
+  // This method can also be used to delete the API key, by giving it no rights.
+  // The caller is required to have all assigned or/and removed rights.
+  rpc UpdateAPIKey(UpdateUserAPIKeyRequest) returns (APIKey) {
+    option (google.api.http) = {
+      put: "/users/{user_ids.user_id}/api-keys/{api_key.id}"
+      body: "*"
+    };
+  }
+
+  // Delete a single API key of this user.
+  rpc DeleteAPIKey(DeleteUserAPIKeyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/users/{user_ids.user_id}/api-keys/{key_id}"};
+  }
+
+  // Create a login token that can be used for a one-time login as a user.
+  rpc CreateLoginToken(CreateLoginTokenRequest) returns (CreateLoginTokenResponse) {
+    option (google.api.http) = {post: "/users/{user_ids.user_id}/login-tokens"};
+  }
+}
+
+// The UserOrganizationRegistry service, exposed by the Identity Server, is used to manage user invitations.
+service UserInvitationRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage user sessions."};
+  // Invite a user to join the network.
+  rpc Send(SendInvitationRequest) returns (Invitation) {
+    option (google.api.http) = {
+      post: "/invitations"
+      body: "*"
+    };
+  }
+
+  // List the invitations the caller has sent.
+  rpc List(ListInvitationsRequest) returns (Invitations) {
+    option (google.api.http) = {get: "/invitations"};
+  }
+
+  // Delete (revoke) a user invitation.
+  rpc Delete(DeleteInvitationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/invitations"};
+  }
+}
+
+// The UserSessionRegistry service, exposed by the Identity Server, is used to manage
+// (browser) sessions of the user.
+service UserSessionRegistry {
+  // List the active sessions for the given user.
+  rpc List(ListUserSessionsRequest) returns (UserSessions) {
+    option (google.api.http) = {get: "/users/{user_ids.user_id}/sessions"};
+  }
+  // Delete (revoke) the given user session.
+  rpc Delete(UserSessionIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/users/{user_ids.user_id}/sessions/{session_id}"};
+  }
+}
+
+service UserBookmarkRegistry {
+  // Create a bookmark for the given user.
+  rpc Create(CreateUserBookmarkRequest) returns (UserBookmark) {
+    option (google.api.http) = {
+      post: "/users/{user_ids.user_id}/bookmarks"
+      body: "*"
+    };
+  }
+
+  // List the bookmarks for the given user.
+  rpc List(ListUserBookmarksRequest) returns (UserBookmarks) {
+    option (google.api.http) = {get: "/users/{user_ids.user_id}/bookmarks"};
+  }
+
+  // Delete the given user's bookmark.
+  rpc Delete(DeleteUserBookmarkRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/{user_ids.user_id}/bookmarks/applications/{entity_ids.application_ids.application_id}",
+      additional_bindings {delete: "/users/{user_ids.user_id}/bookmarks/clients/{entity_ids.client_ids.client_id}"}
+      additional_bindings {delete: "/users/{user_ids.user_id}/bookmarks/gateways/{entity_ids.gateway_ids.gateway_id}"}
+      additional_bindings {delete: "/users/{user_ids.user_id}/bookmarks/organizations/{entity_ids.organization_ids.organization_id}"}
+      additional_bindings {delete: "/users/{user_ids.user_id}/bookmarks/users/{entity_ids.user_ids.user_id}"}
+      additional_bindings {delete: "/users/{user_ids.user_id}/bookmarks/applications/{entity_ids.device_ids.application_ids.application_id}/devices/{entity_ids.device_ids.device_id}"}
+    };
+  }
+
+  // Delete a list of bookmarks of the given user.
+  // This operation is atomic; either all bookmarks are deleted or none.
+  // Bookmarks not found are skipped and no error is returned.
+  rpc BatchDelete(BatchDeleteUserBookmarksRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/users/{user_ids.user_id}/bookmarks/batch"};
+  }
+}

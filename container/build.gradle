@@ -7,27 +7,30 @@ dependencies {
 
     api project(":model")
 
-    api "org.codehaus.groovy:groovy-all:$groovyVersion"
+    api "org.apache.groovy:groovy:$groovyVersion"
+    api "org.apache.groovy:groovy-json:$groovyVersion"
+    api "org.apache.groovy:groovy-xml:$groovyVersion"
+    api "org.apache.groovy:groovy-yaml:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
     // SLF4J JUL provider
     api "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    // Log4J redirect to SLF4J
-    api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "io.undertow:undertow-servlet:$undertowVersion"
+    api "io.undertow:undertow-core:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
     api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
-        exclude group: "io.undertow",  module: "undertow-servlet-jakarta"
+        exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
     }
     api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
 
-    api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
-    api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
+    api "jakarta.security.enterprise:jakarta.security.enterprise-api:4.0.0"
+    api "org.glassfish.soteria:jakarta.security.enterprise:3.0.4"
+    api "com.nimbusds:nimbus-jose-jwt:10.4.2"
+
+
     api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"
@@ -47,6 +50,14 @@ dependencies {
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    api "com.thetransactioncompany:cors-filter:$corsFilterVersion"
+}
+
+dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 base {
@@ -100,8 +111,8 @@ publishing {
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
-                    username findProperty("publishUsername")
-                    password findProperty("publishPassword")
+                    username = findProperty("publishUsername")
+                    password = findProperty("publishPassword")
                 }
             }
             url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")

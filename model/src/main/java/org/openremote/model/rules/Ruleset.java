@@ -30,7 +30,7 @@ import org.hibernate.type.SqlTypes;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -74,15 +74,13 @@ public abstract class Ruleset {
     @Column(name = "VERSION", nullable = false)
     protected long version;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn = new Date();
+    protected Instant createdOn = Instant.now();
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.UpdateTimestamp
-    protected Date lastModified;
+    protected Instant lastModified;
 
     @NotNull(message = "{Ruleset.name.NotNull}")
     @Column(name = "NAME", nullable = false)
@@ -139,11 +137,11 @@ public abstract class Ruleset {
         return this;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public Ruleset setCreatedOn(Date createdOn) {
+    public Ruleset setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return this;
     }
@@ -151,19 +149,19 @@ public abstract class Ruleset {
     @PreUpdate
     @PrePersist
     protected void updateLastModified() {
-        setLastModified(new Date());
+        setLastModified(Instant.now());
     }
 
     public Ruleset setLastModified() {
-        return setLastModified(new Date());
+        return setLastModified(Instant.now());
     }
 
-    public Ruleset setLastModified(Date lastModified) {
+    public Ruleset setLastModified(Instant lastModified) {
         this.lastModified = lastModified;
         return this;
     }
 
-    public Date getLastModified() {
+    public Instant getLastModified() {
         return lastModified;
     }
 

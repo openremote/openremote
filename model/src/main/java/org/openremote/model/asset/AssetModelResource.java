@@ -20,12 +20,17 @@
 package org.openremote.model.asset;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
+import org.jboss.resteasy.annotations.cache.Cache;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
@@ -99,4 +104,16 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    /**
+     * Retrieve the JSON Schema for a {@link ValueDescriptor} available in this system. A value descriptor schema is only meant to be retrieved
+     * once per client. Either when a new {@code name} is requested or the "If-None-Match" header does not match the current ETag. The HTTP client should
+     * use the provided ETag to cache the response.
+     */
+    @GET
+    @Path("getValueDescriptorSchema")
+    @Produces(APPLICATION_JSON)
+    @Cache(noCache = true)
+    @Operation(operationId = "getValueDescriptorSchema", summary = "Retrieve the JSON Schema of the specified value descriptor")
+    Response getValueDescriptorSchema(@QueryParam("name") String name, @Context Request request);
 }

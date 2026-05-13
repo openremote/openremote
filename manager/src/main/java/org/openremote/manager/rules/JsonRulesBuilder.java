@@ -223,7 +223,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 // only need up to date values in the previously matched asset states previously unmatched asset states is only
                 // used to compare asset ID and attribute name.
                 if (event != null) {
-                    if (previouslyMatchedAssetStates.remove(event.assetState)) {
+                    boolean resetImmediately = event.assetState.getMeta().getValue(MetaItemType.RULE_RESET_IMMEDIATE).orElse(false);
+                    if (!resetImmediately && previouslyMatchedAssetStates.remove(event.assetState)) {
                         previouslyMatchedAssetStates.add(event.assetState);
                     }
                 }
@@ -480,6 +481,25 @@ public class JsonRulesBuilder extends RulesBuilder {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                         .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
+                    
+             
+                    // Prevent stale matches from blocking rule re-triggering for multi LHS condition groups
+                    if (!groupMatches && ruleConditionGroup.getItems().size() > 1) {
+
+                        boolean anyConditionHasNoPreviousMatches = ruleConditionGroup.getItems().stream()
+                            .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                            .anyMatch(ruleConditionState -> ruleConditionState.previouslyMatchedAssetStates.isEmpty());
+
+                        // Clear previously matched asset states, so they can be re-matched and trigger the rule when the group matches again
+                        if (anyConditionHasNoPreviousMatches) {
+                            ruleConditionGroup.getItems().forEach(ruleCondition -> {
+                                RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
+                                if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
+                                    conditionState.previouslyMatchedAssetStates.clear();
+                                }
+                            });      
+                        }   
+                    }
                 } else {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
@@ -986,7 +1006,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (webhookAction.mediaType == null) {
                 Optional<Map.Entry<String, List<String>>> contentTypeHeader = webhook.getHeaders().entrySet().stream().filter((entry) -> entry.getKey().equalsIgnoreCase("content-type")).findFirst();
-                String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().get(0) : MediaType.APPLICATION_JSON;
+                String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().getFirst() : MediaType.APPLICATION_JSON;
                 webhookAction.mediaType = MediaType.valueOf(contentType);
             }
 

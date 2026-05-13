@@ -24,8 +24,8 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.asset.Asset;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
@@ -35,7 +35,8 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 public class SentAlarm {
     @Id
     @Column(name = "ID")
-    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
     @NotNull
@@ -69,17 +70,14 @@ public class SentAlarm {
     @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = SOURCE_ID)")
     protected String sourceUsername;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date createdOn;
+    protected Instant createdOn;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date acknowledgedOn;
+    protected Instant acknowledgedOn;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    protected Date lastModified;
+    protected Instant lastModified;
 
     @Column(name = "ASSIGNEE_ID")
     protected String assigneeId;
@@ -167,29 +165,29 @@ public class SentAlarm {
         return sourceUsername;
     }
 
-    public Date getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public SentAlarm setCreatedOn(Date createdOn) {
+    public SentAlarm setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return this;
     }
 
-    public Date getAcknowledgedOn() {
+    public Instant getAcknowledgedOn() {
         return acknowledgedOn;
     }
 
-    public SentAlarm setAcknowledgedOn(Date acknowledgedOn) {
+    public SentAlarm setAcknowledgedOn(Instant acknowledgedOn) {
         this.acknowledgedOn = acknowledgedOn;
         return this;
     }
 
-    public Date getLastModified() {
+    public Instant getLastModified() {
         return lastModified;
     }
 
-    public SentAlarm setLastModified(Date lastModified) {
+    public SentAlarm setLastModified(Instant lastModified) {
         this.lastModified = lastModified;
         return this;
     }

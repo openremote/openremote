@@ -22,13 +22,14 @@ package org.openremote.model.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.openremote.model.Constants;
+import jakarta.ws.rs.core.Response;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-
-import java.util.Map;
 
 @Tag(name = "Map", description = "Operations on maps")
 @Path("map")
@@ -40,34 +41,56 @@ public interface MapResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "saveSettings", summary = "Update map settings")
-    Object saveSettings(@BeanParam RequestParams requestParams, Map<String, MapRealmConfig> mapConfig);
+    ObjectNode saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
 
     /**
-     * Returns style used to initialise Mapbox GL
+     * Returns style used to initialise MapLibre GL
      * @return
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "getSettings", summary = "Retrieve the style used for Mapbox GL")
+    @Operation(operationId = "getSettings", summary = "Retrieve the style used for MapLibre GL")
     ObjectNode getSettings(@BeanParam RequestParams requestParams);
 
     /**
-     * Returns tileJSON object used to initialise Mapbox JS
-     * @return
-     */
-    @GET
-    @Path("js")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(operationId = "getSettingsJs", summary = "Retrieve the tileJSON object used for Mapbox GL")
-    ObjectNode getSettingsJs(@BeanParam RequestParams requestParams);
-
-    /**
-     * Gets vector tile data for Mapbox GL
+     * Gets vector tile data for MapLibre GL
      */
     @GET
     @Produces("application/vnd.mapbox-vector-tile")
     @Path("tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
-    byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+    Response getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+
+    /**
+     * Saves mbtiles file
+     */
+    @POST
+    @Path("upload")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
+    ObjectNode uploadMap(@BeanParam RequestParams requestParams, @QueryParam("filename") String filename);
+
+    /**
+     * Retrieve if the map is custom and custom map limit
+     */
+    @GET
+    @Path("getCustomMapInfo")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getCustomMapInfo", summary = "Retrieve if the map is custom and custom map limit")
+    ObjectNode getCustomMapInfo();
+
+    /**
+     * Removes mbtiles file
+     */
+    @DELETE
+    @Path("deleteMap")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
+    ObjectNode deleteMap(@BeanParam RequestParams requestParams);
 }

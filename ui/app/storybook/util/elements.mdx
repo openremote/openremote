@@ -1,0 +1,45 @@
+{/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/}
+
+export const DocsBadge = (props) => {
+    if (!props?.packageJson) {
+        return <i>Could not find package.json file</i>
+    }
+    switch (props?.type) {
+        case "NPM": {
+            return <a href={`https://npmjs.com/package/${props.packageJson.name}`}>
+                <img alt="NPM Version" src={`https://img.shields.io/npm/v/${props.packageJson.name}`} height="24"></img>
+            </a>
+        }
+        case "License": {
+            if(!props.packageJson.repository) { return (<i>GitHub repository was not specified in package.json file.</i>)}
+            return <a href={props.packageJson.repository}>
+                <img alt="License" src={`https://img.shields.io/npm/l/${props.packageJson.name}`} height="24"></img>
+            </a>
+        }
+        case "Downloads": {
+            return <a href={`https://npmjs.com/package/${props.packageJson.name}`}>
+                <img alt="NPM Downloads" src={`https://img.shields.io/npm/dm/${props.packageJson.name}`} height="24"></img>
+            </a>
+        }
+        default:
+            return null;
+    }
+}

@@ -4,6 +4,7 @@ public class Node {
     // Generation of ID is the responsibility of the front end and is unique for every node in a structure, not for every node in the system
     private String id;
     private NodeType type;
+    private int priority = 999;
     private String name;
     private NodePosition position;
     private NodePosition size;
@@ -21,6 +22,20 @@ public class Node {
         this.inputs = inputs;
         this.outputs = outputs;
         this.displayCharacter = null;
+    }
+    public Node(NodeType type, int priority, String displayCharacter, NodeInternal[] internals, NodeSocket[] inputs, NodeSocket[] outputs) {
+        if (internals.length != 0)
+            throw new IllegalArgumentException("A node cannot have internals when a display character is specified");
+
+        this.id = "INVALID ID";
+        this.type = type;
+        this.priority = priority;
+        this.position = new NodePosition(0, 0);
+        this.size = new NodePosition(0, 0);
+        this.internals = internals;
+        this.inputs = inputs;
+        this.outputs = outputs;
+        this.displayCharacter = displayCharacter;
     }
 
     public Node(NodeType type, String displayCharacter, NodeInternal[] internals, NodeSocket[] inputs, NodeSocket[] outputs) {

@@ -57,7 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getInteger;
 
 /**
  * Base class for all classes that store and retrieve {@link org.openremote.model.datapoint.Datapoint}.

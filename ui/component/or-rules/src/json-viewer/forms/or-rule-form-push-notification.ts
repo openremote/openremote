@@ -1,8 +1,7 @@
 import {html, LitElement, css, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate"
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {PushNotificationMessage, PushNotificationButton} from "@openremote/model";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";

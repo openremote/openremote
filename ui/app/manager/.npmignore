@@ -1,7 +1,12 @@
 build/
 build.gradle
 test/
+app-test-report/
+test-results/
 src/
-webpack.config.jstsconfig.json
+webpack.config.js
+rspack.config.js
+playwright.config.ts
+tsconfig.json
 dist/*.map
 *.tsbuildinfo

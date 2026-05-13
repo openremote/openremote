@@ -23,9 +23,6 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.SecurityConstraint;
-import io.undertow.servlet.api.SecurityInfo;
-import io.undertow.servlet.api.WebResourceCollection;
 import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
 import org.apache.camel.component.undertow.UndertowConsumer;
 import org.apache.camel.component.undertow.UndertowHostKey;
@@ -35,19 +32,18 @@ import org.openremote.model.Container;
 
 import java.net.URI;
 
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-
 /**
  * Customised to use existing undertow instance so websocket doesn't have to be on a separate web server instance
  */
+// TODO: Move realm into request URI if possible and remove Realm query parameter support
 public class UndertowHost implements org.apache.camel.component.undertow.UndertowHost {
 
+    public static final String DEPLOYMENT_NAME = "Camel WebSocket Deployment";
     protected final Container container;
     protected final UndertowHostKey key;
     protected final UndertowHostOptions options;
     protected final Undertow undertow;
     protected DeploymentInfo deployment;
-    protected WebService.RequestHandler websocketHttpHandler;
     protected HttpHandler camelHandler;
 
     public UndertowHost(Container container, UndertowHostKey key, UndertowHostOptions options) {
@@ -69,30 +65,14 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
             return camelHandler;
         }
 
-        String path = registrationInfo.getUri().getPath();
-        String deploymentName = "Camel WebSocket Deployment";
-        deployment = Servlets.deployment()
-            .setDeploymentName(deploymentName)
-            .setContextPath(path)
-            .setClassLoader(getClass().getClassLoader())
-            //httpHandler for servlet is ignored, camel handler is used instead of it
-            .addInnerHandlerChainWrapper(h -> handler);
-
-        // Require authentication, but authorize specific roles later in Camel
-        WebResourceCollection resourceCollection = new WebResourceCollection();
-        resourceCollection.addUrlPattern("/*");
-        SecurityConstraint constraint = new SecurityConstraint();
-        constraint.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.PERMIT);
-        constraint.addWebResourceCollection(resourceCollection);
-        deployment.addSecurityConstraints(constraint);
-
-        HttpHandler deploymentHandler = WebService.addServletDeployment(container, deployment, true);
-
-        websocketHttpHandler = pathStartsWithHandler(deploymentName, path, deploymentHandler);
-
-        // Give web socket handler higher priority than any other handlers already added
-        container.getService(WebService.class).getRequestHandlers().add(0, websocketHttpHandler);
-
+       WebService webService = container.getService(WebService.class);
+       String path = registrationInfo.getUri().getPath();
+       deployment = Servlets.deployment()
+          .setDeploymentName(DEPLOYMENT_NAME)
+          .setContextPath(path)
+          .setClassLoader(getClass().getClassLoader())
+          .addInitialHandlerChainWrapper(h -> handler);
+        webService.deploy(deployment, false);
         // Caller expects a CamelWebSocketHandler instance
         camelHandler = handler;
         return handler;
@@ -103,11 +83,8 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
         WebService webService = container.getService(WebService.class);
 
         if (deployment != null) {
-            webService.removeServletDeployment(deployment);
+            webService.undeploy(DEPLOYMENT_NAME);
             deployment = null;
         }
-
-        webService.getRequestHandlers().remove(websocketHttpHandler);
-        websocketHttpHandler = null;
     }
 }

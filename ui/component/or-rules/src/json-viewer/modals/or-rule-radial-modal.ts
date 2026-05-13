@@ -11,14 +11,12 @@ import {
 } from "../../index";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
+import {i18next, translate} from "@openremote/or-translate"
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
-import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMap, OrMapClickedEvent} from "@openremote/or-map";
+import {OrMap, OrMapClickedEvent, LngLatLike} from "@openremote/or-map";
 import "@openremote/or-map";
-import {LngLatLike} from "maplibre-gl";
 
 @customElement("or-rule-radial-modal")
 export class OrRuleRadialModal extends translate(i18next)(LitElement) {

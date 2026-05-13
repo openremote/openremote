@@ -500,7 +500,7 @@ public class RulesFacts extends Facts implements RuleListener {
         boolean reverse = orderBy.descending;
 
         keyExtractor = switch (orderBy.property) {
-            case CREATED_ON -> assetState -> Long.toString(assetState.getCreatedOn().getTime());
+            case CREATED_ON -> assetState -> Long.toString(assetState.getCreatedOn().toEpochMilli());
             case ASSET_TYPE -> AttributeInfo::getAssetType;
             case PARENT_ID -> AttributeInfo::getParentId;
             case REALM -> AttributeInfo::getRealm;
@@ -521,7 +521,7 @@ public class RulesFacts extends Facts implements RuleListener {
         if (foundLocationPredicates != null && !foundLocationPredicates.isEmpty()) {
             LOG.finest("Location predicate found");
             // Collect asset states only where the attribute is location (location predicates only make sense when the location
-            // attribute is exposed to rules - we don't support RULE_EVENT facts just RULE_STATE
+            // attribute is exposed to rules)
             Collection<AttributeInfo> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getName().equalsIgnoreCase(Asset.LOCATION.getName())).collect(Collectors.toSet());
 
             if (assetStateLocationPredicateMap == null) {

@@ -4,18 +4,34 @@ public class NodeInternal {
     private String name;
     private Picker picker;
     private Object value;
+    private BreakType breakType;
+
+    public enum BreakType{
+        NEW_LINE,
+        SPACER
+    }
 
     public NodeInternal(String name, Picker picker, Object value) {
         this.name = name;
         this.picker = picker;
         this.value = value;
+        this.breakType = BreakType.NEW_LINE;
     }
 
     public NodeInternal(String name, Picker picker) {
         this.name = name;
         this.picker = picker;
         this.value = picker.getOptions().length == 0 ? null : picker.getOptions()[0].getValue();
+        this.breakType = BreakType.NEW_LINE;
+
     }
+    public NodeInternal(String name, Picker picker, BreakType breakType) {
+        this.name = name;
+        this.picker = picker;
+        this.value = picker.getOptions().length == 0 ? null : picker.getOptions()[0].getValue();
+        this.breakType = breakType;
+    }
+
 
     public NodeInternal() {
         name = null;

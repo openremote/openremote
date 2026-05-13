@@ -39,8 +39,6 @@ import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,7 +47,7 @@ import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;
@@ -58,7 +56,7 @@ public class ManagerSetup implements Setup {
 
     public static final String OR_PROVISIONING_DOCROOT = "OR_PROVISIONING_DOCROOT";
     public static final String OR_PROVISIONING_DOCROOT_DEFAULT = "deployment/manager/provisioning";
-    protected static final Logger LOG = LoggerFactory.getLogger(ManagerSetup.class);
+    protected static final System.Logger LOG = System.getLogger(ManagerSetup.class.getName());
     protected Path provisionDocRoot;
 
     final protected TimerService timerService;
@@ -394,42 +392,6 @@ public class ManagerSetup implements Setup {
         return lightAsset;
     }
 
-    protected ElectricityStorageAsset createDemoElectricityStorageAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityStorageAsset electricityStorageAsset = new ElectricityBatteryAsset(name);
-        electricityStorageAsset.setParent(area);
-        electricityStorageAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityStorageAsset;
-    }
-
-    protected ElectricityProducerSolarAsset createDemoElectricitySolarProducerAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityProducerSolarAsset electricityProducerAsset = new ElectricityProducerSolarAsset(name);
-        electricityProducerAsset.setParent(area);
-        electricityProducerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityProducerAsset;
-    }
-
-    protected ElectricityConsumerAsset createDemoElectricityConsumerAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset(name);
-        electricityConsumerAsset.setParent(area);
-        electricityConsumerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityConsumerAsset;
-    }
-
-    protected ElectricityChargerAsset createDemoElectricityChargerAsset(String name, Asset<?> area,
-            GeoJSONPoint location) {
-        ElectricityChargerAsset electricityChargerAsset = new ElectricityChargerAsset(name);
-        electricityChargerAsset.setParent(area);
-        electricityChargerAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-
-        return electricityChargerAsset;
-    }
-
     protected GroundwaterSensorAsset createDemoGroundwaterAsset(String name, Asset<?> area, GeoJSONPoint location) {
         GroundwaterSensorAsset groundwaterAsset = new GroundwaterSensorAsset(name);
         groundwaterAsset.setParent(area);
@@ -460,17 +422,16 @@ public class ManagerSetup implements Setup {
             return;
         }
 
-        LOG.info("Provisioning assets");
+        LOG.log(System.Logger.Level.INFO, "Provisioning assets");
 
         Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
                 .forEach(file -> {
                     try {
                         Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                         asset = assetStorageService.merge(asset);
-
-                        LOG.info("Asset merged: " + asset.toString());
+                        LOG.log(System.Logger.Level.INFO, "Asset merged: " + asset);
                     } catch (IOException e) {
-                        LOG.warn("Processing of file " + file.getFileName() + " went wrong", e);
+                        LOG.log(System.Logger.Level.INFO, "Processing of file " + file.getFileName() + " went wrong", e);
                     }
                 });
 

@@ -463,7 +463,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
                     }
                     if (meshProxies.size() > 0) {
                         synchronized (BluetoothMeshNetwork.this) {
-                            BluetoothMeshNetwork.this.bluetoothMeshProxy = meshProxies.get(0);
+                            BluetoothMeshNetwork.this.bluetoothMeshProxy = meshProxies.getFirst();
                             BluetoothMeshNetwork.this.bluetoothMeshProxy.setRxDataCallback(BluetoothMeshNetwork.this);
                             BluetoothMeshNetwork.this.bluetoothMeshProxy.connect(statusConsumer, new BluetoothMeshProxyConnectCallback() {
                                 @Override

@@ -13,6 +13,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.AssetPredictedDatapoint
 import org.openremote.model.datapoint.ValueDatapoint
+import org.openremote.model.util.TimeUtil
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -47,9 +48,9 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
     static TimerService timerService
     @Shared
     static ForecastConfigurationWeightedExponentialAverage forecastConfig = new ForecastConfigurationWeightedExponentialAverage(
-            new ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration("P7D"),
+            new TimeUtil.ExtendedPeriodAndDuration("P7D"),
             3,
-            new ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration("PT1H"),
+            new TimeUtil.ExtendedPeriodAndDuration("PT1H"),
             4
     )
     @Shared
@@ -69,7 +70,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
 
     // TODO: RT - Not too sure the intention with the offset and seems to be used only in ignored tests so skip for now
 //    def setupSpec() {
-//        forecastThing2 = addForecastAsset(assetStorageService, managerTestSetup.realmEnergyName, forecastAttributeName, forecastConfig)
+//        forecastThing2 = addForecastAsset(assetStorageService, managerTestSetup.realmMasterName, forecastAttributeName, forecastConfig)
 //        Long offset = ((forecastConfig.getForecastPeriod().toMillis() * 2) / 3) * (-1)
 //        insertHistoryTestDataToDb(new AttributeRef(forecastThing2.id, forecastAttributeName), forecastHistoricalData, offset, forecastConfig)
 //
@@ -167,7 +168,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
         advancePseudoClock(now.toEpochMilli()-timerService.getCurrentTimeMillis(), MILLISECONDS, container)
 
         and: "forecast asset is added"
-        def forecastThing1 = addForecastAsset(assetStorageService, managerTestSetup.realmEnergyName, forecastAttributeName, forecastConfig)
+        def forecastThing1 = addForecastAsset(assetStorageService, managerTestSetup.realmMasterName, forecastAttributeName, forecastConfig)
         def attributeRef = new AttributeRef(forecastThing1.id, forecastAttributeName)
 
         then: "attribute should be registered at the forecast service"

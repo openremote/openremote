@@ -15,10 +15,12 @@ if [ -z "$AWS_REGION" ]; then
 fi
 
 if [ -n "$AWS_ACCESS_KEY_ID" ]; then
+  echo "Setting AWS_ACCESS_KEY_ID"
   aws configure --profile github set aws_access_key_id $AWS_ACCESS_KEY_ID
 fi
 
 if [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
+  echo "Setting AWS_SECRET_ACCESS_KEY"
   aws configure --profile github set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
 fi
 

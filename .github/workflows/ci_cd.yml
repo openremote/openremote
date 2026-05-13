@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------------------------------------------------
 # This workflow handles all CI/CD related tasks and can be re-used in custom projects
-# (https://github.com/openremote/custom-project i.e. has openremote submodule) or forks of this repo, it handles:
+# (https://github.com/openremote/custom-project) or forks of this repo, it handles:
 #
 # - Running tests on push/release
 # - Distributing openremote/manager images to docker hub (DOCKERHUB_USER and DOCKERHUB_PASSWORD must be set) on push/release
@@ -43,6 +43,7 @@
 #                           an openremote submodule).
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
+# - PUSH_SNAPSHOT         - Should a SNAPSHOT docker image be pushed to AWS ECR
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
 # - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
@@ -75,6 +76,9 @@ on:
       CLEAN_INSTALL:
         description: 'Delete data before starting'
         type: boolean
+      PUSH_SNAPSHOT:
+        description: 'Push SNAPSHOT docker image to ECR'
+        type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
       OR_HOSTNAME:
@@ -90,6 +94,15 @@ on:
         SECRETS:
           required: false
 
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   build:
@@ -97,14 +110,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.12.1
-        with:
-          access_token: ${{ github.token }}
-
-      - name: Get inputs and secrets
-        id: inputs-and-secrets
+      - name: Process inputs
+        id: process-inputs
         shell: python
         run: |
           import os
@@ -113,13 +120,10 @@ jobs:
           # Overlay all inputs and secrets onto this jobs outputs
           callerInputs = os.getenv("CALLER_INPUTS")
           inputs = os.getenv("INPUTS")
-          secrets = os.getenv("SECRETS")
           eventName = os.getenv("GITHUB_EVENT_NAME")
 
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
-          if secrets is not None and secrets != '':
-            secrets = json.loads(secrets)
           if eventName == 'workflow_call' and callerInputs is not None and callerInputs != 'null':
             os.system(f"echo 'Processing caller inputs'")
             inputs = json.loads(callerInputs)
@@ -127,20 +131,8 @@ jobs:
           if inputs is not None and 'INPUTS' in inputs:
             os.system("echo 'Processing inputs from caller'")
             inputs = json.loads(inputs['INPUTS'])
-          if 'SECRETS' in secrets:
-            os.system("echo 'Processing secrets from caller'")
-            secrets = json.loads(secrets['SECRETS'])
 
-          # Iterate over secrets then inputs and assign them as outputs on this step
-
-          if secrets is not None and secrets != 'null':
-            for key, value in secrets.items():
-              os.system(f"echo 'Outputting secret: {key}'")
-              lines = len(value.split("\n"))
-              if lines > 1:
-                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
-              else:
-                  os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
+          # Iterate over inputs and assign them as outputs on this step
 
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
@@ -153,52 +145,60 @@ jobs:
 
         env:
           CALLER_INPUTS: ${{ toJSON(inputs) }}
-          SECRETS: ${{ toJSON(secrets) }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
 
       - name: Public IP
         id: ip-address
         shell: bash
         run: |
-          set -e
-          PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
-          PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
+          OPTS="-sf -m 5"
+          
+          # Try Primary v4 -> Fallback v4 -> Default to empty
+          PUBLIC_IPV4=$(curl $OPTS v4.ident.me || curl $OPTS 4.tnedi.me || true)
+          
+          # Try Primary v6 -> Fallback v6 -> Default to empty
+          PUBLIC_IPV6=$(curl $OPTS v6.ident.me || curl $OPTS 6.tnedi.me || true)
+          
+          # Validation: Ensure at least one IP was found
+          if [[ -z "$PUBLIC_IPV4" && -z "$PUBLIC_IPV6" ]]; then
+          echo "::error::Could not determine Public IP (both v4 and v6 failed)."
+          exit 1
+          fi
+          
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
-          ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
+          ref: ${{ steps.process-inputs.outputs.COMMIT }}
           submodules: recursive
           fetch-depth: 200
+          lfs: 'true'
 
       # Check which files have changed to only run appropriate tests and checks
       - name: Backend files changed
         id: backend-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files_ignore: |
             .ci_cd/**
-            console/**
             deployment/**
-            setup/**
             ui/**
             **/*.md
             **/*.yml
-            manager/src/web/**
+            yarn.lock
 
       # Check which files have changed to only run appropriate tests and checks
       - name: UI files changed
         id: ui-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
-            ui/app/manager/**
-            ui/component/**
+            ui/**
           files_ignore: |
             **/*.md
             **/*.yml
@@ -208,25 +208,19 @@ jobs:
         if: steps.backend-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
-      - name: Set skip UI tests
-        id: skip-ui-tests
+      - name: Set skip UI component tests
+        id: skip-ui-component-tests
         if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
-
-      - name: Make cache dirs and set file permissions
-        run: |
-          chmod +x gradlew
-          mkdir -p ~/manager-tags-old
-          mkdir -p ~/manager-tags-new
 
       - name: Check if main repo
         id: is_main_repo
         run: |
-          if [ $(grep -E '.+/openremote$' <<< "$GITHUB_REPOSITORY") ]; then
+          if [ -f manager/src/main/java/org/openremote/manager/Main.java ]; then
             echo "value=true" >> $GITHUB_OUTPUT
           else
             if [ -e 'openremote' ]; then
-              echo "::error::Custom project should not have an 'openremote' file or directory!"
+              echo "::error::openremote submodule no longer supported, see custom project template!"
               exit 1
             fi
 
@@ -234,15 +228,17 @@ jobs:
             echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
             version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
-            if [ $(grep -E '.+SNAPSHOT$' <<< "$version") ]; then
-              echo "ref=master" >> $GITHUB_OUTPUT
-            else
-              echo "ref=$version" >> $GITHUB_OUTPUT
+
+            if [ -z "$version" ]; then
+              echo "openremoteVersion must be set in gradle.properties"
+              exit 1
             fi
+
+            echo "ref=$version" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         if: ${{ steps.is_main_repo.outputs.value == 'false' }}
         with:
           repository: ${{ steps.is_main_repo.outputs.repository }}
@@ -253,37 +249,44 @@ jobs:
             profile
           sparse-checkout-cone-mode: false
 
+      - name: Install node_modules
+        if: steps.ui-files-changed.outputs.any_modified == 'true'
+        run: yarn --immutable
+
+      - name: Check UI dependencies
+        if: steps.ui-files-changed.outputs.any_modified == 'true' && steps.is_main_repo.outputs.value == 'true'
+        run: npx knip@5.88.0 -c ui/knip.jsonc
+
       - name: Check deployment build.gradle
         id: check_deployment_gradle
-        uses: andstor/file-existence-action@v3
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
         with:
           files: "deployment/build.gradle"
 
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
-        uses: andstor/file-existence-action@v3
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
         with:
           files: "deployment/Dockerfile"
 
       - name: Check ci_cd existence
         id: check_cicd_json
-        uses: andstor/file-existence-action@v3
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
         with:
           files: ".ci_cd/ci_cd.json"
 
-      - name: Check is custom project when scheduled trigger
-        if: ${{ github.event_name == 'schedule' }}
-        run: |
-          if [ "$IS_MAIN_REPO" == 'true' ]; then
-            echo "Schedule can only be used on a custom project repo"
-            exit 1
-          fi
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+      - name: Set up JDK 21 and gradle cache
+        id: java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
 
       - name: Get version details
         id: get-version-details
         run: |
+          set -o pipefail # exit build with error when pipes fail
           ./gradlew currentVersion | tee /tmp/currentVersion
           versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
           version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
@@ -291,53 +294,9 @@ jobs:
           if [ "$version" == "$versionWithQualifier" ]; then
             isRelease=true
           fi
-
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
           echo "is_release=$isRelease" >> $GITHUB_OUTPUT
-
-      # For scheduled execution from custom projects we need to be able to determine if the manager docker image has
-      # changed since the last execution, we do this using a cache
-      - name: Get docker tags to monitor
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        id: monitor-tags
-        shell: python
-        run: |
-          import json
-          import os
-
-          eventName = os.getenv('GITHUB_EVENT_NAME')
-          refName = os.getenv('GITHUB_REF_NAME')
-          pushTag = None
-          deployTag = None
-          deployEnvironment = None
-
-          f = open(".ci_cd/ci_cd.json")
-          data = json.load(f)
-          f.close()
-
-          if "managerDockerPush" in data:
-            managerPushConfig = data["managerDockerPush"]
-
-            if managerPushConfig is not None:
-              if len(managerPushConfig.keys()) > 0:
-                for key in managerPushConfig.keys():
-                  # Output new tag cache files (for generating hash)
-                  os.system(f"echo 'Outputting manifest info for tag: {key}'")
-                  os.system(f"docker buildx imagetools inspect --raw openremote/manager:{key} > ~/manager-tags-new/{key}")
-              os.system("echo 'Tag manifests generated:'")
-              os.system("find ~/manager-tags-new")
-
-      - name: Load manager tag cache
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        uses: actions/cache@v4
-        id: manager-tag-cache
-        with:
-          path: |
-            ~/manager-tags-old
-          key: ${{ runner.os }}-manager-tags---${{ hashFiles('~/manager-tags-new/**') }}
-          restore-keys: |
-            ${{ runner.os }}-manager-tags---
 
       - name: Process ci_cd.json file
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
@@ -350,60 +309,30 @@ jobs:
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refName = os.getenv('GITHUB_REF_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
           isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
           isRelease = os.getenv('IS_RELEASE') == 'true'
+          managerVersion = os.getenv('MANAGER_VERSION')
           version = os.getenv('VERSION')
           deploys = None
           dockerPublishTags = None
           mavenPublishTag = None
           npmPublishTag = None
           deployEnvironment = None
+          eventConfig = ()
 
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
           f.close()
 
-          if eventName == "schedule":
-            eventName = "managerDockerPush"
-          elif refType == "tag":
+          if isRelease:
             eventName = "release"
 
           if data is not None and eventName in data:
             eventConfig = data[eventName]
 
-            if eventName == "managerDockerPush":
-
-              # Iterate through keys and check if that manager docker image has changed since last execution
-              deploys=[]
-              for key in eventConfig.keys():
-                os.system(f"echo 'Checking manager docker tag: {key}'")
-                newManifestStr = None
-                oldManifestStr = None
-
-                if os.path.exists(os.path.expanduser(f"~/manager-tags-new/{key}")):
-                  f = open(os.path.expanduser(f"~/manager-tags-new/{key}"))
-                  newManifestStr = f.read()
-                  f.close()
-                if os.path.exists(os.path.expanduser(f"~/manager-tags-old/{key}")):
-                  f = open(os.path.expanduser(f"~/manager-tags-old/{key}"))
-                  oldManifestStr = f.read()
-                  f.close()
-
-                if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
-                  os.system(f"echo 'Manager docker tag has been updated: {key}'")
-                  if 'deploy' in eventConfig[key]:
-                    deployConfig = eventConfig[key]['deploy']
-                    if deployConfig is not None:
-                      # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
-                      deployConfig['managerTag'] = key
-                      deploys.append(deployConfig)
-                  else:
-                    os.system(f"echo 'No deploy config in ci_cd.json for manager tag {key}'")
-                else:
-                  os.system(f"echo 'Manager docker tag has not changed: {key}'")
-
-            elif eventName == "push" and refType == "branch" and refName in eventConfig:
-              eventConfig = eventConfig[refName]
+          if eventName == "push" and refType == "branch" and refName in eventConfig:
+            eventConfig = eventConfig[refName]
 
           if eventConfig is not None:
             deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
@@ -418,39 +347,54 @@ jobs:
           if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
 
             if dockerPublishTags is not None:
-              dockerPublishTags = dockerPublishTags.replace("$version", version)
-              firstDockerTag = dockerPublishTags.split(",")[0]
-              os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-              os.system(f" echo 'Manager tags to push to docker: {dockerPublishTags}'")
-              dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-              os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+              if "$version" in dockerPublishTags:
+                 firstDockerTag = version
+                 dockerPublishTags = dockerPublishTags.replace("$version", version)
+              else:
+                dockerPublishTags = dockerPublishTags.replace("$version", version)
+                firstDockerTag = dockerPublishTags.split(",")[0]
 
-            if mavenPublishTag is not None:
+              os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
+              os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
+              dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
+              if repoOwner == 'openremote':
+                os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+
+            if mavenPublishTag is not None and repoOwner == 'openremote':
               mavenPublishTag = mavenPublishTag.replace("$version", version)
               os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
               os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
 
-            if npmPublishTag is not None:
+            if npmPublishTag is not None and repoOwner == 'openremote':
               npmPublishTag = npmPublishTag.replace("$version", version)
               os.system(f" echo 'npm publish version: {npmPublishTag}'")
               os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
-          if deploys is not None:
+          if deploys is not None and repoOwner == 'openremote':
             if not isinstance(deploys, list):
               deploys = [deploys]
 
             deployStr = ""
+            managerTagDefault = '#ref'
 
             for deploy in deploys:
               if 'environment' in deploy:
                 deployStr += deploy['environment']
               deployStr += ":"
               if 'managerTag' in deploy:
-                deployStr += deploy['managerTag']
+                if isMainRepo:
+                  deployStr += deploy['managerTag']
+                else:
+                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                  deployStr += managerVersion
               else:
-                os.system("echo 'Manager tag not specified so using commit SHA'")
-                deployStr += '#ref'
+                if isMainRepo:
+                  os.system("echo 'Manager tag not specified so using commit SHA'")
+                  deployStr += managerTagDefault
+                else:
+                  # Custom projects manager docker image must match the openremoteVersion from gradle.properties
+                  deployStr += managerVersion
 
               deployStr += ";"
 
@@ -461,86 +405,130 @@ jobs:
             os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
           VERSION: ${{ steps.get-version-details.outputs.version }}
 
-      - name: Copy new tag cache to old
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
-        run: |
-          cd ~/manager-tags-new
-          cp -r . ~/manager-tags-old/
-
       - name: Sanitize deployments value
         id: deployments
+        shell: python
         run: |
-          deployments=$DEPLOYMENTS
+          import os
+          import sys
 
-          if [ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ] && [ "$GITHUB_REF_TYPE" != 'tag' ]; then
-            tag="$INPUT_MANAGER_TAG"
-            if [ -z "$INPUT_MANAGER_TAG" ]; then
-              tag='#ref'
-            fi
-            deployments="$INPUT_ENVIRONMENT:$tag"
-          fi
-          echo "value=$deployments" >> $GITHUB_OUTPUT
+          repoOwner = os.getenv('GITHUB_REPOSITORY_OWNER')
+          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+          deployments = os.getenv('DEPLOYMENTS')
+          eventName = os.getenv('GITHUB_EVENT_NAME')
+          refType = os.getenv('GITHUB_REF_TYPE')
+          inputTag = os.getenv('INPUT_MANAGER_TAG')
+          inputEnv = os.getenv('INPUT_ENVIRONMENT')
+          managerVersion = os.getenv('MANAGER_VERSION')
+
+          if eventName == 'workflow_dispatch' and refType != 'tag' and repoOwner == 'openremote':
+            if isMainRepo:
+              tag=inputTag
+              if not inputTag:
+                tag='#ref'
+            else:
+              tag=managerVersion
+            deployments=f'{inputEnv}:{tag}'
+
+          if not isMainRepo:
+            if "-SNAPSHOT" in deployments:
+              os.system("echo 'SNAPSHOT manager docker images not currently supported for custom project deployment'")
+              sys.exit(1)
+          os.system(f"echo 'value={deployments}' >> $GITHUB_OUTPUT")
+
+          pushSnapshot = os.getenv('INPUT_PUSH_SNAPSHOT')
+          if pushSnapshot == 'true' and repoOwner != 'openremote':
+            os.system("echo 'Only Openremote organisation can push to ECR'")
+            sys.exit(1)
+          else:
+            os.system(f"echo 'pushSnapshot={pushSnapshot}' >> $GITHUB_OUTPUT")
         env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.ref }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
-          INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
-          INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
+          INPUT_ENVIRONMENT: ${{ steps.process-inputs.outputs.ENVIRONMENT }}
+          INPUT_MANAGER_TAG: ${{steps.process-inputs.outputs.MANAGER_TAG }}
+          INPUT_PUSH_SNAPSHOT: ${{ steps.process-inputs.outputs.PUSH_SNAPSHOT }}
 
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
+        run: echo "value=./gradlew test -x npmTest" >> $GITHUB_OUTPUT
 
-      - name: Define UI test command
-        id: test-ui-command
-        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo ""
+      - name: Define UI component test command
+        id: test-ui-components-command
+        if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
+        run: echo "value=./gradlew -p ui/component npmTest" >> $GITHUB_OUTPUT
+
+      - name: Define UI app test command
+        id: test-ui-apps-command
+        run: echo "value=./gradlew -p ui/app npmTest" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
+        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
         shell: bash
         run: |
-          if [ $IS_MAIN_REPO == 'true' ]; then
-            buildPath="manager/build/install/manager"
-            commitSha=$(git rev-parse HEAD)
-            commitShaShort=$(git rev-parse --short HEAD)
+          buildPath="manager/build/install/manager"
+          commitSha=$(git rev-parse HEAD)
+          commitShaShort=$(git rev-parse --short HEAD)
 
-            if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
-              if [ -n "$MANAGER_TAGS" ]; then
-                command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
-                echo "pushRequired=true" >> $GITHUB_OUTPUT
-                echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
-              else
-                command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
-                echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
-              fi
-              echo "value=$command" >> $GITHUB_OUTPUT
-            fi
-            echo "buildPath=$buildPath" >> $GITHUB_OUTPUT
-            echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
+          if [ "$(uname -m)" == "aarch64" ]; then
+            PLATFORM=linux/aarch64
           fi
+
+          if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
+            if [ -n "$MANAGER_TAGS" ]; then
+              command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              echo "pushToDockerHub=true" >> $GITHUB_OUTPUT
+              echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
+            else
+              if [ "$PUSH_SNAPSHOT" == "true" ]; then
+                command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t ${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:SNAPSHOT-$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath"
+              else
+                command="docker build --build-arg GIT_COMMIT=$commitSha --platform ${PLATFORM:-linux/amd64} --load -t openremote/manager:$commitShaShort $buildPath && docker build --build-arg GIT_COMMIT=$commitSha --platform ${OTHER_PLATFORM:-linux/aarch64} -t openremote/manager:$commitShaShort $buildPath"
+              fi
+              echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
+            fi
+            echo "value=$command" >> $GITHUB_OUTPUT
+          fi
+          echo "buildPath=$buildPath" >> $GITHUB_OUTPUT
+          echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
         env:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
+          PUSH_SNAPSHOT: ${{ steps.deployments.outputs.pushSnapshot }}
+          TEST_UI_CMD: ${{ steps.test-ui-apps-command.outputs.value }}
 
       - name: Define maven publish command
         id: maven-publish-command
         if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
         shell: bash
         run: |
-          command="./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
+          command="./gradlew publishToSonatype --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
-          MAVEN_SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_PASSWORD }}
-          MAVEN_SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_KEY }}
-          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD }}
+          MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
+          MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
+
+      - name: Define maven release command
+        id: maven-release-command
+        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
+        shell: bash
+        run: |
+          command="./gradlew findSonatypeStagingRepository closeAndReleaseSonatypeStagingRepository -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
+          echo "value=$command" >> $GITHUB_OUTPUT
+        env:
+          MAVEN_USERNAME: ${{ secrets._TEMP_MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets._TEMP_MAVEN_PASSWORD }}
 
       - name: Define deployment docker build command
         id: deployment-docker-command
@@ -582,41 +570,40 @@ jobs:
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
 
       - name: Login to DockerHub
-        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
-        uses: docker/login-action@v3
+        if: ${{ steps.manager-docker-command.outputs.pushToDockerHub == 'true' }}
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
-          username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
-          password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
+          username: ${{ secrets._TEMP_DOCKERHUB_USER }}
+          password: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
+
+      - name: Configure AWS Credentials
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          aws-region: eu-west-1
+          role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
+
+      - name: Login to private ECR
+        if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
+        uses: aws-actions/amazon-ecr-login@376925c9d111252e87ae59691e5a442dd100ef6a # v2.1.3
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
         with:
           platforms: linux/amd64,linux/aarch64
 
       - name: install buildx
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         id: buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          version: latest
-          install: true
-
-      - name: Set up JDK 17 and gradle cache
-        id: java
-        if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - name: Yarn cache
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -634,191 +621,48 @@ jobs:
           echo 'Trigger event: ${{ github.event_name }}'
           echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
           echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
+          echo 'OpenRemote version: ${{ steps.is_main_repo.outputs.ref }}'
           echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
-          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Test UI components command: ${{ steps.test-ui-components-command.outputs.value }}'
+          echo 'End-To-End test command: ${{ steps.test-ui-apps-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
           echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
+          echo 'Maven release command: ${{ steps.maven-release-command.outputs.value }}'
           echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
           echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
           echo "Node version: $(node -v)"
-          echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
-          echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
-          echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '' }}
         run: |
-          # Only need keycloak and postgres services for backend testing
-          if [ -z $TEST_UI_COMMAND ]; then
-            composeProfile='profile/dev-testing.yml'
-          else
-            composeProfile='profile/dev-ui.yml'
-          fi
-
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Pull the images
-          docker compose -f $composeProfile pull
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
+          # Only need keycloak and postgres services for backend and end-to-end testing
+          docker compose -f profile/dev-testing.yml pull
 
       # Use docker layer caching to speed up image building
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
 
-      - name: Run backend tests
-        id: run-backend-tests
-        if: ${{ steps.test-backend-command.outputs.value != '' }}
+      - name: Update version in package.json files
+        id: update-package-json-files
         run: |
-          composeProfile='profile/dev-testing.yml'
+          VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
 
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir -p tmp
-          chmod 777 tmp
-
-          # Define cleanup command
-          echo "cleanup=docker compose -f $composeProfile down" >> $GITHUB_OUTPUT
-
-          # Start the stack
-          echo "docker compose -f ${composeProfile} up -d --no-build"
-          docker compose -f ${composeProfile} up -d --no-build
-
-          # Run the tests
-          ${{ steps.test-backend-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-        timeout-minutes: 20
-        #continue-on-error: true
-
-      - name: Archive backend test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-test-results
-          path: test/build/reports/tests
-
-      - name: Cleanup backend tests
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
-        run: ${{ steps.run-backend-tests.outputs.cleanup }}
-
-      - name: Run install dist
-        if: steps.install-command.outputs.value != ''
-        shell: python
-        run: |
-          import json
-          import os
-          import sys
-          import subprocess
-
-          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
-
-          # Output inputs and secrets as environment variables for build
-          for key, value in inputsAndSecrets.items():
-            if "." in key:
-              continue
-
-            # Look for temp and env prefixed keys
-            if key.startswith("_"):
-              if key.startswith("_TEMP_"):
-                key = key.replace("_TEMP_", "")
-              else:
-                continue
-
-            os.system(f"echo 'Setting environment variable {key}...'")
-            os.putenv(key, value)
-
-          buildCmd = os.getenv("CMD")
-          result = subprocess.run(f"{buildCmd}", shell=True)
-
-          if result.returncode != 0:
-            os.system("echo 'installDist failed'")
-            sys.exit(result.returncode)
-
-        env:
-          CMD: ${{ steps.install-command.outputs.value }}
-          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
-        timeout-minutes: 20
-
-      - name: Run manager docker build command
-        if: steps.manager-docker-command.outputs.value != ''
-        run: |
-          ${{ steps.manager-docker-command.outputs.value }}
-
-      - name: Scan manager docker image
-        if: steps.manager-docker-command.outputs.pushRequired == 'true'
-        uses: anchore/scan-action@v3
-        id: manager-anchore-scan
-        with:
-          image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
-          fail-build: false
-          severity-cutoff: critical
-
-      - name: Upload Anchore scan SARIF report
-        if: |
-          !cancelled() &&
-          steps.manager-docker-command.outputs.pushRequired == 'true'
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
-
-      - name: Inspect Anchore scan SARIF report
-        if: |
-          !cancelled() &&
-          steps.manager-docker-command.outputs.pushRequired == 'true'
-        run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
-
-      - name: Run maven publish command
-        if: steps.maven-publish-command.outputs.value != ''
-        run: |
-          ${{ steps.maven-publish-command.outputs.value }}
-
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
-        run: |
-          composeProfile='profile/dev-ui.yml'
-
-          if [ $IS_MAIN_REPO == 'false' ]; then
-            composeProfile="openremote/$composeProfile"
-          fi
-
-          # Start the stack
-          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
-
-          # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
-        timeout-minutes: 20
-        continue-on-error: true
-
-      - name: Run npm publish command
-        if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
-        run: |
-          QUALIFIER=$(sed -E 's/.+-([A-Za-z]+).*/\1/g' <<< $VERSION)
+          QUALIFIER=$(sed -E 's/.+-([a-z]+).*/\1/g' <<< $VERSION)
           if [ "$QUALIFIER" == "$VERSION" ]; then
             QUALIFIER=""
           fi
 
           if [ "$QUALIFIER" == "" ]; then
-            VERSION="$VERSION"
             TAG="latest"
           else
             if [ "$QUALIFIER" == "snapshot" ]; then
@@ -828,26 +672,218 @@ jobs:
               # Separate qualifiers from numbers of alpha, beta, rc versions
               VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
             fi
-            VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
-            TAG=$(awk '{print tolower($0)}' <<< $QUALIFIER)
+            TAG="$QUALIFIER"
           fi
 
           find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
-          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E 's#"(@openremote/.+)": ".+"#"\1": "workspace:*"#g' {}
 
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          VERSION: ${{ steps.get-version-details.outputs.version_with_qualifier }}
+
+      - name: Check for outdated translations
+        if: steps.is_main_repo.outputs.value == 'true'
+        run: |
+          set -e
+
+          # Run the tests
+          ./gradlew -p ui/app/shared processTranslations --no-parallel
+
+          out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
+          if [[ -z "$out" ]]; then
+              echo "✅ No pipeline changes detected."
+          else
+              echo "❌ Pipeline files have changed. Please run './gradlew -p ui/app/shared processTranslations --no-parallel'"
+              echo "$out"
+              exit 1
+          fi
+        timeout-minutes: 20
+
+      - name: Run backend tests
+        id: run-backend-tests
+        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        run: |
+          composeProfile='profile/dev-testing.yml'
+
+          # Make temp dir and set mask to 777 as docker seems to run as root
+          mkdir -pm 777 tmp
+
+          # Define cleanup command
+          echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
+
+          # Start the stack
+          echo "docker compose -f ${composeProfile} up -d --no-build"
+          docker compose -f ${composeProfile} up -d --no-build
+
+          # Run the tests
+          ${{ steps.test-backend-command.outputs.value }}
+        timeout-minutes: 20
+        #continue-on-error: true
+
+      - name: Generate backend test reports
+        id: backend-test-reports
+        run: |
+          if [ "$IS_MAIN" = "true" ]; then
+            ./gradlew unitTestReport combinedCoverageReport -x test
+            echo "coverage=build/reports/jacoco/combinedCoverageReport/html" >> $GITHUB_OUTPUT
+          else
+            echo "coverage=test/build/reports/jacoco/test/html" >> $GITHUB_OUTPUT
+          fi
+        env:
+          IS_MAIN: ${{ steps.is_main_repo.outputs.value }}
+
+      - name: Archive integration test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: integration-test-results
+          path: test/build/reports/tests/test
+
+      - name: Archive unit test results
+        if: ${{ steps.is_main_repo.outputs.value == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unit-test-results
+          path: build/reports/tests/test/aggregated-results
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-report
+          path: ${{ steps.backend-test-reports.outputs.coverage }}
+
+      - name: Cleanup backend tests
+        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        run: ${{ steps.run-backend-tests.outputs.cleanup }}
+
+      - name: Run install dist
+        if: steps.install-command.outputs.value != ''
+        run: |
+          if [ -n "${{ secrets._TEMP_GFE_PASSWORD }}" ]; then
+            echo "GFE_PASSWORD=${{ secrets._TEMP_GFE_PASSWORD }}" >> $GITHUB_ENV
+          fi
+          ${{ steps.install-command.outputs.value }}
+        timeout-minutes: 20
+
+      - name: Run NPM publish dry run
+        if: steps.is_main_repo.outputs.value == 'true' && github.ref != 'refs/heads/master'
+        run: yarn workspaces foreach --all --no-private --topological npm publish --dry-run
+        timeout-minutes: 20
+
+      - name: Run install playwright browser(s)
+        if: (steps.test-ui-components-command.outputs.value != '' || steps.test-ui-apps-command.outputs.value != '') && steps.is_main_repo.outputs.value == 'true'
+        run: npx playwright install chromium-headless-shell
+        timeout-minutes: 20
+
+      - name: Run UI component tests
+        if: steps.test-ui-components-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
+        run: ${{ steps.test-ui-components-command.outputs.value }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive UI component test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-component-test-results
+          path: ui/component/*/component-test-report/**
+
+      - name: Run UI app tests
+        id: run-ui-app-tests
+        # Skip UI app tests for custom projects until we want to use them there
+        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
+        run: |
+          composeProfile='profile/dev-testing.yml'
+
+          # Make temp dir and set mask to 777 as docker seems to run as root
+          mkdir -pm 777 tmp
+
+          # Define cleanup command
+          echo "cleanup=docker compose -f $composeProfile down -v" >> $GITHUB_OUTPUT
+
+          # Start the stack
+          echo "docker compose -f ${composeProfile} up -d --no-build"
+          docker compose -f $composeProfile up -d --no-build
+
+          # Run the tests
+          ${{ steps.test-ui-apps-command.outputs.value }}
+        env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
+        timeout-minutes: 20
+        # continue-on-error: true
+
+      - name: Archive UI app test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-app-test-results
+          path: ui/app/*/app-test-report/**
+
+      - name: Cleanup UI app tests
+        if: ${{ steps.test-ui-apps-command.outputs.value != '' }}
+        run: ${{ steps.run-ui-app-tests.outputs.cleanup }}
+
+      - name: Run manager docker build command
+        if: steps.manager-docker-command.outputs.value != ''
+        run: |
+          ${{ steps.manager-docker-command.outputs.value }}
+        env:
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
+
+      - name: Scan manager docker image
+        if: steps.manager-docker-command.outputs.pushToDockerHub == 'true'
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        id: manager-anchore-scan
+        with:
+          image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
+          fail-build: false
+          severity-cutoff: critical
+
+      - name: Upload Anchore scan SARIF report
+        if: |
+          !cancelled() &&
+          steps.manager-docker-command.outputs.pushToDockerHub == 'true'
+        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
+
+      - name: Inspect Anchore scan SARIF report
+        if: |
+          !cancelled() &&
+          steps.manager-docker-command.outputs.pushToDockerHub == 'true'
+        run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
+
+      - name: Run maven publish command
+        if: steps.maven-publish-command.outputs.value != ''
+        run: |
+          ${{ steps.maven-publish-command.outputs.value }}
+
+      - name: Run npm publish command
+        if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
+        run: |
           echo 'npmRegistries:' >> .yarnrc.yml
           echo '  "https://registry.yarnpkg.com":' >> .yarnrc.yml
           echo "    npmAuthToken: $NPM_AUTH_TOKEN" >> .yarnrc.yml
 
           yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
-          VERSION: ${{ steps.ci-cd-output.outputs.npmTag }}
-          NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets._TEMP_NPM_AUTH_TOKEN }}
+          TAG: ${{ steps.update-package-json-files.outputs.tag }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
           ${{ steps.deployment-docker-command.outputs.value }}
+        env:
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
+
+      - name: Run maven release command
+        if: |
+          steps.maven-release-command.outputs.value != ''
+        run: |
+          ${{ steps.maven-release-command.outputs.value }}
 
       - name: Do deployments
         if: steps.deployments.outputs.value != ''
@@ -863,11 +899,18 @@ jobs:
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
           isMainRepo = os.getenv("IS_MAIN_REPO") == 'true'
-          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          inputs = json.loads(os.getenv("INPUTS", "{}"))
+          secrets = json.loads(os.getenv("SECRETS", "{}"))
+          inputsAndSecrets = secrets | inputs
           ipv4 = os.getenv("IPV4")
           ipv6 = os.getenv("IPV6")
 
           failure = False
+
+          # Clean-up AWS credentials related variable that might have been set by Configure AWS Credentials for ECR upload
+          os.environ.pop("AWS_ACCESS_KEY_ID", None)
+          os.environ.pop("AWS_SECRET_ACCESS_KEY", None)
+          os.environ.pop("AWS_SESSION_TOKEN", None)
 
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
@@ -973,16 +1016,18 @@ jobs:
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          BUILDX_BUILDER: ${{ steps.buildx.outputs.name }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
           DEPLOYMENT_DOCKER_BUILD_PATH: ${{ steps.deployment-docker-command.outputs.buildPath }}
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
-          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
+          INPUTS: ${{ toJSON(steps.process-inputs.outputs) }}
+          SECRETS: ${{ toJSON(secrets) }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
 
 #       - name: Setup upterm session
-#         uses: lhotari/action-upterm@v1
+#         uses: lhotari/action-upterm@b0357f23233f5ea6d58947c0c402e0631bab7334 # v1
 #         with:
 #           ## limits ssh access and adds the ssh public keys of the listed GitHub users
 #           limit-access-to-actor: true

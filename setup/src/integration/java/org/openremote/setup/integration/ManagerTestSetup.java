@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;
@@ -87,19 +86,12 @@ public class ManagerTestSetup extends ManagerSetup {
     public String realmMasterName;
     public String realmBuildingName;
     public String realmCityName;
-    public String realmEnergyName;
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
     public String peopleCounter1AssetId;
     public String peopleCounter2AssetId;
     public String peopleCounter3AssetId;
-    public String electricityOptimisationAssetId;
-    public String electricityConsumerAssetId;
-    public String electricitySolarAssetId;
-    public String electricityWindAssetId;
-    public String electricitySupplierAssetId;
-    public String electricityBatteryAssetId;
     public String light1Id;
     public String light2Id;
 
@@ -119,7 +111,6 @@ public class ManagerTestSetup extends ManagerSetup {
         realmMasterName = realmMaster.getName();
         realmBuildingName = realmBuilding.getName();
         realmCityName = realmCity.getName();
-        realmEnergyName = keycloakTestSetup.realmEnergy.getName();
 
         // ################################ Assets for 'master' realm ###################################
 
@@ -174,10 +165,6 @@ public class ManagerTestSetup extends ManagerSetup {
                                 STORE_DATA_POINTS,
                                 true),
                         new MetaItem<>(
-                                DATA_POINTS_MAX_AGE_DAYS,
-                                OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT *7
-                        ),
-                        new MetaItem<>(
                                 AGENT_LINK,
                                 new SimulatorAgentLink(agent.getId()))
                     ),
@@ -208,87 +195,6 @@ public class ManagerTestSetup extends ManagerSetup {
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
-        // ################################ Assets for 'energy' realm ###################################
-        EnergyOptimisationAsset electricityOptimisationAsset = new EnergyOptimisationAsset("Optimisation");
-        electricityOptimisationAsset.setIntervalSize(3d);
-        electricityOptimisationAsset.setRealm(keycloakTestSetup.realmEnergy.getName());
-        electricityOptimisationAsset.setFinancialWeighting(100);
-        electricityOptimisationAsset = assetStorageService.merge(electricityOptimisationAsset);
-        electricityOptimisationAssetId = electricityOptimisationAsset.getId();
-
-        ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset("Consumer");
-        electricityConsumerAsset.setParent(electricityOptimisationAsset);
-        electricityConsumerAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
-            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
-        );
-        electricityConsumerAsset = assetStorageService.merge(electricityConsumerAsset);
-        electricityConsumerAssetId = electricityConsumerAsset.getId();
-
-        ElectricityProducerSolarAsset electricitySolarAsset = new ElectricityProducerSolarAsset("Producer");
-        electricitySolarAsset.setParent(electricityOptimisationAsset);
-        electricitySolarAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
-            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
-        );
-        electricitySolarAsset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.SOUTH);
-        electricitySolarAsset.setPanelAzimuth(0);
-        electricitySolarAsset.setPanelPitch(30);
-        electricitySolarAsset.setEfficiencyExport(100);
-        electricitySolarAsset.setPowerExportMax(2.5);
-        electricitySolarAsset.setLocation(new GeoJSONPoint(9.195285, 48.787418));
-        electricitySolarAsset.setSetActualSolarValueWithForecast(true);
-        electricitySolarAsset.setIncludeForecastSolarService(true);
-        electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
-        electricitySolarAssetId = electricitySolarAsset.getId();
-
-        ElectricityProducerWindAsset electricityWindAsset = new ElectricityProducerWindAsset("Wind Turbine");
-        electricityWindAsset.setParent(electricityOptimisationAsset);
-        electricityWindAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
-                attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
-        );
-        electricityWindAsset.setWindSpeedMax(18d);
-        electricityWindAsset.setWindSpeedMin(2d);
-        electricityWindAsset.setWindSpeedReference(12d);
-        electricityWindAsset.setPowerExportMax(9000d);
-        electricityWindAsset.setEfficiencyExport(100);
-        electricityWindAsset.setPowerExportMax(2.5);
-        electricityWindAsset.setLocation(new GeoJSONPoint(9.195285, 48.787418));
-        electricityWindAsset.setSetActualWindValueWithForecast(true);
-        electricityWindAsset.setIncludeForecastWindService(true);
-        electricityWindAsset = assetStorageService.merge(electricityWindAsset);
-        electricityWindAssetId = electricityWindAsset.getId();
-
-        ElectricityBatteryAsset electricityBatteryAsset = new ElectricityBatteryAsset("Battery");
-        electricityBatteryAsset.setParent(electricityOptimisationAsset);
-        electricityBatteryAsset.setEnergyCapacity(200d);
-        electricityBatteryAsset.setEnergyLevelPercentageMin(20);
-        electricityBatteryAsset.setEnergyLevelPercentageMax(80);
-        electricityBatteryAsset.setEnergyLevel(100d);
-        electricityBatteryAsset.setPowerImportMax(7d);
-        electricityBatteryAsset.setPowerExportMax(20d);
-        electricityBatteryAsset.setPowerSetpoint(0d);
-        electricityBatteryAsset.setEfficiencyImport(95);
-        electricityBatteryAsset.setEfficiencyExport(98);
-        electricityBatteryAsset.setSupportsExport(true);
-        electricityBatteryAsset.setSupportsImport(true);
-        electricityBatteryAsset.getAttribute(ElectricityAsset.POWER_SETPOINT).ifPresent(attr ->
-            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
-        );
-        electricityBatteryAsset = assetStorageService.merge(electricityBatteryAsset);
-        electricityBatteryAssetId = electricityBatteryAsset.getId();
-
-        ElectricitySupplierAsset electricitySupplierAsset = new ElectricitySupplierAsset("Supplier");
-        electricitySupplierAsset.setParent(electricityOptimisationAsset);
-        electricitySupplierAsset.setTariffExport(-0.05);
-        electricitySupplierAsset.setTariffImport(0.08);
-        electricitySupplierAsset.getAttribute(ElectricityAsset.TARIFF_IMPORT).ifPresent(attr ->
-            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
-        );
-        electricitySupplierAsset.getAttribute(ElectricityAsset.TARIFF_EXPORT).ifPresent(attr ->
-            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
-        );
-        electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
-        electricitySupplierAssetId = electricitySupplierAsset.getId();
-
         // ################################ Assets for 'building' realm ###################################
 
         BuildingAsset smartBuilding = new BuildingAsset("Smart building");
@@ -312,6 +218,11 @@ public class ManagerTestSetup extends ManagerSetup {
                 new MetaItem<>(ACCESS_PUBLIC_READ),
                 new MetaItem<>(ACCESS_PUBLIC_WRITE)
             ));
+        apartment1.getAttribute(BuildingAsset.STREET).get().addOrReplaceMeta(
+                new MetaItem<>(ACCESS_PUBLIC_WRITE, false),
+                new MetaItem<>(ACCESS_PUBLIC_READ, false),
+                new MetaItem<>(ACCESS_RESTRICTED_READ)
+        );
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -323,6 +234,11 @@ public class ManagerTestSetup extends ManagerSetup {
         /* ############################ ROOMS ############################## */
 
         RoomAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room 1");
+        apartment1Livingroom.setAccessPublicRead(true);
+        apartment1Livingroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Livingroom.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454213, 51.446884)),
             new Attribute<>("lightsCeiling", NUMBER, 0d)
@@ -357,6 +273,10 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         RoomAsset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen 1");
+        apartment1Kitchen.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Kitchen.getAttributes().addOrReplace(
                     new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454122, 51.446800)),
                     new Attribute<>("lights", BOOLEAN, true)
@@ -385,20 +305,26 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1KitchenId = apartment1Kitchen.getId();
 
         RoomAsset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway 1");
+        apartment1Hallway.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Hallway.getAttributes().addOrReplace(
                         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454342, 51.446762)),
                         new Attribute<>("lights", BOOLEAN, true)
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
                 );
-        addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () ->
-            new SimulatorAgentLink(apartment1ServiceAgentId)
-        );
+        addDemoApartmentRoomMotionSensor(apartment1Hallway, false, null);
 
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
 
         RoomAsset apartment1Bedroom1 = createDemoApartmentRoom(apartment1, "Bedroom 1");
+        apartment1Bedroom1.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Bedroom1.getAttributes().addOrReplace(
                         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454332, 51.446830)),
                         new Attribute<>("lights", BOOLEAN, true)
@@ -419,6 +345,10 @@ public class ManagerTestSetup extends ManagerSetup {
 
         RoomAsset apartment1Bathroom = new RoomAsset("Bathroom 1");
         apartment1Bathroom.setParent(apartment1);
+        apartment1Bathroom.getAttribute(Asset.NOTES).ifPresent(notes -> notes.addMeta(
+                new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+        ));
         apartment1Bathroom.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454227,51.446753)),
                 new Attribute<>("lights", BOOLEAN, true)
@@ -602,7 +532,17 @@ public class ManagerTestSetup extends ManagerSetup {
         assetStorageService.storeUserAssetLinks(List.of(
             new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser2.getId(),
-                apartment1HallwayId)));
+                apartment1HallwayId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1Bedroom1Id),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1KitchenId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1LivingroomId)
+            ));
 
         // ################################ Realm smartcity ###################################
 
@@ -647,6 +587,7 @@ public class ManagerTestSetup extends ManagerSetup {
         enviroment1Asset = assetStorageService.merge(enviroment1Asset);
 
         Asset<?> light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.476111, 51.438492));
+        light1Asset.setAccessPublicRead(true);
         light1Asset = assetStorageService.merge(light1Asset);
         light1Id = light1Asset.getId();
 

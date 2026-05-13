@@ -1,0 +1,34 @@
+{
+  "name": "@openremote/or-attribute-barchart",
+  "version": "1.14.0-snapshot",
+  "description": "OpenRemote attribute bar chart",
+  "customElements": "custom-elements.json",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
+  },
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
+    "test": "echo \"No tests\" && exit 0",
+    "prepack": "npx rspack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-icon": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
+    "@openremote/rest": "workspace:*",
+    "echarts": "~6.0.0",
+    "lit": "^3.3.1",
+    "moment": "^2.29.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -74,7 +74,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
     def "Check basic functionality"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         MQTT_IOClient device1Client
         MQTT_IOClient device1SnoopClient
         MQTT_IOClient deviceNClient
@@ -97,8 +97,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def realm = new Realm()
         realm.setName("test")
         realm.setDisplayName("Test")
-        realm.setEnabled(true);
-        realm.setDuplicateEmailsAllowed(true);
+        realm.setEnabled(true)
+        realm.setDuplicateEmailsAllowed(true)
         realm.setRememberMe(true)
         realm = identityService.getIdentityProvider().createRealm(realm)
         (identityService.getIdentityProvider() as KeycloakIdentityProvider).getRealms(realmsResource -> {
@@ -158,11 +158,20 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def mqttDevice1SnoopClientId = UniqueIdentifierGenerator.generateId("device1snoop")
         List<String> subscribeFailures = new CopyOnWriteArrayList<>()
         List<ConnectionStatus> connectionStatuses = new CopyOnWriteArrayList<>()
-        Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
+        Consumer<String> subscribeFailureCallback = {String topic ->
+            subscribeFailures.add(topic)
+            LOG.info("device1Client failed to subscribe to topic: ${topic}")
+        }
+        Consumer<String> deviceNSubscribeFailureCallback = { String topic ->
+            subscribeFailures.add(topic)
+            LOG.info("deviceNClient failed to subscribe to topic: ${topic}")
+        }
         device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1SnoopClient = new MQTT_IOClient(mqttDevice1SnoopClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        device1Client.setRemoveConsumersOnSubscriptionFailure(true)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
+            LOG.info("Device 1 connection status changed: $connectionStatus")
             connectionStatuses.add(connectionStatus)})
         device1Client.connect()
 
@@ -183,11 +192,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
         }
 
         when: "an eavesdropping client connects"
         device1SnoopClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        device1SnoopClient.setRemoveConsumersOnSubscriptionFailure(true)
         device1SnoopClient.connect()
 
         then: "it should be connected"
@@ -196,11 +206,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the eavesdropping client subscribes to the provisioning response topic"
-        def result = device1SnoopClient.addMessageConsumer(device1ResponseTopic, device1MessageConsumer)
+        device1SnoopClient.addMessageConsumer(device1ResponseTopic, device1MessageConsumer)
 
         then: "the subscription should have failed"
         conditions.eventually {
-            assert !result
+            assert subscribeFailures.last == device1ResponseTopic
             assert device1SnoopClient.topicConsumerMap.get(device1ResponseTopic) == null
             assert subscribeFailures.size() == 1
         }
@@ -209,7 +219,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
@@ -255,7 +265,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
-            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).consumers.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
         }
 
@@ -324,8 +334,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) != null
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) != null
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).size() == 1
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).consumers.size() == 1
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).consumers.size() == 1
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -412,6 +422,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
+            assert !defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
             assert subscribeFailures.size() == 2
             assert subscribeFailures.contains(assetSubscriptionTopic)
             assert subscribeFailures.contains(attributeSubscriptionTopic)
@@ -450,8 +461,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Client.topicConsumerMap.get(assetSubscriptionTopic) != null
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) != null
-            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).size() == 1
-            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).size() == 1
+            assert device1Client.topicConsumerMap.get(assetSubscriptionTopic).consumers.size() == 1
+            assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic).consumers.size() == 1
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
             assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
@@ -464,7 +475,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -483,7 +494,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -517,7 +528,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -532,7 +543,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -566,7 +577,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -581,7 +592,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -617,17 +628,19 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         device1Responses.clear()
         connectionStatuses.clear()
+        subscribeFailures.clear()
         provisioningConfig.setDisabled(true)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
         then: "already connected client that was authenticated should be disconnected, then reconnect and should fail to re-subscribe to asset and attribute events"
         conditions.eventually {
             assert connectionStatuses.size() >= 1
-            assert connectionStatuses.get(0) == ConnectionStatus.DISCONNECTED
+            assert connectionStatuses.get(0) == ConnectionStatus.CONNECTING
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
             assert connection != null
+            subscribeFailures.size() == 2
         }
 
         when: "the re-connected client re-authenticates"
@@ -648,7 +661,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "another device re-connects"
         deviceNResponses.clear()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -663,7 +676,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -748,7 +761,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "a device with disabled user account connects"
         deviceNResponses.clear()
         deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
-        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        deviceNClient.setTopicSubscribeFailureConsumer(deviceNSubscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -763,7 +776,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the subscriptions should succeed"
         conditions.eventually {
             assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic) != null
-            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).size() == 1
+            assert deviceNClient.topicConsumerMap.get(deviceNResponseTopic).consumers.size() == 1
             assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) != null
         }
 
@@ -783,7 +796,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "a client user is re-enabled"
         existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
-        def existingNConnection = mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId)
+        mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId)
         device1User.setEnabled(true)
         device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null, true)
 

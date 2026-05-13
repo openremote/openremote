@@ -7,6 +7,11 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "assets": "Assets",
+  "users": "Users",
+  "realms": "Realms",
+  "provisioning": "Auto provisioning",
+  "allAssets": "All assets",
+  "allAssetsofType": "All assets of this type",
   "attribute": "Attribute",
   "attributes": "Attributes",
   "attribute_plural": "Attributes",
@@ -20,6 +25,23 @@
   "login": "Log in",
   "reload": "Reload",
   "edit": "Edit",
+  "deselect": "Deselect",
+  "duplicate": "Duplicate",
+  "sort": "Sort",
+  "openList": "Open list",
+  "closeList": "Close list",
+  "january": "January",
+  "february": "February",
+  "march": "March",
+  "april": "April",
+  "may": "May",
+  "june": "June",
+  "july": "July",
+  "august": "August",
+  "september": "September",
+  "october": "October",
+  "november": "November",
+  "december": "December",
   "monday": "Monday",
   "tuesday": "Tuesday",
   "wednesday": "Wednesday",
@@ -61,6 +83,7 @@
   "notEndsWith": "Does not end with",
   "containsKey": "Contains key",
   "notContainsKey": "Does not contain key",
+  "notUpdatedFor": "Not updated for",
   "true": "Is true",
   "false": "Is false",
   "radiusMin": "Radius (min. 100m)",
@@ -68,6 +91,8 @@
   "outsideRadius": "Outside circle",
   "withinRectangle": "Inside rectangle",
   "outsideRectangle": "Outside rectangle",
+  "insideArea": "Inside area",
+  "outsideArea": "Outside area",
   "indexContains": "Array index contains",
   "notIndexContains": "Array index does not contain",
   "lengthEquals": "Array length equals",
@@ -81,8 +106,13 @@
   "deleteRulesets": "Delete rule(s)",
   "deleteRulesetsConfirm": "Are you sure you want to delete the selected rule(s)? {{ruleNames}}",
   "deleteRulesetsFailed": "Failed to delete one or more requested rules",
+  "deleteRulesetGroups": "Delete group(s)",
+  "deleteRulesetGroupsConfirm": "Are you sure you want to delete the selected group(s)? {{groupNames}}",
   "saveRulesetFailed": "Failed to save rule",
   "confirmContinueRulesetModified": "Rule has been modified, discard changes?",
+  "rulesLegacyJavaScriptWarning": "JavaScript rules are legacy and can only be viewed or deleted.",
+  "rulesLegacyJavaScriptUpdate": "JavaScript rules are legacy and cannot be updated.",
+  "rulesLegacyJavaScriptRename": "Groups containing JavaScript rules cannot be renamed.",
   "when": "When",
   "then": "Then",
   "orWhen": "Or when",
@@ -101,6 +131,7 @@
   "rulesEditorAddGroup": "Add group",
   "rulesEditorAddAction": "Add action",
   "rulesEditorDuration": "Duration (min)",
+  "rulesEditorAddDuration": "Add duration to condition",
   "sortBy": "Sort by",
   "assetType": "Asset type",
   "creationDate": "Creation date",
@@ -131,35 +162,64 @@
   "filterInvite": "Filter with at least 3 characters",
   "location": "Location",
   "longPressSetLoc": "Long press to set location",
+  "this": "Current",
+  "last": "Last",
+  "60minutes": "60 minutes",
   "hour": "Hour",
-  "lastHour": "Last hour",
-  "last24Hours": "Last 24 hours",
-  "thisHour": "This hour",
+  "6hours": "6 hours",
+  "24hours": "24 hours",
+  "7days": "7 days",
+  "30days": "30 days",
+  "90days": "90 days",
+  "6months": "6 months",
+  "365days": "365 days",
   "day": "Day",
-  "thisDay": "This day",
-  "thisDayLastWeek": "This day last week",
-  "yesterday": "Yesterday",
-  "last7Days": "Last 7 days",
-  "last30Days": "Last 30 days",
-  "last90Days": "Last 90 days",
   "week": "Week",
-  "thisWeek": "This week",
-  "previousWeek": "Previous week",
   "month": "Month",
-  "thisMonth": "This month",
-  "previousMonth": "Previous month",
-  "last6Months": "Last 6 months",
   "year": "Year",
-  "lastYear": "Last year",
-  "thisYear": "This year",
-  "previousYear": "Previous year",
   "period": "Period",
+  "beginning": "Beginning",
   "ending": "Ending",
+  "prefix": "Prefix",
+  "prefixDefault": "Default prefix",
   "timeframe": "Timeframe",
   "timeframeDefault": "Default timeframe",
+  "intervalBy": "Per {{interval}}",
+  "intervalByauto": "Auto",
+  "intervalBy1minute": "Per minute",
+  "intervalBy5minutes": "Per 5 minutes",
+  "intervalBy5minutes-auto": "Auto (5min)",
+  "intervalBy15minutes": "Per 15 minutes",
+  "intervalBy30minutes": "Per 30 minutes",
+  "intervalBy30minutes-auto": "Auto (30min)",
+  "intervalByhour": "Per hour",
+  "intervalByhour-auto": "Auto (hour)",
+  "intervalByday": "Per day",
+  "intervalByday-auto": "Auto (day)",
+  "intervalByweek": "Per week",
+  "intervalByweek-auto": "Auto (week)",
+  "intervalBymonth": "Per month",
+  "intervalBymonth-auto": "Auto (month)",
+  "intervalByyear": "Per year",
   "dataSampling": "Data sampling",
   "algorithm": "Algorithm",
   "algorithmMethod": "Method per interval",
+  "methodMaxAttributes": "Maximum",
+  "methodMaxAttributes-short": "MAX",
+  "methodMinAttributes": "Minimum",
+  "methodMinAttributes-short": "MIN",
+  "methodAvgAttributes": "Average",
+  "methodAvgAttributes-short": "AVG",
+  "methodDifferenceAttributes": "Difference",
+  "methodDifferenceAttributes-short": "DIFF",
+  "methodMedianAttributes": "Median",
+  "methodMedianAttributes-short": "MEDIAN",
+  "methodModeAttributes": "Mode",
+  "methodModeAttributes-short": "MOD",
+  "methodSumAttributes": "Sum",
+  "methodSumAttributes-short": "SUM",
+  "methodCountAttributes": "Count",
+  "methodCountAttributes-short": "COUNT",
   "addAttribute": "Add attribute",
   "selectAttributes": "Select attributes",
   "selectAttribute": "Select attribute",
@@ -168,25 +228,6 @@
   "export": "Export",
   "addAssetAttribute": "Add asset attribute",
   "add": "Add",
-  "EQUALS_COMPARATOR": "Equals",
-  "GREATER_THAN": "Greater than",
-  "LESS_THAN": "Less than",
-  "READ_ATTRIBUTE": "Read attribute",
-  "WRITE_ATTRIBUTE": "Write attribute",
-  "BOOLEAN_INPUT": "Boolean",
-  "NUMBER_INPUT": "Number",
-  "TEXT_INPUT": "Text",
-  "ADD_OPERATOR": "Add",
-  "SUBTRACT_OPERATOR": "Subtract",
-  "COMBINE_TEXT": "Combine text",
-  "MULTIPLY_OPERATOR": "Multiply",
-  "DIVIDE_OPERATOR": "Divide",
-  "AND_GATE": "And gate",
-  "OR_GATE": "Or gate",
-  "NOT_GATE": "Not gate",
-  "NUMBER_SWITCH": "Number switch",
-  "TEXT_SWITCH": "Text switch",
-  "ROUND_NODE": "Round",
   "input": "Input",
   "processors": "Processors",
   "output": "Output",
@@ -209,6 +250,40 @@
   "fitView": "Fit view",
   "areYouSure": "Are you sure?",
   "flowEditor": "Flow editor",
+  "flow": {
+    "EQUALS_COMPARATOR": "Equals",
+    "GREATER_THAN": "Greater than",
+    "LESS_THAN": "Less than",
+    "READ_ATTRIBUTE": "Attribute value",
+    "WRITE_ATTRIBUTE": "Attribute value",
+    "BOOLEAN_INPUT": "Boolean",
+    "NUMBER_INPUT": "Number",
+    "TEXT_INPUT": "Text",
+    "ADD_OPERATOR": "Add",
+    "SUBTRACT_OPERATOR": "Subtract",
+    "COMBINE_TEXT": "Combine text",
+    "MULTIPLY_OPERATOR": "Multiply",
+    "DIVIDE_OPERATOR": "Divide",
+    "AND_GATE": "And gate",
+    "OR_GATE": "Or gate",
+    "NOT_GATE": "Not gate",
+    "NUMBER_SWITCH": "Number switch",
+    "TEXT_SWITCH": "Text switch",
+    "ROUND_NODE": "Round",
+    "LOG_OUTPUT": "Write to Logs",
+    "DERIVATIVE": "Attribute derivative",
+    "INTEGRAL": "Attribute integral",
+    "HISTORIC_VALUE": "Attribute history",
+    "MAX_PROCESSOR": "Maximum",
+    "MIN_PROCESSOR": "Minimum",
+    "AVERAGE_PROCESSOR": "Average",
+    "MEDIAN_PROCESSOR": "Median",
+    "SUM_OPERATOR": "Sum",
+    "max": "Max",
+    "min": "Min",
+    "avg": "Avg",
+    "med": "Med"
+  },
   "else": "else",
   "english": "English",
   "arabic": "Arabic",
@@ -217,6 +292,7 @@
   "french": "French",
   "german": "German",
   "italian": "Italian",
+  "polish": "Polish",
   "portuguese": "Portuguese",
   "romanian": "Romanian",
   "spanish": "Spanish",
@@ -248,6 +324,12 @@
   "info": "Info",
   "notSupported": "Not supported",
   "ruleName": "Rule name",
+  "ruleGroupName": "Group name",
+  "ruleGroupNameDefault": "New Group",
+  "ruleGroupExistsError": "This group already exists.",
+  "ruleGroupDragError": "You cannot move a group.",
+  "ruleDragSuccess": "Moved successfully!",
+  "ruleDragFailed": "Failed to move. Please try again.",
   "value": "Value",
   "values": "Values",
   "and": "and",
@@ -263,6 +345,7 @@
   "subCategoryFilters": "Sub category filters",
   "category": "Category",
   "subCategory": "Sub category",
+  "copiedToClipboard": "Copied to clipboard successfully.",
   "message": "Message",
   "warn": "Warning",
   "error": "Error",
@@ -288,12 +371,14 @@
   "realm": "Realm",
   "realm_plural": "Realms",
   "changeRealm": "Change realm",
-  "displayName":"Friendly name",
+  "displayName": "Friendly name",
   "loginTheme": "Login theme",
   "emailTheme": "Email theme",
   "resetPasswordAllowed": "Password reset allowed",
+  "resetPassword": "Reset Password",
+  "resetPasswordConfirmation": "An email has been sent to reset your password.",
   "rememberMe": "Remember me",
-  "deleteRealmConfirm":"Are you sure you want to delete this Realm?",
+  "deleteRealmConfirm": "Are you sure you want to delete this Realm?",
   "serviceUser": "Service user",
   "user_plural": "Users",
   "regularUser_plural": "Regular users",
@@ -309,16 +394,17 @@
   "role": "Role",
   "role_plural": "Roles",
   "description": "Description",
-  "passwordMismatch":"Passwords do not match",
+  "passwordMismatch": "Passwords do not match",
   "twoFactorAuth": "Two Factor Authentication",
   "twoFactorConfigure": "Configure",
-  "username":"Username",
-  "firstName":"First name",
-  "surname":"Surname",
+  "username": "Username",
+  "firstName": "First name",
+  "surname": "Surname",
   "deleteUser": "Delete user",
   "deleteRole": "Delete role",
-  "deleteUserConfirm":"Are you sure you want to delete the user '{{userName}}'?",
-  "deleteRoleConfirm":"Are you sure you want to delete the role '{{roleName}}'?",
+  "roleAlreadyExists": "A role with this name already exists",
+  "deleteUserConfirm": "Are you sure you want to delete the user '{{userName}}'?",
+  "deleteRoleConfirm": "Are you sure you want to delete the role '{{roleName}}'?",
   "realmRules": "Realm",
   "globalRules": "Global",
   "recipients": "Recipients",
@@ -328,19 +414,24 @@
     "GROOVY": "Groovy",
     "JAVASCRIPT": "JavaScript"
   },
+  "group": "Group",
+  "newGroup": "New group",
   "gatewayConnection": "Manager interconnect",
-  "gatewayHeaderItem": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
+    "connectionDetails": "Connection details",
+    "dataSharing": "Data sharing",
+    "assetSyncRules": "Asset synchronization",
     "limit_sharing_is_custom_error": "An advanced data limiting configuration is set. To modify click the JSON button. Clear it to use the fields below.",
     "limit_sharing_attribute": "Limit data sharing by asset type attributes",
     "limit_sharing_attribute_selected": "attributes selected",
     "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
-    "limit_sharing_rate_suffix": "minutes interval"
+    "limit_sharing_rate_suffix": "minutes interval",
+    "assetSyncRulesEnable": "Customize asset synchronization",
+    "assetSyncRulesInput": "Synchronization config"
   },
-  "gatewayTunnel": "Gateway tunnel",
+  "gatewayTunnel": "Gateway tunnels",
   "gatewayTunnels": {
-    "": "Gateway tunnels",
     "settings": "Gateway settings",
     "start": "Start",
     "open": "Open",
@@ -358,12 +449,11 @@
     "createNew": "Add new Gateway tunnel",
     "selectAsset": "Select gateway asset",
     "closeSuccessful": "Closed tunnel successfully",
-    "closesAt": "Closes at"
+    "closesAt": "Closes at",
+    "offline": "Offline"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
-  "connectionDetails": "CONNECTION DETAILS",
-  "dataSharing": "DATA SHARING",
   "secured": "Secured",
   "clientSecret": "Client secret",
   "clientId": "Client ID",
@@ -411,14 +501,14 @@
   "password-policy-not-username": "The password cannot be the username",
   "password-policy-not-email": "The password cannot be the email address",
   "details": "Details",
-  "permissions":"Permissions",
-  "linkedAssets":"Linked assets",
-  "realm_role_plural":"Realm roles",
-  "manager_role_plural":"Manager roles",
+  "permissions": "Permissions",
+  "linkedAssets": "Linked assets",
+  "realm_role_plural": "Realm roles",
+  "manager_role_plural": "Manager roles",
   "restrictAccess": "Restrict access",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Restricted access to",
-  "fullAccessLabel":"Admin: full access; manage users and roles",
+  "fullAccessLabel": "Admin: full access; manage users and roles",
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Change attribute",
@@ -449,6 +539,8 @@
     "cubed": "³",
     "peak": "p",
     "mega": "M",
+    "giga": "G",
+    "tera": "T",
     "kilo": "k",
     "centi": "c",
     "hecto": "h",
@@ -499,6 +591,7 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
+    "ppm": "ppm",
     "var": "var",
     "meta": {},
     "attribute": {}
@@ -543,31 +636,112 @@
       "description": "Protocol for connecting to a KNX"
     }
   },
-  "validityType":"Schedule type",
-  "validityAlways":"Always active",
-  "validityPeriod":"Plan an occurrence",
-  "validityRecurrence":"Plan a repeating occurrence",
+  "validityType": "Schedule type",
+  "validityAlways": "Always active",
+  "planPeriod": "Plan an occurrence",
+  "planRecurrence": "Plan a repeating occurrence",
   "activeFromTo": "Active from {{start}} to {{end}}",
-  "fromTo":"From {{start}} to {{end}}",
-  "fromToDays":"from {{start}} to {{days}} days later {{end}}",
-  "forDays":"for {{days}} days",
+  "fromTo": "from {{start}} to {{end}}",
+  "fromToDays": "from {{start}} to {{end}}",
+  "fromToDays_one": "from {{start}} to 1 day later at {{end}}",
+  "fromToDays_other": "from {{start}} to {{days}} days later at {{end}}",
+  "forDays": "for 1 day",
+  "forDays_other": "for {{days}} days",
+  "scheduleActivity": "Schedule Activity",
   "scheduleRuleActivity": "Schedule Rule Activity",
+  "scheduleSimulatorActivity": "Simulator Replay Schedule",
+  "defaultSimulatorSchedule": "Replay today at {{time}}",
+  "schedule": {
+    "count_one": "occurrence",
+    "count_other": "occurrences",
+    "delete": "Delete schedule",
+    "_ends": "Ends",
+    "ends": {
+      "until": "On",
+      "count": "After"
+    },
+    "repeat": "Repeat every",
+    "repeatOn": "Repeat on",
+    "save": "Save schedule",
+    "type": "Schedule type"
+  },
+  "rrule": {
+    "and": "and",
+    "at": "at",
+    "day": "day",
+    "days": "days",
+    "every": "every",
+    "for": "for",
+    "hour": "hour",
+    "hours": "hours",
+    "in": "in",
+    "last": "last",
+    "minute": "minute",
+    "minutes": "minutes",
+    "month": "month",
+    "months": "months",
+    "nd": "nd",
+    "on": "on",
+    "on the": "on the",
+    "or": "or",
+    "rd": "rd",
+    "st": "st",
+    "th": "th",
+    "the": "the",
+    "time": "time",
+    "times": "times",
+    "until": "until",
+    "week": "week",
+    "weekday": "weekday",
+    "weekdays": "weekdays",
+    "weeks": "weeks",
+    "year": "year",
+    "years": "years",
+    "frequency": {
+      "YEARLY_one": "Year",
+      "YEARLY_other": "Years",
+      "MONTHLY_one": "Month",
+      "MONTHLY_other": "Months",
+      "WEEKLY_one": "Week",
+      "WEEKLY_other": "Weeks",
+      "DAILY_one": "Day",
+      "DAILY_other": "Days",
+      "HOURLY_one": "Hour",
+      "HOURLY_other": "Hours",
+      "MINUTELY_one": "Minute",
+      "MINUTELY_other": "Minutes",
+      "SECONDLY_one": "Second",
+      "SECONDLY_other": "Seconds"
+    },
+    "bymonth": "Months",
+    "byweekno": "Weeks",
+    "byyearday": "Days of year",
+    "bymonthday": "Days of month",
+    "byweekday": "Weekdays",
+    "byhour": "Hours",
+    "byminute": "Minutes",
+    "bysecond": "Seconds"
+  },
   "allDay": "All day",
   "apply": "apply",
   "to": "to",
   "from": "from",
   "never": "Never",
-  "repetitionEnds": "Repetition ends",
-  "repeatOccurrenceEvery": "Repeat occurrence every",
+  "repeatSchedule": "Repeat schedule",
   "daysOfTheWeek": "days of the week",
   "dismiss": "dismiss",
   "createAssetFailed": "Failed to create asset",
   "moveAssetFailed": "Failed to move asset",
+  "loadMore": "Load more",
   "logCategory": {},
   "readPermissions": "Read permissions",
   "writePermissions": "Write permissions",
   "valueType": "Value type",
   "dataExport": "Data export",
+  "exportFormat": "Export format",
+  "exportFormatCSV": "CSV",
+  "exportFormatCSVCrosstab": "CSV crosstab",
+  "exportFormatCSVCrosstabMinute": "CSV crosstab (1 min interval)",
   "dataSelection": "Data selection",
   "exportFrom": "Export from",
   "assetName": "Asset name",
@@ -596,9 +770,10 @@
     "keyAlreadyExists": "Key already exists"
   },
   "autoProvisioning": "Auto provisioning",
+  "provisioningConfig": "Provisioning configuration",
   "provisioningConfigs": "Provisioning configurations",
   "loadFailedProvisioningConfigs": "Failed to load provisioning configurations",
-  "deleteProvisioningConfigConfirm":"Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
+  "deleteProvisioningConfigConfirm": "Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
   "assetTemplate": "Asset template",
   "createAsRestrictedUser": "Create restricted user",
   "ignoreExpiryDate": "Ignore expiry date",
@@ -616,17 +791,22 @@
   "search": "Search",
   "noEmailSet": "Create user failed, no email set.",
   "noUsernameSet": "Create user failed, no username set",
+  "noGatewayUsername": "You cannot start your username or email with 'gateway-'",
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
   "saveUserSucceeded": "Saved user successfully!",
   "savePasswordFailed": "Failed to set the password.",
   "userAlreadyExists": "Error occurred! This user already exists.",
+  "realmAlreadyExists": "Realm name already exists",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",
   "invalidEmail": "Invalid email address",
   "yes": "Yes",
   "no": "No",
+  "tag": "Tag",
   "linked": "Linked",
   "filter": {
+    "close": "Close filter",
+    "open": "Open filter",
     "filter": "Filter",
     "clear": "CLEAR",
     "action": "FILTER",
@@ -639,6 +819,7 @@
   },
   "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
   "realmDeleteFailed": "Failed to delete realm",
+  "addRule": "Add rule",
   "rulesetStatus": {
     "DEPLOYED": "Successfully deployed",
     "NOSTATUS": "Disabled",
@@ -658,9 +839,12 @@
   "layout": "Layout",
   "display": "Display",
   "screen": "Screen",
-  "uploadFile" : "Upload file",
+  "uploadFile": "Upload file",
+  "fileSelected": "File selected",
+  "fileSaved": "File saved",
   "thresholds": "Thresholds",
   "threshold": "Threshold",
+  "addInsights": "Add dashboard",
   "noDashboardSelected": "Please select a dashboard on the left",
   "noDashboardSelected-mobile": "Please select a dashboard in the top left menu",
   "noDashboardFound": "No dashboard could be found.",
@@ -677,7 +861,9 @@
     "markerCoordinates": "Marker Coordinates",
     "imageSettings": "Image Settings",
     "dataManagement": "Data Options",
+    "refresh": "Refresh",
     "defaultRefreshInterval": "Default refresh interval",
+    "refreshInterval": "Refresh interval",
     "presets.wrap_to_single_column": "Wrap to single column",
     "presets.keep_layout": "Keep layout",
     "presets.block_device": "Block this device",
@@ -692,7 +878,7 @@
     "access.public": "Public",
     "access.shared": "Realm Users",
     "access.private": "Only me",
-    "interval.off": "Off",
+    "interval.off": "Auto-refresh off",
     "interval.one_min": "1 min",
     "interval.five_min": "5 min",
     "interval.quarter": "15 min",
@@ -700,8 +886,7 @@
     "saveSuccessful": "Saved dashboard successfully!",
     "initialName": "New Dashboard",
     "openInNewTab": "Open in new tab",
-    "whoCanView": "Who can <b>view</b> the dashboard?",
-    "whoCanEdit": "Who can <b>edit</b> the dashboard?",
+    "whoCanView": "Who can access the dashboard?",
     "numberOfColumns": "Number of columns",
     "numberOfRows": "Number of rows",
     "maxScreenWidth": "Max screen width",
@@ -709,30 +894,40 @@
     "setToMobilePreset": "Set Mobile Preset",
     "zoomPercent": "Zoom %",
     "presetSize": "Preview size",
+    "previewScreenSizes": "Preview screen sizes",
     "renderingGrid": "Rendering grid...",
     "deviceNotSupported": "This dashboard does not support your device.",
     "deletePermanentWarning": "This will delete {{dashboard}} permanently.",
     "deleteWidgetWarning": "This will remove the widget from your board, and be permanently deleted after saving.",
     "widgetTooSmall": "Widget is too small.",
+    "toggleStackView": "Use stacked chart",
     "allowTimerangeSelect": "Allow time range selection",
     "toggleAxis": "Toggle axis",
     "showLegend": "Show legend",
     "showGeoJson": "Show GeoJSON overlay",
     "showValueAs": "Show value as",
+    "showZoomBar": "Show zoom bar",
     "customLabel": "Custom label",
     "customTimeSpan": "Custom",
     "userCanEdit": "Allow user input",
     "showHelperText": "Show time of last update",
     "tableSettings": "Table settings",
     "deleteWidget": "Delete widget",
-    "myDashboards": "My dashboards",
-    "createdByOthers": "Created by others",
     "showUnits": "Show units",
     "showLabels": "Show labels",
     "zoom": "Zoom",
     "center": "Center",
     "imageUrl": "Image URL",
-    "noImageSelected": "No image selected"
+    "noImageSelected": "No image selected",
+    "noData": "No data",
+    "selectMethod": "Select aggregation method",
+    "faint": "Faint",
+    "smooth": "Smooth",
+    "stepped": "Stepped",
+    "fill": "Fill",
+    "extendData": "Extend latest datapoint",
+    "lineColor": "Line color",
+    "barColor": "Bar color"
   },
   "south": "South",
   "east": "East",
@@ -741,14 +936,15 @@
   "default": "Default",
   "appearance": "Appearance",
   "configuration": {
-    "" : "Appearance",
+    "": "Appearance",
     "main": "Main",
     "realmStyling": "Realm styling",
     "managerConfigNotFound": "Manager configuration file could not be found.",
     "mapSettingsNotFound": "Map configuration file could not be found.",
     "tryAgain": "Try again",
-    "addRealmCustomization" : "Add Realm Style",
+    "addRealmCustomization": "Add Realm Style",
     "realmTitle": "Manager app title",
+    "realmMapSettingsTitle": "Realm Map Settings",
     "defaultLanguage": "Default language",
     "images": "Images",
     "logo": "Logo",
@@ -763,16 +959,16 @@
     "--or-app-color2": "Background: colour behind surface panels",
     "--or-app-color3": "Text: page and panel titles",
     "--or-app-color8": "Text on primary: text on items with the primary colour",
-    "navigation" : "Navigation",
+    "navigation": "Navigation",
     "navigationDescription": "Primary navigation is shown in the page header, secondary items can be found in the menu on the right.",
-    "primaryNavigation" : "Primary menu",
-    "secondaryNavigation" : "Secondary menu",
+    "primaryNavigation": "Primary menu",
+    "secondaryNavigation": "Secondary menu",
     "notificationLanguages": "Notification languages",
     "notificationLanguagesDesc": "Languages set here can be used in notifications to be sent to users with locale attribute set.",
     "notificationLanguagesLabel": "Search other languages...",
-    "reloadPage" : "To see the changes that have been made, reload the page",
+    "reloadPage": "To see the changes that have been made, reload the page",
     "deleteRealmCustomization": "Delete Style",
-    "deleteRealmCustomizationConfirm":"Are you sure you want to delete this Realm style?",
+    "deleteRealmCustomizationConfirm": "Are you sure you want to delete this Realm style?",
     "mapBounds": "Boundaries",
     "mapBoundsDescription": "Override the default bounds of the map",
     "mapZoom": "Zoom",
@@ -783,10 +979,32 @@
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",
-    "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
-    "addMapCustomization" : "Add map settings"
+    "deleteMapCustomizationConfirm": "Are you sure you want to delete this Map customization?",
+    "addMapCustomization": "Add map settings",
+    "global": {
+      "reset": "Reset",
+      "import": "Import",
+      "mapLayers": "Map Layers",
+      "mapStyleJsonUrl": "Style JSON URL",
+      "mapStyleJsonUrlDescription": "Override mapsettings with external JSON map styles.",
+      "mapStyleJsonUrlNote": "All other mapsettings will be ignored.",
+      "mapStyleJsonUrlPlaceholder": "Style JSON URL",
+      "mapImportStyle": "Optionally import the style URL to edit the map layers through the JSON editor.",
+      "mapImportStyleNote": "Reset to the default map to edit the default map layers.",
+      "mapTileServer": "Tile Server",
+      "mapTileServerDescription": "Configure a tile server.",
+      "mapTileServerNote": "The map through a tile server gets priority over custom map tiles.",
+      "mapTileServerPlaceholder": "Tile Server URL",
+      "mapTiles": "Custom Map Tiles",
+      "uploadMapTiles": "Upload custom map tiles.",
+      "uploadMapTilesNote": "The maximum allowed file size is {{limit}}.",
+      "uploadingMapTiles": "Uploading map tiles... This may take a moment.",
+      "uploadMapTilesError": "Custom map tiles file exceeds size limit.",
+      "uploadingMapTilesError": "Failed to upload map tiles"
+    }
   },
   "mqttSessions": "MQTT sessions",
+  "noMqttSessions": "This user has no active MQTT sessions",
   "address": "Address",
   "since": "Since",
   "roles": "Roles",
@@ -804,12 +1022,20 @@
   "AVG": "Average (mean)",
   "MIN": "Minimum",
   "MAX": "Maximum",
+  "DIFFERENCE": "Difference",
+  "COUNT": "Count",
+  "MEDIAN": "Median",
+  "MODE": "Mode",
+  "SUM": "Sum",
+  "mapPage": {
+    "legendTitle": "Legend"
+  },
   "alarm": {
     "": "Alarm",
     "alarm_plural": "Alarms",
     "add": "Add Alarm",
     "inactive_plural": "Inactive alarms",
-    "active_plural" : "Active alarms",
+    "active_plural": "Active alarms",
     "title": "Title",
     "content": "Description",
     "severity": "Severity",
@@ -853,5 +1079,176 @@
     "source": "Source"
   },
   "expandAll": "Expand all",
-  "collapseAll": "Collapse all"
+  "collapseAll": "Collapse all",
+  "services": "Services",
+  "service": {
+    "noServiceSelected": "Please select a service on the left",
+    "servicesLoadError": "Something went wrong while retrieving services",
+    "realmServicesLoadError": "Something went wrong while retrieving realm services",
+    "globalServicesLoadError": "Something went wrong while retrieving global services",
+    "noServices": "No services found, check the documentation on how to add services",
+    "iframeLoadError": "The selected service could not be loaded"
+  },
+  "org": {
+    "openremote": {
+      "model": {
+        "query": {
+          "filter": {
+            "ValueEmptyPredicate": {
+              "label": "Empty value",
+              "description": "Predicate that matches any empty/null value; unless negated."
+            },
+            "RadialGeofencePredicate": {
+              "label": "Radial geofence",
+              "description": "Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified latitude and longitude unless negated."
+            },
+            "ValueAnyPredicate": {
+              "label": "Any value",
+              "description": "Predicate that matches any value including null."
+            },
+            "CalendarEventPredicate": {
+              "label": "Calendar",
+              "description": "Predicate for calendar event values; will match based on whether the calendar event is active for the specified time."
+            },
+            "RectangularGeofencePredicate": {
+              "label": "Rectangular geofence",
+              "description": "Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated."
+            },
+            "ArrayPredicate": {
+              "description": "Predicate for array values; will match based on configured options."
+            },
+            "StringPredicate": {
+              "description": "Predicate for string values; will match based on configured options."
+            },
+            "NumberPredicate": {
+              "description": "Predicate for number values; will match based on configured options."
+            },
+            "DateTimePredicate": {
+              "description": "Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss±HH:mm), offset and time are optional, if no offset information is supplied then UTC is assumed."
+            },
+            "BooleanPredicate": {
+              "description": "Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value that is not a boolean will not match"
+            },
+            "GeoJSONGeofencePredicate": {
+              "label": "GeoJSON Geofence",
+              "description": "Predicate for GeoJSON point values; will return true if the point is within the specified GeoJSON geometry (Polygon, MultiPolygon, or Feature/FeatureCollection containing such geometries) unless negated."
+            }
+          }
+        },
+        "simulator": {
+          "SimulatorReplayDatapoint": {
+            "label": "Data point"
+          }
+        },
+        "value": {
+          "MathExpressionValueFilter": {
+            "label": "Mathematical Expression"
+          },
+          "SubStringValueFilter": {
+            "label": "Substring"
+          },
+          "JsonPathFilter": {
+            "label": "JSON Path"
+          },
+          "RegexValueFilter": {
+            "label": "Regex"
+          },
+          "ValueConstraint": {
+            "description": "The constraints must be a JSON compatible list of objects.",
+            "Size": {
+              "description": "The attribute value must be between the specified boundaries based on the `min` and `max` properties. Supported types are JSON compatible strings, arrays and objects. Null values are considered valid."
+            },
+            "Min": {
+              "description": "The attribute value must be a number higher or equal to the specified value on the `min` property. Null values are considered valid."
+            },
+            "Max": {
+              "description": "The attribute value must be a number lower or equal to the specified value on the `max` property. Null values are considered valid."
+            },
+            "Pattern": {
+              "description": "The attribute value must match the regular expression pattern described in the `regexp` property. The regular expression follows the Java regular expression conventions. Flags can be specified using the `flags` property with values: CASE_INSENSITIVE, MULTILINE, DOTALL, UNIX_LINES, UNICODE_CASE, CANON_EQ and COMMENTS. Null values are considered valid."
+            },
+            "AllowedValues": {
+              "description": "The attribute value must match any of the specified values in the `allowedValues` property. The associated input in the UI will change to a select input with the options specified in the `allowedValues` property. The `allowedValueNames` property accepts a list of names that replace the labels in the select input, if the `allowedValueNames` list matches the length of the `allowedValues` list otherwise it falls back to the `allowedValues` as labels. Null values are considered valid. If `allowedValues` is not specified or empty the constraint only accepts null values."
+            },
+            "Past": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past. Null values are considered valid."
+            },
+            "PastOrPresent": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the past or present. Null values are considered valid."
+            },
+            "Future": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future. Null values are considered valid."
+            },
+            "FutureOrPresent": {
+              "description": "The attribute value must be a java time object, java date object, a string in ISO8601 format or a number representing epoch milliseconds; the value must represent a time in the future or present. Null values are considered valid."
+            },
+            "NotEmpty": {
+              "description": "The attribute value must not be null nor empty. Supported types are JSON compatible strings, arrays and objects which contain at least 1 character, item or property."
+            },
+            "NotBlank": {
+              "description": "The attribute value must not be null and must contain at least 1 non-whitespace character. Accepts strings."
+            },
+            "NotNull": {
+              "description": "The attribute value must not be null. Accepts any type."
+            }
+          }
+        },
+        "asset": {
+          "agent": {
+            "AgentLink": {
+              "valueFilters": {
+                "description": "Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order"
+              },
+              "valueConverter": {
+                "description": "Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute"
+              },
+              "writeValueConverter": {
+                "description": "Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion"
+              },
+              "writeValue": {
+                "description": "String to be used for attribute writes and can contain dynamic placeholders to allow dynamic value and/or time injection with formatting (see documentation for details) into the string or alternatively write the string through to the protocol as is (static string)"
+              },
+              "messageMatchPredicate": {
+                "description": "The predicate to apply to incoming messages to determine if the message is intended for the linked attribute; the value used in the predicate can be filtered using the message match filters. This must be defined to enable attributes to be updated by the linked agent."
+              },
+              "messageMatchFilters": {
+                "description": "ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate"
+              },
+              "updateOnWrite": {
+                "description": "Don't expect a response from the protocol just update the attribute immediately on write"
+              },
+              "writeValueFilters": {
+                "description": "Similar to valueFilter but will be applied to outgoing values allowing for inverse filtering."
+              }
+            }
+          }
+        }
+      },
+      "agent": {
+        "protocol": {
+          "simulator": {
+            "SimulatorAgentLink": {
+              "schedule": {
+                "label": "Schedule",
+                "description": "Overwrites the possible dataset length and when it is replayed. The dataset can be scheduled to stop based on the UNTIL rule part or set to recur by a certain amount using the COUNT rule part. The schedule also allows adjusting the frequency at which the dataset is replayed and at what times following the RFC 5545 RRULE format. If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the default 24 hours or the recurrence rule the datapoints will be ignored."
+              },
+              "replayData": {
+                "description": "Used to store a dataset of values that should be replayed (i.e. written to the linked attribute) in a continuous loop based on a schedule (by default replays every 24h). Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored."
+              },
+              "timezone": {
+                "description": "The timezone the Simulator should follow to replay the dataset."
+              }
+            },
+            "SimulatorProtocol": {
+              "Schedule": {
+                "recurrence": {
+                  "description": "The recurrence schedule follows the RFC 5545 RRULE format."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

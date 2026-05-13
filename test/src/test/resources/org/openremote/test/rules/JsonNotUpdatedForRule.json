@@ -1,0 +1,55 @@
+{
+    "rules": [
+        {
+            "recurrence": { "mins": 0 },
+            "when": {
+                "operator": "OR",
+                "groups": [
+                    {
+                        "operator": "AND",
+                        "items": [
+                            {
+                                "assets": {
+                                    "types": ["LightAsset"],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "onOff"
+                                                },
+                                                "timestampOlderThan": "PT3M"
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 50
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "then": [
+                {
+                    "action": "write-attribute",
+                    "target": { "matchedAssets": { "types": ["LightAsset"] } },
+                    "value": "Matched",
+                    "attributeName": "notes"
+                }
+            ],
+            "name": "My Light: OnOff not updated for"
+        }
+    ]
+}

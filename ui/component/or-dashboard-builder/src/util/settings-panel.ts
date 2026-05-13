@@ -11,7 +11,6 @@ const styling = css`
   }
   
   #panel-wrapper {
-    border-top: 1px solid #E0E0E0;
     border-bottom: 1px solid #E0E0E0;
   }
 
@@ -45,8 +44,8 @@ const styling = css`
 @customElement("settings-panel")
 export class SettingsPanel extends LitElement {
 
-    @property()
-    protected expanded: boolean = false;
+    @property({type: Boolean})
+    public expanded = false;
 
     @property()
     protected displayName?: string;

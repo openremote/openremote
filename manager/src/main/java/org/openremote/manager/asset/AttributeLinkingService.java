@@ -80,6 +80,11 @@ public class AttributeLinkingService implements ContainerService {
             return;
         }
 
+        if (gatewayService.getLocallyRegisteredGatewayId(event.getId(), null) != null) {
+            // This is an event for a gateway descendant asset we don't follow attribute links of these
+            return;
+        }
+
         event.getMetaValue(MetaItemType.ATTRIBUTE_LINKS)
             .ifPresent(attributeLinks ->
                 Arrays.stream(attributeLinks).forEach(attributeLink ->

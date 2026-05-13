@@ -1,9 +1,18 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
-import i18next from "i18next";
-import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
+import {
+    InputType,
+    OrMwcInput,
+    OrInputChangedEvent,
+    getValueHolderInputTemplateProvider,
+    ValueInputProviderOptions,
+    OrInputChangedEventDetail,
+    ValueInputProvider,
+    ValueInputProviderGenerator
+} from "@openremote/or-mwc-components/or-mwc-input";
+import {i18next} from "@openremote/or-translate"
+import {Asset, Attribute, NameValueHolder, AssetModelUtil, WellknownMetaItems} from "@openremote/model";
 import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
@@ -204,7 +213,15 @@ export class OrEditAssetPanel extends LitElement {
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
         if (changedProperties.has("asset")) {
-            this.changedAttributes = [];
+            const oldAsset = changedProperties.get("asset") as Asset;
+            if (this.asset.attributes && oldAsset?.attributes && this.asset.id === oldAsset.id) {
+                // Handles external attribute changes post saving phase.
+                this.changedAttributes = Object.values(oldAsset.attributes)
+                  .filter(({ name, timestamp: oldTimestamp }) => oldTimestamp !== this.asset.attributes?.[name!].timestamp)
+                  .map(({ name }) => name!);
+            } else {
+                this.changedAttributes = [];
+            }
         }
         return super.shouldUpdate(changedProperties);
     }
@@ -323,6 +340,7 @@ export class OrEditAssetPanel extends LitElement {
         const deleteAttribute = () => {
             delete this.asset.attributes![attribute.name!];
             this._onModified();
+            this.requestUpdate();
         };
 
         const descriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, assetType);
@@ -344,6 +362,9 @@ export class OrEditAssetPanel extends LitElement {
             };
         };
 
+        // Booleans formatted asMomentary should be read-only in modify mode
+        const formattedAsMomentary = attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.MOMENTARY) || (attribute.meta.hasOwnProperty(WellknownMetaItems.FORMAT) && attribute.meta[WellknownMetaItems.FORMAT]?.asMomentary));
+
         const template = html`
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
@@ -351,11 +372,11 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input ${ref(attributeInputRef)} 
                                         .comfortable="${true}" .assetType="${assetType}" .label=${null} 
-                                        .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
+                                        .readonly="${formattedAsMomentary}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
                                         disableWrite disableSubscribe disableButton compact 
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${deleteAttribute}">` : ``}</td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
@@ -381,7 +402,6 @@ export class OrEditAssetPanel extends LitElement {
 
     protected _onModified() {
         this.dispatchEvent(new OrEditAssetModifiedEvent(this.validate()));
-        this.requestUpdate();
     }
 
     public validate(): ValidatorResult[] {
@@ -450,6 +470,7 @@ export class OrEditAssetPanel extends LitElement {
         const removeMetaItem = () => {
             delete attribute.meta![metaItem.name!];
             this._onModified();
+            this.requestUpdate();
         };
 
         const template = html`
@@ -509,13 +530,13 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        if (attr) {
+                        if (!isDisabled(attr)) {
                             this.asset.attributes![attr.name!] = attr;
                             this._onModified();
+                            this.requestUpdate();
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"
-                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
@@ -583,6 +604,7 @@ export class OrEditAssetPanel extends LitElement {
                                 if (descriptor) {
                                     attribute.meta![descriptor.name!] = (descriptor.type === 'boolean') ? true : null;
                                     this._onModified();
+                                    this.requestUpdate();
                                 }
                             });
                         }
@@ -594,7 +616,6 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _getParentTemplate() {
-        const viewer = this;
         let dialog: OrMwcDialog;
 
         const setParent = () => {

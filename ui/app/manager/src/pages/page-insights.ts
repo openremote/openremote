@@ -1,7 +1,5 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement, property, query, state } from "lit/decorators.js";
-import "@openremote/or-data-viewer";
-import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
 import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
@@ -13,7 +11,7 @@ import {getInsightsRoute} from "../routes";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageInsightsConfig {
-    dataViewer?: DataViewerConfig
+
 }
 
 export function pageInsightsProvider(store: Store<AppStateKeyed>, config?: PageInsightsConfig): PageProvider<AppStateKeyed> {
@@ -53,9 +51,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
     @property()
     public config?: PageInsightsConfig;
 
-    @query("#data-viewer")
-    protected _dataviewer!: OrDataViewer;
-
     @property()
     protected _editMode: boolean = true;
 
@@ -86,7 +81,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
     protected getRealmState = createSelector(
         [this._realmSelector],
         async () => {
-            if (this._dataviewer) this._dataviewer.refresh();
             this._updateRoute(true);
             this.requestUpdate();
         }
@@ -127,9 +121,13 @@ export class PageInsights extends Page<AppStateKeyed>  {
     }
 
     protected _updateRoute(silent: boolean = true) {
-        router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
-            callHooks: !silent,
-            callHandler: !silent
-        });
+        // This if condition prevents updating the URL to /insights/false when no edit mode or dashboard is selected.
+        // This avoids polluting the browser history and ensures users don't get redirected to Insights on refresh.
+        if (this._editMode || this._dashboardId) {
+            router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
+                callHooks: !silent,
+                callHandler: !silent
+            });
+        }
     }
 }

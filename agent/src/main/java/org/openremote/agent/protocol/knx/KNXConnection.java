@@ -106,7 +106,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                     groupAddressConsumerMap.forEach((groupAddress, datapointConsumerList) -> {
                         if (!datapointConsumerList.isEmpty()) {
                             // Take first data point for the group address and request the value
-                            Pair<StateDP, Consumer<Object>> datapointConsumer = datapointConsumerList.get(0);
+                            Pair<StateDP, Consumer<Object>> datapointConsumer = datapointConsumerList.getFirst();
                             getGroupAddressValue(datapointConsumer.key.getMainAddress(), datapointConsumer.key.getPriority());
                         }
                     });

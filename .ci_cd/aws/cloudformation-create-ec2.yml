@@ -29,7 +29,7 @@ Parameters:
   Host:
     Description: FQDN for host
     Type: String
-    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    # AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     Default: ""
   VpcId:
     Description: VPC ID in which to create instance
@@ -70,11 +70,18 @@ Parameters:
   DNSHostedZoneName:
     Description: Name of hosted domain zone to insert host A record into
     Type: String
-    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    # AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
     Default: ""
   DNSHostedZoneRoleArn:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
+    Type: String
+    Default: ""
+  DLMExecutionRoleArn:
+    Description: Role ARN that can be assumed for executing DLM operations
+    Type: String
+  SnapshotId:
+    Description: Snapshot ID to create EBS data volume based on an existing snapshot
     Type: String
     Default: ""
   ElasticIP:
@@ -91,10 +98,14 @@ Parameters:
       - true
       - false
     Default: false
-  DiskSize:
-    Description: Root EBS volume size GB
+  RootDiskSize:
+    Description: Size of the EBS root volume (in GB)
     Type: Number
-    Default: 30
+    Default: 16
+  DataDiskSize:
+    Description: Size of the EBS data volume (in GB)
+    Type: Number
+    Default: 16
   HealthChecks:
     Description: Create health checks
     Type: String
@@ -128,6 +139,7 @@ Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
   MetricsEnabled: !Equals [!Ref Metrics, "true"]
   CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
+  SnapshotProvided: !Not [!Equals [!Ref SnapshotId, ""]]
   UseAMIID: !Equals [!Ref ImageId, ""]
 
 Resources:
@@ -216,9 +228,9 @@ Resources:
           default:
             - setupCfnHup
             - create_swapfile
+            - docker_setup
             - cloudwatch_config
             - restart_amazon-cloudwatch-agent
-            - docker_setup
             - cron_setup
             - env_vars
             - dns_updater
@@ -269,7 +281,8 @@ Resources:
                             "used_percent"
                           ],
                           "resources": [
-                            "/"
+                            "/",
+                            "/var/lib/docker/volumes"
                           ],
                           "metrics_collection_interval": 900
                         }
@@ -330,7 +343,7 @@ Resources:
                               },
                               {
                                 "source_labels": [ "job", "source" ],
-                                "label_matcher": "manager;(RulesEngine|AgentService|DefaultMQTTHandler|AssetResource|WebsocketClient)",
+                                "label_matcher": "manager;.*",
                                 "dimensions": [
                                   [ "InstanceName", "source" ]
                                 ],
@@ -447,7 +460,7 @@ Resources:
         daily_cleanup:
           files:
             "/usr/local/bin/daily-cleanup":
-              content: !Sub |
+              content: |
                 #!/bin/bash
                 journalctl --vacuum-time=7d
             "/etc/cron.d/cleanup":
@@ -766,7 +779,7 @@ Resources:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
-
+  
         cron_setup:
           packages:
             yum:
@@ -823,12 +836,12 @@ Resources:
       ImageId: !If [UseAMIID, !Ref ImageAMI, !Ref ImageId]
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
-        - Ref: SSHSecurityGroupId
-        - Ref: StandardSecurityGroup
+        - !Ref SSHSecurityGroupId
+        - !Ref StandardSecurityGroup
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref DiskSize
+            VolumeSize: !Ref RootDiskSize
             VolumeType: gp3
             DeleteOnTermination: true
       Ipv6AddressCount: 1
@@ -865,6 +878,57 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
+
+  EBSDataVolume:
+    Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Size: !Ref DataDiskSize
+      VolumeType: gp3
+      SnapshotId: !If [SnapshotProvided, !Ref SnapshotId, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: Name
+          Value: !Sub ${Host}-data
+        - Key: Type
+          Value: !Sub ${Host}-or-data-not-in-use
+
+  # DLM Policy for automatic snapshot creation
+
+  DLMPolicy:
+    Type: AWS::DLM::LifecyclePolicy
+    DependsOn: EBSDataVolume
+    Properties:
+      ExecutionRoleArn: !Ref DLMExecutionRoleArn
+      Description: !Join 
+        - ''
+        - - 'Docker Volumes from instance '
+          - !Ref EC2Instance
+      State: ENABLED
+      PolicyDetails:
+        PolicyLanguage: STANDARD
+        PolicyType: EBS_SNAPSHOT_MANAGEMENT
+        TargetTags:
+          - Key: Type
+            Value: !Sub ${Host}-or-data-in-use
+        ResourceTypes: 
+          - VOLUME
+        Schedules:
+          - Name: Daily Backup
+            CopyTags: true
+            CreateRule:
+              CronExpression: 'cron(0 3 * * ? *)'
+            RetainRule:
+              Count: 7
+          - Name: Weekly Backup
+            CopyTags: true
+            CreateRule:
+              CronExpression: 'cron(0 3 ? * MON *)'
+            RetainRule:
+              Count: 4
+      Tags:
+        - Key: Name
+          Value: !Ref Host
 
   # Telemetry and Alarms
 
@@ -941,7 +1005,7 @@ Resources:
         - Name: InstanceId
           Value: !Ref EC2Instance
 
-  DiskUtilizationAlarm:
+  RootDiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: MetricsEnabled
     Properties:
@@ -961,6 +1025,29 @@ Resources:
           Value: !Ref EC2Instance
         - Name: path
           Value: /
+        - Name: fstype
+          Value: xfs
+
+  DataDiskUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent
+      MetricName: disk_used_percent
+      Statistic: Average
+      Period: 3600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: path
+          Value: /var/lib/docker/volumes
         - Name: fstype
           Value: xfs
 
@@ -1020,6 +1107,44 @@ Resources:
       EvaluationPeriods: 3
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+
+  AttributeEventAnomalyDetector:
+    Type: AWS::CloudWatch::AnomalyDetector
+    Condition: MetricsEnabled
+    Properties:
+      Namespace: CWAgent-Prometheus
+      MetricName: or_attributes_seconds_count
+      Stat: Average
+      Dimensions:
+        - Name: InstanceName
+          Value: !Ref Host
+
+  AttributeEventAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      AlarmDescription: Attribute event anomaly
+      ComparisonOperator: LessThanLowerOrGreaterThanUpperThreshold
+      EvaluationPeriods: 1
+      Metrics:
+        - Expression: ANOMALY_DETECTION_BAND(m1, 2)
+          Id: ad1
+        - Id: m1
+          MetricStat:
+            Metric:
+              MetricName: or_attributes_seconds_count
+              Namespace: CWAgent-Prometheus
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+            Period: 300
+            Stat: Average
+      ThresholdMetricId: ad1
+      TreatMissingData: breaching
       AlarmActions:
         - !Ref SnsTopic
       OKActions:

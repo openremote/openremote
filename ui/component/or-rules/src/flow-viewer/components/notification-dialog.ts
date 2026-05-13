@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import {customElement, property} from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("notification-dialog")
 export class NotificationDialog extends translate(i18next)(LitElement) {
@@ -30,8 +31,8 @@ export class NotificationDialog extends translate(i18next)(LitElement) {
         return html`
         <div class="message">${this.message}</div>
         <div class="container">
-            <or-mwc-input type="button" unElevated label="${this.buttonText}"
-                @click="${() => { this.dispatchEvent(new CustomEvent("closed")); }}">
+            <or-mwc-input type="${InputType.BUTTON}" unElevated label="${this.buttonText}"
+                @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent("closed")); }}">
             </or-mwc-input>
         </div>
         `;

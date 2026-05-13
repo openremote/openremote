@@ -3,6 +3,166 @@ import java.nio.file.Paths
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+apply plugin: 'java-base'
+apply plugin: 'test-report-aggregation'
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+subprojects {
+    if (project.path.startsWith(':ui')) return
+    pluginManager.withPlugin('java') {
+        apply plugin: 'jacoco'
+        jacoco { toolVersion = "0.8.14" }
+    }
+}
+
+tasks.register('npmTest') {
+    group = 'verification'
+    description = 'Runs all UI tests sequentially (component then app)'
+}
+
+tasks.register('test') {
+    group = 'verification'
+    description = 'Executes all backend and UI tests in specific order'
+    // When './gradlew test' is run, ensure the UI tests are also pulled into the task graph
+    dependsOn 'npmTest'
+}
+
+// Enforce order in which we run the backend- and frontend tests
+// Order: 1. Unit tests
+//     -> 2. Integration tests
+//     -> 3. UI component tests
+//     -> 4. UI app tests
+gradle.projectsEvaluated {
+    def unitTests = subprojects.findAll { it.path != ':test' }
+        .collect { it.tasks.matching { t -> t.name == 'test' } }
+
+    def integrationTests = subprojects.findAll { it.path == ':test' }
+        .collect { it.tasks.matching { t -> t.name == 'test' } }
+
+    def uiComponentTests = subprojects.findAll { it.path.startsWith(':ui:component') }
+        .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
+
+    def uiAppTests = subprojects.findAll { it.path.startsWith(':ui:app') }
+        .collect { it.tasks.matching { t -> t.name == 'npmTest' } }
+
+    tasks.named('npmTest').configure {
+        dependsOn(uiComponentTests, uiAppTests)
+    }
+
+    def rootTest = tasks.findByName('test') ?: tasks.register('test').get()
+    rootTest.configure {
+        dependsOn(unitTests, integrationTests, npmTest)
+    }
+
+    integrationTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests) }
+    }
+
+    uiComponentTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests, integrationTests) }
+    }
+
+    uiAppTests.forEach { group ->
+        group.configureEach { it.mustRunAfter(unitTests, integrationTests, uiComponentTests) }
+    }
+}
+
+dependencies {
+    subprojects.forEach { subproject ->
+        if (subproject.path.startsWith(':ui')) return
+        subproject.pluginManager.withPlugin('java') {
+            // Aggregate unit test results spread over different projects
+            if (subproject.path != ':test') {
+                testReportAggregation project(subproject.path)
+            }
+        }
+    }
+}
+
+reporting {
+    reports { // Task which generates an aggregated unit test report
+        unitTestReport(AggregateTestReport) {
+            testSuiteName = 'test'
+        }
+    }
+}
+
+tasks.named('unitTestReport').configure {
+    doLast {
+        def htmlIndex = new File(destinationDirectory.get().asFile, "index.html")
+        println "Aggregated Unit Test Results: file://${htmlIndex.absolutePath}"
+    }
+}
+
+def getBackendProjects = {
+    subprojects.findAll { !it.path.startsWith(':ui') && it.pluginManager.hasPlugin('java') }
+}
+
+def getActiveTestTasks = {
+    getBackendProjects().collectMany { it.tasks.withType(Test) }.findAll { it.name == 'test' }
+}
+
+tasks.register('checkCoverageDataExists') {
+    group = 'reporting'
+    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+    doLast {
+        def testTasks = getActiveTestTasks()
+        def allJacocoResultsExist = testTasks.every {
+            it.extensions.findByType(JacocoTaskExtension)?.destinationFile?.exists()
+        }
+        // Check if any of the configured execution data files exist on disk
+        if (!allJacocoResultsExist) {
+            println "Please run the following tasks to be able to generate a report."
+            println "Required tasks: ${testTasks.collect { it.path }.join(', ')}"
+            println "Run: gradle test -x npmTest checkCoverageDataExists"
+            throw new StopExecutionException()
+        }
+    }
+}
+
+// We replace the 'jacoco-report-aggregation' plugin with the following task to
+// ensure we get a combined coverage report for the unit- and integration tests
+tasks.register('combinedCoverageReport', JacocoReport) {
+    group = 'reporting'
+    description = 'Generates a unified coverage report for all Unit and Integration tests'
+    dependsOn('checkCoverageDataExists')
+    mustRunAfter(getBackendProjects().collect { "${it.path}:test" })
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    executionData.setFrom(project.provider {
+        getActiveTestTasks().collect {
+            it.extensions.findByType(JacocoTaskExtension)?.destinationFile
+        }.findAll { it != null && it.exists() }
+    })
+
+    sourceDirectories.setFrom(project.provider {
+        getBackendProjects().collectMany { it.sourceSets.main.allJava.srcDirs }
+    })
+
+    classDirectories.setFrom(project.provider {
+        def dirs = getBackendProjects().collectMany { it.sourceSets.main.output.classesDirs.files }
+        files(dirs).asFileTree.matching {
+            include 'org/openremote/**'
+        }
+    })
+
+    doLast {
+        def htmlIndex = new File(reports.html.outputLocation.get().asFile, "index.html")
+        println "Combined Code Coverage: file://${htmlIndex.absolutePath}"
+    }
+}
+
 // Configure version based on Git tags
 apply plugin: 'pl.allegro.tech.build.axion-release'
 scmVersion {
@@ -31,7 +191,7 @@ allprojects {
 // Each file must be explicitly added to .gitignore otherwise git commit will fail
 // When using encryption the the GFE_PASSWORD environment variable must be set or the build will fail
 // use ./gradlew encryptFiles to encrypt files
-apply plugin: 'com.cherryperry.gradle-file-encrypt'
+apply plugin: 'io.openremote.com.cherryperry.gradle-file-encrypt'
 gradleFileEncrypt {
     // files to encrypt
     plainFiles.from('deployment/manager/fcm.json')
@@ -75,8 +235,128 @@ tasks.register('checkFilesGitIgnoredNew', Exec) {
 def gitFile = Paths.get(projectDir.path, '.git').toFile()
 checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
-tasks.register('clean') {
-    doLast {
-        delete 'tmp'
+tasks.named('clean') {
+    delete 'tmp'
+}
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.ow2.asm:asm:9.5'
+        classpath 'org.ow2.asm:asm-tree:9.5'
+    }
+}
+
+subprojects {
+    // Apply only if the project has a 'test' task
+    tasks.withType(Test).configureEach { testTask ->
+        outputs.upToDateWhen { false } // Always invalidate the test cache
+        useJUnitPlatform()
+
+        systemProperty "junit.jupiter.execution.parallel.enabled", "true"
+        systemProperty "junit.jupiter.execution.parallel.mode.default", "concurrent"
+        systemProperty "junit.jupiter.execution.parallel.mode.classes.default", "concurrent"
+
+        testLogging {
+
+            // set options for log level LIFECYCLE
+            events = [
+                TestLogEvent.FAILED,
+                TestLogEvent.PASSED,
+                TestLogEvent.SKIPPED
+            ]
+            exceptionFormat = TestExceptionFormat.FULL
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
+
+            // set options for log level DEBUG and INFO
+            debug {
+                events = [
+                    TestLogEvent.STARTED,
+                    TestLogEvent.FAILED,
+                    TestLogEvent.PASSED,
+                    TestLogEvent.SKIPPED,
+                    TestLogEvent.STANDARD_OUT,
+                    TestLogEvent.STANDARD_ERROR
+                ]
+                exceptionFormat = TestExceptionFormat.FULL
+            }
+            info.events = debug.events
+            info.exceptionFormat = debug.exceptionFormat
+        }
+
+        addTestListener(new TestListener() {
+            @Override
+            void beforeSuite(TestDescriptor suite) {}
+
+            @Override
+            void afterSuite(TestDescriptor desc, TestResult result) {
+                if (!desc.parent) { // will match the outermost suite
+                    def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+                    def startItem = '|  ', endItem = '  |'
+                    def repeatLength = startItem.length() + output.length() + endItem.length()
+                    println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+                }
+            }
+
+            @Override
+            void beforeTest(TestDescriptor desc) {}
+
+            @Override
+            void afterTest(TestDescriptor desc, TestResult result) {
+                logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
+            }
+        })
+    }
+
+    afterEvaluate { proj ->
+        tasks.withType(Test).configureEach { testTask ->
+            workingDir = findProject(":openremote") != null ? project("").projectDir : rootProject.projectDir
+        }
+
+        if (proj.plugins.hasPlugin('java')) {
+            def entityAnnotation = 'Ljakarta/persistence/Entity;'
+
+            proj.tasks.register('checkJpaEntitiesEquality') {
+                group = 'verification'
+                description = 'Ensure all JPA entities implement equals() and hashCode()'
+                dependsOn proj.tasks.named('classes')
+
+                doLast {
+                    proj.sourceSets.main.output.classesDirs.each { dir ->
+                        if (!dir.exists()) return
+
+                        dir.eachFileRecurse { file ->
+                            if (file.name.endsWith('.class')) {
+                                def reader = new org.objectweb.asm.ClassReader(file.bytes)
+                                def classNode = new org.objectweb.asm.tree.ClassNode()
+                                reader.accept(classNode, 0)
+
+                                def isEntity = classNode.visibleAnnotations?.any {
+                                    it.desc == entityAnnotation
+                                }
+
+                                if (isEntity) {
+                                    def methodNames = classNode.methods*.name
+                                    def className = classNode.name.replace('/', '.')
+
+                                    def missing = []
+                                    if (!methodNames.contains('equals')) missing << 'equals()'
+                                    if (!methodNames.contains('hashCode')) missing << 'hashCode()'
+
+                                    if (!missing.isEmpty()) {
+                                        println "❌ Entity $className is missing: ${missing.join(', ')}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

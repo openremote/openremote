@@ -31,8 +31,6 @@ import static org.openremote.agent.protocol.http.HTTPAgent.VALUE_HTTP_METHOD;
 
 public abstract class AbstractHTTPServerAgent<T extends AbstractHTTPServerAgent<T, U, V>, U extends AbstractHTTPServerProtocol<U, T, V>, V extends AgentLink<?>> extends Agent<T, U, V> {
 
-    public static final AttributeDescriptor<String> DEPLOYMENT_PATH = new AttributeDescriptor<>("deploymentPath", ValueType.TEXT);
-
     public static final AttributeDescriptor<HTTPMethod[]> ALLOWED_HTTP_METHODS = new AttributeDescriptor<>("allowedHTTPMethods", VALUE_HTTP_METHOD.asArray());
     public static final AttributeDescriptor<String[]> ALLOWED_ORIGINS = new AttributeDescriptor<>("allowedOrigins", ValueType.TEXT.asArray());
     public static final AttributeDescriptor<Boolean> ROLE_BASED_SECURITY = new AttributeDescriptor<>("roleBasedSecurity", ValueType.BOOLEAN);
@@ -41,16 +39,6 @@ public abstract class AbstractHTTPServerAgent<T extends AbstractHTTPServerAgent<
 
     protected AbstractHTTPServerAgent(String name) {
         super(name);
-    }
-
-    public Optional<String> getDeploymentPath() {
-        return getAttributes().getValue(DEPLOYMENT_PATH);
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setDeploymentPath(String value) {
-        getAttributes().getOrCreate(DEPLOYMENT_PATH).setValue(value);
-        return (T)this;
     }
 
     public Optional<HTTPMethod[]> getAllowedHTTPMethods() {

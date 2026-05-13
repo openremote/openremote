@@ -1,5 +1,6 @@
 package org.openremote.test.model
 
+
 import com.fasterxml.jackson.databind.node.ObjectNode
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
@@ -8,6 +9,7 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
+import org.openremote.model.attribute.AttributeLink
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
@@ -34,6 +36,8 @@ import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.lang.Unroll
+import java.time.Instant
 
 import java.lang.reflect.Array
 import java.nio.file.Files
@@ -44,7 +48,7 @@ import java.time.temporal.ChronoUnit
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.util.MapAccess.getString
 import static org.openremote.model.Constants.*
 import static org.openremote.model.value.ValueType.BIG_NUMBER
 
@@ -53,6 +57,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     static AssetModelResource assetModelResource
+    @Shared
+    static AssetStorageService assetStorageService
 
     static String CUSTOM_ASSET_TYPE = "CustomAsset"
     static ValueDescriptor[] dynamicValueDescriptors = [new ValueDescriptor("dynamicValue", null, ValueConstraint.constraints(new ValueConstraint.AllowedValues("value1", "value2")), null, null, null)]
@@ -75,6 +81,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         container.getService(AssetModelService).initDynamicModel()
         ValueUtil.doInitialise()
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
+        assetStorageService = container.getService(AssetStorageService.class)
     }
 
     def "Check AttributeMap equality checking"() {
@@ -101,7 +108,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
         stopPseudoClock()
 
         and: "the asset resource"
@@ -121,7 +128,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "a constraint violation exception should be thrown"
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
         def report = ex.response.readEntity(ViolationReport)
         report.propertyViolations.size() == 1
         report.propertyViolations.get(0).path == "attributes[positiveInt].value"
@@ -240,7 +250,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "a constraint violation exception should be thrown"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the report is extracted"
         report = ex.response.readEntity(ViolationReport)
@@ -353,7 +366,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "a constraint violation exception should be thrown"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the report is extracted"
         report = ex.response.readEntity(ViolationReport)
@@ -388,6 +404,14 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         customAsset.getAttribute("attr1").get().type == ValueType.TIMESTAMP
         customAsset.getAttribute("attr2").get().type == ValueType.POSITIVE_INTEGER
         customAsset.getAttribute("attr2").get().value.orElse(0) == 3
+
+        when: "we make a change to the asset and merge it directly into the asset storage service (bypassing any cloning logic in AssetResource)"
+        customAsset.getAttribute("dynamic1").ifPresent {it.setValue("value2")}
+        customAsset = assetStorageService.merge(customAsset, false, null, null)
+
+        then: "it should succeed"
+        customAsset.getAttribute("dynamic1").flatMap {it.value}.orElse(null) == "value2"
+        customAsset.type == "CustomAsset"
     }
 
     def "Retrieving all asset model info"() {
@@ -483,7 +507,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     def "Serialize/Deserialize asset model"() {
         given: "An asset"
         def parentId = UniqueIdentifierGenerator.generateId()
-        def createdDate = new Date()
+        def createdDate = Instant.now()
         def asset = new LightAsset("Test light")
             .setId(UniqueIdentifierGenerator.generateId())
             .setRealm(MASTER_REALM)
@@ -510,7 +534,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         // Inject properties which are normally done by the backend on retrieval
         asset.path = [asset.id, parentId]
         asset.createdOn = createdDate
-        asset.getAttributes().values().forEach {it.setTimestamp(asset.createdOn.getTime())}
+        asset.getAttributes().values().forEach {it.setTimestamp(asset.createdOn.toEpochMilli())}
 
         expect: "the attributes to match the set values"
         asset.getTemperature().orElse(null) == 100I
@@ -527,7 +551,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetObjectNode.get("path").get(0).asText() == asset.id
         assetObjectNode.get("path").get(1).asText() == parentId
 
-        assetObjectNode.get("attributes").get("colourRGB").get("timestamp").asLong() == createdDate.getTime()
+        assetObjectNode.get("attributes").get("colourRGB").get("timestamp").asLong() == createdDate.toEpochMilli()
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).isObject()
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).get("id").asText() == "agent_id"
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == DefaultAgentLink.class.getSimpleName()
@@ -542,7 +566,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "it should match the original"
         asset.getName() == asset2.getName()
         asset2.getType() == asset.getType()
-        asset2.getCreatedOn() == asset.getCreatedOn()
+        asset2.getCreatedOn().toEpochMilli() == asset.getCreatedOn().toEpochMilli()
         asset2.getParentId() == parentId
         asset2.getPath() == asset.getPath()
         asset2.getTemperature().orElse(null) == asset.getTemperature().orElse(null)
@@ -570,7 +594,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def attributeEventObjectNode = ValueUtil.parse(attributeEventStr, ObjectNode.class).get()
         attributeEventObjectNode.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
-        attributeEventObjectNode.get("timestamp").asLong() == createdDate.getTime()
+        attributeEventObjectNode.get("timestamp").asLong() == createdDate.toEpochMilli()
         attributeEventObjectNode.has("realm")
         attributeEventObjectNode.get("value").isTextual()
         attributeEventObjectNode.get("value").asText() == "#3264C8"
@@ -585,12 +609,52 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def attributeEventObjectNode2 = ValueUtil.parse(attributeEventStr2, ObjectNode.class).get()
         attributeEventObjectNode2.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode2.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
-        attributeEventObjectNode2.get("timestamp").asLong() == createdDate.getTime()
+        attributeEventObjectNode2.get("timestamp").asLong() == createdDate.toEpochMilli()
         attributeEventObjectNode2.has("realm")
         attributeEventObjectNode2.get("value").isTextual()
         attributeEventObjectNode2.get("value").asText() == "#3264C8"
         attributeEventObjectNode2.get("deleted").asBoolean()
         !attributeEventObjectNode2.has("source")
         !attributeEventObjectNode2.has("meta")
+    }
+
+    @Unroll
+    def "Get valueDescriptor schema and hash for #name"(String name, Class<?> clazz, String hash) {
+        given: "required services are setup"
+        def assetModelService = container.getService(AssetModelService.class)
+
+        when: "we ask to generate a schema for #clazz"
+        def result = assetModelService.getValueDescriptorSchema(name)
+        def expected = ValueUtil.getSchema(clazz).toString()
+
+        then: "the schema to be the same"
+        Objects.equals(result.schema(), expected)
+
+        and: "the hash to be the same"
+        if (!hash.empty) {
+            Objects.equals(result.hash(), hash)
+        }
+
+        where:
+        name                    | clazz                 | hash
+        "text"                  | String                | "04818E8A57A9EBA38CA5457DA1907FEF"
+        "text[]"                | String[]              | "A843B49121780A9A4DCA0FB5604CDA1B"
+        "text[][]"              | String[][]            | "2FD46740DD360941363BDA6D7F2D9EF2"
+        "agentLink"             | AgentLink             | "" // These are likely to change
+        "attributeLink"         | AttributeLink         | "" // so we skip them.
+        "valueConstraint[]"     | ValueConstraint[]     | ""
+        "forecastConfiguration" | ForecastConfiguration | ""
+        "valueFormat"           | ValueFormat           | ""
+    }
+
+    def "Get unknown valueDescriptor schema"() {
+        given: "required services are setup"
+        def assetModelService = container.getService(AssetModelService.class)
+
+        when: "we ask to generate a schema for a nonexistent value descriptor"
+        def schema = assetModelService.getValueDescriptorSchema("String")
+
+        then: "to return null"
+        Objects.equals(schema, null)
     }
 }

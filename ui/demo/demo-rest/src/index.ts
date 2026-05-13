@@ -1,6 +1,6 @@
 import {html, render} from "lit-html";
-import manager, {Auth, Manager} from "@openremote/core";
-import {AssetQuery} from "@openremote/model";
+import manager, {Manager} from "@openremote/core";
+import {Auth, AssetQuery} from "@openremote/model";
 
 let loggedInTemplate = (manager: Manager) => html `<span>Welcome ${manager.username}</span>(<button @click="${ ()=> {manager.logout()}}">logout</button>)`;
 let loggedOutTemplate = (manager: Manager) => html `<span>Please</span><button @click="${() => {manager.login()}}">login</button>`;

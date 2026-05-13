@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package stream;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/stream";
+option java_package = "io.chirpstack.api.stream";
+option java_multiple_files = true;
+option java_outer_classname = "BackendInterfacesProto";
+option csharp_namespace = "Chirpstack.Stream";
+option php_namespace = "Chirpstack\\Stream";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Stream";
+
+import "google/protobuf/timestamp.proto";
+
+message BackendInterfacesRequest {
+  // Sender ID.
+  string sender_id = 1;
+
+  // Receiver ID.
+  string receiver_id = 2;
+
+  //   Timestamp.
+  google.protobuf.Timestamp time = 3;
+
+  // Transaction ID.
+  uint32 transaction_id = 4;
+
+  // Message-type.
+  string message_type = 5;
+
+  // Result code.
+  string result_code = 6;
+
+  // Request body.
+  string request_body = 7;
+
+  // Request error.
+  string request_error = 8;
+
+  // Response body.
+  string response_body = 9;
+}

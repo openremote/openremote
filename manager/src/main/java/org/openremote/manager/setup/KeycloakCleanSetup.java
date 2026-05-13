@@ -73,5 +73,11 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
                 keycloakProvider.deleteClient(MASTER_REALM, client.getClientId());
             }
         });
+
+        // Delete IDPs
+        keycloakProvider.getIdentityProviders(MASTER_REALM).forEach(idp -> {
+            LOG.info("Deleting IDP: " + idp.getAlias());
+            keycloakProvider.deleteIdentityProvider(MASTER_REALM, idp.getAlias());
+        });
     }
 }

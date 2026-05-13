@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "proxy.fullname" . }}
+  labels:
+    {{- include "proxy.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "proxy.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "proxy.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+#          ports:
+#            - name: http
+#              containerPort: {{ .Values.service.port }}
+#              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: TZ
+              value: "{{ .Values.or.timeZone }}"
+            - name: LOGFILE
+              value: "{{ .Values.or.proxyLogfile }}"
+            - name: PROXY_LOGLEVEL
+              value: "{{ .Values.or.proxyLoglevel }}"
+            - name: DOMAINNAME
+              value: "{{ .Values.or.hostname }}"
+            - name: DOMAINNAMES
+              value: "{{ .Values.or.additionalHostnames }}"
+            - name: HAPROXY_CONFIG
+              value: "{{ .Values.or.haproxyConfig }}"
+            - name: HTTP_PORT
+              value: "{{ .Values.or.httpPort }}"
+            - name: HTTPS_PORT
+              value: "{{ .Values.or.httpsPort }}"
+            - name: HTTPS_FORWARDED_PORT
+              value: "{{ .Values.or.httpsForwardedPort }}"
+            - name: NAMESERVER
+              value: "{{ .Values.or.nameserver }}"
+            - name: LE_EMAIL
+              value: "{{ .Values.or.leEmail }}"
+            - name: LE_EXTRA_ARGS
+              value: "{{ .Values.or.leExtraArgs }}"
+            - name: AWS_ROUTE53_ROLE
+              value: "{{ .Values.or.awsRoute53Role }}"
+            - name: MANAGER_HOST
+              value: "{{ .Values.or.managerHost }}"
+            - name: MANAGER_WEB_PORT
+              value: "{{ .Values.or.managerWebPort }}"
+            - name: MANAGER_MQTT_PORT
+              value: "{{ .Values.or.managerMqttPort }}"
+            {{- if hasKey .Values.or "managerPathPrefix" }}
+            - name: MANAGER_PATH_PREFIX
+              value: "{{ .Values.or.managerPathPrefix }}"
+            {{- end }}
+            - name: KEYCLOAK_HOST
+              value: "{{ .Values.or.keycloakHost }}"
+            - name: KEYCLOAK_PORT
+              value: "{{ .Values.or.keycloakPort }}"
+            {{- if hasKey .Values.or "keycloakPathPrefix" }}
+            - name: KEYCLOAK_PATH_PREFIX
+              value: "{{ .Values.or.keycloakPathPrefix }}"
+            {{- end }}
+          {{- with .Values.or.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

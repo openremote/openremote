@@ -20,8 +20,8 @@
 package org.openremote.model.persistence;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
+import org.hibernate.type.descriptor.WrapperOptions;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -55,13 +55,13 @@ public class LTreeType implements UserType<String[]> {
     }
 
     @Override
-    public String[] nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner) throws SQLException {
+    public String[] nullSafeGet(ResultSet rs, int position, WrapperOptions options) throws SQLException {
         String ltreeStr = rs.getString(position);
         return ltreeStr != null ? ltreeStr.split("\\.") : null;
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, String[] value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, String[] value, int index, WrapperOptions options) throws HibernateException, SQLException {
         st.setObject(index, value != null ? String.join(".", value) : null, Types.OTHER);
     }
 

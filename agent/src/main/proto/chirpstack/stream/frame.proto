@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package stream;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/stream";
+option java_package = "io.chirpstack.api.stream";
+option java_multiple_files = true;
+option java_outer_classname = "FrameProto";
+option csharp_namespace = "Chirpstack.Stream";
+option php_namespace = "Chirpstack\\Stream";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Stream";
+
+import "google/protobuf/timestamp.proto";
+import "common/common.proto";
+import "gw/gw.proto";
+
+message UplinkFrameLog {
+  // PHYPayload.
+  bytes phy_payload = 1;
+
+  // TX meta-data.
+  gw.UplinkTxInfo tx_info = 2;
+
+  // RX meta-data.
+  repeated gw.UplinkRxInfo rx_info = 3;
+
+  // Frame type.
+  common.FType f_type = 4;
+
+  // Device address (optional).
+  string dev_addr = 5;
+
+  // Device EUI (optional).
+  string dev_eui = 6;
+
+  // Time.
+  google.protobuf.Timestamp time = 7;
+
+  // Plaintext f_opts mac-commands.
+  bool plaintext_f_opts = 8;
+
+  // Plaintext frm_payload.
+  bool plaintext_frm_payload = 9;
+}
+
+message DownlinkFrameLog {
+  // Time.
+  google.protobuf.Timestamp time = 1;
+
+  // PHYPayload.
+  bytes phy_payload = 2;
+
+  // TX meta-data.
+  gw.DownlinkTxInfo tx_info = 3;
+
+  // Downlink ID.
+  uint32 downlink_id = 4;
+
+  // Gateway ID (EUI64).
+  string gateway_id = 5;
+
+  // Frame type.
+  common.FType f_type = 6;
+
+  // Device address (optional).
+  string dev_addr = 7;
+
+  // Device EUI (optional).
+  string dev_eui = 8;
+
+  // Plaintext f_opts mac-commands.
+  bool plaintext_f_opts = 9;
+
+  // Plaintext frm_payload.
+  bool plaintext_frm_payload = 10;
+}

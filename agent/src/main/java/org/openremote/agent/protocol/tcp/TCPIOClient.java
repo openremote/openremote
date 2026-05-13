@@ -20,14 +20,14 @@
 package org.openremote.agent.protocol.tcp;
 
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * This is a {@link IOClient} implementation for TCP.
@@ -38,7 +38,7 @@ import java.util.concurrent.Future;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder} and
  * {@link MessageToMessageDecoder}).
  */
-public class TCPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
+public class TCPIOClient<T> extends AbstractNettyIOClient<T> {
 
     protected String host;
     protected int port;
@@ -61,12 +61,12 @@ public class TCPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
-        return new NioEventLoopGroup(1);
+        return new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
     }
 
     @Override
-    protected Future<Void> startChannel() {
-        return bootstrap.connect(new InetSocketAddress(host, port));
+    protected CompletableFuture<Void> startChannel() {
+        return toCompletableFuture(bootstrap.connect(new InetSocketAddress(host, port)));
     }
 
     @Override

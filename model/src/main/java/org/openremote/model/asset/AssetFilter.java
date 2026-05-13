@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
@@ -30,6 +31,7 @@ import org.openremote.model.value.MetaItemType;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
@@ -196,7 +198,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
     @Override
     public T apply(T event) {
 
-        MetaItemDescriptor<?> filterAttributesBy = null;
+        Predicate<Attribute<?>> attributeFilter = null;
 
         // Only send attribute events where value has changed if requested
         if (valueChanged && event instanceof AttributeEvent attributeEvent && !attributeEvent.valueChanged()) {
@@ -219,7 +221,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
                     return null;
                 }
             } else {
-                filterAttributesBy = MetaItemType.ACCESS_RESTRICTED_READ;
+                attributeFilter = (attr) -> attr.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false);
             }
         }
 
@@ -232,7 +234,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
                 if (!assetEvent.isAccessPublicRead()) {
                     return null;
                 } else {
-                    filterAttributesBy = MetaItemType.ACCESS_PUBLIC_READ;
+                    attributeFilter = (attr) -> attr.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false);
                 }
             }
         }
@@ -275,13 +277,12 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
             }
         }
 
-        if (filterAttributesBy != null) {
+        if (attributeFilter != null) {
             // Filter attributes before doing name match
             AssetEvent assetEvent = (AssetEvent) event;
             if (assetEvent.getAsset() != null) {
                 Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
-                MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
-                asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
+                asset.setAttributes(asset.getAttributes().values().stream().filter(attributeFilter).collect(Collectors.toList()));
                 event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
             }
         }
