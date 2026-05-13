@@ -145,11 +145,7 @@ export class OrNotificationsTable extends OrMwcTable {
         // update rows when notifications change
         if (changedProps.has("notifications")) {
             if (this.notifications?.length) {
-                await Promise.all(
-                    this.notifications.map(notification => 
-                        this.resolveTargetDetails(notification)
-                    )
-                );
+                await this.resolveAllTargetDetails(this.notifications);
             }
             this.rows = this.getTableRows(this.notifications || []);
         }
@@ -163,10 +159,6 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     protected getTableRows(notifications: SentNotification[]): TableRow[] | undefined {
-        notifications.forEach(notification => {
-            this.resolveTargetDetails(notification);
-        })
-
         return notifications.map((notification) => {
             const pushMessage = notification.message as PushNotificationMessage;
             return {
@@ -286,45 +278,45 @@ export class OrNotificationsTable extends OrMwcTable {
         }
     }
 
-    protected async resolveTargetDetails(notification: SentNotification) {
-        if (!notification.target || !notification.targetId) return; 
+    protected async resolveAllTargetDetails(notifications: SentNotification[]) {
+        const assetIds = new Set<string>();
+        const userIds = new Set<string>();
 
-        if (this.targetDetailsMap.has(notification.targetId)) {
-            return;
-        }
+        notifications.forEach((n) => {
+            if (!n.targetId || this.targetDetailsMap.has(n.targetId)) return;
+            if (n.target === NotificationTargetType.ASSET) assetIds.add(n.targetId);
+            if (n.target === NotificationTargetType.USER) userIds.add(n.targetId);
+        });
+
+        if (assetIds.size === 0 && userIds.size === 0) return;
 
         try {
-            let details;
-            switch(notification.target) {
-                case NotificationTargetType.ASSET:
-                    const asset = await this.notificationService.getAssetDetails(notification.targetId);
-                    if (asset) {
-                        details = {
-                            name: asset.name || asset.id,
-                            type: 'asset',
-                            link: `#/${getAssetsRoute(false, notification.targetId)}`
-                        };
-                    }
-                    break;
+            const [assets, users] = await Promise.all([
+                assetIds.size > 0
+                    ? this.notificationService.getAssetsDetails(Array.from(assetIds))
+                    : Promise.resolve([]),
+                userIds.size > 0 ? this.notificationService.getUsersDetails(Array.from(userIds)) : Promise.resolve([]),
+            ]);
 
-                case NotificationTargetType.USER:
-                    const user = await this.notificationService.getUserDetails(notification.targetId, manager.displayRealm);
-                    if (user) {
-                        details = {
-                            name: user.username,
-                            type: 'user',
-                            link: `#/${getUsersRoute(notification.targetId)}`
-                        };
-                    }
-                    break;
-            }
+            assets.forEach((asset) => {
+                this.targetDetailsMap.set(asset.id!, {
+                    name: asset.name || asset.id!,
+                    type: "asset",
+                    link: `#/${getAssetsRoute(false, asset.id!)}`,
+                });
+            });
 
-            if (details) {
-                this.targetDetailsMap.set(notification.targetId, details);
-                this.requestUpdate();
-            }
+            users.forEach((user) => {
+                this.targetDetailsMap.set(user.id!, {
+                    name: user.username,
+                    type: "user",
+                    link: `#/${getUsersRoute(user.id!)}`,
+                });
+            });
+
+            this.requestUpdate();
         } catch (err) {
-            console.error(`Failed to resolve target details for ${notification.target}`);
+            console.error("Failed to resolve bulk target details", err);
         }
     }
 
