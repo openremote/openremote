@@ -32,6 +32,7 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.Config;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -240,83 +241,55 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
     }
 
-    // API endpoints below added for development purposes
-    // Notification source is set to internal to sidestep local FCM config issues. 
-    // @Override
-    // public void sendNotificationWithRealmData (RequestParams requestParams, Notification notification, String realmId) {
-    //     if (notification == null) {
-    //         throw new WebApplicationException("Missing notification", BAD_REQUEST);
-    //     }
+     @Override
+     public void sendNotificationWithRealmData (RequestParams requestParams, Notification notification, String realmId) {
+         if (notification == null) {
+             throw new WebApplicationException("Missing notification", BAD_REQUEST);
+         }
 
-    //     try {
-    //         Date now = new Date();
+         if (Config.isDevMode()) {
+             // Notification source is set to internal to sidestep local FCM config issues.
+             try {
+                 Instant now = Instant.now();
 
-    //         SentNotification sentNotification = new SentNotification()
-    //         .setName(notification.getName())
-    //         .setType(notification.getMessage().getType())
-    //         .setSource(Notification.Source.INTERNAL)
-    //         .setSourceId("")
-    //         .setTarget(notification.getTargets().get(0).getType())
-    //         .setTargetId(notification.getTargets().get(0).getId())
-    //         .setMessage(notification.getMessage())
-    //         .setRealm(realmId)
-    //         .setSentOn(now)
-    //         .setDeliveredOn(now);
+                 SentNotification sentNotification = new SentNotification()
+                     .setName(notification.getName())
+                     .setType(notification.getMessage().getType())
+                     .setSource(Notification.Source.INTERNAL)
+                     .setSourceId("")
+                     .setTarget(notification.getTargets().getFirst().getType())
+                     .setTargetId(notification.getTargets().getFirst().getId())
+                     .setMessage(notification.getMessage())
+                     .setRealm(realmId)
+                     .setSentOn(now)
+                     .setDeliveredOn(now);
 
-    //         notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
-    //         });
-    //     } catch (Exception e) {
-    //         LOG.warning("Failed to create notification in DB:" + e.getMessage());
-    //         throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
-    //     }
-    // }
+                 notificationService.persistenceService.doTransaction(em -> {
+                     em.merge(sentNotification);
+                 });
+             } catch (Exception e) {
+                 LOG.warning("Failed to create notification in DB:" + e.getMessage());
+                 throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
+             }
+         } else {
+             Map<String, Object> headers = new HashMap<>();
+             headers.put(Notification.HEADER_SOURCE, Notification.Source.CLIENT);
+             headers.put("NOTIFICATION_REALM_ID", realmId);
 
-    @Override
-    public void sendNotificationWithRealmData (RequestParams requestParams, Notification notification, String realmId) {
-        if (notification == null) {
-            throw new WebApplicationException("Missing notification", BAD_REQUEST);
-        }
+             if (isAuthenticated()) {
+                 headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+             }
 
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Notification.HEADER_SOURCE, Notification.Source.CLIENT);
-        headers.put("NOTIFICATION_REALM_ID", realmId);
+             boolean success = messageBrokerService.getFluentProducerTemplate()
+                 .withBody(notification)
+                 .withHeaders(headers)
+                 .to(NotificationService.NOTIFICATION_QUEUE)
+                 .request(Boolean.class);
 
-        if (isAuthenticated()) {
-            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
-        }
+             if (!success) {
+                 throw new WebApplicationException(BAD_REQUEST);
+             }
+         }
+     }
 
-        boolean success = messageBrokerService.getFluentProducerTemplate()
-            .withBody(notification)
-            .withHeaders(headers)
-            .to(NotificationService.NOTIFICATION_QUEUE)
-            .request(Boolean.class);
-
-        if (!success) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-
-        // try {
-        //     Date now = new Date();
-
-        //     SentNotification sentNotification = new SentNotification()
-        //     .setName(notification.getName())
-        //     .setType(notification.getMessage().getType())
-        //     .setSource(Notification.Source.INTERNAL)
-        //     .setSourceId("")
-        //     .setTarget(notification.getTargets().get(0).getType())
-        //     .setTargetId(notification.getTargets().get(0).getId())
-        //     .setMessage(notification.getMessage())
-        //     .setRealm(realmId)
-        //     .setSentOn(now)
-        //     .setDeliveredOn(now);
-
-        //     notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
-        //     });
-        // } catch (Exception e) {
-        //     LOG.warning("Failed to create notification in DB:" + e.getMessage());
-        //     throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
-        // }
-    }
-
-    
 }
