@@ -72,31 +72,23 @@ export class NotificationService {
         }
     }
 
-    async getAssetDetails(assetId: string): Promise<Asset | undefined> {
+    async getAssetsDetails(assetIds: string[]): Promise<Asset[]> {
         try {
-            const response = await manager.rest.api.AssetResource.get(assetId);
-            if (response.status === 200 && response.data) {
-                return response.data;
-            }
-            console.warn(`No asset found for ID ${assetId}`);
-            return undefined;
+            const response = await manager.rest.api.AssetResource.queryAssets({ ids: assetIds });
+            return response.status === 200 ? response.data || [] : [];
         } catch (err) {
-            console.warn(`Failed to fetch asset details for ${assetId}:`, err);
-            return undefined
+            console.warn(`Failed to fetch assets details:`, err);
+            return [];
         }
     }
 
-    async getUserDetails(userId: string, realmId: string): Promise<User | undefined> {
+    async getUsersDetails(userIds: string[]): Promise<User[]> {
         try {
-            const response = await manager.rest.api.UserResource.get(realmId, userId);
-            if (response.status === 200 && response.data) {
-                return response.data;
-            }
-            console.warn(`No user found for ID ${userId}`);
-            return undefined;
+            const response = await manager.rest.api.UserResource.query({ ids: userIds });
+            return response.status === 200 ? response.data || [] : [];
         } catch (err) {
-            console.warn(`Failed to fetch user details for ${userId}:`, err);
-            return undefined;
+            console.warn(`Failed to fetch users details:`, err);
+            return [];
         }
     }
 
