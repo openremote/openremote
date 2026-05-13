@@ -155,15 +155,4 @@ public interface NotificationResource {
                                         @QueryParam("from") Long fromTimestamp,
                                         @QueryParam("to") Long toTimestamp,
                                         @QueryParam("realmId") String realmId);
-    /**
-     * Development use only: Sending notification to the database directly for testing purposes
-     */
-    @POST
-    @Path("db")
-    @Consumes(APPLICATION_JSON)
-    @Operation(operationId = "sendTestNotification", summary = "Send a notification directly to db")
-    void sendNotificationWithRealmData(@BeanParam RequestParams requestParams,
-                          Notification notification,
-                          @QueryParam("realmId") String realmId);
-
 }
