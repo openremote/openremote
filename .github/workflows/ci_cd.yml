@@ -761,7 +761,7 @@ jobs:
         if: steps.install-command.outputs.value != ''
         run: |
           if [ -n "${{ secrets._TEMP_GFE_PASSWORD }}" ]; then
-            echo "GFE_PASSWORD=${{ secrets._TEMP_GFE_PASSWORD }}" >> $GITHUB_ENV
+            export GFE_PASSWORD=${{ secrets._TEMP_GFE_PASSWORD }}
           fi
           ${{ steps.install-command.outputs.value }}
         timeout-minutes: 20
