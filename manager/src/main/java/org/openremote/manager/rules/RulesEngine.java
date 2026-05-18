@@ -483,36 +483,36 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        Set<AttributeInfo> insertInfos;
-        Set<AttributeInfo> updateInfos;
-        Set<AttributeInfo> retractInfos;
+        Set<AttributeInfo> insertInfosCopy;
+        Set<AttributeInfo> updateInfosCopy;
+        Set<AttributeInfo> retractInfosCopy;
 
         // Synchronise attribute events and states
-        synchronized (this.insertInfos) {
-            insertInfos = new HashSet<>(this.insertInfos);
-            updateInfos = new HashSet<>(this.updateInfos);
-            retractInfos = new HashSet<>(this.retractInfos);
+        synchronized (insertInfos) {
+            insertInfosCopy = new HashSet<>(insertInfos);
+            updateInfosCopy = new HashSet<>(updateInfos);
+            retractInfosCopy = new HashSet<>(retractInfos);
 
-            this.insertInfos.clear();
-            this.updateInfos.clear();
-            this.retractInfos.clear();
+            insertInfos.clear();
+            updateInfos.clear();
+            retractInfos.clear();
         }
 
-        retractInfos.forEach(attributeInfo -> {
+        retractInfosCopy.forEach(attributeInfo -> {
             facts.removeAssetState(attributeInfo);
             // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
             trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
             notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
         });
 
-        insertInfos.forEach(attributeInfo -> {
+        insertInfosCopy.forEach(attributeInfo -> {
             facts.putAssetState(attributeInfo);
             // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
             trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
             notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
         });
 
-        updateInfos.forEach(attributeInfo -> {
+        updateInfosCopy.forEach(attributeInfo -> {
             facts.putAssetState(attributeInfo);
             notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.UPDATE, attributeInfo));
         });
