@@ -111,6 +111,7 @@ import static org.openremote.model.Constants.*;
  * </dl>
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
+
     /**
      * Holds state for each websocket session
      */
@@ -125,6 +126,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
+    protected static final Pattern TRAILING_DIGITS_PATTERN = Pattern.compile("(\\d+)$");
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
@@ -492,9 +494,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
                consumer = subscriptionConsumers.remove(subscriptionKey);
             } else if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
-               Pattern pattern = Pattern.compile("(\\d+)$");
                for (Map.Entry<String, Consumer<? extends Event>> entry : subscriptionConsumers.entrySet()) {
-                  Matcher matcher = pattern.matcher(entry.getKey());
+                  Matcher matcher = TRAILING_DIGITS_PATTERN.matcher(entry.getKey());
                   if (matcher.find() && matcher.group(1).equals(cancelEventSubscription.getSubscriptionId())) {
                      consumer = entry.getValue();
                      subscriptionConsumers.remove(entry.getKey());
