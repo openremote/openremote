@@ -59,6 +59,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.lang.System.Logger.Level.*;
@@ -485,8 +487,21 @@ public class ClientEventService extends RouteBuilder implements ContainerService
          String sessionKey = getSessionKey(exchange);
          LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
          websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-            String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
-            Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
+            Consumer<? extends Event> consumer = null;
+            if (!cancelEventSubscription.getEventType().isEmpty()) {
+               String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
+               consumer = subscriptionConsumers.remove(subscriptionKey);
+            } else if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
+               Pattern pattern = Pattern.compile("(\\d+)$");
+               for (Map.Entry<String, Consumer<? extends Event>> entry : subscriptionConsumers.entrySet()) {
+                  Matcher matcher = pattern.matcher(entry.getKey());
+                  if (matcher.find() && matcher.group(1).equals(cancelEventSubscription.getSubscriptionId())) {
+                     consumer = entry.getValue();
+                     subscriptionConsumers.remove(entry.getKey());
+                     break;
+                  }
+               }
+            }
             if (consumer != null) {
                removeSubscription(consumer);
             }
