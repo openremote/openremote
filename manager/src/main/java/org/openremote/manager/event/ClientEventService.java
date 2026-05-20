@@ -444,11 +444,20 @@ public class ClientEventService extends RouteBuilder implements ContainerService
    @SuppressWarnings({"unchecked", "rawtypes"})
    void procesInboundEvent(Exchange exchange) {
       WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
-      AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
-      String realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
+      AuthContext authContext = exchange.getIn().getHeader(AUTH_CONTEXT, AuthContext.class);
+      String realm = exchange.getIn().getHeader(REALM_PARAM_NAME, String.class);
 
-      exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
-      exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
+      if (webSocketChannel != null) {
+         if (authContext == null) {
+            authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
+         }
+         if (realm == null) {
+            realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
+         }
+      }
+
+       exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+       exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
 
       // Pass to gateway interceptor and abort if it stops the exchange
       if (gatewayInterceptor != null) {

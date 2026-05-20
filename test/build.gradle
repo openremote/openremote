@@ -28,6 +28,7 @@ dependencies {
     }
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    testImplementation "org.apache.camel:camel-undertow:$camelVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
     testImplementation "dev.failsafe:failsafe:$failsafeVersion"
