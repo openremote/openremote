@@ -59,6 +59,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -511,20 +512,22 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             if (!cancelEventSubscription.getEventType().isEmpty() && !cancelEventSubscription.getSubscriptionId().isEmpty()) {
                String subscriptionKey = cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId();
                subscriptionKeys.add(subscriptionKey);
-            } else if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
-                subscriptionConsumers.keySet().stream()
-                        .filter(key -> key.endsWith(SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId()))
-                        .forEach(subscriptionKeys::add);
-            } else if (!cancelEventSubscription.getEventType().isEmpty()) {
-                subscriptionConsumers.keySet().stream()
-                        .filter(key -> key.startsWith(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER))
-                        .forEach(subscriptionKeys::add);
+            } else {
+               Predicate<String> predicate = null;
+               if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
+                   predicate = key -> key.endsWith(SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId());
+               } else if (!cancelEventSubscription.getEventType().isEmpty()) {
+                   predicate = key -> key.startsWith(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER);
+               }
+               if (predicate != null) {
+                  subscriptionConsumers.keySet().stream().filter(predicate).forEach(subscriptionKeys::add);
+               }
             }
             subscriptionKeys.forEach(subscriptionKey -> {
-                Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
-                if (consumer != null) {
-                    removeSubscription(consumer);
-                }
+               Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
+               if (consumer != null) {
+                  removeSubscription(consumer);
+               }
             });
             if (subscriptionConsumers.isEmpty()) {
                return null;
