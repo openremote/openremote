@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.event
+package org.openremote.manager.event
 
 import io.undertow.websockets.core.WebSocketChannel
 import org.apache.camel.Exchange
@@ -25,7 +25,6 @@ import org.apache.camel.component.undertow.UndertowConstants
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.support.DefaultExchange
 import org.openremote.container.security.AuthContext
-import org.openremote.manager.event.ClientEventService
 import org.openremote.model.event.Event
 import org.openremote.model.event.shared.CancelEventSubscription
 import org.openremote.model.event.shared.EventSubscription
@@ -167,3 +166,4 @@ class ClientEventServiceSubscriptionTest extends Specification {
         }
     }
 }
+
