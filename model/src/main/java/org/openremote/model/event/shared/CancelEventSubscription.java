@@ -30,18 +30,8 @@ public class CancelEventSubscription {
 
     public static final String MESSAGE_PREFIX = "UNSUBSCRIBE:";
 
-    /**
-     * Event type of the subscription to cancel.
-     *
-     * <p>Must not contain the reserved delimiter {@code "::"}.
-     */
     protected String eventType;
 
-    /**
-     * Client-defined subscription identifier.
-     *
-     * <p>Must not contain the reserved delimiter {@code "::"}.
-     */
     protected String subscriptionId;
 
     protected CancelEventSubscription() {

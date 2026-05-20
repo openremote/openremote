@@ -113,7 +113,6 @@ import static org.openremote.model.Constants.*;
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
 
-
     /**
      * Holds state for each websocket session
      */
