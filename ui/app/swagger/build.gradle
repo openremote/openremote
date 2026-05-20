@@ -78,6 +78,7 @@ signing {
 }
 
 tasks.register('generateSources', Copy) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     // Copy Swagger UI resources from the WebJars dependency
     from zipTree(configurations.sources.singleFile).matching {
         include "META-INF/resources/webjars/swagger-ui/$swaggeruiVersion/*"
@@ -97,6 +98,7 @@ tasks.register('generateSources', Copy) {
     from fileTree(projectDir) {
         exclude 'build.gradle'
         exclude 'build/**'
+        exclude 'bin/**'
     }
     into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
 }
