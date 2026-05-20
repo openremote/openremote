@@ -1112,6 +1112,15 @@
   "notification_one": "Notificatie",
   "notification_other": "Notificaties",
   "notifications": {
+    "source": "Afkomst",
+    "sources": {
+      "ALL_SOURCES": "Alle bronnen",
+      "CLIENT": "Client",
+      "INTERNAL": "Intern",
+      "GLOBAL_RULESET": "Globale regels",
+      "REALM_RULESET": "Realm regels",
+      "ASSET_RULESET": "Asset regels"
+    },
     "target": "Ontvanger",
     "targetType": "Ontvanger type",
     "urlToVisit": "URL om naartoe te gaan (optioneel)",
@@ -1120,12 +1129,6 @@
     "failedToCreateNotification": "Notificatie aanmaken mislukt: ",
     "successfullySentNotification": "Notificatie verstuurd",
     "missingFields": "Notificatie maken mislukt, niet alle verplichte velden waren gevuld.",
-    "allSources": "Alle bronnen",
-    "client": "Client",
-    "internal": "Intern",
-    "globalRuleset": "Globale regels",
-    "realmRuleset": "Realm regels",
-    "assetRuleset": "Asset regels",
     "details": "Notificatie details",
     "createNotification": "Notificatie aanmaken",
     "sendNew": "Aanmaken"

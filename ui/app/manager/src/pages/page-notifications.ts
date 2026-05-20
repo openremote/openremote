@@ -5,6 +5,7 @@ import {Store} from "@reduxjs/toolkit";
 import {
     Asset,
     Notification,
+    NotificationSource,
     NotificationTargetType,
     PushNotificationMessage,
     SentNotification,
@@ -21,7 +22,14 @@ import "../components/notifications/notification-form";
 import {NotificationTableClickEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 
-type NotificationSource = " " | "CLIENT" | "INTERNAL" | "GLOBAL_RULESET" | "REALM_RULESET" | "ASSET_RULESET"
+type NotificationSourceKeys = keyof typeof NotificationSource
+const sources = [
+    NotificationSource.INTERNAL,
+    NotificationSource.CLIENT,
+    NotificationSource.GLOBAL_RULESET,
+    NotificationSource.REALM_RULESET,
+    NotificationSource.ASSET_RULESET,
+] satisfies NotificationSourceKeys[];
 
 export class NotificationService {
 
@@ -365,7 +373,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             }
 
             if (!this._isFilteredSource) {
-                this._selectedSource = " "
+                this._selectedSource = "ALL_SOURCES"
             }
 
             this._data = await this.notificationService.getNotifications(
@@ -464,7 +472,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected _getFilteredNotifications(): SentNotification[] {
         if (!this._data) return [];
-        if (this._selectedSource === " ") {
+        if (this._selectedSource === "ALL_SOURCES") {
             return this._data;
         }
 
@@ -503,13 +511,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected _renderHeader(writeNotifications: boolean) {
-        const sourceOptions: [NotificationSource, string][] = [
-            [" ", i18next.t("notifications.allSources")],
-            ["CLIENT", i18next.t("notifications.client")],
-            ["INTERNAL", i18next.t("notifications.internal")],
-            ["GLOBAL_RULESET", i18next.t("notifications.globalRuleset")],
-            ["REALM_RULESET", i18next.t("notifications.realmRuleset")],
-            ["ASSET_RULESET", i18next.t("notifications.assetRuleset")],
+        const sourceOptions: [keyof typeof NotificationSource | "ALL_SOURCES", string][] = [
+            ["ALL_SOURCES", i18next.t("notifications.sources.ALL_SOURCES")],
+            ...sources.map<[NotificationSourceKeys, string]>(s => [s, i18next.t(`notifications.sources.${s}`)])
         ];
 
         return html`

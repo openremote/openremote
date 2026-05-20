@@ -1,8 +1,8 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import manager, {DefaultColor4} from "@openremote/core";
-import { SentNotification, PushNotificationMessage, NotificationTargetType } from "@openremote/model";
+import {DefaultColor4} from "@openremote/core";
+import { SentNotification, PushNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
 import { NotificationService } from "../../pages/page-notifications";
@@ -45,9 +45,10 @@ export class OrNotificationsTable extends OrMwcTable {
                 td:nth-child(1), th:nth-child(1) { width: 15%; } /* Title column */
                 td:nth-child(2), th:nth-child(2) { width: 25%; } /* Content column */
                 td:nth-child(3), th:nth-child(3) { width: 6%; } /* Status column */
-                td:nth-child(4), th:nth-child(4) { width: 15%; } /* Target column */
-                td:nth-child(5), th:nth-child(5) { width: 8%; } /* SentOn column */
-                td:nth-child(6), th:nth-child(6) { width: 8%; } /* DeliveredOn column */
+                td:nth-child(4), th:nth-child(4) { width: 4%; } /* Source column */
+                td:nth-child(5), th:nth-child(5) { width: 15%; } /* Target column */
+                td:nth-child(6), th:nth-child(6) { width: 6%; } /* SentOn column */
+                td:nth-child(7), th:nth-child(7) { width: 6%; } /* DeliveredOn column */
     
                 .notification-status {
                     padding: 4px 8px;
@@ -124,6 +125,7 @@ export class OrNotificationsTable extends OrMwcTable {
         {title: i18next.t("title"), isSortable: true},
         {title: i18next.t("content")},
         {title: i18next.t("status"), isSortable: true},
+        {title: i18next.t("notifications.source"), isSortable: true},
         {title: i18next.t("notifications.target")},
         {title: i18next.t("sentOn"), isSortable: true},
         {title: i18next.t("deliveredOn"), isSortable: true}
@@ -166,6 +168,7 @@ export class OrNotificationsTable extends OrMwcTable {
                     pushMessage.title, 
                     pushMessage.body,
                     this.getStatusContent(notification),
+                    this.getSourceContent(notification.source),
                     this.getTargetContent(notification),
                     this.getDateContent(notification.sentOn),
                     this.getDateContent(notification.deliveredOn)
@@ -175,6 +178,10 @@ export class OrNotificationsTable extends OrMwcTable {
                 data: { notification },
             } as NotificationTableRow;
         });
+    }
+
+    protected getSourceContent(source: NotificationSource): TemplateResult {
+        return html`<or-translate value="notifications.sources.${source}"></or-translate>`;
     }
 
     protected getTargetContent(notification: SentNotification): TemplateResult {

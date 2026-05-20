@@ -1120,6 +1120,15 @@
   "notification_one": "Notification",
   "notification_other": "Notifications",
   "notifications": {
+    "source": "Source",
+    "sources": {
+      "ALL_SOURCES": "All sources",
+      "CLIENT": "Client",
+      "INTERNAL": "Internal",
+      "GLOBAL_RULESET": "Global ruleset",
+      "REALM_RULESET": "Realm ruleset",
+      "ASSET_RULESET": "Asset ruleset"
+    },
     "target": "Recipient",
     "targetType": "Recipient type",
     "urlToVisit": "URL to visit (optional)",
@@ -1128,12 +1137,6 @@
     "failedToCreateNotification": "Failed to create notification: ",
     "successfullySentNotification": "Successfully sent notification.",
     "missingFields": "Failed to create notification, missing required fields.",
-    "allSources": "All sources",
-    "client": "Client",
-    "internal": "Internal",
-    "globalRuleset": "Global ruleset",
-    "realmRuleset": "Realm ruleset",
-    "assetRuleset": "Asset ruleset",
     "details": "Notification details",
     "createNotification": "Create notification",
     "sendNew": "Send new"
