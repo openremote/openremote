@@ -55,11 +55,19 @@ jobs:
 
       # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
       # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
-      - name: Create release
+      - name: Create release (manager image)
         run: |
           git push --follow-tags
           gh workflow run ci_cd.yml --ref $RELEASED_VERSION
           gh release create $RELEASED_VERSION --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASED_VERSION: ${{ steps.release.outputs.released-version }}
+      - name: Create release (core image)
+        run: |
+          git push --follow-tags
+          gh workflow run ci_cd.yml -R openremote/extensions --ref $RELEASED_VERSION
+          gh release create $RELEASED_VERSION -R openremote/extensions --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASED_VERSION: ${{ steps.release.outputs.released-version }}

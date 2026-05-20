@@ -180,24 +180,3 @@ publish.dependsOn(setVersionProperties)
 processResources.dependsOn(setVersionProperties)
 sourcesJar.dependsOn(setVersionProperties)
 
-configurations {
-    demoExtension
-}
-
-dependencies {
-    demoExtension project(":extension:demo-setup")
-}
-
-tasks.named("run", JavaExec) {
-    def setupType = System.getenv("OR_SETUP_TYPE")
-    if (setupType != null) {
-        classpath += configurations.demoExtension
-        classpath += files({
-            def setupProject = project(':setup')
-            def targetSourceSet = setupProject.sourceSets.findByName(setupType)
-            if (targetSourceSet != null) {
-                return targetSourceSet.runtimeClasspath
-            }
-        })
-    }
-}
