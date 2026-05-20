@@ -112,6 +112,7 @@ import static org.openremote.model.Constants.*;
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
 
+
     /**
      * Holds state for each websocket session
      */
@@ -126,7 +127,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
-    protected static final Pattern TRAILING_DIGITS_PATTERN = Pattern.compile("(\\d+)$");
+    protected static final String SUBSCRIPTION_KEY_DELIMITER = "::";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
@@ -463,6 +464,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             return;
          }
 
+         if (subscription.getEventType().contains(SUBSCRIPTION_KEY_DELIMITER) || subscription.getSubscriptionId().contains(SUBSCRIPTION_KEY_DELIMITER)) {
+            sendToWebsocketSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
+            exchange.setRouteStop(true);
+            return;
+         }
+
          // Force subscription to filter only value changed attribute events
          if (subscription.getFilter() instanceof AssetFilter assetFilter) {
             subscription.setFilter(assetFilter.setValueChanged(true));
@@ -479,7 +486,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                consumers = new HashMap<>();
             }
 
-            String subscriptionKey = subscription.getEventType() + subscription.getSubscriptionId();
+            String subscriptionKey = subscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + subscription.getSubscriptionId();
             consumers.put(subscriptionKey, consumer);
             addSubscription(subscription, consumer);
             return consumers;
@@ -489,23 +496,25 @@ public class ClientEventService extends RouteBuilder implements ContainerService
          String sessionKey = getSessionKey(exchange);
          LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
          websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-            Consumer<? extends Event> consumer = null;
-            if (!cancelEventSubscription.getEventType().isEmpty()) {
-               String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
-               consumer = subscriptionConsumers.remove(subscriptionKey);
+            List<String> subscriptionKeys = new ArrayList<>();
+            if (!cancelEventSubscription.getEventType().isEmpty() && !cancelEventSubscription.getSubscriptionId().isEmpty()) {
+               String subscriptionKey = cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId();
+               subscriptionKeys.add(subscriptionKey);
             } else if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
-               for (Map.Entry<String, Consumer<? extends Event>> entry : subscriptionConsumers.entrySet()) {
-                  Matcher matcher = TRAILING_DIGITS_PATTERN.matcher(entry.getKey());
-                  if (matcher.find() && matcher.group(1).equals(cancelEventSubscription.getSubscriptionId())) {
-                     consumer = entry.getValue();
-                     subscriptionConsumers.remove(entry.getKey());
-                     break;
-                  }
-               }
+                subscriptionConsumers.keySet().stream()
+                        .filter(key -> key.endsWith(SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId()))
+                        .forEach(subscriptionKeys::add);
+            } else if (!cancelEventSubscription.getEventType().isEmpty()) {
+                subscriptionConsumers.keySet().stream()
+                        .filter(key -> key.startsWith(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER))
+                        .forEach(subscriptionKeys::add);
             }
-            if (consumer != null) {
-               removeSubscription(consumer);
-            }
+            subscriptionKeys.forEach(subscriptionKey -> {
+                Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
+                if (consumer != null) {
+                    removeSubscription(consumer);
+                }
+            });
             if (subscriptionConsumers.isEmpty()) {
                return null;
             }
