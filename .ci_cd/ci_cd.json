@@ -14,7 +14,7 @@
 	},
 	"release": {
 		"distribute": {
-			"docker": "$version-core",
+			"docker": "$version-core,latest-core",
 			"maven": "$version",
 			"npm": "$version"
 		},
