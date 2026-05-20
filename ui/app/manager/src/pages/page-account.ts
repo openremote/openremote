@@ -10,9 +10,9 @@ import {until} from "lit/directives/until.js";
 import {map} from 'lit/directives/map.js';
 import {guard} from "lit/directives/guard.js";
 import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {OrVaadinPasswordField} from "@openremote/or-vaadin-components/or-vaadin-password-field";
 
 export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -155,10 +155,10 @@ export class PageAccount extends Page<AppStateKeyed> {
     protected _passwordPolicy: string[] = [];
 
     @query("#new-password")
-    protected _passwordElem?: OrMwcInput;
+    protected _passwordElem?: OrVaadinPasswordField;
 
     @query("#new-repeatPassword")
-    protected _repeatPasswordElem?: OrMwcInput;
+    protected _repeatPasswordElem?: OrVaadinPasswordField;
 
     static get styles() {
         return this._getStyle();
@@ -222,10 +222,9 @@ export class PageAccount extends Page<AppStateKeyed> {
                         </p>
                         <div class="row">
                             <div class="column">
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('twoFactorConfigure')}"
-                                              outlined
-                                              @or-mwc-input-changed="${() => manager.login({action: "CONFIGURE_TOTP"})}"
-                                ></or-mwc-input>
+                                <or-vaadin-button style="width: fit-content;" @click=${() => manager.login({action: "CONFIGURE_TOTP"})}>
+                                    <or-translate value="twoFactorConfigure"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                     </div>
@@ -248,95 +247,79 @@ export class PageAccount extends Page<AppStateKeyed> {
             <div class="row">
                 <div class="column">
                     <!-- user details -->
-                    <h5>${i18next.t("details")}</h5>
-                    <or-mwc-input id="new-username" class="validate"
-                                  .label="${i18next.t("username")}"
-                                  .type="${InputType.TEXT}"
-                                  ?required="${!registrationEmailAsUsername}"
-                                  .disabled="${true}"
-                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_+@\\.ßçʊÇʊ]+"
-                                  .validationMessage="${i18next.t("invalidUsername")}"
-                                  .value="${user?.username}" autocomplete="false"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.username = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}"
-                    ></or-mwc-input>
+                    <or-vaadin-text-field id="new-username" class="validate" disabled
+                                          ?required=${!registrationEmailAsUsername}
+                                          minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_+@\\.ßçʊÇʊ]+"
+                                          errorMessage=${i18next.t("invalidUsername")}
+                                          value=${user?.username} autocomplete="false"
+                                          @change=${(ev: Event) => {
+                                              user.username = (ev.currentTarget as HTMLInputElement).value;
+                                              onchange?.(user, true, this._isInvalid());
+                                          }}>
+                        <or-translate slot="label" value="username"></or-translate>
+                    </or-vaadin-text-field>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-mwc-input id="new-email" class="validate"
-                                  .label="${i18next.t("email")}"
-                                  .type="${InputType.EMAIL}"
-                                  ?required="${registrationEmailAsUsername}"
-                                  ?readonly="${(!!user?.id && registrationEmailAsUsername) || readonly}"
-                                  .disabled="${!user || (!!user?.id && registrationEmailAsUsername)}"
-                                  pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
-                                  .validationMessage="${i18next.t("invalidEmail")}"
-                                  .value="${user?.email}" autocomplete="false"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.email = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}"
-                    ></or-mwc-input>
-                    <or-mwc-input id="new-firstName" class="validate"
-                                  .label="${i18next.t("firstName")}"
-                                  .type="${InputType.TEXT}"
-                                  ?readonly="${readonly}"
-                                  .disabled="${!user}"
-                                  minLength="5" autocomplete="false"
-                                  .value="${user?.firstName}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.firstName = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}"
-                    ></or-mwc-input>
-                    <or-mwc-input id="new-surname" class="validate"
-                                  .label="${i18next.t("surname")}"
-                                  .type="${InputType.TEXT}"
-                                  ?readonly="${readonly}"
-                                  .disabled="${!user}"
-                                  minLength="1" autocomplete="false"
-                                  .value="${user?.lastName}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.lastName = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}">
-                    </or-mwc-input>
+                    <or-vaadin-email-field id="new-email" class="validate"
+                                           ?required=${registrationEmailAsUsername}
+                                           ?readonly=${(!!user?.id && registrationEmailAsUsername) || readonly}
+                                           ?disabled="${!user || (!!user?.id && registrationEmailAsUsername)}"
+                                           pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
+                                           errorMessage=${i18next.t("invalidEmail")}
+                                           value=${user?.email} autocomplete="false"
+                                           @change="${(ev: Event) => {
+                                               user.email = (ev.currentTarget as HTMLInputElement).value;
+                                               onchange?.(user, true, this._isInvalid());
+                                           }}">
+                        <or-translate slot="label" value="email"></or-translate>
+                    </or-vaadin-email-field>
+                    <or-vaadin-text-field id="new-firstName" class="validate"
+                                          ?readonly=${readonly} ?disabled=${!user}
+                                          minLength="5" autocomplete="false"
+                                          value=${user?.firstName}
+                                          @change=${(ev: Event) => {
+                                              user.firstName = (ev.currentTarget as HTMLInputElement).value;
+                                              onchange?.(user, true, this._isInvalid());
+                                          }}>
+                        <or-translate slot="label" value="firstName"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-text-field id="new-surname" class="validate"
+                                          ?readonly=${readonly} ?disabled=${!user}
+                                          minLength="1" autocomplete="false"
+                                          value=${user?.lastName}
+                                          @change="${(ev: Event) => {
+                                              user.lastName = (ev.currentTarget as HTMLInputElement).value;
+                                              onchange?.(user, true, this._isInvalid());
+                                          }}">
+                        <or-translate slot="label" value="surname"></or-translate>
+                    </or-vaadin-text-field>
                 </div>
                 <div class="column">
-                    <h5>${i18next.t("password")}</h5>
                     ${registrationEmailAsUsername ? html`
                         <!-- Reset password button when email as username is configured -->
-                        <or-mwc-input id="reset-password" raised
-                                      .label="${i18next.t("resetPassword")}"
-                                      .type="${InputType.BUTTON}"
-                                      .disabled="${!user.email}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onResetPasswordBtnClick(e)}"
-                        ></or-mwc-input>
+                        <or-vaadin-button id="reset-password" theme="primary" ?disabled=${!user.email} style="width: fit-content;"
+                                          @click=${() => this._onResetPasswordBtnClick()}>
+                            <or-translate value="resetPassword"></or-translate>
+                        </or-vaadin-button>
                     ` : html`
                         <!-- Direct password input fields when email as username not configured -->
-                        <or-mwc-input id="new-password" class="validate"
-                                      .label="${i18next.t("password")}"
-                                      .type="${InputType.PASSWORD}"
-                                      ?readonly="${readonly}"
-                                      .disabled="${!user}"
-                                      min="1" autocomplete="false"
-                                      @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
-                                          const changed = this._onPasswordChanged(user);
-                                          onchange?.(user, changed, this._isInvalid());
-                                      }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="new-repeatPassword"
-                                      .label="${i18next.t("repeatPassword")}"
-                                      .type="${InputType.PASSWORD}"
-                                      helperPersistent
-                                      ?readonly="${readonly}"
-                                      .disabled="${!user}"
-                                      min="1" autocomplete="false"
-                                      @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
-                                          const changed = this._onPasswordChanged(user);
-                                          onchange?.(user, changed, this._isInvalid());
-                                      }}"
-                        ></or-mwc-input>
+                        <or-vaadin-password-field id="new-password" class="validate"
+                                                  ?readonly=${readonly} ?disabled=${!user}
+                                                  minLength="1" autocomplete="false"
+                                                  @change=${() => {
+                                                      const changed = this._onPasswordChanged(user);
+                                                      onchange?.(user, changed, this._isInvalid());
+                                                  }}>
+                            <or-translate slot="label" value="password"></or-translate>
+                        </or-vaadin-password-field>
+                        <or-vaadin-password-field id="new-repeatPassword"
+                                                  ?readonly=${readonly} ?disabled=${!user}
+                                                  minLength="1" autocomplete="false"
+                                                  @change=${() => {
+                                                      const changed = this._onPasswordChanged(user);
+                                                      onchange?.(user, changed, this._isInvalid());
+                                                  }}>
+                            <or-translate slot="label" value="repeatPassword"></or-translate>
+                        </or-vaadin-password-field>
                         ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                     `}
                 </div>
@@ -353,12 +336,10 @@ export class PageAccount extends Page<AppStateKeyed> {
         const dirty = this._isDirty();
         return html`
             <div class="row" style="justify-content: end; margin-top: 20px;">
-                <or-mwc-input id="savebtn" style="margin: 0;" raised
-                              .label="${i18next.t(user.id ? "save" : "create")}"
-                              .type="${InputType.BUTTON}"
-                              .disabled="${invalid || !dirty}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onSaveBtnClick(e)}"
-                ></or-mwc-input>
+                <or-vaadin-button id="savebtn" theme="primary" ?disabled=${invalid || !dirty}
+                                  @click=${() => this._onSaveBtnClick()}>
+                    <or-translate value=${user.id ? "save" : "create"}></or-translate>
+                </or-vaadin-button>
             </div>
         `;
     }
@@ -369,22 +350,30 @@ export class PageAccount extends Page<AppStateKeyed> {
      * and updates the {@link user} object with the new password.
      */
     protected _onPasswordChanged(user: UserModel): boolean {
-        const password = this._passwordElem?.nativeValue;
-        const repeatPassword = this._repeatPasswordElem?.nativeValue;
+        const password = this._passwordElem?.value;
+        const repeatPassword = this._repeatPasswordElem?.value;
         if(password && repeatPassword) {
 
             if(password !== repeatPassword) {
-                const error = i18next.t("passwordMismatch");
-                this._repeatPasswordElem?.setCustomValidity(error);
+                console.warn("Could not update password: the passwords do not match.");
                 user.password = "";
+                setTimeout(() => {
+                    this._passwordElem.errorMessage = i18next.t("passwordMismatch");
+                    this._passwordElem.invalid = true;
+                    this._repeatPasswordElem.errorMessage = i18next.t("passwordMismatch");
+                    this._repeatPasswordElem.invalid = true;
+                });
 
             } else {
-                this._repeatPasswordElem?.setCustomValidity(undefined);
                 user.password = password;
+                setTimeout(() => {
+                    this._passwordElem.invalid = false;
+                    this._repeatPasswordElem.invalid = false;
+                })
                 return true;
             }
         } else {
-            console.warn("Could not update password; some fields are empty;", password, repeatPassword);
+            console.warn("Could not update password; some fields are empty.");
         }
         return false;
     }
@@ -393,7 +382,7 @@ export class PageAccount extends Page<AppStateKeyed> {
      * HTML callback function for when the 'Save' button is clicked.
      * Checks if the input fields are valid, and calls the {@link _updateUser} function.
      */
-    protected _onSaveBtnClick(_e: OrInputChangedEvent) {
+    protected _onSaveBtnClick() {
         if (this._user && !this._isInvalid()) {
             this._updateUser(this._user);
         } else {
@@ -405,7 +394,7 @@ export class PageAccount extends Page<AppStateKeyed> {
     /**
      * HTML callback function for when the 'Reset Password' button is clicked.
      */
-    protected _onResetPasswordBtnClick(_e: OrInputChangedEvent) {
+    protected _onResetPasswordBtnClick() {
         if (this._user && !this._isInvalid()) {
 
             manager.rest.api.UserResource.requestPasswordResetCurrent()
@@ -423,7 +412,9 @@ export class PageAccount extends Page<AppStateKeyed> {
         if (validateArray.length === 0) {
             return true;
         }
-        return Array.from(validateArray).filter(e => e instanceof OrMwcInput).some(input => !(input as OrMwcInput).valid);
+        return Array.from(validateArray)
+            .filter(e => e instanceof HTMLInputElement)
+            .some(input => !(input as HTMLInputElement).checkValidity());
     }
 
     /**

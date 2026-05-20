@@ -21,6 +21,7 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {InputType} from "./util";
 import "./or-vaadin-checkbox";
+import "./or-vaadin-email-field";
 import "./or-vaadin-number-field";
 import "./or-vaadin-password-field";
 import "./or-vaadin-select";
