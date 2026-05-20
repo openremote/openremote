@@ -127,14 +127,25 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
+
+    /**
+     * Delimiter used when composing the internal subscription key from {@code eventType} and {@code subscriptionId}.
+     *
+     * <p>The key format is: {@code <eventType>::<subscriptionId>}
+     *
+     * <p>This allows unsubscribe requests to match subscriptions even when the
+     * client only provides one part of the original key, which is required for
+     * websocket clients that unsubscribe using only the subscription id or only the event type.
+     */
     protected static final String SUBSCRIPTION_KEY_DELIMITER = "::";
 
-    final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
-    final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
-    final protected Set<Pair<EventSubscription<? extends Event>, Consumer<? extends Event>>> eventSubscriptions = new CopyOnWriteArraySet<>();
-    final protected Map<String, WebSocketChannel> sessionChannels = new ConcurrentHashMap<>();
-    final protected Map<String, Map<String, Consumer<? extends Event>>> websocketSessionSubscriptionConsumers = new ConcurrentHashMap<>();
-    final protected Map<String, SessionDispatchState> sessionStates = new ConcurrentHashMap<>();
+    protected final Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
+    protected final Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
+    protected final Set<Pair<EventSubscription<? extends Event>, Consumer<? extends Event>>> eventSubscriptions = new CopyOnWriteArraySet<>();
+    protected final Map<String, WebSocketChannel> sessionChannels = new ConcurrentHashMap<>();
+    protected final Map<String, Map<String, Consumer<? extends Event>>> websocketSessionSubscriptionConsumers = new ConcurrentHashMap<>();
+    protected final Map<String, SessionDispatchState> sessionStates = new ConcurrentHashMap<>();
+
     protected TimerService timerService;
     protected ExecutorService executorService;
     protected MessageBrokerService messageBrokerService;
