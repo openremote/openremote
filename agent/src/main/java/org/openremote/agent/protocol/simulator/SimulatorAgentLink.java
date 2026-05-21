@@ -35,9 +35,10 @@ import java.util.TimeZone;
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 
     @JsonSchemaDescription("Used to store a dataset of values that should be replayed (i.e. written to the" +
-        " linked attribute) in a continuous loop based on a schedule (by default replays every 24h)." +
+        " linked attribute) based on the specified schedule. Datapoints scheduled after the replay loop are ignored." +
         " Predicted datapoints can be added by configuring 'Store predicted datapoints' which will insert the datapoints" +
-        " immediately as determined by the schedule. Datapoints scheduled after the replay loop are ignored.")
+        " immediately as determined by the schedule." +
+        " If a recurring schedule is defined it recurringly inserts the next predicted dataset.")
     protected SimulatorReplayDatapoint[] replayData;
 
     @JsonSchemaTitle("Schedule")
@@ -45,8 +46,8 @@ public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
         " The dataset can be scheduled to stop based on the UNTIL rule part" +
         " or set to recur by a certain amount using the COUNT rule part. The schedule also allows adjusting the frequency" +
         " at which the dataset is replayed and at what times following the RFC 5545 RRULE format." +
-        " If not provided defaults to 24 hours. If the replay data contains datapoints scheduled after the" +
-        " default 24 hours or the recurrence rule the datapoints will be ignored.")
+        " If not provided creates a schedule that runs the dataset once." +
+        " If the replay data contains datapoints scheduled after the end time value the datapoints will be ignored.")
     @JsonSchemaFormat("simulator-schedule")
     protected SimulatorProtocol.Schedule schedule;
 
