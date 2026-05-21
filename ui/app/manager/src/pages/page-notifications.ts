@@ -28,7 +28,7 @@ const sources = [
     NotificationSource.CLIENT,
     NotificationSource.GLOBAL_RULESET,
     NotificationSource.REALM_RULESET,
-    NotificationSource.ASSET_RULESET,
+    // NotificationSource.ASSET_RULESET, // Not implemented
 ] satisfies NotificationSourceKeys[];
 
 export class NotificationService {
