@@ -34,7 +34,6 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.AssetFilter;
@@ -59,6 +58,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.lang.System.Logger.Level.*;
@@ -109,6 +109,7 @@ import static org.openremote.model.Constants.*;
  * </dl>
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
+
     /**
      * Holds state for each websocket session
      */
@@ -124,12 +125,24 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
-    final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
-    final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
-    final protected Set<Pair<EventSubscription<? extends Event>, Consumer<? extends Event>>> eventSubscriptions = new CopyOnWriteArraySet<>();
-    final protected Map<String, WebSocketChannel> sessionChannels = new ConcurrentHashMap<>();
-    final protected Map<String, Map<String, Consumer<? extends Event>>> websocketSessionSubscriptionConsumers = new ConcurrentHashMap<>();
-    final protected Map<String, SessionDispatchState> sessionStates = new ConcurrentHashMap<>();
+    /**
+     * Delimiter used when composing the internal subscription key from {@code eventType} and {@code subscriptionId}.
+     *
+     * <p>The key format is: {@code <eventType>::<subscriptionId>}
+     *
+     * <p>This allows unsubscribe requests to match subscriptions even when the
+     * client only provides one part of the original key, which is required for
+     * websocket clients that unsubscribe using only the subscription id or only the event type.
+     */
+    protected static final String SUBSCRIPTION_KEY_DELIMITER = "::";
+
+    protected final Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
+    protected final Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
+    protected final Set<Pair<EventSubscription<? extends Event>, Consumer<? extends Event>>> eventSubscriptions = new CopyOnWriteArraySet<>();
+    protected final Map<String, WebSocketChannel> sessionChannels = new ConcurrentHashMap<>();
+    protected final Map<String, Map<String, Consumer<? extends Event>>> websocketSessionSubscriptionConsumers = new ConcurrentHashMap<>();
+    protected final Map<String, SessionDispatchState> sessionStates = new ConcurrentHashMap<>();
+
     protected TimerService timerService;
     protected ExecutorService executorService;
     protected MessageBrokerService messageBrokerService;
@@ -428,11 +441,20 @@ public class ClientEventService extends RouteBuilder implements ContainerService
    @SuppressWarnings({"unchecked", "rawtypes"})
    void procesInboundEvent(Exchange exchange) {
       WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
-      AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
-      String realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
+      AuthContext authContext = exchange.getIn().getHeader(AUTH_CONTEXT, AuthContext.class);
+      String realm = exchange.getIn().getHeader(REALM_PARAM_NAME, String.class);
 
-      exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
-      exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
+      if (webSocketChannel != null) {
+         if (authContext == null) {
+            authContext = (AuthContext) webSocketChannel.getAttribute(AUTH_CONTEXT);
+         }
+         if (realm == null) {
+            realm = (String) webSocketChannel.getAttribute(REALM_PARAM_NAME);
+         }
+      }
+
+       exchange.getIn().setHeader(AUTH_CONTEXT, authContext);
+       exchange.getIn().setHeader(REALM_PARAM_NAME, realm);
 
       // Pass to gateway interceptor and abort if it stops the exchange
       if (gatewayInterceptor != null) {
@@ -459,6 +481,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             return;
          }
 
+         if (subscription.getEventType().contains(SUBSCRIPTION_KEY_DELIMITER) || subscription.getSubscriptionId().contains(SUBSCRIPTION_KEY_DELIMITER)) {
+            sendToWebsocketSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
+            exchange.setRouteStop(true);
+            return;
+         }
+
          // Force subscription to filter only value changed attribute events
          if (subscription.getFilter() instanceof AssetFilter assetFilter) {
             subscription.setFilter(assetFilter.setValueChanged(true));
@@ -475,7 +503,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                consumers = new HashMap<>();
             }
 
-            String subscriptionKey = subscription.getEventType() + subscription.getSubscriptionId();
+            String subscriptionKey = subscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + subscription.getSubscriptionId();
             consumers.put(subscriptionKey, consumer);
             addSubscription(subscription, consumer);
             return consumers;
@@ -485,10 +513,25 @@ public class ClientEventService extends RouteBuilder implements ContainerService
          String sessionKey = getSessionKey(exchange);
          LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
          websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-            String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
-            Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
-            if (consumer != null) {
-               removeSubscription(consumer);
+            Predicate<String> predicate = null;
+            if (!cancelEventSubscription.getEventType().isEmpty() && !cancelEventSubscription.getSubscriptionId().isEmpty()) {
+               predicate = key -> key.equals(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId());
+            } else {
+               if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
+                   predicate = key -> key.endsWith(SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId());
+               } else if (!cancelEventSubscription.getEventType().isEmpty()) {
+                   predicate = key -> key.startsWith(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER);
+               }
+            }
+            if (predicate != null) {
+               final Predicate<String> finalPredicate = predicate;
+               subscriptionConsumers.keySet().removeIf(key -> {
+                  if (finalPredicate.test(key)) {
+                     removeSubscription(subscriptionConsumers.get(key));
+                     return true;
+                  }
+                  return false;
+               });
             }
             if (subscriptionConsumers.isEmpty()) {
                return null;
