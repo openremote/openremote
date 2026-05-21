@@ -437,10 +437,6 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             return response.data;
         } else {
             console.warn("No tunnels were received from the manager.");
-            return [{
-                realm: "test",
-                gatewayId: "test"
-            }] as GatewayTunnelInfo[];
         }
     }
 
