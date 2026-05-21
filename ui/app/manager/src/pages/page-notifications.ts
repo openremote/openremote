@@ -465,8 +465,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 name: formData.title,
                 message: message,
                 targets: formData.targets.map(id => ({
-                    type: formData.targetType as NotificationTargetType,
-                    id: id
+                    id,
+                    type: formData.targetType,
                 }))
             };
 
