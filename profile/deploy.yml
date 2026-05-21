@@ -524,7 +524,7 @@ services:
       test: ["CMD", "/app/app", "-v"]
     ports:
       - "2222:2222"
-      - "9000-10000:9000-10000"
+      - "9000-9100:9000-9100"
     volumes:
       - proxy-data:/etc/letsencrypt
       - deployment-data:/deployment
@@ -538,7 +538,7 @@ services:
       --idle-connection=false
       --authentication-keys-directory=/deployment/sish/pubkeys
       --private-keys-directory=/deployment/sish/keys
-      --port-bind-range="9000-10000"
+      --port-bind-range="9000-9100"
       --bind-random-ports=false
       --bind-random-subdomains=false
       --domain=${OR_HOSTNAME}
