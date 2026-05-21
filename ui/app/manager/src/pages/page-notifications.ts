@@ -338,12 +338,13 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     public stateChanged(state: AppStateKeyed): void {
         if (state.app.page === "notifications") {
-            if (this.realm === undefined || this.realm === state.app.realm) {
-                this._loadData();
-            }
+            const realmChanged = this.realm !== state.app.realm;
             this.realm = state.app.realm;
             this.requestUpdate('realm');
 
+            if (realmChanged) {
+                this.reset();
+            }
             this._loadData();
         }
     }
@@ -353,28 +354,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this._totalCount = 0;
         this._currentPage = 0;
         this.requestUpdate();
-    }
-
-    public shouldUpdate(changedProperties: PropertyValues): boolean {
-        if (changedProperties.has("realm")) {
-            this.realm = manager.displayRealm;
-            this.reset();
-        }
-
-        if (!this._data && !this._loading && this.realm) {
-            this._loadData();
-        }
-
-        return super.shouldUpdate(changedProperties);
-    }
-
-    public connectedCallback(): void {
-        super.connectedCallback();
-
-        this.realm = manager.displayRealm;
-        if (!this._data) {
-            this._loadData();
-        }
     }
 
     get name(): string {
