@@ -513,27 +513,26 @@ public class ClientEventService extends RouteBuilder implements ContainerService
          String sessionKey = getSessionKey(exchange);
          LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
          websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-            List<String> subscriptionKeys = new ArrayList<>();
+            Predicate<String> predicate = null;
             if (!cancelEventSubscription.getEventType().isEmpty() && !cancelEventSubscription.getSubscriptionId().isEmpty()) {
-               String subscriptionKey = cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId();
-               subscriptionKeys.add(subscriptionKey);
+               predicate = key -> key.equals(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId());
             } else {
-               Predicate<String> predicate = null;
                if (!cancelEventSubscription.getSubscriptionId().isEmpty()) {
                    predicate = key -> key.endsWith(SUBSCRIPTION_KEY_DELIMITER + cancelEventSubscription.getSubscriptionId());
                } else if (!cancelEventSubscription.getEventType().isEmpty()) {
                    predicate = key -> key.startsWith(cancelEventSubscription.getEventType() + SUBSCRIPTION_KEY_DELIMITER);
                }
-               if (predicate != null) {
-                  subscriptionConsumers.keySet().stream().filter(predicate).forEach(subscriptionKeys::add);
-               }
             }
-            subscriptionKeys.forEach(subscriptionKey -> {
-               Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
-               if (consumer != null) {
-                  removeSubscription(consumer);
-               }
-            });
+            if (predicate != null) {
+               final Predicate<String> finalPredicate = predicate;
+               subscriptionConsumers.keySet().removeIf(key -> {
+                  if (finalPredicate.test(key)) {
+                     removeSubscription(subscriptionConsumers.get(key));
+                     return true;
+                  }
+                  return false;
+               });
+            }
             if (subscriptionConsumers.isEmpty()) {
                return null;
             }
