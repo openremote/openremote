@@ -5,6 +5,7 @@ import {DefaultColor4} from "@openremote/core";
 import { SentNotification, PushNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { NotificationService } from "../../pages/page-notifications";
 import { getAssetsRoute, getUsersRoute } from "../../routes";
 
@@ -20,11 +21,23 @@ export class NotificationTableClickEvent extends CustomEvent<{notificationId: nu
     constructor(notificationId: number) {
             super(NotificationTableClickEvent.NAME, {
                 detail: {notificationId},
-                bubbles: true, 
+                bubbles: true,
                 composed: true
             })
         }
     }
+
+export class OrNotificationsPageChangedEvent extends CustomEvent<{page: number, size: number}> {
+    static readonly NAME = "or-notifications-page-changed";
+
+    constructor(page: number, size: number) {
+        super(OrNotificationsPageChangedEvent.NAME, {
+            detail: {page, size},
+            bubbles: true,
+            composed: true
+        });
+    }
+}
 
 @customElement("or-notifications-table")
 export class OrNotificationsTable extends OrMwcTable {
@@ -117,6 +130,12 @@ export class OrNotificationsTable extends OrMwcTable {
     @property({type: Object})
     public notificationService!: NotificationService;
 
+    @property({type: Number})
+    public currentPage: number = 0;
+
+    @property({type: Number})
+    public totalCount: number = 0;
+
     @state()
     protected targetDetailsMap: Map<string, {name: string, type: string, link: string}> = new Map();
 
@@ -133,7 +152,7 @@ export class OrNotificationsTable extends OrMwcTable {
 
     protected config: TableConfig = {
         columnFilter: [],
-        stickyFirstColumn: false, 
+        stickyFirstColumn: false,
         pagination: {
             enable: true
         },
@@ -331,6 +350,49 @@ export class OrNotificationsTable extends OrMwcTable {
         if (item?.data?.notification) {
             const event = new NotificationTableClickEvent(item.data.notification.id)
             this.dispatchEvent(event);
+        }
+    }
+
+    async getRowCount(): Promise<number> {
+        return this.totalCount ?? await super.getRowCount();
+    }
+
+    async getPaginationControls(): Promise<TemplateResult> {
+        const max = this.totalCount ?? await super.getRowCount();
+        const start = this.currentPage * this.paginationSize + 1;
+        const end = Math.min((this.currentPage + 1) * this.paginationSize, max);
+        const isFirst = this.currentPage === 0;
+        const isLast = end >= max;
+        const lastPage = Math.max(0, Math.ceil(max / this.paginationSize) - 1);
+        return html`
+            <div class="mdc-data-table__pagination-navigation">
+                <div class="mdc-data-table__pagination-total">
+                    <span>${start}-${end} of ${max}</span>
+                </div>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
+                    data-first-page="true" icon="page-first" .disabled="${isFirst}"
+                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(0, this.paginationSize))}">
+                </or-mwc-input>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
+                    data-prev-page="true" icon="chevron-left" .disabled="${isFirst}"
+                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(this.currentPage - 1, this.paginationSize))}">
+                </or-mwc-input>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
+                    data-next-page="true" icon="chevron-right" .disabled="${isLast}"
+                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(this.currentPage + 1, this.paginationSize))}">
+                </or-mwc-input>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
+                    data-last-page="true" icon="page-last" .disabled="${isLast}"
+                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(lastPage, this.paginationSize))}">
+                </or-mwc-input>
+            </div>
+        `;
+    }
+
+    protected updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        if (changedProperties.has('paginationSize') && this.totalCount) {
+            this.dispatchEvent(new OrNotificationsPageChangedEvent(0, this.paginationSize));
         }
     }
 }
