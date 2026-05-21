@@ -3,72 +3,61 @@ package org.openremote.manager.datapoint;
 import org.hibernate.Session;
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.OutdatedAttributeEvent;
-import org.openremote.model.datapoint.DatapointExportFormat;
-import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.asset.OutdatedAttributeEvent;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
+import org.openremote.model.datapoint.DatapointExportFormat;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 
-import java.io.*;
-import java.sql.Date;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.time.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.Set;
-import java.util.TreeSet;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.util.MapAccess.getInteger;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
- * Store and retrieve datapoints for asset attributes and periodically purge data points based on
- * {@link MetaItemType#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
- * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
- * days.
+ * Store and retrieve datapoints for asset attributes and periodically purge data points using
+ * TimescaleDB's {@code drop_chunks()} with week-based retention aligned to 7-day chunk intervals.
+ * Retention defaults to inifinite.
  */
 public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
+    public static final String OR_DATA_POINTS_MAX_AGE_WEEKS = "OR_DATA_POINTS_MAX_AGE_WEEKS";
+    /** @deprecated Use {@link #OR_DATA_POINTS_MAX_AGE_WEEKS} instead. If set, value is converted to weeks (rounded up). */
+    @Deprecated
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
-    public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     public static final String OR_DATA_POINTS_EXPORT_LIMIT = "OR_DATA_POINTS_EXPORT_LIMIT";
     public static final int OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT = 1000000;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-
-    protected int maxDatapointAgeDays;
+    protected int maxDatapointAgeWeeks = -1;
     protected int datapointExportLimit;
 
     @Override
@@ -84,12 +73,20 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             )
         );
 
-        maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
-
-        if (maxDatapointAgeDays <= 0) {
-            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+        if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_WEEKS)) {
+            maxDatapointAgeWeeks = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_WEEKS, -1);
+        } else if (container.getConfig().containsKey(OR_DATA_POINTS_MAX_AGE_DAYS)) {
+            int days = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, -1);
+            maxDatapointAgeWeeks = days > 0 ? (int) Math.ceil(days / 7.0) : days;
+            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " is deprecated, use " + OR_DATA_POINTS_MAX_AGE_WEEKS + " instead. Converted " + days + " days to " + maxDatapointAgeWeeks + " weeks.");
         } else {
-            LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
+            maxDatapointAgeWeeks = -1;
+        }
+
+        if (maxDatapointAgeWeeks <= 0) {
+            LOG.warning("Data point purge disabled");
+        } else {
+            LOG.log(Level.INFO, "Data point purge retention = " + maxDatapointAgeWeeks + " weeks");
         }
 
         datapointExportLimit = getInteger(container.getConfig(), OR_DATA_POINTS_EXPORT_LIMIT, OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT);
@@ -103,11 +100,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
     @Override
     public void start(Container container) throws Exception {
-        if (maxDatapointAgeDays > 0) {
+        if (maxDatapointAgeWeeks > 0) {
             dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::purgeDataPoints,
                 getFirstPurgeMillis(timerService.getNow()),
-                Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
+                Duration.ofDays(7).toMillis(), TimeUnit.MILLISECONDS
             );
         }
 
@@ -151,107 +148,60 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected void purgeDataPoints() {
-        LOG.info("Running data points purge daily task");
+        LOG.info("Running data points purge task");
 
         try {
-            // 1. Get list of attributes that have custom durations
-            List<Asset<?>> assets = assetStorageService.findAll(
-                    new AssetQuery()
-                            .attributes(
-                                    new AttributePredicate().meta(
-                                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                                    )));
-
-            List<Pair<String, Attribute<?>>> attributes = assets.stream()
-                    .map(asset -> asset
-                            .getAttributes().stream()
-                            .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
-                            .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
-                            .collect(toList()))
-                    .flatMap(List::stream)
-                    .toList();
-
-            // 2. Perform the purge using a temporary table and native SQL
             persistenceService.doTransaction(em -> {
-                em.unwrap(Session.class).doWork(connection -> {
-                    String tempTableName = "tmp_purge_attributes";
+                // Get the schema-qualified hypertable name
+                @SuppressWarnings("unchecked")
+                List<String> hypertables = em.createNativeQuery(
+                    "SELECT hypertable_schema || '.' || hypertable_name " +
+                    "FROM timescaledb_information.hypertables " +
+                    "WHERE hypertable_name = 'asset_datapoint'", String.class
+                ).getResultList();
 
-                    try (Statement statement = connection.createStatement()) {
-                        // Create temp table holding the asset ID, attribute name, and its custom max age
-                        statement.execute(
-                                "create temp table " + tempTableName + " (entity_id text, attribute_name text, max_age_days int) on commit drop"
-                        );
+                if (hypertables.isEmpty()) {
+                    LOG.warning("asset_datapoint is not a TimescaleDB hypertable, skipping purge. " +
+                        "TimescaleDB with hypercore is required for data point storage.");
+                    return;
+                }
+
+                String qualifiedTableName = hypertables.getFirst();
+
+                // Find the maximum custom retention across all attributes with DATA_POINTS_MAX_AGE_DAYS meta
+                int effectiveRetentionWeeks = maxDatapointAgeWeeks;
+                Number maxCustomDays = (Number) em.createNativeQuery(
+                    "SELECT MAX((attr_val->'meta'->>'dataPointsMaxAgeDays')::integer) " +
+                    "FROM asset, jsonb_each(asset.attributes) AS a(attr_key, attr_val) " +
+                    "WHERE jsonb_exists(attr_val->'meta', 'dataPointsMaxAgeDays')"
+                ).getSingleResult();
+
+                if (maxCustomDays != null) {
+                    int customRetentionWeeks = (int) Math.ceil(maxCustomDays.intValue() / 7.0);
+                    effectiveRetentionWeeks = Math.max(effectiveRetentionWeeks, customRetentionWeeks);
+                    if (customRetentionWeeks > maxDatapointAgeWeeks) {
+                        LOG.info("Custom attribute retention (" + maxCustomDays.intValue() + " days / " +
+                            customRetentionWeeks + " weeks) exceeds system default (" + maxDatapointAgeWeeks +
+                            " weeks), using " + effectiveRetentionWeeks + " weeks");
                     }
+                }
 
-                    // Batch insert the custom retention rules to avoid giant IN clauses
-                    if (!attributes.isEmpty()) {
-                        try (PreparedStatement insertStatement = connection.prepareStatement(
-                                "insert into " + tempTableName + " (entity_id, attribute_name, max_age_days) values (?, ?, ?)"
-                        )) {
-                            for (Pair<String, Attribute<?>> attributeRef : attributes) {
-                                insertStatement.setString(1, attributeRef.key);
-                                insertStatement.setString(2, attributeRef.value.getName());
+                // Compute cutoff from effective retention
+                Instant cutoff = timerService.getNow().minus(Duration.ofDays((long) effectiveRetentionWeeks * 7));
+                Timestamp cutoffTimestamp = Timestamp.from(cutoff);
 
-                                int customAge = attributeRef.value
-                                        .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
-                                        .orElse(maxDatapointAgeDays);
-                                insertStatement.setInt(3, customAge);
+                LOG.info("Dropping chunks older than " + cutoffTimestamp + " (" + effectiveRetentionWeeks + " weeks retention)");
 
-                                insertStatement.addBatch();
-                            }
-                            insertStatement.executeBatch();
-                        }
-                    }
+                Number dropped = (Number) em.createNativeQuery("SELECT count(*) FROM public.drop_chunks(CAST(:hypertable AS regclass), older_than => CAST(:cutoff AS timestamp))")
+                   .setParameter("hypertable", qualifiedTableName)
+                   .setParameter("cutoff", cutoffTimestamp)
+                   .getSingleResult();
 
-                    // Purge default data points (NOT in the temp table)
-                    LOG.fine("Purging data points of attributes that use default max age days of " + maxDatapointAgeDays);
-                    long defaultEpochMillis = timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS).toEpochMilli();
-
-                    try (PreparedStatement defaultPurge = connection.prepareStatement(
-                            "delete from asset_datapoint ad " +
-                                    "where ad.timestamp < to_timestamp(?) " +
-                                    "and not exists (select 1 from " + tempTableName + " t where t.entity_id = ad.entity_id and t.attribute_name = ad.attribute_name)"
-                    )) {
-                        defaultPurge.setLong(1, defaultEpochMillis / 1000);
-                        defaultPurge.executeUpdate();
-                    }
-
-                    // Purge custom data points by joining against the temp table
-                    if (!attributes.isEmpty()) {
-                        LOG.fine("Purging data points with custom max age constraints");
-                        long currentEpochMillis = timerService.getNow().truncatedTo(DAYS).toEpochMilli();
-
-                        try (PreparedStatement customPurge = connection.prepareStatement(
-                                "delete from asset_datapoint ad " +
-                                        "using " + tempTableName + " t " +
-                                        "where ad.entity_id = t.entity_id " +
-                                        "and ad.attribute_name = t.attribute_name " +
-                                        // Delete where timestamp is older than (current date - custom age)
-                                        "and ad.timestamp < to_timestamp(? - (t.max_age_days * 86400))"
-                        )) {
-                            customPurge.setLong(1, currentEpochMillis / 1000);
-                            customPurge.executeUpdate();
-                        }
-                    }
-                });
+                LOG.info("Successfully purged data points using drop_chunks, drop count = " + dropped);
             });
-
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to run data points purge", e);
+            LOG.log(Level.SEVERE, "Failed to run data points purge", e);
         }
-    }
-
-    protected String buildWhereClause(List<Pair<String, Attribute<?>>> attributes, boolean negate) {
-
-        if (attributes.isEmpty()) {
-            return "";
-        }
-
-        String whereStr = attributes.stream()
-            .map(attributeRef -> "('" + attributeRef.key + "','" + attributeRef.value.getName() + "')")
-            .collect(Collectors.joining(","));
-
-        return " and (dp.assetId, dp.attributeName) " + (negate ? "not " : "") + "in (" + whereStr + ")";
     }
 
     /**

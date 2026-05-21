@@ -97,6 +97,8 @@ public interface Constants {
     String UNITS_CUBED = "cubed";
     String UNITS_PEAK = "peak";
     String UNITS_MEGA = "mega";
+    String UNITS_GIGA = "giga";
+    String UNITS_TERA = "tera";
     String UNITS_KILO = "kilo";
     String UNITS_CENTI = "centi";
     String UNITS_HECTO = "hecto";

@@ -1,6 +1,7 @@
 import java.nio.file.Paths
 
 apply plugin: "java-library"
+apply plugin: "groovy"
 apply plugin: "application"
 apply plugin: "distribution"
 apply plugin: "maven-publish"
@@ -53,6 +54,19 @@ dependencies {
     implementation "io.prometheus:prometheus-metrics-exporter-httpserver:$prometheusVersion"
 
     implementation "org.apache.sshd:sshd-netty:$apacheMINAVersion"
+
+    testImplementation "org.apache.groovy:groovy-all:$groovyVersion"
+    testImplementation platform("org.spockframework:spock-bom:$spockVersion")
+    testImplementation "org.spockframework:spock-core"
+    testImplementation "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    testImplementation "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
+    testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"
+}
+
+sourceSets {
+    test {
+        groovy.srcDirs = ['test/src/groovy']
+    }
 }
 
 base {
