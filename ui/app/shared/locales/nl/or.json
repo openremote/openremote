@@ -533,6 +533,8 @@
     "cubed": "³",
     "peak": "p",
     "mega": "M",
+    "giga": "G",
+    "tera": "T",
     "kilo": "k",
     "centi": "c",
     "hecto": "h",
