@@ -20,7 +20,6 @@ import {getAlarmsRoute} from "../routes";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
 import {guard} from "lit/directives/guard.js";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {
@@ -29,6 +28,9 @@ import {
     OrMwcTableRowSelectEvent
 } from "@openremote/or-mwc-components/or-mwc-table";
 import "../components/alarms/or-alarms-table";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import moment from "moment";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
 
 export interface PageAlarmsConfig {
     initialFilter?: string;
@@ -75,7 +77,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 #title {
                     padding: 0 20px;
                     font-size: 18px;
-                    font-weight: bold;
                     margin: 10px 0;
                     display: flex;
                     align-items: center;
@@ -151,12 +152,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     display: flex;
                     flex-direction: row;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: baseline;
                 }
 
                 .controls-left {
                     display: flex;
-                    align-items: center;
+                    align-items: baseline;
                     width: 100%;
                 }
 
@@ -274,22 +275,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _selectedIds?: number[];
 
     get statusValue() {
-        const statusOptions = this._getStatusOptions();
-        const matchingOption = statusOptions.find(option =>
+        const matchingOption = this._getStatusOptions().find(option =>
             option.value === this.status ||
-            (this.allActive && option.value === 'All-active') ||
-            (!this.status && option.value === 'All')
+            (this.allActive && option.value === 'allActive') ||
+            (!this.status && option.value === 'all')
         );
-        return matchingOption ? matchingOption.label : '';
-    }
-
-    get severityValue() {
-        const severityOptions = this._getSeverityOptions();
-        const matchingOption = severityOptions.find(option =>
-            option.value === this.severity ||
-            (!this.severity && option.value === 'All')
-        );
-        return matchingOption ? matchingOption.label : '';
+        return matchingOption?.value;
     }
 
     get name(): string {
@@ -412,49 +403,44 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     <div class="${this.creationState || this.alarm ? "hidden" : ""}"
                          style="display: flex; align-items: center;">
                         <or-icon icon="bell-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                        <span>${this.alarm != undefined ? this.alarm.title : html`
+                        <span style="font-weight: bold;">${this.alarm != undefined ? this.alarm.title : html`
                             <or-translate value="alarm.alarm_plural"/>`}</span>
                     </div>
                     <div>
                         <div id="controls">
+                            <!-- Actions when alarm is selected -->
                             <div class="${this.creationState || this.alarm || assignOnly || readonly ? "hidden" : "panel-title"}"
-                                 style="justify-content: flex-end;">
-                                <or-mwc-input
-                                        outlined
-                                        class="${this._selectedIds?.length > 0 ? "" : "hidden"}"
-                                        style="margin: 0;"
-                                        type="${InputType.BUTTON}"
-                                        icon="delete"
-                                        @or-mwc-input-changed="${() => (this._deleteAlarms())}"
-                                ></or-mwc-input>
+                                 style="justify-content: flex-end; margin-right: 12px;">
+                                <or-vaadin-button theme="icon" class="${this._selectedIds?.length > 0 ? "" : "hidden"}"
+                                                  @click=${() => this._deleteAlarms()}>
+                                    <or-icon icon="delete"></or-icon>
+                                </or-vaadin-button>
                             </div>
-                            <div class="${this._selectedIds?.length > 0 ? "" : "hidden"}"
-                                 style="height:40px; border-right: 1px solid #e0e0e0; margin-right: 4px;"></div>
+                            
+                            <!-- Filters -->
                             <div class="${this.creationState || this.alarm ? "hidden" : "controls-left"}">
-                                <or-mwc-input .type="${InputType.CHECKBOX}" id="assign-check"
-                                              ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}"
-                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onAssignCheckChanged(evt.detail.value)}"
-                                              .value="${this.assign}"></or-mwc-input>
-                                <or-mwc-input .type="${InputType.SELECT}" id="severity-select" comfortable
-                                              ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}"
-                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}"
-                                              .value="${this.severityValue}"
-                                              .options="${this._getSeverityOptions().map(s => s.label)}"></or-mwc-input>
-                                <or-mwc-input .type="${InputType.SELECT}" id="status-select" comfortable
-                                              ?disabled="${disabled}" .label="${i18next.t("alarm.status")}"
-                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}"
-                                              .value="${this.statusValue}"
-                                              .options="${this._getStatusOptions().map(s => s.label)}"></or-mwc-input>
+                                <or-vaadin-checkbox id="assign-check" ?disabled=${disabled} ?checked=${this.assign}
+                                                    @change=${(ev: Event) => this._onAssignCheckChanged((ev.currentTarget as HTMLInputElement).checked)}>
+                                    <or-translate slot="label" value="alarm.assignedToMe"></or-translate>
+                                </or-vaadin-checkbox>
+                                <or-vaadin-select id="severity-select" ?disabled=${disabled}
+                                                  .items=${this._getSeverityOptions()} value=${this.severity ?? 'all'}
+                                                  @change=${(ev: Event) => this._onSeverityChanged((ev.currentTarget as OrVaadinSelect).value as AlarmSeverity | 'all')}>
+                                    <or-translate slot="label" value="alarm.severity"></or-translate>
+                                </or-vaadin-select>
+                                <or-vaadin-select id="status-select" ?disabled=${disabled}
+                                                  .items=${this._getStatusOptions()} value=${this.statusValue}>
+                                                  @change=${(ev: Event) => this._onStatusChanged((ev.currentTarget as OrVaadinSelect).value as AlarmStatus | 'all' | 'allActive')}>
+                                    <or-translate slot="label" value="alarm.status"></or-translate>
+                                </or-vaadin-select>
 
                             </div>
                             <div class="${this.creationState || this.alarm || assignOnly || readonly ? "hidden" : "panel-title"}"
                                  style="justify-content: flex-end;">
-                                <or-mwc-input
-                                        type="${InputType.BUTTON}"
-                                        icon="plus"
-                                        label="${i18next.t("alarm.add")}"
-                                        @or-mwc-input-changed="${() => (this.creationState = {alarmModel: this.getNewAlarmModel()})}"
-                                ></or-mwc-input>
+                                <or-vaadin-button @click=${() => (this.creationState = {alarmModel: this.getNewAlarmModel()})}>
+                                    <or-icon slot="prefix" icon="plus"></or-icon>
+                                    <or-translate value="alarm.add"></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                     </div>
@@ -660,88 +646,63 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                 <or-translate value="details"/>
                             </h5>
                             <!-- alarm details -->
-                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
-                                          .label="${i18next.t("alarm.title")}" required
-                                          .type="${InputType.TEXT}"
-                                          .value="${alarm.title}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                              alarm.title = e.detail.value;
-                                              this.onAlarmChanged(e);
-                                          }}"
-                            ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
-                                          .label="${i18next.t("alarm.content")}"
-                                          .type="${InputType.TEXTAREA}"
-                                          .value="${alarm.content}"
-                                          rows="12"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                              alarm.content = e.detail.value;
-                                              this.onAlarmChanged(e);
-                                          }}"
-                            ></or-mwc-input>
+                            <or-vaadin-text-field class="alarm-input" ?readonly=${!write} required value=${alarm.title}
+                                                  @change=${(ev: Event) => {
+                                                      alarm.title = (ev.currentTarget as HTMLInputElement).value;
+                                                      this.onAlarmChanged(ev);
+                                                  }}>
+                                <or-translate slot="label" value="alarm.title"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-area class="alarm-input" ?readonly=${!write} value=${alarm.content} min-rows="12"
+                                                 @change=${(ev: Event) => {
+                                                     alarm.content = (ev.currentTarget as HTMLInputElement).value;
+                                                     this.onAlarmChanged(ev);
+                                                 }}>
+                                <or-translate slot="label" value="alarm.content"></or-translate>
+                            </or-vaadin-text-area>
                         </div>
                         <div class="column" id="prop-panel">
                             <h5>
                                 <or-translate value="properties"/>
                             </h5>
-                            <or-mwc-input class="alarm-input hidden" ?disabled="${true}"
-                                          ?comfortable=${!this.creationState}
-                                          .label="${i18next.t("createdOn")}"
-                                          .type="${InputType.DATETIME}"
-                                          .value="${new Date(alarm.createdOn)}"
-                            ></or-mwc-input>
-                            <or-mwc-input class="${this.creationState ? "hidden" : "alarm-input"}" ?disabled="${true}"
-                                          .label="${i18next.t("alarm.lastModified")}"
-                                          .type="${InputType.DATETIME}"
-                                          .value="${new Date(alarm.lastModified)}"
-                            ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?disabled="${!write || this.creationState || this.alarm}"
-                                          .label="${i18next.t("alarm.source")}"
-                                          .type="${InputType.TEXT}"
-                                          .value="${this._getSourceText()}"
-                            ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
-                                          .label="${i18next.t("alarm.severity")}"
-                                          .type="${InputType.SELECT}"
-                                          .options="${this._getAddSeverityOptions().map(s => s.label)}"
-                                          .value="${this._getAddSeverityOptions().filter((obj) => obj.value === alarm.severity).map((obj) => obj.label)[0]}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                              alarm.severity = this._getAddSeverityOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
-                                              this.onAlarmChanged(e);
-                                          }}"
-                            ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
-                                          .label="${i18next.t("alarm.status")}"
-                                          .type="${InputType.SELECT}"
-                                          .options="${this._getAddStatusOptions().map(s => s.label)}"
-                                          .value="${this._getAddStatusOptions().filter((obj) => obj.value === alarm.status).map((obj) => obj.label)[0]}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                              alarm.status = this._getAddStatusOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
-                                              this.onAlarmChanged(e);
-                                          }}"
-                            ></or-mwc-input>
-                            <or-mwc-input class="alarm-input"
-                                          ?disabled="${!manager.hasRole("read:users") && !manager.hasRole("read:admin")}"
-                                          .label="${i18next.t("alarm.assignee")}"
-                                          .type="${InputType.SELECT}"
-                                          .options="${this._getUsers().map((obj) => obj.label)}"
-                                          .value="${this._getUsers().filter((obj) => obj.label === alarm.assigneeUsername).map((obj) => obj.label)[0]}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                              alarm.assigneeId = this._getUsers().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
-                                              this.onAlarmChanged(e);
-                                          }}"
-                            ></or-mwc-input>
+                            <or-vaadin-text-field class="alarm-input hidden" disabled
+                                                  value=${moment(alarm.createdOn).format("LLL")}>
+                                <or-translate slot="label" value="createdOn"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-field class=${this.creationState ? "hidden" : "alarm-input"} disabled
+                                                  value=${moment(alarm.lastModified).format("LLL")}>
+                                <or-translate slot="label" value="alarm.lastModified"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-field class="alarm-input" ?disabled=${!write || this.creationState || this.alarm}
+                                                  value=${this._getSourceText()}>
+                                <or-translate slot="label" value="alarm.source"></or-translate>
+                            </or-vaadin-text-field>
+                            
+                            <or-vaadin-select class="alarm-input" ?readonly=${!write}
+                                              .items=${this._getAddSeverityOptions()} value=${alarm.severity}
+                                              @change=${(ev: Event) => {
+                                                  alarm.severity = (ev.currentTarget as OrVaadinSelect).value as AlarmSeverity;
+                                                  this.onAlarmChanged(ev);
+                                              }}>
+                                <or-translate slot="label" value="alarm.severity"></or-translate>
+                            </or-vaadin-select>
+                            
+                            <or-vaadin-select class="alarm-input"
+                                              ?readonly=${!manager.hasRole("read:users") && !manager.hasRole("read:admin")}
+                                              .items=${this._getUsers()} value=${alarm.assigneeId}
+                                              @change=${(ev: Event) => {
+                                                  console.debug(this._getUsers());
+                                                  alarm.assigneeId = (ev.currentTarget as OrVaadinSelect).value;
+                                                  this.onAlarmChanged(ev);
+                                              }}>
+                                <or-translate slot="label" value="alarm.assignee"></or-translate>
+                            </or-vaadin-select>
                             <div>
-                                <span style="margin: 0px auto 10px;"><or-translate value="linkedAssets"/>:</span>
-                                <or-mwc-input outlined ?disabled="${!manager.hasRole("write:alarms")}"
-                                              style="margin-left: 4px;"
-                                              .type="${InputType.BUTTON}"
-                                              .label="${i18next.t("selectRestrictedAssets", {
-                                                  number: alarm.alarmAssetLinks?.length,
-                                              })}"
-                                              @or-mwc-input-changed="${(ev: MouseEvent) =>
-                                                      this._openAssetSelector(ev, alarm, readonly)}"
-                                ></or-mwc-input>
+                                <span><or-translate value="linkedAssets"></or-translate>:</span>
+                                <or-vaadin-button ?disabled=${!manager.hasRole("write:alarms")} style="margin-left: 4px;"
+                                                  @click=${(ev: Event) => this._openAssetSelector(ev, alarm, readonly)}>
+                                    <span>${i18next.t("selectRestrictedAssets", {number: alarm.alarmAssetLinks?.length})}</span>
+                                </or-vaadin-button>
                             </div>
                         </div>
                     </div>
@@ -749,42 +710,35 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     ${when(!(readonly && !this._saveAlarmPromise), () => html`
                         <div class="row" style="justify-content: space-between; margin-top: 10px;">
                             ${when((manager.hasRole("write:alarms")), () => html`
-                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined
-                                              ?disabled="${!manager.hasRole("write:alarms") || !alarm.id}"
-                                              .label="${i18next.t("delete")}"
-                                              .type="${InputType.BUTTON}"
-                                              @or-mwc-input-changed="${() => this._deleteAlarm(this.alarm)}"
-                                ></or-mwc-input>
+                                <or-vaadin-button class="alarm-input" ?disabled=${!manager.hasRole("write:alarms") || !alarm.id}
+                                                  @click=${() => this._deleteAlarm(this.alarm)}>
+                                    <or-translate value="delete"></or-translate>
+                                </or-vaadin-button>
                             `)}
                             <div>
-                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined
-                                              .label="${i18next.t("cancel")}"
-                                              .type="${InputType.BUTTON}"
-                                              @or-mwc-input-changed="${() => this.reset()}"
-                                ></or-mwc-input>
-                                <or-mwc-input id="savebtn"
-                                              style="margin: 0;"
-                                              raised class="alarm-input" disabled
-                                              .label="${i18next.t(alarm.id ? "save" : "create")}"
-                                              .type="${InputType.BUTTON}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  let error: { status?: number; text: string };
-                                                  this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
-                                                          .then(() => {
-                                                              showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
-                                                              this.reset();
-                                                          }).catch((ex) => {
-                                                              if (isAxiosError(ex)) {
-                                                                  error = {
-                                                                      status: ex.response.status,
-                                                                      text: ex.response.status === 403 ? i18next.t("alarm.alarmAlreadyExists") : i18next.t("errorOccurred"),
-                                                                  };
-                                                              }
-                                                          }).finally(() => {
-                                                              this._saveAlarmPromise = undefined;
-                                                          });
-                                              }}"
-                                ></or-mwc-input>
+                                <or-vaadin-button class="alarm-input" @click=${() => this.reset()}>
+                                    <or-translate value="cancel"></or-translate>
+                                </or-vaadin-button>
+                                <or-vaadin-button id="savebtn" class="alarm-input" theme="primary" disabled
+                                                  @click=${() => {
+                                                      let error: { status?: number; text: string };
+                                                      this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
+                                                              .then(() => {
+                                                                  showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
+                                                                  this.reset();
+                                                              }).catch((ex) => {
+                                                                  if (isAxiosError(ex)) {
+                                                                      error = {
+                                                                          status: ex.response.status,
+                                                                          text: ex.response.status === 403 ? i18next.t("alarm.alarmAlreadyExists") : i18next.t("errorOccurred"),
+                                                                      };
+                                                                  }
+                                                              }).finally(() => {
+                                                                  this._saveAlarmPromise = undefined;
+                                                              });
+                                                  }}>
+                                    <or-translate value=${alarm.id ? "save" : "create"}></or-translate>
+                                </or-vaadin-button>
                             </div>
                         </div>
                     `)}
@@ -794,24 +748,24 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getStatusOptions() {
-        return [{label: 'alarm.allActive', value: 'All-active'}, {
-            label: 'alarm.all',
-            value: 'All'
-        }].concat(this._getAddStatusOptions());
+        return [
+            {label: i18next.t('alarm.allActive'), value: 'allActive'},
+            {label: i18next.t('alarm.all'), value: 'all'}
+        ].concat(this._getAddStatusOptions());
     }
 
     protected _getSeverityOptions() {
-        return [{label: 'alarm.all', value: 'All'}].concat(this._getAddSeverityOptions());
+        return [{label: i18next.t('alarm.all'), value: 'all'}].concat(this._getAddSeverityOptions());
     }
 
     protected _getAddStatusOptions() {
         const statuses = [AlarmStatus.OPEN, AlarmStatus.ACKNOWLEDGED, AlarmStatus.IN_PROGRESS, AlarmStatus.RESOLVED, AlarmStatus.CLOSED];
-        return statuses.map(status => ({label: 'alarm.status_' + status, value: status}));
+        return statuses.map(status => ({label: i18next.t('alarm.status_' + status), value: status}));
     }
 
     protected _getAddSeverityOptions() {
         const severities = [AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH];
-        return severities.map(status => ({label: 'alarm.severity_' + status, value: status}));
+        return severities.map(status => ({label: i18next.t('alarm.severity_' + status), value: status}));
     }
 
     protected _getSourceText(): string {
@@ -832,19 +786,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
         return sourceText;
     }
 
-    protected _onSeverityChanged(severity: any) {
-        if (severity == 'alarm.all') {
+    protected _onSeverityChanged(severity: AlarmSeverity | 'all') {
+        console.debug(severity);
+        if (severity === 'all') {
             this.severity = undefined;
             this._loadData();
             return;
         }
 
-        this.severity = this._getSeverityOptions().filter((obj) => obj.label === severity).map((obj) => obj.value)[0] as AlarmSeverity;
-
-        if (!this.severity) {
-            return;
-        }
-        this._data = this._data!.filter((e) => e.severity === this.severity);
+        this.severity = severity;
+        this._data = this._data?.filter((e) => e.severity === this.severity);
     }
 
     protected async _onAssignCheckChanged(assign: boolean) {
@@ -861,15 +812,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
     }
 
-    protected _onStatusChanged(status: any) {
-        if (status == 'alarm.all') {
+    protected _onStatusChanged(status: AlarmStatus | 'all' | 'allActive') {
+        if (status === 'all') {
             this.status = undefined;
             this.allActive = undefined;
             this.requestUpdate();
             return;
         }
-
-        if (status == 'alarm.allActive') {
+        if (status === 'allActive') {
             this.status = undefined;
             this.allActive = true;
             this.requestUpdate();
@@ -923,9 +873,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
         return options;
     }
 
-    protected _openAssetSelector(ev: MouseEvent, alarm: AlarmModel, readonly: boolean) {
-        const openBtn = ev.target as OrMwcInput;
-        openBtn.disabled = true;
+    protected _openAssetSelector(ev: Event, alarm: AlarmModel, readonly: boolean) {
+        const openBtn = ev.target as HTMLElement;
+        openBtn.toggleAttribute("disabled", true);
         alarm.previousAssetLinks = alarm.alarmAssetLinks ? [...alarm.alarmAssetLinks] : [];
 
         const onAssetSelectionChanged = (e: OrAssetTreeSelectionEvent) => {
@@ -970,15 +920,15 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         actionName: "cancel",
                         content: i18next.t("cancel"),
                         action: () => {
-                            openBtn.disabled = false;
+                            openBtn.toggleAttribute("disabled", false);
                         },
                     },
                     {
                         actionName: "ok",
                         content: "ok",
                         action: () => {
-                            openBtn.disabled = false;
-                            this.onAlarmChanged(this.shadowRoot.querySelector('or-mwc-input') as OrMwcInput);
+                            openBtn.toggleAttribute("disabled", false);
+                            this.onAlarmChanged(this.shadowRoot.querySelector('or-vaadin-text-field') as HTMLElement);
                             this.requestUpdate();
                         }
                     }
@@ -986,7 +936,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 .setDismissAction({
                     actionName: "cancel",
                     action: () => {
-                        openBtn.disabled = false;
+                        openBtn.toggleAttribute("disabled", false);
                     },
                 })
         );
@@ -1042,14 +992,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
         });
     }
 
-    protected onAlarmChanged(e: OrInputChangedEvent | OrMwcInput) {
-        const formElement = e instanceof OrInputChangedEvent ? (e.target as HTMLElement).parentElement : e.parentElement;
-        const saveBtn = this.shadowRoot.getElementById("savebtn") as OrMwcInput;
+    protected onAlarmChanged(e: Event | HTMLElement) {
+        const formElement = e instanceof Event ? (e.target as HTMLElement).parentElement : e.parentElement;
+        const saveBtn = this.shadowRoot.getElementById("savebtn") as OrVaadinButton;
 
         if (formElement) {
             saveBtn.disabled = Array.from(formElement.children)
-                .filter((e) => e instanceof OrMwcInput)
-                .some((input) => !(input as OrMwcInput).valid);
+                .filter((e) => e instanceof HTMLInputElement)
+                .some((input) => !input.checkValidity());
         }
 
         if (this.alarm && !this.alarm.title) {
