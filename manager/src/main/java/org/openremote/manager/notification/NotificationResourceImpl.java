@@ -224,7 +224,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long from, Long to, String realmId) {
+    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long from, Long to, String realmId, Integer offset, Integer limit) {
         if (realmId == null) {
             throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
         }
@@ -233,11 +233,30 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             return notificationService.getNotificationsByRealm(
                 Collections.singletonList(realmId),
                 from != null ? Instant.ofEpochMilli(from) : null,
-                to != null ? Instant.ofEpochMilli(to) : null
+                to != null ? Instant.ofEpochMilli(to) : null,
+                offset,
+                limit
             ).toArray(new SentNotification[0]);
 
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Error retrieving notifications: " + e.getMessage(), BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public long getNotificationsByRealmCount(RequestParams requestParams, Long from, Long to, String realmId) {
+        if (realmId == null) {
+            throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
+        }
+
+        try {
+            return notificationService.getNotificationsByRealmCount(
+                Collections.singletonList(realmId),
+                from != null ? Instant.ofEpochMilli(from) : null,
+                to != null ? Instant.ofEpochMilli(to) : null
+            );
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Error retrieving notification count: " + e.getMessage(), BAD_REQUEST);
         }
     }
 

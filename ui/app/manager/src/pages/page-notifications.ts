@@ -19,7 +19,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {NotificationForm, NotificationFormData} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
-import {NotificationTableClickEvent} from "../components/notifications/or-notifications-table";
+import {NotificationTableClickEvent, OrNotificationsPageChangedEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 
 type NotificationSourceKeys = keyof typeof NotificationSource
@@ -33,7 +33,7 @@ const sources = [
 
 export class NotificationService {
 
-    async getNotifications(realm: string, fromDate?: number, toDate?: number): Promise<SentNotification[]> {
+    async getNotifications(realm: string, fromDate?: number, toDate?: number, offset?: number, limit?: number): Promise<SentNotification[]> {
         try {
             const timeRange = fromDate && toDate ?
                 {fromDate, toDate} :
@@ -44,7 +44,9 @@ export class NotificationService {
                 {
                     from: timeRange.fromDate,
                     to: timeRange.toDate,
-                    realmId: realm
+                    realmId: realm,
+                    offset,
+                    limit
                 });
 
             if (!response.data) {
@@ -57,6 +59,27 @@ export class NotificationService {
             const error = err as AxiosError;
             console.error('Failed to fetch notifications:', error);
             throw error;
+        }
+    }
+
+    async getNotificationsCount(realm: string, fromDate?: number, toDate?: number): Promise<number> {
+        try {
+            const timeRange = fromDate && toDate ?
+                {fromDate, toDate} :
+                this.getDefaultTimeRange();
+
+            const response = await manager.rest.api.NotificationResource.getNotificationsByRealmCount(
+                realm,
+                {
+                    from: timeRange.fromDate,
+                    to: timeRange.toDate,
+                    realmId: realm
+                });
+
+            return typeof response.data === 'number' ? response.data : 0;
+        } catch (err: unknown) {
+            console.error('Failed to fetch notification count:', err);
+            return 0;
         }
     }
 
@@ -290,6 +313,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
     @state()
     protected _isFilteredSource: boolean = false;
 
+    @state()
+    protected _currentPage: number = 0;
+
+    @state()
+    protected _totalCount: number = 0;
+
+    @state()
+    protected _pageSize: number = 10;
+
     protected _loading: boolean = false;
 
     protected notificationService: NotificationService;
@@ -318,6 +350,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected reset(): void {
         this._data = undefined;
+        this._totalCount = 0;
+        this._currentPage = 0;
         this.requestUpdate();
     }
 
@@ -355,11 +389,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
         try {
 
-            const fromDate = this._isFilteredDate ? this._fromDate : undefined;
-            const toDate = this._isFilteredDate ? this._toDate : undefined;
-
-            // if filtering is enabled, use selected dates
-            // otherwise default to range (last 30 days)
             const timeRange = this._isFilteredDate && this._fromDate && this._toDate ?
                 {
                     fromDate: this._fromDate,
@@ -376,11 +405,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 this._selectedSource = "ALL_SOURCES"
             }
 
-            this._data = await this.notificationService.getNotifications(
-                this.realm,
-                fromDate,
-                toDate
-            );
+            const offset = this._currentPage * this._pageSize;
+
+            const [data, count] = await Promise.all([
+                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, offset, this._pageSize),
+                this.notificationService.getNotificationsCount(this.realm, timeRange.fromDate, timeRange.toDate)
+            ]);
+
+            this._data = data;
+            this._totalCount = count;
 
             this.requestUpdate();
         } catch (err: unknown) {
@@ -542,7 +575,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             .value="${this._fromDate}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this._fromDate = e.detail.value;
-                                this._isFilteredDate = true; // set flag when date changes
+                                this._isFilteredDate = true;
+                                this._currentPage = 0;
                                 this._loadData();
                             }}"
                     ></or-mwc-input>
@@ -553,7 +587,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             .value="${this._toDate}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this._toDate = e.detail.value;
-                                this._isFilteredDate = true; // set flag when date changes
+                                this._isFilteredDate = true;
+                                this._currentPage = 0;
                                 this._loadData();
                             }}"
                     ></or-mwc-input>
@@ -578,6 +613,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
             <or-notifications-table
                     .notifications=${notifications}
                     .notificationService=${this.notificationService}
+                    .totalCount=${this._totalCount}
+                    .currentPage=${this._currentPage}
+                    .paginationSize=${this._pageSize}
+                    @or-notifications-page-changed="${(e: OrNotificationsPageChangedEvent) => {
+                        this._currentPage = e.detail.page;
+                        this._pageSize = e.detail.size;
+                        this._loadData();
+                    }}"
                     @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"
             ></or-notifications-table>
             ${!this._loading && notifications && notifications.length === 0 ? html`

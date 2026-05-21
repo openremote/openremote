@@ -497,9 +497,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to) {
+    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to, Integer offset, Integer limit) {
         if (realmIds == null || realmIds.isEmpty()) {
-            throw new IllegalArgumentException("RealmID must be specified"); 
+            throw new IllegalArgumentException("RealmID must be specified");
         }
 
         StringBuilder builder = new StringBuilder();
@@ -508,7 +508,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         builder.append("SELECT n FROM SentNotification n WHERE n.realm IN ?").append(paramIndex++);
         parameters.add(realmIds);
-
 
         if (from != null) {
             builder.append(" AND n.sentOn >= ?").append(paramIndex++);
@@ -521,16 +520,51 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         builder.append(" ORDER BY n.sentOn DESC");
-        
+
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
             for (int i = 0; i < parameters.size(); i++) {
                 query.setParameter(i + 1, parameters.get(i));
             }
-
+            if (offset != null && offset > 0) {
+                query.setFirstResult(offset);
+            }
+            if (limit != null && limit > 0) {
+                query.setMaxResults(limit);
+            }
             return query.getResultList();
         });
-        
+    }
+
+    public long getNotificationsByRealmCount(List<String> realmIds, Instant from, Instant to) {
+        if (realmIds == null || realmIds.isEmpty()) {
+            throw new IllegalArgumentException("RealmID must be specified");
+        }
+
+        StringBuilder builder = new StringBuilder();
+        List<Object> parameters = new ArrayList<>();
+        int paramIndex = 1;
+
+        builder.append("SELECT COUNT(n) FROM SentNotification n WHERE n.realm IN ?").append(paramIndex++);
+        parameters.add(realmIds);
+
+        if (from != null) {
+            builder.append(" AND n.sentOn >= ?").append(paramIndex++);
+            parameters.add(from);
+        }
+
+        if (to != null) {
+            builder.append(" AND n.sentOn <= ?").append(paramIndex++);
+            parameters.add(to);
+        }
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<Long> query = entityManager.createQuery(builder.toString(), Long.class);
+            for (int i = 0; i < parameters.size(); i++) {
+                query.setParameter(i + 1, parameters.get(i));
+            }
+            return query.getSingleResult();
+        });
     }
 
     protected Instant getRepeatAfterTimestamp(Notification notification, Instant lastSend) {

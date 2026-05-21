@@ -263,6 +263,9 @@ export class OrMwcTable extends LitElement {
     @property({type: Number})
     public paginationSize: number = 10;
 
+    @property({type: Number})
+    public totalCount?: number;
+
     @state()
     protected _dataTable?: MDCDataTable;
 
@@ -307,7 +310,7 @@ export class OrMwcTable extends LitElement {
             "has-sticky-first-column": !!this.config.stickyFirstColumn
         }
         // Only show pagination if enabled in config, and when "the amount of rows doesn't fit on the page".
-        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || (this.rows && (this.rows.length > this.paginationSize)));
+        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || ((this.totalCount ?? this.rows?.length ?? 0) > this.paginationSize));
         const tableWidth = this.shadowRoot?.firstElementChild?.clientWidth;
         return html`
             <div class="${classMap(tableClasses)}">

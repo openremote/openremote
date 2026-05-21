@@ -154,5 +154,17 @@ public interface NotificationResource {
     SentNotification[] getNotificationsByRealm(@BeanParam RequestParams requestParams,
                                         @QueryParam("from") Long fromTimestamp,
                                         @QueryParam("to") Long toTimestamp,
-                                        @QueryParam("realmId") String realmId);
+                                        @QueryParam("realmId") String realmId,
+                                        @QueryParam("offset") Integer offset,
+                                        @QueryParam("limit") Integer limit);
+
+    @GET
+    @Path("{realmId}/count")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getNotificationsByRealmCount", summary="Get total count of notifications filtered by realm ownership and optional time bounds.")
+    long getNotificationsByRealmCount(@BeanParam RequestParams requestParams,
+                                      @QueryParam("from") Long fromTimestamp,
+                                      @QueryParam("to") Long toTimestamp,
+                                      @QueryParam("realmId") String realmId);
 }
