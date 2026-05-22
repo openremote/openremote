@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,17 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.apps;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+import java.util.Map;
+
+import org.openremote.model.http.RequestParams;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,39 +30,30 @@ import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import org.openremote.model.http.RequestParams;
-
-import java.util.Map;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "UI Apps", description = "Operations on UI apps")
 @Path("apps")
 public interface AppResource {
 
-    /**
-     * Retrieve a list of available apps
-     */
-    @GET
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getApps", summary = "Retrieve a list of the available applications")
-    String[] getApps(@BeanParam RequestParams requestParams);
+  /** Retrieve a list of available apps */
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Operation(operationId = "getApps", summary = "Retrieve a list of the available applications")
+  String[] getApps(@BeanParam RequestParams requestParams);
 
-    /**
-     * Retrieve info json of all apps.
-     */
-    @GET
-    @Produces(APPLICATION_JSON)
-    @Path("info")
-    @Operation(operationId = "getAppInfos", summary = "Retrieve the info of the available applications")
-    Map<String, Object> getAppInfos(@BeanParam RequestParams requestParams);
+  /** Retrieve info json of all apps. */
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Path("info")
+  @Operation(
+      operationId = "getAppInfos",
+      summary = "Retrieve the info of the available applications")
+  Map<String, Object> getAppInfos(@BeanParam RequestParams requestParams);
 
-    /**
-     * Retrieve console app config.
-     */
-    @GET
-    @Produces(APPLICATION_JSON)
-    @Path("consoleConfig")
-    @Operation(operationId = "getConsoleConfig", summary = "Retrieve the console configuration")
-    Object getConsoleConfig(@BeanParam RequestParams requestParams);
+  /** Retrieve console app config. */
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Path("consoleConfig")
+  @Operation(operationId = "getConsoleConfig", summary = "Retrieve the console configuration")
+  Object getConsoleConfig(@BeanParam RequestParams requestParams);
 }

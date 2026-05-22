@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.integration.protocol;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
@@ -25,38 +26,34 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class MockAgent extends Agent<MockAgent, MockProtocol, MockAgentLink> {
 
-    public static final AttributeDescriptor<Boolean> REQUIRED = new AttributeDescriptor<>("requiredTest", ValueType.BOOLEAN);
+  public static final AttributeDescriptor<Boolean> REQUIRED =
+      new AttributeDescriptor<>("requiredTest", ValueType.BOOLEAN);
 
-    public static final AgentDescriptor<MockAgent, MockProtocol, MockAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        MockAgent.class, MockProtocol.class, MockAgentLink.class
-    );
+  public static final AgentDescriptor<MockAgent, MockProtocol, MockAgentLink> DESCRIPTOR =
+      new AgentDescriptor<>(MockAgent.class, MockProtocol.class, MockAgentLink.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected MockAgent() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected MockAgent() {}
 
-    public MockAgent(String name) {
-        super(name);
-    }
+  public MockAgent(String name) {
+    super(name);
+  }
 
-    public Optional<Boolean> getRequired() {
-        return getAttributes().getValue(REQUIRED);
-    }
+  public Optional<Boolean> getRequired() {
+    return getAttributes().getValue(REQUIRED);
+  }
 
-    public MockAgent setRequired(Boolean value) {
-        getAttributes().getOrCreate(REQUIRED).setValue(value);
-        return this;
-    }
+  public MockAgent setRequired(Boolean value) {
+    getAttributes().getOrCreate(REQUIRED).setValue(value);
+    return this;
+  }
 
-    @Override
-    public MockProtocol getProtocolInstance() {
-        return new MockProtocol(this);
-    }
+  @Override
+  public MockProtocol getProtocolInstance() {
+    return new MockProtocol(this);
+  }
 }

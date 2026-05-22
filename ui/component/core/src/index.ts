@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
@@ -279,25 +297,26 @@ export class Manager implements EventProviderFactory {
     protected static MAX_RECONNECT_DELAY = 45000;
     private _error?: ORError;
     private _config!: ManagerConfig;
-    private _authenticated: boolean = false;
-    private _ready: boolean = false;
+    private _authenticated = false;
+    private _ready = false;
     private _readyCallback?: () => PromiseLike<any>;
-    private _name: string = "";
-    private _username: string = "";
+    private _name = "";
+    private _username = "";
     private _keycloak?: Keycloak;
     private _basicIdentity?: {
         token: string | undefined,
         user: User | undefined,
         roles: string[] | undefined
     };
+
     private _keycloakUpdateTokenInterval?: number = undefined;
-    private _managerVersion: string = "";
-    public _authServerUrl: string = "";
+    private _managerVersion = "";
+    public _authServerUrl = "";
     private _listeners: EventCallback[] = [];
     private _console!: Console;
     private _consoleAppConfig?: ConsoleAppConfig;
     private _events?: EventProvider;
-    private _disconnected: boolean = false;
+    private _disconnected = false;
     private _reconnectTimer?: number;
     private _displayRealm?: string;
 
@@ -1086,7 +1105,7 @@ export class Manager implements EventProviderFactory {
      * Checks keycloak is available and token is valid otherwise will redirect to login; also checks if event bus is
      * online.
      */
-    public async reconnect(reattemptDelayMillis: number = 3000) {
+    public async reconnect(reattemptDelayMillis = 3000) {
         console.debug("Checking connection to the Manager...");
 
         if (!this._disconnected) {

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,61 +12,66 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalDateTime;
-
 public class OAuthServerResponse {
 
-    @JsonProperty("token_type")
-    protected String tokenType;
-    @JsonProperty("expires_in")
-    protected long expiresIn;
-    @JsonProperty("access_token")
-    protected String accessToken;
-    @JsonProperty("refresh_token")
-    protected String refreshToken;
-    @JsonIgnore
-    protected LocalDateTime createdDateTime = LocalDateTime.now();
+  @JsonProperty("token_type")
+  protected String tokenType;
 
-    public String getTokenType() {
-        return tokenType;
-    }
+  @JsonProperty("expires_in")
+  protected long expiresIn;
 
-    public void setTokenType(String tokenType) {
-        this.tokenType = tokenType;
-    }
+  @JsonProperty("access_token")
+  protected String accessToken;
 
-    public long getExpiresIn() {
-        return expiresIn;
-    }
+  @JsonProperty("refresh_token")
+  protected String refreshToken;
 
-    public void setExpiresIn(long expiresIn) {
-        this.expiresIn = expiresIn;
-    }
+  @JsonIgnore protected LocalDateTime createdDateTime = LocalDateTime.now();
 
-    public String getAccessToken() {
-        return accessToken;
-    }
+  public String getTokenType() {
+    return tokenType;
+  }
 
-    public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
-    }
+  public void setTokenType(String tokenType) {
+    this.tokenType = tokenType;
+  }
 
-    public String getRefreshToken() {
-        return refreshToken;
-    }
+  public long getExpiresIn() {
+    return expiresIn;
+  }
 
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
-    }
+  public void setExpiresIn(long expiresIn) {
+    this.expiresIn = expiresIn;
+  }
 
-    public LocalDateTime getExpiryDateTime() {
-        return createdDateTime.plusSeconds(expiresIn);
-    }
+  public String getAccessToken() {
+    return accessToken;
+  }
+
+  public void setAccessToken(String accessToken) {
+    this.accessToken = accessToken;
+  }
+
+  public String getRefreshToken() {
+    return refreshToken;
+  }
+
+  public void setRefreshToken(String refreshToken) {
+    this.refreshToken = refreshToken;
+  }
+
+  public LocalDateTime getExpiryDateTime() {
+    return createdDateTime.plusSeconds(expiresIn);
+  }
 }

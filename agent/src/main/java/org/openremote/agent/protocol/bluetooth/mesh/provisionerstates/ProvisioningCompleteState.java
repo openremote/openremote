@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,35 +12,33 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
 public class ProvisioningCompleteState extends ProvisioningState {
 
-    private final UnprovisionedMeshNode unprovisionedMeshNode;
+  private final UnprovisionedMeshNode unprovisionedMeshNode;
 
-    public ProvisioningCompleteState(final UnprovisionedMeshNode unprovisionedMeshNode) {
-        super();
-        this.unprovisionedMeshNode = unprovisionedMeshNode;
-        unprovisionedMeshNode.setIsProvisioned(true);
-        unprovisionedMeshNode.setProvisionedTime(System.currentTimeMillis());
-    }
+  public ProvisioningCompleteState(final UnprovisionedMeshNode unprovisionedMeshNode) {
+    super();
+    this.unprovisionedMeshNode = unprovisionedMeshNode;
+    unprovisionedMeshNode.setIsProvisioned(true);
+    unprovisionedMeshNode.setProvisionedTime(System.currentTimeMillis());
+  }
 
-    @Override
-    public State getState() {
-        return State.PROVISIONING_COMPLETE;
-    }
+  @Override
+  public State getState() {
+    return State.PROVISIONING_COMPLETE;
+  }
 
-    @Override
-    public void executeSend() {
+  @Override
+  public void executeSend() {}
 
-    }
-
-    @Override
-    public boolean parseData(final byte[] data) {
-        return true;
-    }
-
+  @Override
+  public boolean parseData(final byte[] data) {
+    return true;
+  }
 }
-

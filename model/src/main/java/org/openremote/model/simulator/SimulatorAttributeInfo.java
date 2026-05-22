@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.simulator;
 
@@ -23,31 +22,32 @@ import org.openremote.model.attribute.Attribute;
 
 public class SimulatorAttributeInfo {
 
-    public String assetName;
-    public String assetId;
-    public boolean replay; // Indicates if the attribute is configured with replay values
-    public Attribute<?> attribute;
+  public String assetName;
+  public String assetId;
+  public boolean replay; // Indicates if the attribute is configured with replay values
+  public Attribute<?> attribute;
 
-    public SimulatorAttributeInfo(String assetName, String assetId, Attribute<?> attribute, boolean replay) {
-        this.assetName = assetName;
-        this.assetId = assetId;
-        this.attribute = attribute;
-        this.replay = replay;
-    }
+  public SimulatorAttributeInfo(
+      String assetName, String assetId, Attribute<?> attribute, boolean replay) {
+    this.assetName = assetName;
+    this.assetId = assetId;
+    this.attribute = attribute;
+    this.replay = replay;
+  }
 
-    public String getAssetName() {
-        return assetName;
-    }
+  public String getAssetName() {
+    return assetName;
+  }
 
-    public String getAssetId() {
-        return assetId;
-    }
+  public String getAssetId() {
+    return assetId;
+  }
 
-    public Attribute<?> getAttribute() {
-        return attribute;
-    }
+  public Attribute<?> getAttribute() {
+    return attribute;
+  }
 
-    public boolean isReplay() {
-        return replay;
-    }
+  public boolean isReplay() {
+    return replay;
+  }
 }

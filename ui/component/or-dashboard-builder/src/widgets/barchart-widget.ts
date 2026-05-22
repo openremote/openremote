@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {AssetDatapointIntervalQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult} from "lit";
@@ -27,7 +26,6 @@ import {AssetWidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {BarChartSettings} from "../settings/barchart-settings";
 import {WidgetSettings} from "../util/widget-settings";
-import "@openremote/or-attribute-barchart";
 import {BarChartAttributeConfig, BarChartInterval, OrAttributeBarChart} from "@openremote/or-attribute-barchart";
 
 export interface BarChartWidgetConfig extends AssetWidgetConfig {

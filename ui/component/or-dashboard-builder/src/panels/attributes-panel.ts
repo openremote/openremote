@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {Asset, AssetDescriptor, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
@@ -7,7 +25,6 @@ import {map} from "lit/directives/map.js";
 import {guard} from "lit/directives/guard.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {i18next} from "@openremote/or-translate";
-import "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";

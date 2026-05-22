@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,14 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.simulator;
+
+import java.util.List;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.manager.agent.AgentService;
@@ -32,123 +34,126 @@ import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorAttributeInfo;
 import org.openremote.model.simulator.SimulatorState;
 
-import java.util.List;
-import java.util.logging.Logger;
-
 // RT: Removed this from META-INF as RequestSimulatorState not used anywhere
-/**
- * Connects the client/UI to the {@link SimulatorProtocol}.
- */
+/** Connects the client/UI to the {@link SimulatorProtocol}. */
 public class SimulatorService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(SimulatorService.class.getName());
+  private static final Logger LOG = Logger.getLogger(SimulatorService.class.getName());
 
-    protected AgentService agentService;
-    protected ManagerIdentityService managerIdentityService;
-    protected AssetStorageService assetStorageService;
-    protected ClientEventService clientEventService;
+  protected AgentService agentService;
+  protected ManagerIdentityService managerIdentityService;
+  protected AssetStorageService assetStorageService;
+  protected ClientEventService clientEventService;
 
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
+  @Override
+  public int getPriority() {
+    return ContainerService.DEFAULT_PRIORITY;
+  }
 
-    @Override
-    public void init(Container container) throws Exception {
-        agentService = container.getService(AgentService.class);
-        managerIdentityService = container.getService(ManagerIdentityService.class);
-        assetStorageService = container.getService(AssetStorageService.class);
-        clientEventService = container.getService(ClientEventService.class);
+  @Override
+  public void init(Container container) throws Exception {
+    agentService = container.getService(AgentService.class);
+    managerIdentityService = container.getService(ManagerIdentityService.class);
+    assetStorageService = container.getService(AssetStorageService.class);
+    clientEventService = container.getService(ClientEventService.class);
 
-        clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
-            if (!subscription.isEventType(SimulatorState.class))
-                return false;
+    clientEventService.addSubscriptionAuthorizer(
+        (realm, auth, subscription) -> {
+          if (!subscription.isEventType(SimulatorState.class)) return false;
 
-            if (auth == null) {
-                return false;
-            }
+          if (auth == null) {
+            return false;
+          }
 
-            // Superuser can get all
-            if (auth.isSuperUser())
-                return true;
+          // Superuser can get all
+          if (auth.isSuperUser()) return true;
+
+          // TODO Should realm admins be able to work with simulators in their realm?
+
+          return false;
+        });
+
+    clientEventService.addEventAuthorizer(
+        (realm, auth, event) -> {
+          if (event instanceof RequestSimulatorState) {
+
+            // Only super users can use this
+            return auth.isSuperUser();
 
             // TODO Should realm admins be able to work with simulators in their realm?
-
-            return false;
+          }
+          return false;
         });
 
-        clientEventService.addEventAuthorizer((realm, auth, event) -> {
-            if (event instanceof RequestSimulatorState) {
+    clientEventService.addSubscription(RequestSimulatorState.class, this::onRequestSimulatorState);
+  }
 
-                // Only super users can use this
-                return auth.isSuperUser();
+  @Override
+  public void start(Container container) throws Exception {}
 
-                // TODO Should realm admins be able to work with simulators in their realm?
-            }
-            return false;
-        });
+  @Override
+  public void stop(Container container) throws Exception {}
 
-        clientEventService.addSubscription(RequestSimulatorState.class, this::onRequestSimulatorState);
+  // TODO Should realm admins be able to work with simulators in their realm?
+  protected void onRequestSimulatorState(RequestSimulatorState event) {
+    LOG.finest("Handling from client: " + event);
+    if (event.getResponseConsumer() == null) {
+      LOG.warning("Requested simulator state but no response consumer provided");
+      return;
     }
 
-    @Override
-    public void start(Container container) throws Exception {
+    String agentId = event.getAgentId();
+    LOG.finest("Attempting to publish simulator state: Agent ID=" + agentId);
 
+    Protocol<?> protocol = agentService.getProtocolInstance(agentId);
+
+    if (!(protocol instanceof SimulatorProtocol simulatorProtocol)) {
+      LOG.warning(
+          "Failed to publish simulator state, agent is not a simulator agent: Agent ID=" + agentId);
+      return;
     }
 
-    @Override
-    public void stop(Container container) throws Exception {
+    SimulatorState simulatorState = getSimulatorState(simulatorProtocol);
+    simulatorState.setMessageID(event.getMessageID());
+    event.getResponseConsumer().accept(simulatorState);
+  }
 
+  /** Get info about all attributes linked to this instance (for frontend usage) */
+  protected SimulatorState getSimulatorState(SimulatorProtocol protocolInstance) {
+    LOG.info("Getting simulator info for protocol instance: " + protocolInstance);
+
+    // We need asset names instead of identifiers for user-friendly display
+    List<String> linkedAssetIds =
+        protocolInstance.getLinkedAttributes().keySet().stream()
+            .map(AttributeRef::getId)
+            .distinct()
+            .toList();
+    List<String> assetNames = assetStorageService.findNames(linkedAssetIds.toArray(new String[0]));
+
+    if (assetNames.size() != linkedAssetIds.size()) {
+      LOG.warning("Retrieved asset names don't match requested asset IDs");
+      return null;
     }
 
-    // TODO Should realm admins be able to work with simulators in their realm?
-    protected void onRequestSimulatorState(RequestSimulatorState event) {
-        LOG.finest("Handling from client: " + event);
-        if (event.getResponseConsumer() == null) {
-            LOG.warning("Requested simulator state but no response consumer provided");
-            return;
-        }
+    SimulatorAttributeInfo[] attributeInfos =
+        protocolInstance.getLinkedAttributes().entrySet().stream()
+            .map(
+                refAttributeEntry -> {
+                  String assetName =
+                      assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
+                  return new SimulatorAttributeInfo(
+                      assetName,
+                      refAttributeEntry.getKey().getId(),
+                      refAttributeEntry.getValue(),
+                      protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
+                })
+            .toArray(SimulatorAttributeInfo[]::new);
 
-        String agentId = event.getAgentId();
-        LOG.finest("Attempting to publish simulator state: Agent ID=" + agentId);
+    return new SimulatorState(protocolInstance.getAgent().getId(), attributeInfos);
+  }
 
-        Protocol<?> protocol = agentService.getProtocolInstance(agentId);
-
-        if (!(protocol instanceof SimulatorProtocol simulatorProtocol)) {
-            LOG.warning("Failed to publish simulator state, agent is not a simulator agent: Agent ID=" + agentId);
-            return;
-        }
-
-        SimulatorState simulatorState = getSimulatorState(simulatorProtocol);
-        simulatorState.setMessageID(event.getMessageID());
-        event.getResponseConsumer().accept(simulatorState);
-    }
-
-    /**
-     * Get info about all attributes linked to this instance (for frontend usage)
-     */
-    protected SimulatorState getSimulatorState(SimulatorProtocol protocolInstance) {
-        LOG.info("Getting simulator info for protocol instance: " + protocolInstance);
-
-        // We need asset names instead of identifiers for user-friendly display
-        List<String> linkedAssetIds = protocolInstance.getLinkedAttributes().keySet().stream().map(AttributeRef::getId).distinct().toList();
-        List<String> assetNames = assetStorageService.findNames(linkedAssetIds.toArray(new String[0]));
-
-        if (assetNames.size() != linkedAssetIds.size()) {
-            LOG.warning("Retrieved asset names don't match requested asset IDs");
-            return null;
-        }
-
-        SimulatorAttributeInfo[] attributeInfos = protocolInstance.getLinkedAttributes().entrySet().stream().map(refAttributeEntry -> {
-            String assetName = assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
-            return new SimulatorAttributeInfo(assetName, refAttributeEntry.getKey().getId(), refAttributeEntry.getValue(), protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
-        }).toArray(SimulatorAttributeInfo[]::new);
-
-        return new SimulatorState(protocolInstance.getAgent().getId(), attributeInfos);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{}";
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{}";
+  }
 }

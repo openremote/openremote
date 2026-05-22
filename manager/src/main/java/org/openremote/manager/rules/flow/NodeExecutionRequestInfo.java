@@ -1,8 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.manager.rules.flow;
-
-import org.openremote.manager.rules.RulesFacts;
-import org.openremote.model.rules.*;
-import org.openremote.model.rules.flow.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,205 +24,246 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.openremote.manager.rules.RulesFacts;
+import org.openremote.model.rules.*;
+import org.openremote.model.rules.flow.*;
+
 public class NodeExecutionRequestInfo {
-    private NodeCollection collection;
+  private NodeCollection collection;
 
-    private int outputSocketIndex;
-    private NodeSocket outputSocket;
+  private int outputSocketIndex;
+  private NodeSocket outputSocket;
 
-    private Node node;
-    private NodeSocket[] inputs;
-    private NodeSocket[] outputs;
-    private NodeInternal[] internals;
+  private Node node;
+  private NodeSocket[] inputs;
+  private NodeSocket[] outputs;
+  private NodeInternal[] internals;
 
-    private RulesFacts facts;
+  private RulesFacts facts;
 
-    private Assets assets;
-    private Users users;
-    private Notifications notifications;
-    private HistoricDatapoints historicDatapoints;
-    private PredictedDatapoints predictedDatapoints;
-    protected Logger LOG;
+  private Assets assets;
+  private Users users;
+  private Notifications notifications;
+  private HistoricDatapoints historicDatapoints;
+  private PredictedDatapoints predictedDatapoints;
+  protected Logger LOG;
 
-    public NodeExecutionRequestInfo() {
-        collection = new NodeCollection();
-        outputSocketIndex = -1;
-        outputSocket = null;
-        node = null;
-        inputs = new NodeSocket[]{};
-        outputs = new NodeSocket[]{};
-        internals = new NodeInternal[]{};
-        facts = null;
-        assets = null;
-        users = null;
-        notifications = null;
-        historicDatapoints = null;
-        predictedDatapoints = null;
+  public NodeExecutionRequestInfo() {
+    collection = new NodeCollection();
+    outputSocketIndex = -1;
+    outputSocket = null;
+    node = null;
+    inputs = new NodeSocket[] {};
+    outputs = new NodeSocket[] {};
+    internals = new NodeInternal[] {};
+    facts = null;
+    assets = null;
+    users = null;
+    notifications = null;
+    historicDatapoints = null;
+    predictedDatapoints = null;
+  }
+
+  public NodeExecutionRequestInfo(
+      NodeCollection collection,
+      int outputSocketIndex,
+      NodeSocket outputSocket,
+      Node node,
+      NodeSocket[] inputs,
+      NodeSocket[] outputs,
+      NodeInternal[] internals,
+      RulesFacts facts,
+      Assets assets,
+      Users users,
+      Notifications notifications,
+      HistoricDatapoints historicDatapoints,
+      PredictedDatapoints predictedDatapoints) {
+    this.collection = collection;
+    this.outputSocketIndex = outputSocketIndex;
+    this.outputSocket = outputSocket;
+    this.node = node;
+    this.inputs = inputs;
+    this.outputs = outputs;
+    this.internals = internals;
+    this.facts = facts;
+    this.assets = assets;
+    this.users = users;
+    this.notifications = notifications;
+    this.historicDatapoints = historicDatapoints;
+    this.predictedDatapoints = predictedDatapoints;
+  }
+
+  public NodeExecutionRequestInfo(
+      NodeCollection collection,
+      Node node,
+      NodeSocket socket,
+      RulesFacts facts,
+      Assets assets,
+      Users users,
+      Notifications notifications,
+      HistoricDatapoints historicDatapoints,
+      PredictedDatapoints predictedDatapoints,
+      Logger log) {
+    if (socket != null
+        && Arrays.stream(node.getOutputs()).noneMatch(c -> c.getNodeId().equals(node.getId())))
+      throw new IllegalArgumentException("Given socket does not belong to given node");
+
+    this.collection = collection;
+    this.outputSocketIndex = Arrays.asList(node.getOutputs()).indexOf(socket);
+    this.outputSocket = socket;
+    this.node = node;
+
+    List<NodeSocket> inputs = new ArrayList<>();
+    for (NodeSocket s : node.getInputs()) {
+      inputs.addAll(
+          Arrays.stream(collection.getConnections())
+              .filter(c -> c.getTo().equals(s.getId()))
+              .map(c -> collection.getSocketById(c.getFrom()))
+              .collect(Collectors.toList()));
+    }
+    this.inputs = inputs.toArray(new NodeSocket[0]);
+
+    List<NodeSocket> outputs = new ArrayList<>();
+    for (NodeSocket s : node.getOutputs()) {
+      outputs.addAll(
+          Arrays.stream(collection.getConnections())
+              .filter(c -> c.getFrom().equals(s.getId()))
+              .map(c -> collection.getSocketById(c.getTo()))
+              .collect(Collectors.toList()));
     }
 
-    public NodeExecutionRequestInfo(NodeCollection collection, int outputSocketIndex, NodeSocket outputSocket,
-                                    Node node, NodeSocket[] inputs, NodeSocket[] outputs, NodeInternal[] internals,
-                                    RulesFacts facts, Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints) {
-        this.collection = collection;
-        this.outputSocketIndex = outputSocketIndex;
-        this.outputSocket = outputSocket;
-        this.node = node;
-        this.inputs = inputs;
-        this.outputs = outputs;
-        this.internals = internals;
-        this.facts = facts;
-        this.assets = assets;
-        this.users = users;
-        this.notifications = notifications;
-        this.historicDatapoints = historicDatapoints;
-        this.predictedDatapoints = predictedDatapoints;
-    }
+    this.outputs = outputs.toArray(new NodeSocket[0]);
+    this.internals = node.getInternals();
 
-    public NodeExecutionRequestInfo(NodeCollection collection, Node node, NodeSocket socket, RulesFacts facts,
-                                    Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints, Logger log) {
-        if (socket != null && Arrays.stream(node.getOutputs()).noneMatch(c -> c.getNodeId().equals(node.getId())))
-            throw new IllegalArgumentException("Given socket does not belong to given node");
+    this.facts = facts;
+    this.assets = assets;
+    this.users = users;
+    this.notifications = notifications;
+    this.historicDatapoints = historicDatapoints;
+    this.predictedDatapoints = predictedDatapoints;
+    this.LOG = log;
+  }
 
-        this.collection = collection;
-        this.outputSocketIndex = Arrays.asList(node.getOutputs()).indexOf(socket);
-        this.outputSocket = socket;
-        this.node = node;
+  public Object getValueFromInput(int index) {
+    NodeSocket aSocket = getInputs()[index];
+    Node aNode = getCollection().getNodeById(aSocket.getNodeId());
+    return NodeModel.getImplementationFor(aNode.getName())
+        .execute(
+            new NodeExecutionRequestInfo(
+                getCollection(),
+                aNode,
+                aSocket,
+                getFacts(),
+                getAssets(),
+                getUsers(),
+                getNotifications(),
+                getHistoricDatapoints(),
+                getPredictedDatapoints(),
+                LOG));
+  }
 
-        List<NodeSocket> inputs = new ArrayList<>();
-        for (NodeSocket s : node.getInputs()) {
-            inputs.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getTo().equals(s.getId())).map(c -> collection.getSocketById(c.getFrom())).collect(Collectors.toList()));
-        }
-        this.inputs = inputs.toArray(new NodeSocket[0]);
+  public NodeDataType getTypeFromInput(int index) {
+    NodeSocket aSocket = getInputs()[index];
+    return aSocket.getType();
+  }
 
-        List<NodeSocket> outputs = new ArrayList<>();
-        for (NodeSocket s : node.getOutputs()) {
-            outputs.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getFrom().equals(s.getId())).map(c -> collection.getSocketById(c.getTo())).collect(Collectors.toList()));
-        }
+  public NodeCollection getCollection() {
+    return collection;
+  }
 
-        this.outputs = outputs.toArray(new NodeSocket[0]);
-        this.internals = node.getInternals();
+  public void setCollection(NodeCollection collection) {
+    this.collection = collection;
+  }
 
-        this.facts = facts;
-        this.assets = assets;
-        this.users = users;
-        this.notifications = notifications;
-        this.historicDatapoints = historicDatapoints;
-        this.predictedDatapoints = predictedDatapoints;
-        this.LOG = log;
-    }
+  public int getOutputSocketIndex() {
+    return outputSocketIndex;
+  }
 
-    public Object getValueFromInput(int index) {
-        NodeSocket aSocket = getInputs()[index];
-        Node aNode = getCollection().getNodeById(aSocket.getNodeId());
-        return NodeModel.getImplementationFor(aNode.getName()).execute(
-            new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
-        );
-    }
+  public void setOutputSocketIndex(int outputSocketIndex) {
+    this.outputSocketIndex = outputSocketIndex;
+  }
 
-    public NodeDataType getTypeFromInput(int index) {
-        NodeSocket aSocket = getInputs()[index];
-        return aSocket.getType();
-    }
+  public NodeSocket getOutputSocket() {
+    return outputSocket;
+  }
 
-    public NodeCollection getCollection() {
-        return collection;
-    }
+  public void setOutputSocket(NodeSocket outputSocket) {
+    this.outputSocket = outputSocket;
+  }
 
-    public void setCollection(NodeCollection collection) {
-        this.collection = collection;
-    }
+  public Node getNode() {
+    return node;
+  }
 
-    public int getOutputSocketIndex() {
-        return outputSocketIndex;
-    }
+  public void setNode(Node node) {
+    this.node = node;
+  }
 
-    public void setOutputSocketIndex(int outputSocketIndex) {
-        this.outputSocketIndex = outputSocketIndex;
-    }
+  public NodeSocket[] getInputs() {
+    return inputs;
+  }
 
-    public NodeSocket getOutputSocket() {
-        return outputSocket;
-    }
+  public void setInputs(NodeSocket[] inputs) {
+    this.inputs = inputs;
+  }
 
-    public void setOutputSocket(NodeSocket outputSocket) {
-        this.outputSocket = outputSocket;
-    }
+  public NodeSocket[] getOutputs() {
+    return outputs;
+  }
 
-    public Node getNode() {
-        return node;
-    }
+  public void setOutputs(NodeSocket[] outputs) {
+    this.outputs = outputs;
+  }
 
-    public void setNode(Node node) {
-        this.node = node;
-    }
+  public NodeInternal[] getInternals() {
+    return internals;
+  }
 
-    public NodeSocket[] getInputs() {
-        return inputs;
-    }
+  public void setInternals(NodeInternal[] internals) {
+    this.internals = internals;
+  }
 
-    public void setInputs(NodeSocket[] inputs) {
-        this.inputs = inputs;
-    }
+  public Assets getAssets() {
+    return assets;
+  }
 
-    public NodeSocket[] getOutputs() {
-        return outputs;
-    }
+  public void setAssets(Assets assets) {
+    this.assets = assets;
+  }
 
-    public void setOutputs(NodeSocket[] outputs) {
-        this.outputs = outputs;
-    }
+  public Users getUsers() {
+    return users;
+  }
 
-    public NodeInternal[] getInternals() {
-        return internals;
-    }
+  public void setUsers(Users users) {
+    this.users = users;
+  }
 
-    public void setInternals(NodeInternal[] internals) {
-        this.internals = internals;
-    }
+  public Notifications getNotifications() {
+    return notifications;
+  }
 
-    public Assets getAssets() {
-        return assets;
-    }
+  public void setNotifications(Notifications notifications) {
+    this.notifications = notifications;
+  }
 
-    public void setAssets(Assets assets) {
-        this.assets = assets;
-    }
+  public HistoricDatapoints getHistoricDatapoints() {
+    return historicDatapoints;
+  }
 
-    public Users getUsers() {
-        return users;
-    }
+  public PredictedDatapoints getPredictedDatapoints() {
+    return predictedDatapoints;
+  }
 
-    public void setUsers(Users users) {
-        this.users = users;
-    }
+  public void setPredictedDatapoints(PredictedDatapoints predictedDatapoints) {
+    this.predictedDatapoints = predictedDatapoints;
+  }
 
-    public Notifications getNotifications() {
-        return notifications;
-    }
+  public RulesFacts getFacts() {
+    return facts;
+  }
 
-    public void setNotifications(Notifications notifications) {
-        this.notifications = notifications;
-    }
-
-    public HistoricDatapoints getHistoricDatapoints() {
-        return historicDatapoints;
-    }
-
-    public PredictedDatapoints getPredictedDatapoints() {
-        return predictedDatapoints;
-    }
-
-    public void setPredictedDatapoints(PredictedDatapoints predictedDatapoints) {
-        this.predictedDatapoints = predictedDatapoints;
-    }
-
-    public RulesFacts getFacts() {
-        return facts;
-    }
-
-    public void setFacts(RulesFacts facts) {
-        this.facts = facts;
-    }
+  public void setFacts(RulesFacts facts) {
+    this.facts = facts;
+  }
 }

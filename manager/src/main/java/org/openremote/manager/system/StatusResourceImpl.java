@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,61 +12,66 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.system;
-
-import com.fasterxml.jackson.databind.node.NullNode;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.system.StatusResource;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import com.fasterxml.jackson.databind.node.NullNode;
+
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
+import org.openremote.model.system.StatusResource;
+
 public class StatusResourceImpl implements StatusResource {
 
-    private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
-    protected List<HealthStatusProvider> healthStatusProviderList;
-    protected Map<String, Object> serverInfo;
+  private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
+  protected List<HealthStatusProvider> healthStatusProviderList;
+  protected Map<String, Object> serverInfo;
 
-    public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
-        this.healthStatusProviderList = healthStatusProviderList;
-        String authServerUrl = "";
-        String version = VersionInfo.getManagerVersion();
+  public StatusResourceImpl(
+      Container container, List<HealthStatusProvider> healthStatusProviderList) {
+    this.healthStatusProviderList = healthStatusProviderList;
+    String authServerUrl = "";
+    String version = VersionInfo.getManagerVersion();
 
-        ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
-        if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
-            authServerUrl = identityService.getIdentityProvider().getFrontendURI();
-        }
+    ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
+    if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
+      authServerUrl = identityService.getIdentityProvider().getFrontendURI();
+    }
 
-        serverInfo = Map.of(
+    serverInfo =
+        Map.of(
             "version", version,
-            "authServerUrl", authServerUrl
-        );
+            "authServerUrl", authServerUrl);
 
-        LOG.info("Starting OpenRemote version: v"+version);
-    }
+    LOG.info("Starting OpenRemote version: v" + version);
+  }
 
-    @Override
-    public Map<String, Object> getHealthStatus() {
-        Map<String, Object> objectValue = new HashMap<>();
+  @Override
+  public Map<String, Object> getHealthStatus() {
+    Map<String, Object> objectValue = new HashMap<>();
 
-        healthStatusProviderList.forEach(healthStatusProvider -> {
-            Object healthStatus = healthStatusProvider.getHealthStatus();
-            Map<String, Object> providerValue = Map.of("data", healthStatus != null ? healthStatus : NullNode.getInstance());
-                objectValue.put(healthStatusProvider.getHealthStatusName(), providerValue);
-            }
-        );
+    healthStatusProviderList.forEach(
+        healthStatusProvider -> {
+          Object healthStatus = healthStatusProvider.getHealthStatus();
+          Map<String, Object> providerValue =
+              Map.of("data", healthStatus != null ? healthStatus : NullNode.getInstance());
+          objectValue.put(healthStatusProvider.getHealthStatusName(), providerValue);
+        });
 
-        return objectValue;
-    }
+    return objectValue;
+  }
 
-    @Override
-    public Map<String, Object> getInfo() {
-        return serverInfo;
-    }
+  @Override
+  public Map<String, Object> getInfo() {
+    return serverInfo;
+  }
 }

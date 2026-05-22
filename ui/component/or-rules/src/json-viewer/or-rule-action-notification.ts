@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {until} from "lit/directives/until.js";
@@ -15,14 +33,13 @@ import {
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import "./modals/or-rule-notification-modal";
+import {OrRulesNotificationModalCancelEvent, OrRulesNotificationModalOkEvent} from "./modals/or-rule-notification-modal";
 import "./forms/or-rule-form-email-message";
 import "./forms/or-rule-form-push-notification";
 import "./forms/or-rule-form-localized";
 import "./or-rule-action-attribute";
 import {i18next} from "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
-import {OrRulesNotificationModalCancelEvent, OrRulesNotificationModalOkEvent} from "./modals/or-rule-notification-modal";
 
 // language=CSS
 const style = css`
@@ -184,8 +201,8 @@ export class OrRuleActionNotification extends LitElement {
 
                         // Get realm roles and add as options
                         const realm = await manager.rest.api.RealmResource.get(manager.displayRealm);
-                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
-                        let values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
+                        const realmRoleOpts: [string, string][] = realm.data.realmRoles!.map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
+                        const values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
                         return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values.sort(Util.sortByString(user => user[1]))];
                     }
                 );
@@ -229,7 +246,7 @@ export class OrRuleActionNotification extends LitElement {
 
                 targetValuesGenerator = manager.rest.api.AssetResource.queryAssets(assetQuery).then(
                     (response) => {
-                        let values: [string, string][] = response.data.map((asset) => [asset.id!, asset.name! + " (" + asset.id! + ")"]);
+                        const values: [string, string][] = response.data.map((asset) => [asset.id!, asset.name! + " (" + asset.id! + ")"]);
 
                         // Add additional options for assets
                         const additionalValues: [string, string][] = [["allMatched", i18next.t("matched")]];
@@ -383,7 +400,7 @@ export class OrRuleActionNotification extends LitElement {
             }
 
             else if(messageType === "localized") {
-                const notificationConfig = this.config?.notifications?.[manager.displayRealm] || this.config?.notifications?.["default"];
+                const notificationConfig = this.config?.notifications?.[manager.displayRealm] || this.config?.notifications?.default;
                 const languages = [...new Set([
                     ...(notificationConfig?.languages || []),
                     ...(Object.keys((message as LocalizedNotificationMessage).languages || {}) || [])

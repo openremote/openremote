@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,32 +12,32 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.geo;
+
+import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import java.io.Serializable;
-
 @JsonSubTypes({
-    @JsonSubTypes.Type(GeoJSONFeatureCollection.class),
-    @JsonSubTypes.Type(GeoJSONFeature.class),
-    @JsonSubTypes.Type(GeoJSONGeometry.class)
+  @JsonSubTypes.Type(GeoJSONFeatureCollection.class),
+  @JsonSubTypes.Type(GeoJSONFeature.class),
+  @JsonSubTypes.Type(GeoJSONGeometry.class)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     property = "type",
-    include = JsonTypeInfo.As.EXISTING_PROPERTY
-)
+    include = JsonTypeInfo.As.EXISTING_PROPERTY)
 public abstract class GeoJSON implements Serializable {
 
-    @JsonProperty
-    protected String type;
+  @JsonProperty protected String type;
 
-    protected GeoJSON(String type) {
-        this.type = type;
-    }
+  protected GeoJSON(String type) {
+    this.type = type;
+  }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -25,83 +26,84 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class ParkingAsset extends Asset<ParkingAsset> {
 
-    public static final AttributeDescriptor<Integer> SPACES_TOTAL = new AttributeDescriptor<>("spacesTotal", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> SPACES_OCCUPIED = new AttributeDescriptor<>("spacesOccupied", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> SPACES_OPEN = new AttributeDescriptor<>("spacesOpen", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> SPACES_BUFFER = new AttributeDescriptor<>("spacesBuffer", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Double> PRICE_HOURLY = new AttributeDescriptor<>("priceHourly", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR");
-    public static final AttributeDescriptor<Double> PRICE_DAILY = new AttributeDescriptor<>("priceDaily", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR");
+  public static final AttributeDescriptor<Integer> SPACES_TOTAL =
+      new AttributeDescriptor<>("spacesTotal", ValueType.POSITIVE_INTEGER);
+  public static final AttributeDescriptor<Integer> SPACES_OCCUPIED =
+      new AttributeDescriptor<>("spacesOccupied", ValueType.POSITIVE_INTEGER);
+  public static final AttributeDescriptor<Integer> SPACES_OPEN =
+      new AttributeDescriptor<>("spacesOpen", ValueType.POSITIVE_INTEGER);
+  public static final AttributeDescriptor<Integer> SPACES_BUFFER =
+      new AttributeDescriptor<>("spacesBuffer", ValueType.POSITIVE_INTEGER);
+  public static final AttributeDescriptor<Double> PRICE_HOURLY =
+      new AttributeDescriptor<>("priceHourly", ValueType.POSITIVE_NUMBER).withUnits("EUR");
+  public static final AttributeDescriptor<Double> PRICE_DAILY =
+      new AttributeDescriptor<>("priceDaily", ValueType.POSITIVE_NUMBER).withUnits("EUR");
 
-    public static final AssetDescriptor<ParkingAsset> DESCRIPTOR = new AssetDescriptor<>("parking", "0260ae", ParkingAsset.class);
+  public static final AssetDescriptor<ParkingAsset> DESCRIPTOR =
+      new AssetDescriptor<>("parking", "0260ae", ParkingAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected ParkingAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected ParkingAsset() {}
 
-    public ParkingAsset(String name) {
-        super(name);
-    }
+  public ParkingAsset(String name) {
+    super(name);
+  }
 
-    public Optional<Integer> getSpacesTotal() {
-        return getAttributes().getValue(SPACES_TOTAL);
-    }
+  public Optional<Integer> getSpacesTotal() {
+    return getAttributes().getValue(SPACES_TOTAL);
+  }
 
-    public ParkingAsset setSpacesTotal(Integer value) {
-        getAttributes().getOrCreate(SPACES_TOTAL).setValue(value);
-        return this;
-    }
+  public ParkingAsset setSpacesTotal(Integer value) {
+    getAttributes().getOrCreate(SPACES_TOTAL).setValue(value);
+    return this;
+  }
 
-    public Optional<Integer> getSpacesOccupied() {
-        return getAttributes().getValue(SPACES_OCCUPIED);
-    }
+  public Optional<Integer> getSpacesOccupied() {
+    return getAttributes().getValue(SPACES_OCCUPIED);
+  }
 
-    public ParkingAsset setSpacesOccupied(Integer value) {
-        getAttributes().getOrCreate(SPACES_OCCUPIED).setValue(value);
-        return this;
-    }
+  public ParkingAsset setSpacesOccupied(Integer value) {
+    getAttributes().getOrCreate(SPACES_OCCUPIED).setValue(value);
+    return this;
+  }
 
-    public Optional<Integer> getSpacesOpen() {
-        return getAttributes().getValue(SPACES_OPEN);
-    }
+  public Optional<Integer> getSpacesOpen() {
+    return getAttributes().getValue(SPACES_OPEN);
+  }
 
-    public ParkingAsset setSpacesOpen(Integer value) {
-        getAttributes().getOrCreate(SPACES_OPEN).setValue(value);
-        return this;
-    }
+  public ParkingAsset setSpacesOpen(Integer value) {
+    getAttributes().getOrCreate(SPACES_OPEN).setValue(value);
+    return this;
+  }
 
-    public Optional<Integer> getSpacesBuffer() {
-        return getAttributes().getValue(SPACES_BUFFER);
-    }
+  public Optional<Integer> getSpacesBuffer() {
+    return getAttributes().getValue(SPACES_BUFFER);
+  }
 
-    public ParkingAsset setSpacesBuffer(Integer value) {
-        getAttributes().getOrCreate(SPACES_BUFFER).setValue(value);
-        return this;
-    }
+  public ParkingAsset setSpacesBuffer(Integer value) {
+    getAttributes().getOrCreate(SPACES_BUFFER).setValue(value);
+    return this;
+  }
 
-    public Optional<Double> getPriceHourly() {
-        return getAttributes().getValue(PRICE_HOURLY);
-    }
+  public Optional<Double> getPriceHourly() {
+    return getAttributes().getValue(PRICE_HOURLY);
+  }
 
-    public ParkingAsset setPriceHourly(Double value) {
-        getAttributes().getOrCreate(PRICE_HOURLY).setValue(value);
-        return this;
-    }
+  public ParkingAsset setPriceHourly(Double value) {
+    getAttributes().getOrCreate(PRICE_HOURLY).setValue(value);
+    return this;
+  }
 
-    public Optional<Double> getPriceDaily() {
-        return getAttributes().getValue(PRICE_DAILY);
-    }
+  public Optional<Double> getPriceDaily() {
+    return getAttributes().getValue(PRICE_DAILY);
+  }
 
-    public ParkingAsset setPriceDaily(Double value) {
-        getAttributes().getOrCreate(PRICE_DAILY).setValue(value);
-        return this;
-    }
+  public ParkingAsset setPriceDaily(Double value) {
+    getAttributes().getOrCreate(PRICE_DAILY).setValue(value);
+    return this;
+  }
 }

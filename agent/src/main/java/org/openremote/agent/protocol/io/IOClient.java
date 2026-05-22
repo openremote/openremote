@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,13 +12,15 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.io;
 
-import org.openremote.model.asset.agent.ConnectionStatus;
-
 import java.util.function.Consumer;
+
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 /**
  * Represents an IO client that communicates with a server
@@ -30,58 +29,36 @@ import java.util.function.Consumer;
  */
 public interface IOClient<T> {
 
-    /**
-     * Send a message over the wire
-     */
-    void sendMessage(T message);
+  /** Send a message over the wire */
+  void sendMessage(T message);
 
-    /**
-     * Add a consumer of received messages
-     */
-    void addMessageConsumer(Consumer<T> messageConsumer);
+  /** Add a consumer of received messages */
+  void addMessageConsumer(Consumer<T> messageConsumer);
 
-    /**
-     * Remove a consumer of received messages
-     */
-    void removeMessageConsumer(Consumer<T> messageConsumer);
+  /** Remove a consumer of received messages */
+  void removeMessageConsumer(Consumer<T> messageConsumer);
 
-    /**
-     * Remove every consumer of received messages
-     */
-    void removeAllMessageConsumers();
+  /** Remove every consumer of received messages */
+  void removeAllMessageConsumers();
 
-    /**
-     * Add a consumer of connection status
-     */
-    void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
+  /** Add a consumer of connection status */
+  void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
 
-    /**
-     * Remove a consumer of connection status
-     */
-    void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
+  /** Remove a consumer of connection status */
+  void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
 
-    /**
-     * Remove every consumer of connection status
-     */
-    void removeAllConnectionStatusConsumers();
+  /** Remove every consumer of connection status */
+  void removeAllConnectionStatusConsumers();
 
-    /**
-     * Get current connection status
-     */
-    ConnectionStatus getConnectionStatus();
+  /** Get current connection status */
+  ConnectionStatus getConnectionStatus();
 
-    /**
-     * Connect to the device
-     */
-    void connect();
+  /** Connect to the device */
+  void connect();
 
-    /**
-     * Disconnect from the device
-     */
-    void disconnect();
+  /** Disconnect from the device */
+  void disconnect();
 
-    /**
-     * Should return a URI that uniquely identifies this client instance
-     */
-    String getClientUri();
+  /** Should return a URI that uniquely identifies this client instance */
+  String getClientUri();
 }
