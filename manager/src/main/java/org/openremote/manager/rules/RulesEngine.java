@@ -483,32 +483,40 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
+        Set<AttributeInfo> insertInfosCopy;
+        Set<AttributeInfo> updateInfosCopy;
+        Set<AttributeInfo> retractInfosCopy;
+
         // Synchronise attribute events and states
         synchronized (insertInfos) {
-
-            retractInfos.forEach(attributeInfo -> {
-                facts.removeAssetState(attributeInfo);
-                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
-                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
-            });
-
-            insertInfos.forEach(attributeInfo -> {
-                facts.putAssetState(attributeInfo);
-                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
-                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
-            });
-
-            updateInfos.forEach(attributeInfo -> {
-                facts.putAssetState(attributeInfo);
-                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.UPDATE, attributeInfo));
-            });
+            insertInfosCopy = new HashSet<>(insertInfos);
+            updateInfosCopy = new HashSet<>(updateInfos);
+            retractInfosCopy = new HashSet<>(retractInfos);
 
             insertInfos.clear();
             updateInfos.clear();
             retractInfos.clear();
         }
+
+        retractInfosCopy.forEach(attributeInfo -> {
+            facts.removeAssetState(attributeInfo);
+            // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+            trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+            notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
+        });
+
+        insertInfosCopy.forEach(attributeInfo -> {
+            facts.putAssetState(attributeInfo);
+            // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+            trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+            notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
+        });
+
+        updateInfosCopy.forEach(attributeInfo -> {
+            facts.putAssetState(attributeInfo);
+            notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.UPDATE, attributeInfo));
+        });
+
 
         if (trackLocationPredicates && assetLocationPredicatesConsumer != null) {
             facts.startTrackingLocationRules();

@@ -441,8 +441,22 @@ services:
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     restart: always
-    # Shared memory should be increased for any reasonable DB size this should be increased further
-    shm_size: 128mb
+    # RAM limits and PostgreSQL memory settings should be set appropriately for the expected load (see documentation)
+    shm_size: 156mb
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - maintenance_work_mem=56MB
+      - -c
+      - work_mem=4MB
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       # Needs to be available on the same path as the manager for data exports to work
@@ -465,11 +479,6 @@ services:
       # service DB values so the actual max connections are not exhausted
       POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-50}
 
-      # When a newer POSTGRESQL image is used with a higher OR_REINDEX_COUNTER and PGDATA is
-      # preserved then the container will REINDEX the DB automatically unless the following
-      # is set to false
-      #OR_DISABLE_REINDEX=${OR_DISABLE_REINDEX:-false}
-
   # Query Exporter - Prometheus metrics from PostgreSQL queries
   # Documentation: https://github.com/albertodonato/query-exporter
   query-exporter:
@@ -486,7 +495,7 @@ services:
         - deployment-data:/deployment
     ports:
       - "127.0.0.1:8406:9560" # Localhost metrics access
-      - "${PRIVATE_IP:-127.0.0.1}:8406:8404" # Allows to also expose metrics on a given IP address,
+      - "${PRIVATE_IP:-127.0.0.1}:8406:9560" # Allows to also expose metrics on a given IP address,
       # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:
       TZ: ${TZ:-Europe/Amsterdam}
@@ -515,7 +524,7 @@ services:
       test: ["CMD", "/app/app", "-v"]
     ports:
       - "2222:2222"
-      - "9000-10000:9000-10000"
+      - "9000-9100:9000-9100"
     volumes:
       - proxy-data:/etc/letsencrypt
       - deployment-data:/deployment
@@ -529,7 +538,7 @@ services:
       --idle-connection=false
       --authentication-keys-directory=/deployment/sish/pubkeys
       --private-keys-directory=/deployment/sish/keys
-      --port-bind-range="9000-10000"
+      --port-bind-range="9000-9100"
       --bind-random-ports=false
       --bind-random-subdomains=false
       --domain=${OR_HOSTNAME}

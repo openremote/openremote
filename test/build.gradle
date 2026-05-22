@@ -9,7 +9,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    testImplementation project(":setup").sourceSets.integration.output
+    testImplementation rootProject.project(":setup").sourceSets.integration.output
     api project(":manager")
 
     implementation "org.apache.groovy:groovy-all:$groovyVersion"
@@ -39,6 +39,12 @@ dependencies {
 
     testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
     testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+
+    testImplementation "io.grpc:grpc-netty-shaded:$grpcVersion"
+    testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
+    testImplementation "io.grpc:grpc-stub:$grpcVersion"
+
+    testImplementation "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion"
 }
 
 tasks.withType(Test) {
