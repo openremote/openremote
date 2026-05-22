@@ -446,7 +446,8 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected removeFromAttributeColors(attributeRef: AttributeRef) {
-        this.widgetConfig.attributeColors = this.widgetConfig.attributeColors.filter(x => x[0] !== attributeRef);
+        this.widgetConfig.attributeColors = (this.widgetConfig.attributeColors ?? [])
+            .filter(x => x[0].id !== attributeRef.id || x[0].name !== attributeRef.name);
     }
 
     protected openColorPickDialog(attributeRef: AttributeRef) {

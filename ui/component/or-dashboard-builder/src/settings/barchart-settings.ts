@@ -446,7 +446,7 @@ export class BarChartSettings extends WidgetSettings {
 
 
     protected removeFromAttributeColors(attributeRef: AttributeRef) {
-        this.widgetConfig.attributeColors = this.widgetConfig.attributeColors.filter(
+        this.widgetConfig.attributeColors = (this.widgetConfig.attributeColors ?? []).filter(
             ([ref, _]) => ref.id !== attributeRef.id || ref.name !== attributeRef.name
         );
     }

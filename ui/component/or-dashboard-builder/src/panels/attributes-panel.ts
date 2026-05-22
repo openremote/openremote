@@ -162,8 +162,7 @@ const styling = css`
         color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         font-style: italic;
     }
-
-    /* The row is the only way to remove a broken ref, so keep its actions visible without hover. */
+    
     .attribute-list-item.broken .attribute-list-item-actions,
     .attribute-list-item.broken .button-action {
         visibility: visible;
