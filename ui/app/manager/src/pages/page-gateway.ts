@@ -124,7 +124,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
             }
 
             .gateway-sharing-control-child {
-                margin-left: 20px;
+                margin-left: 24px;
                 display: flex;
                 gap: 10px;
                 align-items: center;
@@ -335,9 +335,10 @@ export class PageGateway extends Page<AppStateKeyed>  {
                                       @change=${(ev: Event) => this._setConnectionProperty("clientSecret", (ev.currentTarget as HTMLInputElement).value)}>
                     <or-translate slot="label" value="clientSecret"></or-translate>
                 </or-vaadin-text-field>
-                <or-mwc-input id="gateway-secured" .label="${i18next.t("secured")}" .type="${InputType.CHECKBOX}" style="height: 56px;" ?disabled="${disabled}" .value="${connection?.secured || false}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("secured", e.detail.value)}"
-                ></or-mwc-input>
+                <or-vaadin-checkbox id="gateway-secured" ?disabled=${disabled} ?checked=${connection?.secured}
+                                    @change=${(ev: Event) => this._setConnectionProperty("secured", (ev.currentTarget as HTMLInputElement).checked)}>
+                    <or-translate slot="label" value="secured"></or-translate>
+                </or-vaadin-checkbox>
             </div>
         `;
     }
@@ -363,21 +364,21 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     <div></div>
                 `)}
                 <div class="gateway-sharing-control" style="${controlStyling}">
-                    <or-mwc-input .label="${i18next.t("gateway.limit_sharing_attribute")}" .type="${InputType.CHECKBOX}"
-                                  ?disabled="${controlsDisabled}" .value="${controlsDisabled ? undefined : filterChecked}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onLimitAttributesCheck(e)}"
-                    ></or-mwc-input>
+                    <or-vaadin-checkbox ?disabled=${controlsDisabled} ?checked=${controlsDisabled ? false : filterChecked}
+                                        @change=${(ev: Event) => this._onLimitAttributesCheck(ev)}>
+                        <or-translate slot="label" value="gateway.limit_sharing_attribute"></or-translate>
+                    </or-vaadin-checkbox>
                     <div class="gateway-sharing-control-child">
                         <or-vaadin-button theme="primary" ?disabled=${filterDisabled} @click=${() => this._onLimitAttributesButtonClick()}>
                             <span>${attrAmount || 0} <or-translate value="gateway.limit_sharing_attribute_selected"></or-translate></span>
                         </or-vaadin-button>
                     </div>
                 </div>
-                <div class="gateway-sharing-control"  style="${controlStyling}">
-                    <or-mwc-input .label="${i18next.t("gateway.limit_sharing_rate")}" .type="${InputType.CHECKBOX}"
-                                  ?disabled="${controlsDisabled}" .value="${!controlsDisabled && interval !== undefined}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onAttributesIntervalUpdate(e.detail.value ? 1 : undefined)}"
-                    ></or-mwc-input>
+                <div class="gateway-sharing-control" style="${controlStyling}">
+                    <or-vaadin-checkbox ?disabled=${controlsDisabled} ?checked=${!controlsDisabled && interval !== undefined}
+                                        @change=${(ev: Event) => this._onAttributesIntervalUpdate((ev.currentTarget as HTMLInputElement).checked ? 1 : undefined)}>
+                        <or-translate slot="label" value="gateway.limit_sharing_rate"></or-translate>
+                    </or-vaadin-checkbox>
                     <div class="gateway-sharing-control-child">
                         <or-vaadin-number-field ?disabled=${intervalDisabled} value=${controlsDisabled ? undefined : interval} min="0" style="width: 84px"
                                                 @change=${(ev: Event) => this._onAttributesIntervalUpdate(Number((ev.currentTarget as HTMLInputElement)?.value ?? 0))}>
@@ -394,10 +395,10 @@ export class PageGateway extends Page<AppStateKeyed>  {
         return html`
             <div id="gateway-column-4" class="gateway-column">
                 <div class="gateway-sharing-control"  style="${controlStyling}">
-                    <or-mwc-input .label="${i18next.t("gateway.assetSyncRulesEnable")}" .type="${InputType.CHECKBOX}"
-                                  ?disabled="${disabled}" .value="${!!connection.assetSyncRules}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onAssetSyncRulesToggle(!!e.detail.value)}"
-                    ></or-mwc-input>
+                    <or-vaadin-checkbox ?disabled=${disabled} ?checked=${!!connection.assetSyncRules}
+                                        @change=${(ev: Event) => this._onAssetSyncRulesToggle((ev.currentTarget as HTMLInputElement).checked)}>
+                        <or-translate slot="label" value="gateway.assetSyncRulesEnable"></or-translate>
+                    </or-vaadin-checkbox>
                     <div class="gateway-sharing-control-child">
                         <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${disabled || !connection.assetSyncRules}" 
                                       .value="${connection?.assetSyncRules}"
@@ -414,11 +415,12 @@ export class PageGateway extends Page<AppStateKeyed>  {
     /**
      * HTML callback for checking the "limit data sharing by attribute" checkbox.
      */
-    protected _onLimitAttributesCheck(ev: OrInputChangedEvent) {
+    protected _onLimitAttributesCheck(ev: Event) {
+        const value = (ev.currentTarget as HTMLInputElement).checked;
         const attrFilters = this._connection.attributeFilters;
         if(attrFilters?.length > 0) {
             attrFilters?.forEach(filter => {
-                if(ev.detail.value) {
+                if(value) {
                     filter.matcher = {};
                 } else {
                     delete filter.matcher;
@@ -427,7 +429,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
             });
             this._updateAttributeFilters(attrFilters);
         } else {
-            this._updateAttributeFilters(ev.detail.value ? [{ matcher: {} }] as GatewayAttributeFilter[] : undefined);
+            this._updateAttributeFilters(value ? [{ matcher: {} }] as GatewayAttributeFilter[] : undefined);
         }
     }
 
