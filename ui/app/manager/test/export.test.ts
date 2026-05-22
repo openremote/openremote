@@ -95,11 +95,11 @@ test("Export datapoints successfully triggers download", async ({ page, manager 
     const date = new Date(dateStr);
     return date.toISOString().slice(0, 16);
   };
-  await page.locator("or-mwc-input[label='Export from']").locator("input").fill(toDatetimeLocal(oldestDatapoint!));
-  await page.locator("or-mwc-input[label='To']").locator("input").fill(toDatetimeLocal(latestDatapoint!));
+  await page.getByText("Export from").fill(toDatetimeLocal(oldestDatapoint!));
+  await page.getByText("To").fill(toDatetimeLocal(latestDatapoint!));
 
-  await page.locator("or-mwc-input[label='Export format']").click();
-  await page.locator("li.mdc-list-item:has-text('CSV')").first().click();
+  await page.getByText("Export format").click();
+  await page.getByText("CSV", {exact: true}).first().click();
 
   const exportResponsePromise = page.waitForResponse(
     response => response.url().includes("/asset/datapoint/export")
