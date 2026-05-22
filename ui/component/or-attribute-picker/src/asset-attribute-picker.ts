@@ -165,7 +165,7 @@ export class OrAssetAttributePicker extends AttributePicker {
                     this._assetAttributes = this._assetAttributes
                         .filter(e => e.meta && (
                             e.meta[WellknownMetaItems.AGENTLINK]
-                            || (this.showOnlyDatapointAttrs && e.meta[WellknownMetaItems.STOREDATAPOINTS])
+                            || (this.showOnlyDatapointAttrs && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]))
                             || (this.showOnlyRuleStateAttrs && e.meta[WellknownMetaItems.RULESTATE])
                             || (this.showPredictedDataAttrs && e.meta[WellknownMetaItems.HASPREDICTEDDATAPOINTS])
                         ));
