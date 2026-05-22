@@ -58,7 +58,21 @@ services:
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
-    shm_size: 128mb
+    shm_size: 156mb
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - maintenance_work_mem=56MB
+      - -c
+      - work_mem=4MB
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
