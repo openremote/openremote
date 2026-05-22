@@ -327,7 +327,7 @@ export class AttributesPanel extends LitElement {
                                                 <or-icon icon="link-variant-off"></or-icon>
                                             </div>
                                             <div class="attribute-list-item-label">
-                                                <span class="broken-label">${i18next.t("brokenReference")}</span>
+                                                <or-translate class="broken-label" value="brokenReference"></or-translate>
                                                 <span style="color:grey;">${attributeRef.name ?? ""}</span>
                                             </div>
                                             ${this._getBrokenAttributeActionsTemplate(attributeRef)}
