@@ -118,7 +118,10 @@ export class OrConfJson extends LitElement {
 
     render() {
         return html`
-            <or-mwc-input type="${InputType.BUTTON}" label="JSON" outlined icon="pencil" @or-mwc-input-changed="${() => {this._showConfigDialog()}}"></or-mwc-input>
+            <or-vaadin-button @click=${() => this._showConfigDialog()}>
+                <or-icon slot="prefix" icon="pencil"></or-icon>
+                <or-translate value="JSON"></or-translate>
+            </or-vaadin-button>
         `
     }
 }

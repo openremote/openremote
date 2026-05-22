@@ -97,9 +97,10 @@ export class OrConfPanel extends LitElement {
             <!-- Show an "ADD REALM" button if there are realms available to be added -->
             <div style="display: flex; justify-content: space-between;">
                 ${when(availableRealms.length > 0, () => html`
-                    <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" label="${type === 'mapconfig' ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization'}" icon="plus"
-                                  @or-mwc-input-changed="${() => this._showAddingRealmDialog()}"
-                    ></or-mwc-input>
+                    <or-vaadin-button id="btn-add-realm" @click=${() => this._showAddingRealmDialog()}>
+                        <or-icon slot="prefix" icon="plus"></or-icon>
+                        <or-translate value=${type === 'mapconfig' ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization'}></or-translate>
+                    </or-vaadin-button>
                 `)}
             </div>
         `

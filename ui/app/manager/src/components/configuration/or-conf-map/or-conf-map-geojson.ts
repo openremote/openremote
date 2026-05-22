@@ -22,7 +22,12 @@ export class OrConfMapGeoJson extends LitElement {
     /* -------------- */
 
     protected render() {
-        return html`<or-mwc-input type="${InputType.BUTTON}" label="geoJson" outlined icon="pencil" @or-mwc-input-changed="${this.showDialog}"></or-mwc-input>`
+        return html`
+            <or-vaadin-button @click=${() => this.showDialog()}>
+                <or-icon slot="prefix" icon="pencil"></or-icon>
+                <or-translate value="configuration.geoJson"></or-translate>
+            </or-vaadin-button>
+        `;
     }
 
     protected showDialog() {
