@@ -19,13 +19,20 @@
  */
 package org.openremote.container.security;
 
-import io.undertow.servlet.api.DeploymentInfo;
+import jakarta.security.enterprise.AuthenticationException;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.ServletContext;
 import org.openremote.model.Container;
+
+import javax.security.auth.Subject;
+import java.security.Principal;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * SPI for implementations used by {@link IdentityService}.
  */
-public interface IdentityProvider {
+public interface IdentityProvider extends TokenVerifier {
 
     String OR_ADMIN_PASSWORD = "OR_ADMIN_PASSWORD";
     String OR_ADMIN_PASSWORD_DEFAULT = "secret";
@@ -36,5 +43,24 @@ public interface IdentityProvider {
 
     void stop(Container container) throws Exception;
 
-    void secureDeployment(DeploymentInfo deploymentInfo);
+    FilterRegistration.Dynamic secureDeployment(ServletContext servletContext);
+
+    /**
+     * Retrieves a bearer token for the given realm, client id and client secret using this {@link IdentityProvider}.
+     * Only {@link jakarta.security.enterprise.AuthenticationException} should be thrown.
+     */
+    CompletableFuture<OIDCTokenResponse> authenticate(String realm, String clientId, String clientSecret) throws AuthenticationException;
+
+    static String getSubjectId(Subject subject) {
+        return Optional.ofNullable(getTokenPrincipal(subject)).map(Principal::getName).orElse(null);
+    }
+
+    static TokenPrincipal getTokenPrincipal(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof TokenPrincipal)
+                .map(p -> (TokenPrincipal)p).findFirst().orElse(null);
+    }
 }

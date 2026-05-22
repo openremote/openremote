@@ -979,14 +979,14 @@ export class Manager implements EventProviderFactory {
                 this._name = this._keycloak.tokenParsed?.name;
                 this._username = this._keycloak.tokenParsed?.preferred_username;
 
-                this._createTokenUpdateInterval();
-
                 // If native shell is enabled store offline token
                 if (this.isMobile() && this._keycloak?.refreshTokenParsed?.typ === "Offline") {
                     console.debug("Storing offline refresh token");
                     this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
                 }
                 this._onAuthenticated();
+                this._createTokenUpdateInterval();
+
             } else if (this.config.autoLogin) {
                 this.login();
                 return false;
@@ -1002,6 +1002,7 @@ export class Manager implements EventProviderFactory {
 
     protected _createTokenUpdateInterval() {
         if (!this._authenticated) {
+            console.warn("User is not authenticated; skipping token update interval creation.")
             return;
         }
         if (!this._keycloakUpdateTokenInterval) {

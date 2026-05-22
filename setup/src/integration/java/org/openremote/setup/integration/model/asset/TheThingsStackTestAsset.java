@@ -53,6 +53,15 @@ public class TheThingsStackTestAsset extends Asset<TheThingsStackTestAsset> {
             ));
         }})
     );
+    public static final AttributeDescriptor<String> ERRORS = new AttributeDescriptor<>("errors", ValueType.TEXT,
+        new MetaItem<>(MetaItemType.READ_ONLY),
+        new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
+            putAll(Map.of(
+                "uplinkPort", 2,
+                "valueFilterJsonPath", "$.uplink_message.decoded_payload.Errors"
+            ));
+        }})
+    );
     public static final AttributeDescriptor<Boolean> SWITCH = new AttributeDescriptor<>("switch", ValueType.BOOLEAN,
         new MetaItem<>(MetaItemType.AGENT_LINK_CONFIG, new ValueType.ObjectMap() {{
             putAll(Map.of(

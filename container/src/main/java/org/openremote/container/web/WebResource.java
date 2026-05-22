@@ -19,16 +19,14 @@
  */
 package org.openremote.container.web;
 
-import org.keycloak.KeycloakPrincipal;
-import org.openremote.model.Container;
-import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.basic.BasicAuthContext;
-import org.openremote.container.security.keycloak.AccessTokenAuthContext;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.*;
+import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.TokenPrincipal;
+import org.openremote.container.security.basic.BasicAuthContext;
+
 import java.security.Principal;
 
 import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
@@ -69,21 +67,14 @@ public class WebResource implements AuthContext {
     public AuthContext getAuthContext() {
         // The securityContext is a thread-local proxy, careful when/how you call it
         Principal principal = securityContext.getUserPrincipal();
-        if (principal == null) {
-            return null;
-        }
+        return switch (principal) {
+            case null -> null;
+            case TokenPrincipal tokenPrincipal -> tokenPrincipal;
+            case BasicAuthContext basicAuthContext -> basicAuthContext;
+            default ->
+                    throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
+        };
 
-        if (principal instanceof KeycloakPrincipal) {
-            KeycloakPrincipal<?> keycloakPrincipal = (KeycloakPrincipal<?>) principal;
-            return new AccessTokenAuthContext(
-                keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
-                keycloakPrincipal.getKeycloakSecurityContext().getToken()
-            );
-        } else if (principal instanceof BasicAuthContext) {
-            return (BasicAuthContext) principal;
-        } else {
-            throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
-        }
     }
 
     // Convenience methods

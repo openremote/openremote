@@ -32,11 +32,9 @@ import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.reader.MessageUtil;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.keycloak.AccessTokenAuthContext;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -249,32 +247,32 @@ public abstract class MQTTHandler {
      * Checks that authenticated session and topic realm matches the authenticated user and also that topic client ID
      * matches the connection client ID.
      */
-    public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-        if (securityContext == null) {
+    public boolean checkCanSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic) {
+        if (authContext == null) {
             getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
-        if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
+        if (!topicRealmAllowed(authContext, topic) || !topicClientIdMatches(connection, topic)) {
             getLogger().finest("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
-        return canSubscribe(connection, securityContext, topic);
+        return canSubscribe(connection, authContext, topic);
     }
 
     /**
      * Checks that authenticated sessions and topic realm matches the authenticated user and also that topic client ID
      * matches the connection client ID.
      */
-    public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-        if (securityContext == null) {
+    public boolean checkCanPublish(RemotingConnection connection, AuthContext authContext, Topic topic) {
+        if (authContext == null) {
             getLogger().finest("Anonymous connection publishes not supported by this handler topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
-        if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
+        if (!topicRealmAllowed(authContext, topic) || !topicClientIdMatches(connection, topic)) {
             getLogger().finest("Topic realm and client ID tokens must match the connection topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
             return false;
         }
-        return canPublish(connection, securityContext, topic);
+        return canPublish(connection, authContext, topic);
     }
 
     /**
@@ -313,13 +311,13 @@ public abstract class MQTTHandler {
      * Called to authorise a subscription if {@link #handlesTopic} returned true; should return true if the subscription
      * is allowed otherwise return false.
      */
-    public abstract boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic);
+    public abstract boolean canSubscribe(RemotingConnection connection, AuthContext authContext, Topic topic);
 
     /**
      * Called to authorise a publish if {@link #handlesTopic} returned true; should return true if the publish is
      * allowed otherwise return false.
      */
-    public abstract boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic);
+    public abstract boolean canPublish(RemotingConnection connection, AuthContext authContext, Topic topic);
 
     /**
      * Called to handle subscribe if {@link #canSubscribe} returned true.
@@ -350,8 +348,8 @@ public abstract class MQTTHandler {
         return topicTokenIndexToString(topic, 1);
     }
 
-    public static boolean topicRealmAllowed(KeycloakSecurityContext securityContext, Topic topic) {
-        return securityContext != null && securityContext.getRealm().equals(topicRealm(topic)) || KeycloakIdentityProvider.isSuperUser(securityContext);
+    public static boolean topicRealmAllowed(AuthContext authContext, Topic topic) {
+        return authContext != null && (authContext.getAuthenticatedRealmName().equals(topicRealm(topic)) || authContext.isSuperUser());
     }
 
     public static boolean topicClientIdMatches(RemotingConnection connection, Topic topic) {
@@ -370,17 +368,8 @@ public abstract class MQTTHandler {
         return connection != null ? connection.getSubject() : null;
     }
 
-    protected static KeycloakSecurityContext getSecurityContextFromSubject(Subject subject) {
-        return KeycloakIdentityProvider.getSecurityContext(subject);
-    }
-
     protected static Optional<AuthContext> getAuthContextFromConnection(RemotingConnection connection) {
         return Optional.ofNullable(getSubjectFromConnection(connection))
-            .map(MQTTHandler::getSecurityContextFromSubject)
-            .map(DefaultMQTTHandler::getAuthContextFromSecurityContext);
-    }
-
-    protected static AuthContext getAuthContextFromSecurityContext(KeycloakSecurityContext securityContext) {
-        return securityContext == null ? null : new AccessTokenAuthContext(securityContext.getRealm(), securityContext.getToken());
+            .map(IdentityProvider::getTokenPrincipal);
     }
 }

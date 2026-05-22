@@ -35,9 +35,22 @@ public class EventSubscription<E extends Event> {
     public static final String SUBSCRIBE_MESSAGE_PREFIX = "SUBSCRIBE:";
     public static final String SUBSCRIBED_MESSAGE_PREFIX = "SUBSCRIBED:";
 
+    /**
+     * Event type of the subscription to cancel.
+     *
+     * <p>Must not contain the reserved delimiter {@code "::"}.
+     */
     protected String eventType;
+
     protected EventFilter<E> filter;
+
+    /**
+     * Client-defined subscription identifier.
+     *
+     * <p>Must not contain the reserved delimiter {@code "::"}.
+     */
     protected String subscriptionId;
+
     @JsonIgnore
     protected boolean subscribed;
 
