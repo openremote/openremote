@@ -64,7 +64,7 @@ export class ChartSettings extends WidgetSettings {
             let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
             if(!color) {
                 const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
-                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace('#', '');
+                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index % OrChart.DEFAULT_COLORS.length]?.replace('#', '');
             }
             return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
         };
@@ -79,7 +79,7 @@ export class ChartSettings extends WidgetSettings {
             let customColor = false;
             if (!color) {
                 const index = this.widgetConfig?.attributeRefs?.findIndex(ref => ref.id === attributeRef.id && ref.name === attributeRef.name);
-                if (index >= 0) color = OrChart.DEFAULT_COLORS?.[index];
+                if (index >= 0) color = OrChart.DEFAULT_COLORS?.[index % OrChart.DEFAULT_COLORS.length];
             } else {
                 customColor = true;
             }

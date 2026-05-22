@@ -848,24 +848,36 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${map(this.assetAttributes?.map(([assetIndex, attr], index) => {
                                     const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
+                                    if (!asset) {
+                                        // Broken reference: kept in the legend to indicate the config is broken.
+                                        return {broken: true, assetIndex, attr, axisNote: undefined, bgColor: "", label: attr.name ?? ""};
+                                    }
                                     const color = this.attributeColors.find(x => x[0].id === asset.id && x[0].name === attr.name)?.[1];
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
-                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
-                                    const axisNote = (this.attributeConfig.rightAxisAttributes?.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
+                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
+                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
+                                    const axisNote = (this.attributeConfig.rightAxisAttributes?.find(ar => asset.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = (color ?? this.colors[colourIndex]) || "";
-                                    return {assetIndex, attr, axisNote, bgColor, label};
-                                    
-                                }).sort(Util.sortByString(x => x.label)), ({assetIndex, attr, axisNote, bgColor, label}) => html`
+                                    return {broken: false, assetIndex, attr, axisNote, bgColor, label};
+
+                                }).sort(Util.sortByString(x => x.label)), (item) => item.broken ? html`
+                                    <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}">
+                                        <span style="margin-right: 10px; --or-icon-width: 20px;"><or-icon icon="link-variant-off"></or-icon></span>
+                                        <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
+                                            <or-translate style="font-size:12px; color:grey; font-style: italic;" value="brokenReference"></or-translate>
+                                            <span style="font-size:12px; color:grey;">${Util.camelCaseToSentenceCase(item.attr.name) ?? ''}</span>
+                                        </div>
+                                    </div>
+                                ` : html`
                                     <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}"
-                                         @mouseenter="${() => this._addDatasetHighlight({id: this.assets[assetIndex]!.id, name: attr.name})}"
+                                         @mouseenter="${() => this._addDatasetHighlight({id: this.assets[item.assetIndex]!.id, name: item.attr.name})}"
                                          @mouseleave="${()=> this._removeDatasetHighlights()}">
-                                        <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
+                                        <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[item.assetIndex]!.type!), undefined, undefined, item.bgColor.split('#')[1])}</span>
                                         <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
                                             <div style="display: flex; gap: 4px;">
-                                                <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
-                                                ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
+                                                <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[item.assetIndex].name}</span>
+                                                ${when(item.axisNote, () => html`<span style="font-size:12px; color:grey">(${item.axisNote})</span>`)}
                                             </div>
-                                            <span style="font-size:12px; color:grey;">${label}</span>
+                                            <span style="font-size:12px; color:grey;">${item.label}</span>
                                         </div>
                                     </div>
                                 `)}
@@ -1119,9 +1131,11 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getSelectedAttributes() {
-        return this.assetAttributes.map(([assetIndex, attr]) => {
-            return {id: this.assets[assetIndex].id, name: attr.name};
-        });
+        return this.assetAttributes
+            .filter(([assetIndex]) => !!this.assets[assetIndex])
+            .map(([assetIndex, attr]) => {
+                return {id: this.assets[assetIndex].id, name: attr.name};
+            });
     }
 
     protected _cleanup() {
@@ -1274,6 +1288,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     const lineData: LineChartData[] = [];
                     const asset = this.assets[assetIndex];
+                    if (!asset) {
+                        return;
+                    }
                     const shownOnRightAxis = !!this.attributeConfig?.rightAxisAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const smooth = !!this.attributeConfig?.smoothAttributes?.find(ar => ar.id === asset.id && ar.name === attribute.name);
                     const stacked = this.stacked;

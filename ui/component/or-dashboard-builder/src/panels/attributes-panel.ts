@@ -327,7 +327,7 @@ export class AttributesPanel extends LitElement {
                                             </div>
                                             <div class="attribute-list-item-label">
                                                 <or-translate class="broken-label" value="brokenReference"></or-translate>
-                                                <span style="color:grey;">${attributeRef.name ?? ""}</span>
+                                                <span style="color:grey;">${Util.camelCaseToSentenceCase(attributeRef.name) ?? ""}</span>
                                             </div>
                                             ${this._getBrokenAttributeActionsTemplate(attributeRef)}
                                         </div>
