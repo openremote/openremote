@@ -211,7 +211,7 @@ services:
 
       # !! WARNING: This will wipe your database !!
       # Force a full clean and setup on startup irrespective of whether there is existing data
-      # Default behaviour is false unless OR_DEV_MODE = true or openremote database doesn't already exist
+      # Default behaviour is false unless openremote database doesn't already exist
       OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-false}
 
       # Manager web server interface binding; default: 0.0.0.0

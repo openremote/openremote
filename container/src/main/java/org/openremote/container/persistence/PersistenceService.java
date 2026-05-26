@@ -315,7 +315,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
 
-        forceClean = getBoolean(container.getConfig(), OR_SETUP_RUN_ON_RESTART, container.isDevMode());
+        forceClean = getBoolean(container.getConfig(), OR_SETUP_RUN_ON_RESTART, false);
 
         storageDir = Paths.get(getString(container.getConfig(), OR_STORAGE_DIR, OR_STORAGE_DIR_DEFAULT));
         LOG.log(Level.INFO, "Setting storage directory to '" + storageDir.toAbsolutePath() + "'");

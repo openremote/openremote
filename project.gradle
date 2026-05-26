@@ -133,13 +133,15 @@ if (project == rootProject) {
                 "Demo Setup"(Application) {
                     moduleName = getProject().idea.module.name + ".extension.demo-setup.main"
                     envs = [
-                            OR_SETUP_TYPE: "demo"
+                        OR_SETUP_RUN_ON_RESTART: "true",
+                        OR_SETUP_TYPE: "demo"
                     ]
                 }
                 "Clustering Setup"(Application) {
                     moduleName = getProject().idea.module.name + ".setup.clustering"
                     envs = [
-                            OR_SETUP_TYPE: "clustering"
+                        OR_SETUP_RUN_ON_RESTART: "true",
+                        OR_SETUP_TYPE: "clustering"
                     ]
                 }
                 "Test Setup"(Application) {
@@ -147,6 +149,9 @@ if (project == rootProject) {
                 }
                 "Empty"(Application) {
                     moduleName = getProject().idea.module.name + ".manager.main"
+                    envs = [
+                        OR_SETUP_RUN_ON_RESTART: "true"
+                    ]
                 }
             }
         }
