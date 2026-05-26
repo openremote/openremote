@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,37 +12,42 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * This event is used in response to a {@link ReadAssetsEvent}.
- */
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.event.shared.SharedEvent;
+
+/** This event is used in response to a {@link ReadAssetsEvent}. */
 public class AssetsEvent extends SharedEvent {
 
-    protected List<Asset<?>> assets;
+  protected List<Asset<?>> assets;
 
-    @JsonCreator
-    public AssetsEvent(@JsonProperty("assets") List<Asset<?>> assets) {
-        this.assets = assets;
-    }
+  @JsonCreator
+  public AssetsEvent(@JsonProperty("assets") List<Asset<?>> assets) {
+    this.assets = assets;
+  }
 
-    public List<Asset<?>> getAssets() {
-        return assets;
-    }
+  public List<Asset<?>> getAssets() {
+    return assets;
+  }
 
-    @Override
-    public String toString() {
-        return AssetsEvent.class.getSimpleName() + "{" +
-            ", assets=" + (assets == null ? "null" : assets.stream().map(Asset::getId).collect(Collectors.joining())) +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return AssetsEvent.class.getSimpleName()
+        + "{"
+        + ", assets="
+        + (assets == null
+            ? "null"
+            : assets.stream().map(Asset::getId).collect(Collectors.joining()))
+        + '}';
+  }
 }

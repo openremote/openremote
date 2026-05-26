@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,18 +12,24 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.agent.protocol.mqtt;
 
-import javax.net.ssl.TrustManagerFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.Provider;
 
+import javax.net.ssl.TrustManagerFactory;
+
 public class CustomX509TrustManagerFactory extends TrustManagerFactory {
-	public CustomX509TrustManagerFactory(KeyStore... keystores) throws KeyStoreException {
-		super(new CustomX509TrustManagerFactorySpi(keystores), new Provider("CustomX509TrustManagerFactory", "1.0", "Custom X509 Trust Manager Factory") {}, TrustManagerFactory.getDefaultAlgorithm());
-	}
+  public CustomX509TrustManagerFactory(KeyStore... keystores) throws KeyStoreException {
+    super(
+        new CustomX509TrustManagerFactorySpi(keystores),
+        new Provider(
+            "CustomX509TrustManagerFactory", "1.0", "Custom X509 Trust Manager Factory") {},
+        TrustManagerFactory.getDefaultAlgorithm());
+  }
 }

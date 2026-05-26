@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -29,47 +30,46 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class DoorAsset extends Asset<DoorAsset> {
 
-    public static final AttributeDescriptor<Boolean> POSITION = new AttributeDescriptor<>("position", ValueType.BOOLEAN,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withFormat(ValueFormat.BOOLEAN_AS_OPEN_CLOSED());
+  public static final AttributeDescriptor<Boolean> POSITION =
+      new AttributeDescriptor<>(
+              "position", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withFormat(ValueFormat.BOOLEAN_AS_OPEN_CLOSED());
 
-    public static final AttributeDescriptor<Boolean> LOCKED = new AttributeDescriptor<>("locked", ValueType.BOOLEAN,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withOptional(true);
+  public static final AttributeDescriptor<Boolean> LOCKED =
+      new AttributeDescriptor<>("locked", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withOptional(true);
 
-    public static final AttributeDescriptor<String> LAST_ACCESS = new AttributeDescriptor<>("lastAccess", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withOptional(true);
+  public static final AttributeDescriptor<String> LAST_ACCESS =
+      new AttributeDescriptor<>(
+              "lastAccess", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY))
+          .withOptional(true);
 
-    public static final AttributeDescriptor<AttributeExecuteStatus> UNLOCK = new AttributeDescriptor<>("unlock", ValueType.EXECUTION_STATUS)
-        .withOptional(true);
+  public static final AttributeDescriptor<AttributeExecuteStatus> UNLOCK =
+      new AttributeDescriptor<>("unlock", ValueType.EXECUTION_STATUS).withOptional(true);
 
-    public static final AssetDescriptor<DoorAsset> DESCRIPTOR = new AssetDescriptor<>("door", "ae2eb6", DoorAsset.class);
+  public static final AssetDescriptor<DoorAsset> DESCRIPTOR =
+      new AssetDescriptor<>("door", "ae2eb6", DoorAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected DoorAsset() {
-    }
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected DoorAsset() {}
 
-    public DoorAsset(String name) {
-        super(name);
-    }
+  public DoorAsset(String name) {
+    super(name);
+  }
 
-    public Optional<Boolean> getPosition() {
-        return getAttributes().getValue(POSITION);
-    }
+  public Optional<Boolean> getPosition() {
+    return getAttributes().getValue(POSITION);
+  }
 
-    public Optional<Boolean> getLocked() {
-        return getAttributes().getValue(LOCKED);
-    }
+  public Optional<Boolean> getLocked() {
+    return getAttributes().getValue(LOCKED);
+  }
 
-    public Optional<String> getLastAccess() {
-        return getAttributes().getValue(LAST_ACCESS);
-    }
+  public Optional<String> getLastAccess() {
+    return getAttributes().getValue(LAST_ACCESS);
+  }
 }

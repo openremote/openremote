@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.persistence;
 
@@ -28,53 +27,59 @@ import org.hibernate.type.Type;
 
 /**
  * This listener will only push the dirty properties through to the interceptor's onFlushDirty.
- * <p>
- * Unfortunately there are internal and private dependencies which makes extending not ideal but it is fine for our
- * use case.
+ *
+ * <p>Unfortunately there are internal and private dependencies which makes extending not ideal but
+ * it is fine for our use case.
  */
 public class FlushEntityEventListener extends DefaultFlushEntityEventListener {
 
-    @Override
-    protected boolean handleInterception(FlushEntityEvent event) {
-        SessionImplementor session = event.getSession();
-        final boolean intercepted = invokeInterceptor( session, event );
+  @Override
+  protected boolean handleInterception(FlushEntityEvent event) {
+    SessionImplementor session = event.getSession();
+    final boolean intercepted = invokeInterceptor(session, event);
 
-        //now we might need to recalculate the dirtyProperties array
-        if ( intercepted && event.isDirtyCheckPossible() ) {
-            dirtyCheck( event );
-        }
-
-        return intercepted;
+    // now we might need to recalculate the dirtyProperties array
+    if (intercepted && event.isDirtyCheckPossible()) {
+      dirtyCheck(event);
     }
 
-    protected boolean invokeInterceptor(SessionImplementor session, FlushEntityEvent event) {
-        if (event.getDirtyProperties() == null) {
-            return false;
-        }
-        EntityEntry entry = event.getEntityEntry();
-        EntityPersister persister = entry.getPersister();
-        Object entity = event.getEntity();
-        final Object[] values = event.getPropertyValues();
+    return intercepted;
+  }
 
-        // Convert the values, properties names (old and new values)
-        // and types to arrays that contains the dirty ones.
-        int[] dirtyPropertiesIndexes = event.getDirtyProperties();
-        int dirtyPropertiesLength = dirtyPropertiesIndexes.length;
-        String[] dirtyPropertiesNames = new String[dirtyPropertiesLength];
-        Object[] dirtyPropertiesValues = new Object[dirtyPropertiesLength];
-        Object[] loadedPropertiesValues = new Object[dirtyPropertiesLength];
-        Type[] dirtyPropertiesTypes = new Type[dirtyPropertiesLength];
-
-        for (int i = 0; i < dirtyPropertiesLength; i++) {
-            int dirtyPropertyIndex = dirtyPropertiesIndexes[i];
-            dirtyPropertiesNames[i] = persister.getPropertyNames()[dirtyPropertyIndex];
-            dirtyPropertiesValues[i] = values[dirtyPropertyIndex];
-            dirtyPropertiesTypes[i] = persister.getPropertyTypes()[dirtyPropertyIndex];
-            loadedPropertiesValues[i] = entry.getLoadedState()[dirtyPropertyIndex];
-        }
-
-        return session
-            .getInterceptor()
-            .onFlushDirty(entity, entry.getId(), dirtyPropertiesValues, loadedPropertiesValues, dirtyPropertiesNames, dirtyPropertiesTypes);
+  protected boolean invokeInterceptor(SessionImplementor session, FlushEntityEvent event) {
+    if (event.getDirtyProperties() == null) {
+      return false;
     }
+    EntityEntry entry = event.getEntityEntry();
+    EntityPersister persister = entry.getPersister();
+    Object entity = event.getEntity();
+    final Object[] values = event.getPropertyValues();
+
+    // Convert the values, properties names (old and new values)
+    // and types to arrays that contains the dirty ones.
+    int[] dirtyPropertiesIndexes = event.getDirtyProperties();
+    int dirtyPropertiesLength = dirtyPropertiesIndexes.length;
+    String[] dirtyPropertiesNames = new String[dirtyPropertiesLength];
+    Object[] dirtyPropertiesValues = new Object[dirtyPropertiesLength];
+    Object[] loadedPropertiesValues = new Object[dirtyPropertiesLength];
+    Type[] dirtyPropertiesTypes = new Type[dirtyPropertiesLength];
+
+    for (int i = 0; i < dirtyPropertiesLength; i++) {
+      int dirtyPropertyIndex = dirtyPropertiesIndexes[i];
+      dirtyPropertiesNames[i] = persister.getPropertyNames()[dirtyPropertyIndex];
+      dirtyPropertiesValues[i] = values[dirtyPropertyIndex];
+      dirtyPropertiesTypes[i] = persister.getPropertyTypes()[dirtyPropertyIndex];
+      loadedPropertiesValues[i] = entry.getLoadedState()[dirtyPropertyIndex];
+    }
+
+    return session
+        .getInterceptor()
+        .onFlushDirty(
+            entity,
+            entry.getId(),
+            dirtyPropertiesValues,
+            loadedPropertiesValues,
+            dirtyPropertiesNames,
+            dirtyPropertiesTypes);
+  }
 }

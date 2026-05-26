@@ -6,7 +6,7 @@ tasks.register('copyMdiFont', Exec) {
     commandLine npmCommand("npm"), "run", "copyMdiFont"
 }
 
-tasks.register('clean') {
+tasks.named('clean') {
     doLast {
         delete layout.buildDirectory
         delete "lib"

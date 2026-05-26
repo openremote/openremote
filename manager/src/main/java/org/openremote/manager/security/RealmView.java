@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
 
@@ -26,68 +25,65 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-/**
- * Use this to query the Keycloak REALM table in JPA queries.
- */
+/** Use this to query the Keycloak REALM table in JPA queries. */
 @Entity
-@Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
+@Subselect(
+    "select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class RealmView {
 
-    protected String id;
+  protected String id;
 
-    protected boolean enabled;
+  protected boolean enabled;
 
-    protected String name;
+  protected String name;
 
-    protected Integer notBefore;
+  protected Integer notBefore;
 
-    protected String displayName;
+  protected String displayName;
 
-    public RealmView() {
-    }
+  public RealmView() {}
 
-    @Id
-    public String getId() {
-        return id;
-    }
+  @Id
+  public String getId() {
+    return id;
+  }
 
-    protected void setId(String id) {
-        this.id = id;
-    }
+  protected void setId(String id) {
+    this.id = id;
+  }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+  public boolean isEnabled() {
+    return enabled;
+  }
 
-    protected void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+  protected void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    protected void setName(String name) {
-        this.name = name;
-    }
+  protected void setName(String name) {
+    this.name = name;
+  }
 
-    @Column(name = "NOT_BEFORE")
-    public Integer getNotBefore() {
-        return notBefore;
-    }
+  @Column(name = "NOT_BEFORE")
+  public Integer getNotBefore() {
+    return notBefore;
+  }
 
-    public void setNotBefore(Integer notBefore) {
-        this.notBefore = notBefore;
-    }
+  public void setNotBefore(Integer notBefore) {
+    this.notBefore = notBefore;
+  }
 
-    @Formula(
-        "(select ra.VALUE from REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')"
-    )
-    public String getDisplayName() {
-        return displayName;
-    }
+  @Formula(
+      "(select ra.VALUE from REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
+  public String getDisplayName() {
+    return displayName;
+  }
 
-    protected void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
+  protected void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
 }

@@ -1,4 +1,24 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri;
+
+import java.util.function.Consumer;
 
 import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.agent.protocol.tradfri.device.Light;
@@ -8,90 +28,100 @@ import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.attribute.AttributeEvent;
 
 import jakarta.persistence.Entity;
-import java.util.function.Consumer;
 
 @Entity
 public class TradfriLightAsset extends LightAsset implements TradfriAsset {
 
-    public static final AssetDescriptor<TradfriLightAsset> DESCRIPTOR = new AssetDescriptor<>(
-        "lightbulb", "e6688a", TradfriLightAsset.class
-    );
+  public static final AssetDescriptor<TradfriLightAsset> DESCRIPTOR =
+      new AssetDescriptor<>("lightbulb", "e6688a", TradfriLightAsset.class);
 
-    /**
-     * For use by hydrators (i.e. JPA/Jackson)
-     */
-    protected TradfriLightAsset() {
+  /** For use by hydrators (i.e. JPA/Jackson) */
+  protected TradfriLightAsset() {}
+
+  public TradfriLightAsset(String name) {
+    super(name);
+  }
+
+  @Override
+  public void addEventHandlers(Device device, Consumer<AttributeEvent> attributeEventConsumer) {
+    Light light = device.toLight();
+    if (light == null) {
+      return;
     }
-
-    public TradfriLightAsset(String name) {
-        super(name);
-    }
-
-    @Override
-    public void addEventHandlers(Device device, Consumer<AttributeEvent> attributeEventConsumer) {
-        Light light = device.toLight();
-        if (light == null) {
-            return;
-        }
-        EventHandler<LightChangeOnEvent> lightOnOffEventHandler = new EventHandler<LightChangeOnEvent>() {
-            @Override
-            public void handle(LightChangeOnEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), ON_OFF.getName(), light.getOn()));
-            }
+    EventHandler<LightChangeOnEvent> lightOnOffEventHandler =
+        new EventHandler<LightChangeOnEvent>() {
+          @Override
+          public void handle(LightChangeOnEvent event) {
+            attributeEventConsumer.accept(
+                new AttributeEvent(getId(), ON_OFF.getName(), light.getOn()));
+          }
         };
 
-        EventHandler<LightChangeBrightnessEvent> lightBrightnessEventHandler = new EventHandler<LightChangeBrightnessEvent>() {
-            @Override
-            public void handle(LightChangeBrightnessEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), BRIGHTNESS.getName(), convertBrightness(light.getBrightness(), true)));
-            }
+    EventHandler<LightChangeBrightnessEvent> lightBrightnessEventHandler =
+        new EventHandler<LightChangeBrightnessEvent>() {
+          @Override
+          public void handle(LightChangeBrightnessEvent event) {
+            attributeEventConsumer.accept(
+                new AttributeEvent(
+                    getId(), BRIGHTNESS.getName(), convertBrightness(light.getBrightness(), true)));
+          }
         };
 
-        EventHandler<LightChangeColourEvent> lightColourChangeEventHandler = new EventHandler<LightChangeColourEvent>() {
-            @Override
-            public void handle(LightChangeColourEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), COLOUR_RGB.getName(), light.getColourRGB()));
-            }
+    EventHandler<LightChangeColourEvent> lightColourChangeEventHandler =
+        new EventHandler<LightChangeColourEvent>() {
+          @Override
+          public void handle(LightChangeColourEvent event) {
+            attributeEventConsumer.accept(
+                new AttributeEvent(getId(), COLOUR_RGB.getName(), light.getColourRGB()));
+          }
         };
 
-        EventHandler<LightChangeColourTemperatureEvent> lightColorTemperatureEventHandler = new EventHandler<LightChangeColourTemperatureEvent>() {
-            @Override
-            public void handle(LightChangeColourTemperatureEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), COLOUR_TEMPERATURE.getName(), light.getColourTemperature()));
-            }
+    EventHandler<LightChangeColourTemperatureEvent> lightColorTemperatureEventHandler =
+        new EventHandler<LightChangeColourTemperatureEvent>() {
+          @Override
+          public void handle(LightChangeColourTemperatureEvent event) {
+            attributeEventConsumer.accept(
+                new AttributeEvent(
+                    getId(), COLOUR_TEMPERATURE.getName(), light.getColourTemperature()));
+          }
         };
 
-        light.addEventHandler(lightOnOffEventHandler);
-        light.addEventHandler(lightBrightnessEventHandler);
-        light.addEventHandler(lightColourChangeEventHandler);
-        light.addEventHandler(lightColorTemperatureEventHandler);
+    light.addEventHandler(lightOnOffEventHandler);
+    light.addEventHandler(lightBrightnessEventHandler);
+    light.addEventHandler(lightColourChangeEventHandler);
+    light.addEventHandler(lightColorTemperatureEventHandler);
+  }
+
+  @Override
+  public void initialiseAttributes(Device device) {
+    Light light = device.toLight();
+    if (light == null) {
+      return;
+    }
+    getAttributes().get(ON_OFF).ifPresent(attribute -> attribute.setValue(light.getOn()));
+
+    getAttributes()
+        .get(BRIGHTNESS)
+        .ifPresent(attribute -> attribute.setValue(convertBrightness(light.getBrightness(), true)));
+
+    getAttributes()
+        .get(COLOUR_RGB)
+        .ifPresent(attribute -> attribute.setValue(light.getColourRGB()));
+
+    getAttributes()
+        .get(COLOUR_TEMPERATURE)
+        .ifPresent(attribute -> attribute.setValue(light.getColourTemperature()));
+  }
+
+  public static Integer convertBrightness(Integer value, boolean toPercentage) {
+    if (value == null) {
+      return null;
     }
 
-    @Override
-    public void initialiseAttributes(Device device) {
-        Light light = device.toLight();
-        if (light == null) {
-            return;
-        }
-        getAttributes().get(ON_OFF).ifPresent(attribute -> attribute.setValue(light.getOn()));
-
-        getAttributes().get(BRIGHTNESS).ifPresent(attribute ->
-            attribute.setValue(convertBrightness(light.getBrightness(), true)));
-
-        getAttributes().get(COLOUR_RGB).ifPresent(attribute -> attribute.setValue(light.getColourRGB()));
-
-        getAttributes().get(COLOUR_TEMPERATURE).ifPresent(attribute -> attribute.setValue(light.getColourTemperature()));
+    if (toPercentage) {
+      return (int) Math.round((Double.valueOf(value) / 254d) * 100);
     }
 
-    public static Integer convertBrightness(Integer value, boolean toPercentage) {
-        if (value == null) {
-            return null;
-        }
-
-        if (toPercentage) {
-            return (int)Math.round((Double.valueOf(value) / 254d) * 100);
-        }
-
-        return (int)Math.round((Double.valueOf(value) / 100) * 254d);
-    }
+    return (int) Math.round((Double.valueOf(value) / 100) * 254d);
+  }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,26 +12,11 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
-
-import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.client.ClientResponseFilter;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
-import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
-import org.openremote.container.json.JacksonConfig;
-import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -48,160 +30,186 @@ import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
+import org.openremote.container.json.JacksonConfig;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.syslog.SyslogCategory;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+
 /**
- * This is a factory for creating JAX-RS {@link WebTarget} client instances that provide built-in authentication:
+ * This is a factory for creating JAX-RS {@link WebTarget} client instances that provide built-in
+ * authentication:
  */
 public class WebTargetBuilder {
 
-    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.AGENT, WebTargetBuilder.class.getName());
-    protected static final int CONNECTION_POOL_SIZE = 10;
-    protected static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
-    protected static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
-    protected static final AtomicReference<ResteasyClient> BUILT_IN_CLIENT = new AtomicReference<>();
-    protected ResteasyClient client;
-    protected BasicAuthentication basicAuthentication;
-    protected OAuthGrant oAuthGrant;
-    protected URI baseUri;
-    protected List<Integer> failureResponses = new ArrayList<>();
-    protected boolean followRedirects = false;
-    private Map<String, List<String>> overrideResponseHeaders;
+  protected static final Logger LOG =
+      SyslogCategory.getLogger(SyslogCategory.AGENT, WebTargetBuilder.class.getName());
+  protected static final int CONNECTION_POOL_SIZE = 10;
+  protected static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
+  protected static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
+  protected static final AtomicReference<ResteasyClient> BUILT_IN_CLIENT = new AtomicReference<>();
+  protected ResteasyClient client;
+  protected BasicAuthentication basicAuthentication;
+  protected OAuthGrant oAuthGrant;
+  protected URI baseUri;
+  protected List<Integer> failureResponses = new ArrayList<>();
+  protected boolean followRedirects = false;
+  private Map<String, List<String>> overrideResponseHeaders;
 
-    public WebTargetBuilder(ResteasyClient client, URI baseUri) {
-        this.client = client;
-        this.baseUri = baseUri;
+  public WebTargetBuilder(ResteasyClient client, URI baseUri) {
+    this.client = client;
+    this.baseUri = baseUri;
+  }
+
+  /**
+   * Add Basic authentication to requests sent by this {@link WebTarget}; this should not be used in
+   * conjunction with any other authentication.
+   */
+  public WebTargetBuilder setBasicAuthentication(String username, String password) {
+    this.basicAuthentication = new BasicAuthentication(username, password);
+    return this;
+  }
+
+  /**
+   * Add OAuth authentication to requests sent by this {@link WebTarget}; this should not be used in
+   * conjunction with any other authentication (note if basic authentication is also set then this
+   * OAuth authentication will take precedence).
+   */
+  public WebTargetBuilder setOAuthAuthentication(OAuthGrant oAuthGrant) {
+    this.oAuthGrant = oAuthGrant;
+    return this;
+  }
+
+  public WebTargetBuilder setOverrideResponseHeaders(
+      Map<String, List<String>> overrideResponseHeaders) {
+    this.overrideResponseHeaders = overrideResponseHeaders;
+    return this;
+  }
+
+  /**
+   * If the specified status code is returned from the server then it will be treated as a permanent
+   * failure and the web authTarget will no longer be usable (any future requests will immediately
+   * return a {@link Response.Status#METHOD_NOT_ALLOWED} response without hitting the server.
+   *
+   * <p><b>NOTE: Any response in 200 range will always be treated as successful.</b>
+   */
+  public WebTargetBuilder addPermanentFailureResponse(Response.Status... responseStatus) {
+    Collections.addAll(
+        failureResponses,
+        Arrays.stream(responseStatus).map(Response.Status::getStatusCode).toArray(Integer[]::new));
+    return this;
+  }
+
+  public WebTargetBuilder addPermanentFailureResponse(Integer... responseStatus) {
+    Collections.addAll(failureResponses, responseStatus);
+    return this;
+  }
+
+  public WebTargetBuilder removePermanentFailureResponse(Response.Status... responseStatus) {
+    failureResponses.removeAll(
+        Arrays.stream(responseStatus).map(Response.Status::getStatusCode).toList());
+    return this;
+  }
+
+  public WebTargetBuilder removePermanentFailureResponse(Integer... responseStatus) {
+    failureResponses.removeAll(Arrays.asList(responseStatus));
+    return this;
+  }
+
+  public WebTargetBuilder followRedirects(boolean followRedirects) {
+    this.followRedirects = followRedirects;
+    return this;
+  }
+
+  public ResteasyWebTarget build() {
+    ResteasyWebTarget target = client.target(baseUri);
+    target.register(DynamicTimeInjectorFilter.class);
+    target.register(DynamicValueInjectorFilter.class);
+
+    if (!failureResponses.isEmpty()) {
+      // Put a filter with max priority in the filter chain
+      target.register(new PermanentFailureFilter(failureResponses), 1);
     }
 
-    /**
-     * Add Basic authentication to requests sent by this {@link WebTarget}; this should not be used in conjunction with
-     * any other authentication.
-     */
-    public WebTargetBuilder setBasicAuthentication(String username, String password) {
-        this.basicAuthentication = new BasicAuthentication(username, password);
-        return this;
+    if (oAuthGrant != null) {
+      OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
+      target.register(oAuthFilter, Priorities.AUTHENTICATION);
+    } else if (basicAuthentication != null) {
+      target.register(basicAuthentication, Priorities.AUTHENTICATION);
     }
 
-    /**
-     * Add OAuth authentication to requests sent by this {@link WebTarget}; this should not be used in conjunction with
-     * any other authentication (note if basic authentication is also set then this OAuth authentication will take
-     * precedence).
-     */
-    public WebTargetBuilder setOAuthAuthentication(OAuthGrant oAuthGrant) {
-        this.oAuthGrant = oAuthGrant;
-        return this;
+    if (followRedirects) {
+      target.register(new FollowRedirectFilter());
     }
 
-    public WebTargetBuilder setOverrideResponseHeaders(Map<String, List<String>> overrideResponseHeaders) {
-        this.overrideResponseHeaders = overrideResponseHeaders;
-        return this;
+    if (overrideResponseHeaders != null) {
+      target.register(new ResponseHeaderUpdateFilter(overrideResponseHeaders));
     }
 
-    /**
-     * If the specified status code is returned from the server then it will be treated as a permanent failure
-     * and the web authTarget will no longer be usable (any future requests will immediately return a
-     * {@link Response.Status#METHOD_NOT_ALLOWED} response without hitting the server.
-     * <p>
-     * <b>NOTE: Any response in 200 range will always be treated as successful.</b>
-     */
-    public WebTargetBuilder addPermanentFailureResponse(Response.Status...responseStatus) {
-        Collections.addAll(
-            failureResponses,
-            Arrays.stream(responseStatus)
-                .map(Response.Status::getStatusCode)
-                .toArray(Integer[]::new)
-        );
-        return this;
-    }
+    return target;
+  }
 
-    public WebTargetBuilder addPermanentFailureResponse(Integer...responseStatus) {
-        Collections.addAll(failureResponses, responseStatus);
-        return this;
-    }
-
-    public WebTargetBuilder removePermanentFailureResponse(Response.Status...responseStatus) {
-        failureResponses.removeAll(
-            Arrays.stream(responseStatus)
-                .map(Response.Status::getStatusCode)
-                .toList()
-        );
-        return this;
-    }
-
-    public WebTargetBuilder removePermanentFailureResponse(Integer...responseStatus) {
-        failureResponses.removeAll(Arrays.asList(responseStatus));
-        return this;
-    }
-
-    public WebTargetBuilder followRedirects(boolean followRedirects) {
-        this.followRedirects = followRedirects;
-        return this;
-    }
-
-    public ResteasyWebTarget build() {
-        ResteasyWebTarget target = client.target(baseUri);
-        target.register(DynamicTimeInjectorFilter.class);
-        target.register(DynamicValueInjectorFilter.class);
-
-        if (!failureResponses.isEmpty()) {
-            // Put a filter with max priority in the filter chain
-            target.register(new PermanentFailureFilter(failureResponses), 1);
-        }
-
-        if (oAuthGrant != null) {
-            OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
-            target.register(oAuthFilter, Priorities.AUTHENTICATION);
-        } else if (basicAuthentication != null) {
-            target.register(basicAuthentication, Priorities.AUTHENTICATION);
-        }
-
-        if (followRedirects) {
-            target.register(new FollowRedirectFilter());
-        }
-
-        if (overrideResponseHeaders != null) {
-            target.register(new ResponseHeaderUpdateFilter(overrideResponseHeaders));
-        }
-
-        return target;
-    }
-
-    public static ResteasyClient getClient() {
-        return BUILT_IN_CLIENT.updateAndGet(client -> {
-            if (client == null) {
-                return createClient(org.openremote.container.Container.EXECUTOR,
-                        CONNECTION_POOL_SIZE,
-                        CONNECTION_TIMEOUT_MILLISECONDS,
-                        (resteasyClientBuilder ->
-                                // Don't limit pool usage by request route
-                                resteasyClientBuilder.maxPooledPerRoute(CONNECTION_POOL_SIZE)));
-            }
-            return client;
+  public static ResteasyClient getClient() {
+    return BUILT_IN_CLIENT.updateAndGet(
+        client -> {
+          if (client == null) {
+            return createClient(
+                org.openremote.container.Container.EXECUTOR,
+                CONNECTION_POOL_SIZE,
+                CONNECTION_TIMEOUT_MILLISECONDS,
+                (resteasyClientBuilder ->
+                    // Don't limit pool usage by request route
+                    resteasyClientBuilder.maxPooledPerRoute(CONNECTION_POOL_SIZE)));
+          }
+          return client;
         });
-    }
+  }
 
-    public static ResteasyClient createClient(ExecutorService executorService) {
-        return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS, null);
-    }
+  public static ResteasyClient createClient(ExecutorService executorService) {
+    return createClient(
+        executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS, null);
+  }
 
-    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
+  public static ResteasyClient createClient(
+      ExecutorService executorService,
+      int connectionPoolSize,
+      long overrideSocketTimeout,
+      UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
 
-        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
+    ResteasyClientBuilderImpl clientBuilder =
+        new ResteasyClientBuilderImpl()
             .connectionPoolSize(connectionPoolSize)
-            .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
+            .connectionCheckoutTimeout(
+                CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .register(new JacksonConfig())
             .register(new GZIPDecodingInterceptor());
 
-        if (executorService != null) {
-            clientBuilder.executorService(executorService);
-        }
+    if (executorService != null) {
+      clientBuilder.executorService(executorService);
+    }
 
-        if (builderConfigurator != null) {
-            clientBuilder = builderConfigurator.apply(clientBuilder);
-        }
+    if (builderConfigurator != null) {
+      clientBuilder = builderConfigurator.apply(clientBuilder);
+    }
 
-        if (LOG.isLoggable(Level.FINEST)) {
-            clientBuilder.register((ClientResponseFilter) (clientRequestContext, clientResponseContext) -> {
+    if (LOG.isLoggable(Level.FINEST)) {
+      clientBuilder.register(
+          (ClientResponseFilter)
+              (clientRequestContext, clientResponseContext) -> {
                 int status = clientResponseContext.getStatus();
                 if (status < 400) return;
 
@@ -209,40 +217,50 @@ public class WebTargetBuilder {
                 String body = "<no body>";
 
                 if (clientResponseContext.hasEntity()) {
-                    InputStream is = clientResponseContext.getEntityStream();
-                    bytes = is.readAllBytes();
-                    clientResponseContext.setEntityStream(new ByteArrayInputStream(bytes)); // allow RESTEasy to read it later
-                    body = new String(bytes, StandardCharsets.UTF_8);
+                  InputStream is = clientResponseContext.getEntityStream();
+                  bytes = is.readAllBytes();
+                  clientResponseContext.setEntityStream(
+                      new ByteArrayInputStream(bytes)); // allow RESTEasy to read it later
+                  body = new String(bytes, StandardCharsets.UTF_8);
                 }
-                LOG.log(Level.FINEST, "Received {0} response from {1} with body: {2}", new Object[]{status, clientRequestContext.getUri().getPath(), body});
-            });
-        }
-
-        return clientBuilder.build();
+                LOG.log(
+                    Level.FINEST,
+                    "Received {0} response from {1} with body: {2}",
+                    new Object[] {status, clientRequestContext.getUri().getPath(), body});
+              });
     }
 
-    public static <K, V, W extends V> MultivaluedMap<K, V> mapToMultivaluedMap(Map<K, List<W>> map) {
-        MultivaluedMap<K, V> multivaluedMap = new MultivaluedHashMap<>();
-        for (Map.Entry<K, List<W>> e : map.entrySet()) {
-            multivaluedMap.put(e.getKey(), e.getValue() == null ? null : new ArrayList<>(e.getValue()));
-        }
-        return multivaluedMap;
-    }
+    return clientBuilder.build();
+  }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends WebTarget, V> T addQueryParams(@NotNull T webTarget, @NotNull Map<String, List<V>> multivaluedMap) {
-        AtomicReference<T> result = new AtomicReference<>(webTarget);
-        multivaluedMap.forEach((name, values) -> {
-            result.set((T) result.get().queryParam(name, values.toArray()));
+  public static <K, V, W extends V> MultivaluedMap<K, V> mapToMultivaluedMap(Map<K, List<W>> map) {
+    MultivaluedMap<K, V> multivaluedMap = new MultivaluedHashMap<>();
+    for (Map.Entry<K, List<W>> e : map.entrySet()) {
+      multivaluedMap.put(e.getKey(), e.getValue() == null ? null : new ArrayList<>(e.getValue()));
+    }
+    return multivaluedMap;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T extends WebTarget, V> T addQueryParams(
+      @NotNull T webTarget, @NotNull Map<String, List<V>> multivaluedMap) {
+    AtomicReference<T> result = new AtomicReference<>(webTarget);
+    multivaluedMap.forEach(
+        (name, values) -> {
+          result.set((T) result.get().queryParam(name, values.toArray()));
         });
-        return result.get();
-    }
+    return result.get();
+  }
 
-    public static <V> Invocation.Builder addHeaders(@NotNull Invocation.Builder requestBuilder, @NotNull Map<String, List<V>> multiivaluedMap) {
-        AtomicReference<Invocation.Builder> result = new AtomicReference<>(requestBuilder);
-        multiivaluedMap.forEach((name, values) -> values.forEach(v -> {
-            result.set(result.get().header(name, v));
-        }));
-        return result.get();
-    }
+  public static <V> Invocation.Builder addHeaders(
+      @NotNull Invocation.Builder requestBuilder, @NotNull Map<String, List<V>> multiivaluedMap) {
+    AtomicReference<Invocation.Builder> result = new AtomicReference<>(requestBuilder);
+    multiivaluedMap.forEach(
+        (name, values) ->
+            values.forEach(
+                v -> {
+                  result.set(result.get().header(name, v));
+                }));
+    return result.get();
+  }
 }

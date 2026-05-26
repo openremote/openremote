@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,16 +12,23 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import "@openremote/or-icon";
-import "@openremote/or-translate";
+import { translate, i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
 import "@openremote/or-vaadin-components/or-vaadin-date-picker";
 import "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
-import "@openremote/or-vaadin-components/or-vaadin-dialog";
+import {
+    dialogRenderer,
+    dialogHeaderRenderer,
+    dialogFooterRenderer,
+    OrVaadinDialog,
+} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import "@openremote/or-vaadin-components/or-vaadin-radio-group";
@@ -37,13 +41,6 @@ import { when } from "lit/directives/when.js";
 import { Util } from "@openremote/core";
 import { CalendarEvent } from "@openremote/model";
 import { InputType } from "@openremote/or-vaadin-components/util";
-import { translate, i18next } from "@openremote/or-translate";
-import {
-    dialogRenderer,
-    dialogHeaderRenderer,
-    dialogFooterRenderer,
-    OrVaadinDialog,
-} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import { Frequency as FrequencyValue, RRule, Weekday, WeekdayStr } from "rrule";
 import {
     BY_RRULE_PARTS,
@@ -222,7 +219,7 @@ export class OrScheduler extends translate(i18next)(LitElement) {
 
         const schedule = this._applyTimezoneOffset(this.schedule ?? this.defaultSchedule, this.timezoneOffset);
         if (schedule?.start && schedule?.start) {
-            const start = moment(schedule?.start), end = moment(schedule?.end);
+            const start = moment(schedule?.start); const end = moment(schedule?.end);
             this.isAllDay = start.isSame(start.clone().startOf("day")) && end.isSame(end.clone().endOf("day"));
         }
 

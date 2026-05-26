@@ -1,4 +1,4 @@
-tasks.register("clean") {
+tasks.named('clean') {
     doLast {
         delete "dist"
         delete "lib"

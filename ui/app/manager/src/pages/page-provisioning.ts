@@ -1,12 +1,29 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import manager, {DefaultColor3, OPENREMOTE_CLIENT_ID} from "@openremote/core";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {ClientRole, ProvisioningConfig, X509ProvisioningData} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -197,8 +214,10 @@ export class PageProvisioning extends Page<AppStateKeyed> {
 
     @state()
     protected _configs?: ProvisioningConfig<any, any>[];
+
     @state()
     protected _roleOptions?: [string, string][];
+
     @state()
     protected _realmOptions?: string[];
 

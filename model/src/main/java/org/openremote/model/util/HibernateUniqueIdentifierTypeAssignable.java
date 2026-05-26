@@ -1,9 +1,6 @@
 /*
  * Copyright 2025, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,23 +12,22 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.util;
-
-import org.hibernate.annotations.IdGeneratorType;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import org.hibernate.annotations.IdGeneratorType;
+
 @IdGeneratorType(HibernateUniqueIdentifierGeneratorAssignable.class)
-@Retention(RUNTIME) @Target({METHOD,FIELD})
-public @interface HibernateUniqueIdentifierTypeAssignable {
-
-
-}
+@Retention(RUNTIME)
+@Target({METHOD, FIELD})
+public @interface HibernateUniqueIdentifierTypeAssignable {}

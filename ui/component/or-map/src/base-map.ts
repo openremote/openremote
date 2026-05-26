@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { GeoJsonConfig } from "@openremote/model";
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl, {
@@ -267,8 +285,8 @@ export class BaseMap {
             this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { maplibregl, showResultsWhileTyping: true });
             // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
             this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
-                var ESC_KEY_CODE = 27,
-                TAB_KEY_CODE = 9;
+                const ESC_KEY_CODE = 27;
+                const TAB_KEY_CODE = 9;
           
               if (e.keyCode === ESC_KEY_CODE && this._geocoder.options.clearAndBlurOnEsc) {
                 this._geocoder._clear(e);
@@ -276,7 +294,7 @@ export class BaseMap {
               }
           
               // if target has shadowRoot, then get the actual active element inside the shadowRoot
-              var value = this._geocoder._inputEl.value || e.key;
+              const value = this._geocoder._inputEl.value || e.key;
           
               if (!value) {
                 this._geocoder.fresh = true;
@@ -320,7 +338,7 @@ export class BaseMap {
             // There's no callback parameter in the options of the MaplibreGeocoder,
             // so this is how we get the selected result.
             this._geocoder._inputEl.addEventListener("change", () => {
-                var selected = this._geocoder._typeahead.selected;
+                const selected = this._geocoder._typeahead.selected;
                 this._onGeocodeChange(selected);
             });
         }
@@ -465,7 +483,7 @@ export class BaseMap {
                 realmColor = DefaultColor4;
             }
 
-            let layer = {
+            const layer = {
                 id: layerId,
                 source: sourceId
             } as any;
@@ -521,7 +539,7 @@ export class BaseMap {
                 }
                 case "GeometryCollection": {
                     console.error("GeometryCollection GeoJSON is not implemented yet!");
-                    return;
+                    
                 }
             }
         }
@@ -659,7 +677,7 @@ export class BaseMap {
             if (boundsArray.length !== 4){
                 boundsArray = this._viewSettings?.bounds.toString().split(",")
             }
-            var req = [
+            const req = [
                 [
                     [boundsArray[0], boundsArray[3]],
                     [boundsArray[2], boundsArray[3]],
@@ -721,12 +739,12 @@ export class BaseMap {
     protected async _forwardGeocode(config: any) {
         const features = [];
         try {
-            let request =  this._viewSettings!.geocodeUrl + '/search?q=' + config.query + '&format=geojson&polygon_geojson=1&addressdetails=1';
+            const request =  this._viewSettings!.geocodeUrl + '/search?q=' + config.query + '&format=geojson&polygon_geojson=1&addressdetails=1';
             const response = await fetch(request);
             const geojson = await response.json();
-            for (let feature of geojson.features) {
-                let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
-                let point = {
+            for (const feature of geojson.features) {
+                const center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
+                const point = {
                     type: 'Feature',
                     geometry: {
                         type: 'Point',
@@ -752,12 +770,12 @@ export class BaseMap {
     public async _reverseGeocode(config: {lat: number, lon:number}) {
             const features = [];
             try {
-                let request =  this._viewSettings!.geocodeUrl + '/reverse?lat=' + config.lat + '&lon='+config.lon+'&format=geojson&polygon_geojson=1&addressdetails=1';
+                const request =  this._viewSettings!.geocodeUrl + '/reverse?lat=' + config.lat + '&lon='+config.lon+'&format=geojson&polygon_geojson=1&addressdetails=1';
                 const response = await fetch(request);
                 const geojson = await response.json();
-                for (let feature of geojson.features) {
-                    let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
-                    let point = {
+                for (const feature of geojson.features) {
+                    const center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
+                    const point = {
                         type: 'Feature',
                         geometry: {
                             type: 'Point',
@@ -784,7 +802,7 @@ export class BaseMap {
         if (this._map) {
             let pressTimeout: NodeJS.Timeout | null; 
             let pos: LngLat;
-            let clearTimeoutFunc = () => { if (pressTimeout) clearTimeout(pressTimeout); pressTimeout = null; };
+            const clearTimeoutFunc = () => { if (pressTimeout) clearTimeout(pressTimeout); pressTimeout = null; };
 
             this._map.on('touchstart', (e) => {
                 if (e.originalEvent.touches.length > 1) {

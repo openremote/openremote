@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
 
@@ -29,6 +28,7 @@ import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+
 import org.openremote.model.util.JSONSchemaUtil.JsonSchemaTitle;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -36,59 +36,57 @@ import org.openremote.model.util.ValueUtil;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * This filter works on any type of data; when applying the filter the data should be converted to JSON representation
- * using a tool like Jackson and then the JSON path expression should be applied to this JSON string.
+ * This filter works on any type of data; when applying the filter the data should be converted to
+ * JSON representation using a tool like Jackson and then the JSON path expression should be applied
+ * to this JSON string.
  */
 @JsonSchemaTitle("JSON Path")
 @JsonTypeName(JsonPathFilter.NAME)
 public class JsonPathFilter extends ValueFilter {
 
-    protected static ParseContext jsonPathParser = JsonPath.using(
-        Configuration.builder()
-        .jsonProvider(new JacksonJsonNodeJsonProvider())
-        .mappingProvider(new JacksonMappingProvider())
-        .build()
-                .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
-        );
+  protected static ParseContext jsonPathParser =
+      JsonPath.using(
+          Configuration.builder()
+              .jsonProvider(new JacksonJsonNodeJsonProvider())
+              .mappingProvider(new JacksonMappingProvider())
+              .build()
+              .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL));
 
-    public static final String NAME = "jsonPath";
+  public static final String NAME = "jsonPath";
 
-    @NotNull
-    @JsonProperty
-    public String path;
+  @NotNull @JsonProperty public String path;
 
-    @JsonProperty
-    public boolean returnFirst;
+  @JsonProperty public boolean returnFirst;
 
-    @JsonProperty
-    public boolean returnLast;
+  @JsonProperty public boolean returnLast;
 
-    @JsonCreator
-    public JsonPathFilter(@JsonProperty("path") String path,
-                          @JsonProperty("returnFirst") boolean returnFirst,
-                          @JsonProperty("returnLast") boolean returnLast) {
-        this.path = path;
-        this.returnFirst = returnFirst;
-        this.returnLast = returnLast;
+  @JsonCreator
+  public JsonPathFilter(
+      @JsonProperty("path") String path,
+      @JsonProperty("returnFirst") boolean returnFirst,
+      @JsonProperty("returnLast") boolean returnLast) {
+    this.path = path;
+    this.returnFirst = returnFirst;
+    this.returnLast = returnLast;
+  }
+
+  @Override
+  public Object filter(Object value) {
+    if (TextUtil.isNullOrEmpty(path)) {
+      return null;
     }
 
-    @Override
-    public Object filter(Object value) {
-        if (TextUtil.isNullOrEmpty(path)) {
-            return null;
-        }
+    String valueStr = ValueUtil.convert(value, String.class);
 
-        String valueStr = ValueUtil.convert(value, String.class);
-
-        if (valueStr == null) {
-            return null;
-        }
-
-        Object obj = jsonPathParser.parse(valueStr).read(path);
-
-        if ((returnFirst || returnLast) && obj instanceof ArrayNode arrayNode) {
-            obj = arrayNode.get(returnFirst ? 0 : arrayNode.size() - 1);
-        }
-        return obj;
+    if (valueStr == null) {
+      return null;
     }
+
+    Object obj = jsonPathParser.parse(valueStr).read(path);
+
+    if ((returnFirst || returnLast) && obj instanceof ArrayNode arrayNode) {
+      obj = arrayNode.get(returnFirst ? 0 : arrayNode.size() - 1);
+    }
+    return obj;
+  }
 }

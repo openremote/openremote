@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,105 +12,116 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import jakarta.validation.constraints.Pattern;
-import org.openremote.model.util.TsIgnoreTypeParams;
 
 import java.util.Arrays;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.openremote.model.util.TsIgnoreTypeParams;
+
+import jakarta.validation.constraints.Pattern;
+
 @TsIgnoreTypeParams
-public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescriptorHolder<T>, NameHolder {
+public abstract class AbstractNameValueDescriptorHolder<T>
+    implements ValueDescriptorHolder<T>, NameHolder {
 
-    @Pattern(regexp = "^\\w+$")
-    @JsonIgnore
-    protected String name;
-    @JsonIgnore
-    protected ValueDescriptor<T> type;
-    @JsonIgnore
-    protected ValueConstraint[] constraints;
-    @JsonIgnore
-    protected ValueFormat format;
-    @JsonIgnore
-    protected String[] units;
+  @Pattern(regexp = "^\\w+$") @JsonIgnore
+  protected String name;
 
-    AbstractNameValueDescriptorHolder() {}
+  @JsonIgnore protected ValueDescriptor<T> type;
+  @JsonIgnore protected ValueConstraint[] constraints;
+  @JsonIgnore protected ValueFormat format;
+  @JsonIgnore protected String[] units;
 
-    public AbstractNameValueDescriptorHolder(String name, ValueDescriptor<T> type, ValueConstraint...constraints) {
-        this.name = name;
-        this.type = type;
-        this.constraints = constraints;
-    }
+  AbstractNameValueDescriptorHolder() {}
 
-    public AbstractNameValueDescriptorHolder(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
-        this.name = name;
-        this.type = type;
-        this.constraints = constraints;
-        this.format = format;
-        this.units = units;
-    }
+  public AbstractNameValueDescriptorHolder(
+      String name, ValueDescriptor<T> type, ValueConstraint... constraints) {
+    this.name = name;
+    this.type = type;
+    this.constraints = constraints;
+  }
 
-    @Override
-    public String getName() {
-        return name;
-    }
+  public AbstractNameValueDescriptorHolder(
+      String name,
+      ValueDescriptor<T> type,
+      ValueConstraint[] constraints,
+      ValueFormat format,
+      String[] units) {
+    this.name = name;
+    this.type = type;
+    this.constraints = constraints;
+    this.format = format;
+    this.units = units;
+  }
 
-    protected void setName(String name) {
-        this.name = name;
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
 
-    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
-    @Override
-    public ValueDescriptor<T> getType() {
-        return type;
-    }
+  protected void setName(String name) {
+    this.name = name;
+  }
 
-    protected void setType(ValueDescriptor<T> type) {
-        this.type = type;
-    }
+  @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
+  @Override
+  public ValueDescriptor<T> getType() {
+    return type;
+  }
 
-    @Override
-    public ValueFormat getFormat() {
-        return format;
-    }
+  protected void setType(ValueDescriptor<T> type) {
+    this.type = type;
+  }
 
-    @Override
-    public ValueConstraint[] getConstraints() {
-        return constraints;
-    }
+  @Override
+  public ValueFormat getFormat() {
+    return format;
+  }
 
-    @Override
-    public String[] getUnits() {
-        return units;
-    }
+  @Override
+  public ValueConstraint[] getConstraints() {
+    return constraints;
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(name);
-    }
+  @Override
+  public String[] getUnits() {
+    return units;
+  }
 
-    /**
-     * Descriptor names are unique identifiers so can use this for equality purposes
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        AbstractNameValueDescriptorHolder<?> that = (AbstractNameValueDescriptorHolder<?>)obj;
-        return Objects.equals(name, that.name);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(name);
+  }
 
-    @Override
-    public String toString() {
-        return "name='" + name + '\'' +
-            ", type=" + type +
-            ", constraints=" + Arrays.toString(constraints) +
-            ", format=" + format +
-            ", units=" + Arrays.toString(units);
-    }
+  /** Descriptor names are unique identifiers so can use this for equality purposes */
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null || getClass() != obj.getClass()) return false;
+    AbstractNameValueDescriptorHolder<?> that = (AbstractNameValueDescriptorHolder<?>) obj;
+    return Objects.equals(name, that.name);
+  }
+
+  @Override
+  public String toString() {
+    return "name='"
+        + name
+        + '\''
+        + ", type="
+        + type
+        + ", constraints="
+        + Arrays.toString(constraints)
+        + ", format="
+        + format
+        + ", units="
+        + Arrays.toString(units);
+  }
 }

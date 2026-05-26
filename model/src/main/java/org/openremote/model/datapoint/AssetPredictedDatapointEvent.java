@@ -1,9 +1,6 @@
 /*
  * Copyright 2026, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,46 +12,46 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.datapoint;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.SharedEvent;
 
 import java.time.Instant;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.shared.SharedEvent;
+
 /**
- * This event is used when predicted data points are inserted, updated or deleted for an asset's {@link org.openremote.model.attribute.Attribute}.
- * It does not include any of the data point values.
+ * This event is used when predicted data points are inserted, updated or deleted for an asset's
+ * {@link org.openremote.model.attribute.Attribute}. It does not include any of the data point
+ * values.
  */
 public class AssetPredictedDatapointEvent extends SharedEvent {
 
-    protected AttributeRef ref;
+  protected AttributeRef ref;
 
-    public AssetPredictedDatapointEvent(AttributeRef ref, Instant timestamp) {
-        this(ref, timestamp.toEpochMilli());
-    }
+  public AssetPredictedDatapointEvent(AttributeRef ref, Instant timestamp) {
+    this(ref, timestamp.toEpochMilli());
+  }
 
-    @JsonCreator
-    public AssetPredictedDatapointEvent(AttributeRef ref, Long timestamp) {
-        super(timestamp);
-        Objects.requireNonNull(ref);
-        this.ref = ref;
-    }
+  @JsonCreator
+  public AssetPredictedDatapointEvent(AttributeRef ref, Long timestamp) {
+    super(timestamp);
+    Objects.requireNonNull(ref);
+    this.ref = ref;
+  }
 
-    public AttributeRef getRef() {
-        return ref;
-    }
+  public AttributeRef getRef() {
+    return ref;
+  }
 
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "ref=" + ref +
-            ", timestamp=" + timestamp +
-            '}';
-    }
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{" + "ref=" + ref + ", timestamp=" + timestamp + '}';
+  }
 }

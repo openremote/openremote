@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.agent.AgentLink;
 
@@ -26,41 +27,35 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import java.util.Optional;
 
 public class BluetoothMeshAgentLink extends AgentLink<BluetoothMeshAgentLink> {
 
-    @Min(0)
-    @Max(2147483647)
-    @NotNull
-    protected Integer appKeyIndex;
+  @Min(0) @Max(2147483647) @NotNull protected Integer appKeyIndex;
 
-    @Pattern(regexp = "^([0-9A-Fa-f]{4})$")
-    protected String address;
+  @Pattern(regexp = "^([0-9A-Fa-f]{4})$")
+  protected String address;
 
-    @NotBlank
-    protected String modelName;
+  @NotBlank protected String modelName;
 
-    // For Hydrators
-    protected BluetoothMeshAgentLink() {
-    }
+  // For Hydrators
+  protected BluetoothMeshAgentLink() {}
 
-    public BluetoothMeshAgentLink(String id, Integer appKeyIndex, String address, String modelName) {
-        super(id);
-        this.appKeyIndex = appKeyIndex;
-        this.address = address;
-        this.modelName = modelName;
-    }
+  public BluetoothMeshAgentLink(String id, Integer appKeyIndex, String address, String modelName) {
+    super(id);
+    this.appKeyIndex = appKeyIndex;
+    this.address = address;
+    this.modelName = modelName;
+  }
 
-    public Optional<Integer> getAppKeyIndex() {
-        return Optional.ofNullable(appKeyIndex);
-    }
+  public Optional<Integer> getAppKeyIndex() {
+    return Optional.ofNullable(appKeyIndex);
+  }
 
-    public Optional<String> getAddress() {
-        return Optional.ofNullable(address);
-    }
+  public Optional<String> getAddress() {
+    return Optional.ofNullable(address);
+  }
 
-    public Optional<String> getModelName() {
-        return Optional.ofNullable(modelName);
-    }
+  public Optional<String> getModelName() {
+    return Optional.ofNullable(modelName);
+  }
 }

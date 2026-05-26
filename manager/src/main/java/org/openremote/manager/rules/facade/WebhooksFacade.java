@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules.facade;
 
@@ -30,21 +29,21 @@ import jakarta.ws.rs.core.MediaType;
 
 public class WebhooksFacade<T extends Ruleset> extends Webhooks {
 
-    protected final RulesEngineId<T> rulesEngineId;
-    protected final WebhookService webhookService;
+  protected final RulesEngineId<T> rulesEngineId;
+  protected final WebhookService webhookService;
 
-    public WebhooksFacade(RulesEngineId<T> rulesEngineId, WebhookService webhookService) {
-        this.rulesEngineId = rulesEngineId;
-        this.webhookService = webhookService;
-    }
+  public WebhooksFacade(RulesEngineId<T> rulesEngineId, WebhookService webhookService) {
+    this.rulesEngineId = rulesEngineId;
+    this.webhookService = webhookService;
+  }
 
-    @Override
-    public boolean send(Webhook webhook, MediaType mediaType, WebTarget target) {
-        return webhookService.sendHttpRequest(webhook, mediaType, target);
-    }
+  @Override
+  public boolean send(Webhook webhook, MediaType mediaType, WebTarget target) {
+    return webhookService.sendHttpRequest(webhook, mediaType, target);
+  }
 
-    @Override
-    public WebTarget buildTarget(Webhook webhook) {
-        return webhookService.buildWebTarget(webhook);
-    }
+  @Override
+  public WebTarget buildTarget(Webhook webhook) {
+    return webhookService.buildWebTarget(webhook);
+  }
 }

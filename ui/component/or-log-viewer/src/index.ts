@@ -1,3 +1,21 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     css,
     html,
@@ -10,13 +28,10 @@ import {customElement, property, query} from "lit/decorators.js";
 import {i18next, translate} from "@openremote/or-translate"
 import * as Model from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-panel";
 import {MDCDataTable} from "@material/data-table";
 import moment from "moment";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
@@ -207,6 +222,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
 
     @query("#table")
     protected _tableElem!: HTMLDivElement;
+
     protected _table?: MDCDataTable;
     protected _eventSubscriptionId?: string;
     protected _refresh?: number;
@@ -336,11 +352,11 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _getLevelOptions() {
-        return Object.keys((Model as any)["SyslogLevel"]).map((key) => [key, i18next.t(key.toLocaleLowerCase())]);
+        return Object.keys((Model as any).SyslogLevel).map((key) => [key, i18next.t(key.toLocaleLowerCase())]);
     }
 
     protected _getCategoryMenuItems(): ListItem[] {
-        const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
+        const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any).SyslogCategory) as Model.SyslogCategory[];
         return categories.map((cat) => {
             return {
                 text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
@@ -506,7 +522,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
-        const linkHeaders = response.headers["link"] as any;
+        const linkHeaders = response.headers.link as any;
         if (linkHeaders) {
             const links = linkParser.parse(linkHeaders);
             let lastLink = links.rel("last");
@@ -515,7 +531,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             }
             if (lastLink && lastLink.uri) {
                 const url = new URL(lastLink.uri);
-                return parseInt(Util.getQueryParameters(url.search)['page']);
+                return parseInt(Util.getQueryParameters(url.search).page);
             }
         }
     }

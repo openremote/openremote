@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,7 +12,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -157,7 +156,7 @@ export class OrConfRealmCard extends LitElement {
             '--or-app-color8': unsafeCSS(DefaultColor8).toString()
         }
         if (this.realm?.styles){
-            //TODO use regex for filtering and getting color codes CSS
+            // TODO use regex for filtering and getting color codes CSS
             const css = this.realm.styles.slice(this.realm.styles.indexOf("{") +1, this.realm.styles.indexOf("}"))
             css.split(";").forEach(function(value){
                 const col = value.split(":")
@@ -345,7 +344,7 @@ export class OrConfRealmCard extends LitElement {
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
                                     .label="${i18next.t("configuration.primaryNavigation")}"
-                                    .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
+                                    .value="${app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
                                         return app.headerListPrimary.includes(ele);
                                     }) : app.headerListPrimary}"
                                     .options="${app.headerListPrimary}"
@@ -355,7 +354,7 @@ export class OrConfRealmCard extends LitElement {
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
                                     .label="${i18next.t("configuration.secondaryNavigation")}"
-                                    .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
+                                    .value="${app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
                                         return app.headerListSecondary.includes(ele);
                                     }) : app.headerListSecondary}"
                                     .options="${app.headerListSecondary}"

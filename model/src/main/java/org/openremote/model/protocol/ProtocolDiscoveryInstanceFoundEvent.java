@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,40 +12,44 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.protocol;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.event.shared.SharedEvent;
 
-/**
- * Raised when a protocol instance has been discovered for the specified agent type
- */
+/** Raised when a protocol instance has been discovered for the specified agent type */
 public class ProtocolDiscoveryInstanceFoundEvent extends SharedEvent {
 
-    protected String agentDescriptor;
-    protected String instanceName;
-    protected Attribute<?>[] attributes;
+  protected String agentDescriptor;
+  protected String instanceName;
+  protected Attribute<?>[] attributes;
 
-    @JsonCreator
-    public ProtocolDiscoveryInstanceFoundEvent(@JsonProperty("agentDescriptor") String agentDescriptor, @JsonProperty("instanceName") String instanceName, @JsonProperty("attributes") Attribute<?>[] attributes) {
-        this.agentDescriptor = agentDescriptor;
-        this.instanceName = instanceName;
-        this.attributes = attributes;
-    }
+  @JsonCreator
+  public ProtocolDiscoveryInstanceFoundEvent(
+      @JsonProperty("agentDescriptor") String agentDescriptor,
+      @JsonProperty("instanceName") String instanceName,
+      @JsonProperty("attributes") Attribute<?>[] attributes) {
+    this.agentDescriptor = agentDescriptor;
+    this.instanceName = instanceName;
+    this.attributes = attributes;
+  }
 
-    public String getAgentDescriptor() {
-        return agentDescriptor;
-    }
+  public String getAgentDescriptor() {
+    return agentDescriptor;
+  }
 
-    public String getInstanceName() {
-        return instanceName;
-    }
+  public String getInstanceName() {
+    return instanceName;
+  }
 
-    public Attribute<?>[] getAttributes() {
-        return attributes;
-    }
+  public Attribute<?>[] getAttributes() {
+    return attributes;
+  }
 }

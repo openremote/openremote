@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,9 +12,22 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.webhook;
+
+import static org.openremote.container.web.WebTargetBuilder.getClient;
+
+import java.net.URI;
+import java.util.logging.Logger;
+
+import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.webhook.Webhook;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
@@ -25,76 +35,74 @@ import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.web.WebTargetBuilder;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.webhook.Webhook;
-
-import java.net.URI;
-import java.util.logging.Logger;
-
-import static org.openremote.container.web.WebTargetBuilder.getClient;
 
 public class WebhookService extends RouteBuilder implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(WebhookService.class.getName());
+  private static final Logger LOG = Logger.getLogger(WebhookService.class.getName());
 
-    @Override
-    public void configure() throws Exception {
-        // empty
+  @Override
+  public void configure() throws Exception {
+    // empty
+  }
+
+  @Override
+  public void init(Container container) throws Exception {
+    // empty
+  }
+
+  @Override
+  public void start(Container container) throws Exception {
+    // empty
+  }
+
+  @Override
+  public void stop(Container container) throws Exception {
+    // empty
+  }
+
+  public boolean sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
+
+    try (Response response = this.buildRequest(webhook, target, mediaType)) {
+      if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+        LOG.warning(
+            "Webhook request responded with error "
+                + response.getStatus()
+                + ": "
+                + response.getStatusInfo().getReasonPhrase());
+      } else {
+        LOG.info(
+            "Webhook request executed successfully with response status " + response.getStatus());
+        return true;
+      }
+    } catch (Exception e) {
+      LOG.warning(e.getMessage());
     }
+    return false;
+  }
 
-   @Override
-   public void init(Container container) throws Exception {
-        // empty
-   }
+  public WebTarget buildWebTarget(Webhook webhook) {
+    WebTargetBuilder builder = new WebTargetBuilder(getClient(), URI.create(webhook.getUrl()));
 
-   @Override
-    public void start(Container container) throws Exception {
-        // empty
+    // Authentication
+    if (webhook.getUsernamePassword() != null) {
+      builder.setBasicAuthentication(
+          webhook.getUsernamePassword().getUsername(), webhook.getUsernamePassword().getPassword());
+    } else if (webhook.getOAuthGrant() != null) {
+      builder.setOAuthAuthentication(webhook.getOAuthGrant());
     }
+    return builder.build();
+  }
 
-    @Override
-    public void stop(Container container) throws Exception {
-        // empty
+  private Response buildRequest(Webhook webhook, WebTarget target, MediaType mediaType)
+      throws ProcessingException {
+    Invocation.Builder request = target.request();
+    if (webhook.getHeaders() != null) {
+      request = WebTargetBuilder.addHeaders(request, webhook.getHeaders());
     }
+    Object payload = webhook.getPayload();
 
-
-    public boolean sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
-
-        try (Response response = this.buildRequest(webhook, target, mediaType)) {
-            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
-            } else {
-                LOG.info("Webhook request executed successfully with response status " + response.getStatus());
-                return true;
-            }
-        } catch (Exception e) {
-            LOG.warning(e.getMessage());
-        }
-        return false;
-    }
-
-    public WebTarget buildWebTarget(Webhook webhook) {
-        WebTargetBuilder builder = new WebTargetBuilder(getClient(), URI.create(webhook.getUrl()));
-
-        // Authentication
-        if (webhook.getUsernamePassword() != null) {
-            builder.setBasicAuthentication(webhook.getUsernamePassword().getUsername(), webhook.getUsernamePassword().getPassword());
-        } else if (webhook.getOAuthGrant() != null) {
-            builder.setOAuthAuthentication(webhook.getOAuthGrant());
-        }
-        return builder.build();
-    }
-
-    private Response buildRequest(Webhook webhook, WebTarget target, MediaType mediaType) throws ProcessingException {
-        Invocation.Builder request = target.request();
-        if (webhook.getHeaders() != null) {
-            request = WebTargetBuilder.addHeaders(request, webhook.getHeaders());
-        }
-        Object payload = webhook.getPayload();
-
-        return request.method(webhook.getHttpMethod().name(), (payload != null ? Entity.entity(payload, mediaType) : null));
-    }
+    return request.method(
+        webhook.getHttpMethod().name(),
+        (payload != null ? Entity.entity(payload, mediaType) : null));
+  }
 }

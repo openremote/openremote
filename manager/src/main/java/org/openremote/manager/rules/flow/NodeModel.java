@@ -1,4 +1,27 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.manager.rules.flow;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.stream.IntStream;
 
 import org.openremote.manager.rules.RulesBuilder;
 import org.openremote.model.attribute.AttributeInfo;
@@ -10,652 +33,887 @@ import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueHolder;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.stream.IntStream;
-
 public enum NodeModel {
-    READ_ATTRIBUTE(
-            new Node(NodeType.INPUT, new NodeInternal[]{
-                    new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
-            },
-                    new NodeSocket[0], new NodeSocket[]{
-                    new NodeSocket("value", NodeDataType.ANY)
-            }),
-            info -> {
-                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = assetAttributePair.getAssetId();
-                String attributeName = assetAttributePair.getAttributeName();
-                Optional<AttributeInfo> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
-                return readValue.flatMap(ValueHolder::getValue).orElse(null);
-            },
-            params -> {
-                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = internal.getAssetId();
-                String attributeName = internal.getAttributeName();
-                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
-                ).toList();
+  READ_ATTRIBUTE(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {
+            new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
+          },
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.ANY)}),
+      info -> {
+        AttributeInternalValue assetAttributePair =
+            ValueUtil.JSON.convertValue(
+                info.getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = assetAttributePair.getAssetId();
+        String attributeName = assetAttributePair.getAttributeName();
+        Optional<AttributeInfo> readValue =
+            info.getFacts()
+                .matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
+        return readValue.flatMap(ValueHolder::getValue).orElse(null);
+      },
+      params -> {
+        AttributeInternalValue internal =
+            ValueUtil.JSON.convertValue(
+                params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = internal.getAssetId();
+        String attributeName = internal.getAttributeName();
+        List<AttributeInfo> allAssets =
+            params
+                .getFacts()
+                .matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName))
+                .toList();
 
-                return allAssets.stream().anyMatch(state -> {
-                    long timestamp = state.getTimestamp();
-                    long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
-                    if (triggerStamp == -1L) return true; //The flow has never been executed
-                    return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+        return allAssets.stream()
+            .anyMatch(
+                state -> {
+                  long timestamp = state.getTimestamp();
+                  long triggerStamp =
+                      params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+                  if (triggerStamp == -1L) return true; // The flow has never been executed
+                  return timestamp > triggerStamp
+                      && !Objects.equals(
+                          state.getValue().orElse(null), state.getOldValue().orElse(null));
                 });
+      }),
+
+  DERIVATIVE(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {
+            new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
+          },
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.NUMBER)}),
+      info -> {
+        AttributeInternalValue assetAttributePair =
+            ValueUtil.JSON.convertValue(
+                info.getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = assetAttributePair.getAssetId();
+        String attributeName = assetAttributePair.getAttributeName();
+        Optional<AttributeInfo> attr =
+            info.getFacts()
+                .matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
+        if (attr.isPresent()) {
+          AttributeInfo attributeInfo = attr.get();
+          Optional<Object> currentValueOpt = attributeInfo.getValue();
+          Optional<Object> oldValueOpt = attributeInfo.getOldValue();
+          long currentTimestamp = attributeInfo.getTimestamp();
+          long oldTimestamp = attributeInfo.getOldValueTimestamp();
+
+          if (currentValueOpt.isPresent() && oldValueOpt.isPresent()) {
+            double currentValue = ((Number) currentValueOpt.get()).doubleValue();
+            double oldValue = ((Number) oldValueOpt.get()).doubleValue();
+            double timeDifference =
+                (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
+
+            if (timeDifference != 0) {
+              return (currentValue - oldValue) / timeDifference; // Δx formula
             }
-    ),
+          }
+        }
 
-    DERIVATIVE(
-            new Node(NodeType.INPUT, new NodeInternal[]{
-                    new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
-            },
-                    new NodeSocket[0], new NodeSocket[]{
-                    new NodeSocket("value", NodeDataType.NUMBER)
-            }),
-            info -> {
-                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = assetAttributePair.getAssetId();
-                String attributeName = assetAttributePair.getAttributeName();
-                Optional<AttributeInfo> attr = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
-                if (attr.isPresent()) {
-                    AttributeInfo attributeInfo = attr.get();
-                    Optional<Object> currentValueOpt = attributeInfo.getValue();
-                    Optional<Object> oldValueOpt = attributeInfo.getOldValue();
-                    long currentTimestamp = attributeInfo.getTimestamp();
-                    long oldTimestamp = attributeInfo.getOldValueTimestamp();
+        return null;
+      },
+      params -> {
+        AttributeInternalValue internal =
+            ValueUtil.JSON.convertValue(
+                params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = internal.getAssetId();
+        String attributeName = internal.getAttributeName();
+        Optional<AttributeInfo> x =
+            params.getFacts().getAssetStates().stream()
+                .filter(
+                    assetState ->
+                        Objects.equals(assetState.getId(), assetId)
+                            && Objects.equals(assetState.getName(), attributeName))
+                .findFirst();
 
-                    if (currentValueOpt.isPresent() && oldValueOpt.isPresent()) {
-                        double currentValue = ((Number) currentValueOpt.get()).doubleValue();
-                        double oldValue = ((Number) oldValueOpt.get()).doubleValue();
-                        double timeDifference = (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
+        List<AttributeInfo> allAssets =
+            params
+                .getFacts()
+                .matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName))
+                .toList();
 
-                        if (timeDifference != 0) {
-                            return (currentValue - oldValue) / timeDifference; // Δx formula
-                        }
-                    }
-                }
-
-                return null;
-            },
-            params -> {
-                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = internal.getAssetId();
-                String attributeName = internal.getAttributeName();
-                Optional<AttributeInfo> x = params.getFacts().getAssetStates().stream()
-                        .filter(assetState ->
-                                Objects.equals(assetState.getId(), assetId)
-                                && Objects.equals(assetState.getName(), attributeName))
-                        .findFirst();
-
-                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
-                ).toList();
-
-                return allAssets.stream().anyMatch(state -> {
-                    long timestamp = state.getTimestamp();
-                    long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
-                    if (triggerStamp == -1L) return true; //The flow has never been executed
-                    return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+        return allAssets.stream()
+            .anyMatch(
+                state -> {
+                  long timestamp = state.getTimestamp();
+                  long triggerStamp =
+                      params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+                  if (triggerStamp == -1L) return true; // The flow has never been executed
+                  return timestamp > triggerStamp
+                      && !Objects.equals(
+                          state.getValue().orElse(null), state.getOldValue().orElse(null));
                 });
-            }
-    ),
-    INTEGRAL(
-            new Node(NodeType.INPUT, new NodeInternal[]{
-                    new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
-            },
-                    new NodeSocket[0], new NodeSocket[]{
-                    new NodeSocket("value", NodeDataType.NUMBER)
-            }),
-            info -> {
-                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = assetAttributePair.getAssetId();
-                String attributeName = assetAttributePair.getAttributeName();
-                Optional<AttributeInfo> attr = info.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)).findFirst();
+      }),
+  INTEGRAL(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {
+            new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
+          },
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.NUMBER)}),
+      info -> {
+        AttributeInternalValue assetAttributePair =
+            ValueUtil.JSON.convertValue(
+                info.getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = assetAttributePair.getAssetId();
+        String attributeName = assetAttributePair.getAttributeName();
+        Optional<AttributeInfo> attr =
+            info.getFacts()
+                .matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName))
+                .findFirst();
 
-                double integral = 0.0;
-                if (attr.isPresent()) {
-                    AttributeInfo attributeInfo = attr.get();
-                    Optional<Object> currentValueOpt = attributeInfo.getValue();
-                    Optional<Object> oldValueOpt = attributeInfo.getOldValue();
-                    long currentTimestamp = attributeInfo.getTimestamp();
-                    long oldTimestamp = attributeInfo.getOldValueTimestamp();
+        double integral = 0.0;
+        if (attr.isPresent()) {
+          AttributeInfo attributeInfo = attr.get();
+          Optional<Object> currentValueOpt = attributeInfo.getValue();
+          Optional<Object> oldValueOpt = attributeInfo.getOldValue();
+          long currentTimestamp = attributeInfo.getTimestamp();
+          long oldTimestamp = attributeInfo.getOldValueTimestamp();
 
-                    if (currentValueOpt.isPresent() && oldValueOpt.isPresent()) {
-                        double currentValue = ((Number) currentValueOpt.get()).doubleValue();
-                        double previousValue = ((Number) oldValueOpt.get()).doubleValue();
-                        double timeDifference = (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
+          if (currentValueOpt.isPresent() && oldValueOpt.isPresent()) {
+            double currentValue = ((Number) currentValueOpt.get()).doubleValue();
+            double previousValue = ((Number) oldValueOpt.get()).doubleValue();
+            double timeDifference =
+                (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
 
-                        integral += ((currentValue + previousValue) * timeDifference)  / 2;
-                    }
-                }
+            integral += ((currentValue + previousValue) * timeDifference) / 2;
+          }
+        }
 
-                return integral;
-            },
-            params -> {
-                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = internal.getAssetId();
-                String attributeName = internal.getAttributeName();
-                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)).toList();
+        return integral;
+      },
+      params -> {
+        AttributeInternalValue internal =
+            ValueUtil.JSON.convertValue(
+                params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = internal.getAssetId();
+        String attributeName = internal.getAttributeName();
+        List<AttributeInfo> allAssets =
+            params
+                .getFacts()
+                .matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName))
+                .toList();
 
-                return allAssets.stream().anyMatch(state -> {
-                    long timestamp = state.getTimestamp();
-                    long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
-                    if (triggerStamp == -1L) return true; // The flow has never been executed
-                    return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+        return allAssets.stream()
+            .anyMatch(
+                state -> {
+                  long timestamp = state.getTimestamp();
+                  long triggerStamp =
+                      params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+                  if (triggerStamp == -1L) return true; // The flow has never been executed
+                  return timestamp > triggerStamp
+                      && !Objects.equals(
+                          state.getValue().orElse(null), state.getOldValue().orElse(null));
                 });
-            }
-    ),
-    HISTORIC_VALUE(
-            new Node(NodeType.INPUT, new NodeInternal[]
-                    {
-                        new NodeInternal("attribute", new Picker(PickerType.ASSET_ATTRIBUTE), NodeInternal.BreakType.NEW_LINE),
-                        new NodeInternal("time_period", new Picker(PickerType.DATE),  NodeInternal.BreakType.SPACER),
-                        new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN, Arrays.stream(TimePeriod.values()).map(it -> new Option(it.label, it.name())).toArray(Option[]::new)), NodeInternal.BreakType.SPACER)
-                    },
-                    new NodeSocket[0],
-                    new NodeSocket[]{
-                        new NodeSocket("value", NodeDataType.ANY)
-                    }
-            ),
-            info -> {
-                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                AttributeRef ref = new AttributeRef(assetAttributePair.getAssetId(), assetAttributePair.getAttributeName());
-                Number timePeriod;
-                Number timeUnit;
-                timePeriod = TimePeriod.valueOf(info.getInternals()[2].getValue().toString()).getMillis();
-                timeUnit = Long.parseLong(info.getInternals()[1].getValue().toString());
-                if(timePeriod == null) return null;
+      }),
+  HISTORIC_VALUE(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {
+            new NodeInternal(
+                "attribute",
+                new Picker(PickerType.ASSET_ATTRIBUTE),
+                NodeInternal.BreakType.NEW_LINE),
+            new NodeInternal(
+                "time_period", new Picker(PickerType.DATE), NodeInternal.BreakType.SPACER),
+            new NodeInternal(
+                "time_unit",
+                new Picker(
+                    PickerType.DROPDOWN,
+                    Arrays.stream(TimePeriod.values())
+                        .map(it -> new Option(it.label, it.name()))
+                        .toArray(Option[]::new)),
+                NodeInternal.BreakType.SPACER)
+          },
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.ANY)}),
+      info -> {
+        AttributeInternalValue assetAttributePair =
+            ValueUtil.JSON.convertValue(
+                info.getInternals()[0].getValue(), AttributeInternalValue.class);
+        AttributeRef ref =
+            new AttributeRef(
+                assetAttributePair.getAssetId(), assetAttributePair.getAttributeName());
+        Number timePeriod;
+        Number timeUnit;
+        timePeriod = TimePeriod.valueOf(info.getInternals()[2].getValue().toString()).getMillis();
+        timeUnit = Long.parseLong(info.getInternals()[1].getValue().toString());
+        if (timePeriod == null) return null;
 
-                long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
+        long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
 
-                Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
+        Instant pastInstant =
+            Instant.ofEpochMilli(currentMillis - (timePeriod.longValue() * timeUnit.longValue()));
 
-                final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
-                return valueDatapoints.length > 0 ? valueDatapoints[0].getValue() : null;
-            },
-            params -> {
-                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
-                String assetId = internal.getAssetId();
-                String attributeName = internal.getAttributeName();
-                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
-                ).toList();
+        final ValueDatapoint<?>[] valueDatapoints =
+            info.getHistoricDatapoints()
+                .getValueDatapoints(
+                    ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
+        return valueDatapoints.length > 0 ? valueDatapoints[0].getValue() : null;
+      },
+      params -> {
+        AttributeInternalValue internal =
+            ValueUtil.JSON.convertValue(
+                params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+        String assetId = internal.getAssetId();
+        String attributeName = internal.getAttributeName();
+        List<AttributeInfo> allAssets =
+            params
+                .getFacts()
+                .matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName))
+                .toList();
 
-                return allAssets.stream().anyMatch(state -> {
-                    long timestamp = state.getTimestamp();
-                    long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
-                    if (triggerStamp == -1L) return true; //The flow has never been executed
-                    return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+        return allAssets.stream()
+            .anyMatch(
+                state -> {
+                  long timestamp = state.getTimestamp();
+                  long triggerStamp =
+                      params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+                  if (triggerStamp == -1L) return true; // The flow has never been executed
+                  return timestamp > triggerStamp
+                      && !Objects.equals(
+                          state.getValue().orElse(null), state.getOldValue().orElse(null));
                 });
-            }
-    ),
+      }),
 
-    LOG_OUTPUT(new Node(NodeType.OUTPUT, new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("value", NodeDataType.ANY)
-    }, new NodeSocket[0]),
-            info -> ((RulesBuilder.Action) facts -> {
+  LOG_OUTPUT(
+      new Node(
+          NodeType.OUTPUT,
+          new NodeInternal[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.ANY)},
+          new NodeSocket[0]),
+      info ->
+          ((RulesBuilder.Action)
+              facts -> {
                 info.setFacts(facts);
                 Object obj = info.getValueFromInput(0);
-                info.LOG.log(Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
-            })),
+                info.LOG.log(
+                    Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
+              })),
 
-    WRITE_ATTRIBUTE(new Node(NodeType.OUTPUT, new NodeInternal[]{
+  WRITE_ATTRIBUTE(
+      new Node(
+          NodeType.OUTPUT,
+          new NodeInternal[] {
             new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
-    }, new NodeSocket[]{
-            new NodeSocket("value", NodeDataType.ANY)
-    }, new NodeSocket[0]),
-            info -> ((RulesBuilder.Action) facts -> {
+          },
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.ANY)},
+          new NodeSocket[0]),
+      info ->
+          ((RulesBuilder.Action)
+              facts -> {
                 info.setFacts(facts);
                 Object value = info.getValueFromInput(0);
                 if (value == null) {
-                    return;
+                  return;
                 }
-                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                Optional<AttributeInfo> existingValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetAttributePair.getAssetId()).attributeName(assetAttributePair.getAttributeName()));
+                AttributeInternalValue assetAttributePair =
+                    ValueUtil.JSON.convertValue(
+                        info.getInternals()[0].getValue(), AttributeInternalValue.class);
+                Optional<AttributeInfo> existingValue =
+                    info.getFacts()
+                        .matchFirstAssetState(
+                            new AssetQuery()
+                                .ids(assetAttributePair.getAssetId())
+                                .attributeName(assetAttributePair.getAttributeName()));
 
                 if (existingValue.isPresent())
-                    if (existingValue.get().getValue().isPresent())
-                        if (existingValue.get().getValue().get().equals(value)) return;
+                  if (existingValue.get().getValue().isPresent())
+                    if (existingValue.get().getValue().get().equals(value)) return;
 
-                info.getAssets().dispatch(
-                    assetAttributePair.getAssetId(),
-                    assetAttributePair.getAttributeName(),
-                    value);
-            })),
+                info.getAssets()
+                    .dispatch(
+                        assetAttributePair.getAssetId(),
+                        assetAttributePair.getAttributeName(),
+                        value);
+              })),
 
-    BOOLEAN_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
-            new NodeInternal("value", new Picker(PickerType.CHECKBOX))
-    }, new NodeSocket[0], new NodeSocket[]{
-            new NodeSocket("value", NodeDataType.BOOLEAN)
-    }),
-            info -> {
-                Object value = info.getInternals()[0].getValue();
-                if (value == null) return false;
-                if (!(value instanceof Boolean)) return false;
-                return value;
-            }),
+  BOOLEAN_INPUT(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {new NodeInternal("value", new Picker(PickerType.CHECKBOX))},
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.BOOLEAN)}),
+      info -> {
+        Object value = info.getInternals()[0].getValue();
+        if (value == null) return false;
+        if (!(value instanceof Boolean)) return false;
+        return value;
+      }),
 
-    AND_GATE(new Node(NodeType.PROCESSOR, "&", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.BOOLEAN),
-            new NodeSocket("b", NodeDataType.BOOLEAN),
-    }, new NodeSocket[]{
+  AND_GATE(
+      new Node(
+          NodeType.PROCESSOR,
+          "&",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.BOOLEAN), new NodeSocket("b", NodeDataType.BOOLEAN),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                boolean a = (boolean) info.getValueFromInput(0);
-                boolean b = (boolean) info.getValueFromInput(1);
-                return a && b;
-            }),
+          }),
+      info -> {
+        boolean a = (boolean) info.getValueFromInput(0);
+        boolean b = (boolean) info.getValueFromInput(1);
+        return a && b;
+      }),
 
-    OR_GATE(new Node(NodeType.PROCESSOR, "∥", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.BOOLEAN),
-            new NodeSocket("b", NodeDataType.BOOLEAN),
-    }, new NodeSocket[]{
+  OR_GATE(
+      new Node(
+          NodeType.PROCESSOR,
+          "∥",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.BOOLEAN), new NodeSocket("b", NodeDataType.BOOLEAN),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                boolean a = (boolean) info.getValueFromInput(0);
-                boolean b = (boolean) info.getValueFromInput(1);
-                return a || b;
-            }),
+          }),
+      info -> {
+        boolean a = (boolean) info.getValueFromInput(0);
+        boolean b = (boolean) info.getValueFromInput(1);
+        return a || b;
+      }),
 
-    NOT_GATE(new Node(NodeType.PROCESSOR, "!", new NodeInternal[0], new NodeSocket[]{
+  NOT_GATE(
+      new Node(
+          NodeType.PROCESSOR,
+          "!",
+          new NodeInternal[0],
+          new NodeSocket[] {
             new NodeSocket("i", NodeDataType.BOOLEAN),
-    }, new NodeSocket[]{
+          },
+          new NodeSocket[] {
             new NodeSocket("o", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                boolean a = (boolean) info.getValueFromInput(0);
-                return !a;
-            }),
+          }),
+      info -> {
+        boolean a = (boolean) info.getValueFromInput(0);
+        return !a;
+      }),
 
-    NUMBER_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
-            new NodeInternal("value", new Picker(PickerType.NUMBER))
-    }, new NodeSocket[0], new NodeSocket[]{
-            new NodeSocket("value", NodeDataType.NUMBER)
-    }),
-            info -> ValueUtil.convert(info.getInternals()[0].getValue(), Double.class)),
+  NUMBER_INPUT(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {new NodeInternal("value", new Picker(PickerType.NUMBER))},
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.NUMBER)}),
+      info -> ValueUtil.convert(info.getInternals()[0].getValue(), Double.class)),
 
-    ADD_OPERATOR(new Node(NodeType.PROCESSOR, 1, "+", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+  ADD_OPERATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          1,
+          "+",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
+        return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
+      }),
 
-    SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, 2, "-", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+  SUBTRACT_OPERATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          2,
+          "-",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() - b.doubleValue() : null;
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
+        return a != null && b != null ? a.doubleValue() - b.doubleValue() : null;
+      }),
 
-    MULTIPLY_OPERATOR(new Node(NodeType.PROCESSOR, 3, "×", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+  MULTIPLY_OPERATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          3,
+          "×",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() * b.doubleValue() : null;
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
+        return a != null && b != null ? a.doubleValue() * b.doubleValue() : null;
+      }),
 
-    DIVIDE_OPERATOR(new Node(NodeType.PROCESSOR,4, "÷", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+  DIVIDE_OPERATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          4,
+          "÷",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
 
-                if (a == null || b == null) {
-                    return null;
-                }
+        if (a == null || b == null) {
+          return null;
+        }
 
-                if (b.doubleValue() == 0d)
-                    return 0d;
+        if (b.doubleValue() == 0d) return 0d;
 
-                return a.doubleValue() / b.doubleValue();
-            }),
+        return a.doubleValue() / b.doubleValue();
+      }),
 
-    EQUALS_COMPARATOR(new Node(NodeType.PROCESSOR, "=", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.ANY),
-            new NodeSocket("b", NodeDataType.ANY),
-    }, new NodeSocket[]{
+  EQUALS_COMPARATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "=",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.ANY), new NodeSocket("b", NodeDataType.ANY),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                Object a = info.getValueFromInput(0);
-                Object b = info.getValueFromInput(1);
-                return a != null && b != null && Objects.equals(a, b);
-            }),
+          }),
+      info -> {
+        Object a = info.getValueFromInput(0);
+        Object b = info.getValueFromInput(1);
+        return a != null && b != null && Objects.equals(a, b);
+      }),
 
-    SUM_PROCESSOR(new Node(NodeType.PROCESSOR,5, "Σ", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
-    }, new NodeSocket[]{
+  SUM_PROCESSOR(
+      new Node(
+          NodeType.PROCESSOR,
+          5,
+          "Σ",
+          new NodeInternal[0],
+          new NodeSocket[] {new NodeSocket("a", NodeDataType.NUMBER_ARRAY)},
+          new NodeSocket[] {
             new NodeSocket("b", NodeDataType.NUMBER),
-    }),
-            info -> IntStream.range(0, info.getInputs().length)
-                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sum()
-    ),
-    MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
-    }, new NodeSocket[]{
+          }),
+      info ->
+          IntStream.range(0, info.getInputs().length)
+              .mapToObj(info::getValueFromInput)
+              .mapToDouble(value -> ((Number) value).doubleValue())
+              .sum()),
+  MAX_PROCESSOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "max",
+          new NodeInternal[0],
+          new NodeSocket[] {new NodeSocket("a", NodeDataType.NUMBER_ARRAY)},
+          new NodeSocket[] {
             new NodeSocket("b", NodeDataType.NUMBER),
-    }),
-            info -> IntStream.range(0, info.getInputs().length)
-                        .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).max().orElseThrow()
-    ),
-    MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
-    }, new NodeSocket[]{
+          }),
+      info ->
+          IntStream.range(0, info.getInputs().length)
+              .mapToObj(info::getValueFromInput)
+              .mapToDouble(value -> ((Number) value).doubleValue())
+              .max()
+              .orElseThrow()),
+  MIN_PROCESSOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "min",
+          new NodeInternal[0],
+          new NodeSocket[] {new NodeSocket("a", NodeDataType.NUMBER_ARRAY)},
+          new NodeSocket[] {
             new NodeSocket("b", NodeDataType.NUMBER),
-    }),
-            info -> IntStream.range(0, info.getInputs().length)
-                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).min().orElseThrow()
-    ),
-    AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
-    }, new NodeSocket[]{
+          }),
+      info ->
+          IntStream.range(0, info.getInputs().length)
+              .mapToObj(info::getValueFromInput)
+              .mapToDouble(value -> ((Number) value).doubleValue())
+              .min()
+              .orElseThrow()),
+  AVERAGE_PROCESSOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "avg",
+          new NodeInternal[0],
+          new NodeSocket[] {new NodeSocket("a", NodeDataType.NUMBER_ARRAY)},
+          new NodeSocket[] {
             new NodeSocket("b", NodeDataType.NUMBER),
-    }),
-            info -> IntStream.range(0, info.getInputs().length)
-                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).average().orElseThrow()
-    ),
-    MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
-    }, new NodeSocket[]{
+          }),
+      info ->
+          IntStream.range(0, info.getInputs().length)
+              .mapToObj(info::getValueFromInput)
+              .mapToDouble(value -> ((Number) value).doubleValue())
+              .average()
+              .orElseThrow()),
+  MEDIAN_PROCESSOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "med",
+          new NodeInternal[0],
+          new NodeSocket[] {new NodeSocket("a", NodeDataType.NUMBER_ARRAY)},
+          new NodeSocket[] {
             new NodeSocket("b", NodeDataType.NUMBER),
-    }),
-            info -> {
-                final double[] sortedDoubles = IntStream.range(0, info.getInputs().length)
-                        .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sorted().toArray();
-                if (sortedDoubles.length == 0) {
-                    return 0.0;
-                } else if (sortedDoubles.length % 2 == 0) {
-                    return (sortedDoubles[sortedDoubles.length / 2 - 1] + sortedDoubles[sortedDoubles.length / 2]) / 2.0;
-                } else {
-                    return sortedDoubles[sortedDoubles.length / 2];
-                }
-            }
-    ),
-    GREATER_THAN(new Node(NodeType.PROCESSOR, ">", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+          }),
+      info -> {
+        final double[] sortedDoubles =
+            IntStream.range(0, info.getInputs().length)
+                .mapToObj(info::getValueFromInput)
+                .mapToDouble(value -> ((Number) value).doubleValue())
+                .sorted()
+                .toArray();
+        if (sortedDoubles.length == 0) {
+          return 0.0;
+        } else if (sortedDoubles.length % 2 == 0) {
+          return (sortedDoubles[sortedDoubles.length / 2 - 1]
+                  + sortedDoubles[sortedDoubles.length / 2])
+              / 2.0;
+        } else {
+          return sortedDoubles[sortedDoubles.length / 2];
+        }
+      }),
+  GREATER_THAN(
+      new Node(
+          NodeType.PROCESSOR,
+          ">",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null && a.doubleValue() > b.doubleValue();
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
+        return a != null && b != null && a.doubleValue() > b.doubleValue();
+      }),
 
-    LESS_THAN(new Node(NodeType.PROCESSOR, "<", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+  LESS_THAN(
+      new Node(
+          NodeType.PROCESSOR,
+          "<",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null && a.doubleValue() < b.doubleValue();
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
+        return a != null && b != null && a.doubleValue() < b.doubleValue();
+      }),
 
-    ROUND_NODE(new Node(NodeType.PROCESSOR, new NodeInternal[]{
-            new NodeInternal("Rounding method", new Picker(PickerType.DROPDOWN, new Option[]{
-                    new Option("Round", "round"),
-                    new Option("Ceiling", "ceil"),
-                    new Option("Floor", "floor")
-            }))
-    }, new NodeSocket[]{
+  ROUND_NODE(
+      new Node(
+          NodeType.PROCESSOR,
+          new NodeInternal[] {
+            new NodeInternal(
+                "Rounding method",
+                new Picker(
+                    PickerType.DROPDOWN,
+                    new Option[] {
+                      new Option("Round", "round"),
+                      new Option("Ceiling", "ceil"),
+                      new Option("Floor", "floor")
+                    }))
+          },
+          new NodeSocket[] {
             new NodeSocket("value", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+          },
+          new NodeSocket[] {
             new NodeSocket("value", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
 
-                if (a == null) {
-                    return null;
-                }
+        if (a == null) {
+          return null;
+        }
 
-                return switch ((String) info.getInternals()[0].getValue()) {
-                    case "round" -> Math.round(a.doubleValue());
-                    case "ceil" -> Math.ceil(a.doubleValue());
-                    case "floor" -> Math.floor(a.doubleValue());
-                    default -> a;
-                };
-            }),
+        return switch ((String) info.getInternals()[0].getValue()) {
+          case "round" -> Math.round(a.doubleValue());
+          case "ceil" -> Math.ceil(a.doubleValue());
+          case "floor" -> Math.floor(a.doubleValue());
+          default -> a;
+        };
+      }),
 
-    ABS_OPERATOR(new Node(NodeType.PROCESSOR, "|x|", new NodeInternal[0], new NodeSocket[]{
+  ABS_OPERATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "|x|",
+          new NodeInternal[0],
+          new NodeSocket[] {
             new NodeSocket("value", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+          },
+          new NodeSocket[] {
             new NodeSocket("absolute", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                return a != null ? Math.abs(a.doubleValue()) : null;
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        return a != null ? Math.abs(a.doubleValue()) : null;
+      }),
 
-    POW_OPERATOR(new Node(NodeType.PROCESSOR, "^", new NodeInternal[0], new NodeSocket[]{
+  POW_OPERATOR(
+      new Node(
+          NodeType.PROCESSOR,
+          "^",
+          new NodeInternal[0],
+          new NodeSocket[] {
             new NodeSocket("base", NodeDataType.NUMBER),
             new NodeSocket("exponent", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+          },
+          new NodeSocket[] {
             new NodeSocket("value", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? Math.pow(a.doubleValue(), b.doubleValue()) : null;
-            }),
+          }),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        Number b = (Number) info.getValueFromInput(1);
+        return a != null && b != null ? Math.pow(a.doubleValue(), b.doubleValue()) : null;
+      }),
 
-    NUMBER_SWITCH(new Node(NodeType.PROCESSOR, new NodeInternal[0], new NodeSocket[]{
+  NUMBER_SWITCH(
+      new Node(
+          NodeType.PROCESSOR,
+          new NodeInternal[0],
+          new NodeSocket[] {
             new NodeSocket("when", NodeDataType.BOOLEAN),
             new NodeSocket("then", NodeDataType.NUMBER),
             new NodeSocket("else", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
+          },
+          new NodeSocket[] {
             new NodeSocket("output", NodeDataType.NUMBER),
-    }),
-            info -> {
-                boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
+          }),
+      info -> {
+        boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
 
-                Number a = (Number) info.getValueFromInput(1);
-                Number b = (Number) info.getValueFromInput(2);
+        Number a = (Number) info.getValueFromInput(1);
+        Number b = (Number) info.getValueFromInput(2);
 
-                return condition ? (a != null ? a.doubleValue() : null) : (b != null ? b.doubleValue() : null);
-            }),
+        return condition
+            ? (a != null ? a.doubleValue() : null)
+            : (b != null ? b.doubleValue() : null);
+      }),
 
-    TEXT_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
-            new NodeInternal("value", new Picker(PickerType.MULTILINE))
-    }, new NodeSocket[0], new NodeSocket[]{
-            new NodeSocket("value", NodeDataType.STRING)
-    }),
-            info -> {
-                Object value = info.getInternals()[0].getValue();
-                if (!(value instanceof CharSequence charSequence)) return null;
-                return charSequence.toString();
-            }),
+  TEXT_INPUT(
+      new Node(
+          NodeType.INPUT,
+          new NodeInternal[] {new NodeInternal("value", new Picker(PickerType.MULTILINE))},
+          new NodeSocket[0],
+          new NodeSocket[] {new NodeSocket("value", NodeDataType.STRING)}),
+      info -> {
+        Object value = info.getInternals()[0].getValue();
+        if (!(value instanceof CharSequence charSequence)) return null;
+        return charSequence.toString();
+      }),
 
-    COMBINE_TEXT(new Node(NodeType.PROCESSOR, new NodeInternal[]{
-            new NodeInternal("joiner", new Picker(PickerType.TEXT))
-    }, new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.STRING),
-            new NodeSocket("b", NodeDataType.STRING),
-    }, new NodeSocket[]{
+  COMBINE_TEXT(
+      new Node(
+          NodeType.PROCESSOR,
+          new NodeInternal[] {new NodeInternal("joiner", new Picker(PickerType.TEXT))},
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.STRING), new NodeSocket("b", NodeDataType.STRING),
+          },
+          new NodeSocket[] {
             new NodeSocket("c", NodeDataType.STRING),
-    }),
-            info -> {
-                Object joiner = ValueUtil.convert(info.getInternals()[0].getValue(), String.class);
-                Object a = ValueUtil.convert(info.getValueFromInput(0), String.class);
-                Object b = ValueUtil.convert(info.getValueFromInput(1), String.class);
+          }),
+      info -> {
+        Object joiner = ValueUtil.convert(info.getInternals()[0].getValue(), String.class);
+        Object a = ValueUtil.convert(info.getValueFromInput(0), String.class);
+        Object b = ValueUtil.convert(info.getValueFromInput(1), String.class);
 
-                joiner = joiner == null ? "" : joiner;
-                return "" + (a != null ? a : "") + joiner + (b != null ? b : "");
-            }),
+        joiner = joiner == null ? "" : joiner;
+        return "" + (a != null ? a : "") + joiner + (b != null ? b : "");
+      }),
 
-    TEXT_SWITCH(new Node(NodeType.PROCESSOR, new NodeInternal[0], new NodeSocket[]{
+  TEXT_SWITCH(
+      new Node(
+          NodeType.PROCESSOR,
+          new NodeInternal[0],
+          new NodeSocket[] {
             new NodeSocket("when", NodeDataType.BOOLEAN),
             new NodeSocket("then", NodeDataType.STRING),
             new NodeSocket("else", NodeDataType.STRING),
-    }, new NodeSocket[]{
+          },
+          new NodeSocket[] {
             new NodeSocket("output", NodeDataType.STRING),
-    }),
-            info -> {
-                boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
-                String a = ValueUtil.convert(info.getValueFromInput(1), String.class);
-                String b = ValueUtil.convert(info.getValueFromInput(2), String.class);
-                return condition ? a : b;
-            }),
+          }),
+      info -> {
+        boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
+        String a = ValueUtil.convert(info.getValueFromInput(1), String.class);
+        String b = ValueUtil.convert(info.getValueFromInput(2), String.class);
+        return condition ? a : b;
+      }),
 
-    SIN(new Node(NodeType.PROCESSOR, "sin", new NodeInternal[0], new NodeSocket[]{
+  SIN(
+      new Node(
+          NodeType.PROCESSOR,
+          "sin",
+          new NodeInternal[0],
+          new NodeSocket[] {
             new NodeSocket("in", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("out", NodeDataType.NUMBER)
-    }),
-            info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    return a != null ? Math.sin(a.doubleValue()) : null;
-                } catch (Exception e) {
-                    return 0;
-                }
-            }),
-
-    COS(new Node(NodeType.PROCESSOR, "cos", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("in", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("out", NodeDataType.NUMBER)
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                return a != null ? Math.cos(a.doubleValue()) : null;
-            }),
-
-    TAN(new Node(NodeType.PROCESSOR, "tan", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("in", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("out", NodeDataType.NUMBER)
-    }),
-            info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    return a != null ? Math.tan(a.doubleValue()) : null;
-                } catch (Exception e) {
-                    return 0;
-                }
-            }),
-
-    SQRT(new Node(NodeType.PROCESSOR, "√", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("in", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("out", NodeDataType.NUMBER)
-    }),
-            info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    return a != null ? Math.sqrt(a.doubleValue()) : null;
-                } catch (Exception e) {
-                    return 0;
-                }
-            }),
-
-    MOD(new Node(NodeType.PROCESSOR, "%", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("c", NodeDataType.NUMBER)
-    }),
-            info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return a != null  && b != null ? a.doubleValue() % b.doubleValue() : null;
-                } catch (Exception e) {
-                    return 0;
-                }
-            }),
-    ;
-
-
-    NodeModel(Node definition, NodeImplementation implementation) {
-        this.definition = definition;
-        definition.setName(this.name());
-        this.implementation = implementation;
-        this.triggerFunction = (params) -> false;
-    }
-
-    NodeModel(Node definition, NodeImplementation implementation, NodeTriggerFunction triggerFunction) {
-        this.definition = definition;
-        definition.setName(this.name());
-        this.implementation = implementation;
-        this.triggerFunction = triggerFunction;
-    }
-
-
-    private enum TimePeriod {
-        SECONDS("seconds ago", 1000L),
-        MINUTES("minutes ago", SECONDS.millis * 60),
-        HOURS("hours ago", MINUTES.millis * 24),
-        DAYS("days ago", HOURS.millis * 30),
-        MONTHS("months ago", DAYS.millis * 12);
-
-        private final String label;
-        private final Long millis;
-
-        TimePeriod(String label, Long millis) {
-            this.label = label;
-            this.millis = millis;
+          },
+          new NodeSocket[] {new NodeSocket("out", NodeDataType.NUMBER)}),
+      info -> {
+        try {
+          Number a = (Number) info.getValueFromInput(0);
+          return a != null ? Math.sin(a.doubleValue()) : null;
+        } catch (Exception e) {
+          return 0;
         }
+      }),
 
-        public String getLabel() {
-            return label;
+  COS(
+      new Node(
+          NodeType.PROCESSOR,
+          "cos",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("in", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {new NodeSocket("out", NodeDataType.NUMBER)}),
+      info -> {
+        Number a = (Number) info.getValueFromInput(0);
+        return a != null ? Math.cos(a.doubleValue()) : null;
+      }),
+
+  TAN(
+      new Node(
+          NodeType.PROCESSOR,
+          "tan",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("in", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {new NodeSocket("out", NodeDataType.NUMBER)}),
+      info -> {
+        try {
+          Number a = (Number) info.getValueFromInput(0);
+          return a != null ? Math.tan(a.doubleValue()) : null;
+        } catch (Exception e) {
+          return 0;
         }
+      }),
 
-        public Long getMillis() {
-            return millis;
+  SQRT(
+      new Node(
+          NodeType.PROCESSOR,
+          "√",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("in", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {new NodeSocket("out", NodeDataType.NUMBER)}),
+      info -> {
+        try {
+          Number a = (Number) info.getValueFromInput(0);
+          return a != null ? Math.sqrt(a.doubleValue()) : null;
+        } catch (Exception e) {
+          return 0;
         }
+      }),
+
+  MOD(
+      new Node(
+          NodeType.PROCESSOR,
+          "%",
+          new NodeInternal[0],
+          new NodeSocket[] {
+            new NodeSocket("a", NodeDataType.NUMBER), new NodeSocket("b", NodeDataType.NUMBER),
+          },
+          new NodeSocket[] {new NodeSocket("c", NodeDataType.NUMBER)}),
+      info -> {
+        try {
+          Number a = (Number) info.getValueFromInput(0);
+          Number b = (Number) info.getValueFromInput(1);
+          return a != null && b != null ? a.doubleValue() % b.doubleValue() : null;
+        } catch (Exception e) {
+          return 0;
+        }
+      }),
+  ;
+
+  NodeModel(Node definition, NodeImplementation implementation) {
+    this.definition = definition;
+    definition.setName(this.name());
+    this.implementation = implementation;
+    this.triggerFunction = (params) -> false;
+  }
+
+  NodeModel(
+      Node definition, NodeImplementation implementation, NodeTriggerFunction triggerFunction) {
+    this.definition = definition;
+    definition.setName(this.name());
+    this.implementation = implementation;
+    this.triggerFunction = triggerFunction;
+  }
+
+  private enum TimePeriod {
+    SECONDS("seconds ago", 1000L),
+    MINUTES("minutes ago", SECONDS.millis * 60),
+    HOURS("hours ago", MINUTES.millis * 24),
+    DAYS("days ago", HOURS.millis * 30),
+    MONTHS("months ago", DAYS.millis * 12);
+
+    private final String label;
+    private final Long millis;
+
+    TimePeriod(String label, Long millis) {
+      this.label = label;
+      this.millis = millis;
     }
 
-    private Node definition;
-    private NodeImplementation implementation;
-    private NodeTriggerFunction triggerFunction;
-
-    public Node getDefinition() {
-        return definition;
+    public String getLabel() {
+      return label;
     }
 
-    public NodeImplementation getImplementation() {
-        return implementation;
+    public Long getMillis() {
+      return millis;
     }
+  }
 
-    public NodeTriggerFunction getTriggerFunction() {
-        return triggerFunction;
-    }
+  private Node definition;
+  private NodeImplementation implementation;
+  private NodeTriggerFunction triggerFunction;
 
-    public static NodeImplementation getImplementationFor(String name) {
-        return NodeModel.valueOf(name).implementation;
-    }
+  public Node getDefinition() {
+    return definition;
+  }
 
-    public static NodeTriggerFunction getTriggerFunctionFor(String name) {
-        return NodeModel.valueOf(name).triggerFunction;
-    }
+  public NodeImplementation getImplementation() {
+    return implementation;
+  }
 
-    public static Node getDefinitionFor(String name) {
-        return NodeModel.valueOf(name).definition;
-    }
+  public NodeTriggerFunction getTriggerFunction() {
+    return triggerFunction;
+  }
+
+  public static NodeImplementation getImplementationFor(String name) {
+    return NodeModel.valueOf(name).implementation;
+  }
+
+  public static NodeTriggerFunction getTriggerFunctionFor(String name) {
+    return NodeModel.valueOf(name).triggerFunction;
+  }
+
+  public static Node getDefinitionFor(String name) {
+    return NodeModel.valueOf(name).definition;
+  }
 }

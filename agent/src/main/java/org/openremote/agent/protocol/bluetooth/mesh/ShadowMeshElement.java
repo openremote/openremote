@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,13 +12,11 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,56 +25,62 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
+import org.openremote.model.syslog.SyslogCategory;
+
 public class ShadowMeshElement {
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ShadowMeshElement.class.getName());
+  public static final Logger LOG =
+      SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ShadowMeshElement.class.getName());
 
-    private final ExecutorService executorService;
-    private final BluetoothMeshNetwork meshNetwork;
-    private final int address;
-    private final Map<Integer, ShadowMeshModel> modelMap = new HashMap<>();
+  private final ExecutorService executorService;
+  private final BluetoothMeshNetwork meshNetwork;
+  private final int address;
+  private final Map<Integer, ShadowMeshModel> modelMap = new HashMap<>();
 
-    public ShadowMeshElement(ExecutorService executorService, BluetoothMeshNetwork network, int address) {
-        this.executorService = executorService;
-        this.meshNetwork = network;
-        this.address = address;
+  public ShadowMeshElement(
+      ExecutorService executorService, BluetoothMeshNetwork network, int address) {
+    this.executorService = executorService;
+    this.meshNetwork = network;
+    this.address = address;
+  }
+
+  public synchronized void addShadowModel(int modelId, int appKeyIndex) {
+    ShadowMeshModel model = modelMap.get(modelId);
+    if (model != null) {
+      model.setAppKeyIndex(appKeyIndex);
+    } else {
+      model = createShadowModel(modelId, appKeyIndex);
+      if (model != null) {
+        modelMap.put(modelId, model);
+      }
     }
+  }
 
-    public synchronized void addShadowModel(int modelId, int appKeyIndex) {
-        ShadowMeshModel model = modelMap.get(modelId);
-        if (model != null) {
-            model.setAppKeyIndex(appKeyIndex);
-        } else {
-            model = createShadowModel(modelId, appKeyIndex);
-            if (model != null) {
-                modelMap.put(modelId, model);
-            }
-        }
+  public synchronized void onMeshMessageReceived(MeshMessage meshMessage) {
+    for (ShadowMeshModel model : modelMap.values()) {
+      model.onMeshMessageReceived(meshMessage);
     }
+  }
 
-    public synchronized void onMeshMessageReceived(MeshMessage meshMessage) {
-        for (ShadowMeshModel model : modelMap.values()) {
-            model.onMeshMessageReceived(meshMessage);
-        }
-    }
+  public synchronized int getAddress() {
+    return address;
+  }
 
-    public synchronized int getAddress() {
-        return address;
-    }
+  public synchronized List<ShadowMeshModel> getMeshModels() {
+    return new ArrayList<>(modelMap.values());
+  }
 
-    public synchronized List<ShadowMeshModel> getMeshModels() {
-        return new ArrayList<>(modelMap.values());
-    }
+  public synchronized ShadowMeshModel searchShadowModel(int modelId) {
+    return modelMap.get(modelId);
+  }
 
-    public synchronized ShadowMeshModel searchShadowModel(int modelId) {
-        return modelMap.get(modelId);
+  private ShadowMeshModel createShadowModel(int modelId, int appKeyIndex) {
+    ShadowMeshModel model = null;
+    if ((SigModelParser.GENERIC_ON_OFF_SERVER & 0xFFFF) == modelId) {
+      model = new ShadowGenericOnOffModel(executorService, meshNetwork, this, appKeyIndex);
     }
-
-    private ShadowMeshModel createShadowModel(int modelId, int appKeyIndex) {
-        ShadowMeshModel model = null;
-        if ((SigModelParser.GENERIC_ON_OFF_SERVER & 0xFFFF) == modelId) {
-            model = new ShadowGenericOnOffModel(executorService, meshNetwork, this, appKeyIndex);
-        }
-        return model;
-    }
+    return model;
+  }
 }

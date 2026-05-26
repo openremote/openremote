@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -15,55 +12,62 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.auth;
+
+import java.util.Collections;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 import jakarta.ws.rs.core.MultivaluedMap;
-import java.util.Collections;
 
 @JsonTypeName(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE)
 public class OAuthRefreshTokenGrant extends OAuthClientCredentialsGrant {
 
-    public static final String REFRESH_TOKEN_GRANT_TYPE = "refresh_token";
-    @JsonProperty(REFRESH_TOKEN_GRANT_TYPE)
-    protected String refreshToken;
-    @JsonCreator
-    public OAuthRefreshTokenGrant(@JsonProperty(VALUE_KEY_TOKEN_ENDPOINT_URI) String tokenEndpointUri,
-                                  @JsonProperty(VALUE_KEY_CLIENT_ID) String clientId,
-                                  @JsonProperty(VALUE_KEY_CLIENT_SECRET) String clientSecret,
-                                  @JsonProperty(VALUE_KEY_SCOPE) String scope,
-                                  @JsonProperty(REFRESH_TOKEN_GRANT_TYPE) String refreshToken) {
-        this(tokenEndpointUri, REFRESH_TOKEN_GRANT_TYPE, clientId, clientSecret, scope, refreshToken);
-    }
+  public static final String REFRESH_TOKEN_GRANT_TYPE = "refresh_token";
 
-    protected OAuthRefreshTokenGrant(String tokenEndpointUri,
-                                     String grantType,
-                                     String clientId,
-                                     String clientSecret,
-                                     String scope,
-                                     String refreshToken) {
-        super(tokenEndpointUri, grantType, clientId, clientSecret, scope);
-        this.refreshToken = refreshToken;
-    }
+  @JsonProperty(REFRESH_TOKEN_GRANT_TYPE)
+  protected String refreshToken;
 
-    @JsonProperty
-    public String getRefreshToken() {
-        return refreshToken;
-    }
+  @JsonCreator
+  public OAuthRefreshTokenGrant(
+      @JsonProperty(VALUE_KEY_TOKEN_ENDPOINT_URI) String tokenEndpointUri,
+      @JsonProperty(VALUE_KEY_CLIENT_ID) String clientId,
+      @JsonProperty(VALUE_KEY_CLIENT_SECRET) String clientSecret,
+      @JsonProperty(VALUE_KEY_SCOPE) String scope,
+      @JsonProperty(REFRESH_TOKEN_GRANT_TYPE) String refreshToken) {
+    this(tokenEndpointUri, REFRESH_TOKEN_GRANT_TYPE, clientId, clientSecret, scope, refreshToken);
+  }
 
-    public OAuthRefreshTokenGrant setBasicAuthHeader(boolean basicAuthHeader) {
-        return (OAuthRefreshTokenGrant)super.setBasicAuthHeader(basicAuthHeader);
-    }
+  protected OAuthRefreshTokenGrant(
+      String tokenEndpointUri,
+      String grantType,
+      String clientId,
+      String clientSecret,
+      String scope,
+      String refreshToken) {
+    super(tokenEndpointUri, grantType, clientId, clientSecret, scope);
+    this.refreshToken = refreshToken;
+  }
 
-    @Override
-    public MultivaluedMap<String, String> asMultivaluedMap() {
-        MultivaluedMap<String, String> valueMap = super.asMultivaluedMap();
-        valueMap.put(REFRESH_TOKEN_GRANT_TYPE, Collections.singletonList(refreshToken));
-        return valueMap;
-    }
+  @JsonProperty
+  public String getRefreshToken() {
+    return refreshToken;
+  }
+
+  public OAuthRefreshTokenGrant setBasicAuthHeader(boolean basicAuthHeader) {
+    return (OAuthRefreshTokenGrant) super.setBasicAuthHeader(basicAuthHeader);
+  }
+
+  @Override
+  public MultivaluedMap<String, String> asMultivaluedMap() {
+    MultivaluedMap<String, String> valueMap = super.asMultivaluedMap();
+    valueMap.put(REFRESH_TOKEN_GRANT_TYPE, Collections.singletonList(refreshToken));
+    return valueMap;
+  }
 }
