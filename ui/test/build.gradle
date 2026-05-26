@@ -6,3 +6,10 @@ tasks.register("installBrowsers", Exec) {
     mustRunAfter(resolveTask(":deployment:installDist"))
     commandLine npmCommand("npx"), "playwright", "install", "chromium"
 }
+
+tasks.register('installTestDeps', Exec) {
+    onlyIf {
+        !gradle.taskGraph.hasTask(":yarnInstall")
+    }
+    commandLine npmCommand("yarn"), "workspaces", "focus", "@openremote/test", "@openremote/model", "@openremote/rest", "@openremote/core"
+}
