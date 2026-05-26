@@ -97,6 +97,7 @@ tasks.register('generateSources', Copy) {
     from fileTree(projectDir) {
         exclude 'build.gradle'
         exclude 'build/**'
+        exclude 'bin/**'
     }
     into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
 }
