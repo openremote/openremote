@@ -91,9 +91,11 @@ jobs:
 
       - name: Build deployment
         shell: bash
-        run: ./gradlew -p deployment installDist # TODO: optimize the task graph
-        env:
-          GFE_PASSWORD: ${{ secrets._TEMP_GFE_PASSWORD }}
+        run: |
+          if [ -n "${{ secrets._TEMP_GFE_PASSWORD }}" ]; then
+            export GFE_PASSWORD=${{ secrets._TEMP_GFE_PASSWORD }}
+          fi
+          ./gradlew -p deployment installDist # TODO: optimize the task graph
 
       # --------------------------------------------------------------------------------------
       # Deploy
