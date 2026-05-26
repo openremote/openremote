@@ -31,12 +31,6 @@ if [ -f "temp/env" ]; then
   set +a
 fi
 
-echo "setup_jar"
-ls -laR manager/build/install/manager/deployment/manager/extensions
-echo ""
-grep -E 'OR_SETUP_TYPE|OR_SETUP_ASSETS' temp/env
-echo "Logging OR_SETUP_TYPE|OR_SETUP_ASSETS $OR_SETUP_TYPE, $OR_SETUP_ASSETS"
-
 # Load temp environment variables into this session
 if [ -f "temp.env" ]; then
   echo "Loading temp environment variables: 'temp.env'"
@@ -215,9 +209,6 @@ set -a
 . ./temp/env
 set +a
 
-grep -E 'OR_SETUP_TYPE|OR_SETUP_ASSETS' temp/env
-echo "Logging OR_SETUP_TYPE|OR_SETUP_ASSETS \$OR_SETUP_TYPE, \$OR_SETUP_ASSETS"
-
 if [ -f "temp/manager.tar.gz" ]; then
   echo "Loading manager docker image"
   docker load < temp/manager.tar.gz
@@ -284,7 +275,7 @@ fi
 echo "Private IP \$PRIVATE_IP"
 
 # Start the stack
-echo "Starting the stack \$OR_SETUP_TYPE, \$OR_SETUP_ASSETS"
+echo "Starting the stack"
 docker-compose -f temp/docker-compose.yml -p or up -d
 
 if [ \$? -ne 0 ]; then
@@ -370,9 +361,6 @@ set -a
 . ./temp/env
 set +a
 
-grep -E 'OR_SETUP_TYPE|OR_SETUP_ASSETS' temp/env
-echo "Logging OR_SETUP_TYPE|OR_SETUP_ASSETS \$OR_SETUP_TYPE, \$OR_SETUP_ASSETS"
-
 if [ -f "temp/deployment.tar.gz" ]; then
   echo "Loading deployment docker image"
   docker load < temp/deployment.tar.gz
@@ -416,7 +404,7 @@ echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
 
 # Start the stack
-echo "Starting the stack \$OR_SETUP_TYPE, \$OR_SETUP_ASSETS"
+echo "Starting the stack"
 docker-compose -f temp/docker-compose.yml -p or up -d
 
 if [ \$? -ne 0 ]; then
