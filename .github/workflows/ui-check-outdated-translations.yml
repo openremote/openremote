@@ -21,9 +21,14 @@ jobs:
 
           out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
           if [[ -z "$out" ]]; then
-              echo "✅ No pipeline changes detected."
+            echo "✅ No pipeline changes detected."
           else
-              echo "❌ Pipeline files have changed. Please run './gradlew -p ui/app/shared processTranslations --no-parallel'"
-              echo "$out"
-              exit 1
+            cat << EOF >> $GITHUB_STEP_SUMMARY
+            ❌ Pipeline files have changed. Please run:
+            \`\`\`sh
+            ./gradlew -p ui/app/shared processTranslations --no-parallel
+            \`\`\`
+            $out
+            EOF
+            exit 1
           fi
