@@ -17,7 +17,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {i18next} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
 import {OrDashboardPreview} from "./or-dashboard-preview";
@@ -225,7 +225,7 @@ export function registerWidgetTypes() {
 }
 
 @customElement("or-dashboard-builder")
-export class OrDashboardBuilder extends LitElement {
+export class OrDashboardBuilder extends translate(i18next)(LitElement) {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
@@ -603,7 +603,7 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
                                     ${this.selectedDashboard != null ? html`
-                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name')}" 
+                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="${i18next.t('name')}" 
                                                       ?readonly="${this._isReadonly() || !this._hasEditAccess()}" .value="${this.selectedDashboard.displayName}" 
                                                       .disabled="${this.isLoading}" style="width: 300px;" 
                                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
@@ -684,7 +684,7 @@ export class OrDashboardBuilder extends LitElement {
                                     ></or-dashboard-preview>
                                 ` : html`
                                     <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                                        <span>${i18next.t('noDashboardSelected')}</span>
+                                        <span><or-translate value="noDashboardSelected"></or-translate></span>
                                     </div>
                                 `}
                             </div>

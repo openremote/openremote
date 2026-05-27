@@ -37,6 +37,9 @@
     "lit": "^3.3.1",
     "simplebar": "^5.3.6"
   },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }
