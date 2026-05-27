@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "npx tsc -b --force",
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx rspack"
   },
