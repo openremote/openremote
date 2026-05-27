@@ -773,7 +773,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                     <div>
-                                        <span>${i18next.t('noAttributesConnected')}</span>
+                                        <span><or-translate value="noAttributesConnected"></or-translate></span>
                                     </div>
                                 ` : undefined}
                                 ${map(this.assetAttributes?.map(([assetIndex, attr], index) => {
@@ -1062,7 +1062,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             .setContent(() => html`
                 <div style="max-width: 480px; display: flex; flex-direction: column; gap: 8px;">
                     <or-vaadin-date-time-picker ${ref(startRef)} required value=${startTimestamp ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(startTimestamp)) : undefined}>
-                        <or-translate slot="label" value="start"></or-translate>
+                        <or-translate slot="label" value="beginning"></or-translate>
                     </or-vaadin-date-time-picker>
                     <or-vaadin-date-time-picker ${ref(endRef)} required value=${endTimestamp ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(endTimestamp)) : undefined}>
                         <or-translate slot="label" value="ending"></or-translate>

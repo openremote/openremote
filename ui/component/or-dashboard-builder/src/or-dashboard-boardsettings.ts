@@ -21,7 +21,7 @@ import {Dashboard, DashboardAccess, DashboardRefreshInterval, DashboardScalingPr
 import {css, html, LitElement} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {style} from './style';
-import {i18next} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {when} from "lit/directives/when.js";
 import {dashboardAccessToString, scalingPresetToString, sortScreenPresets} from ".";
@@ -36,7 +36,7 @@ const boardSettingsStyling = css`
 `
 
 @customElement("or-dashboard-boardsettings")
-export class OrDashboardBoardsettings extends LitElement {
+export class OrDashboardBoardsettings extends translate(i18next)(LitElement) {
 
     @property({ type: Object })
     public readonly dashboard!: Dashboard;

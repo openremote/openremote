@@ -200,10 +200,10 @@ export class PageAccount extends Page<AppStateKeyed> {
                 </div>
                 <div id="content" class="panel">
 
-                    <p class="panel-title">${i18next.t("user")} ${i18next.t("settings")}</p>
+                    <p class="panel-title" style="gap: 0.25em;"><or-translate value="user"></or-translate><or-translate value="settings"></or-translate></p>
 
                     <!-- Account settings row -->
-                    ${guard([this._user], () => until(
+                    ${guard([this._user, this._language], () => until(
                             this._getAccountRowTemplate(this._user, readonly, (_user, dirty, invalid) => {
                                 this._dirty = dirty;
                                 this._invalid = invalid;

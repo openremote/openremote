@@ -141,7 +141,7 @@ export interface DashboardPreviewSize {
 /* ------------------------------------------------------------ */
 
 @customElement("or-dashboard-preview")
-export class OrDashboardPreview extends LitElement {
+export class OrDashboardPreview extends translate(i18next)(LitElement) {
 
     // Monitoring the changes in the template, save the changes to this.latestChanges,
     // so we can check afterwards which changes are made. Used for

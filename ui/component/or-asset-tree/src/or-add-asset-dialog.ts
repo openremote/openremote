@@ -320,7 +320,7 @@ export class OrAddAssetDialog extends LitElement {
                 ? html``
                 : html`
                     <div>
-                        <div class="heading">${i18next.t("attribute_plural")}</div>
+                        <div class="heading"><or-translate value="attribute_plural"></or-translate></div>
                         <div style="display: grid">
                             ${attributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => html`
