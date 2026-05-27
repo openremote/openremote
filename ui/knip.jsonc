@@ -52,9 +52,6 @@
     "rspack": {
         "config": ["rspack.config.js"]
     },
-    "rsbuild": {
-        "config": ["rsbuild.config.ts"]
-    },
     "eslint": {
         "config": ["ui/.eslintrc.json"]
     }
