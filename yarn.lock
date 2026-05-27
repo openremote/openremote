@@ -1766,6 +1766,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -1776,6 +1777,7 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit-html: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -1848,6 +1850,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
     "@webcomponents/webcomponentsjs": "npm:^2.6.0"
     lit: "npm:^3.3.1"
