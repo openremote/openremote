@@ -9,7 +9,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    testImplementation project(":setup").sourceSets.integration.output
+    testImplementation rootProject.project(":setup").sourceSets.integration.output
     api project(":manager")
 
     implementation "org.apache.groovy:groovy-all:$groovyVersion"
