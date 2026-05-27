@@ -136,7 +136,8 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
     protected _onButtonTitleChange(ev: OrInputChangedEvent, key: number, message: PushNotificationMessage) {
         message.buttons = message.buttons || [];
         message.buttons[key] = {
-            title: ev.detail.value
+            title: ev.detail.value,
+            action: key === 0 ? message.action : undefined
         } as PushNotificationButton;
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
     }
