@@ -39,6 +39,7 @@ public enum ClientRole {
     READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
     READ_INSIGHTS(Constants.READ_INSIGHTS_ROLE, "Read dashboards"),
     READ_ALARMS(Constants.READ_ALARMS_ROLE, "Read alarms"),
+    READ_NOTIFICATIONS(Constants.READ_NOTIFICATIONS_ROLE, "Read notifications"),
     READ_SERVICES(Constants.READ_SERVICES_ROLE, "View services"),
     WRITE_SERVICES(Constants.WRITE_SERVICES_ROLE, "Write service data"),
 
@@ -50,6 +51,7 @@ public enum ClientRole {
     WRITE_RULES(Constants.WRITE_RULES_ROLE, "Write rulesets (NOTE: effectively super-user access!)"),
     WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
     WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
+    WRITE_NOTIFICATIONS(Constants.WRITE_NOTIFICATIONS_ROLE, "Write notification data"),
 
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
@@ -60,6 +62,7 @@ public enum ClientRole {
         READ_RULES,
         READ_INSIGHTS,
         READ_ALARMS,
+        READ_NOTIFICATIONS,
         READ_SERVICES
     }),
 
@@ -72,6 +75,7 @@ public enum ClientRole {
         READ_RULES,
         READ_INSIGHTS,
         READ_ALARMS,
+        READ_NOTIFICATIONS,
         READ_SERVICES,
         WRITE_USER,
         WRITE_ADMIN,
@@ -81,6 +85,7 @@ public enum ClientRole {
         WRITE_RULES,
         WRITE_INSIGHTS,
         WRITE_ALARMS,
+        WRITE_NOTIFICATIONS,
         WRITE_SERVICES
     });
 
