@@ -349,8 +349,8 @@ export class OrHeader extends LitElement {
             return html``;
         }
 
-        const mainItems = this.config.mainMenu;
-        const secondaryItems = this.config.secondaryMenu;
+        const mainItems: HeaderItem[] | undefined = this.config.mainMenu;
+        const secondaryItems: HeaderItem[] | undefined = this.config.secondaryMenu;
 
         return html`
            <!-- Header -->
@@ -373,11 +373,11 @@ export class OrHeader extends LitElement {
                             <or-icon icon=${this.alarmButton} style="color:var(${this.alarmColor})"></or-icon>
                         </or-vaadin-button>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        ${when(secondaryItems, () => this._getSecondaryMenu(secondaryItems ?? []))}
+                        ${when(secondaryItems, () => this._getSecondaryMenu([secondaryItems ?? []]))}
                     </div>
                     <div id="mobile-right">
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        ${when(secondaryItems, () => this._getSecondaryMenu(secondaryItems ?? []))}
+                        ${when(secondaryItems, () => this._getSecondaryMenu([(mainItems ?? []), (secondaryItems ?? [])]))}
                     </div>
                 </div>
             </div>
@@ -406,18 +406,22 @@ export class OrHeader extends LitElement {
         this.alarmColor = newAlarms ? '--or-app-color4, ${unsafeCSS(DefaultColor4)}' : '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
     }
 
-    protected _getSecondaryMenu(secondaryItems: HeaderItem[]): TemplateResult {
-        const menuItems: MenuBarItem[] = [{
-            component: createMenuBarItem(html`<or-icon icon="dots-vertical"></or-icon>`),
-            children: secondaryItems.map(s => ({...s, text: undefined, component: createMenuBarItem(html`
-                    <or-icon icon=${s.icon}></or-icon>
-                    <or-translate value=${s.text}></or-translate>
-                `)}))
-        }];
+    protected _getSecondaryMenu(items: HeaderItem[][]): TemplateResult {
+        const menuItems: MenuBarItem[][] = items.map(group => {
+            return group.map(s => ({...s, text: undefined,
+                component: createMenuBarItem(html`
+                <or-icon icon=${s.icon}></or-icon>
+                <or-translate value=${s.text}></or-translate>
+            `)}));
+        })
+        const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
+            (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%;">`)}] : group
+        );
+        console.debug(flatItems);
         return html`
-            <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${menuItems} style="min-width: 40px;"
-                                @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}
-            ></or-vaadin-menu-bar>
+            <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${flatItems} style="min-width: 40px; width: 40px;"
+                                @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}>
+            </or-vaadin-menu-bar>
         `;
     }
 
