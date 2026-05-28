@@ -20,6 +20,12 @@
 @import "@vaadin/vaadin-lumo-styles/components/checkbox.css";
 
 @media lumo_checkbox_toggle_button {
+
+    /* Fix for label padding in Vaadin source code, where it's only applied on <label>, not on <span> or <or-translate> */
+    :host([has-label]) ::slotted([slot="label"]) {
+        padding: var(--vaadin-checkbox-label-padding, var(--lumo-space-xs) var(--lumo-space-s) var(--lumo-space-xs) var(--lumo-space-xs));
+    }
+
     :host([theme~='button']) {
         &::part(checkbox),
         &::part(required-indicator) {
