@@ -228,7 +228,7 @@ export class OrEditAssetPanel extends LitElement {
         const properties: TemplateResult[] = [
             getField("type", undefined, getPropertyTemplate(this.asset, "type", this, undefined, undefined, {readonly: true, label: i18next.t("assetType")})),
             getField("parent", undefined, this._getParentTemplate()),
-            html`<div @or-mwc-input-changed="${(ev: OrInputChangedEvent) => updatePublicRead(ev.detail.value as boolean)}">
+            html`<div @change="${(ev: OrInputChangedEvent) => updatePublicRead(Boolean((ev.currentTarget as HTMLInputElement).value))}">
                     ${getField("accessPublicRead", undefined, getPropertyTemplate(this.asset, "accessPublicRead", this, undefined, undefined, {readonly: false, label: i18next.t("accessPublicRead")}))}
                 </div>`
         ];
