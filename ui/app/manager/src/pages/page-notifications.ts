@@ -127,6 +127,10 @@ export class NotificationService {
         return manager.hasRole("read:users") || manager.hasRole("read:admin");
     }
 
+    hasAssetReadPermissions(): boolean {
+        return manager.hasRole("read:assets") || manager.hasRole("read:admin");
+    }
+
     public getDefaultTimeRange(): { fromDate: number, toDate: number } {
         const now = new Date();
         const toDate = new Date(now);
@@ -504,7 +508,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected render() {
-        const writeNotifications = manager.hasRole("write:admin");
+        const writeNotifications = manager.hasRole("write:admin") || manager.hasRole("write:notifications");
 
         return html`
             <div id="wrapper">

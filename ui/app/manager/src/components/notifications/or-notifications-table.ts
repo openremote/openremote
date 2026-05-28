@@ -139,6 +139,9 @@ export class OrNotificationsTable extends OrMwcTable {
     @state()
     protected targetDetailsMap: Map<string, {name: string, type: string, link: string}> = new Map();
 
+    protected getTargetMapKey(targetId: string, targetType: string): string {
+        return `${targetType}:${targetId}`;
+    }
 
     public columns: TableColumn[] = [
         {title: i18next.t("title"), isSortable: true},
@@ -226,11 +229,14 @@ export class OrNotificationsTable extends OrMwcTable {
 
         return html`
             <div class="target-wrapper">
-                <or-icon 
+                <or-icon
                     class="target-icon"
                     icon="${iconMap[details.type] || 'help-circle-outline'}">
                 </or-icon>
-                <a href="${details.link}" class="target-link ${details.type}-link">${details.name}</a>
+                ${details.link
+                    ? html`<a href="${details.link}" class="target-link ${details.type}-link">${details.name}</a>`
+                    : html`<span class="target-link">${details.name}</span>`
+                }
             </div>
         `;
     }
@@ -316,12 +322,29 @@ export class OrNotificationsTable extends OrMwcTable {
 
         if (assetIds.size === 0 && userIds.size === 0) return;
 
+        const canReadAssets = this.notificationService.hasAssetReadPermissions();
+        const canReadUsers = this.notificationService.hasUserReadPermissions();
+
+        // Store raw IDs for targets we cannot resolve due to missing permissions
+        if (!canReadAssets) {
+            assetIds.forEach(id => {
+                this.targetDetailsMap.set(id, { name: id, type: "asset", link: "" });
+            });
+        }
+        if (!canReadUsers) {
+            userIds.forEach(id => {
+                this.targetDetailsMap.set(id, { name: id, type: "user", link: "" });
+            });
+        }
+
         try {
             const [assets, users] = await Promise.all([
-                assetIds.size > 0
+                canReadAssets && assetIds.size > 0
                     ? this.notificationService.getAssetsDetails(Array.from(assetIds))
                     : Promise.resolve([]),
-                userIds.size > 0 ? this.notificationService.getUsersDetails(Array.from(userIds)) : Promise.resolve([]),
+                canReadUsers && userIds.size > 0
+                    ? this.notificationService.getUsersDetails(Array.from(userIds))
+                    : Promise.resolve([]),
             ]);
 
             assets.forEach((asset) => {

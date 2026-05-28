@@ -235,7 +235,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
                 offset,
-                limit
+                limit,
+                getAuthContext()
             ).toArray(new SentNotification[0]);
 
         } catch (IllegalArgumentException e) {
@@ -253,7 +254,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             return notificationService.getNotificationsByRealmCount(
                 Collections.singletonList(realmId),
                 from != null ? Instant.ofEpochMilli(from) : null,
-                to != null ? Instant.ofEpochMilli(to) : null
+                to != null ? Instant.ofEpochMilli(to) : null,
+                getAuthContext()
             );
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Error retrieving notification count: " + e.getMessage(), BAD_REQUEST);

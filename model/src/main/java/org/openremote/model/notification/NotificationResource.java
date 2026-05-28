@@ -149,7 +149,7 @@ public interface NotificationResource {
     @GET
     @Path("{realmId}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
     @Operation(operationId = "getNotificationsByRealm", summary="Get notifications filtered by realm ownership and optional time bounds.")
     SentNotification[] getNotificationsByRealm(@BeanParam RequestParams requestParams,
                                         @QueryParam("from") Long fromTimestamp,
@@ -161,7 +161,7 @@ public interface NotificationResource {
     @GET
     @Path("{realmId}/count")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
     @Operation(operationId = "getNotificationsByRealmCount", summary="Get total count of notifications filtered by realm ownership and optional time bounds.")
     long getNotificationsByRealmCount(@BeanParam RequestParams requestParams,
                                       @QueryParam("from") Long fromTimestamp,

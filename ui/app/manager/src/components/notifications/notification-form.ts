@@ -178,10 +178,14 @@ export class NotificationForm extends LitElement {
             value: asset.id
         }));
 
-        await Promise.all([
-            this._loadUsers(),
-            this._loadRealms()
-        ]);
+        const promises = [];
+        if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+            promises.push(this._loadUsers());
+        }
+        if (manager.hasRole("read:admin")) {
+            promises.push(this._loadRealms());
+        }
+        await Promise.all(promises);
     }
 
     @state()
@@ -235,6 +239,9 @@ export class NotificationForm extends LitElement {
     }
 
     protected async _loadUsers(): Promise<User[]> {
+        if (!manager.hasRole("read:users") && !manager.hasRole("read:admin")) {
+            return [];
+        }
         try {
             const response = await manager.rest.api.UserResource.query({
                 realmPredicate: { name: manager.displayRealm },
@@ -452,10 +459,14 @@ export class NotificationForm extends LitElement {
         }
 
         const allowedTargetTypes: [NotificationTargetType, string][] = [
-            [NotificationTargetType.USER, i18next.t("user_plural")],
             [NotificationTargetType.ASSET, i18next.t("asset_plural")],
-            [NotificationTargetType.REALM, i18next.t("realm_plural")],
         ];
+        if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+            allowedTargetTypes.unshift([NotificationTargetType.USER, i18next.t("user_plural")]);
+        }
+        if (!manager.isRestrictedUser() && manager.hasRole("read:admin")) {
+            allowedTargetTypes.push([NotificationTargetType.REALM, i18next.t("realm_plural")]);
+        }
 
         return html`
             <div class="targetContainer">
