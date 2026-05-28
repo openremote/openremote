@@ -497,7 +497,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to, Integer offset, Integer limit) {
+    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to, Integer offset, Integer limit, AuthContext authContext) {
         if (realmIds == null || realmIds.isEmpty()) {
             throw new IllegalArgumentException("RealmID must be specified");
         }
@@ -519,6 +519,16 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(to);
         }
 
+        if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
+            String userId = authContext.getUserId();
+            builder.append(" AND (n.sourceId = ?").append(paramIndex++);
+            builder.append(" OR (n.target = ?").append(paramIndex++);
+            builder.append(" AND n.targetId = ?").append(paramIndex++).append("))");
+            parameters.add(userId);
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(userId);
+        }
+
         builder.append(" ORDER BY n.sentOn DESC");
 
         return persistenceService.doReturningTransaction(entityManager -> {
@@ -536,7 +546,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    public long getNotificationsByRealmCount(List<String> realmIds, Instant from, Instant to) {
+    public long getNotificationsByRealmCount(List<String> realmIds, Instant from, Instant to, AuthContext authContext) {
         if (realmIds == null || realmIds.isEmpty()) {
             throw new IllegalArgumentException("RealmID must be specified");
         }
@@ -556,6 +566,16 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (to != null) {
             builder.append(" AND n.sentOn <= ?").append(paramIndex++);
             parameters.add(to);
+        }
+
+        if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
+            String userId = authContext.getUserId();
+            builder.append(" AND (n.sourceId = ?").append(paramIndex++);
+            builder.append(" OR (n.target = ?").append(paramIndex++);
+            builder.append(" AND n.targetId = ?").append(paramIndex++).append("))");
+            parameters.add(userId);
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(userId);
         }
 
         return persistenceService.doReturningTransaction(entityManager -> {
