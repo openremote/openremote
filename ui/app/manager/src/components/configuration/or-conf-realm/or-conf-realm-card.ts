@@ -37,8 +37,8 @@ import { i18next, translate } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
-import ISO6391 from 'iso-639-1';
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
+import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends translate(i18next)(LitElement) {
@@ -131,14 +131,12 @@ export class OrConfRealmCard extends translate(i18next)(LitElement) {
     protected logo:string = this.realm.logo;
     protected logoMobile:string = this.realm.logoMobile;
     protected favicon:string = this.realm.favicon;
-    protected headerListPrimary: string[] = Object.keys(DefaultHeaderMainMenu);
-    protected headerListSecondary: string[] = Object.keys(DefaultHeaderSecondaryMenu);
+    protected headerListPrimary: {value: any, label: string}[] = Object.keys(DefaultHeaderMainMenu).map(k => ({value: k, label: Util.camelCaseToSentenceCase(k)}));
+    protected headerListSecondary: {value: any, label: string}[] = Object.keys(DefaultHeaderSecondaryMenu).map(k => ({value: k, label: Util.camelCaseToSentenceCase(k)}));
 
-    protected get _languages(): string[][] {
-        return Object.entries(DEFAULT_LANGUAGES)
-            .map(([code, key]) => [code, i18next.t(key)])
-            .sort((a, b) => a[1].localeCompare(b[1]));
-    }
+    protected _languages = Object.entries(DEFAULT_LANGUAGES)
+        .map(([code, key]) => ({value: code, label: i18next.t(key) }))
+        .sort((a, b) => a.label.localeCompare(b.label));
 
     protected get commonLanguages(): string[] {
         return this._languages.map(entry => entry[1]);
@@ -180,8 +178,9 @@ export class OrConfRealmCard extends translate(i18next)(LitElement) {
     }
 
     protected _setHeader(keys: string[], list: string[]) {
+        console.debug(keys, list);
         if (!this.realm.headers) {
-            this.realm.headers = this.headerListSecondary.concat(this.headerListPrimary);
+            this.realm.headers = this.headerListSecondary.map(x => x.value).concat(this.headerListPrimary.map(x => x.value));
         }
         this.realm.headers = this.realm.headers?.filter(function(ele) {
             return !list.includes(ele);
@@ -268,13 +267,6 @@ export class OrConfRealmCard extends translate(i18next)(LitElement) {
         const app = this;
         const managerUrl = (manager.managerUrl ?? "");
 
-        // On an empty search; return the common language as set in DEFAULT_LANGUAGES
-        // If searching, compare strings using lowercase. (with no maximum)
-        const searchProvider = (search: string) => this._languages.filter(entry =>
-            (!search && this.commonLanguages.includes(entry[1])) ||
-            (!search && app.realm.notifications?.languages.includes(entry[0])) ||
-            entry[1].toLowerCase().includes(search?.toLowerCase()))
-
         return html`
             <or-collapsible-panel .expanded="${app.expanded}">
                 <div slot="header" class="header-container">
@@ -282,19 +274,21 @@ export class OrConfRealmCard extends translate(i18next)(LitElement) {
                 </div>
                 <div slot="content" class="panel-content">
                     <div class="subheader"><or-translate value="configuration.main"></or-translate></div>
-                    <or-mwc-input class="appTitle" .type="${InputType.TEXT}" label="${i18next.t("configuration.realmTitle")}" value="${app.realm?.appTitle}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
-                                      app.realm.appTitle = e.detail.value;
-                                      app.notifyConfigChange(app.realm);
-                                  }}"
-                    ></or-mwc-input>
-                    <or-mwc-input class="language" .type="${InputType.SELECT}" label="${i18next.t("configuration.defaultLanguage")}" value="${app.realm?.language}"
-                                  .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => [key, i18next.t(value)])}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      app.realm.language = e.detail.value;
-                                      app.notifyConfigChange(app.realm);
-                                  }}"
-                    ></or-mwc-input>
+                    <or-vaadin-text-field class="appTitle" value=${app.realm?.appTitle}
+                                          @change=${(ev: Event) => {
+                                              app.realm.appTitle = (ev.currentTarget as HTMLInputElement).value;
+                                              app.notifyConfigChange(app.realm);
+                                          }}>
+                        <or-translate slot="label" value="configuration.realmTitle"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-select class="language" value=${app.realm?.language}
+                                      .items=${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => ({value: key, label: i18next.t(value)}))}
+                                      @change=${(ev: Event) => {
+                                          app.realm.language = (ev.currentTarget as HTMLInputElement).value;
+                                          app.notifyConfigChange(app.realm);
+                                      }}>
+                        <or-translate slot="label" value="configuration.defaultLanguage"></or-translate>
+                    </or-vaadin-select>
                     <div class="logo-group">
                         <div class="subheader"><or-translate value="configuration.images"></or-translate></div>
                         <div class="d-inline-flex">
@@ -338,80 +332,70 @@ export class OrConfRealmCard extends translate(i18next)(LitElement) {
                     <div class="header-group">
                         <div class="subheader"><or-translate value="configuration.navigation"></or-translate></div>
                         <span><or-translate value="configuration.navigationDescription"></or-translate></span>
+                        <span>${app.realm.headers ?? "none"}</span>
                         <div>
-                            <or-mwc-input
-                                    .type="${InputType.SELECT}" multiple
-                                    class="header-item"
-                                    label="${i18next.t("configuration.primaryNavigation")}"
-                                    .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
-                                        return app.headerListPrimary.includes(ele);
-                                    }) : app.headerListPrimary}"
-                                    .options="${app.headerListPrimary}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListPrimary)}"
-                            ></or-mwc-input>
-                            <or-mwc-input
-                                    .type="${InputType.SELECT}" multiple
-                                    class="header-item"
-                                    label="${i18next.t("configuration.secondaryNavigation")}"
-                                    .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
-                                        return app.headerListSecondary.includes(ele);
-                                    }) : app.headerListSecondary}"
-                                    .options="${app.headerListSecondary}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListSecondary)}"
-                            ></or-mwc-input>
+                            <or-vaadin-multi-select-combo-box class="header-item"
+                                                              .items=${app.headerListPrimary}
+                                                              .selectedItems=${app.realm.headers ? app.headerListPrimary.filter(h => app.realm.headers?.includes(h.value)) : app.headerListPrimary}
+                                                              @change=${(ev: Event) => {
+                                                                  app._setHeader(
+                                                                      (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.value), 
+                                                                      app.headerListPrimary.map(i => i.value),
+                                                                  );
+                                                              }}>
+                                <or-translate slot="label" value="configuration.primaryNavigation"></or-translate>
+                            </or-vaadin-multi-select-combo-box>
+                            <or-vaadin-multi-select-combo-box class="header-item"
+                                                              .items=${app.headerListSecondary}
+                                                              .selectedItems=${app.realm.headers ? app.headerListSecondary.filter(h => app.realm.headers?.includes(h.value)) : app.headerListSecondary}
+                                                              @change=${(ev: Event) => {
+                                                                  app._setHeader(
+                                                                          (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.value),
+                                                                          app.headerListSecondary.map(i => i.value),
+                                                                  );
+                                                              }}>
+                                <or-translate slot="label" value="configuration.secondaryNavigation"></or-translate>
+                            </or-vaadin-multi-select-combo-box>
                         </div>
                     </div>
                     <div class="header-group">
                         <div class="subheader"><or-translate value="configuration.notificationLanguages"></or-translate></div>
                         <span><or-translate value="configuration.notificationLanguagesDesc"></or-translate></span>
                         <div>
-                            <or-mwc-input
-                                    .type="${InputType.SELECT}" multiple
-                                    class="header-item"
-                                    searchLabel="configuration.notificationLanguagesLabel"
-                                    label="${i18next.t("configuration.notificationLanguages")}"
-                                    .value="${app.realm.notifications?.languages || []}"
-                                    .options="${this._languages}"
-                                    .searchProvider="${searchProvider}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                        const newLanguages: string[] | undefined = e.detail.value;
-                                        const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
-                                        app.realm.notifications = {
-                                            languages: newLanguages,
-                                            defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : newLanguages?.[0]
-                                        }
-                                        app.notifyConfigChange(app.realm);
-                                        this.requestUpdate(); // force render
-                                    }}"
-                            ></or-mwc-input>
-                            ${when(app.realm.notifications?.languages?.length > 0, () => html`
-                                <or-mwc-input
-                                        .type="${InputType.SELECT}"
-                                        class="header-item"
-                                        label="${i18next.t("configuration.defaultLanguage")}"
-                                        .value="${app.realm.notifications?.defaultLanguage || []}"
-                                        .options="${this._languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
-                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                            app.realm.notifications.defaultLanguage = e.detail.value;
-                                            app.notifyConfigChange(app.realm);
-                                            this.requestUpdate(); // force render
-                                        }}"
-                                ></or-mwc-input>
-                            `, () => html`
-                                <or-mwc-input
-                                        .type="${InputType.SELECT}" disabled
-                                        class="header-item"
-                                        label="${i18next.t("configuration.defaultLanguage")}"
-                                ></or-mwc-input>
-                            `)}
+                            <or-vaadin-multi-select-combo-box class="header-item"
+                                                              .items=${this._languages}
+                                                              .selectedItems=${this._languages.filter(l => app.realm.notifications?.languages.includes(l.value))}
+                                                              @change=${(ev: Event) => {
+                                                                  const newLanguages: string[] | undefined = (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.value);
+                                                                  const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
+                                                                  app.realm.notifications = {
+                                                                      languages: newLanguages,
+                                                                      defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : newLanguages?.[0]
+                                                                  }
+                                                                  app.notifyConfigChange(app.realm);
+                                                                  this.requestUpdate(); // force render
+                                                              }}>
+                                <or-translate slot="label" value="configuration.notificationLanguages"></or-translate>
+                            </or-vaadin-multi-select-combo-box>
+                            
+                            <or-vaadin-select class="header-item"
+                                              ?disabled=${!app.realm.notifications?.languages?.length}
+                                              .items=${this._languages.filter(l => app.realm.notifications?.languages.includes(l.value))}
+                                              value=${app.realm.notifications?.defaultLanguage}
+                                              @change=${(ev: Event) => {
+                                                  app.realm.notifications.defaultLanguage = (ev.currentTarget as HTMLInputElement).value;
+                                                  app.notifyConfigChange(app.realm);
+                                                  this.requestUpdate(); // force render
+                                              }}>
+                                <or-translate slot="label" value="configuration.defaultLanguage"></or-translate>
+                            </or-vaadin-select>
                         </div>
                     </div>
 
                     ${when(app.canRemove, () => html`
-                        <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
-                                      label="configuration.deleteRealmCustomization"
-                                      @or-mwc-input-changed="${() => { app._showRemoveRealmDialog(); }}"
-                        ></or-mwc-input>
+                        <or-vaadin-button id="remove-realm" @click=${() => app._showRemoveRealmDialog()}>
+                            <or-translate value="configuration.deleteRealmCustomization"></or-translate>
+                        </or-vaadin-button>
                     `)}
                 </div>
             </or-collapsible-panel>
