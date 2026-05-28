@@ -62,7 +62,8 @@
   "devDependencies": {
     "@openremote/util": "workspace:*",
     "@rsbuild/core": "~1.6.8",
-    "@rsdoctor/rspack-plugin": "~1.4.0"
+    "@rsdoctor/rspack-plugin": "~1.4.0",
+    "@rspack/core": "~1.7.5"
   },
   "publishConfig": {
     "access": "public"

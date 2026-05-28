@@ -36,6 +36,7 @@ import {WidgetService} from "./service/widget-service";
 import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
 import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {i18next, translate} from "@openremote/or-translate";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');

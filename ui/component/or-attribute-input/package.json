@@ -32,6 +32,9 @@
     "@openremote/or-vaadin-components": "workspace:*",
     "lit": "^3.3.1"
   },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }

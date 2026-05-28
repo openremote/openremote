@@ -40,6 +40,7 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4",
     "@types/offscreencanvas": "^2019.6.4"
   },

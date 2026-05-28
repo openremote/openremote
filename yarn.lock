@@ -1798,6 +1798,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.transform": "npm:^4"
     "@types/qs": "npm:^6.9.7"
     axios: "npm:1.16.1"
@@ -1849,6 +1850,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
+    "@rspack/core": "npm:~1.7.5"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -1882,6 +1884,7 @@ __metadata:
     "@reduxjs/toolkit": "npm:^1.8.1"
     "@rsbuild/core": "npm:~1.6.8"
     "@rsdoctor/rspack-plugin": "npm:~1.4.0"
+    "@rspack/core": "npm:~1.7.5"
     iso-639-1: "npm:^3.1.3"
     lit: "npm:^3.3.1"
     maplibre-gl: "npm:^5.12.0"
@@ -1926,6 +1929,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.debounce": "npm:^4"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
@@ -1949,6 +1953,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     axios: "npm:1.16.1"
     i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
@@ -1966,6 +1971,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     echarts: "npm:~6.0.0"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
@@ -1985,6 +1991,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.debounce": "npm:^4"
     chart.js: "npm:^3.6.0"
     chartjs-adapter-moment: "npm:^1.0.0"
@@ -2006,6 +2013,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.debounce": "npm:^4"
     echarts: "npm:~6.0.0"
     jsonpath-plus: "npm:^10.3.0"
@@ -2028,6 +2036,7 @@ __metadata:
     "@openremote/or-scheduler": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2042,6 +2051,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2062,6 +2072,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.debounce": "npm:^4"
     "@types/offscreencanvas": "npm:^2019.6.4"
     echarts: "npm:~6.0.0"
@@ -2080,6 +2091,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
     ace-builds: "npm:^1.41.0"
     lit: "npm:^3.3.1"
     simplebar: "npm:^5.3.6"
@@ -2108,6 +2120,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.debounce": "npm:^4"
     "@types/lodash.throttle": "npm:^4"
     gridstack: "npm:^12.4.2"
@@ -2126,6 +2139,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/lodash.debounce": "npm:^4"
     gaugeJS: "npm:^1.3.7"
     lit: "npm:^3.3.1"
@@ -2139,6 +2153,7 @@ __metadata:
   dependencies:
     "@mdi/font": "npm:latest"
     "@openremote/model": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2153,6 +2168,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     ajv: "npm:^8.8.2"
     lit: "npm:^3.3.1"
   languageName: unknown
@@ -2169,6 +2185,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     axios: "npm:1.16.1"
     http-link-header: "npm:^1.1.3"
     lit: "npm:^3.3.1"
@@ -2187,6 +2204,7 @@ __metadata:
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/geojson": "npm:^7946.0.7"
     "@types/lodash.debounce": "npm:^4"
     lit: "npm:^3.3.1"
@@ -2229,6 +2247,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
   languageName: unknown
@@ -2238,6 +2257,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-rive-renderer@workspace:ui/component/or-rive-renderer"
   dependencies:
+    "@openremote/util": "workspace:*"
     "@rive-app/webgl2": "npm:^2.35.4"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
@@ -2262,6 +2282,7 @@ __metadata:
     "@openremote/or-tree-menu": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     "@types/shortid": "npm:^0.0.29"
     ace-builds: "npm:^1.41.0"
     iso-639-1: "npm:^3.1.3"
@@ -2282,6 +2303,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
     moment: "npm:^2.29.4"
     rrule: "npm:^2.6.4"
@@ -2298,6 +2320,7 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-tree-menu": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2306,6 +2329,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-translate@workspace:ui/component/or-translate"
   dependencies:
+    "@openremote/util": "workspace:*"
     i18next: "npm:^21.5.3"
     lit: "npm:^3.3.1"
   languageName: unknown
@@ -2318,6 +2342,7 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown
   linkType: soft
@@ -2357,6 +2382,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/rest@workspace:ui/component/rest"
   dependencies:
+    "@openremote/util": "workspace:*"
     "@types/qs": "npm:^6.9.7"
     axios: "npm:1.16.1"
     qs: "npm:^6.8.0"
@@ -2385,6 +2411,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/test@workspace:ui/test"
   dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
     "@openremote/util": "workspace:*"
     "@playwright/experimental-ct-core": "npm:1.57.0"
     "@playwright/test": "npm:1.57.0"
@@ -2394,6 +2423,8 @@ __metadata:
     "@sand4rt/experimental-ct-web": "npm:1.57.0"
     css-loader: "npm:^6.5.1"
     html-webpack-plugin: "npm:^5.6.6"
+    i18next: "npm:^21.5.3"
+    i18next-http-backend: "npm:^1.3.1"
     playwright: "npm:1.57.0"
     playwright-core: "npm:1.57.0"
     ts-loader: "npm:~9.5.2"
@@ -2406,6 +2437,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/theme@workspace:ui/component/theme"
   dependencies:
+    "@openremote/util": "workspace:*"
     "@vaadin/vaadin-lumo-styles": "npm:~25.1.0"
   languageName: unknown
   linkType: soft

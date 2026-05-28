@@ -27,6 +27,7 @@ import {WidgetSettings, WidgetSettingsChangedEvent} from "./util/widget-settings
 import {WidgetManifest} from "./util/or-widget";
 import { guard } from "lit/directives/guard.js";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {i18next, translate} from "@openremote/or-translate";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 

@@ -33,6 +33,7 @@
     "qs": "^6.8.0"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4"
   },
   "publishConfig": {

@@ -25,6 +25,7 @@
     "qs": "^6.8.0"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/qs": "^6.9.7"
   },
   "publishConfig": {

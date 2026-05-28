@@ -46,6 +46,7 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4",
     "@types/lodash.throttle": "^4"
   },
