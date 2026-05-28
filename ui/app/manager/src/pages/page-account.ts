@@ -200,10 +200,10 @@ export class PageAccount extends Page<AppStateKeyed> {
                 </div>
                 <div id="content" class="panel">
 
-                    <p class="panel-title">${i18next.t("user")} ${i18next.t("settings")}</p>
+                    <p class="panel-title" style="gap: 0.25em;"><or-translate value="user"></or-translate><or-translate value="settings"></or-translate></p>
 
                     <!-- Account settings row -->
-                    ${guard([this._user], () => until(
+                    ${guard([this._user, this._language], () => until(
                             this._getAccountRowTemplate(this._user, readonly, (_user, dirty, invalid) => {
                                 this._dirty = dirty;
                                 this._invalid = invalid;
@@ -248,9 +248,9 @@ export class PageAccount extends Page<AppStateKeyed> {
             <div class="row">
                 <div class="column">
                     <!-- user details -->
-                    <h5>${i18next.t("details")}</h5>
+                    <h5><or-translate value="details"></or-translate></h5>
                     <or-mwc-input id="new-username" class="validate"
-                                  .label="${i18next.t("username")}"
+                                  label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}"
                                   ?required="${!registrationEmailAsUsername}"
                                   .disabled="${true}"
@@ -264,7 +264,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                     ></or-mwc-input>
                     <!-- if identity provider is set to use email as username, make it required -->
                     <or-mwc-input id="new-email" class="validate"
-                                  .label="${i18next.t("email")}"
+                                  label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
                                   ?required="${registrationEmailAsUsername}"
                                   ?readonly="${(!!user?.id && registrationEmailAsUsername) || readonly}"
@@ -278,7 +278,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                                   }}"
                     ></or-mwc-input>
                     <or-mwc-input id="new-firstName" class="validate"
-                                  .label="${i18next.t("firstName")}"
+                                  label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
@@ -290,7 +290,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                                   }}"
                     ></or-mwc-input>
                     <or-mwc-input id="new-surname" class="validate"
-                                  .label="${i18next.t("surname")}"
+                                  label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
@@ -303,11 +303,11 @@ export class PageAccount extends Page<AppStateKeyed> {
                     </or-mwc-input>
                 </div>
                 <div class="column">
-                    <h5>${i18next.t("password")}</h5>
+                    <h5><or-translate value="password"></or-translate></h5>
                     ${registrationEmailAsUsername ? html`
                         <!-- Reset password button when email as username is configured -->
                         <or-mwc-input id="reset-password" raised
-                                      .label="${i18next.t("resetPassword")}"
+                                      label="${i18next.t("resetPassword")}"
                                       .type="${InputType.BUTTON}"
                                       .disabled="${!user.email}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onResetPasswordBtnClick(e)}"
@@ -315,7 +315,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                     ` : html`
                         <!-- Direct password input fields when email as username not configured -->
                         <or-mwc-input id="new-password" class="validate"
-                                      .label="${i18next.t("password")}"
+                                      label="${i18next.t("password")}"
                                       .type="${InputType.PASSWORD}"
                                       ?readonly="${readonly}"
                                       .disabled="${!user}"
@@ -326,7 +326,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                                       }}"
                         ></or-mwc-input>
                         <or-mwc-input id="new-repeatPassword"
-                                      .label="${i18next.t("repeatPassword")}"
+                                      label="${i18next.t("repeatPassword")}"
                                       .type="${InputType.PASSWORD}"
                                       helperPersistent
                                       ?readonly="${readonly}"
@@ -354,7 +354,7 @@ export class PageAccount extends Page<AppStateKeyed> {
         return html`
             <div class="row" style="justify-content: end; margin-top: 20px;">
                 <or-mwc-input id="savebtn" style="margin: 0;" raised
-                              .label="${i18next.t(user.id ? "save" : "create")}"
+                              label="${i18next.t(user.id ? "save" : "create")}"
                               .type="${InputType.BUTTON}"
                               .disabled="${invalid || !dirty}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onSaveBtnClick(e)}"

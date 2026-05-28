@@ -29,6 +29,9 @@
         "moment": "^2.29.4",
         "rrule": "^2.6.4"
     },
+    "devDependencies": {
+        "@openremote/util": "workspace:*"
+    },
     "publishConfig": {
         "access": "public"
     }
