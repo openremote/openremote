@@ -289,7 +289,6 @@ export class OrAddAssetDialog extends LitElement {
             attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
             optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
 
-        console.debug("Rendering", this.selectedAttributes);
         return html`
             <div id="type-title">
                 <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
@@ -337,7 +336,6 @@ export class OrAddAssetDialog extends LitElement {
                         <or-vaadin-checkbox-group theme="vertical" .value=${this.selectedAttributes.map(attr => attr.name)}>
                             ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
                                 .map(attribute => {
-                                    console.debug("Selected?", this.selectedAttributes?.find(x => x.name === attribute.name));
                                     return html`
                                     <or-vaadin-checkbox value=${attribute.name} label=${Util.getAttributeLabel(undefined, attribute, undefined, true)}
                                                         @change=${(ev: Event) => (ev.currentTarget as OrVaadinCheckbox).checked
@@ -361,7 +359,6 @@ export class OrAddAssetDialog extends LitElement {
     protected async onTypeChanged(isAgent: boolean, listItem: ListItem) {
         await this.updateComplete;
 
-        console.debug(this.selectedAttributes);
         this.selectedAttributes = [];
         this.selectedType = listItem.data as AssetDescriptor | AgentDescriptor;
 
