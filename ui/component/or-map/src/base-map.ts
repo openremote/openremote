@@ -315,7 +315,7 @@ export class BaseMap {
                 this._geocoder._geocode(value);
               }
             }, 300);
-            this._map!.addControl(this._geocoder, 'top-left');
+            this._map!.addControl(this._geocoder, 'top-right');
 
             // There's no callback parameter in the options of the MaplibreGeocoder,
             // so this is how we get the selected result.
