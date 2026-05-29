@@ -405,6 +405,7 @@
   "deleteUser": "Delete user",
   "deleteRole": "Delete role",
   "roleAlreadyExists": "A role with this name already exists",
+  "roleInvalid": "This role name is invalid",
   "deleteUserConfirm": "Are you sure you want to delete the user '{{userName}}'?",
   "deleteRoleConfirm": "Are you sure you want to delete the role '{{roleName}}'?",
   "realmRules": "Realm",

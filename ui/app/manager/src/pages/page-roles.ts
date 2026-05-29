@@ -15,8 +15,8 @@ import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
-import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -121,11 +121,6 @@ export class PageRoles extends Page<AppStateKeyed> {
           padding-right: 16px;
         }
 
-        or-mwc-input {
-            margin-bottom: 10px;
-            margin-right: 16px;
-        }
-
         or-icon {
             vertical-align: middle;
             --or-icon-width: 20px;
@@ -139,6 +134,7 @@ export class PageRoles extends Page<AppStateKeyed> {
             flex-direction: row;
             margin: 10px 0;
             flex: 1 1 0;
+            gap: 16px;
         }
 
         .column {
@@ -245,10 +241,21 @@ export class PageRoles extends Page<AppStateKeyed> {
     return "role_plural";
   }
 
-  protected _onRoleNameChanged(e: OrInputChangedEvent, role: Role): void {
-      role.name = e.detail.value;
-      const isDuplicate = this._compositeRoles.some(r => r !== role && r.name === role.name);
-      (e.target as OrMwcInput).setCustomValidity(isDuplicate ? i18next.t('roleAlreadyExists') : undefined);
+  protected _onRoleNameChanged(e: Event, role: Role): void {
+      const elem = e.currentTarget as OrVaadinTextField;
+      if(!elem.checkValidity()) {
+          elem.invalid = true;
+          elem.errorMessage = i18next.t("roleInvalid");
+          return;
+      }
+      const isDuplicate = this._compositeRoles.some(r => r !== role && r.name === elem.value);
+      if(isDuplicate) {
+          elem.invalid = true;
+          elem.errorMessage = i18next.t("roleAlreadyExists");
+          return;
+      }
+      elem.invalid = false;
+      role.name = elem.value;
       this.requestUpdate();
   }
 
@@ -303,8 +310,8 @@ export class PageRoles extends Page<AppStateKeyed> {
     this._updateRoles()
   }
 
-  private addRemoveRole(e, r, index) {
-    if(e.detail.value) {
+  private addRemoveRole(ev: Event, r, index) {
+    if((ev.currentTarget as HTMLInputElement).checked) {
       this._compositeRoles[index].compositeRoleIds = [...this._compositeRoles[index].compositeRoleIds, r.id]
     } else {
       this._compositeRoles[index].compositeRoleIds = this._compositeRoles[index].compositeRoleIds.filter(id=> id !== r.id)
@@ -353,9 +360,10 @@ export class PageRoles extends Page<AppStateKeyed> {
         <div class="panel">
             <div class="panel-title" style="justify-content: space-between;">
                 <p style="margin: 0;"><or-translate value="role"></or-translate></p>
-                <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
-                              @input="${(ev: InputEvent) => this.onRoleSearch(ev)}"
-                ></or-mwc-input>
+                <or-vaadin-text-field placeholder=${i18next.t("search")} style="width: 240px;"
+                                      @input=${(ev: InputEvent) => this.onRoleSearch(ev)}>
+                    <or-icon slot="suffix" value="magnify"></or-icon>
+                </or-vaadin-text-field>
             </div>
             <div id="table-roles" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="attribute list">
@@ -393,46 +401,72 @@ export class PageRoles extends Page<AppStateKeyed> {
 
                                     <div class="row">
                                         <div class="column">
-                                            <or-mwc-input label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name || undefined}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onRoleNameChanged(e, role)}"></or-mwc-input>
+                                            <or-vaadin-text-field minlength="1" maxlength="255" required manual-validation value=${role.name}
+                                                                  @change=${(ev: Event) => this._onRoleNameChanged(ev, role)}>
+                                                <or-translate slot="label" value="role"></or-translate>
+                                            </or-vaadin-text-field>
                                         </div>
                                         <div class="column">
-                                            <or-mwc-input label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>
-                                        </div>
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="column">
-                                            <strong class="column-title"><or-translate value="readPermissions"></or-translate></strong> ${readRoles.map(r => {
-                                            return html`
-                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
-                                            ` })}
-
-                                        </div>
-                                        <div class="column">
-                                            <strong class="column-title"><or-translate value="writePermissions"></or-translate></strong> ${writeRoles.map(r => {
-                                            return html`
-                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
-                                            ` })}
+                                            <or-vaadin-text-field minlength="1" maxlength="255" required value=${role.description}
+                                                                  @change=${(ev: Event) => {role.description = (ev.currentTarget as HTMLInputElement).value; this.requestUpdate()}}>
+                                                <or-translate slot="label" value="description"></or-translate>
+                                            </or-vaadin-text-field>
                                         </div>
                                     </div>
 
                                     <div class="row">
                                         <div class="column">
-                                            ${otherRoles.map(r => {
-                                            return html`
-                                            <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(" : ")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
-                                            ` })}
+                                            <strong class="column-title"><or-translate value="readPermissions"></or-translate></strong>
+                                            ${readRoles.map(r => html`
+                                                <or-vaadin-checkbox ?readonly=${readonly}
+                                                                    ?checked=${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}
+                                                                    @change=${(ev: Event) => this.addRemoveRole(ev, r, index)}>
+                                                    <span slot="label">${r.name.split(":")[1]}: ${r.description}</span>
+                                                </or-vaadin-checkbox>
+                                            `)}
+                                        </div>
+                                        <div class="column">
+                                            <strong class="column-title"><or-translate value="writePermissions"></or-translate></strong>
+                                            ${writeRoles.map(r => html`
+                                                <or-vaadin-checkbox ?readonly=${readonly}
+                                                                    ?checked=${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}
+                                                                    @change=${(ev: Event) => this.addRemoveRole(ev, r, index)}>
+                                                    <span slot="label">${r.name.split(":")[1]}: ${r.description}</span>
+                                                </or-vaadin-checkbox>
+                                            `)}
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="column">
+                                            ${otherRoles.map(r => html`
+                                                <or-vaadin-checkbox ?readonly=${readonly}
+                                                                    ?checked=${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}
+                                                                    @change=${(ev: Event) => this.addRemoveRole(ev, r, index)}>
+                                                    <span slot="label">${r.name.split(":")[1]}: ${r.description}</span>
+                                                </or-vaadin-checkbox>
+                                            `)}
                                         </div>
                                     </div>
 
                                     ${readonly ? html`` : html`
-                                    <div class="row" style="margin-bottom: 0;">
+                                    <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
                                         ${role.id ? html`
-                                        <or-mwc-input label="delete" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._deleteRole(role, index)}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}" style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
+                                            <or-vaadin-button @click=${() => this._deleteRole(role, index)}>
+                                                <or-translate value="delete"></or-translate>
+                                            </or-vaadin-button>
+                                            <or-vaadin-button theme="primary" ?disabled=${!role.name || !role.description || this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}
+                                                              @click=${() => this._updateRoles()}>
+                                                <or-translate value="save"></or-translate>
+                                            </or-vaadin-button>
                                         ` : html`
-                                        <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRoles()}"></or-mwc-input>
+                                            <or-vaadin-button @click=${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}>
+                                                <or-translate value="cancel"></or-translate>
+                                            </or-vaadin-button>
+                                            <or-vaadin-button theme="primary" ?disabled=${!role.name || !role.description || this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}
+                                                              @click=${() => this._updateRoles()}>
+                                                <or-translate value="update"></or-translate>
+                                            </or-vaadin-button>
                                         `}
                                     </div>
                                     `}
@@ -456,7 +490,7 @@ export class PageRoles extends Page<AppStateKeyed> {
   }
 
   protected onRoleSearch(ev: InputEvent) {
-      const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
+      const value = (ev.target as HTMLInputElement).value?.toLowerCase();
       if (!value) {
           this._roleFilter = (roles) => roles;
       } else {

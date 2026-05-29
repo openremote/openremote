@@ -394,6 +394,7 @@
   "deleteUser": "Gebruiker verwijderen",
   "deleteRole": "Rol verwijderen",
   "roleAlreadyExists": "Er is al een rol met deze naam",
+  "roleInvalid": "Deze naam is ongeldig",
   "deleteUserConfirm": "De gebruiker '{{userName}}' verwijderen?",
   "deleteRoleConfirm": "De rol '{{roleName}}' verwijderen?",
   "passwordMismatch": "Wachtwoorden komen niet overeen",
