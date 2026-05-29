@@ -247,9 +247,10 @@ export class PageAccount extends Page<AppStateKeyed> {
             <div class="row">
                 <div class="column">
                     <!-- user details -->
+                    <h5><or-translate value="details"></or-translate></h5>
                     <or-vaadin-text-field id="new-username" class="validate" disabled
                                           ?required=${!registrationEmailAsUsername}
-                                          minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_+@\\.ßçʊÇʊ]+"
+                                          minlength="3" maxlength="255" pattern="[A-Za-z0-9\\-_+@\\.ßçʊÇʊ]+"
                                           errorMessage=${i18next.t("invalidUsername")}
                                           value=${user?.username} autocomplete="false"
                                           @change=${(ev: Event) => {
@@ -274,7 +275,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                     </or-vaadin-email-field>
                     <or-vaadin-text-field id="new-firstName" class="validate"
                                           ?readonly=${readonly} ?disabled=${!user}
-                                          minLength="5" autocomplete="false"
+                                          minlength="1" autocomplete="false"
                                           value=${user?.firstName}
                                           @change=${(ev: Event) => {
                                               user.firstName = (ev.currentTarget as HTMLInputElement).value;
@@ -284,7 +285,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                     </or-vaadin-text-field>
                     <or-vaadin-text-field id="new-surname" class="validate"
                                           ?readonly=${readonly} ?disabled=${!user}
-                                          minLength="1" autocomplete="false"
+                                          minlength="1" autocomplete="false"
                                           value=${user?.lastName}
                                           @change="${(ev: Event) => {
                                               user.lastName = (ev.currentTarget as HTMLInputElement).value;
@@ -294,7 +295,8 @@ export class PageAccount extends Page<AppStateKeyed> {
                     </or-vaadin-text-field>
                 </div>
                 <div class="column">
-                    ${registrationEmailAsUsername ? html`
+                    <h5><or-translate value="password"></or-translate></h5>
+                    ${!registrationEmailAsUsername ? html`
                         <!-- Reset password button when email as username is configured -->
                         <or-vaadin-button id="reset-password" theme="primary" ?disabled=${!user.email} style="width: fit-content;"
                                           @click=${() => this._onResetPasswordBtnClick()}>
@@ -304,7 +306,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                         <!-- Direct password input fields when email as username not configured -->
                         <or-vaadin-password-field id="new-password" class="validate"
                                                   ?readonly=${readonly} ?disabled=${!user}
-                                                  minLength="1" autocomplete="false"
+                                                  minlength="1" autocomplete="false"
                                                   @change=${() => {
                                                       const changed = this._onPasswordChanged(user);
                                                       onchange?.(user, changed, this._isInvalid());
@@ -313,7 +315,7 @@ export class PageAccount extends Page<AppStateKeyed> {
                         </or-vaadin-password-field>
                         <or-vaadin-password-field id="new-repeatPassword"
                                                   ?readonly=${readonly} ?disabled=${!user}
-                                                  minLength="1" autocomplete="false"
+                                                  minlength="1" autocomplete="false"
                                                   @change=${() => {
                                                       const changed = this._onPasswordChanged(user);
                                                       onchange?.(user, changed, this._isInvalid());
