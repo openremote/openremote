@@ -410,9 +410,10 @@ export class OrHeader extends LitElement {
         const menuItems: MenuBarItem[][] = items.map(group => {
             return group.map(s => ({...s, text: undefined,
                 component: createMenuBarItem(html`
-                <or-icon icon=${s.icon}></or-icon>
-                <or-translate value=${s.text}></or-translate>
-            `)}));
+                    <or-icon icon=${s.icon}></or-icon>
+                    <or-translate value=${s.text}></or-translate>
+                `)
+            }));
         })
         const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
             (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%;">`)}] : group
