@@ -33,7 +33,7 @@ import {
     manager,
     Util,
 } from "@openremote/core";
-import { i18next } from "@openremote/or-translate";
+import { i18next, translate } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
@@ -41,7 +41,7 @@ import ISO6391 from 'iso-639-1';
 import {DefaultHeaderMainMenu, DefaultHeaderSecondaryMenu} from "../../../index";
 
 @customElement("or-conf-realm-card")
-export class OrConfRealmCard extends LitElement {
+export class OrConfRealmCard extends translate(i18next)(LitElement) {
 
     static styles = css`
       .language {
@@ -134,16 +134,14 @@ export class OrConfRealmCard extends LitElement {
     protected headerListPrimary: string[] = Object.keys(DefaultHeaderMainMenu);
     protected headerListSecondary: string[] = Object.keys(DefaultHeaderSecondaryMenu);
 
-    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]));
-    protected _languages: string[][] = [];
-
-    connectedCallback() {
-        const languageNames = ISO6391.getAllNames();
-        this._languages = ISO6391.getAllCodes()
-            .map((code, index) => ([code, languageNames[index]]))
+    protected get _languages(): string[][] {
+        return Object.entries(DEFAULT_LANGUAGES)
+            .map(([code, key]) => [code, i18next.t(key)])
             .sort((a, b) => a[1].localeCompare(b[1]));
+    }
 
-        return super.connectedCallback();
+    protected get commonLanguages(): string[] {
+        return this._languages.map(entry => entry[1]);
     }
 
     protected _getColors() {
@@ -283,14 +281,14 @@ export class OrConfRealmCard extends LitElement {
                     ${app.name}
                 </div>
                 <div slot="content" class="panel-content">
-                    <div class="subheader">${i18next.t("configuration.main")}</div>
-                    <or-mwc-input class="appTitle" .type="${InputType.TEXT}" .label="${i18next.t("configuration.realmTitle")}" value="${app.realm?.appTitle}"
+                    <div class="subheader"><or-translate value="configuration.main"></or-translate></div>
+                    <or-mwc-input class="appTitle" .type="${InputType.TEXT}" label="${i18next.t("configuration.realmTitle")}" value="${app.realm?.appTitle}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
                                       app.realm.appTitle = e.detail.value;
                                       app.notifyConfigChange(app.realm);
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input class="language" .type="${InputType.SELECT}" .label="${i18next.t("configuration.defaultLanguage")}" value="${app.realm?.language}"
+                    <or-mwc-input class="language" .type="${InputType.SELECT}" label="${i18next.t("configuration.defaultLanguage")}" value="${app.realm?.language}"
                                   .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => [key, i18next.t(value)])}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       app.realm.language = e.detail.value;
@@ -298,7 +296,7 @@ export class OrConfRealmCard extends LitElement {
                                   }}"
                     ></or-mwc-input>
                     <div class="logo-group">
-                        <div class="subheader">${i18next.t("configuration.images")}</div>
+                        <div class="subheader"><or-translate value="configuration.images"></or-translate></div>
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
@@ -312,39 +310,39 @@ export class OrConfRealmCard extends LitElement {
                         </div>
                     </div>
                     <div class="color-group">
-                        <div class="subheader">${i18next.t('configuration.realmColors')}</div>
+                        <div class="subheader"><or-translate value="configuration.realmColors"></or-translate></div>
                         <div>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
-                                          .label="${i18next.t('configuration.--or-app-color4')}"
+                                          label="${i18next.t('configuration.--or-app-color4')}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
-                                          .label="${i18next.t('configuration.--or-app-color5')}"
+                                          label="${i18next.t('configuration.--or-app-color5')}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
-                                          .label="${i18next.t("configuration.--or-app-color6")}"
+                                          label="${i18next.t("configuration.--or-app-color6")}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
-                                          .label="${i18next.t("configuration.--or-app-color1")}"
+                                          label="${i18next.t("configuration.--or-app-color1")}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
-                                          .label="${i18next.t("configuration.--or-app-color2")}"
+                                          label="${i18next.t("configuration.--or-app-color2")}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
-                                          .label="${i18next.t("configuration.--or-app-color3")}"
+                                          label="${i18next.t("configuration.--or-app-color3")}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color8"]}"
-                                          .label="${i18next.t("configuration.--or-app-color8")}"
+                                          label="${i18next.t("configuration.--or-app-color8")}"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color8", e.detail.value)}"></or-mwc-input>
                         </div>
                     </div>
                     <div class="header-group">
-                        <div class="subheader">${i18next.t("configuration.navigation")}</div>
-                        <span>${i18next.t("configuration.navigationDescription")}</span>
+                        <div class="subheader"><or-translate value="configuration.navigation"></or-translate></div>
+                        <span><or-translate value="configuration.navigationDescription"></or-translate></span>
                         <div>
                             <or-mwc-input
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
-                                    .label="${i18next.t("configuration.primaryNavigation")}"
+                                    label="${i18next.t("configuration.primaryNavigation")}"
                                     .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
                                         return app.headerListPrimary.includes(ele);
                                     }) : app.headerListPrimary}"
@@ -354,7 +352,7 @@ export class OrConfRealmCard extends LitElement {
                             <or-mwc-input
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
-                                    .label="${i18next.t("configuration.secondaryNavigation")}"
+                                    label="${i18next.t("configuration.secondaryNavigation")}"
                                     .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
                                         return app.headerListSecondary.includes(ele);
                                     }) : app.headerListSecondary}"
@@ -364,14 +362,14 @@ export class OrConfRealmCard extends LitElement {
                         </div>
                     </div>
                     <div class="header-group">
-                        <div class="subheader">${i18next.t("configuration.notificationLanguages")}</div>
-                        <span>${i18next.t("configuration.notificationLanguagesDesc")}</span>
+                        <div class="subheader"><or-translate value="configuration.notificationLanguages"></or-translate></div>
+                        <span><or-translate value="configuration.notificationLanguagesDesc"></or-translate></span>
                         <div>
                             <or-mwc-input
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
                                     searchLabel="configuration.notificationLanguagesLabel"
-                                    .label="${i18next.t("configuration.notificationLanguages")}"
+                                    label="${i18next.t("configuration.notificationLanguages")}"
                                     .value="${app.realm.notifications?.languages || []}"
                                     .options="${this._languages}"
                                     .searchProvider="${searchProvider}"
@@ -390,7 +388,7 @@ export class OrConfRealmCard extends LitElement {
                                 <or-mwc-input
                                         .type="${InputType.SELECT}"
                                         class="header-item"
-                                        .label="${i18next.t("configuration.defaultLanguage")}"
+                                        label="${i18next.t("configuration.defaultLanguage")}"
                                         .value="${app.realm.notifications?.defaultLanguage || []}"
                                         .options="${this._languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -403,7 +401,7 @@ export class OrConfRealmCard extends LitElement {
                                 <or-mwc-input
                                         .type="${InputType.SELECT}" disabled
                                         class="header-item"
-                                        .label="${i18next.t("configuration.defaultLanguage")}"
+                                        label="${i18next.t("configuration.defaultLanguage")}"
                                 ></or-mwc-input>
                             `)}
                         </div>

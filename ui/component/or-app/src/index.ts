@@ -183,12 +183,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
         document.addEventListener("visibilitychange", this._onVisibilityChanged);
+        this.addEventListener("realms-changed", this._onRealmsChanged);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        document.removeEventListener("visibilityChange", this._onVisibilityChanged);
+        document.removeEventListener("visibilitychange", this._onVisibilityChanged);
+        this.removeEventListener("realms-changed", this._onRealmsChanged);
         manager.removeListener(this._onEvent);
         super.disconnectedCallback();
     }
@@ -246,8 +248,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // Load available realm info
-                const response = await manager.rest.api.RealmResource.getAccessible();
-                this._realms = response.data;
+                await this._refreshRealms();
 
                 let realm: string | null | undefined = undefined;
 
@@ -444,6 +445,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._offline = state.app!.offline;
     }
 
+    protected _onRealmsChanged = () => this._refreshRealms();
+
+    protected async _refreshRealms() {
+        try {
+            const response = await manager.rest.api.RealmResource.getAccessible();
+            this._realms = response.data;
+            this.requestUpdate();
+        } catch (e) {
+            console.error(e);
+            showErrorDialog("errorOccurred", document.body);
+        }
+    }
+
     protected _handleEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
@@ -560,8 +574,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             .setHeading(html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`)
             .setContent(html`
                 <div id="login_wrapper">
-                    <or-mwc-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
-                    <or-mwc-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
+                    <or-mwc-input label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
+                    <or-mwc-input label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
                 </div>
             `)
             .setActions([
@@ -575,7 +589,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                             password: p!
                         });
                     },
-                    content: html`<or-mwc-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-mwc-input>`
+                    content: html`<or-mwc-input .type=${InputType.BUTTON} label="${i18next.t("submit")}" raised></or-mwc-input>`
                 }
             ]), document.body); // Attach to document as or-app isn't visible until initialised
 

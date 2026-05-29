@@ -21,6 +21,9 @@
   "dependencies": {
     "@vaadin/vaadin-lumo-styles": "~25.0.3"
   },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
+  },
   "publishConfig": {
     "access": "public"
   }
