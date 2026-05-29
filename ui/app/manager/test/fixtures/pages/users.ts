@@ -92,9 +92,9 @@ export class UsersPage implements BasePage {
       .filter({ hasText: "Service users" })
       .getByRole("button", { name: "Add User" })
       .click();
-    await this.page.locator("label").filter({ hasText: "Username" }).fill(username);
+    await this.page.getByLabel("Username").fill(username);
     if (tag) {
-      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+      await this.page.getByLabel("Tag").fill(tag);
     }
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);

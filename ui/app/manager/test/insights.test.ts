@@ -114,7 +114,7 @@ test("Create a Map widget with text thresholds", async ({ manager, shared, page,
     await expect(thresholdPanel).toBeVisible();
 
     // Check default text configuration is correct
-    const textThresholds = thresholdPanel.getByRole("textbox")
+    const textThresholds = thresholdPanel.locator("vaadin-input-container").getByRole("textbox")
     const thresholdsColors = mwcInput.getInputByType("color", thresholdPanel);
     await expect(textThresholds).toHaveCount(2);
     await expect(textThresholds.first()).toHaveValue("example1");

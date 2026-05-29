@@ -71,8 +71,8 @@ test(`Create service users with tags and search by tag`, async ({ page, manager,
  */
 test(`Verify browser behavior while creating regular users`, async ({ page, usersPage }) => {
     await usersPage.gotoUserCreation("master", "regular");
-    await page.locator("label").filter({ hasText: "Username" }).fill("mycustomusername");
-    await page.locator("label").filter({ hasText: "Email" }).fill("mycustom@email.com");
+    await page.getByLabel("Username").fill("mycustomusername");
+    await page.getByLabel("Email").fill("mycustom@email.com");
     await usersPage.toHavePermissions();
     await usersPage.toggleUserRoles("Read", "Write");
     await usersPage.toHavePermissions(...permissions);

@@ -465,7 +465,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                                             </or-vaadin-button>
                                             <or-vaadin-button theme="primary" ?disabled=${!role.name || !role.description || this._compositeRoles.some(r => r.compositeRoleIds.length === 0) || this._compositeRoles.some((r, i) => this._compositeRoles.some((o, j) => i !== j && r.name && r.name === o.name))}
                                                               @click=${() => this._updateRoles()}>
-                                                <or-translate value="save"></or-translate>
+                                                <or-translate value="create"></or-translate>
                                             </or-vaadin-button>
                                         `}
                                     </div>
