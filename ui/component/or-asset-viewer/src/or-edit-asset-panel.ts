@@ -281,7 +281,7 @@ export class OrEditAssetPanel extends LitElement {
                         expandToggle(tdElems[i] as HTMLElement);
                     }
                 }
-                tdElem.setAttribute("label", this.expandedAll ? "expandAll" : "collapseAll");
+                tdElem.setAttribute("value", this.expandedAll ? "expandAll" : "collapseAll");
                 this.expandedAll = !this.expandedAll;
             }
         };
@@ -415,7 +415,7 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
-        console.debug("_onAttributeModified", attribute, newValue);
+        console.debug("Detected attribute modification;", attribute, newValue);
 
         // Check if modification came from external change
         const index = this.changedAttributes.indexOf(attribute.name!);
@@ -430,6 +430,7 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, value: any) {
+        console.debug("Detected Meta item modification;", attribute, metaItem);
         metaItem.value = value ?? undefined;
         attribute.meta![metaItem.name!] = metaItem.value;
         this._onModified();

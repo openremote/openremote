@@ -418,7 +418,6 @@ export class OrHeader extends LitElement {
         const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
             (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%;">`)}] : group
         );
-        console.debug(flatItems);
         return html`
             <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${flatItems} style="min-width: 40px; width: 40px;"
                                 @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}>

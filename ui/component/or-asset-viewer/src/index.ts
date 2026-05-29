@@ -1520,6 +1520,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     protected _onAssetModified(validationResults: ValidatorResult[]) {
         if (this._assetInfo) {
+            console.debug("Changing modified state to TRUE!")
             this._assetInfo.modified = true;
             this._validationResults = validationResults;
         }
