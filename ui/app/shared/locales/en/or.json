@@ -228,7 +228,7 @@
   "clear": "clear",
   "export": "Export",
   "addAssetAttribute": "Add asset attribute",
-      "add": "Add",
+  "add": "Add",
   "input": "Input",
   "processors": "Processors",
   "output": "Output",
