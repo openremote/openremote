@@ -2,6 +2,7 @@ import { GeoJsonConfig } from "@openremote/model";
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl, {
     AddLayerObject,
+    AttributionControl,
     IControl,
     GeolocateControl,
     LngLat,
@@ -204,7 +205,7 @@ export class BaseMap {
         const settings = await this.loadViewSettings();
 
         const options: MapOptions = {
-            attributionControl: {compact: true},
+            attributionControl: false,
             container: this._mapContainer,
             style: settings as StyleSpecification,
             transformRequest: (url, resourceType) => {
@@ -254,6 +255,8 @@ export class BaseMap {
         this._map = new map.Map(options);
 
         await this._styleLoaded();
+
+        this._map.addControl(new AttributionControl({ compact: true }), 'bottom-left');
 
         this._map.on("click", (e: MapMouseEvent) => {
             this._onMapClick(e.lngLat);

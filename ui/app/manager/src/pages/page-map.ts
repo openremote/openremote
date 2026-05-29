@@ -187,7 +187,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
            or-map-legend {
                position: absolute;
-               bottom: 44px;
+               bottom: 10px;
                right: 10px;
                width: 254px;
                margin: 10px 0;
@@ -201,18 +201,19 @@ export class PageMap extends Page<MapStateKeyed> {
             @media only screen and (min-width: 40em){
                 or-map-asset-card {
                     position: absolute;
-                    top: 10px;
+                    top: 56px;
                     left: 10px;
                     width: 320px;
                     margin: 0;
                     height: 400px; /* fallback for IE */
                     height: max-content;
                     max-height: calc(100vh - 150px);
+                    z-index: 2;
                 }
 
                 or-map-legend {
                     position: absolute;
-                    bottom: 44px;
+                    bottom: 10px;
                     right: 10px;
                     width: calc(100%);
                     max-width: 254px;

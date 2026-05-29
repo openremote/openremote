@@ -129,23 +129,20 @@ export const style = css`
     
     #openremote {
         position: absolute;
-        bottom: 25px;
-        right: 5px;
-        height: 20px;
-        width: 20px;
+        bottom: 10px;
+        left: 10px;
+        height: 24px;
+        width: 24px;
         cursor: pointer;
     }
-    
+
     #openremote img {
-        height: 20px;
-        width: 20px;
+        height: 24px;
+        width: 24px;
     }
-    
-    @media only screen and (max-width: 640px) {
-        #openremote {
-            bottom: 40px;
-            right: 12px;
-        }
+
+    .maplibregl-ctrl-bottom-left {
+        left: 30px;
     }
 `;
 
