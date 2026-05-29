@@ -2,6 +2,7 @@ import {css, html, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
+import "@openremote/or-vaadin-components/or-vaadin-select";
 import {
     MapAssetCardConfig,
     OrMap,
@@ -31,6 +32,7 @@ import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {GenericAxiosResponse} from "@openremote/rest";
 import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
+import { i18next } from "@openremote/or-translate";
 
 export interface MapState {
     locatedAssets: AssetWithLocation[];
@@ -124,6 +126,10 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
+export interface MapPresetFilter {
+    assetQuery: AssetQuery;
+}
+
 export interface PageMapConfig {
     legend?: {
       show: boolean
@@ -131,7 +137,8 @@ export interface PageMapConfig {
     clustering?: ClusterConfig,
     card?: MapAssetCardConfig,
     assetQuery?: AssetQuery,
-    markers?: MapMarkerAssetConfig
+    markers?: MapMarkerAssetConfig,
+    filters?: MapPresetFilter[]
 }
 
 export function pageMapProvider(store: Store<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
@@ -167,6 +174,15 @@ export class PageMap extends Page<MapStateKeyed> {
                 right: 0;
                 width: 100vw;
                 z-index: 3;
+            }
+
+            #filter-select {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                z-index: 3;
+                width: 320px;
+                --vaadin-input-field-background: white;
             }
 
            or-map-legend {
@@ -229,6 +245,9 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _assetsOnScreen: AssetWithLocation[] = [];
 
+    @state()
+    protected _activeFilterIndex = 0;
+
     protected _locatedAssetSelector = (state: MapStateKeyed) => state.map.locatedAssets;
     protected _unlocatedAssetSelector = (state: MapStateKeyed) => state.map.unlocatedAssets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
@@ -247,8 +266,14 @@ export class PageMap extends Page<MapStateKeyed> {
               .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
         }
 
+        const filterAttributes = (this.config?.filters ?? [])
+            .flatMap(f => f.assetQuery.attributes?.items ?? [])
+            .map((item: any) => item.name?.value)
+            .filter((name): name is string => !!name);
+
         return [
             ...markerLabelAttributes,
+            ...filterAttributes,
             WellknownAttributes.LOCATION,
             WellknownAttributes.DIRECTION
         ];
@@ -314,7 +339,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     switch (event.cause) {
                         case "DELETE": this._map?.removeAssets([event.asset.id]); break;
                         case "CREATE":
-                            if (MapUtil.isAssetWithLocation(event.asset) && !this._excludedTypes.includes(event.asset?.type)) {
+                            if (MapUtil.isAssetWithLocation(event.asset) && this._isAssetVisible(event.asset)) {
                                 this._map?.addAsset(event.asset);
                             }
                             break;
@@ -342,8 +367,11 @@ export class PageMap extends Page<MapStateKeyed> {
                     }
                     this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                     // Add the asset after map state has been updated
-                    if (interested && asset && !this._excludedTypes.includes(asset.type)) {
-                        this._map?.addAsset(this._assets.find(asset => asset.id === event.ref.id));
+                    if (interested && asset) {
+                        const located = this._assets.find(a => a.id === event.ref.id);
+                        if (located && this._isAssetVisible(located)) {
+                            this._map?.addAsset(located);
+                        }
                     }
                 });
 
@@ -427,8 +455,25 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected render() {
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
+        const filters = this.config?.filters;
+        const filterItems = filters?.length ? [
+            { value: "0", label: `${i18next.t("mapPage.filterAll", { defaultValue: "All" })} (${this._assets.length})` },
+            ...filters.map((filter, i) => ({
+                value: String(i + 1),
+                label: `${this._getFilterLabel(filter)} (${this._getFilterCount(i + 1)})`
+            }))
+        ] : undefined;
+
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
+
+            ${filterItems ? html`
+                <or-vaadin-select id="filter-select"
+                    .value="${String(this._activeFilterIndex)}"
+                    .items="${filterItems}"
+                    @change="${this._onFilterChanged}"
+                ></or-vaadin-select>
+            ` : null}
 
             ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" .excludedTypes="${this._excludedTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
 
@@ -487,23 +532,124 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected _onMapLoaded(e: OrMapLoadedEvent) {
-        this._map?.addAssets(this._assets);
+        this._map?.addAssets(this._getVisibleAssets());
     }
 
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
-        if (this._map) {
-            this._excludedTypes = e.detail;
-            const assetsToAdd = [];
-            const idsToRemove = [];
-            for (const asset of this._assets) {
-                if (this._excludedTypes.includes(asset.type)) {
-                    idsToRemove.push(asset.id);
-                } else {
-                    assetsToAdd.push(asset);
-                }
-            }
-            this._map.removeAssets(idsToRemove);
-            this._map.addAssets(assetsToAdd);
+        this._excludedTypes = e.detail;
+        this._applyVisibilityFilters();
+    }
+
+    protected _onFilterChanged(e: Event) {
+        this._activeFilterIndex = parseInt((e.target as HTMLInputElement).value) || 0;
+        this._applyVisibilityFilters();
+    }
+
+    protected _assetMatchesFilter(asset: AssetWithLocation, filter: MapPresetFilter): boolean {
+        const { types, attributes } = filter.assetQuery;
+        if (types?.length && !types.includes(asset.type)) return false;
+        if (attributes && !this._evalAttributeGroup(asset, attributes)) return false;
+        return true;
+    }
+
+     protected _isAssetVisible(asset: AssetWithLocation): boolean {
+        if (this._activeFilterIndex > 0) {
+            const filter = this.config.filters![this._activeFilterIndex - 1];
+            if (!this._assetMatchesFilter(asset, filter)) return false;
         }
+        return !this._excludedTypes.includes(asset.type);
+    }
+
+    protected _evalAttributeGroup(asset: AssetWithLocation, group: any): boolean {
+        const operator: string = group.operator ?? "AND";
+        const results: boolean[] = [
+            ...(group.items ?? []).map((item: any) => this._evalAttributePredicate(asset, item)),
+            ...(group.groups ?? []).map((g: any) => this._evalAttributeGroup(asset, g))
+        ];
+        if (!results.length) return true;
+        return operator === "OR" ? results.some(Boolean) : results.every(Boolean);
+    }
+
+    protected _evalAttributePredicate(asset: AssetWithLocation, predicate: any): boolean {
+        const attrName = predicate.name?.value;
+        if (!attrName) return true;
+        const attribute = asset.attributes?.[attrName];
+        if (!attribute) return predicate.negated ? true : false;
+        const matches = this._evalValuePredicate(attribute.value, predicate.value);
+        return predicate.negated ? !matches : matches;
+    }
+
+    protected _evalValuePredicate(val: any, predicate: any): boolean {
+        if (!predicate) return true;
+        switch (predicate.predicateType) {
+            case "string": {
+                if (val === null || val === undefined) return false;
+                const haystack = predicate.caseSensitive !== false ? String(val) : String(val).toLowerCase();
+                const needle = predicate.caseSensitive !== false ? predicate.value : predicate.value?.toLowerCase();
+                let m: boolean;
+                switch (predicate.match) {
+                    case "BEGIN":    m = haystack.startsWith(needle); break;
+                    case "END":      m = haystack.endsWith(needle); break;
+                    case "CONTAINS": m = haystack.includes(needle); break;
+                    default:         m = haystack === needle;
+                }
+                return predicate.negate ? !m : m;
+            }
+            case "boolean":
+                return val === predicate.value;
+            case "number": {
+                if (typeof val !== "number") return false;
+                let m: boolean;
+                switch (predicate.operator) {
+                    case "GREATER_THAN":   m = val > predicate.value; break;
+                    case "GREATER_EQUALS": m = val >= predicate.value; break;
+                    case "LESS_THAN":      m = val < predicate.value; break;
+                    case "LESS_EQUALS":    m = val <= predicate.value; break;
+                    case "BETWEEN":        m = val >= predicate.value && val <= predicate.rangeValue; break;
+                    default:               m = val === predicate.value;
+                }
+                return predicate.negate ? !m : m;
+            }
+            default:
+                return true;
+        }
+    }
+
+    protected _getVisibleAssets(): AssetWithLocation[] {
+        return this._assets.filter(a => this._isAssetVisible(a));
+    }
+
+    protected _applyVisibilityFilters() {
+        if (!this._map) return;
+        const visible = this._getVisibleAssets();
+        const visibleIds = new Set(visible.map(a => a.id));
+        this._map.removeAssets(this._assets.filter(a => !visibleIds.has(a.id)).map(a => a.id));
+        this._map.addAssets(visible);
+    }
+
+    protected _getFilterLabel(filter: MapPresetFilter): string {
+        const types = filter.assetQuery.types;
+        const typeLabel = types?.length
+            ? types.map(t => Util.getAssetTypeLabel(t).replace(/\s*asset\s*$/i, "").trim()).join(" + ")
+            : i18next.t("mapPage.filterCustom", { defaultValue: "Custom" });
+
+        const attrValues = (filter.assetQuery.attributes?.items ?? [] as any[])
+            .map((item: any) => {
+                const val = item.value?.value;
+                if (val === undefined || val === null) return null;
+                if (typeof val === "string") {
+                    return val.replace(/_/g, " ").toLowerCase().replace(/^\w/, c => c.toUpperCase());
+                }
+                return String(val);
+            })
+            .filter(Boolean);
+
+        return attrValues.length ? `${typeLabel}: ${attrValues.join(", ")}` : typeLabel;
+    }
+
+    protected _getFilterCount(filterIndex: number): number {
+        if (filterIndex === 0) return this._assets.length;
+        const filter = this.config.filters![filterIndex - 1];
+        return this._assets.filter(a => this._assetMatchesFilter(a, filter)).length;
     }
 }
