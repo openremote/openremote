@@ -1049,9 +1049,8 @@ export class PageUsers extends Page<AppStateKeyed> {
                         ${this._roles.map(r => {
                             return html`
                                 <or-vaadin-checkbox class="validate" style="flex: 0 1 160px; overflow: hidden; margin: 4px 0;"
-                                                    ?readonly=${readonly || implicitRoleNames.find(name => r.name === name) || isGatewayServiceUser}
-                                                    title=${r.description}
-                                                    label=${r.name}
+                                                    ?disabled=${readonly || implicitRoleNames.find(name => r.name === name) || isGatewayServiceUser}
+                                                    title=${r.description} label=${r.name}
                                                     ?checked=${!!user.roles.find(userRole => userRole === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}
                                                     @change=${(ev: Event) => {
                                                         if ((ev.currentTarget as HTMLInputElement).checked) {

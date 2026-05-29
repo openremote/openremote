@@ -792,7 +792,7 @@ jobs:
       - name: Run UI app tests
         id: run-ui-app-tests
         # Skip UI app tests for custom projects until we want to use them there
-        if: false
+        if: steps.test-ui-apps-command.outputs.value != '' && steps.is_main_repo.outputs.value == 'true'
         run: |
           composeProfile='profile/dev-testing.yml'
 

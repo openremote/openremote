@@ -20,8 +20,8 @@ export class RealmsPage implements BasePage {
     } else {
       await this.page.click("text=Add Realm");
       const realmRow = this.page.locator("#realm-row-1");
-      const realmNameInput = realmRow.locator("or-mwc-input").filter({ hasText: "Realm" }).locator("input");
-      const displayNameInput = realmRow.locator("or-mwc-input").filter({ hasText: "Friendly name" }).locator("input");
+      const realmNameInput = realmRow.getByLabel("Realm");
+      const displayNameInput = realmRow.getByLabel("Friendly name");
       await realmNameInput.fill(name);
       await realmNameInput.dispatchEvent("change");
       await displayNameInput.fill(name);

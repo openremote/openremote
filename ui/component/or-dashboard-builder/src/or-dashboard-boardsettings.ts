@@ -87,7 +87,7 @@ export class OrDashboardBoardsettings extends translate(i18next)(LitElement) {
                     <settings-panel displayName="permissions" expanded="${true}">
                         <div>
                             <div class="label">
-                                ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
+                                <or-translate value="dashboard.whoCanView"></or-translate>
                             </div>
                             <or-vaadin-select .items=${accessOptions} value=${this.dashboard.access}
                                               @change=${(ev: Event) => this.setAccess((ev.currentTarget as OrVaadinSelect).value as DashboardAccess)}
@@ -194,7 +194,7 @@ export class OrDashboardBoardsettings extends translate(i18next)(LitElement) {
                 return html`
                     <div style="margin-bottom: ${screenPresets.length > 1 ? '24px' : '16px'}">
                         <div class="label">
-                            ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + i18next.t(preset.displayName!) + "</b>")))}</span>`}
+                            ${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", "<b>" + i18next.t(preset.displayName!) + "</b>"))}
                         </div>
                         <or-vaadin-select .items=${scalingPresets} value=${preset.scalingPreset}
                                           @change=${(ev: Event) => {

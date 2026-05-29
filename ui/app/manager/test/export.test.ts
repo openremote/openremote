@@ -93,13 +93,19 @@ test("Export datapoints successfully triggers download", async ({ page, manager 
   const latestDatapoint = await page.locator("table tbody tr").first().locator("td").nth(3).textContent();
   const toDatetimeLocal = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toISOString().slice(0, 16);
+    return date.toLocaleString('en-US', {hour12: false}).replaceAll(' ', '').split(',') as [string, string];
   };
-  await page.getByText("Export from").fill(toDatetimeLocal(oldestDatapoint!));
-  await page.getByText("To").fill(toDatetimeLocal(latestDatapoint!));
+  await page.getByLabel("Export from").locator("vaadin-date-picker").getByRole("combobox").fill(toDatetimeLocal(oldestDatapoint!)[0]);
+  await page.getByLabel("Export from").locator("vaadin-date-picker").getByRole("combobox").press("Enter");
+  await page.getByLabel("Export from").locator("vaadin-time-picker").getByRole("combobox").fill(toDatetimeLocal(oldestDatapoint!)[1]);
+  await page.getByLabel("Export from").locator("vaadin-time-picker").getByRole("combobox").press("Enter");
+  await page.getByLabel("to").locator("vaadin-date-picker").getByRole("combobox").fill(toDatetimeLocal(latestDatapoint!)[0]);
+  await page.getByLabel("to").locator("vaadin-date-picker").getByRole("combobox").press("Enter");
+  await page.getByLabel("to").locator("vaadin-time-picker").getByRole("combobox").fill(toDatetimeLocal(latestDatapoint!)[1]);
+  await page.getByLabel("to").locator("vaadin-time-picker").getByRole("combobox").press("Enter");
 
-  await page.getByText("Export format").click();
-  await page.getByText("CSV", {exact: true}).first().click();
+  await page.getByLabel("Export format").click();
+  await page.getByRole("option", {name: "CSV", exact: true}).first().click();
 
   const exportResponsePromise = page.waitForResponse(
     response => response.url().includes("/asset/datapoint/export")
