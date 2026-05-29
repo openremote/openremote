@@ -842,7 +842,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                     <div>
-                                        <span>${i18next.t('noAttributesConnected')}</span>
+                                        <span><or-translate value="noAttributesConnected"></or-translate></span>
                                     </div>
                                 ` : undefined}
                                 ${map(this.assetAttributes?.map(([assetIndex, attr], index) => {
@@ -1089,7 +1089,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             .setHeading(i18next.t('timeframe'))
             .setContent(() => html`
                 <div>
-                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
+                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('beginning')}" .value="${startTimestamp}"></or-mwc-input>
                     <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
                 </div>
             `)

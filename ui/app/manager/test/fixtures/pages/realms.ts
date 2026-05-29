@@ -19,8 +19,13 @@ export class RealmsPage implements BasePage {
       console.warn(`Realm "${name}" already present`);
     } else {
       await this.page.click("text=Add Realm");
-      await this.page.locator("#realm-row-1 label").filter({ hasText: "Realm" }).fill(name);
-      await this.page.locator("#realm-row-1 label").filter({ hasText: "Friendly name" }).fill(name);
+      const realmRow = this.page.locator("#realm-row-1");
+      const realmNameInput = realmRow.locator("or-mwc-input").filter({ hasText: "Realm" }).locator("input");
+      const displayNameInput = realmRow.locator("or-mwc-input").filter({ hasText: "Friendly name" }).locator("input");
+      await realmNameInput.fill(name);
+      await realmNameInput.dispatchEvent("change");
+      await displayNameInput.fill(name);
+      await displayNameInput.dispatchEvent("change");
       await this.page.getByRole("button", { name: "create" }).click();
     }
   }
