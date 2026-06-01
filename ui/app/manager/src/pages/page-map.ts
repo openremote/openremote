@@ -179,13 +179,33 @@ export class PageMap extends Page<MapStateKeyed> {
                 z-index: 3;
             }
 
-            #filter-select {
+            #filter-container {
                 position: absolute;
                 top: 10px;
                 left: 10px;
                 z-index: 3;
+            }
+
+            #filter-select {
                 width: 320px;
                 --vaadin-input-field-background: white;
+            }
+
+            .filter-field-count {
+                position: absolute;
+                right: 40px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: #3A463A1A;
+                border-radius: 10px;
+                padding: 0 4px;
+                font-size: 0.8em;
+                width: 36px;
+                height: 20px;
+                line-height: 20px;
+                text-align: center;
+                box-sizing: border-box;
+                pointer-events: none;
             }
 
            or-map-legend {
@@ -473,22 +493,27 @@ export class PageMap extends Page<MapStateKeyed> {
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
             ${filterOptions ? html`
-                <or-vaadin-select id="filter-select"
-                    .value="${String(this._activeFilterIndex)}"
-                    ${selectRenderer(() => html`
-                        <or-vaadin-list-box>
-                            ${filterOptions.map(opt => html`
-                                <or-vaadin-item value="${opt.value}" label="${opt.label}">
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span style="flex:1;">${opt.label}</span>
-                                        <span style="background:#3A463A1A;border-radius:10px;padding:1px 4px;font-size:0.8em;width:36px;text-align:center;flex-shrink:0;">${opt.count > 99 ? "99+" : opt.count}</span>
-                                    </div>
-                                </or-vaadin-item>
-                            `)}
-                        </or-vaadin-list-box>
-                    `, filterOptions)}
-                    @change="${this._onFilterChanged}"
-                ></or-vaadin-select>
+                <div id="filter-container">
+                    <or-vaadin-select id="filter-select"
+                        .value="${String(this._activeFilterIndex)}"
+                        ${selectRenderer(() => html`
+                            <or-vaadin-list-box>
+                                ${filterOptions.map(opt => html`
+                                    <or-vaadin-item value="${opt.value}" label="${opt.label}" style="padding: unset;">
+                                        <div style="display:flex;align-items:center;gap:calc(var(--lumo-space-l) + var(--lumo-border-radius-m) / 4);padding-right:4px;">
+                                            <span style="flex:1;">${opt.label}</span>
+                                            <span style="background:#3A463A1A;border-radius:10px;padding:0 4px;font-size:0.8em;width:36px;height:20px;line-height:20px;text-align:center;flex-shrink:0;box-sizing:border-box;">${opt.count > 99 ? "99+" : opt.count}</span>
+                                        </div>
+                                    </or-vaadin-item>
+                                `)}
+                            </or-vaadin-list-box>
+                        `, filterOptions)}
+                        @change="${this._onFilterChanged}"
+                    ></or-vaadin-select>
+                    <span class="filter-field-count">
+                        ${this._getFilterCount(this._activeFilterIndex) > 99 ? "99+" : this._getFilterCount(this._activeFilterIndex)}
+                    </span>
+                </div>
             ` : null}
 
             ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" .excludedTypes="${this._excludedTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
