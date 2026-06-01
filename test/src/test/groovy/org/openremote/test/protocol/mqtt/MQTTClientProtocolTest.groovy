@@ -79,6 +79,11 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
+import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
+import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
+import static org.openremote.model.util.MapAccess.getInteger
+import static org.openremote.model.util.MapAccess.getString
+
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -104,8 +109,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         List<String> failedSubs = new CopyOnWriteArrayList()
         List<MQTTMessage<String>> received = new CopyOnWriteArrayList<>()
         def clientId = "ortest1"
-        def host = "localhost"
-        def port = 1883
+        def host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "127.0.0.1")
+        def port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
         def secure = false
         def counter = 0
         def username = "${keycloakTestSetup.realmBuilding.name}:${keycloakTestSetup.serviceUser2.username}"
