@@ -1,14 +1,14 @@
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 import cz.habarta.typescript.generator.*;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.TsModelTransformer;
@@ -16,7 +16,6 @@ import cz.habarta.typescript.generator.emitter.*;
 import cz.habarta.typescript.generator.util.Pair;
 import cz.habarta.typescript.generator.util.Utils;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -225,18 +224,18 @@ public class EnumWithInterfacesExtension extends Extension {
             return;
         }
 
-        ObjectMapper objectMapper = new ObjectMapper()
-                .registerModule(new SimpleModule().addSerializer(Enum.class, new JsonSerializer<Enum>() {
+        ObjectMapper objectMapper = new ObjectMapper().rebuild()
+                .addModule(new SimpleModule().addSerializer(Enum.class, new StdSerializer<Enum>(Enum.class) {
                     @Override
-                    public void serialize(Enum anEnum, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+                    public void serialize(Enum anEnum, JsonGenerator jsonGenerator, SerializationContext context) throws JacksonException {
                         jsonGenerator.writeRawValue(anEnum.getClass().getSimpleName() + "." + anEnum.name());
                     }
                 }))
-                .setAnnotationIntrospector(ignoreJsonFormatIntrospector); // Ignore Shape Object so we get proper enum references
-
-        if (!supportsNullValuesPredicate.test(settings)) {
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL); // Don't output nulls if settings don't support it
-        }
+                .annotationIntrospector(ignoreJsonFormatIntrospector) // Ignore Shape Object so we get proper enum references
+                .changeDefaultPropertyInclusion(incl -> supportsNullValuesPredicate.test(settings)
+                    ? incl
+                    : incl.withValueInclusion(JsonInclude.Include.NON_NULL))
+                .build();
 
         // Do a topological sort of matched enums to ensure they are output in the correct order
         sortEnums(matchedEnums);
@@ -308,7 +307,7 @@ public class EnumWithInterfacesExtension extends Extension {
 
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RuntimeException("Failed to convert enum '" + enumName + "' member '" + memberName + "' value to string: " + ex.getMessage());
         }
     }
