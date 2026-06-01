@@ -79,7 +79,7 @@ test.describe("Map markers", () => {
     ].map(([name, meta, ...coordinates]) => Object.assign({ name, type: "ThingAsset", realm: "smartcity" }, {
       attributes: {
         ...commonAttrs,
-        location: { meta, value: { type: "Point", coordinates } }
+        location: { ...commonAttrs.location, meta, value: { type: "Point", coordinates } }
       }
     })) as Asset[];
     await manager.setup("smartcity", { assets });
@@ -112,7 +112,7 @@ test.describe("Map markers", () => {
     ].map(([name, direction, ...coordinates]) => Object.assign({ name, type: "ThingAsset", realm: "smartcity" }, {
       attributes: {
         ...commonAttrs,
-        location: { value: { type: "Point", coordinates } },
+        location: { ...commonAttrs.location, value: { type: "Point", coordinates } },
         direction: { type: "direction", value: direction }
       }
     })) as Asset[];
