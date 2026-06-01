@@ -328,12 +328,12 @@ export class OrNotificationsTable extends OrMwcTable {
         // Store raw IDs for targets we cannot resolve due to missing permissions
         if (!canReadAssets) {
             assetIds.forEach(id => {
-                this.targetDetailsMap.set(id, { name: id, type: "asset", link: "" });
+                this.targetDetailsMap.set(id, { name: "-", type: "asset", link: "" });
             });
         }
         if (!canReadUsers) {
             userIds.forEach(id => {
-                this.targetDetailsMap.set(id, { name: id, type: "user", link: "" });
+                this.targetDetailsMap.set(id, { name: "-", type: "user", link: "" });
             });
         }
 
