@@ -21,8 +21,9 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
@@ -31,6 +32,7 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.NameHolder;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.time.Instant;
@@ -46,7 +48,9 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     static {
         // Set the default view for serialisation
-        ValueUtil.JSON.setConfig(ValueUtil.JSON.getSerializationConfig().withView(Basic.class));
+        ValueUtil.JSON = ValueUtil.JSON.rebuild()
+            .defaultSerializationView(Basic.class)
+            .build();
     }
 
     @TsIgnore
@@ -134,7 +138,10 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @JsonCreator
     // This allows backwards compatibility with old attribute event JSON that used attributeState
-    protected AttributeEvent(AttributeState attributeState, AttributeRef ref, Object value, Long timestamp) {
+    protected AttributeEvent(@JsonProperty("attributeState") AttributeState attributeState,
+                             @JsonProperty("ref") AttributeRef ref,
+                             @JsonProperty("value") Object value,
+                             @JsonProperty("timestamp") Long timestamp) {
         super(timestamp);
         if (attributeState != null) {
             this.ref = attributeState.getRef();
@@ -183,7 +190,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     public long getOldValueTimestamp() {
-        return oldValueTimestamp;
+        return oldValueTimestamp != null ? oldValueTimestamp : 0L;
     }
 
     @Override
@@ -216,7 +223,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     public boolean isOutdated() {
-        return oldValueTimestamp - getTimestamp() > 0;
+        return oldValueTimestamp != null && oldValueTimestamp - getTimestamp() > 0;
     }
 
     @Override
@@ -261,6 +268,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @JsonView(Enhanced.class)
     @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(converter = NameHolder.NameHolderToStringConverterJackson2.class)
     @Override
     public ValueDescriptor getType() {
         return valueType;
@@ -334,7 +342,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     public boolean valueChanged() {
         // Just use the timestamp for performance
-        return oldValueTimestamp != getTimestamp();
+        return oldValueTimestamp == null || oldValueTimestamp != getTimestamp();
     }
 
     /**

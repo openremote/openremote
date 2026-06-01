@@ -21,7 +21,7 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -59,6 +59,8 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
     }
 
     @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(converter = NameHolder.NameHolderToStringConverterJackson2.class)
+    @JsonProperty
     @Override
     @Nullable
     public ValueDescriptor<T> getType() {

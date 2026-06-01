@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
@@ -32,6 +33,7 @@ import java.util.Arrays;
  * the {@link org.openremote.model.attribute.AttributeEvent}. When the cause is {@link Cause#READ} then the asset's
  * {@link org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
  */
+@JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY)
 public class AssetEvent extends SharedEvent implements AssetInfo {
 
     public enum Cause {
@@ -41,8 +43,11 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         DELETE
     }
 
+    @JsonProperty
     protected Cause cause;
+    @JsonProperty
     protected Asset<?> asset;
+    @JsonProperty
     protected String[] updatedProperties;
 
     @JsonCreator
@@ -95,14 +100,17 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         return updatedProperties != null && Arrays.asList(updatedProperties).contains("attributes") && asset != null && asset.attributes != null ? asset.attributes.keySet().toArray(new String[0]) : new String[0];
     }
 
+    @JsonProperty
     public Cause getCause() {
         return cause;
     }
 
+    @JsonProperty
     public Asset<?> getAsset() {
         return asset;
     }
 
+    @JsonProperty
     public String[] getUpdatedProperties() {
         return updatedProperties;
     }

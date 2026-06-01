@@ -22,8 +22,8 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.util.ValueUtil;
 
@@ -52,8 +52,8 @@ public class RegexValueFilter extends ValueFilter {
     public RegexValueFilter(@JsonProperty("pattern") String pattern,
                             @JsonProperty("dotAll") Boolean dotAll,
                             @JsonProperty("multiline") Boolean multiline,
-                            @JsonProperty("matchGroup") int matchGroup,
-                            @JsonProperty("matchIndex") int matchIndex) {
+                            @JsonProperty("matchGroup") Integer matchGroup,
+                            @JsonProperty("matchIndex") Integer matchIndex) {
         this(pattern, dotAll == null || dotAll, multiline != null && multiline);
         this.matchGroup = matchGroup;
         this.matchIndex = matchIndex;

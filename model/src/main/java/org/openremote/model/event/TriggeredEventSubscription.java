@@ -21,12 +21,98 @@ package org.openremote.model.event;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ser.std.StdSerializer;
+import org.openremote.model.datapoint.AssetPredictedDatapointEvent;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.util.ValueUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@JsonSerialize(using = TriggeredEventSubscription.TriggeredEventSubscriptionSerializer.class)
+@JsonDeserialize(using = TriggeredEventSubscription.TriggeredEventSubscriptionDeserializer.class)
 public class TriggeredEventSubscription<T extends SharedEvent> {
+
+    public static class TriggeredEventSubscriptionSerializer extends StdSerializer<TriggeredEventSubscription> {
+
+        protected TriggeredEventSubscriptionSerializer() {
+            super(TriggeredEventSubscription.class);
+        }
+
+        @Override
+        public void serialize(TriggeredEventSubscription value, JsonGenerator gen, SerializationContext context) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeName("events");
+            gen.writeStartArray();
+            if (value.events != null) {
+                for (Object event : value.events) {
+                    if (event instanceof AssetPredictedDatapointEvent predictedDatapointEvent) {
+                        gen.writeStartObject();
+                        gen.writeName("eventType");
+                        gen.writeString(predictedDatapointEvent.getEventType());
+                        gen.writeName("ref");
+                        gen.writeStartObject();
+                        gen.writeName("id");
+                        gen.writeString(predictedDatapointEvent.getRef().getId());
+                        gen.writeName("name");
+                        gen.writeString(predictedDatapointEvent.getRef().getName());
+                        gen.writeEndObject();
+                        gen.writeName("timestamp");
+                        gen.writeNumber(predictedDatapointEvent.getTimestamp());
+                        gen.writeEndObject();
+                        continue;
+                    }
+                    JsonNode eventNode = context.valueToTree(event);
+                    if (event instanceof SharedEvent sharedEvent && eventNode instanceof ObjectNode objectNode) {
+                        objectNode.put("eventType", sharedEvent.getEventType());
+                    }
+                    context.writeTree(gen, eventNode);
+                }
+            }
+            gen.writeEndArray();
+            gen.writeName("subscriptionId");
+            gen.writeString(value.getSubscriptionId());
+            gen.writeEndObject();
+        }
+    }
+
+    public static class TriggeredEventSubscriptionDeserializer extends StdDeserializer<TriggeredEventSubscription> {
+
+        protected TriggeredEventSubscriptionDeserializer() {
+            super(TriggeredEventSubscription.class);
+        }
+
+        @Override
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        public TriggeredEventSubscription deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+            JsonNode node = ctxt.readTree(p);
+            JsonNode eventsNode = node.get("events");
+            JsonNode subscriptionIdNode = node.get("subscriptionId");
+            List<SharedEvent> events = new ArrayList<>();
+
+            if (eventsNode != null && eventsNode.isArray()) {
+                for (JsonNode eventNode : eventsNode) {
+                    events.add(ValueUtil.JSON.treeToValue(eventNode, SharedEvent.class));
+                }
+            }
+
+            return new TriggeredEventSubscription(
+                events,
+                subscriptionIdNode != null && !subscriptionIdNode.isNull() ? subscriptionIdNode.asText() : null
+            );
+        }
+    }
 
     public static final String MESSAGE_PREFIX = "TRIGGERED:";
     protected List<T> events;

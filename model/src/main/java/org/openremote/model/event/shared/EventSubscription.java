@@ -20,7 +20,19 @@
 package org.openremote.model.event.shared;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import org.openremote.model.event.Event;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * A consumer can subscribe to {@link Event}s on the server, providing the
@@ -30,7 +42,60 @@ import org.openremote.model.event.Event;
  * A subscription can optionally contain a {@link #subscriptionId} which allows a client
  * to have multiple subscriptions for the same event type.
  */
+@JsonSerialize(using = EventSubscription.EventSubscriptionSerializer.class)
+@JsonDeserialize(using = EventSubscription.EventSubscriptionDeserializer.class)
 public class EventSubscription<E extends Event> {
+
+    public static class EventSubscriptionSerializer extends StdSerializer<EventSubscription> {
+
+        protected EventSubscriptionSerializer() {
+            super(EventSubscription.class);
+        }
+
+        @Override
+        public void serialize(EventSubscription value, JsonGenerator gen, SerializationContext context) throws JacksonException {
+            gen.writeStartObject();
+            gen.writeName("eventType");
+            gen.writeString(value.getEventType());
+            context.defaultSerializeProperty("filter", value.filter, gen);
+            gen.writeName("subscriptionId");
+            gen.writeString(value.getSubscriptionId());
+            gen.writeName("subscribed");
+            gen.writeBoolean(value.isSubscribed());
+            gen.writeEndObject();
+        }
+    }
+
+    public static class EventSubscriptionDeserializer extends StdDeserializer<EventSubscription> {
+
+        protected EventSubscriptionDeserializer() {
+            super(EventSubscription.class);
+        }
+
+        @Override
+        public EventSubscription deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+            JsonNode node = ctxt.readTree(p);
+            EventSubscription subscription = new EventSubscription();
+            JsonNode eventType = node.get("eventType");
+            JsonNode filter = node.get("filter");
+            JsonNode subscriptionId = node.get("subscriptionId");
+            JsonNode subscribed = node.get("subscribed");
+
+            if (eventType != null && !eventType.isNull()) {
+                subscription.eventType = eventType.asText();
+            }
+            if (filter != null && !filter.isNull()) {
+                subscription.filter = (EventFilter) ValueUtil.convert(filter, EventFilter.class);
+            }
+            if (subscriptionId != null && !subscriptionId.isNull()) {
+                subscription.subscriptionId = subscriptionId.asText();
+            }
+            if (subscribed != null && !subscribed.isNull()) {
+                subscription.subscribed = subscribed.asBoolean();
+            }
+            return subscription;
+        }
+    }
 
     public static final String SUBSCRIBE_MESSAGE_PREFIX = "SUBSCRIBE:";
     public static final String SUBSCRIBED_MESSAGE_PREFIX = "SUBSCRIBED:";
@@ -81,14 +146,22 @@ public class EventSubscription<E extends Event> {
         this.subscriptionId = subscriptionId;
     }
 
+    @JsonProperty
     public String getEventType() {
         return eventType == null ? "" : eventType;
     }
 
+    @JsonProperty
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
+    }
+
+    @JsonProperty
     public EventFilter<E> getFilter() {
         return filter;
     }
 
+    @JsonProperty
     public void setFilter(EventFilter<E> filter) {
         this.filter = filter;
     }
@@ -97,8 +170,14 @@ public class EventSubscription<E extends Event> {
         return Event.getEventType(eventClass).equals(getEventType());
     }
 
+    @JsonProperty
     public String getSubscriptionId() {
         return subscriptionId == null ? "" : subscriptionId;
+    }
+
+    @JsonProperty
+    public void setSubscriptionId(String subscriptionId) {
+        this.subscriptionId = subscriptionId;
     }
 
     public void setSubscribed(boolean subscribed) {

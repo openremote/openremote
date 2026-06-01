@@ -20,6 +20,7 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -95,18 +96,18 @@ public class GatewayConnection {
     protected GatewayConnection() {
     }
 
-    @JsonCreator
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public GatewayConnection(
-        String localRealm,
-        String host,
-        Integer port,
-        String realm,
-        String clientId,
-        String clientSecret,
-        Boolean secured,
-        List<GatewayAttributeFilter> attributeFilters,
-        Map<String, GatewayAssetSyncRule> assetSyncRules,
-        boolean disabled) {
+        @JsonProperty("localRealm") String localRealm,
+        @JsonProperty("host") String host,
+        @JsonProperty("port") Integer port,
+        @JsonProperty("realm") String realm,
+        @JsonProperty("clientId") String clientId,
+        @JsonProperty("clientSecret") String clientSecret,
+        @JsonProperty("secured") Boolean secured,
+        @JsonProperty("attributeFilters") List<GatewayAttributeFilter> attributeFilters,
+        @JsonProperty("assetSyncRules") Map<String, GatewayAssetSyncRule> assetSyncRules,
+        @JsonProperty("disabled") boolean disabled) {
         this.localRealm = localRealm;
         this.host = host;
         this.port = port;

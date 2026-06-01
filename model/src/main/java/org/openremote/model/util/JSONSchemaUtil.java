@@ -43,11 +43,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 public class JSONSchemaUtil {
 
@@ -240,7 +239,7 @@ public class JSONSchemaUtil {
                     if (erasedType.equals(Object.class)) {
                         return new CustomDefinition(SchemaNodeMapper.getSchemaType(SchemaNodeMapper.TYPES_ALL));
                     }
-                    if (erasedType.equals(ObjectNode.class)) {
+                    if (erasedType.equals(ObjectNode.class) || erasedType.equals(tools.jackson.databind.node.ObjectNode.class)) {
                         return new CustomDefinition(SchemaNodeMapper.getSchemaPatternPropertiesSimpleKeyAnyType());
                     }
                     // Value type parameter "Object" is not handled on HashMap<String,Object> by MAP_VALUES_AS_ADDITIONAL_PROPERTIES
@@ -397,12 +396,26 @@ public class JSONSchemaUtil {
             // Apply Jackson serializers
             builder.forTypesInGeneral().withCustomDefinitionProvider((resolvedType, context) -> {
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
-                JavaType javaType = mapper.constructType(resolvedType.getErasedType());
+                Class<?> erasedType = resolvedType.getErasedType();
+                JavaType javaType = mapper.constructType(erasedType);
 
                 try {
+                    if (isTimestampJavaTimeType(erasedType)) {
+                        node.put("type", "integer");
+                        node.put("format", "utc-millisec");
+                    } else if (erasedType.equals(Year.class)) {
+                        node.put("type", "integer");
+                    } else if (isStringJavaTimeType(erasedType)) {
+                        node.put("type", "string");
+                    }
+
+                    if (node.has("type")) {
+                        return new CustomDefinition(node, CustomDefinition.DefinitionType.INLINE, CustomDefinition.AttributeInclusion.NO);
+                    }
+
                     JsonFormatVisitorWrapper visitor = new JsonFormatVisitorWrapper.Base() {
                         @Override
-                        public JsonStringFormatVisitor expectStringFormat(JavaType type) throws JsonMappingException {
+                        public JsonStringFormatVisitor expectStringFormat(JavaType type) {
                             node.put("type", "string");
                             return new JsonStringFormatVisitor() {
                                 public void format(JsonValueFormat format) {
@@ -415,7 +428,7 @@ public class JSONSchemaUtil {
                         }
 
                         @Override
-                        public JsonNumberFormatVisitor expectNumberFormat(JavaType type) throws JsonMappingException {
+                        public JsonNumberFormatVisitor expectNumberFormat(JavaType type) {
                             node.put("type", "number");
                             return new JsonNumberFormatVisitor() {
                                 public void numberType(JsonParser.NumberType numberType) {}
@@ -429,7 +442,7 @@ public class JSONSchemaUtil {
                         }
 
                         @Override
-                        public JsonIntegerFormatVisitor expectIntegerFormat(JavaType type) throws JsonMappingException {
+                        public JsonIntegerFormatVisitor expectIntegerFormat(JavaType type) {
                             node.put("type", "integer");
                             return new JsonIntegerFormatVisitor() {
                                 public void numberType(JsonParser.NumberType numberType) {}
@@ -443,7 +456,7 @@ public class JSONSchemaUtil {
                         }
 
                         @Override
-                        public JsonBooleanFormatVisitor expectBooleanFormat(JavaType type) throws JsonMappingException {
+                        public JsonBooleanFormatVisitor expectBooleanFormat(JavaType type) {
                             node.put("type", "boolean");
                             return new JsonBooleanFormatVisitor() {
                                 public void format(JsonValueFormat format) {
@@ -465,6 +478,23 @@ public class JSONSchemaUtil {
                 } catch (Exception ignored) {}
                 return null;
             });
+        }
+
+        private static boolean isTimestampJavaTimeType(Class<?> type) {
+            return type.equals(Duration.class)
+                || type.equals(Instant.class)
+                || type.equals(OffsetDateTime.class)
+                || type.equals(ZonedDateTime.class);
+        }
+
+        private static boolean isStringJavaTimeType(Class<?> type) {
+            return type.equals(LocalDate.class)
+                || type.equals(LocalDateTime.class)
+                || type.equals(LocalTime.class)
+                || type.equals(OffsetTime.class)
+                || type.equals(Period.class)
+                || type.equals(ZoneId.class)
+                || type.equals(ZoneOffset.class);
         }
 
         private String getCanonicalMemberKey(FieldScope fieldScope) {
@@ -733,7 +763,25 @@ public class JSONSchemaUtil {
         }
     }
 
-    public static SchemaGeneratorConfig getJsonSchemaConfig(ObjectMapper mapper) {
+    public static SchemaGeneratorConfig getJsonSchemaConfig() {
+        return getJsonSchemaConfig(createSchemaObjectMapper());
+    }
+
+    protected static ObjectMapper createSchemaObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        mapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, false);
+        mapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
+        mapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false);
+        return mapper;
+    }
+
+    protected static SchemaGeneratorConfig getJsonSchemaConfig(ObjectMapper mapper) {
         return new SchemaGeneratorConfigBuilder(mapper, SchemaVersion.DRAFT_7, new OptionPreset(
             Option.SCHEMA_VERSION_INDICATOR,
             Option.ADDITIONAL_FIXED_TYPES,
