@@ -19,16 +19,17 @@
  */
 package org.openremote.manager.asset;
 
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
+import tools.jackson.core.*;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.type.TypeFactory;
+import tools.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -52,7 +53,6 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -76,8 +76,9 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
  * of {@link AssetTypeInfo}.
  */
 public class AssetModelService extends RouteBuilder implements ContainerService, AssetModelProvider {
-    protected static ObjectMapper JSON = ValueUtil.JSON.copy()
-            .addMixIn(AssetTypeInfo.class, AssetTypeInfoMixin.class);
+    protected static ObjectMapper JSON = ValueUtil.JSON.rebuild()
+            .addMixIn(AssetTypeInfo.class, AssetTypeInfoMixin.class)
+            .build();
 
     @JsonDeserialize(using = AssetTypeInfoDeserializer.class)
     private static final class AssetTypeInfoMixin {
@@ -97,10 +98,10 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
      */
     private static final class AssetTypeInfoDeserializer extends StdDeserializer<AssetTypeInfo> {
 
-        private static final JavaType VALUE_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(ValueDescriptor[].class);
-        private static final JavaType META_ITEM_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(MetaItemDescriptor[].class);
-        private static final JavaType ATTRIBUTE_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(AttributeDescriptor[].class);
-        private static final JavaType ASSET_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(AssetDescriptor.class);
+        private static final JavaType VALUE_DESCRIPTOR_TYPE = TypeFactory.createDefaultInstance().constructType(ValueDescriptor[].class);
+        private static final JavaType META_ITEM_DESCRIPTOR_TYPE = TypeFactory.createDefaultInstance().constructType(MetaItemDescriptor[].class);
+        private static final JavaType ATTRIBUTE_DESCRIPTOR_TYPE = TypeFactory.createDefaultInstance().constructType(AttributeDescriptor[].class);
+        private static final JavaType ASSET_DESCRIPTOR_TYPE = TypeFactory.createDefaultInstance().constructType(AssetDescriptor.class);
 
         private AssetTypeInfoDeserializer() {
             super(AssetTypeInfo.class);
@@ -108,9 +109,9 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
 
         @SuppressWarnings("unchecked")
         @Override
-        public AssetTypeInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JacksonException {
+        public AssetTypeInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws JacksonException {
             if (!jp.isExpectedStartObjectToken()) {
-                throw JsonMappingException.from(jp, "Must be an object");
+                throw DatabindException.from(jp, "Must be an object");
             }
 
             TokenBuffer attributeDescriptorBuffer = null;
@@ -142,7 +143,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
 
             while (jp.nextToken() != JsonToken.END_OBJECT) {
                 String propName = jp.currentName();
-                if (jp.currentToken() == JsonToken.FIELD_NAME) {
+                if (jp.currentToken() == JsonToken.PROPERTY_NAME) {
                     jp.nextToken();
                 }
                 if (jp.currentToken() == JsonToken.VALUE_NULL) {
@@ -152,7 +153,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                 switch (propName) {
                     case "attributeDescriptors" -> {
                         if (metaItemDescriptors.get() == null) {
-                            attributeDescriptorBuffer = new TokenBuffer(jp, ctxt);
+                            attributeDescriptorBuffer = TokenBuffer.forBuffering(jp, jp.objectReadContext());
                             attributeDescriptorBuffer.copyCurrentStructure(jp);
                         } else {
                             attributeDescriptors = (AttributeDescriptor<?>[])ctxt.findRootValueDeserializer(ATTRIBUTE_DESCRIPTOR_TYPE).deserialize(jp, ctxt);
@@ -160,7 +161,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                     }
                     case "metaItemDescriptors" -> {
                         if (valueDescriptors.get() == null) {
-                            metaItemDescriptorBuffer = new TokenBuffer(jp, ctxt);
+                            metaItemDescriptorBuffer = TokenBuffer.forBuffering(jp, jp.objectReadContext());
                             metaItemDescriptorBuffer.copyCurrentStructure(jp);
                         } else {
                             metaItemDescriptors.set((MetaItemDescriptor<?>[])ctxt.findRootValueDeserializer(META_ITEM_DESCRIPTOR_TYPE).deserialize(jp, ctxt));
@@ -176,18 +177,18 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
             }
 
             if (metaItemDescriptorBuffer != null) {
-                JsonParser parser = metaItemDescriptorBuffer.asParser();
+                JsonParser parser = metaItemDescriptorBuffer.asParser(jp.objectReadContext());
                 parser.nextToken();
                 metaItemDescriptors.set((MetaItemDescriptor<?>[])ctxt.findRootValueDeserializer(META_ITEM_DESCRIPTOR_TYPE).deserialize(parser, ctxt));
             }
             if (attributeDescriptorBuffer != null) {
-                JsonParser parser = attributeDescriptorBuffer.asParser();
+                JsonParser parser = attributeDescriptorBuffer.asParser(jp.objectReadContext());
                 parser.nextToken();
                 attributeDescriptors = (AttributeDescriptor<?>[])ctxt.findRootValueDeserializer(ATTRIBUTE_DESCRIPTOR_TYPE).deserialize(parser, ctxt);
             }
 
             if (assetDescriptor == null) {
-                throw new JsonParseException(jp, "Must contain an asset descriptor");
+                throw new StreamReadException(jp, "Must contain an asset descriptor");
             }
             return new AssetTypeInfo(
                 assetDescriptor,
@@ -379,7 +380,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getValueDescriptorSchema(name);
     }
 
-    protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {
+    protected <T> T parse(String jsonString, Class<T> type) throws JacksonException {
         return JSON.readValue(jsonString, JSON.constructType(type));
     }
 
@@ -393,7 +394,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                     if (descriptorStr != null) {
                         return parse(descriptorStr, descriptorClazz);
                     }
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     LOG.log(Level.SEVERE, "Failed to parse descriptor file '" + descriptorFile + "': " + e.getMessage());
                 } catch (IOException e) {
                     LOG.log(Level.SEVERE, "Failed to read descriptor file '" + descriptorFile + "': " + e.getMessage());

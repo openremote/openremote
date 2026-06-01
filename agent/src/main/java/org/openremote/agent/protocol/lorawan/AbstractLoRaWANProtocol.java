@@ -19,8 +19,8 @@
  */
 package org.openremote.agent.protocol.lorawan;
 
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 import org.openremote.agent.protocol.mqtt.MQTTAgent;
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink;
 import org.openremote.agent.protocol.mqtt.MQTTProtocol;

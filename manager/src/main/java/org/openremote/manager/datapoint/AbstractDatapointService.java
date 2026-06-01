@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.datapoint;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.validation.constraints.NotNull;

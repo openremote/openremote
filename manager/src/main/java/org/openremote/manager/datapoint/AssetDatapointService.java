@@ -394,6 +394,10 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
     }
 
+    private static String toLocalTimestampLiteral(long timestamp) {
+        return Timestamp.valueOf(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime()).toString();
+    }
+
     /**
      * Function for building crosstab columns when format will make a separate column per attribute.
      * Uses display-label ordering to preserve existing crosstab output ordering, but keeps those labels

@@ -153,7 +153,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                                if(requiredKeyValue == null)
 //                                    throw new NullPointerException("Could not find key: " + requiredKey + " in the json-file.");
 //                                valuesToUpdate.put(requiredKey, requiredKeyValue.asInt());
-//                            } catch (JsonProcessingException e) {
+//                            } catch (JacksonException e) {
 //                                e.printStackTrace();
 //                            }
 //                        }
@@ -165,7 +165,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                            JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                            int dimValue = node.asInt();
 //                            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
-//                        } catch (JsonProcessingException e) {
+//                        } catch (JacksonException e) {
 //                            e.printStackTrace();
 //                        }
 //                    }
@@ -175,7 +175,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                            JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                            boolean enabled = node.asBoolean();
 //                            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
-//                        } catch (JsonProcessingException e) {
+//                        } catch (JacksonException e) {
 //                            e.printStackTrace();
 //                        }
 //                    }
@@ -341,7 +341,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //        return null;
 //    }
 //
-//    protected AssetTreeNode formLightAsset(ArtnetLight light, Asset<?> parentAgent) throws JsonProcessingException {
+//    protected AssetTreeNode formLightAsset(ArtnetLight light, Asset<?> parentAgent) throws JacksonException {
 //        Asset<?> asset = new ThingAsset();
 //        asset.setId(UniqueIdentifierGenerator.generateId());
 //        asset.setParent(parentAgent);

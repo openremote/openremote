@@ -1,7 +1,7 @@
 package org.openremote.agent.protocol.tradfri.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
@@ -118,7 +118,7 @@ public class CoapClient {
             String responsePayload = response.getPayloadString();
             if (responseType == String.class) return (T) responsePayload;
             return objectMapper.readValue(responsePayload, responseType);
-        } catch (InterruptedException | JsonProcessingException e) {
+        } catch (InterruptedException | JacksonException e) {
             return null;
         }
     }
@@ -138,7 +138,7 @@ public class CoapClient {
             request.setPayload(requestPayload);
             request.getOptions().setContentFormat(MediaTypeRegistry.APPLICATION_JSON);
             return request(request, endpoint, responseType);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             return null;
         }
     }

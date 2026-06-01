@@ -21,13 +21,13 @@ package org.openremote.manager.system;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.StdScalarSerializer;
 import org.apache.camel.health.HealthCheck;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,7 +40,7 @@ public interface HealthCheckResultMixin {
         }
 
         @Override
-        public void serialize(HealthCheck value, JsonGenerator g, SerializerProvider provider) throws IOException
+        public void serialize(HealthCheck value, JsonGenerator g, SerializationContext context) throws JacksonException
         {
             g.writeString(value.getClass().getSimpleName());
         }

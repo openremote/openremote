@@ -19,8 +19,7 @@
  */
 package org.openremote.manager.notification;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
+import tools.jackson.databind.JsonNode;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
