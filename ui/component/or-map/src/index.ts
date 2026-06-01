@@ -32,6 +32,7 @@ export * from "./markers/or-cluster-marker";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";
+export * from "./or-map-preset-filter";
 export type * from "./types";
 
 export class OrMapLoadedEvent extends CustomEvent<void> {

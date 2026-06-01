@@ -2,10 +2,6 @@ import {css, html, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
-import "@openremote/or-vaadin-components/or-vaadin-select";
-import "@openremote/or-vaadin-components/or-vaadin-item";
-import "@openremote/or-vaadin-components/or-vaadin-list-box";
-import { selectRenderer } from "@vaadin/select/lit.js";
 import {
     MapAssetCardConfig,
     OrMap,
@@ -17,9 +13,12 @@ import {
     MapMarkerAssetConfig,
     OrMapMarkersChangedEvent,
     OrMapLegendEvent,
-    OrMapLoadedEvent
+    OrMapLoadedEvent,
+    MapPresetFilter,
+    OrMapPresetFilterEvent,
+    assetMatchesFilter
 } from "@openremote/or-map";
-import manager, {Util} from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import {createSelector} from "reselect";
 import {
     Asset,
@@ -35,7 +34,6 @@ import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {GenericAxiosResponse} from "@openremote/rest";
 import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
-import { i18next } from "@openremote/or-translate";
 
 export interface MapState {
     locatedAssets: AssetWithLocation[];
@@ -129,10 +127,6 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
-export interface MapPresetFilter {
-    assetQuery: AssetQuery;
-}
-
 export interface PageMapConfig {
     legend?: {
       show: boolean
@@ -179,16 +173,11 @@ export class PageMap extends Page<MapStateKeyed> {
                 z-index: 3;
             }
 
-            #filter-container {
+            or-map-preset-filter {
                 position: absolute;
                 top: 10px;
                 left: 10px;
                 z-index: 3;
-            }
-
-            #filter-select {
-                width: 320px;
-                --vaadin-input-field-background: white;
             }
 
             .filter-field-count {
@@ -270,7 +259,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assetsOnScreen: AssetWithLocation[] = [];
 
     @state()
-    protected _activeFilterIndex = 0;
+    protected _activeFilter: MapPresetFilter | null = null;
 
     protected _locatedAssetSelector = (state: MapStateKeyed) => state.map.locatedAssets;
     protected _unlocatedAssetSelector = (state: MapStateKeyed) => state.map.unlocatedAssets;
@@ -480,40 +469,16 @@ export class PageMap extends Page<MapStateKeyed> {
     protected render() {
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         const filters = this.config?.filters;
-        const filterOptions = filters?.length ? [
-            { value: "0", label: i18next.t("mapPage.filterAll", { defaultValue: "All" }), count: this._assets.length },
-            ...filters.map((filter, i) => ({
-                value: String(i + 1),
-                label: this._getFilterLabel(filter),
-                count: this._getFilterCount(i + 1)
-            }))
-        ] : undefined;
 
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${filterOptions ? html`
-                <div id="filter-container">
-                    <or-vaadin-select id="filter-select"
-                        .value="${String(this._activeFilterIndex)}"
-                        ${selectRenderer(() => html`
-                            <or-vaadin-list-box>
-                                ${filterOptions.map(opt => html`
-                                    <or-vaadin-item value="${opt.value}" label="${opt.label}" style="padding: unset;">
-                                        <div style="display:flex;align-items:center;gap:calc(var(--lumo-space-l) + var(--lumo-border-radius-m) / 4);padding-right:4px;">
-                                            <span style="flex:1;">${opt.label}</span>
-                                            <span style="background:#3A463A1A;border-radius:10px;padding:0 4px;font-size:0.8em;width:36px;height:20px;line-height:20px;text-align:center;flex-shrink:0;box-sizing:border-box;">${opt.count > 99 ? "99+" : opt.count}</span>
-                                        </div>
-                                    </or-vaadin-item>
-                                `)}
-                            </or-vaadin-list-box>
-                        `, filterOptions)}
-                        @change="${this._onFilterChanged}"
-                    ></or-vaadin-select>
-                    <span class="filter-field-count">
-                        ${this._getFilterCount(this._activeFilterIndex) > 99 ? "99+" : this._getFilterCount(this._activeFilterIndex)}
-                    </span>
-                </div>
+            ${filters?.length ? html`
+                <or-map-preset-filter
+                    .filters="${filters}"
+                    .assets="${this._assets}"
+                    @or-map-preset-filter-changed="${this._onPresetFilterChanged}"
+                ></or-map-preset-filter>
             ` : null}
 
             ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" .excludedTypes="${this._excludedTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
@@ -581,79 +546,14 @@ export class PageMap extends Page<MapStateKeyed> {
         this._applyVisibilityFilters();
     }
 
-    protected _onFilterChanged(e: Event) {
-        this._activeFilterIndex = parseInt((e.target as HTMLInputElement).value) || 0;
+    protected _onPresetFilterChanged(e: OrMapPresetFilterEvent) {
+        this._activeFilter = e.detail;
         this._applyVisibilityFilters();
     }
 
-    protected _assetMatchesFilter(asset: AssetWithLocation, filter: MapPresetFilter): boolean {
-        const { types, attributes } = filter.assetQuery;
-        if (types?.length && !types.includes(asset.type)) return false;
-        if (attributes && !this._evalAttributeGroup(asset, attributes)) return false;
-        return true;
-    }
-
-     protected _isAssetVisible(asset: AssetWithLocation): boolean {
-        if (this._activeFilterIndex > 0) {
-            const filter = this.config.filters![this._activeFilterIndex - 1];
-            if (!this._assetMatchesFilter(asset, filter)) return false;
-        }
+    protected _isAssetVisible(asset: AssetWithLocation): boolean {
+        if (this._activeFilter && !assetMatchesFilter(asset, this._activeFilter)) return false;
         return !this._excludedTypes.includes(asset.type);
-    }
-
-    protected _evalAttributeGroup(asset: AssetWithLocation, group: any): boolean {
-        const operator: string = group.operator ?? "AND";
-        const results: boolean[] = [
-            ...(group.items ?? []).map((item: any) => this._evalAttributePredicate(asset, item)),
-            ...(group.groups ?? []).map((g: any) => this._evalAttributeGroup(asset, g))
-        ];
-        if (!results.length) return true;
-        return operator === "OR" ? results.some(Boolean) : results.every(Boolean);
-    }
-
-    protected _evalAttributePredicate(asset: AssetWithLocation, predicate: any): boolean {
-        const attrName = predicate.name?.value;
-        if (!attrName) return true;
-        const attribute = asset.attributes?.[attrName];
-        if (!attribute) return predicate.negated ? true : false;
-        const matches = this._evalValuePredicate(attribute.value, predicate.value);
-        return predicate.negated ? !matches : matches;
-    }
-
-    protected _evalValuePredicate(val: any, predicate: any): boolean {
-        if (!predicate) return true;
-        switch (predicate.predicateType) {
-            case "string": {
-                if (val === null || val === undefined) return false;
-                const haystack = predicate.caseSensitive !== false ? String(val) : String(val).toLowerCase();
-                const needle = predicate.caseSensitive !== false ? predicate.value : predicate.value?.toLowerCase();
-                let m: boolean;
-                switch (predicate.match) {
-                    case "BEGIN":    m = haystack.startsWith(needle); break;
-                    case "END":      m = haystack.endsWith(needle); break;
-                    case "CONTAINS": m = haystack.includes(needle); break;
-                    default:         m = haystack === needle;
-                }
-                return predicate.negate ? !m : m;
-            }
-            case "boolean":
-                return val === predicate.value;
-            case "number": {
-                if (typeof val !== "number") return false;
-                let m: boolean;
-                switch (predicate.operator) {
-                    case "GREATER_THAN":   m = val > predicate.value; break;
-                    case "GREATER_EQUALS": m = val >= predicate.value; break;
-                    case "LESS_THAN":      m = val < predicate.value; break;
-                    case "LESS_EQUALS":    m = val <= predicate.value; break;
-                    case "BETWEEN":        m = val >= predicate.value && val <= predicate.rangeValue; break;
-                    default:               m = val === predicate.value;
-                }
-                return predicate.negate ? !m : m;
-            }
-            default:
-                return true;
-        }
     }
 
     protected _getVisibleAssets(): AssetWithLocation[] {
@@ -666,31 +566,5 @@ export class PageMap extends Page<MapStateKeyed> {
         const visibleIds = new Set(visible.map(a => a.id));
         this._map.removeAssets(this._assets.filter(a => !visibleIds.has(a.id)).map(a => a.id));
         this._map.addAssets(visible);
-    }
-
-    protected _getFilterLabel(filter: MapPresetFilter): string {
-        const types = filter.assetQuery.types;
-        const typeLabel = types?.length
-            ? types.map(t => Util.getAssetTypeLabel(t).replace(/\s*asset\s*$/i, "").trim()).join(" + ")
-            : i18next.t("mapPage.filterCustom", { defaultValue: "Custom" });
-
-        const attrValues = (filter.assetQuery.attributes?.items ?? [] as any[])
-            .map((item: any) => {
-                const val = item.value?.value;
-                if (val === undefined || val === null) return null;
-                if (typeof val === "string") {
-                    return val.replace(/_/g, " ").toLowerCase().replace(/^\w/, c => c.toUpperCase());
-                }
-                return String(val);
-            })
-            .filter(Boolean);
-
-        return attrValues.length ? `${typeLabel}: ${attrValues.join(", ")}` : typeLabel;
-    }
-
-    protected _getFilterCount(filterIndex: number): number {
-        if (filterIndex === 0) return this._assets.length;
-        const filter = this.config.filters![filterIndex - 1];
-        return this._assets.filter(a => this._assetMatchesFilter(a, filter)).length;
     }
 }
