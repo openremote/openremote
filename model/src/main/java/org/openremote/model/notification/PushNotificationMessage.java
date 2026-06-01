@@ -89,6 +89,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         super(TYPE);
     }
 
+    @JsonProperty
     public String getTitle() {
         return title;
     }
@@ -98,6 +99,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public String getBody() {
         return body;
     }
@@ -107,6 +109,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public PushNotificationAction getAction() {
         return action;
     }
@@ -116,6 +119,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public List<PushNotificationButton> getButtons() {
         return buttons;
     }
@@ -125,6 +129,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public Map<String, Object> getData() {
         return data;
     }
@@ -134,6 +139,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public MessagePriority getPriority() {
         return priority;
     }
@@ -143,6 +149,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public TargetType getTargetType() {
         return targetType;
     }
@@ -152,6 +159,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public String getTarget() {
         return target;
     }
@@ -161,6 +169,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public Long getTtlSeconds() {
         return ttlSeconds;
     }

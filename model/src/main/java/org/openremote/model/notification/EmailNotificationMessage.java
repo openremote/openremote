@@ -20,6 +20,7 @@
 package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
@@ -44,10 +45,12 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
             this.address = address;
         }
 
+        @JsonProperty
         public String getName() {
             return name;
         }
 
+        @JsonProperty
         public String getAddress() {
             return address;
         }
@@ -75,14 +78,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         super(TYPE);
     }
 
+    @JsonProperty
     public Recipient getFrom() {
         return from;
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setFrom(String address) {
         return setFrom(null, address);
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setFrom(String name, String address) {
         return setFrom(new Recipient(name, address));
     }
@@ -92,6 +98,7 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public String getSubject() {
         return subject;
     }
@@ -101,6 +108,7 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public String getText() {
         return text;
     }
@@ -110,6 +118,7 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public String getHtml() {
         return html;
     }
@@ -119,6 +128,7 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public Recipient getReplyTo() {
         return replyTo;
     }
@@ -128,14 +138,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public List<Recipient> getTo() {
         return to;
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setTo(String...addresses) {
         return setTo(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setTo(Recipient...recipients) {
         return setTo(recipients != null ? Arrays.asList(recipients) : null);
     }
@@ -166,14 +179,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public List<Recipient> getCc() {
         return cc;
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setCc(String...addresses) {
         return setCc(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setCc(Recipient...recipients) {
         return setCc(recipients != null ? Arrays.asList(recipients) : null);
     }
@@ -204,14 +220,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
+    @JsonProperty
     public List<Recipient> getBcc() {
         return bcc;
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setBcc(String...addresses) {
         return setBcc(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
+    @JsonIgnore
     public EmailNotificationMessage setBcc(Recipient...recipients) {
         return setBcc(recipients != null ? Arrays.asList(recipients) : null);
     }

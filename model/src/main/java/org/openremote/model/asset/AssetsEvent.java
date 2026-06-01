@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
  */
 public class AssetsEvent extends SharedEvent {
 
+    @JsonProperty
     protected List<Asset<?>> assets;
 
     @JsonCreator
@@ -38,6 +39,7 @@ public class AssetsEvent extends SharedEvent {
         this.assets = assets;
     }
 
+    @JsonProperty
     public List<Asset<?>> getAssets() {
         return assets;
     }

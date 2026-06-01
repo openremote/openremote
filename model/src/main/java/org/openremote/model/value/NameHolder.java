@@ -20,7 +20,7 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.util.StdConverter;
 
 /**
  * Identifies an item that holds a named property, the name should be very simple, as we use them in SQL path
@@ -32,6 +32,14 @@ public interface NameHolder {
      * This class handles serialising {@link ValueDescriptor}s as strings
      */
     class NameHolderToStringConverter extends StdConverter<NameHolder, String> {
+
+        @Override
+        public String convert(NameHolder value) {
+            return value.getName();
+        }
+    }
+
+    class NameHolderToStringConverterJackson2 extends com.fasterxml.jackson.databind.util.StdConverter<NameHolder, String> {
 
         @Override
         public String convert(NameHolder value) {

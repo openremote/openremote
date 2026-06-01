@@ -84,7 +84,7 @@ public abstract class ValueConstraint implements Serializable {
         protected Integer min;
         protected Integer max;
 
-        @JsonCreator
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
         public Size(@JsonProperty("min") Integer min, @JsonProperty("max") Integer max) {
             super(SIZE_MESSAGE_TEMPLATE);
             this.min = min;
@@ -147,7 +147,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class Min extends ValueConstraint {
         protected Number min;
 
-        @JsonCreator
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
         public Min(@JsonProperty("min") Number min) {
             super(MIN_MESSAGE_TEMPLATE);
             this.min = min;
@@ -228,7 +228,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class Max extends ValueConstraint {
         protected Number max;
 
-        @JsonCreator
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
         public Max(@JsonProperty("max") Number max) {
             super(MAX_MESSAGE_TEMPLATE);
             this.max = max;
@@ -313,8 +313,9 @@ public abstract class ValueConstraint implements Serializable {
         protected String regexp;
         protected jakarta.validation.constraints.Pattern.Flag[] flags;
 
-        @JsonCreator
-        public Pattern(String regexp, jakarta.validation.constraints.Pattern.Flag[] flags) {
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        public Pattern(@JsonProperty("regexp") String regexp,
+                       @JsonProperty("flags") jakarta.validation.constraints.Pattern.Flag[] flags) {
             super(PATTERN_MESSAGE_TEMPLATE);
             this.regexp = regexp;
             this.flags = flags;
@@ -387,7 +388,7 @@ public abstract class ValueConstraint implements Serializable {
         Object[] allowedValues;
         String[] allowedValueNames;
 
-        @JsonCreator
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
         public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames, @JsonProperty("allowedValues") Object[] allowedValues) {
             super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
             this.allowedValueNames = allowedValueNames;

@@ -22,6 +22,7 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
@@ -87,8 +88,30 @@ public class JsonPathFilter extends ValueFilter {
         Object obj = jsonPathParser.parse(valueStr).read(path);
 
         if ((returnFirst || returnLast) && obj instanceof ArrayNode arrayNode) {
+            if (arrayNode.isEmpty()) {
+                return null;
+            }
             obj = arrayNode.get(returnFirst ? 0 : arrayNode.size() - 1);
         }
-        return obj;
+        return unwrapJsonNode(obj);
+    }
+
+    protected Object unwrapJsonNode(Object value) {
+        if (!(value instanceof JsonNode node)) {
+            return value;
+        }
+        if (node.isNull() || node.isMissingNode()) {
+            return null;
+        }
+        if (node.isNumber()) {
+            return node.numberValue();
+        }
+        if (node.isBoolean()) {
+            return node.booleanValue();
+        }
+        if (node.isTextual()) {
+            return node.textValue();
+        }
+        return ValueUtil.parse(node.toString()).orElse(node.toString());
     }
 }

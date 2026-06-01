@@ -21,7 +21,7 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.openremote.model.attribute.AttributeRef;
 
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
@@ -53,6 +53,7 @@ public class PushNotificationAction {
         this.httpMethod = httpMethod;
     }
 
+    @JsonProperty
     public String getUrl() {
         return url;
     }
@@ -61,6 +62,7 @@ public class PushNotificationAction {
         this.url = url;
     }
 
+    @JsonProperty
     public Object getData() {
         return data;
     }
@@ -69,6 +71,7 @@ public class PushNotificationAction {
         this.data = data;
     }
 
+    @JsonProperty
     public boolean isSilent() {
         return silent;
     }
@@ -77,6 +80,7 @@ public class PushNotificationAction {
         this.silent = silent;
     }
 
+    @JsonProperty
     public boolean isOpenInBrowser() {
         return openInBrowser;
     }
@@ -85,6 +89,7 @@ public class PushNotificationAction {
         this.openInBrowser = openInBrowser;
     }
 
+    @JsonProperty
     public String getHttpMethod() {
         return httpMethod;
     }

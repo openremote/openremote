@@ -19,15 +19,14 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.StdSerializer;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-
-import java.io.IOException;
 
 /**
  * A named value whose name must match the name of a {@link MetaItemDescriptor} and whose value must match the value
@@ -47,8 +46,8 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
         }
 
         @Override
-        public void serialize(MetaItem value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            gen.writeObject(value.value);
+        public void serialize(MetaItem value, JsonGenerator gen, SerializationContext context) throws JacksonException {
+            context.writeValue(gen, value.value);
         }
     }
 

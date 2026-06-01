@@ -43,7 +43,7 @@ import org.openremote.model.alarm.AlarmEvent;
     @JsonSubTypes.Type(value = ExternalServiceEvent.class, name = "external-service"),
     @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
-    @JsonSubTypes.Type(value = AssetPredictedDatapointEvent.class, name = "asset-predicted-data-points"),
+    @JsonSubTypes.Type(value = AssetPredictedDatapointEvent.class, name = "asset-predicted-datapoint"),
     @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
     @JsonSubTypes.Type(value = AssetsEvent.class, name = "assets"),
     @JsonSubTypes.Type(value = ReadAttributeEvent.class, name = "read-asset-attribute"),

@@ -20,15 +20,14 @@
 package org.openremote.model.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.util.ValueUtil;
-
-import java.io.IOException;
 
 /**
  * Resolves asset type strings using {@link org.openremote.model.util.ValueUtil}
@@ -36,7 +35,7 @@ import java.io.IOException;
 public class AssetTypeIdResolver extends TypeIdResolverBase {
     @SuppressWarnings("unchecked")
     @Override
-    public String idFromValue(Object value) {
+    public String idFromValue(DatabindContext context, Object value) {
         if (value == null) {
             return null;
         }
@@ -48,8 +47,8 @@ public class AssetTypeIdResolver extends TypeIdResolverBase {
 
     @SuppressWarnings("unchecked")
     @Override
-    public String idFromValueAndType(Object value, Class<?> suggestedType) {
-        return idFromValue(value);
+    public String idFromValueAndType(DatabindContext context, Object value, Class<?> suggestedType) {
+        return idFromValue(context, value);
     }
 
     @Override
@@ -59,7 +58,7 @@ public class AssetTypeIdResolver extends TypeIdResolverBase {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public JavaType typeFromId(DatabindContext context, String id) throws IOException {
+    public JavaType typeFromId(DatabindContext context, String id) throws JacksonException {
         Class<?> assetClass = ValueUtil.getAssetDescriptor(id).map(AssetDescriptor::getType).orElse((Class) ThingAsset.class);
         return context.constructType(assetClass);
     }

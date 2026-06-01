@@ -19,11 +19,11 @@
  */
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 import org.openremote.model.util.JSONSchemaUtil.*;
 
 import javax.annotation.processing.*;
@@ -152,9 +152,9 @@ public class I18nAnnotationProcessor extends AbstractProcessor {
                 }
             }
             if (writeValue) {
-                node.set(keys[zeroIndexLength], new TextNode(entry.getValue()));
+                node.set(keys[zeroIndexLength], new StringNode(entry.getValue()));
             } else {
-                node.putIfAbsent(keys[zeroIndexLength], new TextNode(""));
+                node.putIfAbsent(keys[zeroIndexLength], new StringNode(""));
             }
         }
 

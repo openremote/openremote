@@ -19,8 +19,10 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.query.AssetQuery;
 
 public interface HasAssetQuery {
+    @JsonProperty
     AssetQuery getAssetQuery();
 }

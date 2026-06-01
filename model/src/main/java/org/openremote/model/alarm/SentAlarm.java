@@ -19,6 +19,9 @@
  */
 package org.openremote.model.alarm;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.Formula;
@@ -32,63 +35,81 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
 @Table(name = "ALARM")
+@JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.PUBLIC_ONLY)
 public class SentAlarm {
     @Id
+    @JsonProperty
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
     @NotNull
+    @JsonProperty
     @Column(name = "REALM", nullable = false, updatable = false)
     protected String realm;
 
+    @JsonProperty
     @Column(name = "TITLE", nullable = false)
     protected String title;
 
+    @JsonProperty
     @Column(name = "CONTENT", length = 4096)
     protected String content;
 
     @NotNull
+    @JsonProperty
     @Column(name = "SEVERITY", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Severity severity;
 
     @NotNull
+    @JsonProperty
     @Column(name = "STATUS", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Status status;
 
     @NotNull()
+    @JsonProperty
     @Column(name = "SOURCE", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     protected Alarm.Source source;
 
+    @JsonProperty
     @Column(name = "SOURCE_ID", nullable = false, length = 43)
     protected String sourceId;
 
+    @JsonProperty
     @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = SOURCE_ID)")
     protected String sourceUsername;
 
+    @JsonProperty
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Instant createdOn;
 
+    @JsonProperty
     @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Instant acknowledgedOn;
 
+    @JsonProperty
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Instant lastModified;
 
+    @JsonProperty
     @Column(name = "ASSIGNEE_ID")
     protected String assigneeId;
 
+    @JsonProperty
     @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = ASSIGNEE_ID)")
     protected String assigneeUsername;
 
+    @JsonProperty
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "ALARM_ASSET_LINK")
     protected List<Asset<?>> asset = new ArrayList<>();
 
+    @JsonProperty
     public Long getId() {
         return id;
     }
@@ -98,6 +119,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getRealm() {
         return realm;
     }
@@ -107,6 +129,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getTitle() {
         return title;
     }
@@ -116,6 +139,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getContent() {
         return content;
     }
@@ -125,6 +149,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public Alarm.Severity getSeverity() {
         return severity;
     }
@@ -134,6 +159,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public Alarm.Status getStatus() {
         return status;
     }
@@ -143,6 +169,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public Alarm.Source getSource() {
         return source;
     }
@@ -152,6 +179,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getSourceId() {
         return sourceId;
     }
@@ -161,10 +189,12 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getSourceUsername() {
         return sourceUsername;
     }
 
+    @JsonProperty
     public Instant getCreatedOn() {
         return createdOn;
     }
@@ -174,6 +204,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public Instant getAcknowledgedOn() {
         return acknowledgedOn;
     }
@@ -183,6 +214,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public Instant getLastModified() {
         return lastModified;
     }
@@ -192,6 +224,7 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getAssigneeId() {
         return assigneeId;
     }
@@ -201,8 +234,15 @@ public class SentAlarm {
         return this;
     }
 
+    @JsonProperty
     public String getAssigneeUsername() {
         return assigneeUsername;
+    }
+
+    @JsonProperty
+    @JsonIgnore
+    public List<Asset<?>> getAsset() {
+        return asset;
     }
 
     @Override

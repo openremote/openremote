@@ -44,6 +44,7 @@ public class LocalizedNotificationMessage extends AbstractNotificationMessage {
         super(TYPE);
     }
 
+    @JsonProperty
     public String getDefaultLanguage() {
         return defaultLanguage;
     }
@@ -57,6 +58,7 @@ public class LocalizedNotificationMessage extends AbstractNotificationMessage {
         return Optional.ofNullable(languages.get(language)).orElse(languages.get(defaultLanguage));
     }
 
+    @JsonProperty("languages")
     public Map<String, AbstractNotificationMessage> getMessages() {
         return languages;
     }

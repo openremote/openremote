@@ -19,25 +19,36 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 
 public interface AssetInfo {
 
+    @JsonProperty
     String getId();
 
+    @JsonProperty
     String getRealm();
 
+    @JsonProperty
     String getParentId();
 
+    @JsonProperty
     String[] getPath();
 
+    @JsonProperty
     String[] getAttributeNames();
 
+    @JsonProperty
     String getAssetName();
 
+    @JsonProperty
     String getAssetType();
 
+    @JsonProperty
     Class<? extends Asset> getAssetClass();
 
+    @JsonProperty
     Instant getCreatedOn();
 }

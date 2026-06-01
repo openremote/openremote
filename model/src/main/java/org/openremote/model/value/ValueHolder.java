@@ -20,7 +20,7 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Optional;
 
@@ -30,6 +30,8 @@ import java.util.Optional;
 public interface ValueHolder<T> {
 
     @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(converter = NameHolder.NameHolderToStringConverterJackson2.class)
+    @JsonProperty
     ValueDescriptor<T> getType();
 
     Class<?> getTypeClass();

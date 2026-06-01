@@ -19,7 +19,19 @@
  */
 package org.openremote.model.event.shared;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import org.openremote.model.event.Event;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * The server returns this message when an {@link EventSubscription} failed.
@@ -28,7 +40,43 @@ import org.openremote.model.event.Event;
  * access rights. It might also fail if the subscription is invalid, for example, if
  * a required filter is not supplied or if the filter is not valid.
  */
+@JsonSerialize(using = UnauthorizedEventSubscription.UnauthorizedEventSubscriptionSerializer.class)
+@JsonDeserialize(using = UnauthorizedEventSubscription.UnauthorizedEventSubscriptionDeserializer.class)
 public class UnauthorizedEventSubscription<E extends Event> {
+
+    public static class UnauthorizedEventSubscriptionSerializer extends StdSerializer<UnauthorizedEventSubscription> {
+
+        protected UnauthorizedEventSubscriptionSerializer() {
+            super(UnauthorizedEventSubscription.class);
+        }
+
+        @Override
+        public void serialize(UnauthorizedEventSubscription value, JsonGenerator gen, SerializationContext context) throws JacksonException {
+            gen.writeStartObject();
+            context.defaultSerializeProperty("subscription", value.subscription, gen);
+            gen.writeEndObject();
+        }
+    }
+
+    public static class UnauthorizedEventSubscriptionDeserializer extends StdDeserializer<UnauthorizedEventSubscription> {
+
+        protected UnauthorizedEventSubscriptionDeserializer() {
+            super(UnauthorizedEventSubscription.class);
+        }
+
+        @Override
+        public UnauthorizedEventSubscription deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+            JsonNode node = ctxt.readTree(p);
+            JsonNode subscriptionNode = node.get("subscription");
+            EventSubscription subscription = null;
+
+            if (subscriptionNode != null && !subscriptionNode.isNull()) {
+                subscription = ValueUtil.convert(subscriptionNode, EventSubscription.class);
+            }
+
+            return new UnauthorizedEventSubscription(subscription);
+        }
+    }
 
     public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
 
@@ -41,8 +89,14 @@ public class UnauthorizedEventSubscription<E extends Event> {
         this.subscription = subscription;
     }
 
+    @JsonProperty
     public EventSubscription<E> getSubscription() {
         return subscription;
+    }
+
+    @JsonProperty
+    public void setSubscription(EventSubscription<E> subscription) {
+        this.subscription = subscription;
     }
 
     @Override

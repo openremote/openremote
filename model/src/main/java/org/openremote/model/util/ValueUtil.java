@@ -19,19 +19,17 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.*;
+import tools.jackson.databind.cfg.ConstructorDetector;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.deser.ValueDeserializerModifier;
+import tools.jackson.databind.jsontype.NamedType;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.StringNode;
+import tools.jackson.databind.ser.std.SimpleFilterProvider;
 import com.github.victools.jsonschema.generator.*;
 import jakarta.persistence.Entity;
 import jakarta.validation.ConstraintValidatorContext;
@@ -185,44 +183,44 @@ public class ValueUtil {
     });
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
-        objectMapper
-            .setConstructorDetector(ConstructorDetector.DEFAULT)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false) // see https://github.com/FasterXML/jackson-databind/issues/1547
-            .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-            .configure(SerializationFeature.INDENT_OUTPUT, false)
-            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-            .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true)
-            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false)
-            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
-            .registerModule(new Jdk8Module())
-            .registerModule(new JavaTimeModule())
-            .registerModule(new ParameterNamesModule(JsonCreator.Mode.DEFAULT))
-            .registerModule(new SimpleModule()
-                .setDeserializerModifier(new BeanDeserializerModifier() {
-                @Override
-                public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
-                    if (Asset.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                        return new Asset.AssetDeserializer((JsonDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
-                    }
-                    if (ValueDescriptor.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                        return new ValueDescriptor.ValueDescriptorDeserializer((JsonDeserializer<ValueDescriptor<?>>) deserializer);
-                    }
-                    return deserializer;
-                }}));
-
-        objectMapper.configOverride(Map.class)
-            .setInclude(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
-
         SimpleFilterProvider filters = new SimpleFilterProvider();
         filters.setFailOnUnknownId(false);
 
-        objectMapper.setFilterProvider(filters);
-        return objectMapper;
+        return objectMapper.rebuild()
+            .constructorDetector(ConstructorDetector.DEFAULT)
+            .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .changeDefaultPropertyInclusion(incl -> incl.withContentInclusion(JsonInclude.Include.NON_NULL))
+            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false) // see https://github.com/FasterXML/jackson-databind/issues/1547
+            .configure(DateTimeFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+            .configure(SerializationFeature.INDENT_OUTPUT, false)
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+            .configure(DateTimeFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
+            .configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true)
+            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false)
+            .changeDefaultVisibility(visibility -> visibility
+                .withVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
+                .withVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                .withVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY))
+            .addModule(new SimpleModule()
+                .setDeserializerModifier(new ValueDeserializerModifier() {
+                @Override
+                public ValueDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription.Supplier beanDesc, ValueDeserializer<?> deserializer) {
+                    if (Asset.class.isAssignableFrom(beanDesc.getBeanClass())) {
+                        return new Asset.AssetDeserializer((ValueDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
+                    }
+                    if (ValueDescriptor.class.isAssignableFrom(beanDesc.getBeanClass())) {
+                        return new ValueDescriptor.ValueDescriptorDeserializer((ValueDeserializer<ValueDescriptor<?>>) deserializer);
+                    }
+                    return deserializer;
+                }}))
+
+            .withConfigOverride(Map.class, override ->
+                override.setInclude(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL)))
+            .filterProvider(filters)
+            .build();
     }
 
     public static final String NULL_LITERAL = "null";
@@ -262,13 +260,13 @@ public class ValueUtil {
     public static Optional<String> asJSON(Object object) {
         try {
             return Optional.of(asJSONOrThrow(object));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.log(Level.WARNING, "Failed to convert object to JSON string: " + e.getMessage());
             return Optional.empty();
         }
     }
 
-    public static String asJSONOrThrow(Object object) throws JsonProcessingException {
+    public static String asJSONOrThrow(Object object) throws JacksonException {
         if (object == null) {
             return NULL_LITERAL;
         }
@@ -294,6 +292,10 @@ public class ValueUtil {
 
         if (value instanceof CharSequence && String.class.isAssignableFrom(type)) {
             return Optional.of((T) String.valueOf(value));
+        }
+
+        if (value instanceof Enum<?> enumValue && String.class.isAssignableFrom(type)) {
+            return Optional.of((T) enumValue.name());
         }
 
         if (Instant.class.isAssignableFrom(type)) {
@@ -358,7 +360,7 @@ public class ValueUtil {
             }
             if ((type.isArray() && node.isArray()) || (!node.isArray() && node.isObject())) {
                 try {
-                    return Optional.of(((JsonNode) value).traverse().readValueAs(type));
+                    return Optional.of(JSON.treeToValue(node, type));
                 } catch (Exception ignored) {
                 }
             }
@@ -383,6 +385,10 @@ public class ValueUtil {
                         arr[i] = o;
                     });
                     return Optional.of((T)arr);
+                }
+
+                if (CharSequence.class.isAssignableFrom(type) && (value instanceof Object[] || value instanceof Collection || value instanceof Map)) {
+                    return Optional.of((T) JSON.writeValueAsString(value));
                 }
 
                 return Optional.of(JSON.convertValue(value, type));
@@ -468,8 +474,8 @@ public class ValueUtil {
             return (T)object;
         }
         if (targetType == String.class) {
-            if (object instanceof TextNode) {
-                return (T) ((TextNode)object).textValue();
+            if (object instanceof StringNode) {
+                return (T) ((StringNode)object).textValue();
             }
             return (T) asJSON(object).orElse(null);
         }
@@ -644,6 +650,10 @@ public class ValueUtil {
     public static Optional<AgentDescriptor<?, ?, ?>> getAgentDescriptor(String agentType) {
         return getAssetDescriptor(agentType)
             .map(assetDescriptor -> assetDescriptor instanceof AgentDescriptor ? (AgentDescriptor<?, ?, ?>)assetDescriptor : null);
+    }
+
+    public static Optional<Class<? extends AgentLink<?>>> getAgentLinkClass(String agentLinkType) {
+        return Optional.ofNullable(agentTypeMap.get(agentLinkType));
     }
 
     public static Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors() {
@@ -939,13 +949,15 @@ public class ValueUtil {
                 agentLinkClass,
                 agentLinkClass.getSimpleName()
             )).toArray(NamedType[]::new);
-        JSON.registerSubtypes(agentLinkSubTypes);
+        JSON = JSON.rebuild()
+            .registerSubtypes(agentLinkSubTypes)
+            .build();
 
         doSchemaInit();
     }
 
     protected static void doSchemaInit() {
-        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig(JSON));
+        generator = new SchemaGenerator(JSONSchemaUtil.getJsonSchemaConfig());
     }
 
     /**
@@ -1071,7 +1083,11 @@ public class ValueUtil {
         if (generator == null) {
             return JSON.createObjectNode();
         }
-        return generator.generateSchema(clazz);
+        try {
+            return JSON.readTree(generator.generateSchema(clazz).toString());
+        } catch (JacksonException e) {
+            throw new RuntimeException("Failed to convert generated JSON schema", e);
+        }
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {

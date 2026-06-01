@@ -20,14 +20,17 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
+import tools.jackson.databind.deser.std.StdDeserializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Table;
 import jakarta.persistence.*;
@@ -42,6 +45,7 @@ import org.hibernate.type.SqlTypes;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.jackson.AssetTypeIdResolverJackson2;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaMap;
@@ -56,7 +60,7 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -228,13 +232,16 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
 @JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = ThingAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
+@com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver(AssetTypeIdResolverJackson2.class)
 @AssetValid
 @Valid
 @DynamicUpdate
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
 @Schema(description = "Polymorphic OpenRemote asset. The type discriminator selects a registered asset subtype; attributes are keyed by attribute name.")
-public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
+public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private static final java.util.regex.Pattern ASSET_ID_PATTERN = java.util.regex.Pattern.compile(Constants.ASSET_ID_REGEXP);
 
@@ -244,16 +251,18 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
      * isn't used when hydrating from the DB as JPA uses its' own hydration mechanism so we also have a lazy loading
      * of attribute value mechanism.
      */
-    public static class AssetDeserializer extends StdDeserializer<Asset<?>> implements ResolvableDeserializer {
+    public static class AssetDeserializer extends StdDeserializer<Asset<?>> {
         public static final String ASSET_TYPE_INFO_ATTRIBUTE = "assetTypeInfo";
-        protected final JsonDeserializer<Asset<?>> defaultDeserializer;
-        public AssetDeserializer(JsonDeserializer<Asset<?>> defaultDeserializer, Class<?> clazz) {
+        protected final ValueDeserializer<Asset<?>> defaultDeserializer;
+        protected final Class<?> clazz;
+        public AssetDeserializer(ValueDeserializer<Asset<?>> defaultDeserializer, Class<?> clazz) {
             super(clazz);
             this.defaultDeserializer = defaultDeserializer;
+            this.clazz = clazz;
         }
 
         @Override
-        public Asset<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public Asset<?> deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
             JavaType jType = getValueType(ctxt);
             if (jType != null) {
                 // Make the asset type info available to the attribute deserialiser
@@ -264,10 +273,22 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
         // The wrapped deserializer might need some post-processing so check whether it implements it or not
         @Override
-        public void resolve(DeserializationContext ctxt) throws JsonMappingException {
-            if (defaultDeserializer instanceof ResolvableDeserializer resolvableDeserializer) {
-                resolvableDeserializer.resolve(ctxt);
+        public void resolve(DeserializationContext ctxt) throws DatabindException {
+            defaultDeserializer.resolve(ctxt);
+        }
+
+        @Override
+        public ValueDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) {
+            ValueDeserializer<?> contextualDeserializer = defaultDeserializer.createContextual(ctxt, property);
+            if (contextualDeserializer == defaultDeserializer) {
+                return this;
             }
+            return new AssetDeserializer((ValueDeserializer<Asset<?>>) contextualDeserializer, clazz);
+        }
+
+        @Override
+        public ValueDeserializer<?> getDelegatee() {
+            return defaultDeserializer;
         }
     }
 
@@ -338,6 +359,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @JdbcTypeCode(SqlTypes.JSON)
     @Valid
     @Schema(description = "Attributes keyed by attribute name. Each entry contains type, value, timestamp, and optional metadata.")
+    @JsonProperty
     protected AttributeMap attributes;
 
     /**
@@ -457,15 +479,18 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return attributes;
     }
 
+    @JsonProperty
     public T setAttributes(AttributeMap attributes) {
         this.attributes = attributes;
         return (T) this;
     }
 
+    @JsonIgnore
     public Asset<?> setAttributes(Attribute<?>... attributes) {
         return setAttributes(Arrays.asList(attributes));
     }
 
+    @JsonIgnore
     public T setAttributes(Collection<Attribute<?>> attributes) {
         this.attributes = new AttributeMap(attributes);
         return (T) this;

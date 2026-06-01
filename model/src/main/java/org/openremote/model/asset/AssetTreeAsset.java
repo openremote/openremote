@@ -37,6 +37,9 @@ public class AssetTreeAsset {
     boolean hasChildren;
     Instant createdOn;
 
+    public AssetTreeAsset() {
+    }
+
     public AssetTreeAsset(String id, String name, String type, String parentId, String[] path, boolean hasChildren, Instant createdOn) {
         this.id = id;
         this.name = name;

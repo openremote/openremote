@@ -19,7 +19,7 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
@@ -42,6 +42,14 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
      * This class handles deserialising meta item descriptor names to {@link MetaItemDescriptor}s; to reuse instances
      */
     public static class StringMetaItemDescriptorConverter extends StdConverter<String, MetaItemDescriptor<?>> {
+
+        @Override
+        public MetaItemDescriptor<?> convert(String value) {
+            return ValueUtil.getMetaItemDescriptor(value).orElse(null);
+        }
+    }
+
+    public static class StringMetaItemDescriptorConverterJackson2 extends com.fasterxml.jackson.databind.util.StdConverter<String, MetaItemDescriptor<?>> {
 
         @Override
         public MetaItemDescriptor<?> convert(String value) {

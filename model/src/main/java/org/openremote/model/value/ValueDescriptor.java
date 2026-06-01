@@ -21,14 +21,14 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.deser.std.StdDeserializer;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
@@ -36,7 +36,6 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -65,20 +64,20 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
      * Custom deserialiser that will return the same instance of {@link ValueDescriptor} using the
      * {@link #VALUE_DESCRIPTOR_PROVIDER} attribute; otherwise it will construct a new instance
      */
-    public static class ValueDescriptorDeserializer extends StdDeserializer<ValueDescriptor<?>> implements ResolvableDeserializer {
+    public static class ValueDescriptorDeserializer extends StdDeserializer<ValueDescriptor<?>> {
 
         public static final String VALUE_DESCRIPTOR_PROVIDER = "value-descriptor-provider";
         protected static Function<String, ValueDescriptor<?>> DEFAULT_VALUE_DESCRIPTOR_PROVIDER = (name) -> ValueUtil.getValueDescriptor(name).orElse(null);
-        protected JsonDeserializer<ValueDescriptor<?>> defaultDeserializer;
+        protected ValueDeserializer<ValueDescriptor<?>> defaultDeserializer;
 
-        public ValueDescriptorDeserializer(JsonDeserializer<ValueDescriptor<?>> deserializer) {
+        public ValueDescriptorDeserializer(ValueDeserializer<ValueDescriptor<?>> deserializer) {
             super(ValueDescriptor.class);
             this.defaultDeserializer = deserializer;
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public ValueDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+        public ValueDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
             Function<String, ValueDescriptor<?>> valueDescriptorProvider = (Function<String, ValueDescriptor<?>>)ctxt.getAttribute(VALUE_DESCRIPTOR_PROVIDER);
             if (valueDescriptorProvider == null) {
                 valueDescriptorProvider = DEFAULT_VALUE_DESCRIPTOR_PROVIDER;
@@ -94,7 +93,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
             }
 
             if (!p.isExpectedStartObjectToken()) {
-                throw JsonMappingException.from(p, "Value descriptor must be a string or object");
+                throw DatabindException.from(p, "Value descriptor must be a string or object");
             }
 
             return defaultDeserializer.deserialize(p, ctxt);
@@ -102,10 +101,84 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
         // The wrapped deserializer might need some post-processing so check whether it implements it or not
         @Override
-        public void resolve(DeserializationContext ctxt) throws JsonMappingException {
-            if (defaultDeserializer instanceof ResolvableDeserializer resolvableDeserializer) {
+        public void resolve(DeserializationContext ctxt) throws DatabindException {
+            defaultDeserializer.resolve(ctxt);
+        }
+
+        @Override
+        public ValueDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) {
+            ValueDeserializer<?> contextualDeserializer = defaultDeserializer.createContextual(ctxt, property);
+            if (contextualDeserializer == defaultDeserializer) {
+                return this;
+            }
+            return new ValueDescriptorDeserializer((ValueDeserializer<ValueDescriptor<?>>) contextualDeserializer);
+        }
+
+        @Override
+        public ValueDeserializer<?> getDelegatee() {
+            return defaultDeserializer;
+        }
+    }
+
+    /**
+     * Jackson 2 variant of {@link ValueDescriptorDeserializer}. Attribute and meta descriptors expose their value type
+     * as the descriptor name, but asset model responses can also contain full value descriptor objects.
+     */
+    public static class ValueDescriptorDeserializerJackson2 extends com.fasterxml.jackson.databind.deser.std.StdDeserializer<ValueDescriptor<?>>
+        implements com.fasterxml.jackson.databind.deser.ContextualDeserializer, com.fasterxml.jackson.databind.deser.ResolvableDeserializer {
+
+        protected com.fasterxml.jackson.databind.JsonDeserializer<?> defaultDeserializer;
+
+        public ValueDescriptorDeserializerJackson2(com.fasterxml.jackson.databind.JsonDeserializer<?> deserializer) {
+            super(ValueDescriptor.class);
+            this.defaultDeserializer = deserializer;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public ValueDescriptor<?> deserialize(com.fasterxml.jackson.core.JsonParser p, com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+            Function<String, ValueDescriptor<?>> valueDescriptorProvider = (Function<String, ValueDescriptor<?>>)ctxt.getAttribute(ValueDescriptorDeserializer.VALUE_DESCRIPTOR_PROVIDER);
+            if (valueDescriptorProvider == null) {
+                valueDescriptorProvider = ValueDescriptorDeserializer.DEFAULT_VALUE_DESCRIPTOR_PROVIDER;
+            }
+
+            if (p.currentToken() == com.fasterxml.jackson.core.JsonToken.VALUE_NULL) {
+                return null;
+            }
+
+            if (p.currentToken() == com.fasterxml.jackson.core.JsonToken.VALUE_STRING) {
+                return valueDescriptorProvider.apply(p.getText());
+            }
+
+            if (!p.isExpectedStartObjectToken()) {
+                throw com.fasterxml.jackson.databind.JsonMappingException.from(p, "Value descriptor must be a string or object");
+            }
+
+            return (ValueDescriptor<?>)defaultDeserializer.deserialize(p, ctxt);
+        }
+
+        @Override
+        public void resolve(com.fasterxml.jackson.databind.DeserializationContext ctxt) throws com.fasterxml.jackson.databind.JsonMappingException {
+            if (defaultDeserializer instanceof com.fasterxml.jackson.databind.deser.ResolvableDeserializer resolvableDeserializer) {
                 resolvableDeserializer.resolve(ctxt);
             }
+        }
+
+        @Override
+        public com.fasterxml.jackson.databind.JsonDeserializer<?> createContextual(com.fasterxml.jackson.databind.DeserializationContext ctxt, com.fasterxml.jackson.databind.BeanProperty property) throws com.fasterxml.jackson.databind.JsonMappingException {
+            if (!(defaultDeserializer instanceof com.fasterxml.jackson.databind.deser.ContextualDeserializer contextualDeserializer)) {
+                return this;
+            }
+            com.fasterxml.jackson.databind.JsonDeserializer<?> contextual = contextualDeserializer.createContextual(ctxt, property);
+            if (contextual == defaultDeserializer) {
+                return this;
+            }
+            return new ValueDescriptorDeserializerJackson2(contextual);
+        }
+
+        @Override
+        public com.fasterxml.jackson.databind.JsonDeserializer<?> getDelegatee() {
+            return defaultDeserializer;
         }
     }
 
@@ -141,8 +214,13 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         this.constraints = constraints;
     }
 
-    @JsonCreator
-    protected ValueDescriptor(String name, Class<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units, Integer arrayDimensions) {
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    protected ValueDescriptor(@JsonProperty("name") String name,
+                              @JsonProperty("type") Class<T> type,
+                              @JsonProperty("constraints") ValueConstraint[] constraints,
+                              @JsonProperty("format") ValueFormat format,
+                              @JsonProperty("units") String[] units,
+                              @JsonProperty("arrayDimensions") Integer arrayDimensions) {
         this.name = name;
         this.type = type;
         this.arrayDimensions = arrayDimensions;
