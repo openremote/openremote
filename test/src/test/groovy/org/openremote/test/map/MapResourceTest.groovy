@@ -1,6 +1,6 @@
 package org.openremote.test.map
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.node.ObjectNode
 import groovy.json.JsonSlurper
 import jakarta.ws.rs.client.Entity
 import jakarta.ws.rs.core.MediaType

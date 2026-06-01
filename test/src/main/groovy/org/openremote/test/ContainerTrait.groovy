@@ -73,6 +73,7 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
+import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
@@ -103,8 +104,8 @@ trait ContainerTrait {
             } else {
                 if (currentConfig.size() == config.size()) {
                     configsMatch = currentConfig.entrySet().stream().allMatch{entry ->
-                        // ignore webserver port config
-                        if (entry.key == OR_WEBSERVER_LISTEN_PORT) {
+                        // ignore generated listener ports
+                        if (entry.key == OR_WEBSERVER_LISTEN_PORT || entry.key == MQTT_SERVER_LISTEN_PORT) {
                             return true
                         }
                         entry.value == config.get(entry.key)

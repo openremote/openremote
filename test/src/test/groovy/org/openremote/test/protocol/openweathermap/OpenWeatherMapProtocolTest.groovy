@@ -40,6 +40,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
@@ -221,17 +222,79 @@ class OpenWeatherMapProtocolTest extends Specification implements ManagerContain
                     }"""
                     }
                     
-                    def responseBody = ValueUtil.JSON.readValue(content, OpenWeatherMapResponse.class)
-                    requestContext.abortWith(
-                        Response.ok(responseBody, MediaType.APPLICATION_JSON_TYPE).build()
-                    )
+                    if (content == null) {
+                        requestContext.abortWith(Response.serverError().build())
+                    } else {
+                        requestContext.abortWith(
+                            Response.ok(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), MediaType.APPLICATION_JSON_TYPE).build()
+                        )
+                    }
                     return
                     }
                     break
+                default:
+                    return
             }
 
             requestContext.abortWith(Response.serverError().build())
         }
+    }
+
+    def "OpenWeatherMap response can be deserialized"() {
+        when:
+        def response = ValueUtil.JSON.readValue("""{
+            "current": {
+                "dt": 1710000000,
+                "temp": 15.5,
+                "pressure": 1013,
+                "humidity": 65,
+                "wind_speed": 3.2,
+                "wind_deg": 180,
+                "wind_gust": 4.1,
+                "clouds": 20,
+                "uvi": 2.5,
+                "pop": 0.1,
+                "rain": {"1h": 0.5}
+            },
+            "hourly": [
+                {
+                    "dt": 1710000000,
+                    "temp": 15.5,
+                    "pressure": 1013,
+                    "humidity": 65,
+                    "wind_speed": 3.2,
+                    "wind_deg": 180,
+                    "wind_gust": 4.1,
+                    "clouds": 20,
+                    "uvi": 2.5,
+                    "pop": 0.1,
+                    "rain": {"1h": 0.5}
+                }
+            ],
+            "daily": [
+                {
+                    "dt": 1710000000,
+                    "temp": {"day": 18.5},
+                    "pressure": 1013,
+                    "humidity": 65,
+                    "wind_speed": 3.2,
+                    "wind_deg": 180,
+                    "wind_gust": 4.1,
+                    "clouds": 20,
+                    "uvi": 2.5,
+                    "pop": 0.1,
+                    "rain": 0.5
+                }
+            ]
+        }""", OpenWeatherMapResponse.class)
+
+        then:
+        response.current.temperature == 15.5d
+        response.current.rain == 0.5d
+        response.hourly.size() == 1
+        response.hourly[0].windSpeed == 3.2d
+        response.daily.size() == 1
+        response.daily[0].temperature == 18.5d
     }
 
     def "OpenWeatherMap Integration Tests"() {

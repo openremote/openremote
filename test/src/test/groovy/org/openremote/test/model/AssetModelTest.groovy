@@ -1,7 +1,7 @@
 package org.openremote.test.model
 
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.node.ObjectNode
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.agent.protocol.http.HTTPAgentLink
