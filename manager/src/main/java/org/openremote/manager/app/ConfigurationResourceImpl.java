@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.app;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;

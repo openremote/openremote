@@ -19,7 +19,7 @@
  */
 package org.openremote.container;
 
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.SerializationFeature;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
@@ -167,7 +167,9 @@ public class Container implements org.openremote.model.Container {
             ValueUtil.initialise(this);
 
             if (isDevMode()) {
-                ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
+                ValueUtil.JSON = ValueUtil.JSON.rebuild()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .build();
             }
 
             for (ContainerService service : getServices()) {

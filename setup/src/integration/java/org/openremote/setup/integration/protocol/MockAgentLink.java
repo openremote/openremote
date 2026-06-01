@@ -19,12 +19,14 @@
  */
 package org.openremote.setup.integration.protocol;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.agent.AgentLink;
 
 import java.util.Optional;
 
 public class MockAgentLink extends AgentLink<MockAgentLink> {
 
+    @JsonProperty
     protected String requiredValue;
 
     // For Hydrators

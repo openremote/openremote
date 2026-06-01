@@ -393,6 +393,10 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
     }
 
+    private static String toLocalTimestampLiteral(long timestamp) {
+        return Timestamp.valueOf(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime()).toString();
+    }
+
     /**
      * Function for building CSV attribute headers when format will make
      * a separate column per attribute.

@@ -22,14 +22,15 @@ package org.openremote.agent.protocol.simulator;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.StdSerializer;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -44,7 +45,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.JSONSchemaUtil.*;
 import org.openremote.model.value.AbstractNameValueHolder;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.*;
 import java.util.*;
@@ -327,11 +327,11 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     public static class Schedule implements Serializable {
 
-        private static class EpochLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+        private static class EpochLocalDateTimeDeserializer extends ValueDeserializer<LocalDateTime> {
 
             @Override
-            public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-                if (parser != null && parser.getCurrentToken() != null) {
+            public LocalDateTime deserialize(JsonParser parser, DeserializationContext context) throws JacksonException {
+                if (parser != null && parser.currentToken() != null) {
                     long value = parser.getValueAsLong(-1);
                     if (value > -1L) {
                         return LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneOffset.UTC);
@@ -341,10 +341,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             }
         }
 
-        public static class EpochLocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
+        public static class EpochLocalDateTimeSerializer extends StdSerializer<LocalDateTime> {
+
+            public EpochLocalDateTimeSerializer() {
+                super(LocalDateTime.class);
+            }
 
             @Override
-            public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            public void serialize(LocalDateTime value, JsonGenerator gen, SerializationContext context) throws JacksonException {
                 if (value == null) {
                     gen.writeNull();
                     return;
