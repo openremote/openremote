@@ -83,15 +83,15 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
+            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
+                new WebApplicationException(Response.Status.NOT_FOUND)
+            );
+
             // If logged in, user should have READ ASSETS role
             if(isAuthenticated() && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-
-            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
-                new WebApplicationException(Response.Status.NOT_FOUND)
-            );
 
             // If restricted, the attribute should also be restricted
             if(isRestrictedUser()) {
@@ -136,14 +136,9 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            // If not logged in, asset should be PUBLIC READ
-            if(!isAuthenticated() && !asset.isAccessPublicRead()) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
-            }
-
-            // If logged in, user should have READ ASSETS role
-            if(isAuthenticated() && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
+            // If logged in, user should have WRITE ATTRIBUTES role
+            if(isAuthenticated() && !hasResourceRole(ClientRole.WRITE_ATTRIBUTES.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.info("Forbidden write access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -151,18 +146,18 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            // If restricted, the attribute should also be restricted
+            // If restricted, the attribute should be writable by restricted users
             if(isRestrictedUser()) {
-                attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_READ).ifPresentOrElse((v) -> {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_WRITE).ifPresentOrElse((v) -> {
                     if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
                 }, () -> {
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 });
             }
 
-            // If not logged in, attribute should be PUBLIC READ
+            // If not logged in, attribute should be PUBLIC WRITE
             if(!isAuthenticated()) {
-                attribute.getMeta().getValue(MetaItemType.ACCESS_PUBLIC_READ).ifPresentOrElse((v) -> {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_PUBLIC_WRITE).ifPresentOrElse((v) -> {
                     if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
                 }, () -> {
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
