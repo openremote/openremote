@@ -3,6 +3,9 @@ import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import "@openremote/or-vaadin-components/or-vaadin-select";
+import "@openremote/or-vaadin-components/or-vaadin-item";
+import "@openremote/or-vaadin-components/or-vaadin-list-box";
+import { selectRenderer } from "@vaadin/select/lit.js";
 import {
     MapAssetCardConfig,
     OrMap,
@@ -457,21 +460,33 @@ export class PageMap extends Page<MapStateKeyed> {
     protected render() {
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         const filters = this.config?.filters;
-        const filterItems = filters?.length ? [
-            { value: "0", label: `${i18next.t("mapPage.filterAll", { defaultValue: "All" })} (${this._assets.length})` },
+        const filterOptions = filters?.length ? [
+            { value: "0", label: i18next.t("mapPage.filterAll", { defaultValue: "All" }), count: this._assets.length },
             ...filters.map((filter, i) => ({
                 value: String(i + 1),
-                label: `${this._getFilterLabel(filter)} (${this._getFilterCount(i + 1)})`
+                label: this._getFilterLabel(filter),
+                count: this._getFilterCount(i + 1)
             }))
         ] : undefined;
 
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${filterItems ? html`
+            ${filterOptions ? html`
                 <or-vaadin-select id="filter-select"
                     .value="${String(this._activeFilterIndex)}"
-                    .items="${filterItems}"
+                    ${selectRenderer(() => html`
+                        <or-vaadin-list-box>
+                            ${filterOptions.map(opt => html`
+                                <or-vaadin-item value="${opt.value}" label="${opt.label}">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span style="flex:1;">${opt.label}</span>
+                                        <span style="background:#3A463A1A;border-radius:10px;padding:1px 8px;font-size:0.8em;">${opt.count}</span>
+                                    </div>
+                                </or-vaadin-item>
+                            `)}
+                        </or-vaadin-list-box>
+                    `, filterOptions)}
                     @change="${this._onFilterChanged}"
                 ></or-vaadin-select>
             ` : null}
