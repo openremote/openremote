@@ -481,7 +481,7 @@ export class PageMap extends Page<MapStateKeyed> {
                                 <or-vaadin-item value="${opt.value}" label="${opt.label}">
                                     <div style="display:flex;align-items:center;gap:8px;">
                                         <span style="flex:1;">${opt.label}</span>
-                                        <span style="background:#3A463A1A;border-radius:10px;padding:1px 8px;font-size:0.8em;">${opt.count}</span>
+                                        <span style="background:#3A463A1A;border-radius:10px;padding:1px 4px;font-size:0.8em;width:36px;text-align:center;flex-shrink:0;">${opt.count > 99 ? "99+" : opt.count}</span>
                                     </div>
                                 </or-vaadin-item>
                             `)}
