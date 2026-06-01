@@ -108,8 +108,8 @@ test("Create a Map widget with text thresholds", async ({ manager, shared, page,
     await page.getByRole("combobox", { name: "Asset type" }).fill("Thing");
     await page.getByRole("option", { name: "Thing asset" }).click();
     await expect(thresholdPanel).toBeHidden();
-    await insightsPage.getWidgetSettings().getByRole("combobox", { name: "Attribute" }).click();
-    await insightsPage.getWidgetSettings().getByRole("option", { name: "Notes" }).click();
+    await insightsPage.getWidgetSettings().getByRole("combobox", { name: /Attribute|attribute/i }).click();
+    await insightsPage.getWidgetSettings().getByRole("option", { name: /Notes|notes/i }).click();
     await expect(page.locator(".or-map-marker")).toBeVisible();
     await expect(thresholdPanel).toBeVisible();
 

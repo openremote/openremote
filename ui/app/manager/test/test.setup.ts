@@ -34,6 +34,7 @@ setup(`Login as "admin" user`, async ({ page, manager, context }) => {
     await manager.login(admin.username);
     await page.waitForURL("**/manager/**");
     await page.waitForTimeout(2000);
+    await manager.clearStoredConsole();
     await context.storageState({ path: adminStatePath });
 });
 
@@ -74,6 +75,7 @@ setup.describe(async () => {
         await expect(page.getByRole("cell", { name: "smartcity" })).toHaveCount(1);
         await page.getByRole("cell", { name: "smartcity" }).click();
         await usersPage.toHavePermissions(...permissions);
+        await manager.updateUserRolesByUsername("smartcity", username, smartcity.roles);
     });
 });
 
@@ -82,6 +84,7 @@ setup(`Login as "smartcity" user`, async ({ page, manager, context }) => {
     await manager.goToRealmStartPage("smartcity");
     await manager.login("smartcity");
     await page.waitForURL("**/manager/**");
+    await manager.clearStoredConsole();
     await context.storageState({ path: userStatePath });
     await expect(page.getByRole("menuitem", { name: "More options" })).toBeVisible();
     await expect(page.locator("#realm-picker")).not.toBeVisible();
