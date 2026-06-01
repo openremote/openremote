@@ -59,6 +59,14 @@ export class OrRuleFormWebhook extends LitElement {
 
     // Util
 
+    getAuthMethod(webhook: Webhook): string | undefined {
+        if (webhook.oAuthGrant?.grant_type != undefined) {
+            return this.authMethodOptions.get(webhook.oAuthGrant.grant_type);
+        } else {
+            return this.authMethodOptions.get("username_password");
+        }
+    }
+
     getOAuthGrant(authMethodKey: string): OAuthGrant | undefined {
         if (authMethodKey == 'client_credentials' || authMethodKey == 'password') {
             return {grant_type: authMethodKey} as OAuthGrant;

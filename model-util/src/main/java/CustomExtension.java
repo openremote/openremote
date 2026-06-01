@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.habarta.typescript.generator.Extension;
 import cz.habarta.typescript.generator.TsType;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
@@ -29,14 +30,22 @@ import cz.habarta.typescript.generator.emitter.TsBeanModel;
 import cz.habarta.typescript.generator.emitter.TsPropertyModel;
 import cz.habarta.typescript.generator.parser.BeanModel;
 import cz.habarta.typescript.generator.parser.Model;
+import cz.habarta.typescript.generator.parser.PropertyAccess;
+import cz.habarta.typescript.generator.parser.PropertyModel;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.util.TsIgnoreTypeParams;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
@@ -98,6 +107,8 @@ public class CustomExtension extends Extension {
                 @Override
                 public Model transformModel(SymbolTable symbolTable, Model model) {
 
+                    model.getBeans().replaceAll(CustomExtension::addExplicitJsonProperties);
+
                     // Remove attribute state from attribute event (can't do this with annotations)
                     BeanModel attrEventBean = model.getBean(AttributeEvent.class);
                     if (attrEventBean != null) {
@@ -107,5 +118,66 @@ public class CustomExtension extends Extension {
                 }
             })
         );
+    }
+
+    private static BeanModel addExplicitJsonProperties(BeanModel bean) {
+        Class<?> origin = bean.getOrigin();
+        if (origin == null) {
+            return bean;
+        }
+
+        List<PropertyModel> properties = new ArrayList<>(bean.getProperties());
+        Set<String> propertyNames = new HashSet<>();
+        properties.forEach(property -> propertyNames.add(property.getName()));
+
+        for (Field field : origin.getDeclaredFields()) {
+            JsonProperty jsonProperty = field.getAnnotation(JsonProperty.class);
+            if (jsonProperty == null || Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+
+            String propertyName = getJsonPropertyName(jsonProperty, field.getName());
+            if (propertyNames.add(propertyName)) {
+                properties.add(new PropertyModel(propertyName, field.getGenericType(), true, PropertyAccess.ReadWrite, field, null, null, null));
+            }
+        }
+
+        for (Method method : origin.getMethods()) {
+            JsonProperty jsonProperty = method.getAnnotation(JsonProperty.class);
+            if (jsonProperty == null || Modifier.isStatic(method.getModifiers()) || method.getParameterCount() != 0 || method.getReturnType() == Void.TYPE) {
+                continue;
+            }
+
+            String defaultName = getBeanPropertyName(method);
+            if (defaultName == null) {
+                continue;
+            }
+
+            String propertyName = getJsonPropertyName(jsonProperty, defaultName);
+            if (propertyNames.add(propertyName)) {
+                properties.add(new PropertyModel(propertyName, method.getGenericReturnType(), true, PropertyAccess.ReadWrite, method, null, null, null));
+            }
+        }
+
+        if (properties.size() == bean.getProperties().size()) {
+            return bean;
+        }
+
+        return new BeanModel(bean.getOrigin(), bean.getParent(), bean.getTaggedUnionClasses(), bean.getDiscriminantProperty(), bean.getDiscriminantLiteral(), bean.getInterfaces(), properties, bean.getComments());
+    }
+
+    private static String getJsonPropertyName(JsonProperty jsonProperty, String defaultName) {
+        return jsonProperty.value() == null || jsonProperty.value().isEmpty() ? defaultName : jsonProperty.value();
+    }
+
+    private static String getBeanPropertyName(Method method) {
+        String methodName = method.getName();
+        if (methodName.startsWith("get") && methodName.length() > 3) {
+            return Character.toLowerCase(methodName.charAt(3)) + methodName.substring(4);
+        }
+        if (methodName.startsWith("is") && methodName.length() > 2 && method.getReturnType() == Boolean.TYPE) {
+            return Character.toLowerCase(methodName.charAt(2)) + methodName.substring(3);
+        }
+        return null;
     }
 }
