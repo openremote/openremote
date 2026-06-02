@@ -31,66 +31,8 @@ declare global {
     }
 }
 
-export function evalValuePredicate(val: any, predicate: any): boolean {
-    if (!predicate) return true;
-    switch (predicate.predicateType) {
-        case "string": {
-            if (val === null || val === undefined) return false;
-            const haystack = predicate.caseSensitive !== false ? String(val) : String(val).toLowerCase();
-            const needle = predicate.caseSensitive !== false ? predicate.value : predicate.value?.toLowerCase();
-            let m: boolean;
-            switch (predicate.match) {
-                case "BEGIN":    m = haystack.startsWith(needle); break;
-                case "END":      m = haystack.endsWith(needle); break;
-                case "CONTAINS": m = haystack.includes(needle); break;
-                default:         m = haystack === needle;
-            }
-            return predicate.negate ? !m : m;
-        }
-        case "boolean":
-            return val === predicate.value;
-        case "number": {
-            if (typeof val !== "number") return false;
-            let m: boolean;
-            switch (predicate.operator) {
-                case "GREATER_THAN":   m = val > predicate.value; break;
-                case "GREATER_EQUALS": m = val >= predicate.value; break;
-                case "LESS_THAN":      m = val < predicate.value; break;
-                case "LESS_EQUALS":    m = val <= predicate.value; break;
-                case "BETWEEN":        m = val >= predicate.value && val <= predicate.rangeValue; break;
-                default:               m = val === predicate.value;
-            }
-            return predicate.negate ? !m : m;
-        }
-        default:
-            return true;
-    }
-}
-
-export function evalAttributePredicate(asset: AssetWithLocation, predicate: any): boolean {
-    const attrName = predicate.name?.value;
-    if (!attrName) return true;
-    const attribute = asset.attributes?.[attrName];
-    if (!attribute) return predicate.negated ? true : false;
-    const matches = evalValuePredicate(attribute.value, predicate.value);
-    return predicate.negated ? !matches : matches;
-}
-
-export function evalAttributeGroup(asset: AssetWithLocation, group: any): boolean {
-    const operator: string = group.operator ?? "AND";
-    const results: boolean[] = [
-        ...(group.items ?? []).map((item: any) => evalAttributePredicate(asset, item)),
-        ...(group.groups ?? []).map((g: any) => evalAttributeGroup(asset, g))
-    ];
-    if (!results.length) return true;
-    return operator === "OR" ? results.some(Boolean) : results.every(Boolean);
-}
-
 export function assetMatchesFilter(asset: AssetWithLocation, filter: MapPresetFilter): boolean {
-    const { types, attributes } = filter.assetQuery;
-    if (types?.length && (!asset.type || !types.includes(asset.type))) return false;
-    if (attributes && !evalAttributeGroup(asset, attributes)) return false;
-    return true;
+    return Util.assetMatchesQuery(asset, filter.assetQuery);
 }
 
 @customElement("or-map-preset-filter")
