@@ -1,6 +1,9 @@
 [versions]
 angusMail = "2.0.5"
+artemis = "2.53.0"
+apacheSshd = "2.16.0"
 bouncyCastle = "1.83"
+byteBuddy = "1.16.1"
 bluetooth = "0.64"
 californium = "3.14.0"
 calimero = "2.6"
@@ -11,6 +14,7 @@ corsFilter = "3.1"
 easyRules = "4.1.0"
 exp4j = "0.4.13"
 failsafe = "3.3.2"
+firebaseAdmin = "9.8.0"
 flywaydb = "11.13.1"
 friendlyId = "1.0.4"
 geotools = "34.3"
@@ -41,12 +45,18 @@ micrometer = "1.16.5"
 mockito = "5.23.0"
 netty = "4.2.12.Final"
 nimbusJoseJwt = "10.4.2"
+objenesis = "3.4"
 postgresJdbc = "42.7.11"
+prometheus = "1.6.1"
+quartz = "2.5.2"
 reflections = "0.10.2"
 resteasy = "6.2.16.Final"
 resteasyCache = "4.7.10.Final"
 saxonHe = "12.9"
 slf4j = "2.0.17"
+spock = "2.4-groovy-5.0"
+sqlite = "3.53.0.0"
+suncalc = "3.11"
 swagger = "2.2.49"
 undertow = "2.3.24.Final"
 uuidGenerator = "5.2.0"
@@ -55,6 +65,10 @@ zwave = "3.4.0"
 
 [libraries]
 angusMail = { module = "org.eclipse.angus:angus-mail", version.ref = "angusMail" }
+artemisMqttProtocol = { module = "org.apache.artemis:artemis-mqtt-protocol", version.ref = "artemis" }
+artemisServer = { module = "org.apache.artemis:artemis-server", version.ref = "artemis" }
+byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byteBuddy" }
+byteBuddyAgent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "byteBuddy" }
 blessedBluez = { module = "com.github.weliem:blessed-bluez", version.ref = "bluetooth" }
 bouncycastleBcprovJdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncyCastle" }
 californiumCore = { module = "org.eclipse.californium:californium-core", version.ref = "californium" }
@@ -67,12 +81,14 @@ camelHealth = { module = "org.apache.camel:camel-health", version.ref = "camel" 
 camelJackson = { module = "org.apache.camel:camel-jackson", version.ref = "camel" }
 camelManagement = { module = "org.apache.camel:camel-management", version.ref = "camel" }
 camelSnmp = { module = "org.apache.camel:camel-snmp", version.ref = "camel" }
+camelUndertow = { module = "org.apache.camel:camel-undertow", version.ref = "camel" }
 checkerQual = { module = "org.checkerframework:checker-qual", version.ref = "checkerframework" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 corsFilter = { module = "com.thetransactioncompany:cors-filter", version.ref = "corsFilter" }
 easyRulesCore = { module = "org.jeasy:easy-rules-core", version.ref = "easyRules" }
 exp4j = { module = "fr.neolegal:exp4j", version.ref = "exp4j" }
 failsafe = { module = "dev.failsafe:failsafe", version.ref = "failsafe" }
+firebaseAdmin = { module = "com.google.firebase:firebase-admin", version.ref = "firebaseAdmin" }
 flywayCore = { module = "org.flywaydb:flyway-core", version.ref = "flywaydb" }
 flywayDatabasePostgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flywaydb" }
 friendlyId = { module = "com.devskiller.friendly-id:friendly-id", version.ref = "friendlyId" }
@@ -82,6 +98,7 @@ grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpcProtobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpcStub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
+groovyAll = { module = "org.apache.groovy:groovy-all", version.ref = "groovy" }
 groovyJson = { module = "org.apache.groovy:groovy-json", version.ref = "groovy" }
 groovySandbox = { module = "org.craftercms:groovy-sandbox", version.ref = "groovySandbox" }
 groovyXml = { module = "org.apache.groovy:groovy-xml", version.ref = "groovy" }
@@ -119,9 +136,13 @@ micrometerRegistryPrometheus = { module = "io.micrometer:micrometer-registry-pro
 mockitoCore = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 nettyCodec = { module = "io.netty:netty-codec", version.ref = "netty" }
 nettyCodecHttp = { module = "io.netty:netty-codec-http", version.ref = "netty" }
+nettyCodecMqtt = { module = "io.netty:netty-codec-mqtt" }
 nimbusJoseJwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusJoseJwt" }
+objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 orZwave = { module = "org.openremote:or-zwave", version.ref = "zwave" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresJdbc" }
+prometheusMetricsExporterHttpserver = { module = "io.prometheus:prometheus-metrics-exporter-httpserver", version.ref = "prometheus" }
+quartz = { module = "org.quartz-scheduler:quartz", version.ref = "quartz" }
 reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
 resteasyCacheCore = { module = "org.jboss.resteasy:resteasy-cache-core", version.ref = "resteasyCache" }
 resteasyClient = { module = "org.jboss.resteasy:resteasy-client", version.ref = "resteasy" }
@@ -132,7 +153,13 @@ resteasyUndertow = { module = "org.jboss.resteasy:resteasy-undertow", version.re
 resteasyValidatorProvider = { module = "org.jboss.resteasy:resteasy-validator-provider", version.ref = "resteasy" }
 saxonHe = { module = "net.sf.saxon:Saxon-HE", version.ref = "saxonHe" }
 slf4jJdk14 = { module = "org.slf4j:slf4j-jdk14", version.ref = "slf4j" }
+spockBom = { module = "org.spockframework:spock-bom", version.ref = "spock" }
+spockCore = { module = "org.spockframework:spock-core" }
+sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+suncalc = { module = "org.shredzone.commons:commons-suncalc", version.ref = "suncalc" }
 swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
+swaggerJaxrs2Jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
+sshdNetty = { module = "org.apache.sshd:sshd-netty", version.ref = "apacheSshd" }
 undertowCore = { module = "io.undertow:undertow-core", version.ref = "undertow" }
 undertowWebsocketsJsr = { module = "io.undertow:undertow-websockets-jsr", version.ref = "undertow" }
 victoolsJsonschemaGenerator = { module = "com.github.victools:jsonschema-generator", version.ref = "victoolsJsonSchemaGenerator" }
