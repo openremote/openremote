@@ -61,6 +61,7 @@ spock = "2.4-groovy-5.0"
 sqlite = "3.53.0.0"
 suncalc = "3.11"
 swagger = "2.2.49"
+typescriptGenerator = "3.2.1263"
 undertow = "2.3.24.Final"
 uuidGenerator = "5.2.0"
 victoolsJsonSchemaGenerator = "4.38.0"
@@ -172,6 +173,7 @@ suncalc = { module = "org.shredzone.commons:commons-suncalc", version.ref = "sun
 swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
 swaggerJaxrs2Jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
 sshdNetty = { module = "org.apache.sshd:sshd-netty", version.ref = "apacheSshd" }
+typescriptGeneratorCore = { module = "cz.habarta.typescript-generator:typescript-generator-core", version.ref = "typescriptGenerator" }
 undertowCore = { module = "io.undertow:undertow-core", version.ref = "undertow" }
 undertowWebsocketsJsr = { module = "io.undertow:undertow-websockets-jsr", version.ref = "undertow" }
 victoolsJsonschemaGenerator = { module = "com.github.victools:jsonschema-generator", version.ref = "victoolsJsonSchemaGenerator" }
