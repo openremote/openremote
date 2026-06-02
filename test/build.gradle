@@ -1,5 +1,5 @@
 plugins {
-    id 'com.adarshr.test-logger' version '4.0.0'
+    id 'com.adarshr.test-logger' version "$testLoggerPluginVersion"
 }
 
 apply plugin: "java-library"
