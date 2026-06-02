@@ -1,12 +1,12 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { selectRenderer } from "@vaadin/select/lit.js";
 import { AssetQuery } from "@openremote/model";
 import { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-item";
 import "@openremote/or-vaadin-components/or-vaadin-list-box";
+import { selectRenderer } from "@openremote/or-vaadin-components/or-vaadin-select"
 import { AssetWithLocation } from "./types";
 
 export interface MapPresetFilter {
@@ -222,7 +222,7 @@ export class OrMapPresetFilter extends LitElement {
             <div class="filter-container">
                 <or-vaadin-select
                     .value="${String(this._activeIndex)}"
-                    ${selectRenderer(() => this._renderFilterOptions(), [this.filters, this.assets])}
+                    ${selectRenderer(this._renderFilterOptions, [this.filters, this.assets])}
                     @change="${this._onChange}"
                 ></or-vaadin-select>
                 <span class="filter-field-count">

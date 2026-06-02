@@ -23,6 +23,7 @@ import {OrVaadinComponent} from "./util";
 import {type LitElement} from "lit";
 
 export {SelectItem} from "@vaadin/select";
+export {selectRenderer} from "@vaadin/select/lit.js";
 
 /**
  * @slot label - The label element
