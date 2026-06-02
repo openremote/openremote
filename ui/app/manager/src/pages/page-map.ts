@@ -14,9 +14,7 @@ import {
     OrMapMarkersChangedEvent,
     OrMapLegendEvent,
     OrMapLoadedEvent,
-    MapPresetFilter,
-    OrMapPresetFilterEvent,
-    assetMatchesFilter
+    OrMapPresetFilterEvent
 } from "@openremote/or-map";
 import manager, { Util } from "@openremote/core";
 import {createSelector} from "reselect";
@@ -135,7 +133,7 @@ export interface PageMapConfig {
     card?: MapAssetCardConfig,
     assetQuery?: AssetQuery,
     markers?: MapMarkerAssetConfig,
-    filters?: MapPresetFilter[]
+    filters?: AssetQuery[]
 }
 
 export function pageMapProvider(store: Store<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
@@ -259,7 +257,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _assetsOnScreen: AssetWithLocation[] = [];
 
     @state()
-    protected _activeFilter: MapPresetFilter | null = null;
+    protected _activeFilter: AssetQuery | null = null;
 
     protected _locatedAssetSelector = (state: MapStateKeyed) => state.map.locatedAssets;
     protected _unlocatedAssetSelector = (state: MapStateKeyed) => state.map.unlocatedAssets;
@@ -280,7 +278,7 @@ export class PageMap extends Page<MapStateKeyed> {
         }
 
         const filterAttributes = (this.config?.filters ?? [])
-            .flatMap(f => f.assetQuery.attributes?.items ?? [])
+            .flatMap(f => f.attributes?.items ?? [])
             .map((item: any) => item.name?.value)
             .filter((name): name is string => !!name);
 
@@ -552,7 +550,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected _isAssetVisible(asset: AssetWithLocation): boolean {
-        if (this._activeFilter && !assetMatchesFilter(asset, this._activeFilter)) return false;
+        if (this._activeFilter && !Util.assetMatchesQuery(asset, this._activeFilter)) return false;
         return !this._excludedTypes.includes(asset.type);
     }
 

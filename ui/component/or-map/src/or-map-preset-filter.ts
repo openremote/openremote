@@ -9,14 +9,10 @@ import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import { selectRenderer } from "@openremote/or-vaadin-components/or-vaadin-select"
 import { AssetWithLocation } from "./types";
 
-export interface MapPresetFilter {
-    assetQuery: AssetQuery;
-}
-
-export class OrMapPresetFilterEvent extends CustomEvent<MapPresetFilter | null> {
+export class OrMapPresetFilterEvent extends CustomEvent<AssetQuery | null> {
     public static readonly NAME = "or-map-preset-filter-changed";
 
-    constructor(filter: MapPresetFilter | null) {
+    constructor(filter: AssetQuery | null) {
         super(OrMapPresetFilterEvent.NAME, {
             bubbles: false,
             composed: false,
@@ -29,10 +25,6 @@ declare global {
     export interface HTMLElementEventMap {
         [OrMapPresetFilterEvent.NAME]: OrMapPresetFilterEvent;
     }
-}
-
-export function assetMatchesFilter(asset: AssetWithLocation, filter: MapPresetFilter): boolean {
-    return Util.assetMatchesQuery(asset, filter.assetQuery);
 }
 
 @customElement("or-map-preset-filter")
@@ -71,7 +63,7 @@ export class OrMapPresetFilter extends LitElement {
     }
 
     @property({ type: Array })
-    public filters: MapPresetFilter[] = [];
+    public filters: AssetQuery[] = [];
 
     @property({ type: Array })
     public assets: AssetWithLocation[] = [];
@@ -79,13 +71,13 @@ export class OrMapPresetFilter extends LitElement {
     @state()
     protected _activeIndex = 0;
 
-    protected _getFilterLabel(filter: MapPresetFilter): string {
-        const types = filter.assetQuery.types;
+    protected _getFilterLabel(filter: AssetQuery): string {
+        const types = filter.types;
         const typeLabel = types?.length
             ? types.map(t => Util.getAssetTypeLabel(t).replace(/\s*asset\s*$/i, "").trim()).join(" + ")
             : i18next.t("mapPage.filterCustom", { defaultValue: "Custom" });
 
-        const attrValues = (filter.assetQuery.attributes?.items ?? [] as any[])
+        const attrValues = (filter.attributes?.items ?? [] as any[])
             .map((item: any) => {
                 const val = item.value?.value;
                 if (val === undefined || val === null) return null;
@@ -102,7 +94,7 @@ export class OrMapPresetFilter extends LitElement {
     protected _getFilterCount(filterIndex: number): number {
         if (filterIndex === 0) return this.assets.length;
         const filter = this.filters[filterIndex - 1];
-        return this.assets.filter(a => assetMatchesFilter(a, filter)).length;
+        return this.assets.filter(a => Util.assetMatchesQuery(a, filter)).length;
     }
 
     protected _buildOptions() {
