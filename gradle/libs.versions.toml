@@ -19,6 +19,7 @@ flywaydb = "11.13.1"
 friendlyId = "1.0.4"
 geotools = "34.3"
 glassfishSoteria = "3.0.4"
+greenmail = "2.1.2"
 grpc = "1.80.0"
 grpcAnnotations = "1.3.2"
 groovy = "5.0.6"
@@ -44,8 +45,10 @@ keycloak = "25.0.3"
 micrometer = "1.16.5"
 mockito = "5.23.0"
 netty = "4.2.12.Final"
+niftyModbus = "0.17.0"
 nimbusJoseJwt = "10.4.2"
 objenesis = "3.4"
+moquette = "0.18.0"
 postgresJdbc = "42.7.11"
 prometheus = "1.6.1"
 quartz = "2.5.2"
@@ -71,9 +74,11 @@ byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byteBuddy" }
 byteBuddyAgent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "byteBuddy" }
 blessedBluez = { module = "com.github.weliem:blessed-bluez", version.ref = "bluetooth" }
 bouncycastleBcprovJdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncyCastle" }
+bouncycastleBcpkixJdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncyCastle" }
 californiumCore = { module = "org.eclipse.californium:californium-core", version.ref = "californium" }
 californiumScandium = { module = "org.eclipse.californium:scandium", version.ref = "californium" }
 calimeroCore = { module = "com.github.calimero:calimero-core", version.ref = "calimero" }
+calimeroServer = { module = "com.github.calimero:calimero-server", version.ref = "calimero" }
 calimeroTools = { module = "com.github.calimero:calimero-tools", version.ref = "calimero" }
 camelCore = { module = "org.apache.camel:camel-core", version.ref = "camel" }
 camelCoreModel = { module = "org.apache.camel:camel-core-model", version.ref = "camel" }
@@ -101,8 +106,10 @@ groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
 groovyAll = { module = "org.apache.groovy:groovy-all", version.ref = "groovy" }
 groovyJson = { module = "org.apache.groovy:groovy-json", version.ref = "groovy" }
 groovySandbox = { module = "org.craftercms:groovy-sandbox", version.ref = "groovySandbox" }
+groovyTest = { module = "org.apache.groovy:groovy-test", version.ref = "groovy" }
 groovyXml = { module = "org.apache.groovy:groovy-xml", version.ref = "groovy" }
 groovyYaml = { module = "org.apache.groovy:groovy-yaml", version.ref = "groovy" }
+greenmail = { module = "com.icegreen:greenmail", version.ref = "greenmail" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 hibernateCore = { module = "org.hibernate.orm:hibernate-core", version.ref = "hibernate" }
 hibernateHikaricp = { module = "org.hibernate.orm:hibernate-hikaricp", version.ref = "hibernate" }
@@ -137,8 +144,13 @@ mockitoCore = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 nettyCodec = { module = "io.netty:netty-codec", version.ref = "netty" }
 nettyCodecHttp = { module = "io.netty:netty-codec-http", version.ref = "netty" }
 nettyCodecMqtt = { module = "io.netty:netty-codec-mqtt" }
+niftyModbusApi = { module = "net.solarnetwork.common:nifty-modbus-api", version.ref = "niftyModbus" }
+niftyModbusCore = { module = "net.solarnetwork.common:nifty-modbus-core", version.ref = "niftyModbus" }
+niftyModbusRtuJsc = { module = "net.solarnetwork.common:nifty-modbus-rtu-jsc", version.ref = "niftyModbus" }
+niftyModbusTcp = { module = "net.solarnetwork.common:nifty-modbus-tcp", version.ref = "niftyModbus" }
 nimbusJoseJwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusJoseJwt" }
 objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
+moquette = { module = "com.github.moquette-io:moquette", version.ref = "moquette" }
 orZwave = { module = "org.openremote:or-zwave", version.ref = "zwave" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresJdbc" }
 prometheusMetricsExporterHttpserver = { module = "io.prometheus:prometheus-metrics-exporter-httpserver", version.ref = "prometheus" }
