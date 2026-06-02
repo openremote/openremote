@@ -1,0 +1,1044 @@
+/*
+ * Copyright 2019, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.test.protocol.mqtt
+
+import com.fasterxml.jackson.databind.node.ObjectNode
+import io.netty.buffer.ByteBuf
+import io.netty.buffer.ByteBufUtil
+import io.netty.buffer.Unpooled
+import io.netty.channel.embedded.EmbeddedChannel
+import org.openremote.agent.protocol.mqtt.MQTTMessage
+import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.agent.protocol.teltonika.TeltonikaAgent
+import org.openremote.agent.protocol.teltonika.TeltonikaProtocolDecoder
+import org.openremote.agent.protocol.teltonika.TeltonikaRecord
+import org.openremote.manager.agent.AgentService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.mqtt.DefaultMQTTHandler
+import org.openremote.manager.mqtt.MQTTBrokerService
+import org.openremote.manager.telematics.TeltonikaMQTTHandler
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.telematics.TeltonikaVendor
+import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.telematics.teltonika.TeltonikaAssetMapper
+import org.openremote.model.telematics.teltonika.TeltonikaAttributeResolver
+import org.openremote.model.telematics.teltonika.TeltonikaParameters
+import org.openremote.model.telematics.teltonika.TeltonikaTrackerAsset
+import org.openremote.model.util.UniqueIdentifierGenerator
+import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
+import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
+import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
+
+import java.nio.charset.Charset
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.function.Consumer
+
+class TeltonikaMQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
+
+    def "Check MQTT client"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 20, delay: 0.1)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def mqttBrokerService = container.getService(MQTTBrokerService.class)
+        mqttBrokerService.getCustomHandlers().find { it instanceof DefaultMQTTHandler } as DefaultMQTTHandler
+
+        when: "a hiveMQ client is created to connect to our own broker"
+        List<String> failedSubs = new CopyOnWriteArrayList()
+        List<MQTTMessage<String>> received = new CopyOnWriteArrayList<>()
+        def clientId = "teltonikatest1"
+        def host = "localhost"
+        def port = 1883
+        def secure = false
+        def imei = "123456789012345"
+        def subscriptions = [
+                "${keycloakTestSetup.realmMaster.name}/${clientId}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_TOKEN}/${imei}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString(),
+                "${keycloakTestSetup.realmMaster.name}/${clientId}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_TOKEN}/${imei}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_SEND_TOPIC}".toString()
+        ]
+        Consumer<MQTTMessage<String>> consumer = { it ->
+            LOG.info("Received on topic=${it.topic}")
+            received.add(it)
+        }
+        def client = new MQTT_IOClient(
+                clientId,
+                host,
+                port,
+                secure,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null
+        )
+        client.setResubscribeIfSessionPresent(false)
+        client.setTopicSubscribeFailureConsumer {
+            LOG.info("Subscription failed: $it")
+            failedSubs.add(it)
+        }
+        client.addConnectionStatusConsumer {
+            LOG.info("Connection status changed: $it")
+        }
+
+        and: "the client connects"
+        client.connect()
+
+        then: "the client should be connected"
+        conditions.eventually {
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        when: "more subscriptions are added"
+        client.addMessageConsumer(subscriptions[0], consumer)
+        client.addMessageConsumer(subscriptions[1], consumer)
+
+        then: "all subscriptions should be successful"
+        conditions.eventually {
+            assert failedSubs.size() == 0
+        }
+
+        when: "a message is published to the send topic"
+
+        String payload = """
+                       {
+                        "state": {
+                            "reported": {
+                                "11": 893116211,
+                                "12": 275,
+                                "13": 217,
+                                "14": 1680671168,
+                                "15": 0,
+                                "16": 10876,
+                                "17": 65,
+                                "18": 64574,
+                                "19": 65479,
+                                "21": 5,
+                                "24": 0,
+                                "66": 11921,
+                                "67": 3466,
+                                "68": 0,
+                                "69": 2,
+                                "80": 0,
+                                "113": 14,
+                                "181": 0,
+                                "182": 0,
+                                "199": 0,
+                                "200": 0,
+                                "206": 30,
+                                "237": 2,
+                                "238": 0,
+                                "239": 0,
+                                "240": 0,
+                                "241": 20416,
+                                "250": 0,
+                                "263": 1,
+                                "303": 0,
+                                "387": "1280219134765741938828798850837816695541021889564066133288786540739018312683368495",
+                                "449": 0,
+                                "636": 94054758,
+                                "latlng": "0,0",
+                                "ts": 1072915236000,
+                                "alt": "0",
+                                "ang": "0",
+                                "sat": "0",
+                                "sp": "0"
+                            }
+                        }
+                    }
+                """.stripIndent().trim()
+
+        client.sendMessage(new MQTTMessage<String>(subscriptions[0], payload))
+
+
+        then: "a message should be received on the receive topic"
+        conditions.eventually {
+            assert received.size() > 0
+            assert received.find { it.topic == subscriptions[0] }
+            def msg = received.find { it.topic == subscriptions[0] }
+            assert msg.payload.contains('"636": 94054758')
+        }
+
+        when: "a new message comes in"
+        def jsonNode = ValueUtil.JSON.readTree(payload)
+        def modifiedPayload = ValueUtil.JSON.writeValueAsString(jsonNode)
+        client.sendMessage(new MQTTMessage<String>(subscriptions[0], modifiedPayload))
+
+        then: "a message should be received on the receive topic"
+        conditions.eventually {
+            TeltonikaTrackerAsset asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(imei), TeltonikaTrackerAsset.class);
+
+            assert asset.getAttributes().get(TeltonikaTrackerAsset.BATTERY_VOLTAGE).get().getValue().get() == 3.466
+
+        }
+
+        cleanup:
+        container.stop();
+
+    }
+
+    @Ignore("Manual profiling test: intentionally infinite")
+    def "Manual load - publish same Teltonika MQTT packet every 100ms"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 20, delay: 0.1)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def setupService = container.getService(SetupService.class)
+        def keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class)
+
+        and: "a MQTT client and Teltonika data topic"
+        def clientId = "teltonika-load-" + System.currentTimeMillis()
+        def host = "localhost"
+        def port = 1883
+        def secure = false
+        def imei = "123456789012346"
+        def topic = "${keycloakTestSetup.realmMaster.name}/${clientId}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_TOKEN}/${imei}/${TeltonikaMQTTHandler.TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString()
+        def payload = '{"state":{"reported":{"11":893116211,"67":3466,"ts":1782290930000,"latlng":"51.91912473595176,4.484142852286654","10836":1234}}}'
+
+        def client = new MQTT_IOClient(
+                clientId,
+                host,
+                port,
+                secure,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null
+        )
+        client.setResubscribeIfSessionPresent(false)
+
+        when: "client connects"
+        client.connect()
+
+        then: "client is connected"
+        conditions.eventually {
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        when: "the same payload is published every 100ms"
+        long durationMs = 60 * 1000 // 1 minute
+        long startedAt = System.currentTimeMillis()
+        long sent = 0
+        while (!Thread.currentThread().isInterrupted() &&
+                (durationMs <= 0 || (System.currentTimeMillis() - startedAt) < durationMs)) {
+            client.sendMessage(new MQTTMessage<String>(topic, payload))
+            sent++
+            if (sent % 100 == 0) {
+                LOG.info("Manual Teltonika load test sent " + sent + " packets")
+            }
+            sleep(100)
+        }
+
+        then: "loop runs until duration elapses or externally interrupted"
+        true
+
+        cleanup:
+        try {
+            client?.disconnect()
+        } catch (Exception ignored) {
+        }
+        container?.stop()
+    }
+
+    def "Check Teltonika Protocol Decoder with UDP mode"() {
+        given: "a Teltonika Protocol Decoder in UDP mode"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+
+        and: "UDP packet format data"
+        def buffer = Unpooled.buffer()
+        def imei = "123456789012345"
+
+        // UDP header (set actual length at the end)
+        buffer.writeShort(0)            // length placeholder
+        buffer.writeShort(0x1234)       // packet id
+        buffer.writeByte(0x01)          // packet type
+        buffer.writeByte(0x05)          // location packet id
+
+        // IMEI
+        buffer.writeShort(imei.length())
+        buffer.writeBytes(imei.getBytes())
+
+        // Codec and count
+        buffer.writeByte(0x08)          // CODEC 8
+        buffer.writeByte(1)             // 1 record
+
+        // Minimal AVL record
+        buffer.writeLong(System.currentTimeMillis())  // timestamp
+        buffer.writeByte(0)             // priority
+        buffer.writeInt(0)              // longitude
+        buffer.writeInt(0)              // latitude
+        buffer.writeShort(0)            // altitude
+        buffer.writeShort(0)            // direction
+        buffer.writeByte(0)             // satellites
+        buffer.writeShort(0)            // speed
+        buffer.writeByte(0)             // event ID
+        buffer.writeByte(0)             // total IO count
+        buffer.writeByte(0)             // 1-byte IO count
+        buffer.writeByte(0)             // 2-byte IO count
+        buffer.writeByte(0)             // 4-byte IO count
+        buffer.writeByte(0)             // 8-byte IO count
+
+        // Count verification
+        buffer.writeByte(1)
+
+        // Fill UDP payload length (excluding the first 2 length bytes)
+        buffer.setShort(0, buffer.readableBytes() - 2)
+
+        when: "the UDP data is written to the channel"
+        channel.writeInbound(buffer)
+
+        then: "a decoded record with IMEI should be produced"
+        def record = channel.readInbound() as TeltonikaRecord
+        record != null
+        record.imei == imei
+
+        and: "a UDP acknowledgment should be sent"
+        def ack = channel.readOutbound() as ByteBuf
+        ack != null
+        ack.readableBytes() == 7
+        ack.release()
+
+        cleanup:
+        channel.finish()
+        container.stop()
+    }
+
+    def "Teltonika TCP and UDP agents provision and update tracker assets"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        and: "a running manager container"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        def setupService = container.getService(SetupService.class)
+        def keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class)
+        def realm = keycloakTestSetup.realmMaster.name
+
+        and: "a TCP Teltonika agent"
+        int tcpPort = findEphemeralPort()
+        def tcpAgent = new TeltonikaAgent("Teltonika TCP Agent")
+                .setRealm(realm)
+                .setBindHost("127.0.0.1")
+                .setBindPort(tcpPort)
+                .setTransport("TCP")
+
+        and: "a UDP Teltonika agent"
+        int udpPort = findEphemeralPort()
+        def udpAgent = new TeltonikaAgent("Teltonika UDP Agent")
+                .setRealm(realm)
+                .setBindHost("127.0.0.1")
+                .setBindPort(udpPort)
+                .setTransport("UDP")
+
+        when: "both agents are stored"
+        tcpAgent = assetStorageService.merge(tcpAgent)
+        udpAgent = assetStorageService.merge(udpAgent)
+
+        then: "both protocol instances are deployed"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(tcpAgent.id) != null
+            assert agentService.getProtocolInstance(udpAgent.id) != null
+        }
+
+        when: "a Teltonika device sends TCP identification + AVL packet"
+        def tcpImei = "123456789012345"
+        def tcpPayload = ByteBufUtil.decodeHexDump(TCP_REFERENCE_VALID_HEX[0])
+        Socket tcpSocket = new Socket("127.0.0.1", tcpPort)
+        tcpSocket.setSoTimeout(5000)
+        def tcpOut = tcpSocket.getOutputStream()
+        def tcpIn = tcpSocket.getInputStream()
+
+        tcpOut.write(buildIdentificationPacket(tcpImei))
+        tcpOut.flush()
+        assert tcpIn.read() == 1
+
+        tcpOut.write(tcpPayload)
+        tcpOut.flush()
+
+        byte[] tcpAckBytes = new byte[4]
+        int tcpRead = 0
+        while (tcpRead < 4) {
+            int n = tcpIn.read(tcpAckBytes, tcpRead, 4 - tcpRead)
+            assert n > 0
+            tcpRead += n
+        }
+        int tcpAckCount = ((tcpAckBytes[0] & 0xFF) << 24) |
+                ((tcpAckBytes[1] & 0xFF) << 16) |
+                ((tcpAckBytes[2] & 0xFF) << 8) |
+                (tcpAckBytes[3] & 0xFF)
+
+        and: "the same TCP device sends a Codec8E packet"
+        def tcpCodec8ePayload = ByteBufUtil.decodeHexDump(TCP_REFERENCE_VALID_HEX[4])
+        tcpOut.write(tcpCodec8ePayload)
+        tcpOut.flush()
+
+        byte[] tcpCodec8eAckBytes = new byte[4]
+        int tcpCodec8eRead = 0
+        while (tcpCodec8eRead < 4) {
+            int n = tcpIn.read(tcpCodec8eAckBytes, tcpCodec8eRead, 4 - tcpCodec8eRead)
+            assert n > 0
+            tcpCodec8eRead += n
+        }
+        int tcpCodec8eAckCount = ((tcpCodec8eAckBytes[0] & 0xFF) << 24) |
+                ((tcpCodec8eAckBytes[1] & 0xFF) << 16) |
+                ((tcpCodec8eAckBytes[2] & 0xFF) << 8) |
+                (tcpCodec8eAckBytes[3] & 0xFF)
+
+        and: "a Teltonika device sends a UDP AVL packet"
+        def udpPayload = ByteBufUtil.decodeHexDump(UDP_REFERENCE_VALID_HEX[0])
+        DatagramSocket udpSocket = new DatagramSocket()
+        udpSocket.send(new DatagramPacket(udpPayload, udpPayload.length, InetAddress.getByName("127.0.0.1"), udpPort))
+
+        then: "both transports acknowledge records"
+        assert tcpAckCount == 1
+        assert tcpCodec8eAckCount == 1
+        // UDP decoder sends an ACK internally; we intentionally avoid blocking on receive
+        // in this integration basis to keep it deterministic across CI timing variations.
+
+        and: "a tracker asset is provisioned/updated for TCP IMEI"
+        conditions.eventually {
+            TeltonikaTrackerAsset tcpAsset = assetStorageService.find(new TeltonikaAssetMapper().generateAssetId(tcpImei), TeltonikaTrackerAsset.class)
+            assert tcpAsset != null
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.AXIS_X.getName()).get().getValue().get() == 29
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.ICCID_1.getName()).get().getValue().get() == "000000003544C87A"
+            assert tcpAsset.getAttribute(TeltonikaTrackerAsset.PROTOCOL.getName()).get().getValue().get() == "TCP"
+        }
+
+        and: "a tracker asset is provisioned/updated for UDP IMEI"
+        conditions.eventually {
+            def udpImei = "352093086403655"
+            TeltonikaTrackerAsset udpAsset = assetStorageService.find(new TeltonikaAssetMapper().generateAssetId(udpImei), TeltonikaTrackerAsset.class)
+            assert udpAsset != null
+            assert Math.abs((Double) udpAsset.getAttribute(TeltonikaTrackerAsset.TOTAL_ODOMETER.name).get().value.get() - 22949000L) < 1L
+            assert udpAsset.getAttribute(TeltonikaTrackerAsset.PROTOCOL.name).get().value.get() == "UDP"
+        }
+
+        cleanup:
+        tcpSocket?.close()
+        udpSocket?.close()
+        container?.stop()
+    }
+
+    def "Check Teltonika Protocol Decoder with identification packet"() {
+        given: "a Teltonika Protocol Decoder in TCP mode"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+
+        and: "an IMEI identification packet"
+        def imei = "123456789012345"
+        def buffer = Unpooled.buffer()
+        buffer.writeShort(imei.length())
+        buffer.writeBytes(imei.getBytes())
+
+        when: "the identification packet is written to the channel"
+        channel.writeInbound(buffer)
+
+        then: "no record should be produced (identification only)"
+        def record = channel.readInbound()
+        record == null
+
+        and: "an acknowledgment byte should be sent (1 = accept)"
+        def ack = channel.readOutbound() as ByteBuf
+        ack != null
+        ack.readableBytes() == 1
+        ack.readByte() == 1
+        ack.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Teltonika Protocol Decoder with ping message"() {
+        given: "a Teltonika Protocol Decoder in TCP mode"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+
+        and: "a ping message (single 0xFF byte)"
+        def buffer = Unpooled.buffer()
+        buffer.writeByte(0xFF)
+
+        when: "the ping is written to the channel"
+        channel.writeInbound(buffer)
+
+        then: "no record should be produced"
+        def record = channel.readInbound()
+        record == null
+
+        and: "no acknowledgment should be sent for ping"
+        def ack = channel.readOutbound()
+        ack == null
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec8 TCP example #1"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false) // connectionless = false for TCP
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "the record attributes are correct"
+        assert record.timestamp == 1560161086000L
+        // all attribute timestamps must equal record timestamp
+        record.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record.timestamp
+        }
+        record.getAttributes().get(TeltonikaTrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.079) < 0.001
+        record.getAttributes().get(TeltonikaTrackerAsset.ACTIVE_GSM_OPERATOR).get().getValue().get() == 24602L
+        record.getAttributes().get(TeltonikaTrackerAsset.IBUTTON).get().getValue().get() == "0000000000000000"
+        record.getAttributes().get(TeltonikaTrackerAsset.SPEED).get().getValue().get() == 0
+
+        and: "a TCP ack is sent"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack?.readableBytes() == 4
+        ack.readInt() == 1
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec8 TCP example #2"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "000000000000002808010000016B40D9AD80010000000000000000000000000000000103021503010101425E100000010000F22A"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "the record attributes are correct"
+        record.timestamp == 1560161136000L
+        
+        record.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record.timestamp
+        }
+        record.getAttributes().get(TeltonikaTrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.080) < 0.001
+        record.getAttributes().get(TeltonikaTrackerAsset.SPEED).get().getValue().get() == 0
+
+        and: "a TCP ack is sent"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack?.readableBytes() == 4
+        ack.readInt() == 1
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec8 TCP multi record"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "000000000000004308020000016B40D57B480100000000000000000000000000000001010101000000000000016B40D5C198010000000000000000000000000000000101010101000000020000252C"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "two records are produced"
+        records.size() == 2
+
+        and: "the first record is correct"
+        def record1 = records[0]
+        record1.timestamp == 1560160861000L
+        record1.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record1.timestamp
+        }
+        record1.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+
+        and: "the second record is correct"
+        def record2 = records[1]
+        record2.timestamp == 1560160879000L
+        record2.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record2.timestamp
+        }
+        record2.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+
+        and: "a TCP ack is sent for 2 records"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack?.readableBytes() == 4
+        ack.readInt() == 2
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec8 UDP example"() {
+        given: "a UDP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(true) // connectionless = true for UDP
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "003DCAFE0105000F33353230393330383634303336353508010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "the record attributes are correct"
+        record.imei == "352093086403655"
+        
+        record.timestamp == 1560407006000L
+        record.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record.timestamp
+        }
+        record.getAttributes().get(TeltonikaTrackerAsset.GSM_SIGNAL).get().getValue().get() == 3
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 24.0) < 0.01
+
+        and: "a UDP ack is sent"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack != null
+        assert ack.readableBytes() == 7
+        ack.readShort() == 5 // length
+        ack.readString(2, Charset.defaultCharset()) // packet id
+        ack.readByte() == 1 // not usable
+        ack.readByte() == 5 // avl packet id
+        ack.readByte() == 1 // num accepted
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec8E TCP example"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "000000000000004A8E010000016B412CEE000100000000000000000000000000000000010005000100010100010011001D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A00000100002994"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "the record attributes are correct"
+        record.timestamp == 1560166592000L
+        
+        record.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record.timestamp
+        }
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        record.getAttributes().get(TeltonikaTrackerAsset.AXIS_X).get().getValue().get() == 29
+        record.getAttributes().get(TeltonikaTrackerAsset.TOTAL_ODOMETER).get().getValue().get() == 22949000
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_1).get().getValue().get() == "000000003544C87A"
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_2).get().getValue().get() == "000000001DD7E06A"
+
+        and: "a TCP ack is sent"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack?.readableBytes() == 4
+        ack.readInt() == 1
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec8E UDP example"() {
+        given: "a UDP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "005FCAFE0107000F3335323039333038363430333635358E010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "the record attributes are correct"
+        record.imei == "352093086403655"
+        
+        record.timestamp == 1560407121000
+        record.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record.timestamp
+        }
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == true
+        record.getAttributes().get(TeltonikaTrackerAsset.AXIS_X).get().getValue().get() == 157
+        record.getAttributes().get(TeltonikaTrackerAsset.TOTAL_ODOMETER).get().getValue().get() == 22949000
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_1).get().getValue().get() == "000000003544C87A"
+        record.getAttributes().get(TeltonikaTrackerAsset.ICCID_2).get().getValue().get() == "000000001DD7E06A"
+
+        and: "a UDP ack is sent"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack != null
+        assert ack.readableBytes() == 7
+        ack.readShort() == 5 // length
+        ack.readString(2, Charset.defaultCharset()) // packet id
+        ack.readByte() == 1 // not usable
+        ack.readByte() == 7 // avl packet id
+        ack.readByte() == 1 // num accepted
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec16 TCP example"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005FB3"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "two records are produced"
+        records.size() == 2
+
+        and: "the first record is correct"
+        def record1 = records[0]
+        record1.timestamp == 1562760414000L
+        record1.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record1.timestamp
+        }
+        record1.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record1.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_INPUT_3.getDisplayName().orElseThrow())).get().getValue().get() == false
+        // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
+        !record1.getAttributes().containsKey(TeltonikaTrackerAsset.ICCID_1.getName())
+        Math.abs((Double) record1.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
+
+        and: "the second record is correct"
+        def record2 = records[1]
+        record2.timestamp == 1562760415000L
+        record2.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record2.timestamp
+        }
+        record2.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record1.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_INPUT_3.getDisplayName().orElseThrow())).get().getValue().get() == false
+        // ICCID1 (AVL ID 11) is defined as 8 bytes but is 2 bytes in this codec, so it's skipped by the decoder.
+        !record2.getAttributes().containsKey(TeltonikaParameters.ICCID1)
+        Math.abs((Double) record2.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 22.074) < 0.001
+
+        and: "a TCP ack is sent for 2 records"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack?.readableBytes() == 4
+        ack.readInt() == 2
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec16 UDP example"() {
+        given: "a UDP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "0048CAFE0107000F33353230393430383532333135393210010000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF01010042111A000001"
+//        def hexPayload = "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC78718"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "the record attributes are correct"
+        record.imei == "352094085231592"
+        
+        record.timestamp == 1447804801000L
+        record.attributes.values().each { attr ->
+            assert attr.getTimestamp().get() == record.timestamp
+        }
+        record.getAttributes().get(TeltonikaTrackerAsset.DIGITAL_INPUT_1).get().getValue().get() == false
+        record.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_INPUT_3.getDisplayName().orElseThrow())).get().getValue().get() == false
+        record.getAttributes().get(TeltonikaAttributeResolver.toAttributeName(TeltonikaParameters.DIGITAL_OUTPUT_2.getDisplayName().orElseThrow())).get().getValue().get() == false
+        record.getAttributes().get(TeltonikaTrackerAsset.IGNITION).get().getValue().get() == true
+        Math.abs((Double) record.getAttributes().get(TeltonikaTrackerAsset.EXTERNAL_VOLTAGE).get().getValue().get() - 4.378) < 0.001
+
+        and: "a UDP ack is sent"
+        def ack = channel.readOutbound() as ByteBuf
+        assert ack != null
+        assert ack.readableBytes() == 7
+        ack.readShort() == 5 // length
+        def packetIdHex = ByteBufUtil.hexDump(ack, ack.readerIndex(), 2)
+        assert packetIdHex.toUpperCase() == "CAFE" // packet id as hex string
+        ack.skipBytes(2)
+        ack.readByte() == 1 // not usable
+        ack.readByte() == 7 // avl packet id
+        ack.readByte() == 1 // num accepted
+        ack?.release()
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec12 response example"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "00000000000000900C010600000088494E493A323031392F372F323220373A3232205254433A323031392F372F323220373A3533205253543A32204552523A312053523A302042523A302043463A302046473A3020464C3A302054553A302F302055543A3020534D533A30204E4F4750533A303A3330204750533A31205341543A302052533A332052463A36352053463A31204D443A30010000C78F"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "it is a command response"
+        assert record.getAttributes().get("serialData").isPresent()
+        record.getAttributes().get("serialData").get().getValue().get() == "INI:2019/7/22 7:22 RTC:2019/7/22 7:53 RST:2 ERR:1 SR:0 BR:0 CF:0 FG:0 FL:0 TU:0/0 UT:0 SMS:0 NOGPS:0:30 GPS:1 SAT:0 RS:3 RF:65 SF:1 MD:0"
+
+        and: "no ack is sent for command response"
+        assert channel.readOutbound() == null
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Check Codec13 response example"() {
+        given: "a TCP decoder and a payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def hexPayload = "000000000000001D0D01060000001564E8328168656C6C6F206C65747320746573740D0A0100003548"
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        def records = drainRecords(channel)
+
+        then: "one record is produced"
+        records.size() == 1
+        def record = records[0]
+
+        and: "it is a command response"
+        assert record.getAttributes().get("textCommand").isPresent()
+        record.getAttributes().get("textCommand").get().getValue().get() == "hello lets test"
+
+
+        and: "no ack is sent for command response"
+        assert channel.readOutbound() == null
+
+        cleanup:
+        channel.finish()
+    }
+
+    def "Decode TCP reference vectors without errors"() {
+        given: "a TCP decoder and a reference payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        drainRecords(channel)
+        drainOutboundBuffers(channel)
+
+        then: "no exception is thrown"
+        noExceptionThrown()
+
+        cleanup:
+        channel.finish()
+
+        where:
+        hexPayload << TCP_REFERENCE_VALID_HEX
+    }
+
+    def "Decode UDP reference vectors without errors"() {
+        given: "a UDP decoder and a reference payload"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        drainRecords(channel)
+        drainOutboundBuffers(channel)
+
+        then: "no exception is thrown"
+        noExceptionThrown()
+
+        cleanup:
+        channel.finish()
+
+        where:
+        hexPayload << UDP_REFERENCE_VALID_HEX
+    }
+
+    def "Decode malformed TCP reference vectors must fail"() {
+        given: "a TCP decoder and malformed payload"
+        def decoder = new TeltonikaProtocolDecoder(false)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        channel.finish()
+
+        then: "an error is thrown"
+        thrown(Exception)
+
+        where:
+        hexPayload << TCP_REFERENCE_INVALID_HEX
+    }
+
+    def "Decode malformed UDP reference vectors must fail"() {
+        given: "a UDP decoder and malformed payload"
+        def decoder = new TeltonikaProtocolDecoder(true)
+        def channel = new EmbeddedChannel(decoder)
+        def buffer = hexStringToByteBuf(hexPayload)
+
+        when: "the payload is decoded"
+        channel.writeInbound(buffer)
+        channel.finish()
+
+        then: "an error is thrown"
+        thrown(Exception)
+
+        where:
+        hexPayload << UDP_REFERENCE_INVALID_HEX
+    }
+
+    private static List<TeltonikaRecord> drainRecords(EmbeddedChannel channel) {
+        def records = []
+        Object payload
+        while ((payload = channel.readInbound()) != null) {
+            if (payload instanceof TeltonikaRecord) {
+                records << payload
+            }
+        }
+        return records
+    }
+
+    private static void drainOutboundBuffers(EmbeddedChannel channel) {
+        Object outbound
+        while ((outbound = channel.readOutbound()) != null) {
+            if (outbound instanceof ByteBuf) {
+                outbound.release()
+            }
+        }
+    }
+
+    private static final List<String> TCP_REFERENCE_VALID_HEX = [
+            "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF",
+            "000000000000002808010000016B40D9AD80010000000000000000000000000000000103021503010101425E100000010000F22A",
+            "000000000000004308020000016B40D57B480100000000000000000000000000000001010101000000000000016B40D5C198010000000000000000000000000000000101010101000000020000252C",
+            "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005FB3",
+            "000000000000004A8E010000016B412CEE000100000000000000000000000000000000010005000100010100010011001D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A00000100002994",
+            "00000000000000A98E020000017357633410000F0DC39B2095964A00AC00F80B00000000000B000500F00100150400C800004501007156000500B5000500B600040018000000430FE00044011B000100F10000601B000000000000017357633BE1000F0DC39B2095964A00AC00F80B000001810001000000000000000000010181002D11213102030405060708090A0B0C0D0E0F104545010ABC212102030405060708090A0B0C0D0E0F10020B010AAD020000BF30",
+            "000000000000000F0C010500000007676574696E666F0100004312",
+            "00000000000000130d01060000000b0a81c320676574696e666f0100001d6b",
+            "00000000000000160E01050000000E0352093081452251676574766572010000D2C1",
+            "000000000000001b0f010b00000013654b65a4012345678912345648656c6c6f210a01000093d6"
+    ]
+
+    private static final List<String> TCP_REFERENCE_INVALID_HEX = [
+            "000001000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7C1",
+            "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000050000C7C1",
+            "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7C1",
+            "000000000000002808010000016B40D9AD80010000000000000000000000000000000103021503010101425E100000010000F23A",
+            "000000000000003604010000001B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000050000C7C1",
+            "000000000000003611010000019B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000050000C7C1",
+            "000000000000004308020000016B40D57B480100000000000000000000000000000001010101000000000000016B40D5C198010000000000000000000000000000000101010101000000020000254C",
+            "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005F13",
+            "000000000000004A8E010000016B412CEE000100000000000000000000000000000000010005000100010100010011001D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A00000100002991",
+            "00000000000000A98E020000017357633410000F0DC39B2095964A00AC00F80B00000000000B000500F00100150400C800004501007156000500B5000500B600040018000000430FE00044011B000100F10000601B000000000000017357633BE1000F0DC39B2095964A00AC00F80B000001810001000000000000000000010181002D11213102030405060708090A0B0C0D0E0F104545010ABC212102030405060708090A0B0C0D0E0F10020B010AAD020000BF40"
+    ]
+
+    private static final List<String> UDP_REFERENCE_VALID_HEX = [
+            "005FCAFE0107000F3335323039333038363430333635358E010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001",
+            "003DCAFE0105000F33353230393330383634303336353508010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001",
+            "0086CAFE0101000F3335323039333038353639383230368E0100000167EFA919800200000000000000000000000000000000FC0013000800EF0000F00000150500C80000450200010000710000FC00000900B5000000B600000042305600CD432A00CE6064001100090012FF22001303D1000F0000000200F1000059D90010000000000000000001",
+            "0083CAFE0101000F3335323039333038353639383230368E0100000167F1AEEC00000A750E8F1D43443100F800B210000000000012000700EF0000F00000150500C800004501000100007142000900B5000600B6000500422FB300CD432A00CE60640011000700120007001303EC000F0000000200F1000059D90010000000000000000001",
+            "01E4CAFE0126000F333532303934303839333937343634080400000163C803B420010A259E1A1D4A057D00DA0128130057421B0A4503F00150051503EF01510052005900BE00C1000AB50008B60005427025CD79D8CE605A5400005500007300005A0000C0000007C700000018F1000059D910002D32C85300000000570000000064000000F7BF000000000000000163C803AC50010A25A9D21D4A01B600DB0128130056421B0A4503F00150051503EF01510052005900BE00C1000AB50008B6000542702ECD79D8CE605A5400005500007300005A0000C0000007C700000017F1000059D910002D32B05300000000570000000064000000F7BF000000000000000163C803A868010A25B5581D49FE5400DB0127130057421B0A4503F00150051503EF01510052005900BE00C1000AB50008B60005427039CD79D8CE605A5400005500007300005A0000C0000007C700000017F1000059D910002D32995300000000570000000064000000F7BF000000000000000163C803A4B2010A25CC861D49F75C00DB0124130058421B0A4503F00150051503EF01510052005900BE00C1000AB50008B6000542703CCD79D8CE605A5400005500007300005A0000C0000007C700000018F1000059D910002D32695300000000570000000064000000F7BF000000000004"
+    ]
+
+    private static final List<String> UDP_REFERENCE_INVALID_HEX = [
+            "005FCAFE010700043335323039333038363430333635358E010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001",
+            "013DCAFE0105000F33353230393330383634303336353508010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001",
+            "015BCAFE0101000F33353230393430383532333135393210070000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF01010042111A000001"
+    ]
+
+    /**
+     * Helper method to convert hex string to ByteBuf
+     */
+    private static byte[] buildIdentificationPacket(String imei) {
+        byte[] imeiBytes = imei.getBytes(Charset.defaultCharset())
+        byte[] result = new byte[2 + imeiBytes.length]
+        result[0] = (byte) ((imeiBytes.length >> 8) & 0xFF)
+        result[1] = (byte) (imeiBytes.length & 0xFF)
+        System.arraycopy(imeiBytes, 0, result, 2, imeiBytes.length)
+        return result
+    }
+
+    private static ByteBuf hexStringToByteBuf(String hex) {
+        int len = hex.length()
+        byte[] data = new byte[len / 2 as int]
+        for (int i = 0; i < len; i += 2) {
+            data[(int) (i / 2)] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i + 1), 16))
+        }
+        return Unpooled.wrappedBuffer(data)
+    }
+}
