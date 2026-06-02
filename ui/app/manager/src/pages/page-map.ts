@@ -211,7 +211,7 @@ export class PageMap extends Page<MapStateKeyed> {
             @media only screen and (min-width: 40em){
                 or-map-asset-card {
                     position: absolute;
-                    top: 56px;
+                    top: var(--card-top, 56px);
                     left: 10px;
                     width: 320px;
                     margin: 0;
@@ -467,6 +467,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected render() {
         const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         const filters = this.config?.filters;
+        this.style.setProperty("--card-top", filters?.length ? "56px" : "10px");
 
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
