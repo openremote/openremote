@@ -2,7 +2,7 @@
 	"push": {
 		"master": {
 			"distribute": {
-				"docker": "develop",
+				"docker": "develop-core",
 				"maven": "$version-SNAPSHOT",
 				"npm": "$version-snapshot"
 			},
@@ -14,7 +14,7 @@
 	},
 	"release": {
 		"distribute": {
-			"docker": "latest,$version",
+			"docker": "$version-core,latest-core",
 			"maven": "$version",
 			"npm": "$version"
 		},
