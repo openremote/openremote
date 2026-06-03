@@ -273,6 +273,19 @@ class GroovySandboxReportingTest extends Specification {
         report(reporter, ruleset).lastFlushedDroppedSignatureCount == 2
     }
 
+    def "sorts report classifications by severity"() {
+        expect:
+        [
+            GroovySandboxClassification.KNOWN,
+            GroovySandboxClassification.UNKNOWN,
+            GroovySandboxClassification.DANGEROUS
+        ].sort { GroovySandboxReporter.classificationPriority(it) } == [
+            GroovySandboxClassification.DANGEROUS,
+            GroovySandboxClassification.UNKNOWN,
+            GroovySandboxClassification.KNOWN
+        ]
+    }
+
     @Unroll
     def "parses Groovy sandbox mode config value '#value' as #mode"() {
         expect:

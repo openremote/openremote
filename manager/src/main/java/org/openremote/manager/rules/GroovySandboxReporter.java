@@ -107,7 +107,7 @@ public class GroovySandboxReporter {
         }
 
         counters.sort(Comparator
-            .comparing((SignatureCounter counter) -> counter.signature.classification())
+            .comparingInt((SignatureCounter counter) -> classificationPriority(counter.signature.classification()))
             .thenComparing(counter -> counter.signature.phase())
             .thenComparing(counter -> counter.signature.operation())
             .thenComparing(counter -> counter.signature.receiverType())
@@ -151,6 +151,14 @@ public class GroovySandboxReporter {
             + ", receiver=" + signature.receiverType()
             + ", member=" + signature.member()
             + ", argTypes=" + signature.argumentTypes());
+    }
+
+    protected static int classificationPriority(GroovySandboxClassification classification) {
+        return switch (classification) {
+            case DANGEROUS -> 0;
+            case UNKNOWN -> 1;
+            case KNOWN -> 2;
+        };
     }
 
     protected static class RulesetReport {
