@@ -88,7 +88,7 @@ metrics:
 
   pg_datapoint_data_index_ratio:
     type: gauge
-    description: Asset datapoint table index size to data size ratio (over 10 indicates an possible issue)
+    description: Asset datapoint table index size to data size ratio (over 1 indicates an possible issue)
 
   pg_datapoint_chunk_count:
     type: gauge
