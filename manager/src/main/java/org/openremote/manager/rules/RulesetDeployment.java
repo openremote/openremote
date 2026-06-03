@@ -324,7 +324,7 @@ public class RulesetDeployment {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
-            Script script = groovyShell.parse(ruleset.getRules());
+            Script script = parseGroovyScript(ruleset);
             Binding binding = new Binding();
             RulesBuilder rulesBuilder = new RulesBuilder();
             binding.setVariable("LOG", LOG);
@@ -375,6 +375,20 @@ public class RulesetDeployment {
         } finally {
             interceptor.unregister();
         }
+    }
+
+    protected Script parseGroovyScript(Ruleset ruleset) {
+        if (groovySandboxReporter == null) {
+            return groovyShell.parse(ruleset.getRules());
+        }
+
+        GroovyShell reportingGroovyShell = new GroovyShell(
+            new CompilerConfiguration().addCompilationCustomizers(
+                new SandboxTransformer(),
+                new ReportingGroovyCompilationCustomizer(groovySandboxReporter, ruleset)
+            )
+        );
+        return reportingGroovyShell.parse(ruleset.getRules());
     }
 
     protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
