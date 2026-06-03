@@ -63,6 +63,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -148,6 +150,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected GroovySandboxMode groovySandboxMode = OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT;
     protected int groovySandboxReportIntervalMinutes = OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT;
     protected int groovySandboxReportMaxSignaturesPerRuleset = OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT;
+    protected GroovySandboxReporter groovySandboxReporter;
+    protected ScheduledFuture<?> groovySandboxReportTimer;
     protected boolean initDone;
     protected boolean startDone;
     protected io.micrometer.core.instrument.Timer rulesFiringTimer;
@@ -188,6 +192,9 @@ public class RulesService extends RouteBuilder implements ContainerService {
             OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET,
             OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT
         );
+        groovySandboxReporter = groovySandboxMode == GroovySandboxMode.REPORT
+            ? new GroovySandboxReporter(timerService, groovySandboxReportMaxSignaturesPerRuleset)
+            : null;
 
         if (initDone) {
             return;
@@ -292,6 +299,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         startDone = false;
+        startGroovySandboxReporter();
 
         if (!geofenceAssetAdapters.isEmpty()) {
             LOG.fine("GeofenceAssetAdapters found: " + geofenceAssetAdapters.size());
@@ -378,6 +386,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
+        stopGroovySandboxReporter();
+
         for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
             try {
                 geofenceAssetAdapter.stop(container);
@@ -404,6 +414,32 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
             geofenceAssetAdapter.stop(container);
+        }
+    }
+
+    protected void startGroovySandboxReporter() {
+        if (groovySandboxReporter == null || groovySandboxReportTimer != null) {
+            return;
+        }
+
+        groovySandboxReportTimer = scheduledExecutorService.scheduleAtFixedRate(
+            groovySandboxReporter::flushAll,
+            groovySandboxReportIntervalMinutes,
+            groovySandboxReportIntervalMinutes,
+            TimeUnit.MINUTES
+        );
+    }
+
+    protected void stopGroovySandboxReporter() {
+        ScheduledFuture<?> reportTimer = groovySandboxReportTimer;
+        groovySandboxReportTimer = null;
+
+        if (reportTimer != null) {
+            reportTimer.cancel(false);
+        }
+
+        if (groovySandboxReporter != null) {
+            groovySandboxReporter.flushAll();
         }
     }
 
