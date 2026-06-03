@@ -28,3 +28,9 @@ updates:
     open-pull-requests-limit: 0
     ignore:
       - dependency-name: "*"
+
+  # Maintain Java dependencies for the Gradle multi-project build.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
