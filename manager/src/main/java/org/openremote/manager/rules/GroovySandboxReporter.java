@@ -98,6 +98,7 @@ public class GroovySandboxReporter {
 
     protected void flush(RulesetReport report) {
         List<SignatureCounter> counters = new ArrayList<>(report.signatureCounters.values());
+        counters.removeIf(counter -> counter.pendingCount() <= 0);
         if (counters.isEmpty()) {
             return;
         }
@@ -110,20 +111,26 @@ public class GroovySandboxReporter {
             .thenComparing(counter -> counter.signature.member()));
 
         LOG.info("Groovy sandbox report summary: " + report.summaryPrefix()
-            + ", uniqueSignatures=" + counters.size()
+            + ", pendingSignatures=" + counters.size()
+            + ", uniqueSignatures=" + report.signatureCounters.size()
             + ", maxSignatures=" + maxSignaturesPerRuleset);
 
-        counters.forEach(counter -> LOG.info("Groovy sandbox report signature: "
-            + report.summaryPrefix()
-            + ", phase=" + counter.signature.phase()
-            + ", operation=" + counter.signature.operation()
-            + ", receiver=" + counter.signature.receiverType()
-            + ", member=" + counter.signature.member()
-            + ", argTypes=" + counter.signature.argumentTypes()
-            + ", classification=" + counter.signature.classification()
-            + ", count=" + counter.count.sum()
-            + ", firstSeen=" + counter.firstSeen
-            + ", lastSeen=" + counter.lastSeen));
+        counters.forEach(counter -> {
+            long count = counter.count.sum();
+            long pendingCount = counter.markFlushed(count);
+            LOG.info("Groovy sandbox report signature: "
+                + report.summaryPrefix()
+                + ", phase=" + counter.signature.phase()
+                + ", operation=" + counter.signature.operation()
+                + ", receiver=" + counter.signature.receiverType()
+                + ", member=" + counter.signature.member()
+                + ", argTypes=" + counter.signature.argumentTypes()
+                + ", classification=" + counter.signature.classification()
+                + ", count=" + count
+                + ", pendingCount=" + pendingCount
+                + ", firstSeen=" + counter.firstSeen
+                + ", lastSeen=" + counter.lastSeen);
+        });
     }
 
     protected void reportFirstSeenDangerous(RulesetReport report, GroovySandboxSignature signature) {
@@ -170,6 +177,7 @@ public class GroovySandboxReporter {
         protected final GroovySandboxSignature signature;
         protected final long firstSeen;
         protected volatile long lastSeen;
+        protected volatile long lastFlushedCount;
         protected final LongAdder count = new LongAdder();
 
         protected SignatureCounter(GroovySandboxSignature signature, long firstSeen) {
@@ -181,6 +189,16 @@ public class GroovySandboxReporter {
         protected void increment(long lastSeen) {
             this.lastSeen = lastSeen;
             count.increment();
+        }
+
+        protected long pendingCount() {
+            return count.sum() - lastFlushedCount;
+        }
+
+        protected long markFlushed(long count) {
+            long pendingCount = count - lastFlushedCount;
+            lastFlushedCount = count;
+            return pendingCount;
         }
     }
 

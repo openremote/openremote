@@ -124,6 +124,40 @@ class GroovySandboxReportingTest extends Specification {
         GroovySandboxSignature.typeName(closure) == "groovy.lang.Closure"
     }
 
+    def "flush tracks only pending signature counts"() {
+        given:
+        def reporter = reporter()
+        def ruleset = ruleset()
+        def signature = source(GroovySandboxOperation.SOURCE_IMPORT, "java.util.List", "List")
+
+        when:
+        reporter.report(ruleset, signature)
+        reporter.report(ruleset, signature)
+
+        then:
+        counter(reporter, ruleset, signature).pendingCount() == 2
+
+        when:
+        reporter.flush(ruleset)
+
+        then:
+        counter(reporter, ruleset, signature).lastFlushedCount == 2
+        counter(reporter, ruleset, signature).pendingCount() == 0
+
+        when:
+        reporter.flush(ruleset)
+
+        then:
+        counter(reporter, ruleset, signature).lastFlushedCount == 2
+        counter(reporter, ruleset, signature).pendingCount() == 0
+
+        when:
+        reporter.report(ruleset, signature)
+
+        then:
+        counter(reporter, ruleset, signature).pendingCount() == 1
+    }
+
     private GroovySandboxReporter reporter() {
         def timerService = Stub(TimerService) {
             getCurrentTimeMillis() >>> [100L, 101L, 102L, 103L, 104L, 105L, 106L, 107L, 108L, 109L, 110L, 111L]
@@ -143,6 +177,14 @@ class GroovySandboxReportingTest extends Specification {
 
     private static Set<GroovySandboxSignature> signatures(GroovySandboxReporter reporter, GlobalRuleset ruleset) {
         reporter.reports[new GroovySandboxReporter.RulesetKey(ruleset)].signatureCounters.keySet()
+    }
+
+    private static GroovySandboxReporter.SignatureCounter counter(
+        GroovySandboxReporter reporter,
+        GlobalRuleset ruleset,
+        GroovySandboxSignature signature
+    ) {
+        reporter.reports[new GroovySandboxReporter.RulesetKey(ruleset)].signatureCounters[signature]
     }
 
     private static GroovySandboxSignature source(
