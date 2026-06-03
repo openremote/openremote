@@ -195,6 +195,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
         groovySandboxReporter = groovySandboxMode == GroovySandboxMode.REPORT
             ? new GroovySandboxReporter(timerService, groovySandboxReportMaxSignaturesPerRuleset)
             : null;
+        logGroovySandboxReportConfig();
 
         if (initDone) {
             return;
@@ -428,6 +429,16 @@ public class RulesService extends RouteBuilder implements ContainerService {
             groovySandboxReportIntervalMinutes,
             TimeUnit.MINUTES
         );
+    }
+
+    protected void logGroovySandboxReportConfig() {
+        if (groovySandboxReporter == null) {
+            return;
+        }
+
+        LOG.info("Groovy sandbox report mode enabled: logger=" + GroovySandboxReporter.LOGGER_NAME
+            + ", intervalMinutes=" + groovySandboxReportIntervalMinutes
+            + ", maxSignaturesPerRuleset=" + groovySandboxReportMaxSignaturesPerRuleset);
     }
 
     protected void stopGroovySandboxReporter() {
