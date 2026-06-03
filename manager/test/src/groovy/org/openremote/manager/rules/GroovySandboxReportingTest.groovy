@@ -156,6 +156,52 @@ class GroovySandboxReportingTest extends Specification {
         ] as Set)
     }
 
+    def "ruleset deployment reports source and deployment Groovy signatures"() {
+        given:
+        def reporter = reporter()
+        def ruleset = new GlobalRuleset("Deployment report test", Ruleset.Lang.GROOVY, """
+            import org.openremote.manager.rules.RulesBuilder
+
+            RulesBuilder rules = binding.rules
+
+            rules.add()
+                .name("Reported")
+                .when { facts -> true }
+                .then { facts -> }
+        """).setId(2L).setVersion(1L)
+        def deployment = new RulesetDeployment(
+            ruleset,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            reporter
+        )
+
+        when:
+        def compiled = deployment.compileRulesGroovy(ruleset, null, null, null, null, null)
+
+        then:
+        compiled
+        deployment.getError() == null
+        deployment.rules.size() == 1
+        signatures(reporter, ruleset).containsAll([
+            source(GroovySandboxOperation.SOURCE_IMPORT, "org.openremote.manager.rules.RulesBuilder", "RulesBuilder"),
+            signature(GroovySandboxPhase.DEPLOYMENT, GroovySandboxOperation.METHOD, "org.openremote.manager.rules.RulesBuilder", "add"),
+            signature(GroovySandboxPhase.DEPLOYMENT, GroovySandboxOperation.METHOD, "org.openremote.manager.rules.RulesBuilder\$Builder", "name", "java.lang.String"),
+            signature(GroovySandboxPhase.DEPLOYMENT, GroovySandboxOperation.METHOD, "org.openremote.manager.rules.RulesBuilder\$Builder", "when", "groovy.lang.Closure"),
+            signature(GroovySandboxPhase.DEPLOYMENT, GroovySandboxOperation.METHOD, "org.openremote.manager.rules.RulesBuilder\$Builder", "then", "groovy.lang.Closure")
+        ] as Set)
+    }
+
     def "flush tracks only pending signature counts"() {
         given:
         def reporter = reporter()
@@ -331,12 +377,11 @@ class GroovySandboxReportingTest extends Specification {
         GroovySandboxClassification classification = GroovySandboxClassifier.classify(operation, receiverType, member),
         String... argumentTypes
     ) {
-        GroovySandboxSignature.of(
+        signature(
             GroovySandboxPhase.SOURCE,
             operation,
             receiverType,
             member,
-            classification,
             argumentTypes
         )
     }
@@ -347,8 +392,18 @@ class GroovySandboxReportingTest extends Specification {
         String member,
         String... argumentTypes
     ) {
+        signature(GroovySandboxPhase.RUNTIME, operation, receiverType, member, argumentTypes)
+    }
+
+    private static GroovySandboxSignature signature(
+        GroovySandboxPhase phase,
+        GroovySandboxOperation operation,
+        String receiverType,
+        String member,
+        String... argumentTypes
+    ) {
         GroovySandboxSignature.of(
-            GroovySandboxPhase.RUNTIME,
+            phase,
             operation,
             receiverType,
             member,
