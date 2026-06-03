@@ -3,6 +3,10 @@ name: Install Dist
 on:
   workflow_call:
     inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
       VERSION_WITH_QUALIFIER:
         type: string
     outputs:
@@ -13,6 +17,7 @@ on:
 jobs:
   install-dist:
     name: Install Dist
+    if: ${{ !inputs.skip }}
     runs-on: ubuntu-latest
     outputs:
       npmTag: ${{ steps.update-package-json.outputs.tag }}

@@ -1,9 +1,16 @@
 name: Integration Tests
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
 
 jobs:
   integration-tests:
     name: Integration Tests
+    if: ${{ !inputs.skip }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
