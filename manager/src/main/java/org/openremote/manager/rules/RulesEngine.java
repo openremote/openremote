@@ -288,7 +288,8 @@ public class RulesEngine<T extends Ruleset> {
             boolean wasRunning = this.running;
             stop();
             stopRuleset(deployment);
-            deployments.values().remove(deployment);
+            deployments.remove(ruleset.getId());
+            removeGroovySandboxReport(deployment.getRuleset());
             updateDeploymentInfo();
             if (wasRunning && !deployments.isEmpty()) {
                 start();
@@ -403,6 +404,12 @@ public class RulesEngine<T extends Ruleset> {
             if (deployment.stop(facts)) {
                 publishRulesetStatus(deployment);
             }
+        }
+    }
+
+    protected void removeGroovySandboxReport(Ruleset ruleset) {
+        if (groovySandboxReporter != null) {
+            groovySandboxReporter.remove(ruleset);
         }
     }
 
