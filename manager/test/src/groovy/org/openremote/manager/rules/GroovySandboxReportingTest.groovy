@@ -158,6 +158,59 @@ class GroovySandboxReportingTest extends Specification {
         counter(reporter, ruleset, signature).pendingCount() == 1
     }
 
+    @Unroll
+    def "parses Groovy sandbox mode config value '#value' as #mode"() {
+        expect:
+        GroovySandboxMode.fromConfig(value) == mode
+
+        where:
+        value      | mode
+        null       | GroovySandboxMode.OFF
+        ""         | GroovySandboxMode.OFF
+        " "        | GroovySandboxMode.OFF
+        "off"      | GroovySandboxMode.OFF
+        "REPORT"   | GroovySandboxMode.REPORT
+        " report " | GroovySandboxMode.REPORT
+    }
+
+    def "rejects unsupported Groovy sandbox mode config values"() {
+        when:
+        GroovySandboxMode.fromConfig("enforce")
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("Unsupported Groovy sandbox mode")
+        e.message.contains("OFF, REPORT")
+    }
+
+    @Unroll
+    def "parses positive integer config value '#value' as #expected"() {
+        expect:
+        RulesService.getPositiveInteger(config, "TEST_KEY", 60) == expected
+
+        where:
+        value | expected
+        null  | 60
+        ""    | 60
+        "15"  | 15
+
+        config = value == null ? [:] : ["TEST_KEY": value]
+    }
+
+    @Unroll
+    def "rejects non-positive integer config value '#value'"() {
+        when:
+        RulesService.getPositiveInteger(["TEST_KEY": value], "TEST_KEY", 60)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("TEST_KEY")
+        e.message.contains("greater than zero")
+
+        where:
+        value << ["0", "-1"]
+    }
+
     private GroovySandboxReporter reporter() {
         def timerService = Stub(TimerService) {
             getCurrentTimeMillis() >>> [100L, 101L, 102L, 103L, 104L, 105L, 106L, 107L, 108L, 109L, 110L, 111L]
