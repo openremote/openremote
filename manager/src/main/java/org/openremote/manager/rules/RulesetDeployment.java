@@ -25,7 +25,6 @@ import groovy.lang.Script;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.Rules;
-import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -66,14 +65,6 @@ import static org.openremote.model.rules.RulesetStatus.EMPTY;
 import static org.openremote.model.rules.RulesetStatus.VALIDITY_PERIOD_ERROR;
 
 public class RulesetDeployment {
-
-    // TODO Finish groovy sandbox
-    static class GroovyDenyAllFilter extends GroovyValueFilter {
-        @Override
-        public Object filterReceiver(Object receiver) {
-            throw new SecurityException("Not allowed: " + receiver);
-        }
-    }
 
     public static final int DEFAULT_RULE_PRIORITY = 1000;
 
@@ -322,8 +313,6 @@ public class RulesetDeployment {
 
     protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
-            // TODO Implement sandbox
-            // new DenyAll().register();
             Script script = parseGroovyScript(ruleset);
             Binding binding = new Binding();
             RulesBuilder rulesBuilder = new RulesBuilder();
