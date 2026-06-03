@@ -382,6 +382,7 @@ public class RulesetDeployment {
             return groovyShell.parse(ruleset.getRules());
         }
 
+        ReportingGroovyCompilationCustomizer.reportGrapeAnnotations(groovySandboxReporter, ruleset, ruleset.getRules());
         GroovyShell reportingGroovyShell = new GroovyShell(
             new CompilerConfiguration().addCompilationCustomizers(
                 new SandboxTransformer(),

@@ -41,6 +41,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer {
 
@@ -60,6 +62,9 @@ public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer 
         "groovy.lang.GrabResolvers",
         "groovy.lang.Grapes"
     );
+    protected static final Pattern GRAPE_ANNOTATION_PATTERN = Pattern.compile(
+        "@\\s*(?:groovy\\.lang\\.)?(Grab|GrabConfig|GrabExclude|GrabResolver|GrabResolvers|Grapes)\\b"
+    );
 
     protected final GroovySandboxReporter reporter;
     protected final Ruleset ruleset;
@@ -69,6 +74,28 @@ public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer 
         super(CompilePhase.CONVERSION);
         this.reporter = Objects.requireNonNull(reporter, "reporter");
         this.ruleset = Objects.requireNonNull(ruleset, "ruleset");
+    }
+
+    public static void reportGrapeAnnotations(GroovySandboxReporter reporter, Ruleset ruleset, String source) {
+        if (reporter == null || ruleset == null || source == null || source.isBlank()) {
+            return;
+        }
+
+        Matcher matcher = GRAPE_ANNOTATION_PATTERN.matcher(source);
+        while (matcher.find()) {
+            String annotationType = "groovy.lang." + matcher.group(1);
+            reporter.report(ruleset, GroovySandboxSignature.of(
+                GroovySandboxPhase.SOURCE,
+                GroovySandboxOperation.SOURCE_GRAB,
+                annotationType,
+                GroovySandboxSignature.NONE,
+                GroovySandboxClassifier.classify(
+                    GroovySandboxOperation.SOURCE_GRAB,
+                    annotationType,
+                    GroovySandboxSignature.NONE
+                )
+            ));
+        }
     }
 
     @Override
@@ -90,7 +117,7 @@ public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer 
 
     protected void reportModule(ModuleNode module) {
         if (module.hasPackageName()) {
-            report(GroovySandboxOperation.SOURCE_PACKAGE, module.getPackageName(), GroovySandboxSignature.NONE);
+            report(GroovySandboxOperation.SOURCE_PACKAGE, removeTrailingDot(module.getPackageName()), GroovySandboxSignature.NONE);
         }
 
         if (module.hasPackage()) {
@@ -238,5 +265,13 @@ public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer 
 
     protected static boolean isGrapeAnnotation(String annotationType) {
         return annotationType != null && GRAPE_ANNOTATIONS.contains(annotationType);
+    }
+
+    protected static String removeTrailingDot(String value) {
+        if (value == null || !value.endsWith(".")) {
+            return value;
+        }
+
+        return value.substring(0, value.length() - 1);
     }
 }
