@@ -5,32 +5,3 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-
-  # Do not maintain npm/Yarn dependencies, including security update PRs.
-  - package-ecosystem: "npm"
-    directories:
-      - "/"
-      - "/ui/component/*"
-      - "/ui/test"
-      - "/ui/util"
-      - "/ui/app/manager"
-      - "/ui/app/storybook"
-      - "/ui/app/insights"
-      - "/ui/demo/demo-core"
-      - "/ui/demo/demo-rest"
-    schedule:
-      interval: "daily"
-    exclude-paths:
-      - "node_modules/**"
-      - "**/node_modules/**"
-      - "**/dist/**"
-      - "**/build/**"
-    open-pull-requests-limit: 0
-    ignore:
-      - dependency-name: "*"
-
-  # Maintain Java dependencies for the Gradle multi-project build.
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "daily"
