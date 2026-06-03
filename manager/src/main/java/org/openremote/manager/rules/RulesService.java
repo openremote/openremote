@@ -73,6 +73,7 @@ import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.model.util.MapAccess.getInteger;
+import static org.openremote.model.util.MapAccess.getString;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**
@@ -106,6 +107,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
     public static final int OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT = 50000; // Just under a minute to catch 1 min timer rules
     public static final String OR_RULES_QUICK_FIRE_MILLIS = "OR_RULES_QUICK_FIRE_MILLIS";
     public static final int OR_RULES_QUICK_FIRE_MILLIS_DEFAULT = 3000;
+    public static final String OR_RULES_GROOVY_SANDBOX_MODE = "OR_RULES_GROOVY_SANDBOX_MODE";
+    public static final GroovySandboxMode OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT = GroovySandboxMode.OFF;
+    public static final String OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES = "OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES";
+    public static final int OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT = 60;
+    public static final String OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET = "OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET";
+    public static final int OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT = 1000;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected final AtomicReference<RulesEngine<GlobalRuleset>> globalEngine = new AtomicReference<>();
     protected final Map<String, RulesEngine<RealmRuleset>> realmEngines = new ConcurrentHashMap<>();
@@ -138,6 +145,9 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected final Map<AttributeRef, AttributeEvent> preInitAttributeEvents = new LinkedHashMap<>();
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
+    protected GroovySandboxMode groovySandboxMode = OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT;
+    protected int groovySandboxReportIntervalMinutes = OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT;
+    protected int groovySandboxReportMaxSignaturesPerRuleset = OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT;
     protected boolean initDone;
     protected boolean startDone;
     protected io.micrometer.core.instrument.Timer rulesFiringTimer;
@@ -167,6 +177,17 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         tempFactExpirationMillis = getInteger(container.getConfig(), OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS, OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT);
         quickFireMillis = getInteger(container.getConfig(), OR_RULES_QUICK_FIRE_MILLIS, OR_RULES_QUICK_FIRE_MILLIS_DEFAULT);
+        groovySandboxMode = GroovySandboxMode.fromConfig(getString(container.getConfig(), OR_RULES_GROOVY_SANDBOX_MODE, OR_RULES_GROOVY_SANDBOX_MODE_DEFAULT.name()));
+        groovySandboxReportIntervalMinutes = getPositiveInteger(
+            container.getConfig(),
+            OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES,
+            OR_RULES_GROOVY_SANDBOX_REPORT_INTERVAL_MINUTES_DEFAULT
+        );
+        groovySandboxReportMaxSignaturesPerRuleset = getPositiveInteger(
+            container.getConfig(),
+            OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET,
+            OR_RULES_GROOVY_SANDBOX_REPORT_MAX_SIGNATURES_PER_RULESET_DEFAULT
+        );
 
         if (initDone) {
             return;
@@ -220,6 +241,16 @@ public class RulesService extends RouteBuilder implements ContainerService {
         }
 
         initDone = true;
+    }
+
+    protected static int getPositiveInteger(Map<String, String> config, String key, int defaultValue) {
+        int value = getInteger(config, key, defaultValue);
+
+        if (value <= 0) {
+            throw new IllegalArgumentException("Configuration value '" + key + "' must be greater than zero");
+        }
+
+        return value;
     }
 
     @SuppressWarnings("unchecked")
