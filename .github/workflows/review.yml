@@ -29,6 +29,7 @@ jobs:
             backend:
               - '!.ci_cd/**'
               - '!deployment/**'
+              - '!ui/**'
               - '!**/*.md'
               - '!**/*.yml'
               - '!yarn.lock'
