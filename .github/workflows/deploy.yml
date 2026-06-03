@@ -52,7 +52,7 @@ jobs:
   deployment:
     name: Deployment
     needs: install-dist
-    if: always()
+    if: always() && !cancelled() && (needs.install-dist.result == 'success' || needs.install-dist.result == 'skipped')
     uses: "./.github/workflows/deployment.yml"
     with:
       INPUTS: ${{ toJSON(inputs) }}
