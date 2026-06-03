@@ -138,3 +138,4 @@ runs:
         MANAGER_VERSION: ${{ inputs.MANAGER_VERSION }}
         IS_RELEASE: ${{ inputs.IS_RELEASE }}
         VERSION: ${{ inputs.VERSION }}
+        PYTHONUNBUFFERED: "1"

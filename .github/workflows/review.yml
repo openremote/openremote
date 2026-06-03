@@ -33,6 +33,30 @@ jobs:
               - '!**/*.yml'
               - '!yarn.lock'
 
+      - name: Get version details
+        id: get-version-details
+        uses: openremote/openremote/.github/actions/get-version-details@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+
+      - name: Check ci_cd existence
+        id: check_cicd_json
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          files: ".ci_cd/ci_cd.json"
+
+      - name: Check if main repo
+        id: is_main_repo
+        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+
+      - name: Process ci_cd.json file
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch')) }}
+        id: ci-cd-output
+        uses: openremote/openremote/.github/actions/process-cicd-json@c5b484840a0b983191464d2341aa87875c23f7e0
+        with:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
+          MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
+          IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
+          VERSION: ${{ steps.get-version-details.outputs.version }}
+
   ui-check-dependencies:
     name: Lint
     needs: detect-changes
