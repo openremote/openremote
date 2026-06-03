@@ -34,6 +34,7 @@ import org.codehaus.groovy.control.customizers.CompilationCustomizer;
 import org.openremote.model.rules.Ruleset;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -121,52 +122,60 @@ public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer 
         }
 
         if (module.hasPackage()) {
-            reportAnnotations(module.getPackage().getAnnotations());
+            reportAnnotations(module.getPackage().getAnnotations(), Map.of());
         }
 
+        Map<String, String> importedTypes = new HashMap<>();
         module.getImports().forEach(importNode -> {
-            reportImport(GroovySandboxOperation.SOURCE_IMPORT, importClassName(importNode), importAlias(importNode));
-            reportAnnotations(importNode.getAnnotations());
+            String importedType = importClassName(importNode);
+            String alias = importAlias(importNode);
+            importedTypes.put(alias, importedType);
+            reportImport(GroovySandboxOperation.SOURCE_IMPORT, importedType, alias);
+            reportAnnotations(importNode.getAnnotations(), importedTypes);
         });
 
         module.getStarImports().forEach(importNode -> {
             reportImport(GroovySandboxOperation.SOURCE_STAR_IMPORT, importPackageName(importNode), "*");
-            reportAnnotations(importNode.getAnnotations());
+            reportAnnotations(importNode.getAnnotations(), importedTypes);
         });
 
         for (Map.Entry<String, ImportNode> entry : module.getStaticImports().entrySet()) {
             ImportNode importNode = entry.getValue();
             reportImport(GroovySandboxOperation.SOURCE_STATIC_IMPORT, importClassName(importNode), importMember(importNode, entry.getKey()));
-            reportAnnotations(importNode.getAnnotations());
+            reportAnnotations(importNode.getAnnotations(), importedTypes);
         }
 
         for (Map.Entry<String, ImportNode> entry : module.getStaticStarImports().entrySet()) {
             ImportNode importNode = entry.getValue();
             reportImport(GroovySandboxOperation.SOURCE_STATIC_STAR_IMPORT, importClassName(importNode), "*");
-            reportAnnotations(importNode.getAnnotations());
+            reportAnnotations(importNode.getAnnotations(), importedTypes);
         }
 
-        module.getClasses().forEach(this::reportClass);
+        module.getClasses().forEach(classNode -> reportClass(classNode, importedTypes));
     }
 
-    protected void reportClass(ClassNode classNode) {
+    protected void reportClass(ClassNode classNode, Map<String, String> importedTypes) {
         if (classNode == null) {
             return;
         }
 
+        if (classNode.isScript()) {
+            return;
+        }
+
         report(GroovySandboxOperation.SOURCE_CLASS, className(classNode), className(classNode.getSuperClass()));
-        reportAnnotations(classNode.getAnnotations());
+        reportAnnotations(classNode.getAnnotations(), importedTypes);
 
         for (ConstructorNode constructor : classNode.getDeclaredConstructors()) {
-            reportMethod(classNode, constructor, "<init>");
+            reportMethod(classNode, constructor, "<init>", importedTypes);
         }
 
         for (MethodNode method : classNode.getMethods()) {
-            reportMethod(classNode, method, method.getName());
+            reportMethod(classNode, method, method.getName(), importedTypes);
         }
     }
 
-    protected void reportMethod(ClassNode owner, MethodNode method, String name) {
+    protected void reportMethod(ClassNode owner, MethodNode method, String name, Map<String, String> importedTypes) {
         if (method == null || method.isSynthetic() || method.isStaticConstructor()) {
             return;
         }
@@ -177,16 +186,17 @@ public class ReportingGroovyCompilationCustomizer extends CompilationCustomizer 
             name,
             parameterTypeNames(method.getParameters())
         );
-        reportAnnotations(method.getAnnotations());
+        reportAnnotations(method.getAnnotations(), importedTypes);
     }
 
-    protected void reportAnnotations(List<AnnotationNode> annotations) {
+    protected void reportAnnotations(List<AnnotationNode> annotations, Map<String, String> importedTypes) {
         if (annotations == null) {
             return;
         }
 
         for (AnnotationNode annotation : annotations) {
             String annotationType = className(annotation.getClassNode());
+            annotationType = importedTypes.getOrDefault(annotationType, annotationType);
             report(
                 isGrapeAnnotation(annotationType) ? GroovySandboxOperation.SOURCE_GRAB : GroovySandboxOperation.SOURCE_ANNOTATION,
                 annotationType,

@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.rules;
 
+import groovy.lang.Closure;
+import groovy.lang.Script;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -80,6 +83,12 @@ public record GroovySandboxSignature(
         }
         if (value instanceof Class<?> type) {
             return type.getName();
+        }
+        if (value instanceof Script) {
+            return Script.class.getName();
+        }
+        if (value instanceof Closure) {
+            return Closure.class.getName();
         }
         return value.getClass().getName();
     }

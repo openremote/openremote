@@ -39,9 +39,10 @@ class GroovySandboxReportingTest extends Specification {
         GroovySandboxOperation.METHOD         | "org.openremote.model.rules.Assets" | "dispatch"       | GroovySandboxClassification.KNOWN
         GroovySandboxOperation.CONSTRUCTOR    | "java.util.HashMap"             | "<init>"         | GroovySandboxClassification.KNOWN
         GroovySandboxOperation.STATIC_METHOD  | "java.lang.System"              | "currentTimeMillis" | GroovySandboxClassification.DANGEROUS
-        GroovySandboxOperation.GET_PROPERTY   | "org.openremote.model.asset.Asset" | "class"          | GroovySandboxClassification.DANGEROUS
+        GroovySandboxOperation.GET_PROPERTY   | "org.openremote.model.asset.Asset" | "class"          | GroovySandboxClassification.KNOWN
+        GroovySandboxOperation.METHOD         | "org.openremote.model.asset.Asset" | "getClass"       | GroovySandboxClassification.DANGEROUS
         GroovySandboxOperation.SOURCE_GRAB    | "groovy.lang.Grab"              | "-"              | GroovySandboxClassification.DANGEROUS
-        GroovySandboxOperation.CONSTRUCTOR    | "groovy.lang.Tuple"             | "<init>"         | GroovySandboxClassification.UNKNOWN
+        GroovySandboxOperation.CONSTRUCTOR    | "groovy.lang.Tuple"             | "<init>"         | GroovySandboxClassification.KNOWN
     }
 
     def "reports source package imports annotations classes and methods"() {
@@ -75,11 +76,16 @@ class GroovySandboxReportingTest extends Specification {
             source(GroovySandboxOperation.SOURCE_IMPORT, "java.util.concurrent.TimeUnit", "TimeUnit"),
             source(GroovySandboxOperation.SOURCE_STATIC_IMPORT, "java.lang.System", "currentTimeMillis", GroovySandboxClassification.DANGEROUS),
             source(GroovySandboxOperation.SOURCE_STATIC_STAR_IMPORT, "org.openremote.model.query.AssetQuery.Operator", "*"),
-            source(GroovySandboxOperation.SOURCE_ANNOTATION, "ToString", "-"),
+            source(GroovySandboxOperation.SOURCE_ANNOTATION, "groovy.transform.ToString", "-"),
             source(GroovySandboxOperation.SOURCE_CLASS, "org.openremote.test.rules.Helper", "java.lang.Object", GroovySandboxClassification.UNKNOWN),
             source(GroovySandboxOperation.SOURCE_METHOD, "org.openremote.test.rules.Helper", "<init>", GroovySandboxClassification.UNKNOWN, "String"),
             source(GroovySandboxOperation.SOURCE_METHOD, "org.openremote.test.rules.Helper", "value", GroovySandboxClassification.UNKNOWN, "Integer")
         ] as Set)
+
+        and:
+        !signatures(reporter, ruleset).any {
+            it.operation() == GroovySandboxOperation.SOURCE_CLASS && it.receiverType() == "org.openremote.test.rules.Script1"
+        }
     }
 
     def "reports grab annotations as dangerous source signatures"() {
@@ -106,6 +112,16 @@ class GroovySandboxReportingTest extends Specification {
         signatures(reporter, ruleset).contains(
             source(GroovySandboxOperation.SOURCE_GRAB, "groovy.lang.Grab", "-", GroovySandboxClassification.DANGEROUS)
         )
+    }
+
+    def "normalizes generated script and closure runtime type names"() {
+        given:
+        def script = new GroovyShell().parse("{ value -> value }")
+        def closure = script.run()
+
+        expect:
+        GroovySandboxSignature.typeName(script) == "groovy.lang.Script"
+        GroovySandboxSignature.typeName(closure) == "groovy.lang.Closure"
     }
 
     private GroovySandboxReporter reporter() {

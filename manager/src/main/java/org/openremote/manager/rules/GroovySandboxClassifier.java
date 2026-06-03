@@ -24,7 +24,6 @@ import java.util.Set;
 public class GroovySandboxClassifier {
 
     protected static final Set<String> DANGEROUS_MEMBERS = Set.of(
-        "class",
         "classLoader",
         "getClass",
         "getClassLoader",
@@ -33,6 +32,7 @@ public class GroovySandboxClassifier {
         "setMetaClass",
         "invokeMethod"
     );
+    protected static final String CLASS_LITERAL_MEMBER = "class";
 
     protected static final Set<String> DANGEROUS_TYPES = Set.of(
         "java.io.File",
@@ -63,18 +63,23 @@ public class GroovySandboxClassifier {
         "groovy.lang.Binding",
         "groovy.lang.Closure",
         "groovy.lang.Script",
+        "groovy.lang.Tuple",
+        "groovy.transform.ToString",
         "java.lang.Boolean",
         "java.lang.Byte",
         "java.lang.Character",
         "java.lang.Double",
+        "java.lang.Exception",
         "java.lang.Float",
         "java.lang.Integer",
         "java.lang.Long",
         "java.lang.Math",
         "java.lang.Number",
         "java.lang.Object",
+        "java.lang.RuntimeException",
         "java.lang.Short",
         "java.lang.String",
+        "java.lang.Throwable",
         "java.math.BigDecimal",
         "java.math.BigInteger",
         "java.time.Duration",
@@ -120,6 +125,10 @@ public class GroovySandboxClassifier {
             return GroovySandboxClassification.DANGEROUS;
         }
 
+        if (isKnownClassLiteral(receiverType, member)) {
+            return GroovySandboxClassification.KNOWN;
+        }
+
         if (isKnown(receiverType)) {
             return GroovySandboxClassification.KNOWN;
         }
@@ -132,24 +141,25 @@ public class GroovySandboxClassifier {
             return true;
         }
 
-        if (member != null && DANGEROUS_MEMBERS.contains(member)) {
+        if (receiverType != null && DANGEROUS_TYPES.contains(receiverType)) {
             return true;
         }
 
-        if (receiverType == null) {
-            return false;
-        }
-
-        if (DANGEROUS_TYPES.contains(receiverType)) {
+        if (receiverType != null
+            && (receiverType.startsWith("java.lang.reflect.")
+                || receiverType.startsWith("java.net.")
+                || receiverType.startsWith("java.nio.file.")
+                || receiverType.startsWith("javax.script.")
+                || receiverType.startsWith("groovy.grape.")
+                || receiverType.startsWith("org.codehaus.groovy.runtime.ProcessGroovyMethods"))) {
             return true;
         }
 
-        return receiverType.startsWith("java.lang.reflect.")
-            || receiverType.startsWith("java.net.")
-            || receiverType.startsWith("java.nio.file.")
-            || receiverType.startsWith("javax.script.")
-            || receiverType.startsWith("groovy.grape.")
-            || receiverType.startsWith("org.codehaus.groovy.runtime.ProcessGroovyMethods");
+        return member != null && DANGEROUS_MEMBERS.contains(member);
+    }
+
+    protected static boolean isKnownClassLiteral(String receiverType, String member) {
+        return CLASS_LITERAL_MEMBER.equals(member) && isKnown(receiverType);
     }
 
     protected static boolean isKnown(String receiverType) {
