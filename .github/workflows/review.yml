@@ -83,7 +83,7 @@ jobs:
 
   code-coverage:
     name: Test
-    needs: [unit-tests, integration-tests]
+    needs: [detect-changes, unit-tests, integration-tests]
     if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/code-coverage.yml"
     with:
