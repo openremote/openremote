@@ -21,6 +21,7 @@ package org.openremote.manager.rules
 
 import groovy.lang.GroovyShell
 import org.codehaus.groovy.control.CompilerConfiguration
+import org.kohsuke.groovy.sandbox.SandboxTransformer
 import org.openremote.container.timer.TimerService
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
@@ -122,6 +123,37 @@ class GroovySandboxReportingTest extends Specification {
         expect:
         GroovySandboxSignature.typeName(script) == "groovy.lang.Script"
         GroovySandboxSignature.typeName(closure) == "groovy.lang.Closure"
+    }
+
+    def "reports runtime operations from sandbox transformed Groovy scripts"() {
+        given:
+        def reporter = reporter()
+        def ruleset = ruleset()
+        def script = sandboxedShell().parse("""
+            import java.util.ArrayList
+
+            def values = new ArrayList()
+            values.add("one")
+            values[0]
+            Math.max(1, 2)
+        """)
+        def interceptor = new ReportingGroovyInterceptor(reporter, ruleset, GroovySandboxPhase.RUNTIME)
+
+        when:
+        interceptor.register()
+        try {
+            script.run()
+        } finally {
+            interceptor.unregister()
+        }
+
+        then:
+        signatures(reporter, ruleset).containsAll([
+            runtime(GroovySandboxOperation.CONSTRUCTOR, "java.util.ArrayList", "<init>"),
+            runtime(GroovySandboxOperation.METHOD, "java.util.ArrayList", "add", "java.lang.String"),
+            runtime(GroovySandboxOperation.GET_ARRAY, "java.util.ArrayList", "-", "java.lang.Integer"),
+            runtime(GroovySandboxOperation.STATIC_METHOD, "java.lang.Math", "max", "java.lang.Integer", "java.lang.Integer")
+        ] as Set)
     }
 
     def "flush tracks only pending signature counts"() {
@@ -269,6 +301,10 @@ class GroovySandboxReportingTest extends Specification {
         ))
     }
 
+    private static GroovyShell sandboxedShell() {
+        new GroovyShell(new CompilerConfiguration().addCompilationCustomizers(new SandboxTransformer()))
+    }
+
     private static Set<GroovySandboxSignature> signatures(GroovySandboxReporter reporter, GlobalRuleset ruleset) {
         report(reporter, ruleset).signatureCounters.keySet()
     }
@@ -301,6 +337,22 @@ class GroovySandboxReportingTest extends Specification {
             receiverType,
             member,
             classification,
+            argumentTypes
+        )
+    }
+
+    private static GroovySandboxSignature runtime(
+        GroovySandboxOperation operation,
+        String receiverType,
+        String member,
+        String... argumentTypes
+    ) {
+        GroovySandboxSignature.of(
+            GroovySandboxPhase.RUNTIME,
+            operation,
+            receiverType,
+            member,
+            GroovySandboxClassifier.classify(operation, receiverType, member),
             argumentTypes
         )
     }
