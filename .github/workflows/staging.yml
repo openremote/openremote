@@ -60,6 +60,7 @@ jobs:
             backend:
               - '!.ci_cd/**'
               - '!deployment/**'
+              - '!ui/**'
               - '!**/*.md'
               - '!**/*.yml'
               - '!yarn.lock'
@@ -124,6 +125,12 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.backend_any_modified == 'true'
     uses: "./.github/workflows/integration-tests.yml"
+
+  code-coverage:
+    name: Test
+    needs: [detect-changes, unit-tests, integration-tests]
+    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    uses: "./.github/workflows/code-coverage.yml"
 
   ui-component-tests:
     name: Test
