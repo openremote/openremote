@@ -127,6 +127,7 @@ public class RulesEngine<T extends Ruleset> {
     protected final Set<AttributeInfo> updateInfos = new HashSet<>();
     protected final Set<AttributeInfo> insertInfos = new HashSet<>();
     protected final Set<AttributeInfo> retractInfos = new HashSet<>();
+    protected final GroovySandboxReporter groovySandboxReporter;
 
     // Only used to optimize toString(), contains the details of this engine
     protected String deploymentInfo;
@@ -147,7 +148,8 @@ public class RulesEngine<T extends Ruleset> {
                        AssetPredictedDatapointService assetPredictedDatapointService,
                        RulesEngineId<T> id,
                        AssetLocationPredicateProcessor assetLocationPredicatesConsumer,
-                       Timer rulesFiringTimer) {
+                       Timer rulesFiringTimer,
+                       GroovySandboxReporter groovySandboxReporter) {
         this.timerService = timerService;
         this.rulesService = rulesService;
         this.previouslyFired = rulesService.startDone;
@@ -156,6 +158,7 @@ public class RulesEngine<T extends Ruleset> {
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.rulesFiringTimer = rulesFiringTimer;
+        this.groovySandboxReporter = groovySandboxReporter;
         this.id = id;
 
         String ruleEngineCategory = id.scope.getSimpleName().replace("Ruleset", "Engine-") + id.getId().orElse("");
@@ -262,7 +265,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade, groovySandboxReporter);
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);
@@ -562,7 +565,7 @@ public class RulesEngine<T extends Ruleset> {
 
                     long startTimestamp = timerService.getCurrentTimeMillis();
 
-                    engine.fire(deployment.getRules(), facts);
+                    fireDeployment(deployment);
                     long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
                     LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
                 } else {
@@ -586,6 +589,25 @@ public class RulesEngine<T extends Ruleset> {
             }
         }
         previouslyFired = true;
+    }
+
+    protected void fireDeployment(RulesetDeployment deployment) throws Exception {
+        if (groovySandboxReporter == null) {
+            engine.fire(deployment.getRules(), facts);
+            return;
+        }
+
+        ReportingGroovyInterceptor interceptor = new ReportingGroovyInterceptor(
+            groovySandboxReporter,
+            deployment.getRuleset(),
+            GroovySandboxPhase.RUNTIME
+        );
+        interceptor.register();
+        try {
+            engine.fire(deployment.getRules(), facts);
+        } finally {
+            interceptor.unregister();
+        }
     }
 
     protected String getEngineId() {

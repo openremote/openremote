@@ -631,7 +631,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(),
                     locationPredicateRulesConsumer,
-                    rulesFiringTimer
+                    rulesFiringTimer,
+                    groovySandboxReporter
                 );
                 globalEngine.set(engine);
             }
@@ -683,7 +684,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(ruleset.getRealm()),
                     locationPredicateRulesConsumer,
-                    rulesFiringTimer
+                    rulesFiringTimer,
+                    groovySandboxReporter
                 );
                 realmEngines.put(ruleset.getRealm(), realmRulesEngine);
 
@@ -765,7 +767,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(ruleset.getRealm(), ruleset.getAssetId()),
                     locationPredicateRulesConsumer,
-                    rulesFiringTimer
+                    rulesFiringTimer,
+                    groovySandboxReporter
                 );
                 assetEngines.put(ruleset.getAssetId(), assetRulesEngine);
 
