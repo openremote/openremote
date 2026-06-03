@@ -1,5 +1,5 @@
 plugins {
-    id 'com.adarshr.test-logger' version '4.0.0'
+    id 'com.adarshr.test-logger' version "$testLoggerPluginVersion"
 }
 
 apply plugin: "java-library"
@@ -12,39 +12,39 @@ dependencies {
     testImplementation rootProject.project(":setup").sourceSets.integration.output
     api project(":manager")
 
-    implementation "org.apache.groovy:groovy-all:$groovyVersion"
-    implementation "org.apache.groovy:groovy-test:$groovyVersion"
-    api platform("org.spockframework:spock-bom:$spockVersion")
-    api 'org.spockframework:spock-core'
+    implementation libs.groovyAll
+    implementation libs.groovyTest
+    api platform(libs.spockBom)
+    api libs.spockCore
 
     // optional dependencies for using Spock
-    testImplementation "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
-    testImplementation "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion" // for runtime class redefinition
-    testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion" // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
+    testImplementation libs.byteBuddy // allows mocking of classes (in addition to interfaces)
+    testImplementation libs.byteBuddyAgent // for runtime class redefinition
+    testRuntimeOnly libs.objenesis // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
+    testImplementation(libs.calimeroServer) {
         // Has a dependency on the SLF4J simple provider
         exclude group: "org.slf4j"
     }
 
-    testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
-    testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    testImplementation "com.icegreen:greenmail:$greenmailVersion"
-    testImplementation "dev.failsafe:failsafe:$failsafeVersion"
+    testImplementation libs.firebaseAdmin
+    testImplementation libs.suncalc
+    testImplementation libs.greenmail
+    testImplementation libs.failsafe
 
-    testImplementation "net.solarnetwork.common:nifty-modbus-tcp:$niftyModbusVersion"
-    testImplementation "net.solarnetwork.common:nifty-modbus-rtu-jsc:$niftyModbusVersion"
-    testImplementation "net.solarnetwork.common:nifty-modbus-api:$niftyModbusVersion"
-    testImplementation "net.solarnetwork.common:nifty-modbus-core:$niftyModbusVersion"
+    testImplementation libs.niftyModbusTcp
+    testImplementation libs.niftyModbusRtuJsc
+    testImplementation libs.niftyModbusApi
+    testImplementation libs.niftyModbusCore
 
-    testImplementation "com.github.moquette-io:moquette:$moquetteVersion"
-    testImplementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+    testImplementation libs.moquette
+    testImplementation libs.hiveMqttClient
 
-    testImplementation "io.grpc:grpc-netty-shaded:$grpcVersion"
-    testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
-    testImplementation "io.grpc:grpc-stub:$grpcVersion"
+    testImplementation libs.grpcNettyShaded
+    testImplementation libs.grpcProtobuf
+    testImplementation libs.grpcStub
 
-    testImplementation "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion"
+    testImplementation libs.bouncycastleBcpkixJdk18on
 }
 
 tasks.withType(Test) {

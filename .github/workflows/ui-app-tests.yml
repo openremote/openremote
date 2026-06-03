@@ -1,9 +1,16 @@
 name: UI App Tests
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
 
 jobs:
   ui-app-tests:
     name: UI App Tests
+    if: ${{ !inputs.skip }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -50,3 +57,16 @@ jobs:
         with:
           name: or-ui-app-test-results-${{ matrix.shardIndex }}
           path: ui/app/*/app-test-report/**
+
+  ui-app-tests-status:
+    name: UI App Tests Status
+    needs: ui-app-tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check matrix job result
+        if: ${{ needs.ui-app-tests.result == 'failure' || needs.ui-app-tests.result == 'cancelled' }}
+        run: exit 1
+      - name: Success or Skipped
+        if: ${{ needs.ui-app-tests.result == 'success' || needs.ui-app-tests.result == 'skipped' }}
+        run: echo "UI App Tests completed successfully or were skipped."

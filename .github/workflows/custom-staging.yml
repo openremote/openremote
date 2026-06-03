@@ -59,7 +59,7 @@ jobs:
 
   # code-coverage:
   #   name: Test
-  #   needs: [unit-tests, integration-tests]
+  #   needs: [detect-changes, unit-tests, integration-tests]
   #   if: needs.detect-changes.outputs.backend_any_modified == 'true'
   #   uses: "./.github/workflows/code-coverage.yml"
 
