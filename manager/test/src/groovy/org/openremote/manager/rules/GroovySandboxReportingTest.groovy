@@ -158,6 +158,43 @@ class GroovySandboxReportingTest extends Specification {
         counter(reporter, ruleset, signature).pendingCount() == 1
     }
 
+    def "tracks dropped signatures when per-ruleset cap is reached"() {
+        given:
+        def reporter = reporter(1)
+        def ruleset = ruleset()
+        def retainedSignature = source(GroovySandboxOperation.SOURCE_IMPORT, "java.util.List", "List")
+        def droppedSignature = source(GroovySandboxOperation.SOURCE_IMPORT, "java.util.Map", "Map")
+
+        when:
+        reporter.report(ruleset, retainedSignature)
+        reporter.report(ruleset, droppedSignature)
+        reporter.report(ruleset, droppedSignature)
+
+        then:
+        signatures(reporter, ruleset) == [retainedSignature] as Set
+        report(reporter, ruleset).droppedSignatureCount.sum() == 2
+        report(reporter, ruleset).lastFlushedDroppedSignatureCount == 0
+
+        when:
+        reporter.flush(ruleset)
+
+        then:
+        report(reporter, ruleset).lastFlushedDroppedSignatureCount == 2
+
+        when:
+        reporter.flush(ruleset)
+
+        then:
+        report(reporter, ruleset).lastFlushedDroppedSignatureCount == 2
+
+        when:
+        reporter.report(ruleset, droppedSignature)
+
+        then:
+        report(reporter, ruleset).droppedSignatureCount.sum() == 3
+        report(reporter, ruleset).lastFlushedDroppedSignatureCount == 2
+    }
+
     @Unroll
     def "parses Groovy sandbox mode config value '#value' as #mode"() {
         expect:
@@ -212,10 +249,14 @@ class GroovySandboxReportingTest extends Specification {
     }
 
     private GroovySandboxReporter reporter() {
+        reporter(100)
+    }
+
+    private GroovySandboxReporter reporter(int maxSignaturesPerRuleset) {
         def timerService = Stub(TimerService) {
             getCurrentTimeMillis() >>> [100L, 101L, 102L, 103L, 104L, 105L, 106L, 107L, 108L, 109L, 110L, 111L]
         }
-        new GroovySandboxReporter(timerService, 100)
+        new GroovySandboxReporter(timerService, maxSignaturesPerRuleset)
     }
 
     private static GlobalRuleset ruleset() {
@@ -229,7 +270,7 @@ class GroovySandboxReportingTest extends Specification {
     }
 
     private static Set<GroovySandboxSignature> signatures(GroovySandboxReporter reporter, GlobalRuleset ruleset) {
-        reporter.reports[new GroovySandboxReporter.RulesetKey(ruleset)].signatureCounters.keySet()
+        report(reporter, ruleset).signatureCounters.keySet()
     }
 
     private static GroovySandboxReporter.SignatureCounter counter(
@@ -237,7 +278,14 @@ class GroovySandboxReportingTest extends Specification {
         GlobalRuleset ruleset,
         GroovySandboxSignature signature
     ) {
-        reporter.reports[new GroovySandboxReporter.RulesetKey(ruleset)].signatureCounters[signature]
+        report(reporter, ruleset).signatureCounters[signature]
+    }
+
+    private static GroovySandboxReporter.RulesetReport report(
+        GroovySandboxReporter reporter,
+        GlobalRuleset ruleset
+    ) {
+        reporter.reports[new GroovySandboxReporter.RulesetKey(ruleset)]
     }
 
     private static GroovySandboxSignature source(

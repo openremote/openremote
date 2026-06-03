@@ -60,6 +60,7 @@ public class GroovySandboxReporter {
 
         if (counter == null) {
             if (report.signatureCounters.size() >= maxSignaturesPerRuleset) {
+                report.droppedSignatureCount.increment();
                 if (report.capLogged.compareAndSet(false, true)) {
                     LOG.warning("Groovy sandbox report signature cap reached: " + report.summaryPrefix()
                         + ", maxSignatures=" + maxSignaturesPerRuleset);
@@ -99,7 +100,9 @@ public class GroovySandboxReporter {
     protected void flush(RulesetReport report) {
         List<SignatureCounter> counters = new ArrayList<>(report.signatureCounters.values());
         counters.removeIf(counter -> counter.pendingCount() <= 0);
-        if (counters.isEmpty()) {
+        long droppedSignatureCount = report.droppedSignatureCount.sum();
+        long pendingDroppedSignatureCount = droppedSignatureCount - report.lastFlushedDroppedSignatureCount;
+        if (counters.isEmpty() && pendingDroppedSignatureCount <= 0) {
             return;
         }
 
@@ -113,7 +116,10 @@ public class GroovySandboxReporter {
         LOG.info("Groovy sandbox report summary: " + report.summaryPrefix()
             + ", pendingSignatures=" + counters.size()
             + ", uniqueSignatures=" + report.signatureCounters.size()
+            + ", droppedSignatures=" + droppedSignatureCount
+            + ", pendingDroppedSignatures=" + pendingDroppedSignatureCount
             + ", maxSignatures=" + maxSignaturesPerRuleset);
+        report.lastFlushedDroppedSignatureCount = droppedSignatureCount;
 
         counters.forEach(counter -> {
             long count = counter.count.sum();
@@ -155,6 +161,8 @@ public class GroovySandboxReporter {
         protected final long createdOn;
         protected final ConcurrentMap<GroovySandboxSignature, SignatureCounter> signatureCounters = new ConcurrentHashMap<>();
         protected final AtomicBoolean capLogged = new AtomicBoolean(false);
+        protected final LongAdder droppedSignatureCount = new LongAdder();
+        protected volatile long lastFlushedDroppedSignatureCount;
 
         protected RulesetReport(Ruleset ruleset, long createdOn) {
             this.rulesetId = ruleset.getId();
