@@ -29,6 +29,7 @@ jobs:
             backend:
               - '!.ci_cd/**'
               - '!deployment/**'
+              - '!ui/**'
               - '!**/*.md'
               - '!**/*.yml'
               - '!yarn.lock'
@@ -36,62 +37,82 @@ jobs:
   ui-check-dependencies:
     name: Lint
     needs: detect-changes
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/ui-check-dependencies.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
 
   ui-check-outdated-translations:
     name: Lint
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/ui-check-outdated-translations.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   install-browsers:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/install-browsers.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
 
   install-dist:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/install-dist.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
 
   unit-tests:
     name: Test
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/unit-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   integration-tests:
     name: Test
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/integration-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   code-coverage:
     name: Test
-    needs: [unit-tests, integration-tests]
-    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    needs: [detect-changes, unit-tests, integration-tests]
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/code-coverage.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   ui-component-tests:
     name: Test
     needs: [detect-changes, install-dist, install-browsers]
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/ui-component-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
 
   ui-app-tests:
     name: Test
     needs: [detect-changes, install-dist, install-browsers]
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/ui-app-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
 
   build-manager-image:
     name: Build
     needs: [detect-changes, install-dist]
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/build-manager-image.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
     secrets:
       DOCKERHUB_USER: ${{ secrets._TEMP_DOCKERHUB_USER }}
       DOCKERHUB_PASSWORD: ${{ secrets._TEMP_DOCKERHUB_PASSWORD }}
@@ -99,16 +120,19 @@ jobs:
   build-deployment-image: # Only here to check if it can build successfully
     name: Build
     needs: [detect-changes, install-dist]
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/build-deployment-image.yml"
     with:
       tag: develop
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
 
   publish-npm-dry-run:
     name: Publish
     needs: [detect-changes, install-dist]
-    if: needs.detect-changes.outputs.ui_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/publish-npm-dry-run.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.ui_any_modified != 'true' }}
 
   get-version-details: # Only here to check if it can build successfully
     name: Build / Get version details
