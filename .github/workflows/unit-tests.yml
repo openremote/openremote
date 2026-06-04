@@ -1,0 +1,55 @@
+name: Unit Tests
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    if: ${{ !inputs.skip }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+
+      - name: Check if main repo
+        id: is_main_repo
+        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+
+      - name: Run unit tests
+        timeout-minutes: 20
+        run: |
+          if [ "${{ steps.is_main_repo.outputs.value }}" = "true" ]; then
+            ./gradlew test -x :test:test -x npmTest unitTestReport
+          else
+            ./gradlew test -x :test:test
+          fi
+
+      - name: Archive unit test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: or-unit-test-results
+          path: build/reports/tests/test/aggregated-results/
+
+      - name: Archive JaCoCo coverage outputs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: or-unit-test-outputs
+          path: |
+            **/build/classes/java/main/**
+            **/build/classes/java/test/**
+            **/build/jacoco/*.exec
+            **/build/reports/tests/test/**
+            **/build/test-results/test/**

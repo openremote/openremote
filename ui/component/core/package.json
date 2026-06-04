@@ -15,6 +15,7 @@
     "dist"
   ],
   "scripts": {
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx rspack"
   },
@@ -35,6 +36,7 @@
     "url-search-params-polyfill": "^8.1.0"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.transform": "^4",
     "@types/qs": "^6.9.7"
   },

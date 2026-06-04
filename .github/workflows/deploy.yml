@@ -1,0 +1,59 @@
+# This workflow only exists to allow manual deployments e.g. to test servers.
+#
+# It leverages existing reusable workflows similar to the staging.yml environment workflow but unlike the staging.yml workflow
+# it only includes the required jobs for deployments: install-dist, build-manager-image and deploy.
+name: Deploy
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      ENVIRONMENT:
+        description: 'Environment to use (if any)'
+      MANAGER_TAG:
+        description: 'Manager docker tag to pull'
+      CLEAN_INSTALL:
+        description: 'Delete data before starting'
+        type: boolean
+      COMMIT:
+        description: 'Repo branch or commit SHA to checkout'
+      OR_HOSTNAME:
+        description: 'Host to deploy to (e.g. demo.openremote.app)'
+      OR_ADMIN_PASSWORD:
+        description: 'Admin password override'
+
+  workflow_call:
+    inputs:
+      INPUTS:
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  is-main-repo:
+    name: Is main repository
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.is_main_repo.outputs.value }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check if main repo
+        id: is_main_repo
+        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+
+  install-dist:
+    name: Build
+    needs: is-main-repo
+    if: ${{ needs.is-main-repo.outputs.value == 'true' }}
+    uses: "./.github/workflows/install-dist.yml"
+
+  deployment:
+    name: Deployment
+    needs: install-dist
+    if: always() && !cancelled() && (needs.install-dist.result == 'success' || needs.install-dist.result == 'skipped')
+    uses: "./.github/workflows/deployment.yml"
+    with:
+      INPUTS: ${{ toJSON(inputs) }}
+    secrets: inherit
