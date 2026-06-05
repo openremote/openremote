@@ -52,7 +52,6 @@ runs:
         version = os.getenv('VERSION')
         deploys = None
         dockerPublishTags = None
-        mavenPublishTag = None
         npmPublishTag = None
         deployEnvironment = None
         eventConfig = ()
@@ -75,8 +74,6 @@ runs:
           if 'distribute' in eventConfig:
             if 'docker' in eventConfig['distribute']:
                 dockerPublishTags = eventConfig['distribute']['docker']
-            if 'maven' in eventConfig['distribute']:
-                mavenPublishTag = eventConfig['distribute']['maven']
             if 'npm' in eventConfig['distribute']:
                 npmPublishTag = eventConfig['distribute']['npm']
 
@@ -95,11 +92,6 @@ runs:
             dockerPublishTags = " ".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
             if repoOwner == 'openremote':
               os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
-
-          if mavenPublishTag is not None and repoOwner == 'openremote':
-            mavenPublishTag = mavenPublishTag.replace("$version", version)
-            os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-            os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
 
           if npmPublishTag is not None and repoOwner == 'openremote':
             npmPublishTag = npmPublishTag.replace("$version", version)

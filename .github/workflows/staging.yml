@@ -41,7 +41,6 @@ jobs:
       is_release: ${{ steps.get-version-details.outputs.is_release }}
       # Processed ci_cd.json outputs
       dockerTags: ${{ steps.ci-cd-output.outputs.dockerTags }}
-      mavenTag: ${{ steps.ci-cd-output.outputs.mavenTag }}
       npmTag: ${{ steps.ci-cd-output.outputs.npmTag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -162,8 +161,6 @@ jobs:
       always() &&
       !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     uses: "./.github/workflows/publish-maven.yml"
-    with:
-      MAVEN_TAG: ${{ needs.detect-changes.outputs.mavenTag }}
     secrets:
       MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
       MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
