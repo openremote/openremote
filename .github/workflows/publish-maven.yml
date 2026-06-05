@@ -17,7 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+
       - name: Publish to Maven Central Sonatype
         run: ./gradlew publishToSonatype --no-parallel -PsigningKey=${{ secrets.MAVEN_SIGNING_KEY }} -PsigningPassword=${{ secrets.MAVEN_SIGNING_PASSWORD }} -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
+
       - name: Release to Maven Central Sonatype
         run: ./gradlew findSonatypeStagingRepository closeAndReleaseSonatypeStagingRepository -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
