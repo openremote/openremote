@@ -38,5 +38,9 @@ jobs:
       - name: Publish to Maven Central Sonatype
         run: ./gradlew publishToSonatype --no-parallel -PsigningKey=${{ secrets.MAVEN_SIGNING_KEY }} -PsigningPassword=${{ secrets.MAVEN_SIGNING_PASSWORD }} -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
 
+      - name: Close and Verify Staging Repository
+        # This will poll the Sonatype API and wait until all validation rules pass.
+        run: ./gradlew findSonatypeStagingRepository closeSonatypeStagingRepository -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
+
       - name: Release to Maven Central Sonatype
-        run: ./gradlew findSonatypeStagingRepository closeAndReleaseSonatypeStagingRepository -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
+        run: ./gradlew findSonatypeStagingRepository releaseSonatypeStagingRepository -PpublishUsername=${{ secrets.MAVEN_USERNAME }} -PpublishPassword=${{ secrets.MAVEN_PASSWORD }}
