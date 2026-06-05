@@ -1,4 +1,4 @@
-// test
+
 afterEvaluate {
     // Add dependencies on model and rest typescript generation
     rootProject.getTasksByName('installDist', true).forEach {
