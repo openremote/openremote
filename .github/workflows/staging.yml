@@ -66,15 +66,15 @@ jobs:
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
 
       - name: Check if main repo
         id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+        uses: openremote/openremote/.github/actions/check-if-main-repo@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+        uses: openremote/openremote/.github/actions/process-cicd-json@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
