@@ -41,7 +41,6 @@ jobs:
       is_release: ${{ steps.get-version-details.outputs.is_release }}
       # Processed ci_cd.json outputs
       dockerTags: ${{ steps.ci-cd-output.outputs.dockerTags }}
-      mavenTag: ${{ steps.ci-cd-output.outputs.mavenTag }}
       npmTag: ${{ steps.ci-cd-output.outputs.npmTag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -67,22 +66,15 @@ jobs:
 
       - name: Get version details
         id: get-version-details
-        uses: openremote/openremote/.github/actions/get-version-details@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
-
-      - name: Check ci_cd existence
-        id: check_cicd_json
-        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
-        with:
-          files: ".ci_cd/ci_cd.json"
+        uses: openremote/openremote/.github/actions/get-version-details@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
 
       - name: Check if main repo
         id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+        uses: openremote/openremote/.github/actions/check-if-main-repo@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
 
       - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+        uses: openremote/openremote/.github/actions/process-cicd-json@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}
@@ -169,8 +161,6 @@ jobs:
       always() &&
       !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     uses: "./.github/workflows/publish-maven.yml"
-    with:
-      MAVEN_TAG: ${{ needs.detect-changes.outputs.mavenTag }}
     secrets:
       MAVEN_SIGNING_PASSWORD: ${{ secrets._TEMP_MAVEN_SIGNING_PASSWORD }}
       MAVEN_SIGNING_KEY: ${{ secrets._TEMP_MAVEN_SIGNING_KEY }}
