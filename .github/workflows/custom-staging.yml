@@ -42,26 +42,34 @@ jobs:
   install-dist:
     name: Build
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/install-dist.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
 
   unit-tests:
     name: Test
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/unit-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   integration-tests:
     name: Test
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend_any_modified == 'true'
+    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/integration-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   # code-coverage:
   #   name: Test
   #   needs: [detect-changes, unit-tests, integration-tests]
-  #   if: needs.detect-changes.outputs.backend_any_modified == 'true'
+  #   if: ${{ !failure() && !cancelled() }}
   #   uses: "./.github/workflows/code-coverage.yml"
+  #   with:
+  #     skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
 
   # deployment:
   #   name: Deploy
