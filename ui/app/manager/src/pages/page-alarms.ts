@@ -624,7 +624,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             await this.loadAlarm(alarm);
                             return this.getSingleAlarmTemplate(alarm, readonly);
                         };
-                        const content: Promise<TemplateResult> = getTemplate();
+                        const content: Promise<TemplateResult> = await getTemplate();
                         return html`${until(content, html`
                             <or-translate value="loading"/>`)} `;
                     }
