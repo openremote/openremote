@@ -66,6 +66,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -436,9 +437,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        LOG.info("Groovy sandbox report mode enabled: logger=" + GroovySandboxReporter.LOGGER_NAME
-            + ", intervalMinutes=" + groovySandboxReportIntervalMinutes
-            + ", maxSignaturesPerRuleset=" + groovySandboxReportMaxSignaturesPerRuleset);
+        LOG.log(Level.INFO, "Groovy sandbox report mode enabled: logger= {0}, intervalMinutes= {1}, maxSignaturesPerRuleset= {2}",
+                new Object[] { GroovySandboxReporter.LOGGER_NAME, groovySandboxReportIntervalMinutes, groovySandboxReportMaxSignaturesPerRuleset });
     }
 
     protected void stopGroovySandboxReporter() {

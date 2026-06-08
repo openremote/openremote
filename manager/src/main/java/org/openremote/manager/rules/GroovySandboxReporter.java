@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GroovySandboxReporter {
@@ -62,8 +63,8 @@ public class GroovySandboxReporter {
             if (report.signatureCounters.size() >= maxSignaturesPerRuleset) {
                 report.droppedSignatureCount.increment();
                 if (report.capLogged.compareAndSet(false, true)) {
-                    LOG.warning("Groovy sandbox report signature cap reached: " + report.summaryPrefix()
-                        + ", maxSignatures=" + maxSignaturesPerRuleset);
+                    LOG.log(Level.WARNING, "Groovy sandbox report signature cap reached: {0}, maxSignatures= {1}",
+                            new Object[] { report.summaryPrefix(), maxSignaturesPerRuleset });
                 }
                 return;
             }
@@ -113,29 +114,26 @@ public class GroovySandboxReporter {
             .thenComparing(counter -> counter.signature.receiverType())
             .thenComparing(counter -> counter.signature.member()));
 
-        LOG.info("Groovy sandbox report summary: " + report.summaryPrefix()
-            + ", pendingSignatures=" + counters.size()
-            + ", uniqueSignatures=" + report.signatureCounters.size()
-            + ", droppedSignatures=" + droppedSignatureCount
-            + ", pendingDroppedSignatures=" + pendingDroppedSignatureCount
-            + ", maxSignatures=" + maxSignaturesPerRuleset);
+        LOG.log(Level.INFO, "Groovy sandbox report summary: {0}"
+            + ", pendingSignatures= {1}"
+            + ", uniqueSignatures= {2}"
+            + ", droppedSignatures= {3}"
+            + ", pendingDroppedSignatures= {4}"
+            + ", maxSignatures= {5}",
+            new Object[] { report.summaryPrefix(),  counters.size(), report.signatureCounters.size(),
+                    droppedSignatureCount, pendingDroppedSignatureCount, maxSignaturesPerRuleset });
+
         report.lastFlushedDroppedSignatureCount = droppedSignatureCount;
 
         counters.forEach(counter -> {
             long count = counter.count.sum();
             long pendingCount = counter.markFlushed(count);
-            LOG.info("Groovy sandbox report signature: "
-                + report.summaryPrefix()
-                + ", phase=" + counter.signature.phase()
-                + ", operation=" + counter.signature.operation()
-                + ", receiver=" + counter.signature.receiverType()
-                + ", member=" + counter.signature.member()
-                + ", argTypes=" + counter.signature.argumentTypes()
-                + ", classification=" + counter.signature.classification()
-                + ", count=" + count
-                + ", pendingCount=" + pendingCount
-                + ", firstSeen=" + counter.firstSeen
-                + ", lastSeen=" + counter.lastSeen);
+            LOG.log(Level.INFO, "Groovy sandbox report signature: {0}"
+                + ", phase= {1}, operation= {2}, receiver= {3}, member= {4}, argTypes= {5}}, classification= {6}"
+                + ", count= {7}, pendingCount= {8}, firstSeen= {9}, lastSeen= {10}",
+                new Object[] { report.summaryPrefix(), counter.signature.phase(), counter.signature.operation(),
+                        counter.signature.receiverType(), counter.signature.member(), counter.signature.argumentTypes(),
+                        counter.signature.classification(), count, pendingCount, counter.firstSeen, counter.lastSeen });
         });
     }
 
