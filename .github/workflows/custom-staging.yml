@@ -42,10 +42,7 @@ jobs:
   install-dist:
     name: Build
     needs: detect-changes
-    if: ${{ !failure() && !cancelled() }}
     uses: "./.github/workflows/install-dist.yml"
-    with:
-      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
 
   unit-tests:
     name: Test
