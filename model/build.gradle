@@ -3,50 +3,50 @@ apply plugin: "maven-publish"
 apply plugin: "signing"
 
 dependencies {
-    api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    api "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
+    api libs.jacksonDatabind
+    api libs.jacksonDatatypeJdk8
+    api libs.jacksonDatatypeJsr310
+    api libs.jacksonModuleParameterNames
 
-    api "org.hibernate.orm:hibernate-core:$hibernateVersion"
-    api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
-    api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
-    api "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsVersion"
-    api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxrsSpecVersion"
-    api "org.jboss.resteasy:resteasy-cache-core:4.7.10.Final"
+    api libs.hibernateCore
+    api libs.hibernateValidator
+    api libs.jakartaElApi
+    api libs.jakartaAnnotationApi
+    api libs.jakartaWsRsApi
+    api libs.resteasyCacheCore
 
-    api "org.keycloak:keycloak-core:$keycloakVersion"
+    api libs.keycloakCore
 
-    api "org.geotools:gt-main:$geotoolsVersion"
-    api "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+    api libs.geotoolsMain
+    api libs.jaywayJsonPath
 
-    api "org.jeasy:easy-rules-core:$easyRulesVersion"
-    api "org.mnode.ical4j:ical4j:$ical4jVersion"
-    api "org.reflections:reflections:$reflectionsVersion"
-    api "com.google.guava:guava:$guavaVersion"
+    api libs.easyRulesCore
+    api libs.ical4j
+    api libs.reflections
+    api libs.guava
 
-    api "org.checkerframework:checker-qual:$checkerframeworkVersion"
+    api libs.checkerQual
 
-    api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
+    api libs.swaggerAnnotations
 
-    api "com.github.victools:jsonschema-generator:$victoolsJsonSchemaGeneratorVersion"
-    api "com.github.victools:jsonschema-module-jackson:$victoolsJsonSchemaGeneratorVersion"
-    api "com.github.victools:jsonschema-module-jakarta-validation:$victoolsJsonSchemaGeneratorVersion"
+    api libs.victoolsJsonschemaGenerator
+    api libs.victoolsJsonschemaModuleJackson
+    api libs.victoolsJsonschemaModuleJakartaValidation
 
-    api "io.github.classgraph:classgraph:$classgraphVersion"
-    api "io.micrometer:micrometer-core:$micrometerVersion"
-    api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
-    api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
+    api libs.classgraph
+    api libs.micrometerCore
+    api libs.friendlyId
+    api libs.javaUuidGenerator
 
-    api "fr.neolegal:exp4j:$exp4jVersion"
+    api libs.exp4j
 
     dependencies {
-        testImplementation 'org.skyscreamer:jsonassert:1.5.3'
-        testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
-        testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-        testImplementation "org.mockito:mockito-core:$mockitoVersion"
-        testRuntimeOnly 'org.glassfish:jakarta.el:4.0.2'
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+        testImplementation libs.jsonassert
+        testImplementation libs.junitJupiterParams
+        testImplementation libs.junitJupiterApi
+        testImplementation libs.mockitoCore
+        testRuntimeOnly libs.jakartaEl
+        testRuntimeOnly libs.junitJupiterEngine
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     }
 }

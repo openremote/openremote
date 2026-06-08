@@ -28,6 +28,12 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Check ci_cd existence
+      id: check_cicd_json
+      uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+      with:
+        files: ".ci_cd/ci_cd.json"
+
     - name: Process ci_cd.json file
       if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
       id: ci-cd-output
@@ -46,7 +52,6 @@ runs:
         version = os.getenv('VERSION')
         deploys = None
         dockerPublishTags = None
-        mavenPublishTag = None
         npmPublishTag = None
         deployEnvironment = None
         eventConfig = ()
@@ -69,8 +74,6 @@ runs:
           if 'distribute' in eventConfig:
             if 'docker' in eventConfig['distribute']:
                 dockerPublishTags = eventConfig['distribute']['docker']
-            if 'maven' in eventConfig['distribute']:
-                mavenPublishTag = eventConfig['distribute']['maven']
             if 'npm' in eventConfig['distribute']:
                 npmPublishTag = eventConfig['distribute']['npm']
 
@@ -85,19 +88,14 @@ runs:
               firstDockerTag = dockerPublishTags.split(",")[0]
 
             os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-            os.system(f" echo 'Manager tags to push to docker hub: {dockerPublishTags}'")
-            dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
+            print("Manager tags to push to docker hub: {dockerPublishTags}")
+            dockerPublishTags = " ".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
             if repoOwner == 'openremote':
               os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
-          if mavenPublishTag is not None and repoOwner == 'openremote':
-            mavenPublishTag = mavenPublishTag.replace("$version", version)
-            os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-            os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
-
           if npmPublishTag is not None and repoOwner == 'openremote':
             npmPublishTag = npmPublishTag.replace("$version", version)
-            os.system(f" echo 'npm publish version: {npmPublishTag}'")
+            print(f"npm publish version: {npmPublishTag}")
             os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
         deployStr = None

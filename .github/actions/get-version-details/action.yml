@@ -34,6 +34,6 @@ runs:
         if [ "$version" == "$versionWithQualifier" ]; then
           isRelease=true
         fi
-        echo "version=$version" >> $GITHUB_OUTPUT
-        echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
-        echo "is_release=$isRelease" >> $GITHUB_OUTPUT
+        echo "version=$version" | tee -a $GITHUB_OUTPUT
+        echo "version_with_qualifier=$versionWithQualifier" | tee -a $GITHUB_OUTPUT
+        echo "is_release=$isRelease" | tee -a $GITHUB_OUTPUT

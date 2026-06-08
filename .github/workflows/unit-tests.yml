@@ -1,9 +1,16 @@
 name: Unit Tests
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
 
 jobs:
   unit-tests:
     name: Unit Tests
+    if: ${{ !inputs.skip }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -17,7 +24,7 @@ jobs:
 
       - name: Check if main repo
         id: is_main_repo
-        uses: openremote/openremote/.github/actions/check-if-main-repo@9bf40702cf69c4b3de5f719f4c14b1240d9762d3
+        uses: openremote/openremote/.github/actions/check-if-main-repo@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
 
       - name: Run unit tests
         timeout-minutes: 20
