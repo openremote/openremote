@@ -76,7 +76,7 @@ jobs:
           platforms: linux/amd64 # "ubuntu-latest" runs on x86 GitHub runners
           load: true # Load image locally for Grype Scan
           push: false
-          tags: ${{ steps.parse-tags.outputs.formatted_tags }}
+          tags: ${{ steps.meta.outputs.formatted_tags }}
           build-args: |
             GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=manager
@@ -117,7 +117,7 @@ jobs:
           platforms: linux/amd64,linux/aarch64
           load: false
           push: ${{ steps.meta.outputs.should_push == 'true' }}
-          tags: ${{ steps.parse-tags.outputs.formatted_tags }}
+          tags: ${{ steps.meta.outputs.formatted_tags }}
           build-args: |
             GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha,scope=manager
