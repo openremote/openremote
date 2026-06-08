@@ -142,13 +142,10 @@ public class GroovySandboxReporter {
             return;
         }
 
-        LOG.warning("Groovy sandbox report dangerous signature first seen: "
-            + report.summaryPrefix()
-            + ", phase=" + signature.phase()
-            + ", operation=" + signature.operation()
-            + ", receiver=" + signature.receiverType()
-            + ", member=" + signature.member()
-            + ", argTypes=" + signature.argumentTypes());
+        LOG.log(Level.WARNING, "Groovy sandbox report dangerous signature first seen: {0}"
+            + ", phase= {1} , operation= {2}, receiver= {3}, member= {4}, argTypes= {5}",
+            new Object[] { report.summaryPrefix(), signature.phase(), signature.operation(),
+                    signature.receiverType(), signature.member(), signature.argumentTypes() });
     }
 
     protected static int classificationPriority(GroovySandboxClassification classification) {
