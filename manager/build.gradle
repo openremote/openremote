@@ -1,6 +1,7 @@
 import java.nio.file.Paths
 
 apply plugin: "java-library"
+apply plugin: "groovy"
 apply plugin: "application"
 apply plugin: "distribution"
 apply plugin: "maven-publish"
@@ -16,43 +17,56 @@ dependencies {
     api project(":agent")
     api project(":model")
 
-    implementation "org.xerial:sqlite-jdbc:$sqliteVersion"
+    implementation libs.sqliteJdbc
 
-    api "org.mnode.ical4j:ical4j:$ical4jVersion"
+    api libs.ical4j
 
-    implementation "org.geotools:gt-main:$geotoolsVersion"
-    implementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
-    implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
-    implementation "io.swagger.core.v3:swagger-jaxrs2-jakarta:$swaggerVersion"
-    implementation "org.apache.camel:camel-undertow:$camelVersion"
+    implementation libs.geotoolsMain
+    implementation libs.firebaseAdmin
+    implementation libs.angusMail
+    implementation libs.swaggerJaxrs2Jakarta
+    implementation libs.camelUndertow
 
     // Indirect dep from org.apache.activemq:artemis-mqtt-protocol
-    api ("io.netty:netty-codec-mqtt") {
+    api(libs.nettyCodecMqtt) {
         version {
-            strictly "$nettyVersion"
+            strictly libs.versions.netty.get()
         }
     }
 
-    implementation("org.apache.artemis:artemis-mqtt-protocol:$artemisVersion") {
+    implementation(libs.artemisMqttProtocol) {
         exclude group: "org.osgi"
         exclude group: "org.jboss.logmanager"
     }
 
     // Needed for reference in tests
-    api("org.apache.artemis:artemis-server:$artemisVersion") {
+    api(libs.artemisServer) {
         exclude group: "org.osgi"
         exclude group: "org.jboss.logmanager"
     }
 
-    implementation("org.quartz-scheduler:quartz:$quartzVersion") {
+    implementation(libs.quartz) {
         exclude module: "c3p0"
         exclude module: "HikariCP-java7"
     }
 
-    implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    implementation "io.prometheus:prometheus-metrics-exporter-httpserver:$prometheusVersion"
+    implementation libs.suncalc
+    implementation libs.prometheusMetricsExporterHttpserver
 
-    implementation "org.apache.sshd:sshd-netty:$apacheMINAVersion"
+    implementation libs.sshdNetty
+
+    testImplementation libs.groovyAll
+    testImplementation platform(libs.spockBom)
+    testImplementation libs.spockCore
+    testImplementation libs.byteBuddy
+    testImplementation libs.byteBuddyAgent
+    testRuntimeOnly libs.objenesis
+}
+
+sourceSets {
+    test {
+        groovy.srcDirs = ['test/src/groovy']
+    }
 }
 
 base {

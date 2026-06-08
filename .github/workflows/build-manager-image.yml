@@ -1,0 +1,127 @@
+name: Build manager image
+
+on:
+  workflow_call:
+    secrets:
+      DOCKERHUB_USER:
+        required: true
+      DOCKERHUB_PASSWORD:
+        required: true
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
+      TAGS:
+        type: string
+        default: ""
+        description: Comma separated list of docker image tags
+
+jobs:
+  build-manager-image:
+    name: Manager image
+    if: ${{ !inputs.skip }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: or-manager-build
+          path: manager/build
+
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        with:
+          platforms: linux/amd64,linux/aarch64
+
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Parse tags and evaluate conditions
+        id: meta
+        shell: bash
+        run: |
+          COMMIT_SHA_SHORT=$(git rev-parse --short HEAD)
+
+          FORMATTED_TAGS="openremote/manager:$COMMIT_SHA_SHORT"
+          FIRST_TAG="openremote/manager:$COMMIT_SHA_SHORT"
+          SHOULD_PUSH="false"
+
+          if [ -n "${{ inputs.TAGS }}" ]; then
+            SHOULD_PUSH="true"
+
+            IFS=',' read -ra TAGS <<< "${{ inputs.TAGS }}"
+            for tag in "${TAGS[@]}"; do
+              CLEAN_TAG=$(echo "$tag" | xargs)
+              FULL_TAG="openremote/manager:$CLEAN_TAG"
+
+              # Make the first explicit tag our primary reference
+              if [ "$FIRST_TAG" == "openremote/manager:$COMMIT_SHA_SHORT" ]; then
+                FIRST_TAG=$FULL_TAG
+              fi
+
+              FORMATTED_TAGS="$FORMATTED_TAGS,$FULL_TAG"
+            done
+          fi
+
+          echo "formatted_tags=$FORMATTED_TAGS" | tee -a $GITHUB_OUTPUT
+          echo "first_tag=$FIRST_TAG" | tee -a $GITHUB_OUTPUT
+          echo "should_push=$SHOULD_PUSH" | tee -a $GITHUB_OUTPUT
+
+      - name: Build and load manager image for Grype scan
+        timeout-minutes: 20
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: manager/build/install/manager
+          platforms: linux/amd64 # "ubuntu-latest" runs on x86 GitHub runners
+          load: true # Load image locally for Grype Scan
+          push: false
+          tags: ${{ steps.meta.outputs.formatted_tags }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=manager
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+
+      - name: Scan manager docker image
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        id: manager-anchore-scan
+        with:
+          image: ${{ steps.manager-docker-command.outputs.first_tag }}
+          fail-build: true
+          severity-cutoff: critical
+
+      - name: Upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@b8bb9f28b8d3f992092362369c57161b755dea45 # v4.35.0
+        if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
+        with:
+          sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
+
+      - name: Inspect Anchore scan SARIF report
+        if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
+        run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        if: ${{ success() && steps.meta.outputs.should_push == 'true' }}
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build multi-platform manager image
+        timeout-minutes: 20
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: manager/build/install/manager
+          platforms: linux/amd64,linux/aarch64
+          load: false
+          push: ${{ steps.meta.outputs.should_push == 'true' }}
+          tags: ${{ steps.meta.outputs.formatted_tags }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=manager
+          cache-to: type=gha,mode=max,scope=manager
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
