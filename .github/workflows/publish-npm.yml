@@ -26,6 +26,11 @@ jobs:
           name: or-ui-app-build
           path: ui/app
 
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: or-ui-util-build
+          path: ui/util
+
       - name: Update when the `tsbuildinfo` files were last modified to 'now'
         run: find . -name "*.tsbuildinfo" -exec touch {} +
 

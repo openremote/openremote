@@ -104,6 +104,14 @@ jobs:
             ui/app/**/lib
             ui/app/**/package.json
 
+      - name: Archive UI util build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: or-ui-util-build
+          if-no-files-found: error
+          path: |
+            ui/util/package.json
+
       - name: Archive MDI fonts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ steps.is_main_repo.outputs.value == 'true' }}
