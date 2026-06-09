@@ -40,6 +40,7 @@ import jakarta.ws.rs.WebApplicationException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -230,14 +231,38 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
 
         try {
-            return notificationService.getNotificationsByRealm(
+            var authContext = getAuthContext();
+            boolean canReadUsers = authContext != null && (authContext.isSuperUser()
+                || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+                || authContext.hasResourceRole(Constants.READ_USERS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+            boolean canReadAssets = authContext != null && (authContext.isSuperUser()
+                || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+                || authContext.hasResourceRole(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+
+            List<SentNotification> notifications = notificationService.getNotificationsByRealm(
                 Collections.singletonList(realmId),
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
                 offset,
                 limit,
-                getAuthContext()
-            ).toArray(new SentNotification[0]);
+                authContext
+            );
+
+            if (!canReadUsers || !canReadAssets) {
+                notifications.forEach(n -> {
+                    if (!canReadUsers) {
+                        n.setSourceId(null);
+                        if (n.getTarget() == Notification.TargetType.USER) {
+                            n.setTargetId(null);
+                        }
+                    }
+                    if (!canReadAssets && n.getTarget() == Notification.TargetType.ASSET) {
+                        n.setTargetId(null);
+                    }
+                });
+            }
+
+            return notifications.toArray(new SentNotification[0]);
 
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Error retrieving notifications: " + e.getMessage(), BAD_REQUEST);

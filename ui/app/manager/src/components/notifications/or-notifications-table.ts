@@ -317,7 +317,11 @@ export class OrNotificationsTable extends OrMwcTable {
         notifications.forEach((n) => {
             if (!n.targetId || this.targetDetailsMap.has(n.targetId)) return;
             if (n.target === NotificationTargetType.ASSET) assetIds.add(n.targetId);
-            if (n.target === NotificationTargetType.USER) userIds.add(n.targetId);
+            else if (n.target === NotificationTargetType.USER) userIds.add(n.targetId);
+            else {
+                // REALM or unknown — just display the ID directly, no API lookup needed
+                this.targetDetailsMap.set(n.targetId, { name: n.targetId, type: "realm", link: "" });
+            }
         });
 
         if (assetIds.size === 0 && userIds.size === 0) return;
