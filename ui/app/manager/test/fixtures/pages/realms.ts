@@ -39,6 +39,6 @@ export class RealmsPage implements BasePage {
     await this.page.getByRole("button", { name: "Delete" }).click();
     await this.page.getByRole("alertdialog").getByRole("textbox", { name: "Realm" }).fill(realm);
     await this.page.getByRole("button", { name: "OK" }).click();
-    await this.page.waitForLoadState('networkidle') // Wait for reload to take place after deleting realm
+    // await this.page.waitForLoadState('networkidle') // Wait for reload to take place after deleting realm
   }
 }
