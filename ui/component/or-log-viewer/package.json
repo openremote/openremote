@@ -15,6 +15,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepack": "npx rspack"
   },
@@ -34,7 +35,8 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@types/http-link-header": "1.0.7"
   },
   "publishConfig": {
     "access": "public"

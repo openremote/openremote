@@ -2139,8 +2139,9 @@ __metadata:
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
+    "@types/gaugejs": "npm:1.3.5"
     "@types/lodash.debounce": "npm:^4"
-    gaugeJS: "npm:^1.3.7"
+    gaugeJS: "npm:1.3.9"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
   languageName: unknown
@@ -2185,6 +2186,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
+    "@types/http-link-header": "npm:1.0.7"
     axios: "npm:1.16.1"
     http-link-header: "npm:^1.1.3"
     lit: "npm:^3.3.1"
@@ -2464,6 +2466,7 @@ __metadata:
     eslint-plugin-node: "npm:^11.1.0"
     eslint-plugin-promise: "npm:^6.0.0"
     html-webpack-plugin: "npm:^5.6.6"
+    moment: "npm:^2.29.4"
     moment-locales-webpack-plugin: "npm:^1.2.0"
     prettier: "npm:^2.5.1"
     querystring-es3: "npm:^0.2.1"
@@ -3605,6 +3608,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/gaugejs@npm:1.3.5":
+  version: 1.3.5
+  resolution: "@types/gaugejs@npm:1.3.5"
+  checksum: 10c0/c88a0f9718936d41f2c5a95f56f52ddb0ace49b4d2347fa397597de462da8e37e9f3a80a553066df86446e3ee3fa640f0718a6cc67661155d43e8f3975b64c33
+  languageName: node
+  linkType: hard
+
 "@types/geojson-vt@npm:3.2.5":
   version: 3.2.5
   resolution: "@types/geojson-vt@npm:3.2.5"
@@ -3646,6 +3656,15 @@ __metadata:
   version: 2.0.4
   resolution: "@types/http-errors@npm:2.0.4"
   checksum: 10c0/494670a57ad4062fee6c575047ad5782506dd35a6b9ed3894cea65830a94367bd84ba302eb3dde331871f6d70ca287bfedb1b2cf658e6132cd2cbd427ab56836
+  languageName: node
+  linkType: hard
+
+"@types/http-link-header@npm:1.0.7":
+  version: 1.0.7
+  resolution: "@types/http-link-header@npm:1.0.7"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/ffde4514a286ee62fab86bd5164958f5c9ad9d8012eaeb4f5536efa6157e6cf9f93121d5a39bf160c3712554d945300a223a9f8b1f3fb08cc70b73f539767338
   languageName: node
   linkType: hard
 
@@ -7484,10 +7503,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gaugeJS@npm:^1.3.7":
-  version: 1.3.7
-  resolution: "gaugeJS@npm:1.3.7"
-  checksum: 10c0/178cfec48146da9b7919aa11c948059686671c5c31253c41c18e8b9350527576fd50ff8153dfeda6516139f831f9960765f610c00df650bc9ea5a90928356b0b
+"gaugeJS@npm:1.3.9":
+  version: 1.3.9
+  resolution: "gaugeJS@npm:1.3.9"
+  checksum: 10c0/ee2ad6b740942d96c1a0d043f53b656afa0ad0fb9b9f9e0e8fe4c0a23c8327d4bfe22b867442e074dde993409677adceae8cf23f85f4a1d7bad8b80b2cb4aa73
   languageName: node
   linkType: hard
 
