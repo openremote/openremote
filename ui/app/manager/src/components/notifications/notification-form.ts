@@ -262,6 +262,9 @@ export class NotificationForm extends LitElement {
     }
 
     protected async _loadAssets(): Promise<Asset[]> {
+        if (!manager.hasRole("read:assets") && !manager.hasRole("read:admin")) {
+            return [];
+        }
         try {
             const response = await manager.rest.api.AssetResource.queryAssets({
                 realm: {name: manager.displayRealm}
@@ -360,9 +363,10 @@ export class NotificationForm extends LitElement {
         };
 
         if (this.readonly) {
+            const canReadUsers = manager.hasRole("read:users") || manager.hasRole("read:admin");
             this.formData = {
                 ...this.formData,
-                source: this.notification.sourceId ?
+                source: (canReadUsers && this.notification.sourceId) ?
                     `${this.notification.source}, ${this.notification.sourceId}` :
                     this.notification.source,
                 status: this.notification.deliveredOn ?
@@ -454,11 +458,16 @@ export class NotificationForm extends LitElement {
     // TODO: Make the Target field similar to the cell in the table: icon with asset/user/realm name instead of ID
     protected _renderTargetContainer(inputDisabled: boolean) {
         if (inputDisabled) {
+            const targetType = this.formData.targetType;
+            const canSeeTargetId = manager.hasRole("read:admin")
+                || (targetType === NotificationTargetType.USER && manager.hasRole("read:users"))
+                || (targetType === NotificationTargetType.ASSET && manager.hasRole("read:assets"));
+            const targetDisplay = canSeeTargetId ? this._normalizeValue(this.formData.targets[0]) : '-';
             return html`
                 <div class="targetContainer">
                     <h5 style="flex:0 0 auto;">${i18next.t("notifications.target")}</h5>
                     ${this._renderReadOnlyField("notifications.targetType", this._normalizeValue(this.formData.targetType))}
-                    ${this._renderReadOnlyField("notifications.target", this._normalizeValue(this.formData.targets[0]))}
+                    ${this._renderReadOnlyField("notifications.target", targetDisplay)}
                 </div>
             `;
         }
