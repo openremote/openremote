@@ -509,6 +509,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected render() {
         const writeNotifications = manager.hasRole("write:admin") || manager.hasRole("write:notifications");
+        const hasRecipientType = manager.hasRole("read:admin")
+            || manager.hasRole("read:assets")
+            || manager.hasRole("read:users");
 
         return html`
             <div id="wrapper">
@@ -516,7 +519,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                         ? html`
                             <or-translate value="notAuthenticated"/>`
                         : html`
-                            ${this._renderHeader(writeNotifications)}
+                            ${this._renderHeader(writeNotifications, hasRecipientType)}
                             <div id="table-container">
                                 ${this._renderNotificationsTable()}
                             </div>
@@ -526,7 +529,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         `;
     }
 
-    protected _renderHeader(writeNotifications: boolean) {
+    protected _renderHeader(writeNotifications: boolean, hasRecipientType: boolean = true) {
         const sourceOptions: [keyof typeof NotificationSource | "ALL_SOURCES", string][] = [
             ["ALL_SOURCES", i18next.t("notifications.sources.ALL_SOURCES")],
             ...sources.map<[NotificationSourceKeys, string]>(s => [s, i18next.t(`notifications.sources.${s}`)])
@@ -582,6 +585,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 type="${InputType.BUTTON}"
                                 icon="plus"
                                 label="${i18next.t("notifications.sendNew")}"
+                                .disabled="${!hasRecipientType}"
                                 @or-mwc-input-changed="${() => this._showCreateDialog()}"
                         ></or-mwc-input>
                     ` : ``}
