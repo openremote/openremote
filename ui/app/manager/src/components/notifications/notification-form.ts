@@ -169,16 +169,12 @@ export class NotificationForm extends LitElement {
     `;
 
     async firstUpdated() {
-        // load assets first since it's default
-        await this._loadAssets();
-
-        // set initial target options
-        this._targetOptions = (this._assets || []).map(asset => ({
-            text: asset.name,
-            value: asset.id
-        }));
+        const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
 
         const promises = [];
+        if (canReadAssets) {
+            promises.push(this._loadAssets());
+        }
         if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
             promises.push(this._loadUsers());
         }
@@ -186,6 +182,15 @@ export class NotificationForm extends LitElement {
             promises.push(this._loadRealms());
         }
         await Promise.all(promises);
+
+        if (canReadAssets) {
+            this._targetOptions = (this._assets || []).map(asset => ({
+                text: asset.name,
+                value: asset.id
+            }));
+        } else if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+            this.formData = {...this.formData, targetType: NotificationTargetType.USER};
+        }
     }
 
     @state()
@@ -458,9 +463,10 @@ export class NotificationForm extends LitElement {
             `;
         }
 
-        const allowedTargetTypes: [NotificationTargetType, string][] = [
-            [NotificationTargetType.ASSET, i18next.t("asset_plural")],
-        ];
+        const allowedTargetTypes: [NotificationTargetType, string][] = [];
+        if (manager.hasRole("read:assets") || manager.hasRole("read:admin")) {
+            allowedTargetTypes.push([NotificationTargetType.ASSET, i18next.t("asset_plural")]);
+        }
         if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
             allowedTargetTypes.unshift([NotificationTargetType.USER, i18next.t("user_plural")]);
         }
