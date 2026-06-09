@@ -759,7 +759,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                                                     if((ev.currentTarget as OrVaadinCheckbox).checked) {
                                                         newlySelectedAttributes.push(attribute);
                                                     } else {
-                                                        newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1);
+                                                        newlySelectedAttributes.splice(newlySelectedAttributes.indexOf(attribute), 1);
                                                     }
                                                 }}
                             ></or-vaadin-checkbox>
