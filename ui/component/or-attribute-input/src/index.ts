@@ -574,7 +574,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         };
 
         if (this.customProvider) {
-            console.debug("Rendering a custom or-attribute-input provider...");
             this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options) : undefined;
             return;
         }

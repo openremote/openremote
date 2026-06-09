@@ -23,5 +23,5 @@ import {OrVaadinComponent} from "./util";
 import {type LitElement} from "lit";
 
 @customElement("or-vaadin-item")
-export class OrVaadinListBox extends (Item as new () => Item & LitElement) implements OrVaadinComponent {
+export class OrVaadinItem extends (Item as new () => Item & LitElement) implements OrVaadinComponent {
 }

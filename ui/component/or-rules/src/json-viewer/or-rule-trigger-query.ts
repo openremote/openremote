@@ -210,7 +210,6 @@ export class OrRuleTriggerQuery extends LitElement {
             const date = new Date();
             date.setHours(Number(splittedTime[0]));
             date.setMinutes(Number(splittedTime[1]));
-            console.debug(date.toString());
             this.condition.cron = Util.formatCronString(undefined, undefined, undefined, date.getUTCHours().toString(), date.getUTCMinutes().toString());
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();

@@ -1494,7 +1494,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const asset = this._assetInfo.asset;
-        console.debug("Asset to be saved:", asset);
         this.saveBtnElem.disabled = true;
         this._saveInProgress = true;
         this.wrapperElem.classList.add("saving");

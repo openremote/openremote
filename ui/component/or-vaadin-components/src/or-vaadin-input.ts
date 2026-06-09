@@ -35,7 +35,6 @@ import "./or-vaadin-text-area";
  * @param constructors - List of CustomElements to scan for available properties
  */
 function registerProperties(constructors: (CustomElementConstructor | undefined)[]) {
-    console.debug("[OrVaadinInput] Registering properties for", constructors);
     constructors
         .filter(constr => !!constr)
         .map(contr => contr as typeof LitElement)
