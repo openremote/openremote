@@ -906,7 +906,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     protected _getDefaultDate() {
         const date = new Date();
-        date.setHours(date.getHours() + 1, 0, 0, 0); // Round to the end of the hour
+        date.setHours(date.getHours() + 1, 0, 0, 0); // Round to the beginning of the next hour
         return date;
     }
     
