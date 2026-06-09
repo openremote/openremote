@@ -11,6 +11,7 @@ sourceSets {
     integration
     load1
     load2
+    notification
 }
 
 // dependencies declaration
@@ -19,6 +20,7 @@ configurations {
     integrationImplementation.extendsFrom(implementation)
     load1Implementation.extendsFrom(implementation)
     load2Implementation.extendsFrom(implementation)
+    notificationImplementation.extendsFrom(implementation)
 }
 
 dependencies {
@@ -38,6 +40,11 @@ tasks.register('load1Jar', Jar) {
 tasks.register('load2Jar', Jar) {
     archiveBaseName.set("openremote-load2-${project.name}")
     from sourceSets.load2.output
+}
+
+tasks.register('notificationJar', Jar) {
+    archiveBaseName.set("openremote-notification-${project.name}")
+    from sourceSets.notification.output
 }
 
 tasks.named("compileJava") {

@@ -154,6 +154,13 @@ if (project == rootProject) {
                             OR_SETUP_TYPE: "clustering"
                     ]
                 }
+                "Notification Setup"(Application) {
+                    moduleName = getProject().idea.module.name + ".setup.notification"
+                    envs = [
+                            OR_SETUP_TYPE: "notification",
+                            OR_APP_DOCROOT: "manager/build/install/manager/web"
+                    ]
+                }
                 "Test Setup"(Application) {
                     moduleName = getProject().idea.module.name + ".setup.integration"
                 }
