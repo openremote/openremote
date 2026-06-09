@@ -270,7 +270,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                                                           const elem = ev.currentTarget as OrVaadinTextField;
                                                           keyChangeHandler(elem, key, elem.value)
                                                       }}>
-                                </or-vaadin-text-field>>
+                                </or-vaadin-text-field>
                             </div>
                             <div class="value-container">
                                 ${getDynamicValueTemplate(key, value)}

@@ -343,7 +343,6 @@ export class OrDashboardBuilder extends translate(i18next)(LitElement) {
     }
 
     willUpdate(changedProps: PropertyValues) {
-        console.debug(changedProps);
         super.willUpdate(changedProps);
 
         this.isLoading = (this.dashboards == undefined);
@@ -607,7 +606,6 @@ export class OrDashboardBuilder extends translate(i18next)(LitElement) {
             display: (this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'none' : undefined,
             maxHeight: this.editMode ? "calc(100vh - 77px - 50px)" : "inherit"
         };
-        console.debug(`Rendering dashboard UI with loading = ${this.isLoading} and hasChanged = ${this.hasChanged}`);
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${(this.showDashboardTree) ? html`

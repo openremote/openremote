@@ -110,7 +110,6 @@ export class TableSettings extends AssetWidgetSettings {
         const elem = ev.currentTarget as OrVaadinSelect;
         const value = Number(elem.value || 10);
         this.widgetConfig.tableSize = value;
-        console.debug(this.widgetConfig.tableSize);
         if(value !== 10) {
             this.widgetConfig.tableOptions = [value];
         } else {

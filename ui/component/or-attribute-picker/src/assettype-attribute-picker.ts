@@ -211,8 +211,7 @@ export class OrAssetTypeAttributePicker extends AttributePicker {
     /**
      * HTML Callback function when the selected asset type has been updated.
      */
-    protected _onAssetTypeItemClick(listItem: ListItem) {
-        console.debug(listItem);
+    protected _onAssetTypeItemClick(listItem: ListItem) {;
         this._selectedAssetType = (listItem.data as AssetDescriptor).name;
     }
 

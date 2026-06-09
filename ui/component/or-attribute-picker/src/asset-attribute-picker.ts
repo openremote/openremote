@@ -192,7 +192,6 @@ export class OrAssetAttributePicker extends AttributePicker {
      * So, selected attributes of other assets, will merge together with the new {@link attrNames}.
      */
     protected _onAttributesSelect(attrNames: string[]) {
-        console.debug(attrNames);
         this.setSelectedAttributes([
             ...this.selectedAttributes.filter(attributeRef => attributeRef.id !== this._asset!.id),
             ...attrNames.map(a => ({id: this._asset?.id, name: a}))
