@@ -2440,6 +2440,7 @@ __metadata:
   dependencies:
     "@openremote/util": "workspace:*"
     "@vaadin/vaadin-lumo-styles": "npm:~25.1.3"
+    inter-ui: "npm:^4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -8201,6 +8202,13 @@ __metadata:
   version: 2.0.3
   resolution: "inherits@npm:2.0.3"
   checksum: 10c0/6e56402373149ea076a434072671f9982f5fad030c7662be0332122fe6c0fa490acb3cc1010d90b6eff8d640b1167d77674add52dfd1bb85d545cf29e80e73e7
+  languageName: node
+  linkType: hard
+
+"inter-ui@npm:^4.1.1":
+  version: 4.1.1
+  resolution: "inter-ui@npm:4.1.1"
+  checksum: 10c0/fb809bead520fefdef61abfca8ff7865b697e0738d2341afd4faf0539536d45638ee7812533afe413cabe765faf7a20e8e22a34c3df7693839a3acd2be44d1a7
   languageName: node
   linkType: hard
 
