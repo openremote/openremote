@@ -22,6 +22,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import type { GenericAxiosResponse } from "axios";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import { when } from "lit/directives/when.js";
@@ -194,7 +195,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     protected _refresh?: number;
     protected _pageCount?: number;
     protected _currentPage: number = 1;
-    protected _pendingCategories?: Model.SyslogCategory[];
 
     connectedCallback() {
         super.connectedCallback();
@@ -272,18 +272,22 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         const hideFilter = this.config && this.config.hideFilter;
         const hideLevel = this.config && this.config.hideLevel;
 
+        const categoryItems = this._getCategoryMenuItems();
+        const selectedItems = categoryItems.filter(i => this.categories?.includes(i.value));
+
         return html`
             <div id="container">
                 <div id="controls">
                     <div id="log-controls">
-                        ${hideCategories ? `` : getContentWithMenuTemplate(
-                            html`<or-mwc-input .type=${InputType.BUTTON} raised ?disabled="${disabled}" .label="${i18next.t("categories")}" icontrailing="chevron-down"></or-mwc-input>`,
-                            this._getCategoryMenuItems(), 
-                            this.categories,
-                            (v) => this._onCategoriesChanged(v as Model.SyslogCategory[]),
-                            () => this._onCategoriesClosed(),
-                            true
-                        )}
+                        ${when(!hideCategories, () => html`
+                            <or-vaadin-multi-select-combo-box .items=${categoryItems} .selectedItems=${selectedItems} style="width: 240px;"
+                                                              @change=${(ev: Event) => {
+                                                                  const elem = ev.currentTarget as OrVaadinMultiSelectComboBox;
+                                                                  this._onCategoriesChanged(elem.selectedItems.map(i => i.value));
+                                                              }}>
+                                <or-translate slot="label" value="categories"></or-translate>
+                            </or-vaadin-multi-select-combo-box>
+                        `)}
                         <!-- Filter by subcategory string -->
                         <or-vaadin-text-field id="subcategory-field" ?hidden=${hideFilter} ?disabled=${disabled} value=${this.filter} style="width: 200px;"
                                               @change=${(ev: Event) => this._onFilterChanged(ev)}>
@@ -363,14 +367,12 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         return Object.keys((Model as any)["SyslogLevel"]).map(key => ({value: key, label: i18next.t(key.toLocaleLowerCase())}));
     }
 
-    protected _getCategoryMenuItems(): ListItem[] {
+    protected _getCategoryMenuItems(): {value: any, label: string}[] {
         const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
-        return categories.map((cat) => {
-            return {
-                text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
-                value: cat
-            } as ListItem;
-        });
+        return categories.map(cat => ({
+            value: cat,
+            label: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))})
+        }));
     }
 
     protected getLimit() {
@@ -378,21 +380,10 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _onCategoriesChanged(values: Model.SyslogCategory[]) {
-        this._pendingCategories = values;
-    }
-
-    protected _onCategoriesClosed() {
-        if (!this._pendingCategories) {
-            return;
-        }
-
-        this.categories = [...this._pendingCategories];
-
+        this.categories = values;
         if (this.categories && this.live) {
             this._data = this._data!.filter((e) => this.categories!.find((c) => c === e.category));
         }
-
-        this._pendingCategories = undefined;
     }
 
     protected _onLiveChanged(live: boolean) {
