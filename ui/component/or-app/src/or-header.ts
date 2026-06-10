@@ -208,6 +208,11 @@ export class OrHeader extends LitElement {
             #realm-picker {
                 min-width: 160px;
             }
+            
+            /* Hides the default menu bar content (three horizontal dots) and replace it ourselves using the slot="prefix" */
+            #drawer-menu-button::part(label) {
+                display: none;
+            }
           
             /* Wide layout: when the viewport width is bigger than 768px, layout
             changes to a wide layout. */
@@ -416,11 +421,14 @@ export class OrHeader extends LitElement {
             }));
         })
         const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
-            (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%;">`)}] : group
+            (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%; color: white;">`)}] : group
         );
         return html`
             <or-vaadin-menu-bar id="drawer-menu" theme="icon" .items=${flatItems} style="min-width: 40px; width: 40px;"
                                 @item-selected=${(ev: CustomEvent)=> this._onSecondaryMenuSelect((ev.detail.value as HeaderItem).value!)}>
+                <vaadin-menu-bar-button slot="overflow" id="drawer-menu-button" theme="icon">
+                    <or-icon slot="prefix" icon="dots-vertical"></or-icon>
+                </vaadin-menu-bar-button>
             </or-vaadin-menu-bar>
         `;
     }

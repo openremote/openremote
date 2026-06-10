@@ -598,6 +598,7 @@ export class OrAttributeBarChart extends LitElement {
     }
 
     protected _getTimeControlsTemplate(disabled: boolean): TemplateResult {
+        console.debug("Disabled?", disabled);
         const menuItems: MenuBarItem[] = [{
             component: createMenuBarItem(html`<or-translate value=${this.timeframe ? "dashboard.customTimeSpan" : this.timePrefixKey}></or-translate>`),
             children: this.timePrefixOptions.map(o => (
@@ -624,7 +625,7 @@ export class OrAttributeBarChart extends LitElement {
                     ></or-vaadin-menu-bar>
                 </div>
                 <!-- Interval selection -->
-                <or-vaadin-menu-bar .items=${intervalMenuItems}
+                <or-vaadin-menu-bar .items=${intervalMenuItems} ?disabled=${disabled}
                                     @item-selected=${(ev: CustomEvent) => this.interval = ev.detail.value.value}
                 ></or-vaadin-menu-bar>
             </div>
