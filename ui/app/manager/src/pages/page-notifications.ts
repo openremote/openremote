@@ -83,11 +83,10 @@ export class NotificationService {
         }
     }
 
-    async sendNotification(notification: Notification, realm: string): Promise<boolean> {
+    async sendNotification(notification: Notification): Promise<boolean> {
         try {
-            const response = await manager.rest.api.NotificationResource.sendNotificationWithRealmData(
-                notification,
-                {realmId: realm}
+            const response = await manager.rest.api.NotificationResource.sendNotification(
+                notification
             );
             return response.status === 200;
         } catch (err: unknown) {
@@ -474,7 +473,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 }))
             };
 
-            const response = await this.notificationService.sendNotification(notification, this.realm);
+            const response = await this.notificationService.sendNotification(notification);
 
             showSnackbar(undefined, i18next.t("notifications.successfullySentNotification"));
             dialog.close();

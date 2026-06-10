@@ -75,6 +75,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     protected ExecutorService executorService;
     protected ClientEventService clientEventService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
+    protected boolean devMode;
 
     @Override
     public int getPriority() {
@@ -83,6 +84,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     @Override
     public void init(Container container) throws Exception {
+        this.devMode = container.isDevMode();
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
@@ -158,7 +160,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     if (handler == null) {
                         throw new NotificationProcessingException(UNSUPPORTED_MESSAGE_TYPE, "No handler for message type: " + notification.getMessage().getType());
                     }
-                    if (!handler.isValid()) {
+                    if (!devMode && !handler.isValid()) {
                         throw new NotificationProcessingException(NOTIFICATION_HANDLER_CONFIG_ERROR, "Handler is not valid: " + handler.getTypeName());
                     }
                     if (!handler.isMessageValid(notification.getMessage())) {
@@ -223,6 +225,31 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     // Check access permissions
                     checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
+
+                    // In dev mode skip handler target resolution and persist original targets directly
+                    if (devMode) {
+                        List<Notification.Target> targets = notification.getTargets();
+                        if (targets == null || targets.isEmpty()) {
+                            throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
+                        }
+                        Instant now = timerService.getNow();
+                        targets.forEach(target -> {
+                            String targetRealm = resolveTargetRealm(target, notificationRealm.get());
+                            persistenceService.doTransaction(em -> em.merge(new SentNotification()
+                                .setName(notification.getName())
+                                .setType(notification.getMessage().getType())
+                                .setSource(source)
+                                .setSourceId(sourceId.get())
+                                .setTarget(target.getType())
+                                .setTargetId(target.getId())
+                                .setMessage(notification.getMessage())
+                                .setRealm(targetRealm)
+                                .setSentOn(now)
+                                .setDeliveredOn(now)));
+                        });
+                        exchange.getMessage().setBody(true);
+                        return;
+                    }
 
                     // Get the list of notification targets
                     List<Notification.Target> mappedTargetsList = handler.getTargets(source, sourceId.get(), notification.getTargets(), notification.getMessage());
@@ -311,6 +338,27 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 // Just notify sender in case of RequestReply
                 exchange.getMessage().setBody(false);
             });
+    }
+
+    protected String resolveTargetRealm(Notification.Target target, String fallback) {
+        switch (target.getType()) {
+            case REALM:
+                return target.getId();
+            case USER:
+                User user = identityService.getIdentityProvider().getUser(target.getId());
+                if (user != null && user.getRealm() != null) {
+                    return user.getRealm();
+                }
+                throw new NotificationProcessingException(MISSING_TARGETS, "Cannot resolve realm for user target: " + target.getId());
+            case ASSET:
+                Asset<?> asset = assetStorageService.find(target.getId(), false);
+                if (asset != null) {
+                    return asset.getRealm();
+                }
+                throw new NotificationProcessingException(MISSING_TARGETS, "Cannot resolve realm for asset target: " + target.getId());
+            default:
+                throw new NotificationProcessingException(MISSING_TARGETS, "Cannot resolve realm for target type: " + target.getType());
+        }
     }
 
     public boolean sendNotification(Notification notification) {
