@@ -99,7 +99,7 @@ jobs:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Inspect Anchore scan SARIF report
-        if: ${{ always() }}
+        if: ${{ always() && steps.meta.outputs.should_push == 'true' }}
         run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Login to DockerHub
