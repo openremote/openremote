@@ -569,12 +569,15 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
             String userId = authContext.getUserId();
+            String userRealm = authContext.getAuthenticatedRealmName();
             builder.append(" AND (n.sourceId = ?").append(paramIndex++);
-            builder.append(" OR (n.target = ?").append(paramIndex++);
-            builder.append(" AND n.targetId = ?").append(paramIndex++).append("))");
+            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append(")");
+            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append("))");
             parameters.add(userId);
             parameters.add(Notification.TargetType.USER);
             parameters.add(userId);
+            parameters.add(Notification.TargetType.REALM);
+            parameters.add(userRealm);
         }
 
         builder.append(" ORDER BY n.sentOn DESC");
@@ -618,12 +621,15 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
             String userId = authContext.getUserId();
+            String userRealm = authContext.getAuthenticatedRealmName();
             builder.append(" AND (n.sourceId = ?").append(paramIndex++);
-            builder.append(" OR (n.target = ?").append(paramIndex++);
-            builder.append(" AND n.targetId = ?").append(paramIndex++).append("))");
+            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append(")");
+            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append("))");
             parameters.add(userId);
             parameters.add(Notification.TargetType.USER);
             parameters.add(userId);
+            parameters.add(Notification.TargetType.REALM);
+            parameters.add(userRealm);
         }
 
         return persistenceService.doReturningTransaction(entityManager -> {
