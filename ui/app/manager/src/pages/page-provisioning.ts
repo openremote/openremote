@@ -388,7 +388,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 </or-vaadin-text-area>
                 <or-vaadin-checkbox ?checked=${data.ignoreExpiryDate}
                                     @change=${(ev: Event) => data.ignoreExpiryDate = !(ev.currentTarget as HTMLInputElement).checked}>
-                    <or-translate slot="label" value="ignoreExpiryDate"></or-translate>
+                    <label slot="label"><or-translate value="ignoreExpiryDate"></or-translate></label>
                 </or-vaadin-checkbox>
             `;
         } else {
@@ -445,11 +445,11 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value ? JSON.stringify(e.detail.value) : undefined}"></or-mwc-input>
                                 <or-vaadin-checkbox ?checked=${config.restrictedUser}
                                                     @change=${(ev: Event) => config.restrictedUser = (ev.currentTarget as HTMLInputElement).checked}>
-                                    <or-translate slot="label" value="createAsRestrictedUser"></or-translate>
+                                    <label slot="label"><or-translate value="createAsRestrictedUser"></or-translate></label>
                                 </or-vaadin-checkbox>
                                 <or-vaadin-checkbox ?checked=${config.disabled}
                                                     @change=${(ev: Event) => config.disabled = (ev.currentTarget as HTMLInputElement).checked}>
-                                    <or-translate slot="label" value="disabled"></or-translate>
+                                    <label slot="label"><or-translate value="disabled"></or-translate></label>
                                 </or-vaadin-checkbox>
                             </div>
 

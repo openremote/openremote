@@ -324,7 +324,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                         <!-- Live logging on/off toggle -->
                         <or-vaadin-checkbox id="live-button" ?disabled=${disabled} ?checked=${this.live}
                                             @change=${(ev: Event) => this._onLiveChanged((ev.currentTarget as OrVaadinCheckbox).checked)}>
-                            <or-translate slot="label" value="live"></or-translate>
+                            <label slot="label"><or-translate value="live"></or-translate></label>
                         </or-vaadin-checkbox>
                         <!-- Period select -->
                         <or-vaadin-select id="period-select" ?disabled=${disabled || isLive} value=${this.interval} .items=${this._getIntervalOptions()} style="min-width: 120px;"

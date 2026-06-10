@@ -1011,7 +1011,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                 user.enabled = (ev.currentTarget as HTMLInputElement).checked;
                                                 this.onUserChanged(suffix);
                                             }}>
-                            <or-translate slot="label" value="active"></or-translate>
+                            <label slot="label"><or-translate value="active"></or-translate></label>
                         </or-vaadin-checkbox>
                     </div>
 

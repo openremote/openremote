@@ -123,7 +123,7 @@ export class OrAddAttributePanel extends LitElement {
                 </or-vaadin-combo-box>
                 <or-vaadin-checkbox id="array-checkbox" ?readonly=${!this.customAttribute} ?checked=${this.isArray} 
                                     @change=${(ev: Event) => this.onArrayChanged((ev.currentTarget as OrVaadinCheckbox).checked, 1)}>
-                    <or-translate slot="label" value="array"></or-translate>
+                    <label slot="label"><or-translate slot="label" value="array"></label></or-translate>
                 </or-vaadin-checkbox>
                 <or-vaadin-number-field id="array-input" ?disabled=${!this.isArray} ?readonly=${!this.customAttribute} value=${this.arrayDimensions} min="1" max="2" 
                                         @change=${(ev: Event) => this.onArrayChanged(true, Number((ev.currentTarget as OrVaadinNumberField).value))}>

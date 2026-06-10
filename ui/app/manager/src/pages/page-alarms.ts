@@ -421,7 +421,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             <div class="${this.creationState || this.alarm ? "hidden" : "controls-left"}">
                                 <or-vaadin-checkbox id="assign-check" ?disabled=${disabled} ?checked=${this.assign}
                                                     @change=${(ev: Event) => this._onAssignCheckChanged((ev.currentTarget as HTMLInputElement).checked)}>
-                                    <or-translate slot="label" value="alarm.assignedToMe"></or-translate>
+                                    <label slot="label"><or-translate value="alarm.assignedToMe"></or-translate></label>
                                 </or-vaadin-checkbox>
                                 <or-vaadin-select id="severity-select" ?disabled=${disabled}
                                                   .items=${this._getSeverityOptions()} value=${this.severity ?? 'all'}

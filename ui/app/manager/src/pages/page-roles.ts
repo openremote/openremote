@@ -421,7 +421,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                                                 <or-vaadin-checkbox ?readonly=${readonly}
                                                                     ?checked=${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}
                                                                     @change=${(ev: Event) => this.addRemoveRole(ev, r, index)}>
-                                                    <span slot="label">${r.name.split(":")[1]}: ${r.description}</span>
+                                                    <label slot="label">${r.name.split(":")[1]}: ${r.description}</label>
                                                 </or-vaadin-checkbox>
                                             `)}
                                         </div>
@@ -431,7 +431,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                                                 <or-vaadin-checkbox ?readonly=${readonly}
                                                                     ?checked=${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}
                                                                     @change=${(ev: Event) => this.addRemoveRole(ev, r, index)}>
-                                                    <span slot="label">${r.name.split(":")[1]}: ${r.description}</span>
+                                                    <label slot="label">${r.name.split(":")[1]}: ${r.description}</label>
                                                 </or-vaadin-checkbox>
                                             `)}
                                         </div>
@@ -443,7 +443,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                                                 <or-vaadin-checkbox ?readonly=${readonly}
                                                                     ?checked=${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}
                                                                     @change=${(ev: Event) => this.addRemoveRole(ev, r, index)}>
-                                                    <span slot="label">${r.name.split(":")[1]}: ${r.description}</span>
+                                                    <label slot="label">${r.name.split(":")[1]}: ${r.description}</label>
                                                 </or-vaadin-checkbox>
                                             `)}
                                         </div>

@@ -337,7 +337,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 </or-vaadin-text-field>
                 <or-vaadin-checkbox id="gateway-secured" ?disabled=${disabled} ?checked=${connection?.secured}
                                     @change=${(ev: Event) => this._setConnectionProperty("secured", (ev.currentTarget as HTMLInputElement).checked)}>
-                    <or-translate slot="label" value="secured"></or-translate>
+                    <label slot="label"><or-translate value="secured"></or-translate></label>
                 </or-vaadin-checkbox>
             </div>
         `;
@@ -366,7 +366,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 <div class="gateway-sharing-control" style="${controlStyling}">
                     <or-vaadin-checkbox ?disabled=${controlsDisabled} ?checked=${controlsDisabled ? false : filterChecked}
                                         @change=${(ev: Event) => this._onLimitAttributesCheck(ev)}>
-                        <or-translate slot="label" value="gateway.limit_sharing_attribute"></or-translate>
+                        <label slot="label"><or-translate value="gateway.limit_sharing_attribute"></or-translate></label>
                     </or-vaadin-checkbox>
                     <div class="gateway-sharing-control-child">
                         <or-vaadin-button theme="primary" ?disabled=${filterDisabled} @click=${() => this._onLimitAttributesButtonClick()}>
@@ -377,7 +377,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 <div class="gateway-sharing-control" style="${controlStyling}">
                     <or-vaadin-checkbox ?disabled=${controlsDisabled} ?checked=${!controlsDisabled && interval !== undefined}
                                         @change=${(ev: Event) => this._onAttributesIntervalUpdate((ev.currentTarget as HTMLInputElement).checked ? 1 : undefined)}>
-                        <or-translate slot="label" value="gateway.limit_sharing_rate"></or-translate>
+                        <label slot="label"><or-translate value="gateway.limit_sharing_rate"></or-translate></label>
                     </or-vaadin-checkbox>
                     <div class="gateway-sharing-control-child">
                         <or-vaadin-number-field ?disabled=${intervalDisabled} value=${controlsDisabled ? undefined : interval} min="0" style="width: 84px"
@@ -397,7 +397,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 <div class="gateway-sharing-control"  style="${controlStyling}">
                     <or-vaadin-checkbox ?disabled=${disabled} ?checked=${!!connection.assetSyncRules}
                                         @change=${(ev: Event) => this._onAssetSyncRulesToggle((ev.currentTarget as HTMLInputElement).checked)}>
-                        <or-translate slot="label" value="gateway.assetSyncRulesEnable"></or-translate>
+                        <label slot="label"><or-translate value="gateway.assetSyncRulesEnable"></or-translate></label>
                     </or-vaadin-checkbox>
                     <div class="gateway-sharing-control-child">
                         <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${disabled || !connection.assetSyncRules}" 
