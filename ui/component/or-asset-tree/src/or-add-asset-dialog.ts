@@ -260,7 +260,7 @@ export class OrAddAssetDialog extends LitElement {
                         </div>
                         <div id="type-list">
                             ${when(agentItems.length > 0, () => getListTemplate(filteredAgentItems, true))}
-                            <hr />
+                            <hr style="color: white;" />
                             ${when(assetItems.length > 0, () => getListTemplate(filteredAssetItems, false))}
                         </div>
                     </div>
