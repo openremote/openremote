@@ -35,13 +35,11 @@ export const panelStyles = css`
     }
 
     .panel-title {
-        text-transform: uppercase;
-        font-weight: bolder;
-        line-height: 1em;
+        font-size: 18px;
+        font-weight: bold;
         color: var(--internal-or-asset-viewer-title-text-color);
         margin-bottom: 20px;
         flex: 0 0 auto;
-        letter-spacing: 0.025em;
     }
 
     .field {
