@@ -89,7 +89,7 @@ runs:
 
             os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
             print("Manager tags to push to docker hub: {dockerPublishTags}")
-            dockerPublishTags = " ".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
+            dockerPublishTags = ",".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
             if repoOwner == 'openremote':
               os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
