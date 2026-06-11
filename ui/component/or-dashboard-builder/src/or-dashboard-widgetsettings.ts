@@ -58,7 +58,7 @@ export class OrDashboardWidgetsettings extends translate(i18next)(LitElement) {
     protected render() {
         return html`
             <div style="padding: 12px; border-bottom: 1px solid #E0E0E0">
-                <or-vaadin-text-field value=${this.selectedWidget?.displayName} required minlength="1" @click=${(ev: Event) => {
+                <or-vaadin-text-field value=${this.selectedWidget?.displayName} required minlength="1" @change=${(ev: Event) => {
                     const elem = ev.currentTarget as OrVaadinTextField;
                     if(elem.checkValidity()) this.setDisplayName(elem.value);
                 }}>

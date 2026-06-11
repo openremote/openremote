@@ -106,7 +106,7 @@ export class GatewaySettings extends WidgetSettings {
     }
 
     protected _onTunnelTargetSelect(ev: Event) {
-        this.widgetConfig.target = (ev.currentTarget as OrVaadinSelect).value;
+        this.widgetConfig.target = (ev.currentTarget as HTMLInputElement).value;
         this.notifyConfigUpdate();
     }
 

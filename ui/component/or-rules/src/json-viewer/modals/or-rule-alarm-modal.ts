@@ -173,7 +173,7 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
 
         return html`
             <or-vaadin-select value=${this.action.alarm?.severity} .items=${severityOptions} style="width: 240px;"
-                              @click=${(ev: Event) => this.setActionAlarmSeverity((ev.currentTarget as OrVaadinSelect).value)}>
+                              @change=${(ev: Event) => this.setActionAlarmSeverity((ev.currentTarget as OrVaadinSelect).value)}>
                 <or-translate slot="label" value="alarm.severity"></or-translate>
             </or-vaadin-select>
             <or-vaadin-button @click=${() => alarmPickerModalOpen()}>

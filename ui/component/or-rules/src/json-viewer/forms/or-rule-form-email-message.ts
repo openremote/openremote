@@ -52,11 +52,11 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
         return html`
             <div id="form-container">
                 <or-vaadin-text-field value=${this.message?.subject} required
-                                      @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as OrVaadinTextField).value, "subject")}>
+                                      @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "subject")}>
                     <or-translate slot="label" value="subject"></or-translate>
                 </or-vaadin-text-field>
                 <or-vaadin-text-area value=${this.message?.html} required style="min-height: 200px;" 
-                                     @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as OrVaadinTextField).value, "html")}>
+                                     @change=${(ev: Event) => this.setActionNotificationName((ev.currentTarget as HTMLInputElement).value, "html")}>
                     <or-translate slot="label" value="message"></or-translate>
                 </or-vaadin-text-area>
             </div>

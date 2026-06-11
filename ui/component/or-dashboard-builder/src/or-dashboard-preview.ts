@@ -561,7 +561,7 @@ export class OrDashboardPreview extends translate(i18next)(LitElement) {
                                                     const elem = ev.currentTarget as OrVaadinNumberField;
                                                     if(elem.checkValidity()) this.previewHeight = (elem.value + "px");
                                                 }}>
-                            <or-translate slot="label" value="width"></or-translate>
+                            <or-translate slot="label" value="height"></or-translate>
                         </or-vaadin-number-field>
                         <!-- Rotate button -->
                         <or-vaadin-button id="rotate-btn" theme="icon" @click=${() => {
