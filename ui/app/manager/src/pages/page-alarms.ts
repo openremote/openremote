@@ -429,7 +429,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                     <or-translate slot="label" value="alarm.severity"></or-translate>
                                 </or-vaadin-select>
                                 <or-vaadin-select id="status-select" ?disabled=${disabled}
-                                                  .items=${this._getStatusOptions()} value=${this.statusValue}>
+                                                  .items=${this._getStatusOptions()} value=${this.statusValue}
                                                   @change=${(ev: Event) => this._onStatusChanged((ev.currentTarget as OrVaadinSelect).value as AlarmStatus | 'all' | 'allActive')}>
                                     <or-translate slot="label" value="alarm.status"></or-translate>
                                 </or-vaadin-select>
