@@ -89,7 +89,7 @@ runs:
               firstDockerTag = dockerPublishTags.split(",")[0]
 
             os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-            print("Manager tags to push to docker hub: {dockerPublishTags}")
+            print(f"Manager tags to push to docker hub: {dockerPublishTags}")
             if repoOwner == 'openremote':
               os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
