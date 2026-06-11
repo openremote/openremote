@@ -97,6 +97,18 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             "testuser3"
         )
 
+        def adminBuildingRoles = identityProvider.getUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser4Id,
+            KEYCLOAK_CLIENT_ID
+        )
+        identityProvider.updateUserClientRoles(
+            keycloakTestSetup.realmBuilding.name,
+            keycloakTestSetup.testuser4Id,
+            KEYCLOAK_CLIENT_ID,
+            ((adminBuildingRoles as List) + ClientRole.READ_ADMIN.value).unique() as String[]
+        )
+
         def adminBuildingAccessToken = authenticate(
             container,
             keycloakTestSetup.realmBuilding.name,
@@ -265,6 +277,12 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         then: "a not allowed exception should be thrown"
         thrown(ForbiddenException.class)
 
+        when: "a realm admin tries to read client roles from the master realm"
+        adminUserBuildingResource.getClientRoles(null, MASTER_REALM, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm read should be rejected"
+        thrown(NotAllowedException)
+
         when: "a new composite role is created by the admin user"
         List<Role> updatedRoles = new ArrayList<>(Arrays.asList(roles))
         updatedRoles.add(new Role(
@@ -375,6 +393,107 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             "newPassword"
         )
         testUser2BuildingAccessToken != null
+    }
+
+    def "Get user requires realm administration rights"() {
+        when: "a realm admin retrieves a user from their own realm"
+        def sameRealmUser = adminUserBuildingResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+        then: "the user should be returned"
+        sameRealmUser != null
+        sameRealmUser.id == keycloakTestSetup.testuser2Id
+        sameRealmUser.realm == keycloakTestSetup.realmBuilding.name
+
+        when: "a superuser retrieves a user across realms"
+        def crossRealmUser = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+        then: "the cross-realm read should succeed for the superuser"
+        crossRealmUser != null
+        crossRealmUser.id == keycloakTestSetup.testuser2Id
+
+        when: "a realm admin tries to retrieve a user from the master realm"
+        adminUserBuildingResource.get(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+
+        then: "the cross-realm read should be rejected"
+        thrown(NotAllowedException)
+
+        when: "a realm admin uses their own realm path with a user ID from another realm"
+        adminUserBuildingResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1Id)
+
+        then: "the mismatched user realm should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Get user client roles requires realm administration rights"() {
+        when: "a realm admin retrieves client roles for a user in their own realm"
+        def sameRealmRoles = adminUserBuildingResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
+
+        then: "the roles should be returned"
+        sameRealmRoles as Set == [
+            ClientRole.WRITE_USER.value,
+            ClientRole.READ_MAP.value,
+            ClientRole.READ_ASSETS.value
+        ] as Set
+
+        when: "a superuser retrieves client roles across realms"
+        def crossRealmRoles = adminUserResource.getUserClientRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm read should succeed for the superuser"
+        crossRealmRoles as Set == sameRealmRoles as Set
+
+        when: "a realm admin tries to retrieve client roles for a user in the master realm"
+        adminUserBuildingResource.getUserClientRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id, KEYCLOAK_CLIENT_ID)
+
+        then: "the cross-realm read should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Get user realm roles requires realm administration rights"() {
+        when: "a realm admin retrieves realm roles for a user in their own realm"
+        def sameRealmRoles = adminUserBuildingResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+
+        then: "the roles should be returned"
+        sameRealmRoles.contains(KeycloakTestSetup.REALM_ROLE_TEST)
+
+        when: "a superuser retrieves realm roles across realms"
+        def crossRealmRoles = adminUserResource.getUserRealmRoles(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+
+        then: "the cross-realm read should succeed for the superuser"
+        crossRealmRoles == sameRealmRoles
+
+        when: "a realm admin tries to retrieve realm roles for a user in the master realm"
+        adminUserBuildingResource.getUserRealmRoles(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+
+        then: "the cross-realm read should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Get user sessions requires realm administration rights"() {
+        when: "a realm admin retrieves sessions for a user in their own realm"
+        def sameRealmSessions = adminUserBuildingResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+        then: "the sessions should be returned"
+        sameRealmSessions != null
+
+        when: "a superuser retrieves sessions across realms"
+        def crossRealmSessions = adminUserResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id)
+
+        then: "the cross-realm read should succeed for the superuser"
+        crossRealmSessions != null
+
+        when: "a realm admin tries to retrieve sessions for a user in the master realm"
+        adminUserBuildingResource.getUserSessions(null, MASTER_REALM, keycloakTestSetup.testuser1Id)
+
+        then: "the cross-realm read should be rejected"
+        thrown(NotAllowedException)
+    }
+
+    def "Get user sessions rejects users outside the requested realm"() {
+        when: "a realm admin uses their own realm path with a user ID from another realm"
+        adminUserBuildingResource.getUserSessions(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser1Id)
+
+        then: "the mismatched user realm should be rejected"
+        thrown(NotAllowedException)
     }
 
     def "Request password reset"() {
