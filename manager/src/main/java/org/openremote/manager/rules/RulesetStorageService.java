@@ -195,6 +195,10 @@ public class RulesetStorageService implements ContainerService {
     protected <T extends Ruleset> void appendWhereString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query, List<ParameterBinder> binders) {
         sb.append(" WHERE 1=1");
 
+        if (rulesetType == AssetRuleset.class) {
+            sb.append(" AND A.DELETED_ON IS NULL");
+        }
+
         if (query.publicOnly) {
             sb.append(" AND R.ACCESS_PUBLIC_READ");
         }

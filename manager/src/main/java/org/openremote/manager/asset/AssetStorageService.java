@@ -51,6 +51,7 @@ import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.EventSubscription;
@@ -67,6 +68,7 @@ import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -540,7 +542,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         // TODO: Do this in a loop in reasonably sized batches
         return persistenceService.doReturningTransaction(em -> {
-            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids",
+            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.deletedOn is null and a.id in :ids",
                 Object[].class)
                 .setParameter("ids", Arrays.asList(ids))
                 .getResultList();
@@ -648,6 +650,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         Supplier<T> assetSupplier = () -> persistenceService.doReturningTransaction(em -> {
 
            T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
+           boolean existingAssetDeleted = existingAsset != null && existingAsset.isDeleted();
 
            if (existingAsset != null) {
 
@@ -658,11 +661,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  throw new IllegalStateException(msg);
               }
 
-              if (!existingAsset.getRealm().equals(asset.getRealm())) {
-                 String msg = "Asset realm cannot be changed: asset=" + asset;
-                 LOG.warning(msg);
-                 throw new IllegalStateException(msg);
-              }
+               if (!existingAsset.getRealm().equals(asset.getRealm())) {
+                  String msg = "Asset realm cannot be changed: asset=" + asset;
+                  LOG.warning(msg);
+                  throw new IllegalStateException(msg);
+               }
+
+               // Allow revival of a soft deleted asset only within its existing realm and type.
+               // Use the current persisted version so a recreation request does not fail optimistic locking.
+               if (existingAssetDeleted) {
+                  asset.setVersion(existingAsset.getVersion());
+               }
 
               // Update timestamp on modified attributes this allows fast equality checking
               asset.getAttributes().stream().forEach(attr ->
@@ -793,7 +802,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
               }
            }
 
-           T updatedAsset;
+            T updatedAsset;
+
+            if (existingAssetDeleted) {
+               asset.setDeletedOn(null);
+               existingAsset.setDeletedOn(null);
+            }
 
            if (existingAsset instanceof UnknownAsset && !(asset instanceof UnknownAsset)) {
               // This occurs when an existing asset is merged but the type is unknown
@@ -879,7 +893,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 persistenceService.doTransaction(em -> {
                     List<Asset<?>> assets = em
-                        .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
+                        .createQuery(
+                            "select a from Asset a " +
+                                "where a.deletedOn is null " +
+                                "and not exists(" +
+                                "   select child.id from Asset child " +
+                                "   where child.parentId = a.id and child.deletedOn is null and not child.id in :ids" +
+                                ") and a.id in :ids",
+                            Asset.class
+                        )
                         .setParameter("ids", ids)
                         .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
 
@@ -888,7 +910,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     }
 
                     assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
-                    assets.forEach(em::remove);
+                    Set<String> idsWithDatapoints = new HashSet<>(em.createQuery(
+                            "select distinct dp.assetId from AssetDatapoint dp where dp.assetId in :ids", String.class)
+                        .setParameter("ids", ids)
+                        .getResultList());
+                    Instant deletedOn = timerService.getNow();
+
+                    for (Asset<?> asset : assets) {
+                        boolean hasDatapoints = idsWithDatapoints.contains(asset.getId());
+                        long childCount = em.createQuery(
+                                "select count(child) from Asset child where child.parentId = :assetId", Long.class)
+                            .setParameter("assetId", asset.getId())
+                            .getSingleResult();
+
+                        if (!hasDatapoints && childCount == 0L) {
+                            em.remove(asset);
+                        } else {
+                            asset.setDeletedOn(deletedOn);
+                        }
+                    }
                     em.flush();
                 });
             } catch (Exception e) {
@@ -913,8 +953,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 String queryStr = TextUtil.isNullOrEmpty(userId) ?
-                    "select count(ual) from UserAssetLink ual where ual.id.assetId = :assetId" :
-                    "select count(ual) from UserAssetLink ual where ual.id.userId = :userId and ual.id.assetId = :assetId";
+                    "select count(ual) from UserAssetLink ual where ual.id.assetId = :assetId and exists (select a.id from Asset a where a.id = ual.id.assetId and a.deletedOn is null)" :
+                    "select count(ual) from UserAssetLink ual where ual.id.userId = :userId and ual.id.assetId = :assetId and exists (select a.id from Asset a where a.id = ual.id.assetId and a.deletedOn is null)";
 
                 TypedQuery<Long> query = entityManager.createQuery(
                     queryStr,
@@ -938,7 +978,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(ual) from UserAssetLink ual where ual.id.userId in :userIds and ual.id.assetId = :assetId",
+                    "select count(ual) from UserAssetLink ual where ual.id.userId in :userIds and ual.id.assetId = :assetId and exists (select a.id from Asset a where a.id = ual.id.assetId and a.deletedOn is null)",
                     Long.class)
                     .setParameter("userIds", userIds)
                     .setParameter("assetId", assetId)
@@ -956,7 +996,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(ual) from UserAssetLink ual where ual.id.userId = :userId and ual.id.assetId in :assetIds",
+                    "select count(ual) from UserAssetLink ual where ual.id.userId = :userId and ual.id.assetId in :assetIds and exists (select a.id from Asset a where a.id = ual.id.assetId and a.deletedOn is null)",
                     Long.class)
                     .setParameter("userId", userId)
                     .setParameter("assetIds", assetIds)
@@ -984,7 +1024,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds",
+                    "select count(a) from Asset a where a.deletedOn is null and a.realm = :realm and a.id in :assetIds",
                     Long.class)
                     .setParameter("realm", realm)
                     .setParameter("assetIds", assetIds)
@@ -1003,7 +1043,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
             @Override
             public Boolean execute(Connection connection) throws SQLException {
-                try (PreparedStatement st = connection.prepareStatement("select count(*) from Asset a where a.path ~ lquery(?) AND a.id = ANY(?)")) {
+                try (PreparedStatement st = connection.prepareStatement("select count(*) from Asset a where a.deleted_on is null and a.path ~ lquery(?) AND a.id = ANY(?)")) {
                     st.setString(1, "*." + parentAssetId + ".*");
                     st.setArray(2, st.getConnection().createArrayOf("text", assetIds.toArray()));
                     ResultSet rs = st.executeQuery();
@@ -1028,7 +1068,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             // Get all parent IDs that have children
             List<String> parentsWithChildren = entityManager.createQuery(
-                "select distinct a.parentId from Asset a where a.parentId in :assetIds", String.class)
+                "select distinct a.parentId from Asset a where a.deletedOn is null and a.parentId in :assetIds", String.class)
                 .setParameter("assetIds", assetIds)
                 .getResultList();
 
@@ -1095,7 +1135,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, Collection<String> userIds, Collection<String> assetIds) {
         StringBuilder sb = new StringBuilder();
         Map<String, Object> parameters = new HashMap<>(3);
-        sb.append("select ua from UserAssetLink ua where 1=1");
+        sb.append("select ua from UserAssetLink ua where exists (select a.id from Asset a where a.id = ua.id.assetId and a.deletedOn is null)");
 
         if (!isNullOrEmpty(realm)) {
             sb.append(" and ua.id.realm in :realm");
@@ -1411,7 +1451,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
 
             // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
-            Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
+            Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ? and deleted_on is null")
                 .setParameter(1, event.getName())
                 .setParameter(2, event.getName())
                 .setParameter(3, "{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
@@ -1442,35 +1482,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         Asset<?> asset = persistenceEvent.getEntity();
         switch (persistenceEvent.getCause()) {
             case CREATE -> {
-                // Fully load the asset
-                Asset<?> loadedAsset = find(new AssetQuery().ids(asset.getId()));
-                if (loadedAsset == null) {
-                    return;
-                }
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Asset created: " + loadedAsset.toStringAll());
-                } else {
-                    LOG.fine("Asset created: " + loadedAsset);
-                }
-                clientEventService.publishEvent(
-                    new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
-                );
-
-                // Raise attribute event for each created attribute
-                asset.getAttributes().forEach(newAttribute ->
-                    clientEventService.publishEvent(
-                        new AttributeEvent(
-                            asset,
-                            newAttribute,
-                            getClass().getSimpleName(),
-                            newAttribute.getValue().orElse(null),
-                            newAttribute.getTimestamp().orElse(0L),
-                            newAttribute.getValue().orElse(null),
-                            newAttribute.getTimestamp().orElse(0L))
-                                .setSource(getClass().getSimpleName())
-                    ));
+                publishAssetCreatedEvents(asset);
             }
             case UPDATE -> {
+                if (persistenceEvent.hasPropertyChanged("deletedOn")) {
+                    Instant previousDeletedOn = persistenceEvent.getPreviousState("deletedOn");
+                    Instant currentDeletedOn = persistenceEvent.getCurrentState("deletedOn");
+
+                    // Soft delete transition should emit delete semantics and skip normal update processing.
+                    if (previousDeletedOn == null && currentDeletedOn != null) {
+                        publishAssetDeletedEvents(asset);
+                        return;
+                    }
+
+                    // Revive transition should emit create semantics and skip normal update processing.
+                    if (previousDeletedOn != null && currentDeletedOn == null) {
+                        publishAssetCreatedEvents(asset);
+                        return;
+                    }
+                }
+
                 boolean nonAttributeChange = persistenceEvent.getPropertyNames().size() > 1 || !persistenceEvent.hasPropertyChanged("attributes");
                 boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
                 LOG.finest(() -> "Asset updated: " + persistenceEvent);
@@ -1523,25 +1554,59 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     });
             }
             case DELETE -> {
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Asset deleted: " + asset.toStringAll());
-                } else {
-                    LOG.fine("Asset deleted: " + asset);
-                }
-                clientEventService.publishEvent(
-                    new AssetEvent(AssetEvent.Cause.DELETE, asset, null)
-                );
-
-                // Raise attribute event with deleted flag for each attribute
-                AttributeMap deletedAttributes = asset.getAttributes();
-                deletedAttributes.forEach(obsoleteAttribute ->
-                    clientEventService.publishEvent(
-                        new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
-                            .setSource(getClass().getSimpleName())
-                            .setDeleted(true)
-                    ));
+                publishAssetDeletedEvents(asset);
             }
         }
+    }
+
+    protected void publishAssetCreatedEvents(Asset<?> asset) {
+        // Fully load the asset
+        Asset<?> loadedAsset = find(new AssetQuery().ids(asset.getId()));
+        if (loadedAsset == null) {
+            return;
+        }
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest("Asset created: " + loadedAsset.toStringAll());
+        } else {
+            LOG.fine("Asset created: " + loadedAsset);
+        }
+        clientEventService.publishEvent(
+            new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
+        );
+
+        // Raise attribute event for each created attribute
+        loadedAsset.getAttributes().forEach(newAttribute ->
+            clientEventService.publishEvent(
+                new AttributeEvent(
+                    loadedAsset,
+                    newAttribute,
+                    getClass().getSimpleName(),
+                    newAttribute.getValue().orElse(null),
+                    newAttribute.getTimestamp().orElse(0L),
+                    newAttribute.getValue().orElse(null),
+                    newAttribute.getTimestamp().orElse(0L))
+                        .setSource(getClass().getSimpleName())
+            ));
+    }
+
+    protected void publishAssetDeletedEvents(Asset<?> asset) {
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest("Asset deleted: " + asset.toStringAll());
+        } else {
+            LOG.fine("Asset deleted: " + asset);
+        }
+        clientEventService.publishEvent(
+            new AssetEvent(AssetEvent.Cause.DELETE, asset, null)
+        );
+
+        // Raise attribute event with deleted flag for each attribute
+        AttributeMap deletedAttributes = asset.getAttributes();
+        deletedAttributes.forEach(obsoleteAttribute ->
+            clientEventService.publishEvent(
+                new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                    .setSource(getClass().getSimpleName())
+                    .setDeleted(true)
+            ));
     }
 
     public String toString() {
@@ -1599,7 +1664,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
         sb.append(", A.CREATED_ON AS CREATED_ON, A.TYPE AS TYPE, A.PARENT_ID AS PARENT_ID");
-        sb.append(", A.REALM AS REALM, A.VERSION as VERSION");
+        sb.append(", A.REALM AS REALM, A.VERSION as VERSION, A.DELETED_ON as DELETED_ON");
 
         if (!query.recursive || level == 3) {
             sb.append(", A.PATH as PATH");
@@ -1720,6 +1785,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         boolean containsCalendarPredicate = false;
         boolean recursive = query.recursive;
         sb.append(" where true");
+
+        if (level == 1 || level == 2) {
+            sb.append(" and A.ID is not null and A.DELETED_ON is null");
+        }
 
         if (level == 2) {
             return false;

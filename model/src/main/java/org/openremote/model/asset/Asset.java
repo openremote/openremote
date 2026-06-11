@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -298,6 +299,10 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @org.hibernate.annotations.CreationTimestamp
     protected Instant createdOn;
 
+    @JsonIgnore
+    @Column(name = "DELETED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    protected Instant deletedOn;
+
     @NotBlank(message = "{Asset.name.NotBlank}")
     @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
     @Column(name = "NAME", nullable = false, length = 1023)
@@ -367,6 +372,21 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public T setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
         return (T) this;
+    }
+
+    @JsonIgnore
+    public Instant getDeletedOn() {
+        return deletedOn;
+    }
+
+    public T setDeletedOn(Instant deletedOn) {
+        this.deletedOn = deletedOn;
+        return (T) this;
+    }
+
+    @JsonIgnore
+    public boolean isDeleted() {
+        return deletedOn != null;
     }
 
     public String getName() {
@@ -627,12 +647,12 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Asset<?> asset = (Asset<?>) o;
-        return version == asset.version && accessPublicRead == asset.accessPublicRead && Objects.equals(id, asset.id) && Objects.equals(createdOn, asset.createdOn) && Objects.equals(name, asset.name) && Objects.equals(parentId, asset.parentId) && Objects.equals(realm, asset.realm) && Objects.equals(type, asset.type) && Objects.deepEquals(path, asset.path) && Objects.equals(attributes, asset.attributes);
+        return version == asset.version && accessPublicRead == asset.accessPublicRead && Objects.equals(id, asset.id) && Objects.equals(createdOn, asset.createdOn) && Objects.equals(deletedOn, asset.deletedOn) && Objects.equals(name, asset.name) && Objects.equals(parentId, asset.parentId) && Objects.equals(realm, asset.realm) && Objects.equals(type, asset.type) && Objects.deepEquals(path, asset.path) && Objects.equals(attributes, asset.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, version, createdOn, name, accessPublicRead, parentId, realm, type, Arrays.hashCode(path), attributes);
+        return Objects.hash(id, version, createdOn, deletedOn, name, accessPublicRead, parentId, realm, type, Arrays.hashCode(path), attributes);
     }
 
     /**

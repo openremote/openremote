@@ -345,7 +345,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         "from asset_datapoint ad " +
                         "join asset a on ad.entity_id = a.id " +
                         "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "where a.deleted_on is null and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
                         "group by bucket_timestamp, header " +
                         "order by bucket_timestamp, header",
                         tempTableName, fromSeconds, toSeconds);
@@ -355,7 +355,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         "from asset_datapoint ad " +
                         "join asset a on ad.entity_id = a.id " +
                         "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "where a.deleted_on is null and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
                         "order by ad.timestamp, header",
                         tempTableName, fromSeconds, toSeconds);
             }
@@ -370,7 +370,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     "from asset_datapoint ad " +
                     "join asset a on ad.entity_id = a.id " +
                     "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                    "where a.deleted_on is null and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
                     "order by ad.timestamp desc",
                     tempTableName, fromSeconds, toSeconds);
             return "copy (" + innerQuery + TO_STDOUT_WITH_CSV_FORMAT;
@@ -399,7 +399,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * It returns a structure containing the parametrized query as a string and the parameter values.
      */
     protected ExportQuery getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
-        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(?) and ad.timestamp <= to_timestamp(?) and ");
+        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and a.deleted_on is null and ad.timestamp >= to_timestamp(?) and ad.timestamp <= to_timestamp(?) and ");
         Map<Integer, Object> parameters = new HashMap<>();
         int paramIndex = 1;
         parameters.put(paramIndex++, fromTimestamp / 1000);

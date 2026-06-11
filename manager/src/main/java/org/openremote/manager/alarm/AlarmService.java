@@ -166,6 +166,21 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         });
     }
 
+    protected void validateAssetsExistAndNotDeleted(Set<String> assetIds) {
+        long count = persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                    "select count(a) from Asset a where a.id in :assetIds and a.deletedOn is null",
+                    Long.class
+                )
+                .setParameter("assetIds", assetIds)
+                .getSingleResult()
+        );
+
+        if (count != assetIds.size()) {
+            throw new IllegalArgumentException("One or more assets do not exist or are deleted");
+        }
+    }
+
     /**
      * Sends an alarm if the given user has access to the alarm realm.
      */
@@ -346,6 +361,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         Set<String> assetIds = links.stream().map(link -> link.getId().getAssetId()).collect(Collectors.toSet());
         validateAssetIds(assetIds);
+        validateAssetsExistAndNotDeleted(assetIds);
 
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
             PreparedStatement st = connection.prepareStatement("""
@@ -371,6 +387,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 entityManager.createQuery("""
                                 select aal from AlarmAssetLink aal
                                 where aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
+                                and exists (select a.id from Asset a where a.id = aal.id.assetId and a.deletedOn is null)
                                 order by aal.createdOn desc
                                 """, AlarmAssetLink.class)
                         .setParameter("realm", realm)
@@ -432,7 +449,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         StringBuilder sb = new StringBuilder("select sa from SentAlarm sa ");
 
         if (assetId != null) {
-            sb.append("join AlarmAssetLink aal on sa.id = aal.id.sentalarmId where sa.realm = :realm and aal.id.assetId = :assetId ");
+            sb.append("join AlarmAssetLink aal on sa.id = aal.id.sentalarmId where sa.realm = :realm and aal.id.assetId = :assetId and exists (select a.id from Asset a where a.id = aal.id.assetId and a.deletedOn is null) ");
             parameters.put("assetId", assetId);
         } else {
             sb.append("where sa.realm = :realm ");
