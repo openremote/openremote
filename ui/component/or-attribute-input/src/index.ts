@@ -584,7 +584,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value, _updateImmediately) => valueChangeHandler({value: value}), options);
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value, updateImmediately) => valueChangeHandler({value, enterPressed: !!updateImmediately}), options);
         this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider, true)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
 
         if (!this._templateProvider) {
