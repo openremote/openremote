@@ -37,6 +37,10 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttributeConfigurationDocument;
+import org.openremote.model.asset.AssetAttributeConfigurationExportRequest;
+import org.openremote.model.asset.AssetAttributeConfigurationImportRequest;
+import org.openremote.model.asset.AssetAttributeConfigurationImportPreview;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetTree;
 import org.openremote.model.asset.UserAssetLink;
@@ -413,6 +417,56 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (OptimisticLockException opEx) {
             throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
+        }
+    }
+
+    @Override
+    public AssetAttributeConfigurationDocument exportAttributeConfiguration(RequestParams requestParams, String assetId, AssetAttributeConfigurationExportRequest request) {
+        try {
+            return AssetAttributeConfigurationService.exportConfiguration(get(requestParams, assetId, true), request);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw new BadRequestException(ex);
+        }
+    }
+
+    @Override
+    public AssetAttributeConfigurationImportPreview previewAttributeConfigurationImport(RequestParams requestParams, String assetId, AssetAttributeConfigurationImportRequest request) {
+        try {
+            if (request == null || request.getTargetAsset() == null) {
+                throw new BadRequestException("Target asset draft is required");
+            }
+
+            Asset<?> storageAsset = assetStorageService.find(assetId, true);
+
+            if (storageAsset == null) {
+                throw new WebApplicationException(NOT_FOUND);
+            }
+
+            if (!isRealmActiveAndAccessible(storageAsset.getRealm())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            Asset<?> targetAsset = request.getTargetAsset();
+
+            if (!assetId.equals(targetAsset.getId())) {
+                throw new BadRequestException("Target asset draft ID must match request asset ID");
+            }
+
+            if (!storageAsset.getRealm().equals(targetAsset.getRealm())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            if (!storageAsset.getType().equals(targetAsset.getType())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            return AssetAttributeConfigurationService.previewImportConfiguration(targetAsset, request.getConfiguration());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw new BadRequestException(ex);
         }
     }
 

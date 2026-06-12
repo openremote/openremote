@@ -220,6 +220,26 @@ public interface AssetResource {
     @Operation(operationId = "updateAsset", summary = "Update an asset")
     Asset<?> update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset<?> asset);
 
+    @POST
+    @Path("{assetId}/attribute-config/export")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "exportAssetAttributeConfiguration", summary = "Export asset attribute configuration")
+    AssetAttributeConfigurationDocument exportAttributeConfiguration(@BeanParam RequestParams requestParams,
+                                                                    @PathParam("assetId") String assetId,
+                                                                    AssetAttributeConfigurationExportRequest request);
+
+    @POST
+    @Path("{assetId}/attribute-config/import/preview")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    @Operation(operationId = "previewAssetAttributeConfigurationImport", summary = "Preview asset attribute configuration import for a draft asset")
+    AssetAttributeConfigurationImportPreview previewAttributeConfigurationImport(@BeanParam RequestParams requestParams,
+                                                                                @PathParam("assetId") String assetId,
+                                                                                AssetAttributeConfigurationImportRequest request);
+
     /**
      * Updates an attribute of an asset. Regular users can only update assets in their authenticated realm, the
      * superuser can update assets in other (all) realms. A 403 status is returned if a regular user tries to update an
