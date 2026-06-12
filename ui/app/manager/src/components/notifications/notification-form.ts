@@ -467,7 +467,7 @@ export class NotificationForm extends LitElement {
                         label="${i18next.t("notifications.targetType")}"
                         type="${InputType.SELECT}"
                         .options="${allowedTargetTypes}"
-                        ?disabled="${inputDisabled}"
+                        ?disabled="${inputDisabled || allowedTargetTypes.length === 1}"
                         required
                         id="targetType"
                         .value="${this._targetType}"
