@@ -17,13 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {customElement} from "lit/decorators.js";
+import {customElement, property} from "lit/decorators.js";
 import {TextField} from "@vaadin/text-field";
-import {type LitElement} from "lit";
+import {PropertyValues, type LitElement} from "lit";
 import {OrVaadinComponent} from "./util";
 
 @customElement("or-vaadin-text-field")
 export class OrVaadinTextField extends (TextField as new () => TextField & LitElement) implements OrVaadinComponent {
+
+    /**
+     * Custom `type` attribute that echoes to the input element.
+     * This is useful for types like 'url' and 'email'.
+     * Use with caution: using unknown types, or mismatched types like 'number' could potentially break the component.
+     */
+    @property({type: String})
+    public type?: string;
+
+    override willUpdate(changedProps: PropertyValues) {
+        super.willUpdate(changedProps);
+        if(changedProps.has("type") && this.type !== undefined) {
+            (this as any)._setType(this.type);
+        }
+    }
 
     override _onEnter(ev: KeyboardEvent) {
         this.dispatchEvent(new CustomEvent("submit", {bubbles: true, composed: true}));
