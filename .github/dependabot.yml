@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "openremote/openremote"
 
   # Do not maintain npm/Yarn dependencies, including security update PRs.
   - package-ecosystem: "npm"
