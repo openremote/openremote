@@ -48,7 +48,10 @@ import {html, TemplateResult} from "lit";
 import {Ref, ref, createRef} from "lit/directives/ref.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {styleMap} from "lit/directives/style-map.js";
-import {InputType, inputTypeSupportsHelperText, inputTypeSupportsLabel, inputTypeSupportsSendButton} from "./util";
+import {
+    InputType, inputTypeSupportsHelperText, inputTypeSupportsLabel, inputTypeSupportsSendButton,
+    SupportedWellknownValueTypes
+} from "./util";
 import {OrVaadinInput} from "./or-vaadin-input";
 
 export interface ValueInputProviderOptions {
@@ -102,11 +105,15 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
-    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && !format?.asSlider && !format?.asOnOff);
+    const supportsVaadinInput = (type: InputType) => (OrVaadinInput.TEMPLATES.has(type) && !format?.asOnOff);
+
+    // Enforces which value types are supported making SUPPORTED_WELLKNOWN_VALUE_TYPES the single source of truth through type checking
+    let _exhaustiveTypeCheck: never
+    const valueType = valueDescriptor.name as SupportedWellknownValueTypes;
 
     // Determine input type
     if (!inputType) {
-        switch (valueDescriptor.name) {
+        switch (valueType) {
             case WellknownValueTypes.TEXT:
             case WellknownValueTypes.EMAIL:
             case WellknownValueTypes.UUID:
@@ -189,6 +196,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             case WellknownValueTypes.JSONOBJECT:
                 inputType = InputType.JSON_OBJECT;
                 break;
+            default: _exhaustiveTypeCheck = valueType;
         }
 
         if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
