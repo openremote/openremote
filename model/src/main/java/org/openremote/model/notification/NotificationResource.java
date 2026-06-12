@@ -150,11 +150,12 @@ public interface NotificationResource {
     @Path("{realmId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "getNotificationsByRealm", summary="Get notifications filtered by realm ownership and optional time bounds.")
+    @Operation(operationId = "getNotificationsByRealm", summary="Get notifications filtered by realm ownership, optional source and optional time bounds.")
     SentNotification[] getNotificationsByRealm(@BeanParam RequestParams requestParams,
                                         @QueryParam("from") Long fromTimestamp,
                                         @QueryParam("to") Long toTimestamp,
                                         @QueryParam("realmId") String realmId,
+                                        @QueryParam("source") Notification.Source source,
                                         @QueryParam("offset") Integer offset,
                                         @QueryParam("limit") Integer limit);
 
@@ -162,9 +163,10 @@ public interface NotificationResource {
     @Path("{realmId}/count")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE, Constants.READ_NOTIFICATIONS_ROLE})
-    @Operation(operationId = "getNotificationsByRealmCount", summary="Get total count of notifications filtered by realm ownership and optional time bounds.")
+    @Operation(operationId = "getNotificationsByRealmCount", summary="Get total count of notifications filtered by realm ownership, optional source and optional time bounds.")
     long getNotificationsByRealmCount(@BeanParam RequestParams requestParams,
                                       @QueryParam("from") Long fromTimestamp,
                                       @QueryParam("to") Long toTimestamp,
-                                      @QueryParam("realmId") String realmId);
+                                      @QueryParam("realmId") String realmId,
+                                      @QueryParam("source") Notification.Source source);
 }
