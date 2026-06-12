@@ -5,6 +5,7 @@ import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.asset.impl.LightAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointExportFormat
 import org.openremote.model.datapoint.DatapointQueryTooLargeException
@@ -12,6 +13,7 @@ import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -21,6 +23,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.value.ValueType.NUMBER
 
 class AssetDatapointExportTest extends Specification implements ManagerContainerTrait {
 
@@ -249,6 +252,67 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
 
         then: "the REST API should reject the unknown attribute name"
         response.responseCode == 404
+
+        cleanup: "Remove the limit on datapoint exporting"
+        if (response != null) {
+            response.disconnect()
+        }
+        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+    }
+
+    def "Restricted users cannot export datapoints for linked non-restricted attributes"() {
+        given: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.datapointExportLimit = 10000
+
+        and: "a linked asset has historical data for an attribute that is not restricted-readable"
+        assetDatapointService.purgeDataPoints()
+        def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
+        def attributeName = "nonRestrictedHistory"
+        asset.getAttributes().addOrReplace(new Attribute<>(attributeName, NUMBER, 0d))
+        assetStorageService.merge(asset)
+
+        def dateTime = LocalDateTime.now()
+        assetDatapointService.upsertValues(
+                asset.getId(),
+                attributeName,
+                [new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)]
+        )
+
+        and: "a restricted user is authenticated in the asset realm"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+        when: "the restricted user exports the historical datapoints"
+        def response = null
+        def attributeRefsJson = "[{\"id\":\"${asset.id}\",\"name\":\"${attributeName}\"}]"
+        def encodedAttributeRefs = URLEncoder.encode(attributeRefsJson, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        def fromTimestamp = dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        def toTimestamp = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        def baseUri = serverUri(serverPort).clone()
+                .replacePath(ManagerWebService.API_PATH)
+                .path(keycloakTestSetup.realmBuilding.name)
+                .path("asset")
+                .path("datapoint")
+                .path("export")
+                .build()
+        def url = new URL("${baseUri}?attributeRefs=${encodedAttributeRefs}&fromTimestamp=${fromTimestamp}&toTimestamp=${toTimestamp}")
+        response = (HttpURLConnection) url.openConnection()
+        response.setRequestMethod("GET")
+        response.setRequestProperty("Authorization", "Bearer ${accessToken}")
+        response.setRequestProperty("Accept", "application/zip")
+        response.connect()
+
+        then: "the export endpoint should apply the same restricted attribute check"
+        response.responseCode == 403
 
         cleanup: "Remove the limit on datapoint exporting"
         if (response != null) {
