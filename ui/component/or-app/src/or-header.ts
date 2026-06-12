@@ -354,8 +354,8 @@ export class OrHeader extends LitElement {
             return html``;
         }
 
-        const mainItems: HeaderItem[] | undefined = this.config.mainMenu;
-        const secondaryItems: HeaderItem[] | undefined = this.config.secondaryMenu;
+        const mainItems: HeaderItem[] | undefined = this.config.mainMenu?.filter(hasRequiredRole);
+        const secondaryItems: HeaderItem[] | undefined = this.config.secondaryMenu?.filter(hasRequiredRole);
 
         return html`
            <!-- Header -->
@@ -366,7 +366,7 @@ export class OrHeader extends LitElement {
                     <!-- This gets hidden on a small screen-->
                     <nav id="toolbar-list">
                         <div id="desktop-left">
-                            ${mainItems ? mainItems.filter(hasRequiredRole).map((headerItem) => {
+                            ${mainItems ? mainItems.map((headerItem) => {
                                 return html`
                                     <a class="menu-item" href=${this._getHeaderHref(headerItem)} @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem, e)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
