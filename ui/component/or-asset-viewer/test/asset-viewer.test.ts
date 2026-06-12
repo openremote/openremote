@@ -81,6 +81,7 @@ ct("Should disable asset configuration export when there are unsaved changes", a
 
     await expect(component.locator("#save-btn")).not.toBeDisabled();
     await expect(exportButton).toBeDisabled();
+    await expect(component.locator("#import-attribute-config-btn")).not.toBeDisabled();
 });
 
 const configuredId = configuredAsset.id;
@@ -123,4 +124,79 @@ ct("Should export selected asset attribute configuration", async ({ page, mount 
 
     expect(requestBody).toEqual({ attributeNames: ["notes"] });
     expect(download.suggestedFilename()).toBe("Configured Thing-attribute-config.json");
+});
+
+ct("Should preview imported asset attribute configuration", async ({ page, mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: configuredId, editMode: true },
+    });
+
+    const configuration = {
+        version: 1,
+        assetType: "OtherAsset",
+        attributes: {
+            notes: {
+                type: "text",
+                meta: { readOnly: false },
+            },
+            missing: {
+                type: "number",
+                meta: { readOnly: true },
+            },
+            model: {
+                type: "number",
+                meta: { label: "Model" },
+            },
+        },
+    };
+
+    let requestBody: any;
+    await page.route("**/api/master/asset/configuredAsset/attribute-config/import/preview", async (route) => {
+        requestBody = route.request().postDataJSON();
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                assetTypeMismatch: {
+                    expected: "ThingAsset",
+                    actual: "OtherAsset",
+                },
+                importableAttributes: [
+                    { name: "notes", type: "text" },
+                ],
+                missingAttributes: [
+                    { name: "missing", type: "number" },
+                ],
+                typeMismatches: [
+                    { name: "model", importedType: "number", targetType: "text" },
+                ],
+                patchedAttributes: {
+                    notes: {
+                        name: "notes",
+                        type: "text",
+                        meta: { readOnly: false },
+                    },
+                },
+            }),
+        });
+    });
+
+    await component.locator("#import-attribute-config-btn").click();
+
+    const dialog = page.locator("or-mwc-dialog");
+    await dialog.locator("input[type='file']").setInputFiles({
+        name: "attribute-config.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(configuration)),
+    });
+
+    await expect(dialog).toContainText("attribute-config.json");
+    await expect(dialog).toContainText("ThingAsset");
+    await expect(dialog).toContainText("OtherAsset");
+    await expect(dialog).toContainText("notes (text)");
+    await expect(dialog).toContainText("missing (number)");
+    await expect(dialog).toContainText("model (number -> text)");
+
+    expect(requestBody.configuration).toEqual(configuration);
+    expect(requestBody.targetAsset.id).toBe("configuredAsset");
 });

@@ -142,6 +142,11 @@ interface AssetAttributeConfigurationExportRequest {
     attributeNames: string[];
 }
 
+interface AssetAttributeConfigurationImportRequest {
+    targetAsset: Asset;
+    configuration: AssetAttributeConfigurationDocument;
+}
+
 interface AssetAttributeConfigurationDocument {
     version: number;
     assetType?: string;
@@ -151,6 +156,30 @@ interface AssetAttributeConfigurationDocument {
 interface AssetAttributeConfigurationEntry {
     type?: string;
     meta?: {[name: string]: any};
+}
+
+interface AssetAttributeConfigurationImportPreview {
+    assetTypeMismatch?: AssetAttributeConfigurationAssetTypeMismatch;
+    importableAttributes: AssetAttributeConfigurationAttribute[];
+    missingAttributes: AssetAttributeConfigurationAttribute[];
+    typeMismatches: AssetAttributeConfigurationTypeMismatch[];
+    patchedAttributes: {[name: string]: Attribute<any>};
+}
+
+interface AssetAttributeConfigurationAssetTypeMismatch {
+    expected?: string;
+    actual?: string;
+}
+
+interface AssetAttributeConfigurationAttribute {
+    name?: string;
+    type?: string;
+}
+
+interface AssetAttributeConfigurationTypeMismatch {
+    name?: string;
+    importedType?: string;
+    targetType?: string;
 }
 
 interface AssetInfo {
@@ -1572,7 +1601,121 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     protected _onImportAttributeConfigurationClicked() {
-        // Dialog and backend integration are added in the next implementation phase.
+        const asset = this._assetInfo?.asset;
+        if (!asset?.id) {
+            return;
+        }
+
+        let dialog: OrMwcDialog;
+        let fileName: string | undefined;
+        let preview: AssetAttributeConfigurationImportPreview | undefined;
+        let errorMessage: string | undefined;
+        let loading = false;
+
+        const onFileSelected = async (ev: Event) => {
+            const fileInput = ev.currentTarget as HTMLInputElement;
+            const file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : undefined;
+            if (!file) {
+                return;
+            }
+
+            fileName = file.name;
+            preview = undefined;
+            errorMessage = undefined;
+            loading = true;
+            dialog.requestUpdate();
+
+            let configuration: AssetAttributeConfigurationDocument;
+            try {
+                configuration = JSON.parse(await file.text()) as AssetAttributeConfigurationDocument;
+            } catch (e) {
+                console.error("Failed to preview asset attribute configuration import", e);
+                errorMessage = i18next.t("invalidAttributeConfigurationFile");
+                loading = false;
+                dialog.requestUpdate();
+                return;
+            }
+
+            try {
+                preview = await this._previewAttributeConfigurationImport(asset, configuration);
+            } catch (e) {
+                console.error("Failed to preview asset attribute configuration import", e);
+                errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
+            } finally {
+                loading = false;
+                dialog.requestUpdate();
+            }
+        };
+
+        dialog = showDialog(new OrMwcDialog()
+            .setHeading("assetAttributeConfigurationImport")
+            .setContent(() => html`
+                <div id="asset-attribute-config-import">
+                    <div id="asset-attribute-config-import-file-picker">
+                        <or-vaadin-button @click=${() => dialog.shadowRoot?.getElementById("asset-attribute-config-import-file")?.click()}>
+                            <or-translate value="selectFile"></or-translate>
+                        </or-vaadin-button>
+                        <span>${fileName || ""}</span>
+                        <input id="asset-attribute-config-import-file" type="file" accept="application/json,.json" @change=${onFileSelected}/>
+                    </div>
+                    ${loading ? html`<span><or-translate value="loading"></or-translate></span>` : ``}
+                    ${errorMessage ? html`<span class="error">${errorMessage}</span>` : ``}
+                    ${preview ? this._getAttributeConfigurationImportPreviewTemplate(preview) : ``}
+                </div>
+            `)
+            .setStyles(html`
+                <style>
+                    #asset-attribute-config-import {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 16px;
+                        min-width: 420px;
+                    }
+
+                    #asset-attribute-config-import-file-picker {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    #asset-attribute-config-import-file {
+                        display: none;
+                    }
+
+                    .asset-attribute-config-import-section {
+                        border-top: 1px solid var(--or-app-color5);
+                        padding-top: 12px;
+                    }
+
+                    .asset-attribute-config-import-section:first-child {
+                        border-top: 0;
+                        padding-top: 0;
+                    }
+
+                    .asset-attribute-config-import-section h3 {
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 6px;
+                    }
+
+                    .asset-attribute-config-import-section ul {
+                        margin: 0 0 0 20px;
+                        padding: 0;
+                    }
+
+                    .error {
+                        color: var(--or-app-color-error, #c62828);
+                    }
+                </style>
+            `)
+            .setActions([
+                {
+                    actionName: "cancel",
+                    content: "cancel",
+                    default: true
+                }
+            ])
+            .setDismissAction(null));
     }
 
     protected _getAttributeConfigurationExportCandidates(asset: Asset): Attribute<any>[] {
@@ -1623,6 +1766,73 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             link.remove();
             window.URL.revokeObjectURL(url);
         }, 0);
+    }
+
+    protected async _previewAttributeConfigurationImport(asset: Asset, configuration: AssetAttributeConfigurationDocument): Promise<AssetAttributeConfigurationImportPreview> {
+        const request: AssetAttributeConfigurationImportRequest = {
+            targetAsset: asset,
+            configuration
+        };
+        const response = await manager.rest.axiosInstance.post<AssetAttributeConfigurationImportPreview>(
+            `asset/${asset.id}/attribute-config/import/preview`,
+            request
+        );
+        return response.data;
+    }
+
+    protected _getAttributeConfigurationImportPreviewTemplate(preview: AssetAttributeConfigurationImportPreview): TemplateResult {
+        return html`
+            <div id="asset-attribute-config-import-preview">
+                ${preview.assetTypeMismatch ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <h3><or-translate value="assetTypeMismatch"></or-translate></h3>
+                        <span>${preview.assetTypeMismatch.expected} -> ${preview.assetTypeMismatch.actual}</span>
+                    </section>
+                ` : ``}
+                <section class="asset-attribute-config-import-section">
+                    <h3><or-translate value="importableAttributes"></or-translate></h3>
+                    ${this._getAttributeConfigurationAttributeListTemplate(preview.importableAttributes)}
+                </section>
+                ${preview.missingAttributes.length > 0 ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <h3><or-translate value="missingAttributes"></or-translate></h3>
+                        ${this._getAttributeConfigurationAttributeListTemplate(preview.missingAttributes)}
+                    </section>
+                ` : ``}
+                ${preview.typeMismatches.length > 0 ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <h3><or-translate value="typeMismatches"></or-translate></h3>
+                        <ul>
+                            ${preview.typeMismatches.map((typeMismatch) => html`
+                                <li>${this._formatAttributeConfigurationTypeMismatch(typeMismatch)}</li>
+                            `)}
+                        </ul>
+                    </section>
+                ` : ``}
+            </div>
+        `;
+    }
+
+    protected _getAttributeConfigurationAttributeListTemplate(attributes: AssetAttributeConfigurationAttribute[]): TemplateResult {
+        if (attributes.length === 0) {
+            return html`<span><or-translate value="none"></or-translate></span>`;
+        }
+
+        return html`
+            <ul>
+                ${attributes.map((attribute) => html`
+                    <li>${this._formatAttributeConfigurationAttribute(attribute)}</li>
+                `)}
+            </ul>
+        `;
+    }
+
+    protected _formatAttributeConfigurationAttribute(attribute: AssetAttributeConfigurationAttribute): string {
+        return attribute.type ? `${attribute.name} (${attribute.type})` : (attribute.name || "");
+    }
+
+    protected _formatAttributeConfigurationTypeMismatch(typeMismatch: AssetAttributeConfigurationTypeMismatch): string {
+        return `${typeMismatch.name} (${typeMismatch.importedType} -> ${typeMismatch.targetType})`;
     }
 
     protected _isReadonly() {
