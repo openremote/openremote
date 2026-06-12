@@ -86,8 +86,8 @@ export class Manager {
      * @param setting Name of the setting menu item
      */
     async navigateToMenuItem(setting: string) {
-        await this.page.click("button#menu-btn-desktop");
-        const menu = this.page.locator("#menu > #list > li").filter({ hasText: setting });
+        await this.page.click("#drawer-menu");
+        const menu = this.page.locator("#drawer-menu").getByRole("menuitem").filter({ hasText: setting });
         await menu.waitFor({ state: "visible" });
         await menu.click();
     }
@@ -98,7 +98,7 @@ export class Manager {
      */
     async switchToRealmByRealmPicker(realm: string) {
         await this.page.click("#realm-picker");
-        await this.page.locator("#desktop-right li", { hasText: realm }).click();
+        await this.page.locator("#realm-picker").getByRole("option").filter({ hasText: realm }).click();
     }
 
     /**

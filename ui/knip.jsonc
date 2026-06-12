@@ -5,6 +5,7 @@
         "@types/react", // Required by mdx which is used in Storybook
         "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
         "@types/offscreencanvas", // Referenced in the tsconfig file
+        "inter-ui", // Only imports CSS files
         "@vaadin/vaadin-lumo-styles", // Only imports CSS files
         "@openremote/theme", // Only imports CSS files
         // --- HOISTED UTIL PACKAGE TOOLING ---

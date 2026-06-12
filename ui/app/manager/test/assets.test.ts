@@ -56,7 +56,7 @@ assets.forEach(({ type, name, attributes }) => {
         const item = page.locator(`#field-${attribute3} input[type="${type}"]`);
         if (await item.isEditable()) {
             await item.fill(value3);
-            await page.click(`#field-${attribute3} #send-btn span`);
+            await page.click(`#field-${attribute3} #send-btn`);
         }
 
         await assetViewer.switchMode("modify");
@@ -236,11 +236,11 @@ test.describe("Attributes", () => {
         await page.getByRole("button", { name: "Add attribute" }).click();
 
         const dialog = page.getByLabel("Add attribute");
-        await dialog.locator("label").filter({ hasText: "Name" }).fill("test");
-        await dialog.getByRole("button", { name: "Value type" }).click();
-        await mwcInput.getSelectInputOption("Integer", dialog).click();
-        await dialog.getByRole("button", { name: "Add" }).click();
-        await page.getByRole("button", { name: "Save" }).click();
+        await dialog.getByLabel("Name").fill("test");
+        await dialog.getByRole("combobox", { name: "Value type", exact: true }).fill("Int");
+        await dialog.getByRole("option", { name: "Integer", exact: true }).click();
+        await dialog.getByRole("button", { name: "Add", exact: true }).click();
+        await page.getByRole("button", { name: "Save", exact: true }).click();
 
         await expect(assetViewer.getAttributeLocator("test")).toBeVisible();
         await expect(assetViewer.getAttributeLocator("test")).toContainText(/Integer/);
