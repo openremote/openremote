@@ -244,8 +244,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 .setTargetId(target.getId())
                                 .setMessage(notification.getMessage())
                                 .setRealm(targetRealm)
-                                .setSentOn(now)
-                                .setDeliveredOn(now)));
+                                .setSentOn(now)));
                         });
                         exchange.getMessage().setBody(true);
                         return;
