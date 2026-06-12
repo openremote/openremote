@@ -610,7 +610,7 @@ export class NotificationForm extends LitElement {
             <div class="actionButtonContainer">
                 <h5>${i18next.t("actions")}</h5>
                 <or-mwc-input
-                        label="${i18next.t("notifications.urlToVisit")}"
+                        label="${i18next.t("openWebsiteUrl")}"
                         type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
                         id="actionUrl"
@@ -620,7 +620,7 @@ export class NotificationForm extends LitElement {
                 </or-mwc-input>
 
                 <or-mwc-input
-                        label="${i18next.t("notifications.openButtonText")}"
+                        label="${i18next.t("buttonTextConfirm")}"
                         type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
                         id="openButtonText"
@@ -629,7 +629,7 @@ export class NotificationForm extends LitElement {
                 </or-mwc-input>
 
                 <or-mwc-input
-                        label="${i18next.t("notifications.closeButtonText")}"
+                        label="${i18next.t("buttonTextDecline")}"
                         type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
                         id="closeButtonText"

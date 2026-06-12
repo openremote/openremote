@@ -176,7 +176,7 @@ export class OrNotificationsTable extends OrMwcTable {
 
     public columns: TableColumn[] = [
         {title: i18next.t("title"), isSortable: true},
-        {title: i18next.t("content")},
+        {title: i18next.t("body")},
         {title: i18next.t("status"), isSortable: true},
         {title: i18next.t("notifications.source"), isSortable: true},
         {title: i18next.t("notifications.target")},
