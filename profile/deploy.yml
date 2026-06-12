@@ -363,8 +363,8 @@ services:
       # When using path based proxying this prefix is added to the URLs returned via the REST API.
       # OR_PATH_PREFIX: /openremote
 
-      # Custom JVM options (override default manager options)
-  #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
+      # Custom JVM options (override default manager options or append using JAVA_OPTS_APPEND)
+  #JAVA_OPTS: ${JAVA_OPTS:--Xms500m -Xmx2g
   #  -XX:NativeMemoryTracking=summary
   #  -Xlog:all=warning:stdout:uptime,level,tags
   #  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}

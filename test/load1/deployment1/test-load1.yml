@@ -94,7 +94,7 @@ services:
       OR_SETUP_DEVICES_SKIP_COUNT:
       OR_METRICS_ENABLED: true
       OR_EXECUTOR_THREADS_MAX:
-      OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx4g -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms500m -Xmx4g -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
     volumes:
       - manager-data:/storage
       - ./manager:/deployment/manager

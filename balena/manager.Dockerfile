@@ -56,10 +56,16 @@ ENV OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES ${OR_IDENTITY_SESSION_OFFLINE_TI
 ENV OR_ATTRIBUTE_EVENT_THREADS ${OR_ATTRIBUTE_EVENT_THREADS}
 ENV OR_STORAGE_DIR ${OR_STORAGE_DIR:-/storage}
 ENV OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE ${OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE:-172.17.0.1}
-ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
+
+ARG JAVA_OPTS="-Xms500m -Xmx2g \
     -XX:NativeMemoryTracking=summary \
     -Xlog:all=warning:stdout:uptime,level,tags \
-    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/storage/dump.hprof \
+    -XX:OnOutOfMemoryError=/heapdump-rename.sh"
+ENV JAVA_OPTS=${JAVA_OPTS}
+
+ARG JAVA_OPTS_APPEND
+ENV JAVA_OPTS_APPEND=${JAVA_OPTS_APPEND}
 
 # OpenMetrics _created series breaks cloudwatch prometheus scraper
 ENV PROMETHEUS_DISABLE_CREATED_SERIES ${PROMETHEUS_DISABLE_CREATED_SERIES:-true}
@@ -77,5 +83,10 @@ ADD ./manager-build/map /opt/map
 EXPOSE 8080
 EXPOSE 1883
 
-HEALTHCHECK --interval=3s --timeout=60s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
-ENTRYPOINT java $OR_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
+HEALTHCHECK --interval=5s --timeout=60s --start-period=5s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+COPY heapdump-rename.sh /heapdump-rename.sh
+RUN chmod +x /heapdump-rename.sh
+ENTRYPOINT ["/entrypoint.sh"]
