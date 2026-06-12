@@ -10,6 +10,7 @@ import "./or-conf-map/or-conf-map-card";
 import "./or-conf-realm/or-conf-realm-card";
 import {OrConfRealmCard} from "./or-conf-realm/or-conf-realm-card";
 import {OrConfMapCard} from "./or-conf-map/or-conf-map-card";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 
 @customElement("or-conf-panel")
 export class OrConfPanel extends LitElement {
@@ -97,9 +98,10 @@ export class OrConfPanel extends LitElement {
             <!-- Show an "ADD REALM" button if there are realms available to be added -->
             <div style="display: flex; justify-content: space-between;">
                 ${when(availableRealms.length > 0, () => html`
-                    <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" label="${type === 'mapconfig' ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization'}" icon="plus"
-                                  @or-mwc-input-changed="${() => this._showAddingRealmDialog()}"
-                    ></or-mwc-input>
+                    <or-vaadin-button id="btn-add-realm" @click=${() => this._showAddingRealmDialog()}>
+                        <or-icon slot="prefix" icon="plus"></or-icon>
+                        <or-translate value=${type === 'mapconfig' ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization'}></or-translate>
+                    </or-vaadin-button>
                 `)}
             </div>
         `
@@ -174,15 +176,17 @@ export class OrConfPanel extends LitElement {
             },
         ];
         const headingKey = this.isMapConfig(this.config) ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization';
+        const realmItems = this.getAvailableRealms(this.config, this.realmOptions).map(item => ({value: item.name, label: item.displayName}));
         showDialog(new OrMwcDialog()
             .setHeading(i18next.t(headingKey))
             .setActions(dialogActions)
             .setContent(html`
-                <or-mwc-input class="selector" label="${i18next.t('realm')}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}"
-                              .options="${Object.entries(this.getAvailableRealms(this.config, this.realmOptions)).map(([, value]) => {
-                return [value.name, value.displayName]
-            })}"
-                ></or-mwc-input>
+                <div style="width: 280px; padding: 10px 20px;">
+                    <or-vaadin-select class="selector" .items=${realmItems}
+                                      @change=${(ev: Event) => this._addedRealm = (ev.currentTarget as OrVaadinSelect).value}>
+                        <or-translate slot="label" value="realm"></or-translate>
+                    </or-vaadin-select>
+                </div>
             `)
             .setStyles(html`
                 <style>

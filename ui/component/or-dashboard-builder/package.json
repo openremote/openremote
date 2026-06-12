@@ -37,6 +37,7 @@
     "@openremote/or-map": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
     "gridstack": "^12.4.2",
     "lit": "^3.3.1",

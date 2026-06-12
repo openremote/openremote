@@ -100,6 +100,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User get(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -122,7 +124,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         if (!isAuthenticated()) {
             throw new ForbiddenException("Must be authenticated");
         }
-        return get(requestParams, getRequestRealmName(), getUserId());
+        return get(requestParams, getAuthenticatedRealmName(), getUserId());
     }
 
     @Override
@@ -278,7 +280,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new ForbiddenException("Must be authenticated");
         }
 
-        return getUserClientRoles(requestParams, getRequestRealmName(), getUserId(), clientId);
+        return getUserClientRoles(requestParams, getAuthenticatedRealmName(), getUserId(), clientId);
     }
 
     @Override
@@ -287,11 +289,13 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new ForbiddenException("Must be authenticated");
         }
 
-        return getUserRealmRoles(requestParams, getRequestRealmName(), getUserId());
+        return getUserRealmRoles(requestParams, getAuthenticatedRealmName(), getUserId());
     }
 
     @Override
     public String[] getUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String clientId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -311,6 +315,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public String[] getUserRealmRoles(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -365,6 +371,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public Role[] getClientRoles(RequestParams requestParams, String realm, String clientId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             return identityService.getIdentityProvider().getClientRoles(
                 realm,
@@ -416,6 +424,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public UserSession[] getUserSessions(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -488,6 +498,14 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         if (!authContext.isRealmAccessibleByUser(realm)) {
             throw new NotAllowedException("Cannot administer a different realm");
+        }
+    }
+
+    protected void throwIfCannotReadUserInRealm(String realm, String userId) throws WebApplicationException {
+        throwIfCannotAdminRealm(realm);
+
+        if (!identityService.getIdentityProvider().isUserInRealm(userId, realm)) {
+            throw new NotAllowedException("Cannot read a user in a different realm");
         }
     }
 

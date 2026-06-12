@@ -34,7 +34,7 @@ export {
     DialogRendererDirective,
     dialogFooterRenderer,
     DialogFooterRendererDirective,
-} from "@vaadin/dialog/lit.js";
+} from "@vaadin/dialog/lit";
 
 type WithLit<T> = T & typeof LitElement;
 
