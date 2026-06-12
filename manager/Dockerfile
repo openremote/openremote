@@ -148,7 +148,8 @@ ENV OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE=${OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE}
 ARG OR_JAVA_OPTS="-Xms500m -Xmx2g \
     -XX:NativeMemoryTracking=summary \
     -Xlog:all=warning:stdout:uptime,level,tags \
-    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof"
+    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/storage/dump.hprof \
+    -XX:OnOutOfMemoryError=/heapdump-rename.sh"
 ENV OR_JAVA_OPTS=${OR_JAVA_OPTS}
 
 # OpenMetrics _created series breaks cloudwatch prometheus scraper
@@ -172,4 +173,6 @@ HEALTHCHECK --interval=5s --timeout=60s --start-period=5s --retries=120 CMD curl
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+COPY heapdump-rename.sh /heapdump-rename.sh
+RUN chmod +x /heapdump-rename.sh
 ENTRYPOINT ["/entrypoint.sh"]
