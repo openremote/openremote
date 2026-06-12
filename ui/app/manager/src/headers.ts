@@ -140,7 +140,8 @@ export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(o
         icon: "database-export",
         value: "export",
         href: "data-export",
-        text: "dataExport"
+        text: "dataExport",
+        roles: ["read:assets"]
     };
 }
 
