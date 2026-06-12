@@ -1581,6 +1581,22 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
                 >
                   <or-translate value="save"></or-translate>
                 </or-vaadin-button>
+                <or-vaadin-button
+                  id="export-attribute-config-btn"
+                  ?disabled=${this.isModified() || !this._assetInfo?.asset.id}
+                  @click=${() => this._onExportAttributeConfigurationClicked()}
+                >
+                  <or-icon slot="prefix" icon="download"></or-icon>
+                  <or-translate value="export"></or-translate>
+                </or-vaadin-button>
+                <or-vaadin-button
+                  id="import-attribute-config-btn"
+                  ?disabled=${!this._assetInfo?.asset.id}
+                  @click=${() => this._onImportAttributeConfigurationClicked()}
+                >
+                  <or-icon slot="prefix" icon="upload"></or-icon>
+                  <or-translate value="import"></or-translate>
+                </or-vaadin-button>
               `
             )}
             ${when(
@@ -1607,6 +1623,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
     this.containerElem.scrollTop > 0
       ? this.headerElem.classList.add("scrolled")
       : this.headerElem.classList.remove("scrolled");
+  }
+
+  protected _onExportAttributeConfigurationClicked() {
+    // Dialog and backend integration are added in the next implementation phase.
+  }
+
+  protected _onImportAttributeConfigurationClicked() {
+    // Dialog and backend integration are added in the next implementation phase.
   }
 
   protected _isReadonly() {
