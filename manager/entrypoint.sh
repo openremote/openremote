@@ -10,4 +10,4 @@ if [ -n "$HEAP_DUMPS" ]; then
     echo "WARNING: Heap dump(s) found in /storage - remove them to free up disk space:"
     ls -lh /storage/dump_*.hprof
 fi
-exec java ${OR_JAVA_OPTS} -cp "/opt/app/lib/*:/deployment/manager/extensions/*" org.openremote.manager.Main
+exec java ${JAVA_OPTS} ${JAVA_OPTS_APPEND} -cp "/opt/app/lib/*:/deployment/manager/extensions/*" org.openremote.manager.Main
