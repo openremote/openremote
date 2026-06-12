@@ -1437,6 +1437,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             <or-vaadin-button id="save-btn" theme="primary" ?disabled=${!this.isModified()} @click=${() => this._onSaveClicked()}>
                                 <or-translate value="save"></or-translate>
                             </or-vaadin-button>
+                            <or-vaadin-button id="export-attribute-config-btn" ?disabled=${this.isModified() || !this._assetInfo?.asset.id} @click=${() => this._onExportAttributeConfigurationClicked()}>
+                                <or-icon slot="prefix" icon="download"></or-icon>
+                                <or-translate value="export"></or-translate>
+                            </or-vaadin-button>
+                            <or-vaadin-button id="import-attribute-config-btn" ?disabled=${!this._assetInfo?.asset.id} @click=${() => this._onImportAttributeConfigurationClicked()}>
+                                <or-icon slot="prefix" icon="upload"></or-icon>
+                                <or-translate value="import"></or-translate>
+                            </or-vaadin-button>
                         `)}
                         ${when(!this._isReadonly(), () => html`
                             <or-vaadin-button id="edit-btn" ?disabled=${!this._assetInfo?.asset.id} @click=${() => this._onEditToggleClicked(!this.editMode)}>
@@ -1453,6 +1461,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     protected _toggleHeaderShadow() {
         (this.containerElem.scrollTop > 0) ? this.headerElem.classList.add('scrolled') : this.headerElem.classList.remove('scrolled');
+    }
+
+    protected _onExportAttributeConfigurationClicked() {
+        // Dialog and backend integration are added in the next implementation phase.
+    }
+
+    protected _onImportAttributeConfigurationClicked() {
+        // Dialog and backend integration are added in the next implementation phase.
     }
 
     protected _isReadonly() {

@@ -48,3 +48,37 @@ ct("Should not show asset invalid error after switching assets", async ({ mount,
     await component.update({ props: { assetId: validId, editMode: true } });
     await expect(component).not.toContainText("Asset is not valid");
 });
+
+ct("Should show asset configuration import and export actions between save and view in modify mode", async ({ mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: validId, editMode: true },
+    });
+
+    await expect(component.locator("#export-attribute-config-btn")).toBeVisible();
+    await expect(component.locator("#import-attribute-config-btn")).toBeVisible();
+
+    const actionOrder = await component.locator("#right-wrapper").evaluate((wrapper) =>
+        Array.from(wrapper.querySelectorAll("or-vaadin-button")).map((button) => button.id)
+    );
+    expect(actionOrder).toEqual([
+        "save-btn",
+        "export-attribute-config-btn",
+        "import-attribute-config-btn",
+        "edit-btn",
+    ]);
+});
+
+ct("Should disable asset configuration export when there are unsaved changes", async ({ mount, assetViewer }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: validId, editMode: true },
+    });
+
+    const exportButton = component.locator("#export-attribute-config-btn");
+    await expect(exportButton).not.toBeDisabled();
+
+    await assetViewer.getAttributeValueLocator("notes").fill("changed notes");
+    await assetViewer.getAttributeValueLocator("notes").press("Enter");
+
+    await expect(component.locator("#save-btn")).not.toBeDisabled();
+    await expect(exportButton).toBeDisabled();
+});
