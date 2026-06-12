@@ -382,7 +382,10 @@ export class OrHeader extends LitElement {
                     </div>
                     <div id="mobile-right">
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
-                        ${when(secondaryItems, () => this._getSecondaryMenu([(mainItems ?? []), (secondaryItems ?? [])]))}
+                        ${when(secondaryItems, () => this._getSecondaryMenu([
+                            (mainItems?.filter(i => !i.hideMobile) ?? []),
+                            (secondaryItems?.filter(i => !i.hideMobile) ?? [])
+                        ]))}
                     </div>
                 </div>
             </div>
@@ -419,7 +422,7 @@ export class OrHeader extends LitElement {
                     <or-translate value=${s.text}></or-translate>
                 `)
             }));
-        })
+        });
         const flatItems: MenuBarItem[] = menuItems.flatMap((group, i) =>
             (i < menuItems.length - 1) ? [...group, {component: createMenuBarItem(html`<hr style="width: 100%; color: white;">`)}] : group
         );
@@ -434,9 +437,11 @@ export class OrHeader extends LitElement {
     }
 
     protected _onSecondaryMenuSelect(value: string) {
-        const headerItem = this.config!.secondaryMenu!.find((item) => item.value === value);
+        const headerItem = [...this.config!.mainMenu!, ...this.config!.secondaryMenu!].find((item) => item.value === value);
         if (headerItem) {
             this._onHeaderItemSelect(headerItem);
+        } else {
+            console.warn("Could not find header item to navigate towards.");
         }
     }
 

@@ -6,6 +6,7 @@ import { getMapRoute } from "./routes";
 export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "map",
+        value: "map",
         href: getMapRoute(),
         text: "map"
     };
@@ -14,6 +15,7 @@ export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orAp
 export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "rhombus-split",
+        value: "assets",
         href: "assets",
         text: "asset_plural",
     };
@@ -22,6 +24,7 @@ export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(o
 export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "puzzle",
+        value: "services",
         href: "services",
         text: "services",
         roles: ["read:services"]
@@ -31,6 +34,7 @@ export function headerItemServices<S extends AppStateKeyed, A extends AnyAction>
 export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "state-machine",
+        value: "rules",
         href: "rules",
         text: "rule_plural",
         hideMobile: true,
@@ -41,6 +45,7 @@ export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(or
 export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "chart-areaspline",
+        value: "insights",
         href: "insights",
         text: "insights"
     };
