@@ -1121,6 +1121,10 @@
       "REALM_RULESET": "Realm regels",
       "ASSET_RULESET": "Asset regels"
     },
+    "types": {
+      "push": "Push",
+      "email": "E-mail"
+    },
     "target": "Ontvanger",
     "targetType": "Ontvanger type",
     "urlToVisit": "URL om naartoe te gaan (optioneel)",

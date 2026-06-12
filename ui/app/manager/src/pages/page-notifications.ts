@@ -7,7 +7,6 @@ import {
     Notification,
     NotificationSource,
     NotificationTargetType,
-    PushNotificationMessage,
     SentNotification,
     User
 } from "@openremote/model";
@@ -17,7 +16,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AxiosError, isAxiosError} from "@openremote/rest";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {NotificationForm, NotificationFormData} from "../components/notifications/notification-form";
+import {NotificationForm} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
 import {NotificationTableClickEvent, OrNotificationsPageChangedEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
@@ -415,65 +414,30 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
     }
 
-    protected _getFormData(dialog: OrMwcDialog): NotificationFormData | null {
+    protected _getNotification(dialog: OrMwcDialog): Notification | null {
         const form = dialog.shadowRoot?.querySelector<NotificationForm>("notification-form");
         if (!form) {
             return null;
         }
 
-        const formData = form.getFormData();
+        const notification = form.getNotification();
 
         // validate required fields per schema
-        if (!formData?.name || !formData?.targetType || !formData?.targets) {
+        if (!notification) {
             showSnackbar(undefined, i18next.t("notifications.missingFields"));
             return null;
         }
-        return formData;
+        return notification;
     }
 
     protected async _handleCreateNotification(dialog: OrMwcDialog) {
-        const formData = this._getFormData(dialog);
-        if (!formData) {
+        const notification = this._getNotification(dialog);
+        if (!notification) {
             return;
         }
 
         try {
-            const buttons = [];
-            if (formData.openButtonText) {
-                buttons.push({
-                    title: formData.openButtonText,
-                    action: {
-                        url: formData.actionUrl,
-                        openInBrowser: true
-                    }
-                });
-            }
-            if (formData.closeButtonText) {
-                buttons.push({title: formData.closeButtonText});
-            }
-
-            const message: PushNotificationMessage = {
-                type: "push" as const,
-                title: formData.title,
-                body: formData.body,
-                data: {},
-                action: formData.actionUrl ? {
-                    url: formData.actionUrl,
-                    openInBrowser: true
-                } : undefined,
-                buttons: buttons.length > 0 ? buttons : undefined
-            };
-
-            const notification: Notification = {
-                name: formData.title,
-                message: message,
-                targets: formData.targets.map(id => ({
-                    id,
-                    type: formData.targetType,
-                }))
-            };
-
-            const response = await this.notificationService.sendNotification(notification);
+            await this.notificationService.sendNotification(notification);
 
             showSnackbar(undefined, i18next.t("notifications.successfullySentNotification"));
             dialog.close();
@@ -666,6 +630,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 ])
                 .setStyles(html`
                     <style>
+                        .mdc-dialog__surface {
+                            width: 1024px;
+                        }
+
                         .mdc-dialog__content {
                             padding: 0 !important;
                             border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
@@ -713,6 +681,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 ])
                 .setStyles(html`
                     <style>
+                        .mdc-dialog__surface {
+                            width: 1024px;
+                        }
+
                         .mdc-dialog__content {
                             padding: 0 !important;
                             border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;

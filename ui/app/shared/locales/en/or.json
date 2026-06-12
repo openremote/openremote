@@ -1129,6 +1129,10 @@
       "REALM_RULESET": "Realm ruleset",
       "ASSET_RULESET": "Asset ruleset"
     },
+    "types": {
+      "push": "Push",
+      "email": "Email"
+    },
     "target": "Recipient",
     "targetType": "Recipient type",
     "urlToVisit": "URL to visit (optional)",
