@@ -1,12 +1,12 @@
 import { ct } from "./fixtures";
 import { expect } from "@openremote/test";
 import { OrAssetViewer } from "@openremote/or-asset-viewer";
-import { validAsset, invalidAsset } from "./fixtures/data/asset";
+import { validAsset, invalidAsset, configuredAsset } from "./fixtures/data/asset";
 
 ct.beforeEach(async ({ shared }) => {
     await shared.locales();
     await shared.fonts();
-    await shared.registerAssets([validAsset, invalidAsset]);
+    await shared.registerAssets([validAsset, invalidAsset, configuredAsset]);
 });
 
 // Due to how the component tests resolve imports, imported data with an object reference gets
@@ -81,4 +81,46 @@ ct("Should disable asset configuration export when there are unsaved changes", a
 
     await expect(component.locator("#save-btn")).not.toBeDisabled();
     await expect(exportButton).toBeDisabled();
+});
+
+const configuredId = configuredAsset.id;
+ct("Should export selected asset attribute configuration", async ({ page, mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: configuredId, editMode: true },
+    });
+
+    let requestBody: unknown;
+    await page.route("**/api/master/asset/configuredAsset/attribute-config/export", async (route) => {
+        requestBody = route.request().postDataJSON();
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                version: 1,
+                assetType: "ThingAsset",
+                attributes: {
+                    notes: {
+                        type: "text",
+                        meta: { readOnly: true },
+                    },
+                },
+            }),
+        });
+    });
+
+    await component.locator("#export-attribute-config-btn").click();
+
+    const dialog = page.locator("or-mwc-dialog");
+    await expect(dialog).toContainText("Model");
+    await expect(dialog).toContainText("Notes");
+    await expect(dialog).toContainText("Read Only");
+    await expect(dialog).not.toContainText("Location");
+    await dialog.locator("or-vaadin-checkbox[label='Model (text)']").click();
+
+    const downloadPromise = page.waitForEvent("download");
+    await dialog.locator("[data-mdc-dialog-action='export']").click();
+    const download = await downloadPromise;
+
+    expect(requestBody).toEqual({ attributeNames: ["notes"] });
+    expect(download.suggestedFilename()).toBe("Configured Thing-attribute-config.json");
 });

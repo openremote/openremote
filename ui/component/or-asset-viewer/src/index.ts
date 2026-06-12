@@ -13,7 +13,7 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {type DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -136,6 +136,21 @@ interface UserAssetLinkInfo {
     userId: string;
     usernameAndId: string;
     restrictedUser: boolean;
+}
+
+interface AssetAttributeConfigurationExportRequest {
+    attributeNames: string[];
+}
+
+interface AssetAttributeConfigurationDocument {
+    version: number;
+    assetType?: string;
+    attributes: {[name: string]: AssetAttributeConfigurationEntry};
+}
+
+interface AssetAttributeConfigurationEntry {
+    type?: string;
+    meta?: {[name: string]: any};
 }
 
 interface AssetInfo {
@@ -1464,11 +1479,150 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     protected _onExportAttributeConfigurationClicked() {
-        // Dialog and backend integration are added in the next implementation phase.
+        const asset = this._assetInfo?.asset;
+        if (!asset?.id) {
+            return;
+        }
+
+        const exportableAttributes = this._getAttributeConfigurationExportCandidates(asset);
+        if (exportableAttributes.length === 0) {
+            showOkDialog("assetAttributeConfigurationExport", i18next.t("noAttributeConfigurationToExport"));
+            return;
+        }
+
+        const selectedAttributeNames = new Set(exportableAttributes.map((attribute) => attribute.name!));
+        let dialog: OrMwcDialog;
+        let exportAction: DialogAction;
+
+        const updateExportAction = () => {
+            exportAction.disabled = selectedAttributeNames.size === 0;
+            dialog.requestUpdate();
+        };
+
+        exportAction = {
+            actionName: "export",
+            content: "export",
+            action: () => this._exportAttributeConfiguration(asset, Array.from(selectedAttributeNames))
+        };
+
+        dialog = showDialog(new OrMwcDialog()
+            .setHeading("assetAttributeConfigurationExport")
+            .setContent(() => html`
+                <div id="asset-attribute-config-export">
+                    ${exportableAttributes.map((attribute) => {
+                        const attributeName = attribute.name!;
+                        return html`
+                            <div class="asset-attribute-config-export-attribute">
+                                <or-vaadin-checkbox
+                                    label=${this._getAttributeConfigurationAttributeLabel(asset, attribute)}
+                                    .checked=${selectedAttributeNames.has(attributeName)}
+                                    @change=${(ev: Event) => {
+                                        if ((ev.currentTarget as OrVaadinCheckbox).checked) {
+                                            selectedAttributeNames.add(attributeName);
+                                        } else {
+                                            selectedAttributeNames.delete(attributeName);
+                                        }
+                                        updateExportAction();
+                                    }}
+                                ></or-vaadin-checkbox>
+                                <ul>
+                                    ${this._getAttributeConfigurationMetaNames(attribute).map((metaName) => html`
+                                        <li>${this._getAttributeConfigurationMetaLabel(asset, metaName)}</li>
+                                    `)}
+                                </ul>
+                            </div>
+                        `;
+                    })}
+                </div>
+            `)
+            .setStyles(html`
+                <style>
+                    #asset-attribute-config-export {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 16px;
+                        min-width: 360px;
+                    }
+
+                    .asset-attribute-config-export-attribute {
+                        border-bottom: 1px solid var(--or-app-color5);
+                        padding-bottom: 12px;
+                    }
+
+                    .asset-attribute-config-export-attribute:last-child {
+                        border-bottom: 0;
+                        padding-bottom: 0;
+                    }
+
+                    .asset-attribute-config-export-attribute ul {
+                        margin: 4px 0 0 34px;
+                        padding: 0;
+                    }
+                </style>
+            `)
+            .setActions([
+                {
+                    actionName: "cancel",
+                    content: "cancel",
+                    default: true
+                },
+                exportAction
+            ])
+            .setDismissAction(null));
     }
 
     protected _onImportAttributeConfigurationClicked() {
         // Dialog and backend integration are added in the next implementation phase.
+    }
+
+    protected _getAttributeConfigurationExportCandidates(asset: Asset): Attribute<any>[] {
+        return Object.values(asset.attributes || {})
+            .filter((attribute) => !!attribute.name && !!attribute.meta && Object.keys(attribute.meta).length > 0)
+            .sort(Util.sortByString((attribute) => attribute.name!));
+    }
+
+    protected _getAttributeConfigurationMetaNames(attribute: Attribute<any>): string[] {
+        return Object.keys(attribute.meta || {}).sort();
+    }
+
+    protected _getAttributeConfigurationAttributeLabel(asset: Asset, attribute: Attribute<any>): string {
+        const descriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, asset.type!);
+        const label = Util.getAttributeLabel(attribute, descriptor, asset.type, false, attribute.name);
+        return attribute.type ? `${label} (${attribute.type})` : label;
+    }
+
+    protected _getAttributeConfigurationMetaLabel(asset: Asset, metaName: string): string {
+        const descriptor = AssetModelUtil.getMetaItemDescriptor(metaName);
+        return Util.getMetaLabel(undefined, descriptor || metaName, asset.type, false, metaName);
+    }
+
+    protected async _exportAttributeConfiguration(asset: Asset, attributeNames: string[]) {
+        try {
+            const request: AssetAttributeConfigurationExportRequest = {attributeNames};
+            const response = await manager.rest.axiosInstance.post<AssetAttributeConfigurationDocument>(
+                `asset/${asset.id}/attribute-config/export`,
+                request
+            );
+            this._downloadAttributeConfiguration(asset, response.data);
+            showSnackbar(undefined, "attributeConfigurationExported");
+        } catch (e) {
+            console.error("Failed to export asset attribute configuration", e);
+            showSnackbar(undefined, "errorOccurred");
+        }
+    }
+
+    protected _downloadAttributeConfiguration(asset: Asset, document: AssetAttributeConfigurationDocument) {
+        const data = JSON.stringify(document, undefined, 2);
+        const url = window.URL.createObjectURL(new Blob([data], {type: "application/json"}));
+        const link = window.document.createElement("a");
+        link.href = url;
+        link.download = `${asset.name || asset.id || "asset"}-attribute-config.json`;
+        window.document.body.appendChild(link);
+        link.click();
+        window.setTimeout(() => {
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        }, 0);
     }
 
     protected _isReadonly() {

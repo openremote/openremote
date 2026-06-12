@@ -10,6 +10,17 @@ export const validAsset: Asset = {
     type: "ThingAsset",
     attributes: { ...commonAttrs },
 };
+export const configuredAsset: Asset = {
+    id: "configuredAsset",
+    name: "Configured Thing",
+    realm: "master",
+    type: "ThingAsset",
+    attributes: {
+        notes: { ...notes, meta: { readOnly: true } },
+        model: { name: "model", type: "text", meta: { label: "Model" } },
+        location,
+    },
+};
 export const invalidAsset: Asset = {
     id: "invalidAsset",
     name: "Thing",

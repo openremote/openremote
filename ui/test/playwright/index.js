@@ -57,6 +57,7 @@ manager.init = async () => {
         unsubscribe: async () => "",
         unsubscribeStatusChange: () => null,
     };
+    manager.rest.initialise("/api/master/");
     // Similar to `manager.doDescriptorsInit`, but without requesting the API
     AssetModelUtil._assetTypeInfos = [thingAssetInfo];
     AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptors);
