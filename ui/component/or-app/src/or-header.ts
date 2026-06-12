@@ -135,6 +135,8 @@ export class OrHeader extends LitElement {
             
             #mobile-right {
                 display: flex;
+                padding-right: 4px;
+                gap: 4px;
                 align-items: center;
                 margin-left: auto;
                 --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
