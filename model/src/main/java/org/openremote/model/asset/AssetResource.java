@@ -344,6 +344,65 @@ public interface AssetResource {
                               value = ASSET_UPDATE)))
           Asset<?> asset);
 
+  @POST
+  @Path("{assetId}/attribute-config/export")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.READ_ASSETS_ROLE})
+  @Operation(
+      operationId = "exportAssetAttributeConfiguration",
+      summary = "Export asset attribute configuration",
+      description =
+          "Returns a versioned JSON document containing metadata and value types for selected configured attributes on one asset.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.Authenticated
+  @OpenApiResponses.BadRequest
+  @OpenApiResponses.Forbidden
+  @OpenApiResponses.NotFound
+  AssetAttributeConfigurationDocument exportAttributeConfiguration(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId")
+          String assetId,
+      @RequestBody(
+              description =
+                  "Optional export settings. When attribute names are supplied, only matching configured attributes are included.",
+              content =
+                  @Content(
+                      mediaType = APPLICATION_JSON,
+                      schema =
+                          @Schema(implementation = AssetAttributeConfigurationExportRequest.class)))
+          AssetAttributeConfigurationExportRequest request);
+
+  @POST
+  @Path("{assetId}/attribute-config/import/preview")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+  @Operation(
+      operationId = "previewAssetAttributeConfigurationImport",
+      summary = "Preview asset attribute configuration import",
+      description =
+          "Validates an attribute configuration document against the supplied asset draft and returns the metadata patch that can be applied client-side.")
+  @OpenApiResponses.Ok
+  @OpenApiResponses.Authenticated
+  @OpenApiResponses.BadRequest
+  @OpenApiResponses.Forbidden
+  @OpenApiResponses.NotFound
+  AssetAttributeConfigurationImportPreview previewAttributeConfigurationImport(
+      @BeanParam RequestParams requestParams,
+      @Parameter(description = ASSET_ID, example = EXAMPLE_ASSET_ID) @PathParam("assetId")
+          String assetId,
+      @RequestBody(
+              required = true,
+              description =
+                  "Current asset draft and imported configuration document to validate before applying in the Modify view.",
+              content =
+                  @Content(
+                      mediaType = APPLICATION_JSON,
+                      schema =
+                          @Schema(implementation = AssetAttributeConfigurationImportRequest.class)))
+          AssetAttributeConfigurationImportRequest request);
+
   /**
    * Updates an attribute of an asset. Regular users can only update assets in their authenticated
    * realm, the superuser can update assets in other (all) realms. A 403 status is returned if a
