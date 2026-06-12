@@ -45,6 +45,24 @@ export class OrNotificationsTable extends OrMwcTable {
             return [
                 ...super.styles,
                 css`
+                :host {
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 0;
+                }
+
+                /* Size the table to its rows; the host height only acts as an upper bound */
+                .mdc-data-table,
+                .mdc-data-table__paginated {
+                    max-height: none;
+                    min-height: 0;
+                }
+
+                /* Scroll rows within the table so the pagination footer stays visible when space runs out */
+                .mdc-data-table__table-container {
+                    overflow-y: auto;
+                }
+
                 .notification-container {
                     padding: 20px;
                     margin: 0 20px;

@@ -208,8 +208,17 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 }
 
                 #table-container {
-                    margin-left: 20px;
-                    margin-right: 20px;
+                    flex: 1;
+                    min-height: 0;
+                    display: flex;
+                    flex-direction: column;
+                    margin: 0 20px 20px 20px;
+                }
+
+                /* Table sizes to its rows but may shrink (and scroll internally) when it hits the bottom of the page */
+                #table-container or-notifications-table {
+                    flex: 0 1 auto;
+                    min-height: 0;
                 }
 
                 /* Dialog and form specific styles */
