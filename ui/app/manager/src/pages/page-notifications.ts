@@ -591,13 +591,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
 
-    protected _renderForm(notification?: SentNotification) {
+    protected _renderForm(notification?: SentNotification, onChange?: (ev: Event) => void) {
         if (!notification) {
             return html`
                 <div class="dialog-content">
                     <notification-form
                             id="notificationForm"
-                            ?disabled="${false}">
+                            ?disabled="${false}"
+                            @notification-form-changed="${onChange}">
                     </notification-form>
                 </div>
             `
@@ -616,10 +617,21 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected async _showCreateDialog() {
         await customElements.whenDefined('notification-form');
 
+        // Re-evaluate form validity on every form change and enable/disable the create button accordingly
+        const onFormChanged = (ev: Event) => {
+            const form = ev.target as NotificationForm;
+            const shouldDisable = !form.getNotification();
+            const createAction = dialog.actions?.find(action => action.actionName === "create");
+            if (createAction && createAction.disabled !== shouldDisable) {
+                createAction.disabled = shouldDisable;
+                dialog.requestUpdate();
+            }
+        };
+
         const dialog = showDialog(
             new OrMwcDialog()
                 .setHeading(i18next.t("notifications.createNotification"))
-                .setContent(this._renderForm())
+                .setContent(this._renderForm(undefined, onFormChanged))
                 // .setDismissAction(null)
                 .setActions([
                     {
@@ -633,6 +645,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     {
                         actionName: "create",
                         content: i18next.t("create"),
+                        disabled: true,
                         action: async () => this._handleCreateNotification(dialog)
                         // note: _loadData is already called in _handleCreateNotification
                     }

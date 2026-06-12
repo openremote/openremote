@@ -23,6 +23,17 @@ import {ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-
 
 export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
 
+export class NotificationFormChangedEvent extends CustomEvent<void> {
+    static readonly NAME = "notification-form-changed";
+
+    constructor() {
+        super(NotificationFormChangedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 @customElement("notification-form")
 export class NotificationForm extends LitElement {
     static styles = css`
@@ -227,6 +238,10 @@ export class NotificationForm extends LitElement {
     updated(changedProps: Map<string, any>) {
         if (changedProps.has('notification') && this.notification) {
             this._populateFromNotification()
+        }
+        // Notify listeners (e.g. the create dialog) so they can re-evaluate form validity
+        if (!this.readonly) {
+            this.dispatchEvent(new NotificationFormChangedEvent());
         }
     }
 
