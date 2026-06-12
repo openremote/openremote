@@ -321,4 +321,62 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
     }
 
+    def "Restricted users cannot get datapoint periods for linked non-restricted attributes"() {
+        given: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class)
+
+        and: "a linked asset has historical data for an attribute that is not restricted-readable"
+        assetDatapointService.purgeDataPoints()
+        def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
+        def attributeName = "nonRestrictedHistoryPeriod"
+        asset.getAttributes().addOrReplace(new Attribute<>(attributeName, NUMBER, 0d))
+        assetStorageService.merge(asset)
+
+        def dateTime = LocalDateTime.now()
+        assetDatapointService.upsertValues(
+                asset.getId(),
+                attributeName,
+                [new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)]
+        )
+
+        and: "a restricted user is authenticated in the asset realm"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+
+        when: "the restricted user requests the historical datapoint period"
+        def response = null
+        def encodedAssetId = URLEncoder.encode(asset.id, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        def encodedAttributeName = URLEncoder.encode(attributeName, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        def baseUri = serverUri(serverPort).clone()
+                .replacePath(ManagerWebService.API_PATH)
+                .path(keycloakTestSetup.realmBuilding.name)
+                .path("asset")
+                .path("datapoint")
+                .path("periods")
+                .build()
+        def url = new URL("${baseUri}?assetId=${encodedAssetId}&attributeName=${encodedAttributeName}")
+        response = (HttpURLConnection) url.openConnection()
+        response.setRequestMethod("GET")
+        response.setRequestProperty("Authorization", "Bearer ${accessToken}")
+        response.setRequestProperty("Accept", "application/json")
+        response.connect()
+
+        then: "the period endpoint should apply the same restricted attribute check"
+        response.responseCode == 403
+
+        cleanup:
+        if (response != null) {
+            response.disconnect()
+        }
+    }
+
 }
