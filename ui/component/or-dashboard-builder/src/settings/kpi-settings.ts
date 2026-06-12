@@ -1,11 +1,32 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
 import {KpiWidgetConfig} from "../widgets/kpi-widget";
 import {AttributesSelectEvent} from "../panels/attributes-panel";
-import {Attribute, AttributeRef} from "@openremote/model";
+import {Attribute} from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 const styling = css`
   .switchMwcInputContainer {
@@ -40,11 +61,10 @@ export class KpiSettings extends AssetWidgetSettings {
                 <!-- Display settings -->
                 <settings-panel displayName="display" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
-                                      .options="${['year', 'month', 'week', 'day', 'hour']}"
-                                      .value="${this.widgetConfig.period}" label="${i18next.t('timeframe')}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeframeSelect(ev)}"
-                        ></or-mwc-input>
+                        <or-vaadin-select .items=${['year', 'month', 'week', 'day', 'hour'].map(i => ({value: i, label: i18next.t(i)}))}
+                                          value=${this.widgetConfig.period} @change=${(ev: Event) => this.onTimeframeSelect(ev)}>
+                            <or-translate slot="label" value="timeframe"></or-translate>
+                        </or-vaadin-select>
                         <div class="switchMwcInputContainer">
                             <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showTimestampControls}"
@@ -56,13 +76,14 @@ export class KpiSettings extends AssetWidgetSettings {
 
                 <settings-panel displayName="values" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${this.widgetConfig.deltaFormat}"
-                                      label="${i18next.t('dashboard.showValueAs')}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDeltaFormatSelect(ev)}"
-                        ></or-mwc-input>
-                        <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t('decimals')}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDecimalsChange(ev)}"
-                        ></or-mwc-input>
+                        <or-vaadin-select .items=${['absolute', 'percentage'].map(i => ({value: i, label: i18next.t(i)}))}
+                                          value=${this.widgetConfig.deltaFormat} @change=${(ev: Event) => this.onDeltaFormatSelect(ev)}>
+                            <or-translate slot="label" value="dashboard.showValueAs"></or-translate>
+                        </or-vaadin-select>
+                        <or-vaadin-number-field value=${this.widgetConfig.decimals} min="0"
+                                                @change=${(ev: Event) => this.onDecimalsChange(ev)}>
+                            <or-translate slot="label" value="decimals"></or-translate>
+                        </or-vaadin-number-field>
                     </div>
                 </settings-panel>
 
@@ -83,8 +104,8 @@ export class KpiSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onTimeframeSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.period = ev.detail.value;
+    protected onTimeframeSelect(ev: Event) {
+        this.widgetConfig.period = (ev.currentTarget as OrVaadinSelect).value as any;
         this.notifyConfigUpdate();
     }
 
@@ -93,14 +114,17 @@ export class KpiSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onDeltaFormatSelect(ev: OrInputChangedEvent) {
-        this.widgetConfig.deltaFormat = ev.detail.value;
+    protected onDeltaFormatSelect(ev: Event) {
+        this.widgetConfig.deltaFormat = (ev.currentTarget as OrVaadinSelect).value as any;
         this.notifyConfigUpdate();
     }
 
-    protected onDecimalsChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.decimals = ev.detail.value;
-        this.notifyConfigUpdate();
+    protected onDecimalsChange(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinNumberField;
+        if(elem.checkValidity()) {
+            this.widgetConfig.decimals = Number(elem.value);
+            this.notifyConfigUpdate();
+        }
     }
 
 }

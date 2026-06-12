@@ -7,7 +7,7 @@ export class AssetTree {
      * Returns a locator of the filter input
      */
     getFilterInput() {
-        return this.page.locator(`or-asset-tree #filterInput input[type="text"]`);
+        return this.page.locator("or-asset-tree #filterInput").getByRole("textbox");
     }
 
     /**

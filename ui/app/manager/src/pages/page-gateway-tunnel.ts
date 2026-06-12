@@ -7,13 +7,14 @@ import {Task} from "@lit/task";
 import {Store} from "@reduxjs/toolkit";
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, manager} from "@openremote/core";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Asset, AssetQuery, GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
 import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {getAssetsRoute} from "../routes";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import moment from "moment";
+import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 
 export function pageGatewayTunnelProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -129,10 +130,13 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
                         <or-translate value="tunnels"></or-translate>
-                        <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
-                                      label="${i18next.t('add')} ${i18next.t("tunnel")}"
-                                      @or-mwc-input-changed="${(ev) => this._onAddTunnelClick(ev)}"
-                        ></or-mwc-input>
+                        <or-vaadin-button @click=${() => this._onAddTunnelClick()}>
+                            <or-icon slot="prefix" icon="plus"></or-icon>
+                            <span>
+                                <or-translate value="add"></or-translate>
+                                <or-translate value="tunnel"></or-translate>
+                            </span>
+                        </or-vaadin-button>
                     </div>
                     ${this._fetchTunnelsTask.render({
                         pending: () => html`${i18next.t('loading')}`,
@@ -200,11 +204,17 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     protected async _getTunnelActionsTemplate(tunnel: GatewayTunnelInfo): Promise<TemplateResult | string> {
         return html`
             <div style="display: flex; justify-content: end; align-items: center; gap: 12px;">
-                <or-mwc-input .type="${InputType.BUTTON}" icon="stop" @or-mwc-input-changed="${(ev) => this._onStopTunnelClick(ev, tunnel)}"></or-mwc-input>
+                <or-vaadin-button theme="icon" @click=${(ev: Event) => this._onStopTunnelClick(ev, tunnel)}>
+                    <or-icon icon="stop"></or-icon>
+                </or-vaadin-button>
                 ${when(tunnel.type === GatewayTunnelInfoType.TCP, () => html`
-                    <or-mwc-input .type="${InputType.BUTTON}" outlined label="${i18next.t('gatewayTunnels.copyAddress')}" @or-mwc-input-changed="${(ev) => this._onCopyTunnelAddressClick(ev, tunnel)}"></or-mwc-input>
+                    <or-vaadin-button @click=${(ev: Event) => this._onCopyTunnelAddressClick(ev, tunnel)}>
+                        <or-translate value="gatewayTunnels.copyAddress"></or-translate>
+                    </or-vaadin-button>
                 `, () => html`
-                    <or-mwc-input .type="${InputType.BUTTON}" outlined label="${i18next.t('gatewayTunnels.open')}" @or-mwc-input-changed="${(ev) => this._onOpenTunnelClick(ev, tunnel)}"></or-mwc-input>
+                    <or-vaadin-button @click=${(ev: Event) => this._onOpenTunnelClick(ev, tunnel)}>
+                        <or-translate value="gatewayTunnels.open"></or-translate>
+                    </or-vaadin-button>
                 `)}
             </div>
         `
@@ -214,7 +224,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event of the 'stop' button in the tunnels table,
      * meant to stop and delete the constructed tunnel.
      */
-    protected _onStopTunnelClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo) {
+    protected _onStopTunnelClick(ev: Event, tunnel: GatewayTunnelInfo) {
         ev.stopPropagation();
         showOkCancelDialog(
             i18next.t("areYouSure"),
@@ -249,7 +259,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event for the 'copy address' button in the tunnels table,
      * meant for TCP addresses to be copied to the browsers' clipboard.
      */
-    protected _onCopyTunnelAddressClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
+    protected _onCopyTunnelAddressClick(ev: Event, tunnel: GatewayTunnelInfo): void {
         const address = this._getTunnelAddress(tunnel);
         if(address) {
             navigator.clipboard.writeText(address).finally(() => {
@@ -265,7 +275,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event of the 'open' button in the tunnels table,
      * meant to start tunneling towards that instance
      */
-    protected _onOpenTunnelClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
+    protected _onOpenTunnelClick(ev: Event, tunnel: GatewayTunnelInfo): void {
         this._navigateToTunnel(tunnel);
     }
 
@@ -273,7 +283,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * HTML callback event of the 'add' button above the tunnels table,
      * meant to start a tunnel towards that instance.
      */
-    protected _onAddTunnelClick(ev: OrInputChangedEvent) {
+    protected _onAddTunnelClick() {
         const tunnel = this._getDefaultTunnelToAdd();
         let dialog: OrMwcDialog | undefined;
 
@@ -288,34 +298,38 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         }
         const gatewayListTemplate = async (): Promise<TemplateResult> => {
             const gatewayAssets = await this._fetchGatewayAssets();
-            const items = gatewayAssets.map((g) => [g.id, g.name]);
+            const items: {value: any, label: string}[] = gatewayAssets.map(g => ({value: g.id, label: g.name }));
+            const types: {value: any, label: string}[] = this.GATEWAY_TUNNEL_PROTOCOL_TYPES.map(g => ({value: g, label: String(g)}))
             return html`
                 <div style="display: flex; flex-direction: column; gap: 20px; width: 360px;">
-                    <or-mwc-input .type="${InputType.SELECT}" .options="${items}" .value="${tunnel.gatewayId}" label="${i18next.t('gatewayTunnels.selectAsset')}" style="width: 100%;"
-                                  @or-mwc-input-changed="${(ev) => {
-                                      tunnel.gatewayId = ev.detail.value;
-                                      updateActions();
-                                  }}"
-                    ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('gatewayTunnels.protocol')}" .value="${tunnel.type}" .options="${this.GATEWAY_TUNNEL_PROTOCOL_TYPES}"
-                                  style="width: 100%"
-                                  @or-mwc-input-changed="${(ev) => {
-                                      tunnel.type = ev.detail.value;
-                                      updateActions();
-                                  }}"
-                    ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('host')}" .value="${tunnel.target}" style="width: 100%;"
-                                  @or-mwc-input-changed="${(ev) => {
-                                      tunnel.target = ev.detail.value;
-                                      updateActions();
-                                  }}"
-                    ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('port')}" .value="${tunnel.targetPort}" style="width: 100%"
-                                  @or-mwc-input-changed="${(ev) => {
-                                      tunnel.targetPort = ev.detail.value;
-                                      updateActions();
-                                  }}"
-                    ></or-mwc-input>
+                    <or-vaadin-combo-box .items=${items} value="${tunnel.gatewayId}"
+                                         @change=${(ev: Event) => {
+                                             tunnel.gatewayId = (ev.currentTarget as OrVaadinComboBox).value;
+                                             updateActions();
+                                         }}>
+                        <or-translate slot="label" value="gatewayTunnels.selectAsset"></or-translate>
+                    </or-vaadin-combo-box>
+                    <or-vaadin-select .items=${types} value=${tunnel.type}
+                                      @change=${(ev: Event) => {
+                                          tunnel.type = (ev.currentTarget as OrVaadinSelect).value as GatewayTunnelInfoType;
+                                          updateActions();
+                                      }}>
+                        <or-translate slot="label" value="gatewayTunnels.protocol"></or-translate>
+                    </or-vaadin-select>
+                    <or-vaadin-text-field value=${tunnel.target} @change=${(ev: Event) => {
+                        tunnel.target = (ev.currentTarget as HTMLInputElement).value;
+                        updateActions();
+                    }}>
+                        <or-translate slot="label" value="host"></or-translate>
+                    </or-vaadin-text-field>
+                    <or-vaadin-number-field value=${tunnel.targetPort} min="0" step="1" @change=${(ev: Event) => {
+                        const value = (ev.currentTarget as HTMLInputElement).value;
+                        tunnel.targetPort = value ? Number(value) : undefined;
+                        updateActions();
+                    }}>
+                        <or-translate slot="label" value="port"></or-translate>
+                        
+                    </or-vaadin-number-field>
                 </div>
             `
         }
@@ -422,7 +436,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             this._updateRefreshTimer(response.data);
             return response.data;
         } else {
-            console.warn("No tunnels were received from the manager.")
+            console.warn("No tunnels were received from the manager.");
         }
     }
 
