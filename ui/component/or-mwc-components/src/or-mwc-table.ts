@@ -309,8 +309,12 @@ export class OrMwcTable extends LitElement {
             "mdc-data-table__fullheight": !!this.config.fullHeight,
             "has-sticky-first-column": !!this.config.stickyFirstColumn
         }
-        // Only show pagination if enabled in config, and when "the amount of rows doesn't fit on the page".
-        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || ((this.totalCount ?? this.rows?.length ?? 0) > this.paginationSize));
+        // Only show pagination if enabled in config, and when the amount of rows doesn't fit on the page using the
+        // smallest page size available; comparing against the smallest size (rather than the selected one) ensures the
+        // rows-per-page control stays visible after selecting a page size larger than the row count.
+        const paginationOptions = this.config.pagination?.options || [10, 25, 100];
+        const minPageSize = Math.min(...paginationOptions, this.paginationSize);
+        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || ((this.totalCount ?? this.rows?.length ?? 0) > minPageSize));
         const tableWidth = this.shadowRoot?.firstElementChild?.clientWidth;
         return html`
             <div class="${classMap(tableClasses)}">
@@ -435,7 +439,7 @@ export class OrMwcTable extends LitElement {
                 </div>
                 <!-- Pagination HTML, shown on the bottom right. Same as Material Design spec -->
                 ${when(showPagination, () => {
-                    const options = this.config.pagination?.options || [10, 25, 100];
+                    const options = paginationOptions;
                     return html`
                         <div class="mdc-data-table__pagination">
                             <div class="mdc-data-table__pagination-trailing">
