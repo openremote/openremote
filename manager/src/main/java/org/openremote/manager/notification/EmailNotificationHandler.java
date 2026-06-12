@@ -58,6 +58,7 @@ public class EmailNotificationHandler implements NotificationHandler {
     protected Map<String, String> headers;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
+    protected boolean devMode;
 
     @Override
     public int getPriority() {
@@ -69,6 +70,7 @@ public class EmailNotificationHandler implements NotificationHandler {
 
         managerIdentityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        devMode = container.isDevMode();
 
         // Configure SMTP
         String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);
@@ -176,7 +178,8 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     @Override
     public boolean isValid() {
-        return mailTransport != null;
+        // In dev mode the handler is always valid so notifications are processed and persisted even without SMTP config
+        return mailTransport != null || devMode;
     }
 
     @Override
@@ -308,6 +311,13 @@ public class EmailNotificationHandler implements NotificationHandler {
         if (!addresses.isEmpty()) {
             mappedTargets.add(new Notification.Target(Notification.TargetType.CUSTOM, String.join(";", addresses)));
         }
+
+        if (devMode && mappedTargets.isEmpty() && targets != null && !targets.isEmpty()) {
+            // Keep the no-targets behaviour identical to production but make the dropped notification visible
+            LOG.info("Dev mode: no email recipients mapped for email notification, original targets=["
+                + targets.stream().map(Object::toString).collect(Collectors.joining(",")) + "], message=" + message);
+        }
+
         return mappedTargets;
     }
 
@@ -394,6 +404,11 @@ public class EmailNotificationHandler implements NotificationHandler {
     }
 
     protected void sendMessage(Message email) throws Exception {
+        if (devMode && mailTransport == null) {
+            // SMTP not configured; log the notification instead of sending so the sent record is still created
+            LOG.info("Dev mode: SMTP not configured so skipping email notification send: " + email);
+            return;
+        }
         if (!mailTransport.isConnected()) {
             mailTransport.connect();
         }

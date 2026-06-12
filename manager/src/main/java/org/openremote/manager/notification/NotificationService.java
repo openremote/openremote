@@ -21,6 +21,7 @@ package org.openremote.manager.notification;
 
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -75,7 +76,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     protected ExecutorService executorService;
     protected ClientEventService clientEventService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
-    protected boolean devMode;
 
     @Override
     public int getPriority() {
@@ -84,7 +84,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     @Override
     public void init(Container container) throws Exception {
-        this.devMode = container.isDevMode();
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
@@ -160,7 +159,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     if (handler == null) {
                         throw new NotificationProcessingException(UNSUPPORTED_MESSAGE_TYPE, "No handler for message type: " + notification.getMessage().getType());
                     }
-                    if (!devMode && !handler.isValid()) {
+                    if (!handler.isValid()) {
                         throw new NotificationProcessingException(NOTIFICATION_HANDLER_CONFIG_ERROR, "Handler is not valid: " + handler.getTypeName());
                     }
                     if (!handler.isMessageValid(notification.getMessage())) {
@@ -226,30 +225,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     // Check access permissions
                     checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
 
-                    // In dev mode skip handler target resolution and persist original targets directly
-                    if (devMode) {
-                        List<Notification.Target> targets = notification.getTargets();
-                        if (targets == null || targets.isEmpty()) {
-                            throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
-                        }
-                        Instant now = timerService.getNow();
-                        targets.forEach(target -> {
-                            String targetRealm = resolveTargetRealm(target, notificationRealm.get());
-                            persistenceService.doTransaction(em -> em.merge(new SentNotification()
-                                .setName(notification.getName())
-                                .setType(notification.getMessage().getType())
-                                .setSource(source)
-                                .setSourceId(sourceId.get())
-                                .setTarget(target.getType())
-                                .setTargetId(target.getId())
-                                .setMessage(notification.getMessage())
-                                .setRealm(targetRealm)
-                                .setSentOn(now)));
-                        });
-                        exchange.getMessage().setBody(true);
-                        return;
-                    }
-
                     // Get the list of notification targets
                     List<Notification.Target> mappedTargetsList = handler.getTargets(source, sourceId.get(), notification.getTargets(), notification.getMessage());
 
@@ -283,7 +258,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
                                     .setMessage(notification.getMessage())
-                                    .setRealm(notificationRealm.get() != null ? notificationRealm.get() : "master")
+                                    .setRealm(resolveTargetRealm(target, notificationRealm.get()))
                                     .setSentOn(timerService.getNow());
 
                                 sentNotification = em.merge(sentNotification);
@@ -334,30 +309,36 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             .logStackTrace(false)
             .handled(true)
             .process(exchange -> {
-                // Just notify sender in case of RequestReply
+                // Log the failure reason; notify sender in case of RequestReply
+                Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                if (exception instanceof NotificationProcessingException) {
+                    LOG.warning("Notification processing failed: " + exception.getMessage());
+                } else {
+                    LOG.log(Level.WARNING, "Notification processing failed", exception);
+                }
                 exchange.getMessage().setBody(false);
             });
     }
 
-    protected String resolveTargetRealm(Notification.Target target, String fallback) {
+    /**
+     * Resolves the realm a {@link SentNotification} should be stored against from its target so cross-realm
+     * notifications are visible in the recipient's realm; falls back to the sender's realm when the target
+     * cannot be resolved (e.g. {@link Notification.TargetType#CUSTOM} targets).
+     */
+    protected String resolveTargetRealm(Notification.Target target, String fallbackRealm) {
         switch (target.getType()) {
             case REALM:
                 return target.getId();
             case USER:
                 User user = identityService.getIdentityProvider().getUser(target.getId());
-                if (user != null && user.getRealm() != null) {
-                    return user.getRealm();
-                }
-                throw new NotificationProcessingException(MISSING_TARGETS, "Cannot resolve realm for user target: " + target.getId());
+                if (user != null && user.getRealm() != null) return user.getRealm();
+                break;
             case ASSET:
                 Asset<?> asset = assetStorageService.find(target.getId(), false);
-                if (asset != null) {
-                    return asset.getRealm();
-                }
-                throw new NotificationProcessingException(MISSING_TARGETS, "Cannot resolve realm for asset target: " + target.getId());
-            default:
-                throw new NotificationProcessingException(MISSING_TARGETS, "Cannot resolve realm for target type: " + target.getType());
+                if (asset != null) return asset.getRealm();
+                break;
         }
+        return fallbackRealm != null ? fallbackRealm : "master";
     }
 
     public boolean sendNotification(Notification notification) {
