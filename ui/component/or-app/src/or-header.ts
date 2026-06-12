@@ -160,7 +160,7 @@ export class OrHeader extends LitElement {
                 cursor: pointer;
                 text-decoration: none !important;         
                 color: inherit;       
-                padding: 0 20px;
+                padding: 0 10px;
                 font-size: 14px;       
             }        
             
@@ -208,7 +208,7 @@ export class OrHeader extends LitElement {
             }
           
             #realm-picker {
-                min-width: 160px;
+                min-width: 140px;
             }
             
             /* Hides the default menu bar content (three horizontal dots) and replace it ourselves using the slot="prefix" */
@@ -255,6 +255,10 @@ export class OrHeader extends LitElement {
                 #logo-mobile {
                     display: none;
                 }
+
+                #realm-picker {
+                    min-width: 160px;
+                }
                 
                 #desktop-left ::slotted(*) {
                     display: inline-block;
@@ -263,6 +267,10 @@ export class OrHeader extends LitElement {
                 #desktop-left ::slotted(*[selected]) {                
                     border-bottom: 4px solid var(--internal-or-header-selected-color);
                     line-height: calc(var(--internal-or-header-height) - 4px);
+                }
+
+                .menu-item {
+                    padding: 0 20px;
                 }
             }
             
