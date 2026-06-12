@@ -21,7 +21,6 @@ import {i18next, translate} from "@openremote/or-translate";
 import {html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import {style} from "./or-rule-viewer";
-import { InputType, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesGroupNameChangeEvent} from "./index";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 

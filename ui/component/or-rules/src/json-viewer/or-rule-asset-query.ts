@@ -19,7 +19,6 @@ import {
     AssetModelUtil, AssetQuery
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
-import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";

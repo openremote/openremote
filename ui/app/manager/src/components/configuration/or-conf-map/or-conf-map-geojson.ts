@@ -4,7 +4,6 @@ import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
 import { OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("or-conf-map-geojson")
 export class OrConfMapGeoJson extends LitElement {

@@ -367,7 +367,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                                               <or-translate value="delete"></or-translate>
                                           </or-vaadin-button>
                                       ` : ``}
-                                      <or-vaadin-button theme="primary" @click=${() => this._updateRealm(realm)}>
+                                      <or-vaadin-button theme="primary" style="margin-left: auto;" @click=${() => this._updateRealm(realm)}>
                                           <or-translate value="save"></or-translate>
                                       </or-vaadin-button>
                                   ` : !readonly ? html`

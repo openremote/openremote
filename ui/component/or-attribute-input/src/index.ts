@@ -19,7 +19,9 @@ import {
     ValueConstraintAllowedValues
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
+import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-input";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";

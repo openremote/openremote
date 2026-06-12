@@ -34,7 +34,6 @@ import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-scheduler";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {i18next, translate} from "@openremote/or-translate"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";

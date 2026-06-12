@@ -25,7 +25,6 @@ import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-di
 import { createRef, Ref, ref } from "lit/directives/ref.js";
 import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
 import { ManagerAppConfig, MapConfig } from "@openremote/model";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("or-conf-json")
 export class OrConfJson extends LitElement {
