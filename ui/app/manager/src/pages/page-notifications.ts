@@ -32,7 +32,7 @@ const sources = [
 
 export class NotificationService {
 
-    async getNotifications(realm: string, fromDate?: number, toDate?: number, offset?: number, limit?: number): Promise<SentNotification[]> {
+    async getNotifications(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource, offset?: number, limit?: number): Promise<SentNotification[]> {
         try {
             const timeRange = fromDate && toDate ?
                 {fromDate, toDate} :
@@ -44,6 +44,7 @@ export class NotificationService {
                     from: timeRange.fromDate,
                     to: timeRange.toDate,
                     realmId: realm,
+                    source,
                     offset,
                     limit
                 });
@@ -61,7 +62,7 @@ export class NotificationService {
         }
     }
 
-    async getNotificationsCount(realm: string, fromDate?: number, toDate?: number): Promise<number> {
+    async getNotificationsCount(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource): Promise<number> {
         try {
             const timeRange = fromDate && toDate ?
                 {fromDate, toDate} :
@@ -72,7 +73,8 @@ export class NotificationService {
                 {
                     from: timeRange.fromDate,
                     to: timeRange.toDate,
-                    realmId: realm
+                    realmId: realm,
+                    source
                 });
 
             return typeof response.data === 'number' ? response.data : 0;
@@ -400,11 +402,16 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 this._selectedSource = "ALL_SOURCES"
             }
 
+            // Filter on source in the query so it applies to all pages rather than the current one
+            const source = this._selectedSource && this._selectedSource !== "ALL_SOURCES"
+                ? this._selectedSource as NotificationSource
+                : undefined;
+
             const offset = this._currentPage * this._pageSize;
 
             const [data, count] = await Promise.all([
-                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, offset, this._pageSize),
-                this.notificationService.getNotificationsCount(this.realm, timeRange.fromDate, timeRange.toDate)
+                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, source, offset, this._pageSize),
+                this.notificationService.getNotificationsCount(this.realm, timeRange.fromDate, timeRange.toDate, source)
             ]);
 
             this._data = data;
@@ -463,20 +470,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
     }
 
-    protected _getFilteredNotifications(): SentNotification[] {
-        if (!this._data) return [];
-        if (this._selectedSource === "ALL_SOURCES") {
-            return this._data;
-        }
-
-        return this._data.filter(notification => {
-            if (this._selectedSource && notification.source !== this._selectedSource) {
-                return false;
-            }
-            return true;
-        });
-    }
-
     protected isValidTargetType(type: string): boolean {
         return type === NotificationTargetType.REALM ||
             type === NotificationTargetType.USER ||
@@ -528,7 +521,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this._selectedSource = e.detail.value;
                                 this._isFilteredSource = true; // set filter changes
-                                this.requestUpdate();
+                                this._currentPage = 0;
+                                this._loadData();
                             }}"
                     ></or-mwc-input>
 
@@ -572,7 +566,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected _renderNotificationsTable() {
-        const notifications = this._getFilteredNotifications();
+        const notifications = this._data || [];
         return html`
             <or-notifications-table
                     .notifications=${notifications}

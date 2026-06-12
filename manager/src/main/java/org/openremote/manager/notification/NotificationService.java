@@ -525,7 +525,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to, Integer offset, Integer limit, AuthContext authContext) {
+    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to, Notification.Source source, Integer offset, Integer limit, AuthContext authContext) {
         if (realmIds == null || realmIds.isEmpty()) {
             throw new IllegalArgumentException("RealmID must be specified");
         }
@@ -545,6 +545,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (to != null) {
             builder.append(" AND n.sentOn <= ?").append(paramIndex++);
             parameters.add(to);
+        }
+
+        if (source != null) {
+            builder.append(" AND n.source = ?").append(paramIndex++);
+            parameters.add(source);
         }
 
         if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
@@ -577,7 +582,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    public long getNotificationsByRealmCount(List<String> realmIds, Instant from, Instant to, AuthContext authContext) {
+    public long getNotificationsByRealmCount(List<String> realmIds, Instant from, Instant to, Notification.Source source, AuthContext authContext) {
         if (realmIds == null || realmIds.isEmpty()) {
             throw new IllegalArgumentException("RealmID must be specified");
         }
@@ -597,6 +602,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (to != null) {
             builder.append(" AND n.sentOn <= ?").append(paramIndex++);
             parameters.add(to);
+        }
+
+        if (source != null) {
+            builder.append(" AND n.source = ?").append(paramIndex++);
+            parameters.add(source);
         }
 
         if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {

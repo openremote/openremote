@@ -224,7 +224,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long from, Long to, String realmId, Integer offset, Integer limit) {
+    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long from, Long to, String realmId, Notification.Source source, Integer offset, Integer limit) {
         if (realmId == null) {
             throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
         }
@@ -242,6 +242,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 Collections.singletonList(realmId),
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
+                source,
                 offset,
                 limit,
                 authContext
@@ -269,7 +270,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public long getNotificationsByRealmCount(RequestParams requestParams, Long from, Long to, String realmId) {
+    public long getNotificationsByRealmCount(RequestParams requestParams, Long from, Long to, String realmId, Notification.Source source) {
         if (realmId == null) {
             throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
         }
@@ -279,6 +280,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 Collections.singletonList(realmId),
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
+                source,
                 getAuthContext()
             );
         } catch (IllegalArgumentException e) {
