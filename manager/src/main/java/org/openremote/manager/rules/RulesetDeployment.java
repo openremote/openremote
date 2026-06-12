@@ -90,7 +90,8 @@ public class RulesetDeployment {
         then check your class loader setup.
          */
         groovyShell = new GroovyShell(
-                new CompilerConfiguration().addCompilationCustomizers(new SandboxTransformer())
+                // See https://github.com/openremote/openremote/issues/2843, can't use SandboxTransformer until it's Groovy 5 compatible
+                //                new CompilerConfiguration().addCompilationCustomizers(new SandboxTransformer())
         );
     }
 
