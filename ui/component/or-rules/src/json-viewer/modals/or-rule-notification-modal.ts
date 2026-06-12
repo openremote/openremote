@@ -75,6 +75,9 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
     @property({type: Object})
     public query?: AssetQuery;
 
+    @property({type: Boolean})
+    public readonly = false;
+
     @query("#notification-modal")
     protected _orMwcDialog?: OrMwcDialog;
     
@@ -211,7 +214,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         };
 
         return html`
-            <or-vaadin-button @click=${() => notificationPickerModalOpen()}>
+            <or-vaadin-button ?disabled=${this.readonly} @click=${() => notificationPickerModalOpen()}>
                 <or-translate value="message"></or-translate>
             </or-vaadin-button>
             <or-mwc-dialog id="notification-modal" .heading="${this.title}" .dismissAction="${dismissAction}" .actions="${actions}" .styles="${styles}"></or-mwc-dialog>

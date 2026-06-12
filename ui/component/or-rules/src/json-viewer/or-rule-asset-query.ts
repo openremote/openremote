@@ -313,7 +313,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 if(descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
                 return html`<or-attribute-input .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
             case "radial":
-                return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-radial-modal>`;
+                return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}" ?readonly=${this.readonly}></or-rule-radial-modal>`;
             case "rect":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "geojson":

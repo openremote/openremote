@@ -281,7 +281,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         if(readonly) {
             recurrenceTemplate = html`
                 <div style="margin-right: 6px;">
-                    <or-vaadin-button>
+                    <or-vaadin-button disabled>
                         <or-translate value=${value}></or-translate>
                     </or-vaadin-button>
                 </div>

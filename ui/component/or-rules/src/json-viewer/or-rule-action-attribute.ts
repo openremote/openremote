@@ -170,7 +170,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                         <or-translate slot="label" value="asset"></or-translate>
                     </or-vaadin-combo-box>
                     ${when(attributes.length > 0, () => html`
-                        <or-vaadin-combo-box id="attributeSelect" class="min-width"
+                        <or-vaadin-combo-box id="attributeSelect" class="min-width" ?readonly=${this.readonly}
                                              .items=${attributes} value=${this.action.attributeName}
                                              @change=${(ev: Event) => this.setActionAttributeName((ev.currentTarget as OrVaadinComboBox).value)}>
                             <or-translate slot="label" value="attribute"></or-translate>

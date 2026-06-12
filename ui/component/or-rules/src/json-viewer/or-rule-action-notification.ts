@@ -364,7 +364,7 @@ export class OrRuleActionNotification extends LitElement {
         if (message) {
             if (messageType === "push") {
                 modalTemplate = html`
-                    <or-rule-notification-modal title="push-notification" .action="${this.action}"
+                    <or-rule-notification-modal title="push-notification" .action="${this.action}" ?readonly=${this.readonly}
                                                 @or-rules-notification-modal-cancel="${onModalCancel}"
                                                 @or-rules-notification-modal-ok="${onModalOk}">
                         <or-rule-form-push-notification .message="${message as PushNotificationMessage}"></or-rule-form-push-notification>
@@ -374,7 +374,7 @@ export class OrRuleActionNotification extends LitElement {
             
             else if (messageType === "email") {
                 modalTemplate = html`
-                    <or-rule-notification-modal title="email" .action="${this.action}"
+                    <or-rule-notification-modal title="email" .action="${this.action}" ?readonly=${this.readonly}
                                                 @or-rules-notification-modal-cancel="${onModalCancel}"
                                                 @or-rules-notification-modal-ok="${onModalOk}">
                         <or-rule-form-email-message .message="${message as EmailNotificationMessage}"></or-rule-form-email-message>
@@ -396,7 +396,7 @@ export class OrRuleActionNotification extends LitElement {
                 const type = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push";
                 const title = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push-notification";
                 modalTemplate = html`
-                    <or-rule-notification-modal title="${title}" .action="${this.action}"
+                    <or-rule-notification-modal title="${title}" .action="${this.action}" ?readonly=${this.readonly}
                                                 @or-rules-notification-modal-cancel="${onModalCancel}"
                                                 @or-rules-notification-modal-ok="${onModalOk}">
                         <or-rule-form-localized .message="${message}" .type="${type}" .languages="${languages}" .defaultLang="${defaultLang}" 
