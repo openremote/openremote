@@ -2,7 +2,7 @@ import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {DefaultColor4} from "@openremote/core";
-import { SentNotification, PushNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
+import { SentNotification, PushNotificationMessage, EmailNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -85,6 +85,19 @@ export class OrNotificationsTable extends OrMwcTable {
                 .status-error {
                     color: var(--or-notification-status-pending-color,rgb(231, 126, 126));
                     background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
+                }
+
+                .title-wrapper {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .type-icon {
+                    --or-icon-width: 16px;
+                    --or-icon-height: 16px;
+                    color: var(--or-app-color3);
+                    flex: 0 0 auto;
                 }
 
                 .target-wrapper {
@@ -184,11 +197,14 @@ export class OrNotificationsTable extends OrMwcTable {
 
     protected getTableRows(notifications: SentNotification[]): TableRow[] | undefined {
         return notifications.map((notification) => {
-            const pushMessage = notification.message as PushNotificationMessage;
+            const message = notification.message as PushNotificationMessage | EmailNotificationMessage;
+            const isEmail = message?.type === "email";
+            const title = isEmail ? (message as EmailNotificationMessage).subject : (message as PushNotificationMessage)?.title;
+            const body = isEmail ? (message as EmailNotificationMessage).html : (message as PushNotificationMessage)?.body;
             return {
                 content: [
-                    pushMessage.title, 
-                    pushMessage.body,
+                    this.getTitleContent(notification, title),
+                    body,
                     this.getStatusContent(notification),
                     this.getSourceContent(notification.source),
                     this.getTargetContent(notification),
@@ -200,6 +216,21 @@ export class OrNotificationsTable extends OrMwcTable {
                 data: { notification },
             } as NotificationTableRow;
         });
+    }
+
+    protected getTitleContent(notification: SentNotification, title?: string): TemplateResult {
+        const iconMap: {[type: string]: string} = {
+            "push": "cellphone-message",
+            "email": "email-outline"
+        };
+
+        // The icon is nested in its own template so the title remains the first string value used for sorting
+        return html`
+            <div class="title-wrapper">
+                ${html`<or-icon class="type-icon" title="${notification.type || ""}" icon="${iconMap[notification.type] || "bell-outline"}"></or-icon>`}
+                <span>${title || "-"}</span>
+            </div>
+        `;
     }
 
     protected getSourceContent(source: NotificationSource): TemplateResult {

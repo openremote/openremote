@@ -1,34 +1,27 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
-import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import manager, {DefaultColor3, Util} from "@openremote/core";
-import {Asset, NotificationTargetType, PushNotificationMessage, SentNotification, User} from "@openremote/model";
+import {
+    Asset,
+    EmailNotificationMessage,
+    Notification,
+    NotificationTargetType,
+    PushNotificationButton,
+    PushNotificationMessage,
+    PushNotificationMessageMessagePriority,
+    SentNotification,
+    User
+} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {live} from "lit/directives/live.js";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import "@openremote/or-asset-tree";
 import {ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 
-export interface NotificationFormData {
-    name: string;
-    title: string;
-    body: string;
-    priority: string;
-    targetType: NotificationTargetType;
-    targets: string[]; // The IDs used for sending messages.
-    // actions
-    actionUrl?: string;
-    openButtonText?: string;
-    closeButtonText?: string;
-    // fields shown in readonly mode
-    source?: string;
-    sourceId?: string;
-    status?: string;
-    sent?: string;
-    delivered?: string;
-}
+export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
 
 @customElement("notification-form")
 export class NotificationForm extends LitElement {
@@ -153,6 +146,11 @@ export class NotificationForm extends LitElement {
             z-index: 2;
         }
 
+        /* Lift the focused input above its siblings so open select menus aren't overlapped by the fields below */
+        or-mwc-input:focus-within {
+            z-index: 4;
+        }
+
         h5 {
             margin-top: 12px;
             margin-bottom: 6px;
@@ -168,43 +166,14 @@ export class NotificationForm extends LitElement {
         }
     `;
 
-    async firstUpdated() {
-        const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
-
-        const promises = [];
-        if (canReadAssets) {
-            promises.push(this._loadAssets());
-        }
-        if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
-            promises.push(this._loadUsers());
-        }
-        if (manager.hasRole("read:admin")) {
-            promises.push(this._loadRealms());
-        }
-        await Promise.all(promises);
-
-        if (canReadAssets) {
-            this._targetOptions = (this._assets || []).map(asset => ({
-                text: asset.name,
-                value: asset.id
-            }));
-        } else if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
-            this.formData = {...this.formData, targetType: NotificationTargetType.USER};
-        }
-    }
+    @state()
+    protected _message: NotificationMessage = {type: "push"};
 
     @state()
-    protected formData: NotificationFormData = {
-        name: '',
-        title: '',
-        body: '',
-        priority: 'Normal',
-        targetType: NotificationTargetType.ASSET,
-        targets: [''],
-        actionUrl: '',
-        openButtonText: '',
-        closeButtonText: ''
-    };
+    protected _targetType: NotificationTargetType = NotificationTargetType.ASSET;
+
+    @state()
+    protected _targets: string[] = [];
 
     @state()
     protected _users?: User[];
@@ -230,16 +199,34 @@ export class NotificationForm extends LitElement {
     @property({type: Object})
     public notification?: SentNotification;
 
-    updated(changedProps: Map<string, any>) {
-        if (changedProps.has('notification') && this.notification) {
-            this._populateFormFromNotification()
+    async firstUpdated() {
+        const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
+
+        const promises = [];
+        if (canReadAssets) {
+            promises.push(this._loadAssets());
+        }
+        if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+            promises.push(this._loadUsers());
+        }
+        if (manager.hasRole("read:admin")) {
+            promises.push(this._loadRealms());
+        }
+        await Promise.all(promises);
+
+        if (canReadAssets) {
+            this._targetOptions = (this._assets || []).map(asset => ({
+                text: asset.name,
+                value: asset.id
+            }));
+        } else if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
+            this._targetType = NotificationTargetType.USER;
         }
     }
 
-    protected _onFieldChanged(field: keyof NotificationFormData, value: any) {
-        this.formData = {
-            ...this.formData,
-            [field]: value
+    updated(changedProps: Map<string, any>) {
+        if (changedProps.has('notification') && this.notification) {
+            this._populateFromNotification()
         }
     }
 
@@ -294,7 +281,7 @@ export class NotificationForm extends LitElement {
         const type = e.detail.value;
         if (!type) return;
 
-        this.formData.targetType = type;
+        this._targetType = type;
         this._targetOptions = [];
 
         switch (type) {
@@ -330,7 +317,16 @@ export class NotificationForm extends LitElement {
 
     protected _onAssetSelectionChanged(e: OrAssetTreeSelectionEvent): void {
         this._selectedAssetIds = e.detail.newNodes.map(node => node.asset.id);
-        this._onFieldChanged('targets', this._selectedAssetIds);
+        this._targets = this._selectedAssetIds;
+    }
+
+    protected _onMessageTypeChanged(type: NotificationMessage["type"]) {
+        if (type === this._message.type) return;
+        this._message = {type} as NotificationMessage;
+    }
+
+    protected _updateMessage(props: Partial<NotificationMessage>) {
+        this._message = {...this._message, ...props} as NotificationMessage;
     }
 
     private _normalizeValue(value: string): string {
@@ -341,92 +337,63 @@ export class NotificationForm extends LitElement {
         return normalizedValue;
     }
 
-    private async _populateFormFromNotification() {
+    private async _populateFromNotification() {
         if (!this.notification) return;
 
-        const pushMessage = this.notification?.message as PushNotificationMessage;
-        if (!pushMessage) return;
-
-        const normalizedPriority = this._normalizeValue(pushMessage.priority || 'NORMAL');
-
-
-        this.formData = {
-            name: this.notification.name || '',
-            title: pushMessage.title,
-            body: pushMessage.body || '',
-            priority: normalizedPriority,
-            targetType: this.notification.target || NotificationTargetType.ASSET,
-            targets: this.notification.targetId ? [this.notification.targetId] : [],
-            actionUrl: pushMessage.action?.url,
-            openButtonText: pushMessage.buttons?.[0]?.title,
-            closeButtonText: pushMessage.buttons?.[1]?.title,
-        };
-
-        if (this.readonly) {
-            const canReadUsers = manager.hasRole("read:users") || manager.hasRole("read:admin");
-            this.formData = {
-                ...this.formData,
-                source: (canReadUsers && this.notification.sourceId) ?
-                    `${this.notification.source}, ${this.notification.sourceId}` :
-                    this.notification.source,
-                status: this.notification.deliveredOn ?
-                    i18next.t("delivered") :
-                    i18next.t("pending"),
-                sent: this.notification.sentOn ?
-                    new Date(this.notification.sentOn).toLocaleString() :
-                    '-',
-                delivered: this.notification.deliveredOn ?
-                    new Date(this.notification.deliveredOn).toLocaleString() :
-                    '-'
-            };
-        }
+        this._message = (this.notification.message || {type: "push"}) as NotificationMessage;
+        this._targetType = this.notification.target || NotificationTargetType.ASSET;
+        this._targets = this.notification.targetId ? [this.notification.targetId] : [];
 
         // Load target options based on type
         if (this.readonly) {
             await this._onTargetTypeChanged({
-                detail: {value: this.formData.targetType}
+                detail: {value: this._targetType}
             } as OrInputChangedEvent);
         }
 
         await this.requestUpdate();
     }
 
-    public getFormData(): NotificationFormData | null {
-        if (this.readonly) {
-            return this.formData;
-        }
+    /**
+     * Builds a {@link Notification} from the current form state or returns null when required fields are missing.
+     */
+    public getNotification(): Notification | null {
+        const name = this._message.type === "email"
+            ? (this._message as EmailNotificationMessage).subject
+            : (this._message as PushNotificationMessage).title;
+        const body = this._message.type === "email"
+            ? (this._message as EmailNotificationMessage).html
+            : (this._message as PushNotificationMessage).body;
 
-        // for create mode
-        const form = this.shadowRoot!;
-        const inputs = {
-            title: form.querySelector<OrMwcInput>("#notificationTitle"),
-            body: form.querySelector<OrMwcInput>("#notificationBody"),
-            priority: form.querySelector<OrMwcInput>("#notificationPriority"),
-            targetType: form.querySelector<OrMwcInput>("#targetType"),
-            targets: form.querySelector<OrMwcInput>("#target"),
-
-            actionUrl: form.querySelector<OrMwcInput>("#actionUrl"),
-            openButton: form.querySelector<OrMwcInput>("#openButtonText"),
-            closeButton: form.querySelector<OrMwcInput>("#closeButtonText")
-        };
-
-        if (!inputs.title?.value || !inputs.body?.value) {
+        if (!name || !body || !this._targetType || this._targets.length === 0) {
             return null;
         }
 
+        let message = this._message;
+        if (message.type === "push") {
+            const push = {...message} as PushNotificationMessage;
+            // Drop empty button slots and attach the action to the open button (index 0)
+            const buttons = (push.buttons || []).filter(button => button?.title);
+            if (buttons.length > 0) {
+                if (push.action) {
+                    buttons[0] = {...buttons[0], action: push.action};
+                }
+                push.buttons = buttons;
+            } else {
+                delete push.buttons;
+            }
+            message = push;
+        }
+
         return {
-            name: inputs.title.value,
-            title: inputs.title.value,
-            body: inputs.body.value,
-            priority: inputs.priority?.value || this.formData.priority || "Normal",
-            targetType: inputs.targetType?.value || this.formData.targetType,
-            targets: inputs.targets?.value || this.formData.targets,
-            actionUrl: inputs.actionUrl?.value || '',
-            openButtonText: inputs.openButton?.value || '',
-            closeButtonText: inputs.closeButton?.value || ''
+            name,
+            message,
+            targets: this._targets.map(id => ({
+                id,
+                type: this._targetType
+            }))
         };
     }
-
 
     protected render() {
         const inputDisabled = this.disabled || this.readonly;
@@ -436,7 +403,7 @@ export class NotificationForm extends LitElement {
                 <div class="${this.readonly ? "formGridContainer-readonly" : "formGridContainer"}">
                     ${this._renderTargetContainer(inputDisabled)}
                     ${this._renderMessageContentContainer(inputDisabled)}
-                    ${this._renderActionButtonContainer(inputDisabled)}
+                    ${this._message.type === "push" ? this._renderActionButtonContainer(inputDisabled) : ''}
                     ${this.readonly ? this._renderPropertiesContainer() : ''}
                 </div>
             </div>
@@ -444,13 +411,23 @@ export class NotificationForm extends LitElement {
     }
 
     protected _renderPropertiesContainer() {
+        if (!this.notification) return '';
+
+        const canReadUsers = manager.hasRole("read:users") || manager.hasRole("read:admin");
+        const source = (canReadUsers && this.notification.sourceId) ?
+            `${this.notification.source}, ${this.notification.sourceId}` :
+            this.notification.source;
+        const status = this.notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending");
+        const sent = this.notification.sentOn ? new Date(this.notification.sentOn).toLocaleString() : '-';
+        const delivered = this.notification.deliveredOn ? new Date(this.notification.deliveredOn).toLocaleString() : '-';
+
         return html`
             <div class="propContainer">
                 <h5>${i18next.t("properties")}</h5>
-                ${this._renderReadOnlyField("source", this._normalizeValue(this.formData.source))}
-                ${this._renderReadOnlyField("status", this.formData.status)}
-                ${this._renderReadOnlyField("sent", this.formData.sent)}
-                ${this._renderReadOnlyField("delivered", this.formData.delivered)}
+                ${this._renderReadOnlyField("source", this._normalizeValue(source))}
+                ${this._renderReadOnlyField("status", status)}
+                ${this._renderReadOnlyField("sent", sent)}
+                ${this._renderReadOnlyField("delivered", delivered)}
             </div>
         `;
     }
@@ -458,15 +435,14 @@ export class NotificationForm extends LitElement {
     // TODO: Make the Target field similar to the cell in the table: icon with asset/user/realm name instead of ID
     protected _renderTargetContainer(inputDisabled: boolean) {
         if (inputDisabled) {
-            const targetType = this.formData.targetType;
             const canSeeTargetId = manager.hasRole("read:admin")
-                || (targetType === NotificationTargetType.USER && manager.hasRole("read:users"))
-                || (targetType === NotificationTargetType.ASSET && manager.hasRole("read:assets"));
-            const targetDisplay = canSeeTargetId ? this._normalizeValue(this.formData.targets[0]) : '-';
+                || (this._targetType === NotificationTargetType.USER && manager.hasRole("read:users"))
+                || (this._targetType === NotificationTargetType.ASSET && manager.hasRole("read:assets"));
+            const targetDisplay = canSeeTargetId ? this._normalizeValue(this._targets[0]) : '-';
             return html`
                 <div class="targetContainer">
                     <h5 style="flex:0 0 auto;">${i18next.t("notifications.target")}</h5>
-                    ${this._renderReadOnlyField("notifications.targetType", this._normalizeValue(this.formData.targetType))}
+                    ${this._renderReadOnlyField("notifications.targetType", this._normalizeValue(this._targetType))}
                     ${this._renderReadOnlyField("notifications.target", targetDisplay)}
                 </div>
             `;
@@ -494,15 +470,12 @@ export class NotificationForm extends LitElement {
                         ?disabled="${inputDisabled}"
                         required
                         id="targetType"
-                        .value="${this.formData.targetType}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this._onFieldChanged('targetType', e.detail.value);
-                            this._onTargetTypeChanged(e);
-                        }}">
+                        .value="${this._targetType}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onTargetTypeChanged(e)}">
                 </or-mwc-input>
 
                 <div class="target-area">
-                    ${when(this.formData.targetType === NotificationTargetType.ASSET,
+                    ${when(this._targetType === NotificationTargetType.ASSET,
                             () => html`
                                 <or-asset-tree
                                         id="asset-selector"
@@ -520,10 +493,10 @@ export class NotificationForm extends LitElement {
                                         ?disabled="${inputDisabled || !this._targetOptions}"
                                         required
                                         id="target"
-                                        .values="${this.formData.targets}"
+                                        .values="${this._targets}"
                                         .listItems="${this._targetOptions.sort(Util.sortByString(option => option.text))}"
                                         @or-mwc-list-changed="${(e: OrMwcListChangedEvent) => {
-                                            this._onFieldChanged('targets', e.detail.map(id => id.value))
+                                            this._targets = e.detail.map(item => item.value);
                                         }}">
                                 </or-mwc-list>
                             `
@@ -534,38 +507,90 @@ export class NotificationForm extends LitElement {
     }
 
     protected _renderMessageContentContainer(inputDisabled: boolean) {
+        const messageTypeOptions: [NotificationMessage["type"], string][] = [
+            ["push", i18next.t("notifications.types.push")],
+            ["email", i18next.t("notifications.types.email")]
+        ];
+
         return html`
             <div class="messageContentContainer">
                 <h5>${i18next.t("content")}</h5>
                 <or-mwc-input
-                        label="${i18next.t('title')}"
-                        type="${InputType.TEXT}"
-                        ?readonly="${inputDisabled}"
-                        id="notificationTitle"
+                        label="${i18next.t("type")}"
+                        type="${InputType.SELECT}"
+                        .options="${messageTypeOptions}"
+                        ?disabled="${inputDisabled}"
                         required
-                        .value="${live(this.formData.title || '')}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                                this._onFieldChanged('title', e.detail.value)}"
-                ></or-mwc-input>
-
-                <or-mwc-input
-                        label="${i18next.t('body')}"
-                        type="${InputType.TEXTAREA}"
-                        style="display: flex; flex: 1; --mdc-text-field-height: 100%;"
-                        rows="4"
-                        ?readonly="${inputDisabled}"
-                        id="notificationBody"
-                        required
-                        .value="${live(this.formData.body || '')}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                                this._onFieldChanged('body', e.detail.value)}"
-                ></or-mwc-input>
+                        id="messageType"
+                        .value="${this._message.type}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMessageTypeChanged(e.detail.value)}">
+                </or-mwc-input>
+                ${this._message.type === "push"
+                        ? this._renderPushContent(this._message as PushNotificationMessage, inputDisabled)
+                        : this._renderEmailContent(this._message as EmailNotificationMessage, inputDisabled)}
             </div>
         `;
+    }
 
+    protected _renderPushContent(message: PushNotificationMessage, inputDisabled: boolean) {
+        return html`
+            <or-mwc-input
+                    label="${i18next.t('title')}"
+                    type="${InputType.TEXT}"
+                    ?readonly="${inputDisabled}"
+                    id="notificationTitle"
+                    required
+                    .value="${live(message.title || '')}"
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
+                            this._updateMessage({title: e.detail.value})}"
+            ></or-mwc-input>
+
+            <or-mwc-input
+                    label="${i18next.t('body')}"
+                    type="${InputType.TEXTAREA}"
+                    style="display: flex; flex: 1; --mdc-text-field-height: 100%;"
+                    rows="4"
+                    ?readonly="${inputDisabled}"
+                    id="notificationBody"
+                    required
+                    .value="${live(message.body || '')}"
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
+                            this._updateMessage({body: e.detail.value})}"
+            ></or-mwc-input>
+        `;
+    }
+
+    protected _renderEmailContent(message: EmailNotificationMessage, inputDisabled: boolean) {
+        return html`
+            <or-mwc-input
+                    label="${i18next.t('subject')}"
+                    type="${InputType.TEXT}"
+                    ?readonly="${inputDisabled}"
+                    id="notificationSubject"
+                    required
+                    .value="${live(message.subject || '')}"
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
+                            this._updateMessage({subject: e.detail.value})}"
+            ></or-mwc-input>
+
+            <or-mwc-input
+                    label="${i18next.t('body')}"
+                    type="${InputType.TEXTAREA}"
+                    style="display: flex; flex: 1; --mdc-text-field-height: 100%;"
+                    rows="4"
+                    ?readonly="${inputDisabled}"
+                    id="notificationEmailBody"
+                    required
+                    .value="${live(message.html || '')}"
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
+                            this._updateMessage({html: e.detail.value})}"
+            ></or-mwc-input>
+        `;
     }
 
     protected _renderActionButtonContainer(inputDisabled: boolean) {
+        const message = this._message as PushNotificationMessage;
+
         return html`
             <div class="actionButtonContainer">
                 <h5>${i18next.t("actions")}</h5>
@@ -574,8 +599,9 @@ export class NotificationForm extends LitElement {
                         type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
                         id="actionUrl"
-                        .value="${this.formData.actionUrl || ''}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onFieldChanged('actionUrl', e.detail.value)}">
+                        .value="${live(message.action?.url || '')}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
+                                this._updateMessage({action: e.detail.value ? {url: e.detail.value, openInBrowser: true} : undefined})}">
                 </or-mwc-input>
 
                 <or-mwc-input
@@ -583,8 +609,8 @@ export class NotificationForm extends LitElement {
                         type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
                         id="openButtonText"
-                        .value="${this.formData.openButtonText || ''}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onFieldChanged('openButtonText', e.detail.value)}">
+                        .value="${live(message.buttons?.[0]?.title || '')}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._updateButton(0, e.detail.value)}">
                 </or-mwc-input>
 
                 <or-mwc-input
@@ -592,22 +618,32 @@ export class NotificationForm extends LitElement {
                         type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
                         id="closeButtonText"
-                        .value="${this.formData.closeButtonText || ''}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onFieldChanged('closeButtonText', e.detail.value)}">
+                        .value="${live(message.buttons?.[1]?.title || '')}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._updateButton(1, e.detail.value)}">
                 </or-mwc-input>
 
                 <or-mwc-input
                         label="${i18next.t('priority')}"
                         type="${InputType.SELECT}"
-                        .options="${[['Normal', i18next.t('normal')], ['High', i18next.t('high')]]}"
+                        .options="${[
+                            [PushNotificationMessageMessagePriority.NORMAL, i18next.t('normal')],
+                            [PushNotificationMessageMessagePriority.HIGH, i18next.t('high')]
+                        ]}"
                         ?readonly="${inputDisabled}"
                         id="notificationPriority"
-                        .value="${live(this.formData.priority || 'Normal')}"
+                        .value="${live(message.priority || PushNotificationMessageMessagePriority.NORMAL)}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                                this._onFieldChanged('priority', e.detail.value)}"
+                                this._updateMessage({priority: e.detail.value})}"
                 ></or-mwc-input>
             </div>
         `;
+    }
+
+    protected _updateButton(index: number, title?: string) {
+        const message = this._message as PushNotificationMessage;
+        const buttons: (PushNotificationButton | undefined)[] = [...(message.buttons || [])];
+        buttons[index] = title ? {title} : undefined;
+        this._updateMessage({buttons: buttons as PushNotificationButton[]});
     }
 
     protected _renderReadOnlyField(label: string, value: string | string[] | undefined) {
