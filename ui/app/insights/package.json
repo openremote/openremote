@@ -37,6 +37,6 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "@rspack/core": "~1.7.5"
+    "@rspack/core": "~1.7.10"
   }
 }
