@@ -353,10 +353,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
             this.realm = state.app.realm;
             this.requestUpdate('realm');
 
+            // Only fetch when relevant state changed; stateChanged fires on every store update
+            // (e.g. visibility changes during page unload) which shouldn't trigger requests
             if (realmChanged) {
                 this.reset();
+                this._loadData();
+            } else if (!this._data && !this._loading) {
+                // Initial load when entering the page
+                this._loadData();
             }
-            this._loadData();
         }
     }
 
