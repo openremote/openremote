@@ -1775,6 +1775,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
     let preview: AssetAttributeConfigurationImportPreview | undefined;
     let errorMessage: string | undefined;
     let loading = false;
+    let importAction: DialogAction;
+
+    const updateDialog = () => {
+      importAction.disabled = !preview || loading || !!errorMessage;
+      dialog.requestUpdate();
+    };
+
+    importAction = {
+      actionName: "import",
+      content: "import",
+      disabled: true,
+      action: () => {
+        if (preview) {
+          this._applyAttributeConfigurationImportPreview(asset, preview);
+        }
+      },
+    };
 
     const onFileSelected = async (ev: Event) => {
       const fileInput = ev.currentTarget as HTMLInputElement;
@@ -1787,7 +1804,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
       preview = undefined;
       errorMessage = undefined;
       loading = true;
-      dialog.requestUpdate();
+      updateDialog();
 
       let configuration: AssetAttributeConfigurationDocument;
       try {
@@ -1796,7 +1813,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
         console.error("Failed to preview asset attribute configuration import", e);
         errorMessage = i18next.t("invalidAttributeConfigurationFile");
         loading = false;
-        dialog.requestUpdate();
+        updateDialog();
         return;
       }
 
@@ -1807,7 +1824,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
         errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
       } finally {
         loading = false;
-        dialog.requestUpdate();
+        updateDialog();
       }
     };
 
@@ -1886,6 +1903,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
             content: "cancel",
             default: true,
           },
+          importAction,
         ])
         .setDismissAction(null)
     );
@@ -1939,6 +1957,22 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
       link.remove();
       window.URL.revokeObjectURL(url);
     }, 0);
+  }
+
+  protected _applyAttributeConfigurationImportPreview(
+    asset: Asset,
+    preview: AssetAttributeConfigurationImportPreview
+  ) {
+    if (!this._assetInfo || this._assetInfo.asset.id !== asset.id) {
+      return;
+    }
+
+    this._assetInfo.asset.attributes = { ...preview.patchedAttributes };
+    this._assetInfo.attributeTemplateMap = {};
+    this._assetInfo.modified = true;
+    this._doValidation();
+    this.requestUpdate("_assetInfo");
+    showSnackbar(undefined, "attributeConfigurationImported");
   }
 
   protected async _previewAttributeConfigurationImport(
@@ -2136,7 +2170,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
         return;
       }
 
-      const asset = this._assetInfo.asset;
       const asset = this._assetInfo.asset;
 
       // Inject the attribute as we don't subscribe to events from individual attribute inputs
