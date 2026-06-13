@@ -232,6 +232,7 @@
   "assetAttributeConfigurationExport": "Export attribute configuration",
   "assetAttributeConfigurationImport": "Import attribute configuration",
   "attributeConfigurationExported": "Attribute configuration exported",
+  "attributeConfigurationImported": "Attribute configuration imported",
   "noAttributeConfigurationToExport": "No attribute configuration to export",
   "invalidAttributeConfigurationFile": "Invalid attribute configuration file",
   "attributeConfigurationImportPreviewFailed": "Could not preview attribute configuration import",

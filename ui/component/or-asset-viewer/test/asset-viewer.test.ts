@@ -200,3 +200,79 @@ ct("Should preview imported asset attribute configuration", async ({ page, mount
     expect(requestBody.configuration).toEqual(configuration);
     expect(requestBody.targetAsset.id).toBe("configuredAsset");
 });
+
+ct("Should apply previewed asset attribute configuration to the draft", async ({ page, mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: configuredId, editMode: true },
+    });
+
+    await page.route("**/api/master/asset/configuredAsset/attribute-config/import/preview", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                importableAttributes: [
+                    { name: "notes", type: "text" },
+                ],
+                missingAttributes: [],
+                typeMismatches: [],
+                patchedAttributes: {
+                    notes: {
+                        name: "notes",
+                        type: "text",
+                        meta: { readOnly: false },
+                    },
+                    model: {
+                        name: "model",
+                        type: "text",
+                        meta: { label: "Model" },
+                    },
+                    location: {
+                        name: "location",
+                        type: "GEO_JSONPoint",
+                    },
+                },
+            }),
+        });
+    });
+
+    await component.locator("#import-attribute-config-btn").click();
+
+    const dialog = page.locator("or-mwc-dialog");
+    await dialog.locator("input[type='file']").setInputFiles({
+        name: "attribute-config.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify({
+            version: 1,
+            assetType: "ThingAsset",
+            attributes: {
+                notes: {
+                    type: "text",
+                    meta: { readOnly: false },
+                },
+            },
+        })),
+    });
+
+    await expect(dialog).toContainText("notes (text)");
+    await dialog.locator("[data-mdc-dialog-action='import']").click();
+
+    await expect(page.locator("or-mwc-dialog")).toHaveCount(0);
+    await expect(component.locator("#save-btn")).not.toBeDisabled();
+
+    const draft = await component.evaluate((element: any) => ({
+        modified: element._assetInfo.modified,
+        notesReadOnly: element._assetInfo.asset.attributes.notes.meta.readOnly,
+        notesHasLabel: Object.prototype.hasOwnProperty.call(element._assetInfo.asset.attributes.notes.meta, "label"),
+        modelLabel: element._assetInfo.asset.attributes.model.meta.label,
+        locationType: element._assetInfo.asset.attributes.location.type,
+    }));
+
+    expect(draft).toEqual({
+        modified: true,
+        notesReadOnly: false,
+        notesHasLabel: false,
+        modelLabel: "Model",
+        locationType: "GEO_JSONPoint",
+    });
+});
