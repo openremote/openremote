@@ -12,6 +12,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.attribute.MetaMap
 import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 

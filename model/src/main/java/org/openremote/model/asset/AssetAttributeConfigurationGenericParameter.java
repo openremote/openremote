@@ -24,27 +24,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class AssetAttributeConfigurationExportRequest {
+public class AssetAttributeConfigurationGenericParameter {
 
-    protected final List<String> attributeNames;
-    protected final List<String> genericParameterPaths;
+    protected final String type;
+    protected final List<String> paths;
 
     @JsonCreator
-    public AssetAttributeConfigurationExportRequest(@JsonProperty("attributeNames") List<String> attributeNames,
-                                                    @JsonProperty("genericParameterPaths") List<String> genericParameterPaths) {
-        this.attributeNames = attributeNames;
-        this.genericParameterPaths = genericParameterPaths;
+    public AssetAttributeConfigurationGenericParameter(@JsonProperty("type") String type,
+                                                       @JsonProperty("paths") List<String> paths) {
+        this.type = type;
+        this.paths = paths;
     }
 
-    public AssetAttributeConfigurationExportRequest(List<String> attributeNames) {
-        this(attributeNames, null);
+    public String getType() {
+        return type;
     }
 
-    public List<String> getAttributeNames() {
-        return attributeNames;
-    }
-
-    public List<String> getGenericParameterPaths() {
-        return genericParameterPaths;
+    public List<String> getPaths() {
+        return paths;
     }
 }
