@@ -30,7 +30,7 @@ import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import { type DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import "@openremote/or-mwc-components/or-mwc-list";
+import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import { type OrTranslate, translate } from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import manager, { OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Util } from "@openremote/core";
@@ -38,6 +38,7 @@ import type { OrMwcTable, OrMwcTableRowClickEvent } from "@openremote/or-mwc-com
 import type { OrChartConfig } from "@openremote/or-chart";
 import type { HistoryConfig, OrAttributeHistory } from "@openremote/or-attribute-history";
 import type { OrVaadinSelect } from "@openremote/or-vaadin-components/or-vaadin-select";
+import type { OrVaadinNumberField } from "@openremote/or-vaadin-components/or-vaadin-number-field";
 import type { OrVaadinTextField } from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {
   type AgentDescriptor,
@@ -164,17 +165,24 @@ interface AssetAttributeConfigurationExportRequest {
 interface AssetAttributeConfigurationImportRequest {
     targetAsset: Asset;
     configuration: AssetAttributeConfigurationDocument;
+    genericParameterValues?: {[name: string]: any};
 }
 
 interface AssetAttributeConfigurationDocument {
     version: number;
     assetType?: string;
     attributes: {[name: string]: AssetAttributeConfigurationEntry};
+    genericParameters?: {[name: string]: AssetAttributeConfigurationGenericParameter};
 }
 
 interface AssetAttributeConfigurationEntry {
     type?: string;
     meta?: {[name: string]: any};
+}
+
+interface AssetAttributeConfigurationGenericParameter {
+    type?: string;
+    paths?: string[];
 }
 
 interface AssetAttributeConfigurationImportPreview {
@@ -1772,14 +1780,75 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
 
     let dialog: OrMwcDialog;
     let fileName: string | undefined;
+    let configuration: AssetAttributeConfigurationDocument | undefined;
     let preview: AssetAttributeConfigurationImportPreview | undefined;
     let errorMessage: string | undefined;
     let loading = false;
     let importAction: DialogAction;
+    let genericParameterValues: { [name: string]: any } = {};
+    let genericParameterValueTexts: { [name: string]: string } = {};
+    let genericParameterErrors: { [name: string]: string | undefined } = {};
 
     const updateDialog = () => {
       importAction.disabled = !preview || loading || !!errorMessage;
       dialog.requestUpdate();
+    };
+
+    const getGenericParameterEntries = () => this._getAttributeConfigurationGenericParameterEntries(configuration);
+
+    const hasValidGenericParameterValues = () =>
+      getGenericParameterEntries().every(([name, genericParameter]) =>
+        this._isAttributeConfigurationGenericParameterValueReady(
+          name,
+          genericParameter,
+          genericParameterValues,
+          genericParameterErrors
+        )
+      );
+
+    const previewSelectedConfiguration = async () => {
+      if (!configuration) {
+        return;
+      }
+
+      preview = undefined;
+      errorMessage = undefined;
+      loading = true;
+      updateDialog();
+
+      try {
+        preview = await this._previewAttributeConfigurationImport(
+          asset,
+          configuration,
+          getGenericParameterEntries().length > 0 ? genericParameterValues : undefined
+        );
+      } catch (e) {
+        console.error("Failed to preview asset attribute configuration import", e);
+        errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
+      } finally {
+        loading = false;
+        updateDialog();
+      }
+    };
+
+    const onGenericParameterValueChanged = (
+      name: string,
+      genericParameter: AssetAttributeConfigurationGenericParameter,
+      value: string | boolean
+    ) => {
+      preview = undefined;
+      const parsedValue = this._parseAttributeConfigurationGenericParameterValue(genericParameter, value);
+      if (typeof value === "string") {
+        genericParameterValueTexts[name] = value;
+      }
+      if (parsedValue.valid) {
+        genericParameterValues[name] = parsedValue.value;
+        delete genericParameterErrors[name];
+      } else {
+        delete genericParameterValues[name];
+        genericParameterErrors[name] = i18next.t("invalidGenericParameterValue");
+      }
+      updateDialog();
     };
 
     importAction = {
@@ -1803,10 +1872,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
       fileName = file.name;
       preview = undefined;
       errorMessage = undefined;
+      configuration = undefined;
+      genericParameterValues = {};
+      genericParameterValueTexts = {};
+      genericParameterErrors = {};
       loading = true;
       updateDialog();
 
-      let configuration: AssetAttributeConfigurationDocument;
       try {
         configuration = JSON.parse(await file.text()) as AssetAttributeConfigurationDocument;
       } catch (e) {
@@ -1817,15 +1889,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
         return;
       }
 
-      try {
-        preview = await this._previewAttributeConfigurationImport(asset, configuration);
-      } catch (e) {
-        console.error("Failed to preview asset attribute configuration import", e);
-        errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
-      } finally {
+      for (const [name, genericParameter] of getGenericParameterEntries()) {
+        if ((genericParameter.type || "text") === "boolean") {
+          genericParameterValues[name] = false;
+        }
+      }
+
+      if (getGenericParameterEntries().length > 0) {
         loading = false;
         updateDialog();
+        return;
       }
+
+      await previewSelectedConfiguration();
     };
 
     dialog = showDialog(
@@ -1849,6 +1925,32 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
             </div>
             ${loading ? html` <span><or-translate value="loading"></or-translate></span> ` : ``}
             ${errorMessage ? html` <span class="error">${errorMessage}</span> ` : ``}
+            ${getGenericParameterEntries().length > 0
+              ? html`
+                  <section id="asset-attribute-config-generic-parameters" class="asset-attribute-config-import-section">
+                    <h3><or-translate value="genericParameters"></or-translate></h3>
+                    <div class="asset-attribute-config-generic-parameter-list">
+                      ${getGenericParameterEntries().map(([name, genericParameter]) =>
+                        this._getAttributeConfigurationGenericParameterInputTemplate(
+                          name,
+                          genericParameter,
+                          genericParameterValueTexts[name] || "",
+                          genericParameterValues[name],
+                          genericParameterErrors[name],
+                          onGenericParameterValueChanged
+                        )
+                      )}
+                    </div>
+                    <or-vaadin-button
+                      id="asset-attribute-config-preview-btn"
+                      ?disabled=${loading || !hasValidGenericParameterValues()}
+                      @click=${previewSelectedConfiguration}
+                    >
+                      <or-translate value="preview"></or-translate>
+                    </or-vaadin-button>
+                  </section>
+                `
+              : ``}
             ${preview ? this._getAttributeConfigurationImportPreviewTemplate(preview) : ``}
           </div>
         `)
@@ -1890,6 +1992,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
             .asset-attribute-config-import-section ul {
               margin: 0 0 0 20px;
               padding: 0;
+            }
+
+            .asset-attribute-config-generic-parameter-list {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+              margin-bottom: 12px;
+            }
+
+            .asset-attribute-config-generic-parameter {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
             }
 
             .error {
@@ -1975,14 +2090,129 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
     showSnackbar(undefined, "attributeConfigurationImported");
   }
 
+  protected _getAttributeConfigurationGenericParameterEntries(
+    configuration?: AssetAttributeConfigurationDocument
+  ): [string, AssetAttributeConfigurationGenericParameter][] {
+    return Object.entries(configuration?.genericParameters || {}).sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
+  }
+
+  protected _getAttributeConfigurationGenericParameterInputTemplate(
+    name: string,
+    genericParameter: AssetAttributeConfigurationGenericParameter,
+    textValue: string,
+    value: any,
+    errorMessage: string | undefined,
+    onValueChanged: (
+      name: string,
+      genericParameter: AssetAttributeConfigurationGenericParameter,
+      value: string | boolean
+    ) => void
+  ): TemplateResult {
+    const type = genericParameter.type || "text";
+    const label = `${Util.camelCaseToSentenceCase(name)} (${type})`;
+    const id = `asset-attribute-config-generic-${name}`;
+
+    return html`
+      <div class="asset-attribute-config-generic-parameter">
+        ${type === "boolean"
+          ? html`
+              <or-vaadin-checkbox
+                id=${id}
+                label=${label}
+                .checked=${!!value}
+                @change=${(ev: Event) =>
+                  onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinCheckbox).checked)}
+              ></or-vaadin-checkbox>
+            `
+          : type === "number"
+            ? html`
+                <or-vaadin-number-field
+                  id=${id}
+                  label=${label}
+                  .value=${textValue}
+                  @input=${(ev: Event) =>
+                    onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinNumberField).value)}
+                  @change=${(ev: Event) =>
+                    onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinNumberField).value)}
+                ></or-vaadin-number-field>
+              `
+            : html`
+                <or-vaadin-text-field
+                  id=${id}
+                  label=${label}
+                  .value=${textValue}
+                  @input=${(ev: Event) =>
+                    onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinTextField).value)}
+                  @change=${(ev: Event) =>
+                    onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinTextField).value)}
+                ></or-vaadin-text-field>
+              `}
+        ${errorMessage ? html` <span class="error">${errorMessage}</span> ` : ``}
+      </div>
+    `;
+  }
+
+  protected _parseAttributeConfigurationGenericParameterValue(
+    genericParameter: AssetAttributeConfigurationGenericParameter,
+    value: string | boolean
+  ): { valid: boolean; value?: any } {
+    const type = genericParameter.type || "text";
+    if (type === "boolean") {
+      return { valid: true, value: !!value };
+    }
+
+    const textValue = typeof value === "string" ? value.trim() : "";
+    if (textValue.length === 0) {
+      return { valid: false };
+    }
+
+    if (type === "number") {
+      const numberValue = Number(textValue);
+      return Number.isNaN(numberValue) ? { valid: false } : { valid: true, value: numberValue };
+    }
+
+    if (type === "object" || type === "array") {
+      try {
+        const jsonValue = JSON.parse(textValue);
+        if (type === "object" && (jsonValue === null || Array.isArray(jsonValue) || typeof jsonValue !== "object")) {
+          return { valid: false };
+        }
+        if (type === "array" && !Array.isArray(jsonValue)) {
+          return { valid: false };
+        }
+        return { valid: true, value: jsonValue };
+      } catch (e) {
+        return { valid: false };
+      }
+    }
+
+    return { valid: true, value: textValue };
+  }
+
+  protected _isAttributeConfigurationGenericParameterValueReady(
+    name: string,
+    genericParameter: AssetAttributeConfigurationGenericParameter,
+    genericParameterValues: { [name: string]: any },
+    genericParameterErrors: { [name: string]: string | undefined }
+  ): boolean {
+    return (
+      (genericParameter.type || "text") === "boolean" ||
+      (!genericParameterErrors[name] && Object.prototype.hasOwnProperty.call(genericParameterValues, name))
+    );
+  }
+
   protected async _previewAttributeConfigurationImport(
     asset: Asset,
-    configuration: AssetAttributeConfigurationDocument
+    configuration: AssetAttributeConfigurationDocument,
+    genericParameterValues?: { [name: string]: any }
   ): Promise<AssetAttributeConfigurationImportPreview> {
     const request: AssetAttributeConfigurationImportRequest = {
       targetAsset: asset,
       configuration,
     };
+    if (genericParameterValues && Object.keys(genericParameterValues).length > 0) {
+      request.genericParameterValues = genericParameterValues;
+    }
     const response = await manager.rest.axiosInstance.post<AssetAttributeConfigurationImportPreview>(
       `asset/${asset.id}/attribute-config/import/preview`,
       request
