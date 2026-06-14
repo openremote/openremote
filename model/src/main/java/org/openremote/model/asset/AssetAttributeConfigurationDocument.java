@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -31,14 +32,23 @@ public class AssetAttributeConfigurationDocument {
     protected final int version;
     protected final String assetType;
     protected final Map<String, AssetAttributeConfigurationEntry> attributes;
+    protected final Map<String, AssetAttributeConfigurationGenericParameter> genericParameters;
 
     @JsonCreator
     public AssetAttributeConfigurationDocument(@JsonProperty("version") int version,
                                                @JsonProperty("assetType") String assetType,
-                                               @JsonProperty("attributes") Map<String, AssetAttributeConfigurationEntry> attributes) {
+                                               @JsonProperty("attributes") Map<String, AssetAttributeConfigurationEntry> attributes,
+                                               @JsonProperty("genericParameters") Map<String, AssetAttributeConfigurationGenericParameter> genericParameters) {
         this.version = version;
         this.assetType = assetType;
         this.attributes = attributes;
+        this.genericParameters = genericParameters;
+    }
+
+    public AssetAttributeConfigurationDocument(int version,
+                                               String assetType,
+                                               Map<String, AssetAttributeConfigurationEntry> attributes) {
+        this(version, assetType, attributes, null);
     }
 
     public int getVersion() {
@@ -51,5 +61,10 @@ public class AssetAttributeConfigurationDocument {
 
     public Map<String, AssetAttributeConfigurationEntry> getAttributes() {
         return attributes;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public Map<String, AssetAttributeConfigurationGenericParameter> getGenericParameters() {
+        return genericParameters;
     }
 }

@@ -4,6 +4,7 @@ import org.openremote.manager.asset.AssetAttributeConfigurationService
 import org.openremote.model.asset.AssetAttributeConfigurationDocument
 import org.openremote.model.asset.AssetAttributeConfigurationEntry
 import org.openremote.model.asset.AssetAttributeConfigurationExportRequest
+import org.openremote.model.asset.AssetAttributeConfigurationGenericParameter
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
@@ -98,6 +99,82 @@ class AssetAttributeConfigurationTest extends Specification {
         thrown(IllegalArgumentException)
     }
 
+    def "Export attribute configuration can make selected meta paths generic"() {
+        given: "an asset with repeated agent link metadata"
+        def asset = new ThingAsset("Indoor unit")
+            .addOrReplaceAttributes(
+                new Attribute<>("error", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>("agentLink", null, [
+                        id    : "agent-1",
+                        unitId: 1,
+                        type  : "ModbusAgentLink"
+                    ])),
+                new Attribute<>("pumpDown", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>("agentLink", null, [
+                        id    : "agent-1",
+                        unitId: 1,
+                        type  : "ModbusAgentLink"
+                    ]))
+            )
+
+        when: "agent id and unit id are exported as generic values"
+        def document = AssetAttributeConfigurationService.exportConfiguration(
+            asset,
+            new AssetAttributeConfigurationExportRequest(
+                ["error", "pumpDown"],
+                ["meta.agentLink.id", "meta.agentLink.unitId"]
+            )
+        )
+
+        then: "generic parameters record the removed value locations and original value types"
+        document.genericParameters.keySet() == ["agentLinkId", "agentLinkUnitId"] as Set
+        document.genericParameters.agentLinkId.type == "text"
+        document.genericParameters.agentLinkId.paths == [
+            "attributes.error.meta.agentLink.id",
+            "attributes.pumpDown.meta.agentLink.id"
+        ]
+        document.genericParameters.agentLinkUnitId.type == "number"
+        document.genericParameters.agentLinkUnitId.paths == [
+            "attributes.error.meta.agentLink.unitId",
+            "attributes.pumpDown.meta.agentLink.unitId"
+        ]
+
+        and: "the concrete values are removed but the remaining meta hierarchy is preserved"
+        document.attributes.error.meta.get("agentLink").get().value.orElse(null) == [type: "ModbusAgentLink"]
+        document.attributes.pumpDown.meta.get("agentLink").get().value.orElse(null) == [type: "ModbusAgentLink"]
+
+        when: "the document is serialized"
+        def json = ValueUtil.JSON.writerWithDefaultPrettyPrinter().writeValueAsString(document)
+
+        then: "the concrete generic values are absent from the exported JSON"
+        json.contains('"genericParameters"')
+        !json.contains('"agent-1"')
+        !json.contains('"unitId" : 1')
+    }
+
+    def "Export rejects generic paths with incompatible repeated values"() {
+        given: "an asset with repeated paths containing different values"
+        def asset = new ThingAsset("Indoor unit")
+            .addOrReplaceAttributes(
+                new Attribute<>("error", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>("agentLink", null, [unitId: 1])),
+                new Attribute<>("pumpDown", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>("agentLink", null, [unitId: 2]))
+            )
+
+        when: "the path is requested as a shared generic value"
+        AssetAttributeConfigurationService.exportConfiguration(
+            asset,
+            new AssetAttributeConfigurationExportRequest(
+                ["error", "pumpDown"],
+                ["meta.agentLink.unitId"]
+            )
+        )
+
+        then: "export fails"
+        thrown(IllegalArgumentException)
+    }
+
     def "Import attribute configuration previews compatible patch without changing the draft asset"() {
         given: "a target draft asset with existing metadata"
         def target = new ThingAsset("Target")
@@ -185,6 +262,27 @@ class AssetAttributeConfigurationTest extends Specification {
             new AssetAttributeConfigurationDocument(AssetAttributeConfigurationDocument.CURRENT_VERSION, target.type, [
                 missing: new AssetAttributeConfigurationEntry("number", new MetaMap([new MetaItem<>(READ_ONLY, true)]))
             ])
+        )
+
+        then: "the import fails"
+        thrown(IllegalArgumentException)
+
+        when: "generic parameters have not yet been resolved"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            new AssetAttributeConfigurationDocument(
+                AssetAttributeConfigurationDocument.CURRENT_VERSION,
+                target.type,
+                [
+                    temperature: new AssetAttributeConfigurationEntry("number", new MetaMap([new MetaItem<>(READ_ONLY, true)]))
+                ],
+                [
+                    agentLinkId: new AssetAttributeConfigurationGenericParameter(
+                        "text",
+                        ["attributes.temperature.meta.agentLink.id"]
+                    )
+                ]
+            )
         )
 
         then: "the import fails"
