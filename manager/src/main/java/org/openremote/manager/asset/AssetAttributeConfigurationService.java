@@ -84,12 +84,20 @@ public class AssetAttributeConfigurationService {
     }
 
     public static AssetAttributeConfigurationImportPreview previewImportConfiguration(Asset<?> targetAsset, AssetAttributeConfigurationDocument configuration) {
+        return previewImportConfiguration(targetAsset, configuration, null);
+    }
+
+    public static AssetAttributeConfigurationImportPreview previewImportConfiguration(Asset<?> targetAsset,
+                                                                                     AssetAttributeConfigurationDocument configuration,
+                                                                                     Map<String, Object> genericParameterValues) {
         validateTargetAsset(targetAsset);
         validateConfiguration(configuration);
 
+        AssetAttributeConfigurationDocument resolvedConfiguration = resolveGenericParameters(configuration, genericParameterValues);
+
         AssetAttributeConfigurationAssetTypeMismatch assetTypeMismatch = null;
-        if (!targetAsset.getType().equals(configuration.getAssetType())) {
-            assetTypeMismatch = new AssetAttributeConfigurationAssetTypeMismatch(targetAsset.getType(), configuration.getAssetType());
+        if (!targetAsset.getType().equals(resolvedConfiguration.getAssetType())) {
+            assetTypeMismatch = new AssetAttributeConfigurationAssetTypeMismatch(targetAsset.getType(), resolvedConfiguration.getAssetType());
         }
 
         List<AssetAttributeConfigurationAttribute> importableAttributes = new ArrayList<>();
@@ -97,7 +105,7 @@ public class AssetAttributeConfigurationService {
         List<AssetAttributeConfigurationTypeMismatch> typeMismatches = new ArrayList<>();
         AttributeMap patchedAttributes = cloneAttributes(targetAsset.getAttributes());
 
-        for (Map.Entry<String, AssetAttributeConfigurationEntry> importedAttribute : configuration.getAttributes().entrySet()) {
+        for (Map.Entry<String, AssetAttributeConfigurationEntry> importedAttribute : resolvedConfiguration.getAttributes().entrySet()) {
             String attributeName = importedAttribute.getKey();
             AssetAttributeConfigurationEntry importedConfiguration = importedAttribute.getValue();
 
@@ -194,6 +202,39 @@ public class AssetAttributeConfigurationService {
         return genericParameters;
     }
 
+    protected static AssetAttributeConfigurationDocument resolveGenericParameters(AssetAttributeConfigurationDocument configuration,
+                                                                                 Map<String, Object> genericParameterValues) {
+        if (configuration.getGenericParameters() == null || configuration.getGenericParameters().isEmpty()) {
+            return configuration;
+        }
+
+        Map<String, Object> values = genericParameterValues != null ? genericParameterValues : Map.of();
+        Map<String, AssetAttributeConfigurationEntry> resolvedAttributes = cloneConfigurationAttributes(configuration.getAttributes());
+
+        for (Map.Entry<String, AssetAttributeConfigurationGenericParameter> genericParameterEntry : configuration.getGenericParameters().entrySet()) {
+            String genericParameterName = genericParameterEntry.getKey();
+            AssetAttributeConfigurationGenericParameter genericParameter = genericParameterEntry.getValue();
+            validateGenericParameter(genericParameterName, genericParameter);
+
+            if (!values.containsKey(genericParameterName) || values.get(genericParameterName) == null) {
+                throw new IllegalArgumentException("Generic parameter value is required: " + genericParameterName);
+            }
+
+            Object value = values.get(genericParameterName);
+            validateGenericParameterValue(genericParameterName, genericParameter.getType(), value);
+
+            for (String path : genericParameter.getPaths()) {
+                setConfigurationPathValue(resolvedAttributes, path, value);
+            }
+        }
+
+        return new AssetAttributeConfigurationDocument(
+            configuration.getVersion(),
+            configuration.getAssetType(),
+            resolvedAttributes
+        );
+    }
+
     protected static String[] validateGenericParameterPath(String path) {
         if (TextUtil.isNullOrEmpty(path)) {
             throw new IllegalArgumentException("Generic parameter path is required");
@@ -213,6 +254,25 @@ public class AssetAttributeConfigurationService {
         return pathParts;
     }
 
+    protected static String[] validateGenericParameterDocumentPath(String path) {
+        if (TextUtil.isNullOrEmpty(path)) {
+            throw new IllegalArgumentException("Generic parameter document path is required");
+        }
+
+        String[] pathParts = path.split("\\.");
+        if (pathParts.length < 4 || !"attributes".equals(pathParts[0]) || !"meta".equals(pathParts[2])) {
+            throw new IllegalArgumentException("Generic parameter document path is invalid: " + path);
+        }
+
+        for (String pathPart : pathParts) {
+            if (TextUtil.isNullOrEmpty(pathPart)) {
+                throw new IllegalArgumentException("Generic parameter document path is invalid: " + path);
+            }
+        }
+
+        return pathParts;
+    }
+
     protected static Optional<Object> getMetaPathValue(MetaMap meta, String[] pathParts) {
         Optional<MetaItem<?>> metaItemOptional = meta.get(pathParts[1]);
         if (metaItemOptional.isEmpty()) {
@@ -221,13 +281,32 @@ public class AssetAttributeConfigurationService {
 
         Object value = metaItemOptional.get().getValue(Object.class).orElse(null);
         for (int i = 2; i < pathParts.length; i++) {
-            if (!(value instanceof Map<?, ?> valueMap) || !valueMap.containsKey(pathParts[i])) {
+            Optional<Object> pathChild = getPathChild(value, pathParts[i]);
+            if (pathChild.isEmpty()) {
                 return Optional.empty();
             }
-            value = valueMap.get(pathParts[i]);
+            value = pathChild.get();
         }
 
         return Optional.ofNullable(value);
+    }
+
+    protected static Optional<Object> getPathChild(Object value, String pathPart) {
+        if (value == null) {
+            return Optional.empty();
+        }
+
+        Map<String, Object> valueMap;
+        try {
+            valueMap = toMutableStringObjectMap(value, null);
+        } catch (IllegalArgumentException ignored) {
+            return Optional.empty();
+        }
+
+        if (!valueMap.containsKey(pathPart)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(valueMap.get(pathPart));
     }
 
     @SuppressWarnings("unchecked")
@@ -243,15 +322,171 @@ public class AssetAttributeConfigurationService {
         }
 
         Object value = metaItemOptional.get().getValue(Object.class).orElse(null);
+        Map<String, Object> valueMap;
+        try {
+            valueMap = toMutableStringObjectMap(value, String.join(".", pathParts));
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        if (valueMap != value) {
+            setMetaItemValue(metaItemOptional.get(), valueMap);
+        }
+        value = valueMap;
+
         for (int i = 2; i < pathParts.length - 1; i++) {
-            if (!(value instanceof Map<?, ?> valueMap)) {
+            if (!(value instanceof Map<?, ?> currentValueMap)) {
                 return;
             }
-            value = valueMap.get(pathParts[i]);
+            Object childValue = currentValueMap.get(pathParts[i]);
+            if (childValue == null) {
+                return;
+            }
+
+            Map<String, Object> childValueMap;
+            try {
+                childValueMap = toMutableStringObjectMap(childValue, String.join(".", pathParts));
+            } catch (IllegalArgumentException ignored) {
+                return;
+            }
+
+            if (childValueMap != childValue) {
+                ((Map<String, Object>) currentValueMap).put(pathParts[i], childValueMap);
+            }
+            value = childValueMap;
         }
 
+        if (value instanceof Map<?, ?> currentValueMap) {
+            ((Map<String, Object>) currentValueMap).remove(pathParts[pathParts.length - 1]);
+        }
+    }
+
+    protected static void setConfigurationPathValue(Map<String, AssetAttributeConfigurationEntry> attributes, String path, Object value) {
+        String[] pathParts = validateGenericParameterDocumentPath(path);
+
+        AssetAttributeConfigurationEntry attributeConfiguration = attributes.get(pathParts[1]);
+        if (attributeConfiguration == null) {
+            throw new IllegalArgumentException("Generic parameter path references an unknown attribute: " + path);
+        }
+
+        MetaMap meta = attributeConfiguration.getMeta();
+        if (meta == null) {
+            throw new IllegalArgumentException("Generic parameter path references an attribute without meta: " + path);
+        }
+
+        String metaItemName = pathParts[3];
+        if (pathParts.length == 4) {
+            meta.addOrReplace(new MetaItem<>(metaItemName, null, value));
+            return;
+        }
+
+        MetaItem<?> metaItem = meta.get(metaItemName).orElse(null);
+        Map<String, Object> valueMap;
+        if (metaItem == null) {
+            valueMap = new LinkedHashMap<>();
+            meta.addOrReplace(new MetaItem<>(metaItemName, null, valueMap));
+        } else {
+            Object metaItemValue = metaItem.getValue(Object.class).orElse(null);
+            valueMap = toMutableStringObjectMap(metaItemValue, path);
+            if (valueMap != metaItemValue) {
+                setMetaItemValue(metaItem, valueMap);
+            }
+        }
+
+        Map<String, Object> currentMap = valueMap;
+        for (int i = 4; i < pathParts.length - 1; i++) {
+            Object child = currentMap.get(pathParts[i]);
+            if (child == null) {
+                Map<String, Object> childMap = new LinkedHashMap<>();
+                currentMap.put(pathParts[i], childMap);
+                currentMap = childMap;
+                continue;
+            }
+
+            if (!(child instanceof Map<?, ?> childValueMap)) {
+                throw new IllegalArgumentException("Generic parameter path parent is not an object: " + path);
+            }
+
+            Map<String, Object> mutableChildMap = toMutableStringObjectMap(childValueMap, path);
+            if (mutableChildMap != child) {
+                currentMap.put(pathParts[i], mutableChildMap);
+            }
+            currentMap = mutableChildMap;
+        }
+
+        currentMap.put(pathParts[pathParts.length - 1], value);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static Map<String, Object> toMutableStringObjectMap(Object value, String path) {
         if (value instanceof Map<?, ?> valueMap) {
-            ((Map<String, Object>) valueMap).remove(pathParts[pathParts.length - 1]);
+            return toMutableStringObjectMap(valueMap, path);
+        }
+
+        if (value == null
+            || value instanceof CharSequence
+            || value instanceof Number
+            || value instanceof Boolean
+            || value instanceof Collection<?>
+            || value.getClass().isArray()) {
+            throw new IllegalArgumentException("Generic parameter path parent is not an object" + (path != null ? ": " + path : ""));
+        }
+
+        return toMutableStringObjectMap(ValueUtil.JSON.convertValue(value, LinkedHashMap.class), path);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static Map<String, Object> toMutableStringObjectMap(Map<?, ?> valueMap, String path) {
+        if (valueMap instanceof LinkedHashMap<?, ?>) {
+            return (Map<String, Object>) valueMap;
+        }
+
+        Map<String, Object> mutableMap = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : valueMap.entrySet()) {
+            if (!(entry.getKey() instanceof String key)) {
+                throw new IllegalArgumentException("Generic parameter path parent contains a non-string key" + (path != null ? ": " + path : ""));
+            }
+            mutableMap.put(key, entry.getValue());
+        }
+        return mutableMap;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected static void setMetaItemValue(MetaItem<?> metaItem, Object value) {
+        ((MetaItem) metaItem).setValue(value);
+    }
+
+    protected static void validateGenericParameter(String genericParameterName,
+                                                   AssetAttributeConfigurationGenericParameter genericParameter) {
+        if (TextUtil.isNullOrEmpty(genericParameterName)) {
+            throw new IllegalArgumentException("Generic parameter name is required");
+        }
+
+        if (genericParameter == null) {
+            throw new IllegalArgumentException("Generic parameter definition is required: " + genericParameterName);
+        }
+
+        if (TextUtil.isNullOrEmpty(genericParameter.getType())) {
+            throw new IllegalArgumentException("Generic parameter type is required: " + genericParameterName);
+        }
+
+        if (genericParameter.getPaths() == null || genericParameter.getPaths().isEmpty()) {
+            throw new IllegalArgumentException("Generic parameter paths are required: " + genericParameterName);
+        }
+    }
+
+    protected static void validateGenericParameterValue(String genericParameterName, String type, Object value) {
+        boolean valid = switch (type) {
+            case "text" -> value instanceof CharSequence;
+            case "number" -> value instanceof Number;
+            case "boolean" -> value instanceof Boolean;
+            case "object" -> value instanceof Map<?, ?>;
+            case "array" -> value instanceof Collection<?> || value.getClass().isArray();
+            case "unknown" -> true;
+            default -> throw new IllegalArgumentException("Unsupported generic parameter type: " + type);
+        };
+
+        if (!valid) {
+            throw new IllegalArgumentException("Generic parameter value has invalid type: " + genericParameterName);
         }
     }
 
@@ -313,10 +548,6 @@ public class AssetAttributeConfigurationService {
         if (configuration.getAttributes() == null) {
             throw new IllegalArgumentException("Configuration attributes are required");
         }
-
-        if (configuration.getGenericParameters() != null && !configuration.getGenericParameters().isEmpty()) {
-            throw new IllegalArgumentException("Generic parameters must be resolved before import");
-        }
     }
 
     protected static void validateAttributeEntry(String attributeName, AssetAttributeConfigurationEntry attributeConfiguration) {
@@ -360,6 +591,17 @@ public class AssetAttributeConfigurationService {
             fallback.addOrReplace(clonedAttribute);
         }
         return fallback;
+    }
+
+    protected static Map<String, AssetAttributeConfigurationEntry> cloneConfigurationAttributes(Map<String, AssetAttributeConfigurationEntry> attributes) {
+        Map<String, AssetAttributeConfigurationEntry> clonedAttributes = new LinkedHashMap<>();
+        for (Map.Entry<String, AssetAttributeConfigurationEntry> attribute : attributes.entrySet()) {
+            clonedAttributes.put(
+                attribute.getKey(),
+                new AssetAttributeConfigurationEntry(attribute.getValue().getType(), cloneMeta(attribute.getValue().getMeta()))
+            );
+        }
+        return clonedAttributes;
     }
 
     protected static MetaMap cloneMeta(MetaMap meta) {

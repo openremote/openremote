@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.manager.asset.AssetAttributeConfigurationService
 import org.openremote.model.asset.AssetAttributeConfigurationDocument
 import org.openremote.model.asset.AssetAttributeConfigurationEntry
@@ -14,6 +15,7 @@ import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.ValueType
 import spock.lang.Specification
 
+import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.MetaItemType.LABEL
 import static org.openremote.model.value.MetaItemType.READ_ONLY
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS
@@ -175,6 +177,37 @@ class AssetAttributeConfigurationTest extends Specification {
         thrown(IllegalArgumentException)
     }
 
+    def "Export generic paths from typed meta item values"() {
+        given: "an asset with typed agent link metadata"
+        def agentLink = new ModbusAgentLink("agent-1")
+        agentLink.setUnitId(1)
+
+        def asset = new ThingAsset("Indoor unit")
+            .addOrReplaceAttributes(
+                new Attribute<>("error", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>(AGENT_LINK, agentLink))
+            )
+
+        when: "agent link properties are exported as generic values"
+        def document = AssetAttributeConfigurationService.exportConfiguration(
+            asset,
+            new AssetAttributeConfigurationExportRequest(
+                ["error"],
+                ["meta.agentLink.id", "meta.agentLink.unitId"]
+            )
+        )
+
+        then: "the generic parameters are created from the typed value"
+        document.genericParameters.agentLinkId.type == "text"
+        document.genericParameters.agentLinkUnitId.type == "number"
+
+        and: "the concrete values are removed while the agent link type is preserved"
+        def json = ValueUtil.JSON.writeValueAsString(document)
+        json.contains('"type":"ModbusAgentLink"')
+        !json.contains('"id":"agent-1"')
+        !json.contains('"unitId":1')
+    }
+
     def "Import attribute configuration previews compatible patch without changing the draft asset"() {
         given: "a target draft asset with existing metadata"
         def target = new ThingAsset("Target")
@@ -238,6 +271,99 @@ class AssetAttributeConfigurationTest extends Specification {
         and: "the target draft asset was not mutated by preview generation"
         target.getAttribute("temperature").get().meta.getValue(LABEL).orElse(null) == "Old label"
         !target.getAttribute("temperature").get().meta.getValue(READ_ONLY).orElse(false)
+    }
+
+    def "Import resolves generic parameters before previewing compatible patch"() {
+        given: "a target draft asset"
+        def target = new ThingAsset("Target")
+            .addOrReplaceAttributes(
+                new Attribute<>("error", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>(LABEL, "Old error label")),
+                new Attribute<>("pumpDown", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>(LABEL, "Old pump down label"))
+            )
+
+        and: "an import document with generic agent link values removed"
+        def document = new AssetAttributeConfigurationDocument(
+            AssetAttributeConfigurationDocument.CURRENT_VERSION,
+            target.type,
+            [
+                error   : new AssetAttributeConfigurationEntry("boolean", new MetaMap([
+                    new MetaItem<>("agentLink", null, [type: "ModbusAgentLink"])
+                ])),
+                pumpDown: new AssetAttributeConfigurationEntry("boolean", new MetaMap([
+                    new MetaItem<>("agentLink", null, [type: "ModbusAgentLink"])
+                ]))
+            ],
+            [
+                agentLinkId    : new AssetAttributeConfigurationGenericParameter(
+                    "text",
+                    [
+                        "attributes.error.meta.agentLink.id",
+                        "attributes.pumpDown.meta.agentLink.id"
+                    ]
+                ),
+                agentLinkUnitId: new AssetAttributeConfigurationGenericParameter(
+                    "number",
+                    [
+                        "attributes.error.meta.agentLink.unitId",
+                        "attributes.pumpDown.meta.agentLink.unitId"
+                    ]
+                )
+            ]
+        )
+
+        when: "the generic values are supplied"
+        def result = AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            document,
+            [
+                agentLinkId    : "agent-2",
+                agentLinkUnitId: 3
+            ]
+        )
+
+        then: "the generic values are injected into every referenced import path"
+        result.importableAttributes*.name == ["error", "pumpDown"]
+        result.patchedAttributes.get("error").get().meta.get("agentLink").get().value.orElse(null) == [
+            type  : "ModbusAgentLink",
+            id    : "agent-2",
+            unitId: 3
+        ]
+        result.patchedAttributes.get("pumpDown").get().meta.get("agentLink").get().value.orElse(null) == [
+            type  : "ModbusAgentLink",
+            id    : "agent-2",
+            unitId: 3
+        ]
+
+        and: "the uploaded configuration document is not mutated"
+        document.attributes.error.meta.get("agentLink").get().value.orElse(null) == [type: "ModbusAgentLink"]
+        document.attributes.pumpDown.meta.get("agentLink").get().value.orElse(null) == [type: "ModbusAgentLink"]
+
+        when: "a generic value is missing"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            document,
+            [
+                agentLinkId: "agent-2"
+            ]
+        )
+
+        then: "the import fails"
+        thrown(IllegalArgumentException)
+
+        when: "a generic value does not match the declared type"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            document,
+            [
+                agentLinkId    : 3,
+                agentLinkUnitId: 3
+            ]
+        )
+
+        then: "the import fails"
+        thrown(IllegalArgumentException)
     }
 
     def "Import rejects unsupported and unusable configuration documents"() {
