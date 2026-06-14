@@ -28,13 +28,17 @@ import org.openremote.model.asset.AssetAttributeConfigurationExportRequest;
 import org.openremote.model.asset.AssetAttributeConfigurationGenericParameter;
 import org.openremote.model.asset.AssetAttributeConfigurationImportPreview;
 import org.openremote.model.asset.AssetAttributeConfigurationTypeMismatch;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -167,6 +171,7 @@ public class AssetAttributeConfigurationService {
 
             Object expectedValue = null;
             boolean expectedValueSet = false;
+            String genericParameterType = null;
             List<String> fullPaths = new ArrayList<>();
 
             for (Map.Entry<String, AssetAttributeConfigurationEntry> attributeEntry : attributes.entrySet()) {
@@ -184,6 +189,12 @@ public class AssetAttributeConfigurationService {
                 }
 
                 fullPaths.add("attributes." + attributeEntry.getKey() + "." + genericParameterPath);
+                String pathType = getGenericParameterType(attributeEntry.getValue().getMeta(), pathParts);
+                if (genericParameterType == null || "unknown".equals(genericParameterType)) {
+                    genericParameterType = pathType;
+                } else if (!"unknown".equals(pathType) && !genericParameterType.equals(pathType)) {
+                    throw new IllegalArgumentException("Generic parameter path has different types: " + genericParameterPath);
+                }
             }
 
             if (!expectedValueSet) {
@@ -196,7 +207,7 @@ public class AssetAttributeConfigurationService {
 
             genericParameters.put(
                 toGenericParameterName(genericParameterPath),
-                new AssetAttributeConfigurationGenericParameter(getGenericParameterType(expectedValue), fullPaths)
+                new AssetAttributeConfigurationGenericParameter(genericParameterType != null ? genericParameterType : "unknown", fullPaths)
             );
         }
         return genericParameters;
@@ -503,23 +514,130 @@ public class AssetAttributeConfigurationService {
         return name.toString();
     }
 
-    protected static String getGenericParameterType(Object value) {
-        if (value instanceof CharSequence) {
-            return "text";
+    protected static String getGenericParameterType(MetaMap meta, String[] pathParts) {
+        Optional<MetaItemDescriptor<?>> metaItemDescriptor = ValueUtil.getMetaItemDescriptor(pathParts[1]);
+        if (pathParts.length == 2) {
+            return metaItemDescriptor
+                .map(MetaItemDescriptor::getType)
+                .map(AssetAttributeConfigurationService::getGenericParameterType)
+                .orElse("unknown");
         }
-        if (value instanceof Number) {
-            return "number";
+
+        if (metaItemDescriptor.isEmpty()) {
+            return "unknown";
         }
-        if (value instanceof Boolean) {
-            return "boolean";
+
+        Object metaItemValue = meta.get(pathParts[1])
+            .flatMap(metaItem -> metaItem.getValue(Object.class))
+            .orElse(null);
+        Class<?> metaItemType = getConcreteMetaValueType(metaItemDescriptor.get().getType().getType(), metaItemValue);
+        return getNestedPathType(metaItemType, pathParts, 2)
+            .map(AssetAttributeConfigurationService::getGenericParameterType)
+            .orElse("unknown");
+    }
+
+    protected static Class<?> getConcreteMetaValueType(Class<?> descriptorType, Object value) {
+        if (descriptorType == null || descriptorType == Object.class || value == null) {
+            return descriptorType;
         }
-        if (value instanceof Map<?, ?>) {
-            return "object";
+
+        if (descriptorType.isAssignableFrom(value.getClass()) && descriptorType != value.getClass()) {
+            return value.getClass();
         }
-        if (value instanceof Collection<?>) {
+
+        if (AgentLink.class.isAssignableFrom(descriptorType)) {
+            return getAgentLinkValueClass(value).orElse(descriptorType);
+        }
+
+        return descriptorType;
+    }
+
+    protected static Optional<Class<?>> getAgentLinkValueClass(Object value) {
+        if (value instanceof AgentLink<?>) {
+            return Optional.of(value.getClass());
+        }
+
+        if (!(value instanceof Map<?, ?> valueMap) || !(valueMap.get("type") instanceof String type) || TextUtil.isNullOrEmpty(type)) {
+            return Optional.empty();
+        }
+
+        try {
+            AgentLink<?> agentLink = ValueUtil.JSON.convertValue(value, AgentLink.class);
+            return agentLink != null ? Optional.of(agentLink.getClass()) : Optional.empty();
+        } catch (IllegalArgumentException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    protected static Optional<Class<?>> getNestedPathType(Class<?> rootType, String[] pathParts, int pathPartIndex) {
+        Class<?> currentType = rootType;
+        for (int i = pathPartIndex; i < pathParts.length; i++) {
+            if (currentType == null || currentType == Object.class || Map.class.isAssignableFrom(currentType)) {
+                return Optional.of(Object.class);
+            }
+
+            if (Collection.class.isAssignableFrom(currentType) || currentType.isArray()) {
+                return Optional.of(Object.class);
+            }
+
+            Optional<Field> field = getField(currentType, pathParts[i]);
+            if (field.isEmpty()) {
+                return Optional.empty();
+            }
+
+            currentType = field.get().getType();
+        }
+
+        return Optional.ofNullable(currentType);
+    }
+
+    protected static Optional<Field> getField(Class<?> type, String fieldName) {
+        Class<?> currentType = type;
+        while (currentType != null && currentType != Object.class) {
+            try {
+                return Optional.of(currentType.getDeclaredField(fieldName));
+            } catch (NoSuchFieldException ignored) {
+                currentType = currentType.getSuperclass();
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    protected static String getGenericParameterType(ValueDescriptor<?> valueDescriptor) {
+        if (valueDescriptor.getArrayDimensions() != null && valueDescriptor.getArrayDimensions() > 0) {
             return "array";
         }
-        return "unknown";
+
+        return getGenericParameterType(valueDescriptor.getType());
+    }
+
+    protected static String getGenericParameterType(Class<?> type) {
+        if (type == null || type == Object.class) {
+            return "unknown";
+        }
+        if (ValueUtil.isString(type) || type.isEnum()) {
+            return "text";
+        }
+        if (ValueUtil.isNumber(type)
+            || type == byte.class
+            || type == short.class
+            || type == int.class
+            || type == long.class
+            || type == float.class
+            || type == double.class) {
+            return "number";
+        }
+        if (ValueUtil.isBoolean(type) || type == boolean.class) {
+            return "boolean";
+        }
+        if (Map.class.isAssignableFrom(type)) {
+            return "object";
+        }
+        if (Collection.class.isAssignableFrom(type) || type.isArray()) {
+            return "array";
+        }
+        return "object";
     }
 
     protected static void validateTargetAsset(Asset<?> targetAsset) {
