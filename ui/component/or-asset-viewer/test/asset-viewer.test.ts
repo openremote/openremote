@@ -201,6 +201,89 @@ ct("Should preview imported asset attribute configuration", async ({ page, mount
     expect(requestBody.targetAsset.id).toBe("configuredAsset");
 });
 
+ct("Should request generic parameter values before previewing imported asset attribute configuration", async ({ page, mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: configuredId, editMode: true },
+    });
+
+    const configuration = {
+        version: 1,
+        assetType: "ThingAsset",
+        attributes: {
+            notes: {
+                type: "text",
+                meta: {
+                    agentLink: {
+                        type: "ModbusAgentLink",
+                    },
+                },
+            },
+        },
+        genericParameters: {
+            agentLinkId: {
+                type: "text",
+                paths: ["attributes.notes.meta.agentLink.id"],
+            },
+            agentLinkUnitId: {
+                type: "number",
+                paths: ["attributes.notes.meta.agentLink.unitId"],
+            },
+        },
+    };
+
+    let requestBody: any;
+    await page.route("**/api/master/asset/configuredAsset/attribute-config/import/preview", async (route) => {
+        requestBody = route.request().postDataJSON();
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                importableAttributes: [
+                    { name: "notes", type: "text" },
+                ],
+                missingAttributes: [],
+                typeMismatches: [],
+                patchedAttributes: {
+                    notes: {
+                        name: "notes",
+                        type: "text",
+                        meta: {
+                            agentLink: {
+                                type: "ModbusAgentLink",
+                                id: "agent-1",
+                                unitId: 3,
+                            },
+                        },
+                    },
+                },
+            }),
+        });
+    });
+
+    await component.locator("#import-attribute-config-btn").click();
+
+    const dialog = page.locator("or-mwc-dialog");
+    await dialog.locator("input[type='file']").setInputFiles({
+        name: "attribute-config.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(configuration)),
+    });
+
+    await expect(dialog.locator("[data-mdc-dialog-action='import']")).toBeDisabled();
+    await expect(dialog.locator("#asset-attribute-config-preview-btn")).toBeDisabled();
+
+    await dialog.locator("#asset-attribute-config-generic-agentLinkId input").fill("agent-1");
+    await dialog.locator("#asset-attribute-config-generic-agentLinkUnitId input").fill("3");
+    await dialog.locator("#asset-attribute-config-preview-btn").click();
+
+    await expect(dialog).toContainText("notes (text)");
+    expect(requestBody.configuration).toEqual(configuration);
+    expect(requestBody.genericParameterValues).toEqual({
+        agentLinkId: "agent-1",
+        agentLinkUnitId: 3,
+    });
+});
+
 ct("Should apply previewed asset attribute configuration to the draft", async ({ page, mount }) => {
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },
