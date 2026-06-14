@@ -203,9 +203,43 @@ class AssetAttributeConfigurationTest extends Specification {
 
         and: "the concrete values are removed while the agent link type is preserved"
         def json = ValueUtil.JSON.writeValueAsString(document)
-        json.contains('"type":"ModbusAgentLink"')
-        !json.contains('"id":"agent-1"')
-        !json.contains('"unitId":1')
+        def jsonNode = ValueUtil.JSON.readTree(json)
+        def exportedAgentLink = jsonNode.get("attributes").get("error").get("meta").get("agentLink")
+        exportedAgentLink.get("type").asText() == "ModbusAgentLink"
+        !exportedAgentLink.has("id")
+        !exportedAgentLink.has("unitId")
+    }
+
+    def "Export generic parameter types from meta schema"() {
+        given: "an asset with generic metadata values whose runtime types do not match the schema"
+        def asset = new ThingAsset("Indoor unit")
+            .addOrReplaceAttributes(
+                new Attribute<>("error", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(
+                        new MetaItem<>("label", null, 42),
+                        new MetaItem<>("readOnly", null, "true"),
+                        new MetaItem<>("agentLink", null, [
+                            id    : 123,
+                            unitId: "1",
+                            type  : "ModbusAgentLink"
+                        ])
+                    )
+            )
+
+        when: "those paths are exported as generic values"
+        def document = AssetAttributeConfigurationService.exportConfiguration(
+            asset,
+            new AssetAttributeConfigurationExportRequest(
+                ["error"],
+                ["meta.label", "meta.readOnly", "meta.agentLink.id", "meta.agentLink.unitId"]
+            )
+        )
+
+        then: "the generic parameter types come from the meta schema, not the current values"
+        document.genericParameters.label.type == "text"
+        document.genericParameters.readOnly.type == "boolean"
+        document.genericParameters.agentLinkId.type == "text"
+        document.genericParameters.agentLinkUnitId.type == "number"
     }
 
     def "Import attribute configuration previews compatible patch without changing the draft asset"() {
