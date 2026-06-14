@@ -22,16 +22,26 @@ package org.openremote.model.asset;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 public class AssetAttributeConfigurationImportRequest {
 
     protected final Asset<?> targetAsset;
     protected final AssetAttributeConfigurationDocument configuration;
+    protected final Map<String, Object> genericParameterValues;
 
     @JsonCreator
     public AssetAttributeConfigurationImportRequest(@JsonProperty("targetAsset") Asset<?> targetAsset,
-                                                    @JsonProperty("configuration") AssetAttributeConfigurationDocument configuration) {
+                                                    @JsonProperty("configuration") AssetAttributeConfigurationDocument configuration,
+                                                    @JsonProperty("genericParameterValues") Map<String, Object> genericParameterValues) {
         this.targetAsset = targetAsset;
         this.configuration = configuration;
+        this.genericParameterValues = genericParameterValues;
+    }
+
+    public AssetAttributeConfigurationImportRequest(Asset<?> targetAsset,
+                                                    AssetAttributeConfigurationDocument configuration) {
+        this(targetAsset, configuration, null);
     }
 
     public Asset<?> getTargetAsset() {
@@ -40,5 +50,9 @@ public class AssetAttributeConfigurationImportRequest {
 
     public AssetAttributeConfigurationDocument getConfiguration() {
         return configuration;
+    }
+
+    public Map<String, Object> getGenericParameterValues() {
+        return genericParameterValues;
     }
 }

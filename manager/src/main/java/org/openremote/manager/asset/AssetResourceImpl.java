@@ -522,7 +522,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
       }
 
       return AssetAttributeConfigurationService.previewImportConfiguration(
-          targetAsset, request.getConfiguration());
+          targetAsset, request.getConfiguration(), request.getGenericParameterValues());
     } catch (IllegalArgumentException | IllegalStateException ex) {
       throw new BadRequestException(ex);
     }

@@ -1,9 +1,11 @@
 package org.openremote.test.assets
 
+import org.openremote.agent.protocol.modbus.ModbusAgentLink
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetAttributeConfigurationDocument
 import org.openremote.model.asset.AssetAttributeConfigurationEntry
 import org.openremote.model.asset.AssetAttributeConfigurationExportRequest
+import org.openremote.model.asset.AssetAttributeConfigurationGenericParameter
 import org.openremote.model.asset.AssetAttributeConfigurationImportRequest
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.RoomAsset
@@ -103,7 +105,8 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
             RoomAsset.DESCRIPTOR.name,
             [
                 temperature: new AssetAttributeConfigurationEntry("number", new MetaMap([
-                    new MetaItem<>(READ_ONLY, true)
+                    new MetaItem<>(READ_ONLY, true),
+                    new MetaItem<>("agentLink", null, [type: "ModbusAgentLink"])
                 ])),
                 missing    : new AssetAttributeConfigurationEntry("text", new MetaMap([
                     new MetaItem<>(LABEL, "Missing")
@@ -111,6 +114,12 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
                 mode       : new AssetAttributeConfigurationEntry("boolean", new MetaMap([
                     new MetaItem<>(LABEL, "Wrong type")
                 ]))
+            ],
+            [
+                agentLinkId: new AssetAttributeConfigurationGenericParameter(
+                    "text",
+                    ["attributes.temperature.meta.agentLink.id"]
+                )
             ]
         )
 
@@ -118,7 +127,11 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
         def preview = assetResource.previewAttributeConfigurationImport(
             null,
             asset.id,
-            new AssetAttributeConfigurationImportRequest(draftAsset, document)
+            new AssetAttributeConfigurationImportRequest(
+                draftAsset,
+                document,
+                [agentLinkId: "agent-1"]
+            )
         )
 
         then: "the response contains the confirmation report"
@@ -131,6 +144,7 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
         and: "the patched attributes replace compatible metadata and preserve unrelated draft metadata"
         preview.patchedAttributes.get("temperature").get().meta.getValue(READ_ONLY).orElse(false)
         !preview.patchedAttributes.get("temperature").get().meta.has(LABEL)
+        preview.patchedAttributes.get("temperature").get().meta.get("agentLink").get().getValue(ModbusAgentLink.class).get().id == "agent-1"
         preview.patchedAttributes.get("humidity").get().meta.getValue(LABEL).orElse(null) == "Unsaved humidity label"
         preview.patchedAttributes.get("mode").get().meta.getValue(LABEL).orElse(null) == "Persisted mode label"
 
