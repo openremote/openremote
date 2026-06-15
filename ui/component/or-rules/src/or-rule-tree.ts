@@ -198,12 +198,18 @@ export class OrRuleTree extends OrTreeMenu {
                 <div id="tree-header-actions">
                     ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('ruleset')) && !this.readonly, () => html`
                         ${when(this._findSelectedTreeNodes().length === 1 && !this._isSelectedLegacyJavascriptRuleset(), () => html`
-                            <or-mwc-input type=${InputType.BUTTON} icon="content-copy" @or-mwc-input-changed=${this._onCopyClicked}></or-mwc-input>
+                            <or-vaadin-button theme="icon" @click=${(ev: Event) => this._onCopyClicked(ev)}>
+                                <or-icon icon="content-copy"></or-icon>
+                            </or-vaadin-button>
                         `)}
-                        <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
+                        <or-vaadin-button theme="icon" @click=${(ev: Event) => this._onDeleteClicked(ev)}>
+                            <or-icon icon="delete"></or-icon>
+                        </or-vaadin-button>
                     `)}
                     ${when((this._selectedTypes.size === 1 && this._selectedTypes.has('group')) && !this.readonly, () => html`
-                        <or-mwc-input type=${InputType.BUTTON} icon="delete" @or-mwc-input-changed=${this._onDeleteClicked}></or-mwc-input>
+                        <or-vaadin-button theme="icon" @click=${(ev: Event) => this._onDeleteClicked(ev)}>
+                            <or-icon icon="delete"></or-icon>
+                        </or-vaadin-button>
                     `)}
                     ${this._getAddActionTemplate()}
                     ${this._getSortActionTemplate(this.sortBy, this.sortOptions)}
@@ -225,7 +231,7 @@ export class OrRuleTree extends OrTreeMenu {
      * HTML callback on when the 'copy' menu option is pressed.
      * The function duplicates the current selected rule, and shows it inside the viewer window.
      */
-    protected _onCopyClicked(_ev: OrInputChangedEvent) {
+    protected _onCopyClicked(_ev: Event) {
         const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
         if (selected.length !== 1) {
             return;
@@ -263,7 +269,7 @@ export class OrRuleTree extends OrTreeMenu {
      * The function deletes the rule that is affiliated with selected tree node,
      * after prompting a modal that the user confirms this action.
      */
-    protected _onDeleteClicked(_ev: OrInputChangedEvent) {
+    protected _onDeleteClicked(_ev: Event) {
         const selected = this._findSelectedTreeNodes() as RuleTreeNode[];
         if (selected.length > 0) {
             const selectedRules = selected.map(node => node.ruleset).filter(x => x) as RulesetUnion[];
@@ -454,7 +460,10 @@ export class OrRuleTree extends OrTreeMenu {
 
         return getContentWithMenuTemplate(
             html`
-                <or-mwc-input type=${InputType.BUTTON} icon="plus" title="${i18next.t("addRule")}"></or-mwc-input>`,
+                <or-vaadin-button theme="icon" title=${i18next.t("addRule")}>
+                    <or-icon icon="plus"></or-icon>
+                </or-vaadin-button>
+            `,
             menuOptions,
             undefined,
             value => onValueChange(String(value))

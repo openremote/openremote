@@ -67,7 +67,9 @@ export const defineAppConfig = (path: string) => {
       video: "on",
     },
     webServer: {
-      command: `node ${join(__dirname, "manager.cjs")}`
+      command: `node ${join(__dirname, "manager.cjs")}`,
+      url: 'http://localhost:8080',
+      reuseExistingServer: !process.env.CI,
     },
     /* Configure projects */
     projects: [

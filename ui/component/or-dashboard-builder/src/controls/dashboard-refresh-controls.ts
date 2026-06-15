@@ -1,11 +1,27 @@
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
 import {DashboardRefreshInterval} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
+import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 
 export function intervalToMillis(interval: DashboardRefreshInterval): number | undefined {
     switch (interval) {
@@ -58,32 +74,17 @@ export class DashboardRefreshControls extends LitElement {
 
     protected render(): TemplateResult {
         const intervalOptions: string[] = this.getRefreshOptions();
-        const value = this.getIntervalString(this.interval);
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(when(this.interval === DashboardRefreshInterval.OFF,
+                    () => html`<or-icon icon="pause"></or-icon>`,
+                    () => html`<or-translate value=${this.getIntervalString(this.interval)}></or-translate>`)
+            ),
+            children: intervalOptions.map(o => ({interval: o, component: createMenuBarItem(html`<or-translate value=${o}></or-translate>`)}))
+        }]
         return html`
-            <div style="height: 100%; display: flex; align-items: center;">
-                ${when(this.readonly, () => html`
-                    ${when(this.interval === DashboardRefreshInterval.OFF, () => html`
-                        <or-mwc-input .type="${InputType.BUTTON}" icon="pause" disabled="true" title="${i18next.t("dashboard.interval.off")}" style="height: 36px; margin-top: -12px;"></or-mwc-input>
-                    `, () => html`
-                        <or-mwc-input .type="${InputType.BUTTON}" label="${value}" disabled="true" title="${i18next.t("dashboard.refreshInterval")}"></or-mwc-input>
-                    `)}
-                `, () => html`
-                    ${getContentWithMenuTemplate(
-                            this.interval === DashboardRefreshInterval.OFF ? html`
-                                <or-mwc-input .type="${InputType.BUTTON}" icon="pause" title="${i18next.t("dashboard.interval.off")}" style="height: 36px; margin-top: -12px;"></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${value}" title="${i18next.t("dashboard.refreshInterval")}"></or-mwc-input>
-                            `,
-                            intervalOptions.map(o => ({value: o} as ListItem)),
-                            value,
-                            (newVal) => this.onIntervalSelect(intervalOptions, newVal as string),
-                            undefined,
-                            false,
-                            true,
-                            true
-                    )}
-                `)}
-            </div>
+            <or-vaadin-menu-bar .items=${menuItems} ?disabled=${this.readonly}
+                                @item-selected=${(ev: CustomEvent)=> this.onIntervalSelect(intervalOptions, ev.detail.value.interval as string)}
+            ></or-vaadin-menu-bar>
         `;
     }
 

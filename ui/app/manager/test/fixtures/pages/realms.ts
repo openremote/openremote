@@ -13,15 +13,15 @@ export class RealmsPage implements BasePage {
    * @param name The realm name
    */
   async addRealm(name: string) {
-    const locator = this.page.getByRole("cell", { name, exact: true });
-    await this.page.getByRole("cell", { name: "Master", exact: true }).waitFor();
+    const locator = this.page.getByRole("button", { name, exact: true });
+    await this.page.getByRole("button", { name: "Master", exact: true }).waitFor();
     if (await locator.isVisible()) {
       console.warn(`Realm "${name}" already present`);
     } else {
       await this.page.click("text=Add Realm");
       const realmRow = this.page.locator("#realm-row-1");
-      const realmNameInput = realmRow.locator("or-mwc-input").filter({ hasText: "Realm" }).locator("input");
-      const displayNameInput = realmRow.locator("or-mwc-input").filter({ hasText: "Friendly name" }).locator("input");
+      const realmNameInput = realmRow.getByLabel("Realm");
+      const displayNameInput = realmRow.getByLabel("Friendly name");
       await realmNameInput.fill(name);
       await realmNameInput.dispatchEvent("change");
       await displayNameInput.fill(name);
