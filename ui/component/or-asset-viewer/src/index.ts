@@ -175,9 +175,9 @@ interface AssetAttributeConfigurationGenericParameterCandidate {
 
 interface AssetAttributeConfigurationImportPreview {
     assetTypeMismatch?: AssetAttributeConfigurationAssetTypeMismatch;
-    importableAttributes: AssetAttributeConfigurationAttribute[];
-    missingAttributes: AssetAttributeConfigurationAttribute[];
-    typeMismatches: AssetAttributeConfigurationTypeMismatch[];
+    importableAttributes?: AssetAttributeConfigurationAttribute[];
+    missingAttributes?: AssetAttributeConfigurationAttribute[];
+    typeMismatches?: AssetAttributeConfigurationTypeMismatch[];
     patchedAttributes: {[name: string]: Attribute<any>};
 }
 
@@ -2158,6 +2158,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     protected _getAttributeConfigurationImportPreviewTemplate(preview: AssetAttributeConfigurationImportPreview, includeOverwriteWarning = false): TemplateResult {
+        const importableAttributes = preview.importableAttributes || [];
+        const missingAttributes = preview.missingAttributes || [];
+        const typeMismatches = preview.typeMismatches || [];
+
         return html`
             <div id="asset-attribute-config-import-preview">
                 ${preview.assetTypeMismatch ? html`
@@ -2173,19 +2177,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 ` : ``}
                 <section class="asset-attribute-config-import-section">
                     <h3><or-translate value="importableAttributes"></or-translate></h3>
-                    ${this._getAttributeConfigurationAttributeListTemplate(preview.importableAttributes)}
+                    ${this._getAttributeConfigurationAttributeListTemplate(importableAttributes)}
                 </section>
-                ${preview.missingAttributes.length > 0 ? html`
+                ${missingAttributes.length > 0 ? html`
                     <section class="asset-attribute-config-import-section">
                         <h3><or-translate value="missingAttributes"></or-translate></h3>
-                        ${this._getAttributeConfigurationAttributeListTemplate(preview.missingAttributes)}
+                        ${this._getAttributeConfigurationAttributeListTemplate(missingAttributes)}
                     </section>
                 ` : ``}
-                ${preview.typeMismatches.length > 0 ? html`
+                ${typeMismatches.length > 0 ? html`
                     <section class="asset-attribute-config-import-section">
                         <h3><or-translate value="typeMismatches"></or-translate></h3>
                         <ul>
-                            ${preview.typeMismatches.map((typeMismatch) => html`
+                            ${typeMismatches.map((typeMismatch) => html`
                                 <li>${this._formatAttributeConfigurationTypeMismatch(typeMismatch)}</li>
                             `)}
                         </ul>

@@ -376,8 +376,6 @@ ct("Should request generic parameter values before previewing imported asset att
                 importableAttributes: [
                     { name: "notes", type: "text" },
                 ],
-                missingAttributes: [],
-                typeMismatches: [],
                 patchedAttributes: {
                     notes: {
                         name: "notes",
