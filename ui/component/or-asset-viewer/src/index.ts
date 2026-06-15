@@ -29,7 +29,14 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import { type DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {
+  type DialogAction,
+  OrMwcDialog,
+  OrMwcDialogClosedEvent,
+  showDialog,
+  showOkCancelDialog,
+  showOkDialog,
+} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import { type OrTranslate, translate } from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
@@ -1856,6 +1863,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
     let errorMessage: string | undefined;
     let loading = false;
     let importAction: DialogAction;
+    let appliedPreview: AssetAttributeConfigurationImportPreview | undefined;
     let genericParameterValues: { [name: string]: any } = {};
     let genericParameterValueTexts: { [name: string]: string } = {};
     let genericParameterErrors: { [name: string]: string | undefined } = {};
@@ -1927,8 +1935,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
       content: "import",
       disabled: true,
       action: () => {
-        if (preview) {
-          this._applyAttributeConfigurationImportPreview(asset, preview);
+        if (preview && this._applyAttributeConfigurationImportPreview(asset, preview)) {
+          appliedPreview = preview;
         }
       },
     };
@@ -2022,7 +2030,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
                   </section>
                 `
               : ``}
-            ${preview ? this._getAttributeConfigurationImportPreviewTemplate(preview) : ``}
+            ${preview ? this._getAttributeConfigurationImportPreviewTemplate(preview, true) : ``}
           </div>
         `)
         .setStyles(html`
@@ -2093,6 +2101,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
         ])
         .setDismissAction(null)
     );
+    dialog.addEventListener(OrMwcDialogClosedEvent.NAME, (ev) => {
+      if ((ev as OrMwcDialogClosedEvent).detail === "import" && appliedPreview) {
+        const resultPreview = appliedPreview;
+        window.setTimeout(() => this._showAttributeConfigurationImportResult(resultPreview), 0);
+      }
+    });
   }
 
   protected _getAttributeConfigurationExportCandidates(asset: Asset): Attribute<any>[] {
@@ -2226,9 +2240,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
   protected _applyAttributeConfigurationImportPreview(
     asset: Asset,
     preview: AssetAttributeConfigurationImportPreview
-  ) {
+  ): boolean {
     if (!this._assetInfo || this._assetInfo.asset.id !== asset.id) {
-      return;
+      return false;
     }
 
     this._assetInfo.asset.attributes = { ...preview.patchedAttributes };
@@ -2237,6 +2251,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
     this._doValidation();
     this.requestUpdate("_assetInfo");
     showSnackbar(undefined, "attributeConfigurationImported");
+    return true;
+  }
+
+  protected _showAttributeConfigurationImportResult(preview: AssetAttributeConfigurationImportPreview) {
+    showOkDialog(
+      "assetAttributeConfigurationImportResult",
+      this._getAttributeConfigurationImportPreviewTemplate(preview)
+    );
   }
 
   protected _getAttributeConfigurationGenericParameterEntries(
@@ -2370,7 +2392,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
   }
 
   protected _getAttributeConfigurationImportPreviewTemplate(
-    preview: AssetAttributeConfigurationImportPreview
+    preview: AssetAttributeConfigurationImportPreview,
+    includeOverwriteWarning = false
   ): TemplateResult {
     return html`
       <div id="asset-attribute-config-import-preview">
@@ -2379,6 +2402,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
               <section class="asset-attribute-config-import-section">
                 <h3><or-translate value="assetTypeMismatch"></or-translate></h3>
                 <span>${preview.assetTypeMismatch.expected} -> ${preview.assetTypeMismatch.actual}</span>
+              </section>
+            `
+          : ``}
+        ${includeOverwriteWarning
+          ? html`
+              <section class="asset-attribute-config-import-section">
+                <span><or-translate value="attributeConfigurationImportOverwriteWarning"></or-translate></span>
               </section>
             `
           : ``}
