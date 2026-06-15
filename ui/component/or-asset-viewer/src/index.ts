@@ -26,6 +26,7 @@ import {type OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-se
 import {type OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {
+    Agent,
     AgentDescriptor,
     Asset,
     AssetEvent,
@@ -1688,6 +1689,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         let genericParameterValues: {[name: string]: any} = {};
         let genericParameterValueTexts: {[name: string]: string} = {};
         let genericParameterErrors: {[name: string]: string | undefined} = {};
+        let genericParameterAgents: Agent[] | undefined;
 
         const updateDialog = () => {
             importAction.disabled = !preview || loading || !!errorMessage;
@@ -1700,6 +1702,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             .every(([name, genericParameter]) =>
                 this._isAttributeConfigurationGenericParameterValueReady(name, genericParameter, genericParameterValues, genericParameterErrors)
             );
+
+        const hasAgentLinkGenericParameters = () => getGenericParameterEntries()
+            .some(([, genericParameter]) => !!this._getAttributeConfigurationGenericParameterAgentLinkType(configuration, genericParameter));
+
+        const loadGenericParameterAgents = async () => {
+            if (genericParameterAgents || !hasAgentLinkGenericParameters()) {
+                return;
+            }
+
+            genericParameterAgents = await this._loadAttributeConfigurationGenericParameterAgents();
+        };
 
         const previewSelectedConfiguration = async () => {
             if (!configuration) {
@@ -1767,6 +1780,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             genericParameterValues = {};
             genericParameterValueTexts = {};
             genericParameterErrors = {};
+            genericParameterAgents = undefined;
             loading = true;
             updateDialog();
 
@@ -1775,6 +1789,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             } catch (e) {
                 console.error("Failed to preview asset attribute configuration import", e);
                 errorMessage = i18next.t("invalidAttributeConfigurationFile");
+                loading = false;
+                updateDialog();
+                return;
+            }
+
+            try {
+                await loadGenericParameterAgents();
+            } catch (e) {
+                console.error("Failed to load agents for asset attribute configuration import", e);
+                errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
                 loading = false;
                 updateDialog();
                 return;
@@ -1818,7 +1842,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                     genericParameterValueTexts[name] || "",
                                     genericParameterValues[name],
                                     genericParameterErrors[name],
-                                    onGenericParameterValueChanged
+                                    onGenericParameterValueChanged,
+                                    configuration,
+                                    genericParameterAgents
                                 ))}
                             </div>
                             <or-vaadin-button id="asset-attribute-config-preview-btn" ?disabled=${loading || !hasValidGenericParameterValues()} @click=${previewSelectedConfiguration}>
@@ -1882,6 +1908,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         gap: 4px;
                     }
 
+                    .asset-attribute-config-generic-parameter or-mwc-input {
+                        width: 100%;
+                    }
+
                     .error {
                         color: var(--or-app-color-error, #c62828);
                     }
@@ -1940,6 +1970,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }));
 
         return Array.from(pathValues.entries())
+            .filter(([path]) => !this._isAttributeConfigurationAgentLinkTypeGenericParameterPath(path))
             .filter(([, values]) =>
                 values.length > 1
                 && values.every((value) => this._areAttributeConfigurationGenericParameterValuesEqual(values[0], value))
@@ -1995,6 +2026,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         return `${metaLabel} > ${pathParts.slice(2).map((pathPart) => Util.camelCaseToSentenceCase(pathPart)).join(" > ")}`;
+    }
+
+    protected _isAttributeConfigurationAgentLinkTypeGenericParameterPath(path: string): boolean {
+        return path === `meta.${WellknownMetaItems.AGENTLINK}.type`;
     }
 
     protected async _exportAttributeConfiguration(asset: Asset, attributeNames: string[], genericParameterPaths: string[] = []) {
@@ -2058,17 +2093,96 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             .sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
     }
 
+    protected async _loadAttributeConfigurationGenericParameterAgents(): Promise<Agent[]> {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            realm: {
+                name: manager.displayRealm
+            },
+            types: [
+                "Agent"
+            ],
+            select: {
+                attributes: []
+            }
+        });
+        return (response.data || []) as Agent[];
+    }
+
+    protected _getAttributeConfigurationGenericParameterAgentLinkType(configuration: AssetAttributeConfigurationDocument | undefined, genericParameter: AssetAttributeConfigurationGenericParameter): string | undefined {
+        if (!configuration || !genericParameter.paths) {
+            return;
+        }
+
+        let agentLinkType: string | undefined;
+        for (const path of genericParameter.paths) {
+            const pathAgentLinkType = this._getAttributeConfigurationGenericParameterPathAgentLinkType(configuration, path);
+            if (pathAgentLinkType === undefined) {
+                continue;
+            }
+            if (!pathAgentLinkType) {
+                return;
+            }
+            if (!agentLinkType) {
+                agentLinkType = pathAgentLinkType;
+                continue;
+            }
+            if (agentLinkType !== pathAgentLinkType) {
+                return;
+            }
+        }
+        return agentLinkType;
+    }
+
+    protected _getAttributeConfigurationGenericParameterPathAgentLinkType(configuration: AssetAttributeConfigurationDocument, path: string): string | null | undefined {
+        const pathParts = path.split(".");
+        if (
+            pathParts.length !== 5
+            || pathParts[0] !== "attributes"
+            || pathParts[2] !== "meta"
+            || pathParts[3] !== WellknownMetaItems.AGENTLINK
+            || pathParts[4] !== "id"
+        ) {
+            return;
+        }
+
+        const agentLink = configuration.attributes?.[pathParts[1]]?.meta?.[WellknownMetaItems.AGENTLINK];
+        if (!agentLink || typeof agentLink !== "object" || Array.isArray(agentLink)) {
+            return null;
+        }
+
+        const agentLinkType = (agentLink as {type?: unknown}).type;
+        return typeof agentLinkType === "string" && agentLinkType.length > 0 ? agentLinkType : null;
+    }
+
+    protected _getAttributeConfigurationGenericParameterAgentOptions(agents: Agent[], agentLinkType: string): [string, string][] {
+        return agents
+            .filter((agent) => !!agent.id && this._getAttributeConfigurationAgentLinkType(agent) === agentLinkType)
+            .sort(Util.sortByString((agent) => agent.name || agent.id || ""))
+            .map((agent) => [agent.id!, `${agent.name || agent.id} (${agent.id})`]);
+    }
+
+    protected _getAttributeConfigurationAgentLinkType(agent: Agent): string | undefined {
+        const descriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor | undefined;
+        return descriptor?.agentLinkType;
+    }
+
     protected _getAttributeConfigurationGenericParameterInputTemplate(
         name: string,
         genericParameter: AssetAttributeConfigurationGenericParameter,
         textValue: string,
         value: any,
         errorMessage: string | undefined,
-        onValueChanged: (name: string, genericParameter: AssetAttributeConfigurationGenericParameter, value: string | boolean) => void
+        onValueChanged: (name: string, genericParameter: AssetAttributeConfigurationGenericParameter, value: string | boolean) => void,
+        configuration?: AssetAttributeConfigurationDocument,
+        agents?: Agent[]
     ): TemplateResult {
-        const type = genericParameter.type || "text";
-        const label = `${Util.camelCaseToSentenceCase(name)} (${type})`;
         const id = `asset-attribute-config-generic-${name}`;
+        const agentLinkType = this._getAttributeConfigurationGenericParameterAgentLinkType(configuration, genericParameter);
+        const agentOptions = agentLinkType
+            ? this._getAttributeConfigurationGenericParameterAgentOptions(agents || [], agentLinkType)
+            : [];
+        const type = genericParameter.type || "text";
+        const label = agentLinkType ? i18next.t("agentId") : `${Util.camelCaseToSentenceCase(name)} (${type})`;
 
         return html`
             <div class="asset-attribute-config-generic-parameter">
@@ -2087,6 +2201,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         @input=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinNumberField).value)}
                         @change=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinNumberField).value)}
                     ></or-vaadin-number-field>
+                ` : agentLinkType ? html`
+                    <or-mwc-input
+                        id=${id}
+                        type=${InputType.SELECT}
+                        label=${label}
+                        required
+                        ?disabled=${!agents}
+                        .value=${value || ""}
+                        .placeholder=${i18next.t("selectAgent")}
+                        .options=${agentOptions}
+                        @or-mwc-input-changed=${(ev: OrInputChangedEvent) => onValueChanged(name, genericParameter, ev.detail.value)}
+                    ></or-mwc-input>
                 ` : html`
                     <or-vaadin-text-field
                         id=${id}

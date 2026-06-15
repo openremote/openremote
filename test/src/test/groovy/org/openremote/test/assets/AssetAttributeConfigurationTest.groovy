@@ -242,6 +242,31 @@ class AssetAttributeConfigurationTest extends Specification {
         document.genericParameters.agentLinkUnitId.type == "number"
     }
 
+    def "Export rejects agent link type as a generic parameter"() {
+        given: "an asset with agent link metadata"
+        def asset = new ThingAsset("Indoor unit")
+            .addOrReplaceAttributes(
+                new Attribute<>("error", ValueType.BOOLEAN)
+                    .addOrReplaceMeta(new MetaItem<>("agentLink", null, [
+                        id  : "agent-1",
+                        type: "ModbusAgentLink"
+                    ]))
+            )
+
+        when: "agent link type is exported as a generic value"
+        AssetAttributeConfigurationService.exportConfiguration(
+            asset,
+            new AssetAttributeConfigurationExportRequest(
+                ["error"],
+                ["meta.agentLink.type"]
+            )
+        )
+
+        then: "export fails"
+        def exception = thrown(IllegalArgumentException)
+        exception.message.contains("Agent link type cannot be a generic parameter")
+    }
+
     def "Import attribute configuration previews compatible patch without changing the draft asset"() {
         given: "a target draft asset with existing metadata"
         def target = new ThingAsset("Target")
@@ -517,6 +542,33 @@ class AssetAttributeConfigurationTest extends Specification {
         then: "the import fails before asking for values"
         def malformedPathException = thrown(IllegalArgumentException)
         malformedPathException.message.contains("Generic parameter document path")
+
+        when: "a generic parameter references agent link type"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            new AssetAttributeConfigurationDocument(
+                AssetAttributeConfigurationDocument.CURRENT_VERSION,
+                target.type,
+                [
+                    temperature: new AssetAttributeConfigurationEntry("number", new MetaMap([
+                        new MetaItem<>("agentLink", null, [id: "agent-1"])
+                    ]))
+                ],
+                [
+                    agentLinkType: new AssetAttributeConfigurationGenericParameter(
+                        "text",
+                        ["attributes.temperature.meta.agentLink.type"]
+                    )
+                ]
+            ),
+            [
+                agentLinkType: "ModbusAgentLink"
+            ]
+        )
+
+        then: "the import fails before asking for values"
+        def agentLinkTypeException = thrown(IllegalArgumentException)
+        agentLinkTypeException.message.contains("Agent link type cannot be a generic parameter")
 
         when: "an attribute entry is malformed"
         AssetAttributeConfigurationService.previewImportConfiguration(

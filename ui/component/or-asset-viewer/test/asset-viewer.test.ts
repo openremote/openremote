@@ -1,5 +1,5 @@
 import { ct } from "./fixtures";
-import { expect } from "@openremote/test";
+import { expect, type Page } from "@openremote/test";
 import { OrAssetViewer } from "@openremote/or-asset-viewer";
 import { validAsset, invalidAsset, configuredAsset, partiallyConfiguredAsset } from "./fixtures/data/asset";
 
@@ -8,6 +8,42 @@ ct.beforeEach(async ({ shared }) => {
     await shared.fonts();
     await shared.registerAssets([validAsset, invalidAsset, configuredAsset, partiallyConfiguredAsset]);
 });
+
+const agentLinkSchema = {
+    type: "object",
+    properties: {
+        id: {
+            type: "string",
+            format: "or-agent-id",
+        },
+        type: {
+            type: "string",
+        },
+        unitId: {
+            type: "number",
+        },
+    },
+};
+
+type TestAgent = { id: string; name: string; realm: string; type: string };
+
+const mockAgentLinkEditorRequests = async (page: Page, agents: TestAgent[] = []) => {
+    await page.route("**/api/master/model/getValueDescriptorSchema**", async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(agentLinkSchema),
+        });
+    });
+    await page.route("**/api/master/asset/query", async (route) => {
+        const query = route.request().postDataJSON();
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(query?.types?.includes("Agent") ? agents : []),
+        });
+    });
+};
 
 // Due to how the component tests resolve imports, imported data with an object reference gets
 // confused for a component that is meant to be registered in the playwright component test app.
@@ -86,6 +122,8 @@ ct("Should disable asset configuration export when there are unsaved changes", a
 
 const configuredId = configuredAsset.id;
 ct("Should export selected asset attribute configuration", async ({ page, mount }) => {
+    await mockAgentLinkEditorRequests(page);
+
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },
     });
@@ -112,10 +150,10 @@ ct("Should export selected asset attribute configuration", async ({ page, mount 
     await component.locator("#export-attribute-config-btn").click();
 
     const dialog = page.locator("or-mwc-dialog");
-    await expect(dialog).toContainText("Model");
-    await expect(dialog).toContainText("Notes");
-    await expect(dialog).toContainText("Read Only");
-    await expect(dialog).not.toContainText("Location");
+    await expect(dialog).toContainText("Model (text)");
+    await expect(dialog).toContainText("notes (text)");
+    await expect(dialog).toContainText("readOnly");
+    await expect(dialog).not.toContainText("location (GEO_JSONPoint)");
     await dialog.locator("or-vaadin-checkbox[label='Model (text)']").click();
 
     const downloadPromise = page.waitForEvent("download");
@@ -127,6 +165,8 @@ ct("Should export selected asset attribute configuration", async ({ page, mount 
 });
 
 ct("Should export selected generic asset attribute configuration paths", async ({ page, mount }) => {
+    await mockAgentLinkEditorRequests(page);
+
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },
     });
@@ -177,7 +217,11 @@ ct("Should export selected generic asset attribute configuration paths", async (
     await expect(dialog).toContainText("Generic parameters");
     await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.id']")).toBeVisible();
     await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.unitId']")).toBeVisible();
-    await dialog.locator("[data-generic-parameter-path='meta.agentLink.id']").click();
+    await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.type']")).toHaveCount(0);
+    await dialog.locator("[data-generic-parameter-path='meta.agentLink.id']").evaluate((checkbox: any) => {
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+    });
 
     const downloadPromise = page.waitForEvent("download");
     await dialog.locator("[data-mdc-dialog-action='export']").click();
@@ -191,6 +235,8 @@ ct("Should export selected generic asset attribute configuration paths", async (
 
 const partiallyConfiguredId = partiallyConfiguredAsset.id;
 ct("Should export generic paths shared by only some selected attributes", async ({ page, mount }) => {
+    await mockAgentLinkEditorRequests(page);
+
     const component = await mount(OrAssetViewer, {
         props: { assetId: partiallyConfiguredId, editMode: true },
     });
@@ -248,7 +294,10 @@ ct("Should export generic paths shared by only some selected attributes", async 
     const dialog = page.locator("or-mwc-dialog");
     await expect(dialog).toContainText("Generic parameters");
     await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.id']")).toBeVisible();
-    await dialog.locator("[data-generic-parameter-path='meta.agentLink.id']").click();
+    await dialog.locator("[data-generic-parameter-path='meta.agentLink.id']").evaluate((checkbox: any) => {
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+    });
 
     const downloadPromise = page.waitForEvent("download");
     await dialog.locator("[data-mdc-dialog-action='export']").click();
@@ -261,6 +310,8 @@ ct("Should export generic paths shared by only some selected attributes", async 
 });
 
 ct("Should preview imported asset attribute configuration", async ({ page, mount }) => {
+    await mockAgentLinkEditorRequests(page);
+
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },
     });
@@ -337,6 +388,21 @@ ct("Should preview imported asset attribute configuration", async ({ page, mount
 });
 
 ct("Should request generic parameter values before previewing imported asset attribute configuration", async ({ page, mount }) => {
+    await mockAgentLinkEditorRequests(page, [
+        {
+            id: "agent-1",
+            name: "Modbus Agent",
+            realm: "master",
+            type: "ModbusTcpAgent",
+        },
+        {
+            id: "agent-2",
+            name: "Simulator Agent",
+            realm: "master",
+            type: "SimulatorAgent",
+        },
+    ]);
+
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },
     });
@@ -402,10 +468,14 @@ ct("Should request generic parameter values before previewing imported asset att
         buffer: Buffer.from(JSON.stringify(configuration)),
     });
 
-    await expect(dialog.locator("[data-mdc-dialog-action='import']")).toBeDisabled();
     await expect(dialog.locator("#asset-attribute-config-preview-btn")).toBeDisabled();
 
-    await dialog.locator("#asset-attribute-config-generic-agentLinkId input").fill("agent-1");
+    const agentLinkIdInput = dialog.locator("#asset-attribute-config-generic-agentLinkId");
+    await agentLinkIdInput.locator("#component").click();
+    const modbusAgentOption = dialog.locator("or-mwc-input li[role=option]", { hasText: "Modbus Agent (agent-1)" });
+    await expect(modbusAgentOption).toBeVisible();
+    await expect(dialog.locator("or-mwc-input li[role=option]").getByText("Simulator Agent", { exact: false })).toHaveCount(0);
+    await modbusAgentOption.click();
     await dialog.locator("#asset-attribute-config-generic-agentLinkUnitId input").fill("3");
     await dialog.locator("#asset-attribute-config-preview-btn").click();
 

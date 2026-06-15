@@ -38,12 +38,15 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttributeConfigurationDocument;
+import org.openremote.model.asset.AssetAttributeConfigurationEntry;
 import org.openremote.model.asset.AssetAttributeConfigurationExportRequest;
+import org.openremote.model.asset.AssetAttributeConfigurationGenericParameter;
 import org.openremote.model.asset.AssetAttributeConfigurationImportRequest;
 import org.openremote.model.asset.AssetAttributeConfigurationImportPreview;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetTree;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
@@ -464,6 +467,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
+            validateGenericAgentLinkIds(storageAsset, request);
+
             return AssetAttributeConfigurationService.previewImportConfiguration(
                 targetAsset,
                 request.getConfiguration(),
@@ -471,6 +476,107 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             );
         } catch (IllegalArgumentException | IllegalStateException ex) {
             throw new BadRequestException(ex);
+        }
+    }
+
+    protected void validateGenericAgentLinkIds(Asset<?> storageAsset, AssetAttributeConfigurationImportRequest request) {
+        AssetAttributeConfigurationDocument configuration = request.getConfiguration();
+        if (configuration == null || configuration.getGenericParameters() == null || configuration.getGenericParameters().isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> values = request.getGenericParameterValues() != null ? request.getGenericParameterValues() : Map.of();
+        for (Map.Entry<String, AssetAttributeConfigurationGenericParameter> genericParameterEntry : configuration.getGenericParameters().entrySet()) {
+            String genericParameterName = genericParameterEntry.getKey();
+            AssetAttributeConfigurationGenericParameter genericParameter = genericParameterEntry.getValue();
+            if (genericParameter == null || genericParameter.getPaths() == null) {
+                continue;
+            }
+
+            String expectedAgentLinkType = null;
+            for (String path : genericParameter.getPaths()) {
+                Optional<String> pathAgentLinkType = getGenericAgentLinkIdPathType(configuration, path);
+                if (pathAgentLinkType.isEmpty()) {
+                    continue;
+                }
+
+                if (expectedAgentLinkType == null) {
+                    expectedAgentLinkType = pathAgentLinkType.get();
+                } else if (!expectedAgentLinkType.equals(pathAgentLinkType.get())) {
+                    throw new BadRequestException("Generic agent link ID paths reference different agent link types: " + genericParameterName);
+                }
+            }
+
+            if (expectedAgentLinkType == null || !values.containsKey(genericParameterName)) {
+                continue;
+            }
+
+            Object selectedAgentId = values.get(genericParameterName);
+            if (!(selectedAgentId instanceof String agentId) || TextUtil.isNullOrEmpty(agentId)) {
+                continue;
+            }
+
+            validateGenericAgentLinkId(storageAsset, genericParameterName, agentId, expectedAgentLinkType);
+        }
+    }
+
+    protected Optional<String> getGenericAgentLinkIdPathType(AssetAttributeConfigurationDocument configuration, String path) {
+        if (TextUtil.isNullOrEmpty(path)) {
+            return Optional.empty();
+        }
+
+        String[] pathParts = path.split("\\.");
+        if (pathParts.length != 5
+            || !"attributes".equals(pathParts[0])
+            || !"meta".equals(pathParts[2])
+            || !AGENT_LINK.getName().equals(pathParts[3])
+            || !"id".equals(pathParts[4])) {
+            return Optional.empty();
+        }
+
+        if (configuration.getAttributes() == null) {
+            return Optional.empty();
+        }
+
+        AssetAttributeConfigurationEntry attributeConfiguration = configuration.getAttributes().get(pathParts[1]);
+        if (attributeConfiguration == null || attributeConfiguration.getMeta() == null) {
+            return Optional.empty();
+        }
+
+        Object agentLinkValue = attributeConfiguration.getMeta()
+            .get(AGENT_LINK.getName())
+            .flatMap(metaItem -> metaItem.getValue(Object.class))
+            .orElse(null);
+        Optional<Object> agentLinkType = AssetAttributeConfigurationService.getPathChild(agentLinkValue, "type");
+        if (agentLinkType.isEmpty() || !(agentLinkType.get() instanceof String type) || TextUtil.isNullOrEmpty(type)) {
+            throw new BadRequestException("Generic agent link ID requires preserved agent link type: " + path);
+        }
+        return Optional.of(type);
+    }
+
+    protected void validateGenericAgentLinkId(Asset<?> storageAsset, String genericParameterName, String agentId, String expectedAgentLinkType) {
+        Asset<?> selectedAgent = assetStorageService.find(agentId, false);
+        if (selectedAgent == null) {
+            throw new BadRequestException("Generic parameter references an unknown agent: " + genericParameterName);
+        }
+
+        if (!storageAsset.getRealm().equals(selectedAgent.getRealm())) {
+            throw new BadRequestException("Generic parameter references an agent from a different realm: " + genericParameterName);
+        }
+
+        if (!isRealmActiveAndAccessible(selectedAgent.getRealm())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), agentId)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        String selectedAgentLinkType = ValueUtil.getAgentDescriptor(selectedAgent.getType())
+            .map(AgentDescriptor::getAgentLinkType)
+            .orElse(null);
+        if (!expectedAgentLinkType.equals(selectedAgentLinkType)) {
+            throw new BadRequestException("Generic parameter selected agent type does not match imported agent link type: " + genericParameterName);
         }
     }
 

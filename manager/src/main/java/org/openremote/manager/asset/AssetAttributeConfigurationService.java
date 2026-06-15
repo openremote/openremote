@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+
 public class AssetAttributeConfigurationService {
 
     protected AssetAttributeConfigurationService() {
@@ -264,6 +266,10 @@ public class AssetAttributeConfigurationService {
             }
         }
 
+        if (isAgentLinkTypePath(pathParts, 0)) {
+            throw new IllegalArgumentException("Agent link type cannot be a generic parameter: " + path);
+        }
+
         return pathParts;
     }
 
@@ -283,7 +289,18 @@ public class AssetAttributeConfigurationService {
             }
         }
 
+        if (isAgentLinkTypePath(pathParts, 2)) {
+            throw new IllegalArgumentException("Agent link type cannot be a generic parameter: " + path);
+        }
+
         return pathParts;
+    }
+
+    protected static boolean isAgentLinkTypePath(String[] pathParts, int metaIndex) {
+        return pathParts.length == metaIndex + 3
+            && "meta".equals(pathParts[metaIndex])
+            && AGENT_LINK.getName().equals(pathParts[metaIndex + 1])
+            && "type".equals(pathParts[metaIndex + 2]);
     }
 
     protected static Optional<Object> getMetaPathValue(MetaMap meta, String[] pathParts) {
