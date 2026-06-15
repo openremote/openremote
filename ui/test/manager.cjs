@@ -35,7 +35,8 @@ const javaOpts = process.env.JAVA_OPTS ? process.env.JAVA_OPTS.split(" ") : [
     "-XX:+HeapDumpOnOutOfMemoryError",
     "-XX:HeapDumpPath=./dump.hprof",
 ];
-const args = [...javaOpts, "-cp", classPath, "org.openremote.manager.Main"];
+const javaOptsAppend = process.env.JAVA_OPTS_APPEND ? process.env.JAVA_OPTS_APPEND.split(" ") : []
+const args = [...javaOpts, ...javaOptsAppend, "-cp", classPath, "org.openremote.manager.Main"];
 
 // --- Execute Java ---
 const child = spawn("java", args, {
