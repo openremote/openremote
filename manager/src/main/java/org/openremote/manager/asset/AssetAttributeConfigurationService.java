@@ -239,6 +239,8 @@ public class AssetAttributeConfigurationService {
             }
         }
 
+        validateGenericParameterPathTypes(resolvedAttributes, configuration.getGenericParameters());
+
         return new AssetAttributeConfigurationDocument(
             configuration.getVersion(),
             configuration.getAssetType(),
@@ -498,6 +500,36 @@ public class AssetAttributeConfigurationService {
 
         if (!valid) {
             throw new IllegalArgumentException("Generic parameter value has invalid type: " + genericParameterName);
+        }
+    }
+
+    protected static void validateGenericParameterPathTypes(Map<String, AssetAttributeConfigurationEntry> attributes,
+                                                            Map<String, AssetAttributeConfigurationGenericParameter> genericParameters) {
+        for (Map.Entry<String, AssetAttributeConfigurationGenericParameter> genericParameterEntry : genericParameters.entrySet()) {
+            String genericParameterName = genericParameterEntry.getKey();
+            AssetAttributeConfigurationGenericParameter genericParameter = genericParameterEntry.getValue();
+            for (String path : genericParameter.getPaths()) {
+                validateGenericParameterPathType(attributes, genericParameterName, genericParameter.getType(), path);
+            }
+        }
+    }
+
+    protected static void validateGenericParameterPathType(Map<String, AssetAttributeConfigurationEntry> attributes,
+                                                           String genericParameterName,
+                                                           String genericParameterType,
+                                                           String path) {
+        String[] pathParts = validateGenericParameterDocumentPath(path);
+        AssetAttributeConfigurationEntry attributeConfiguration = attributes.get(pathParts[1]);
+        if (attributeConfiguration == null || attributeConfiguration.getMeta() == null) {
+            return;
+        }
+
+        String[] metaPathParts = new String[pathParts.length - 2];
+        System.arraycopy(pathParts, 2, metaPathParts, 0, metaPathParts.length);
+
+        String pathType = getGenericParameterType(attributeConfiguration.getMeta(), metaPathParts);
+        if (!"unknown".equals(pathType) && !pathType.equals(genericParameterType)) {
+            throw new IllegalArgumentException("Generic parameter type does not match path schema: " + genericParameterName);
         }
     }
 
