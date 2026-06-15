@@ -14,7 +14,9 @@ import manager, {DefaultColor3} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AxiosError, isAxiosError} from "@openremote/rest";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {NotificationForm} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
@@ -215,6 +217,17 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 #table-container or-notifications-table {
                     flex: 0 1 auto;
                     min-height: 0;
+                }
+
+                .controls or-vaadin-select {
+                    width: 180px;
+                }
+
+                .controls or-vaadin-date-time-picker {
+                    width: 280px;
+                    &::part(label) {
+                        padding-bottom: 0.5em; /* TODO: find a structural fix */
+                    }
                 }
             `];
     }
@@ -420,9 +433,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected _renderHeader(writeNotifications: boolean, hasRecipientType: boolean = true) {
-        const sourceOptions: [keyof typeof NotificationSource | "ALL_SOURCES", string][] = [
-            ["ALL_SOURCES", i18next.t("notifications.sources.ALL_SOURCES")],
-            ...sources.map<[NotificationSourceKeys, string]>(s => [s, i18next.t(`notifications.sources.${s}`)])
+        const sourceOptions: SelectItem[] = [
+            {label: i18next.t("notifications.sources.ALL_SOURCES"), value: "ALL_SOURCES"},
+            ...sources.map(s => ({label: i18next.t(`notifications.sources.${s}`), value: s as string}))
         ];
 
         return html`
@@ -432,52 +445,50 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     <span><or-translate value="notification_other"/></span>
                 </div>
 
-                <div>
-                    <or-mwc-input
-                            type="${InputType.SELECT}"
-                            label="${i18next.t('source')}"
-                            .options="${sourceOptions}"
-                            .value="${this._selectedSource}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                this._selectedSource = e.detail.value;
+                <div class="controls">
+                    <or-vaadin-select
+                            .items="${sourceOptions}"
+                            value="${this._selectedSource || "ALL_SOURCES"}"
+                            @change="${(ev: Event) => {
+                                this._selectedSource = (ev.currentTarget as OrVaadinSelect).value;
                                 this._isFilteredSource = true; // set filter changes
                                 this._currentPage = 0;
                                 this._loadData();
-                            }}"
-                    ></or-mwc-input>
+                            }}">
+                        <or-translate slot="label" value="source"></or-translate>
+                    </or-vaadin-select>
 
-                    <or-mwc-input
-                            type="${InputType.DATETIME}"
-                            label="${i18next.t('from')}"
-                            .value="${this._fromDate}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                this._fromDate = e.detail.value;
+                    <or-vaadin-date-time-picker
+                            value="${this._fromDate ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(this._fromDate)) : ""}"
+                            @change="${(ev: Event) => {
+                                const value = (ev.currentTarget as OrVaadinDateTimePicker).value;
+                                if (!value) return;
+                                this._fromDate = new Date(value).getTime();
                                 this._isFilteredDate = true;
                                 this._currentPage = 0;
                                 this._loadData();
-                            }}"
-                    ></or-mwc-input>
+                            }}">
+                        <or-translate slot="label" value="from"></or-translate>
+                    </or-vaadin-date-time-picker>
 
-                    <or-mwc-input
-                            type="${InputType.DATETIME}"
-                            label="${i18next.t('to')}"
-                            .value="${this._toDate}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                this._toDate = e.detail.value;
+                    <or-vaadin-date-time-picker
+                            value="${this._toDate ? OrVaadinDateTimePicker.getLocalizedISOString(new Date(this._toDate)) : ""}"
+                            @change="${(ev: Event) => {
+                                const value = (ev.currentTarget as OrVaadinDateTimePicker).value;
+                                if (!value) return;
+                                this._toDate = new Date(value).getTime();
                                 this._isFilteredDate = true;
                                 this._currentPage = 0;
                                 this._loadData();
-                            }}"
-                    ></or-mwc-input>
+                            }}">
+                        <or-translate slot="label" value="to"></or-translate>
+                    </or-vaadin-date-time-picker>
 
                     ${writeNotifications ? html`
-                        <or-mwc-input
-                                type="${InputType.BUTTON}"
-                                icon="plus"
-                                label="${i18next.t("notifications.sendNew")}"
-                                .disabled="${!hasRecipientType}"
-                                @or-mwc-input-changed="${() => this._showCreateDialog()}"
-                        ></or-mwc-input>
+                        <or-vaadin-button ?disabled="${!hasRecipientType}" @click="${() => this._showCreateDialog()}">
+                            <or-icon slot="prefix" icon="plus"></or-icon>
+                            <or-translate value="notifications.sendNew"></or-translate>
+                        </or-vaadin-button>
                     ` : ``}
                 </div>
             </div>
