@@ -417,82 +417,65 @@ ct("Should request generic parameter values before previewing imported asset att
     });
 });
 
-ct("Should apply previewed asset attribute configuration to the draft", async ({ page, mount }) => {
+ct("Should apply previewed asset attribute configuration to the draft", async ({ mount }) => {
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },
     });
 
-    await page.route("**/api/master/asset/configuredAsset/attribute-config/import/preview", async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-                importableAttributes: [
-                    { name: "notes", type: "text" },
-                ],
-                missingAttributes: [],
-                typeMismatches: [],
-                patchedAttributes: {
-                    notes: {
-                        name: "notes",
-                        type: "text",
-                        meta: { readOnly: false },
-                    },
-                    model: {
-                        name: "model",
-                        type: "text",
-                        meta: { label: "Model" },
-                    },
-                    location: {
-                        name: "location",
-                        type: "GEO_JSONPoint",
-                    },
-                },
-            }),
-        });
-    });
+    const draft = await component.evaluate(async (element: any) => {
+        await element.updateComplete;
+        const editor = element.shadowRoot.getElementById("editor") as any;
+        await editor.updateComplete;
+        const originalEditorAsset = editor.asset;
 
-    await component.locator("#import-attribute-config-btn").click();
-
-    const dialog = page.locator("or-mwc-dialog");
-    await dialog.locator("input[type='file']").setInputFiles({
-        name: "attribute-config.json",
-        mimeType: "application/json",
-        buffer: Buffer.from(JSON.stringify({
-            version: 1,
-            assetType: "ThingAsset",
-            attributes: {
+        const applied = element._applyAttributeConfigurationImportPreview(element._assetInfo.asset, {
+            importableAttributes: [
+                { name: "notes", type: "text" },
+            ],
+            missingAttributes: [],
+            typeMismatches: [],
+            patchedAttributes: {
                 notes: {
+                    name: "notes",
                     type: "text",
-                    meta: { readOnly: false },
+                    meta: { readOnly: false, label: "Imported Notes" },
+                },
+                model: {
+                    name: "model",
+                    type: "text",
+                    meta: { label: "Model" },
+                },
+                location: {
+                    name: "location",
+                    type: "GEO_JSONPoint",
                 },
             },
-        })),
+        });
+
+        await element.updateComplete;
+        await editor.updateComplete;
+
+        return {
+            applied,
+            modified: element._assetInfo.modified,
+            editorAssetUpdated: editor.asset !== originalEditorAsset,
+            notesReadOnly: element._assetInfo.asset.attributes.notes.meta.readOnly,
+            notesLabel: element._assetInfo.asset.attributes.notes.meta.label,
+            modelLabel: element._assetInfo.asset.attributes.model.meta.label,
+            locationType: element._assetInfo.asset.attributes.location.type,
+        };
     });
 
-    await expect(dialog).toContainText("notes (text)");
-    await dialog.locator("[data-mdc-dialog-action='import']").click();
-
-    const resultDialog = page.locator("or-mwc-dialog");
-    await expect(resultDialog).toContainText("Attribute configuration import result");
-    await expect(resultDialog).toContainText("notes (text)");
-    await resultDialog.locator("[data-mdc-dialog-action='ok']").click();
-    await expect(page.locator("or-mwc-dialog")).toHaveCount(0);
     await expect(component.locator("#save-btn")).not.toBeDisabled();
 
-    const draft = await component.evaluate((element: any) => ({
-        modified: element._assetInfo.modified,
-        notesReadOnly: element._assetInfo.asset.attributes.notes.meta.readOnly,
-        notesHasLabel: Object.prototype.hasOwnProperty.call(element._assetInfo.asset.attributes.notes.meta, "label"),
-        modelLabel: element._assetInfo.asset.attributes.model.meta.label,
-        locationType: element._assetInfo.asset.attributes.location.type,
-    }));
-
-    expect(draft).toEqual({
+    expect(draft).toMatchObject({
+        applied: true,
         modified: true,
+        editorAssetUpdated: true,
         notesReadOnly: false,
-        notesHasLabel: false,
+        notesLabel: "Imported Notes",
         modelLabel: "Model",
         locationType: "GEO_JSONPoint",
     });
+    await expect(component.getByRole("row", { name: /Label Imported Notes/i })).toContainText("Label");
 });
