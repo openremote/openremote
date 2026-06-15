@@ -1,3 +1,22 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {css, html, TemplateResult } from "lit";
 import { customElement, query } from "lit/decorators.js";
 import {WidgetSettings} from "../util/widget-settings";
@@ -14,6 +33,8 @@ import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ChartAttributeConfig, OrChart} from "@openremote/or-chart";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
 const styling = css`
   .switch-container {
@@ -141,8 +162,8 @@ export class ChartSettings extends WidgetSettings {
         if(!timeWindow || !this.timeWindowOptions.has(timeWindow)) timeWindow = Array.from(this.timeWindowOptions.keys())[0];
 
         // List the available timeframes to select from
-        const prefixOptions = this.timePrefixOptions.map(s => s.toLowerCase());
-        const windowOptions = Array.from(this.timeWindowOptions.keys()).map(s => [s, i18next.t(s.toLowerCase())]);
+        const prefixOptions: SelectItem[] = this.timePrefixOptions.map(s => ({value: s, label: i18next.t(s.toLowerCase()) }));
+        const windowOptions: SelectItem[] = Array.from(this.timeWindowOptions.keys()).map(s => ({value: s, label: i18next.t(s.toLowerCase()) }));
         return html`
             <div>
                 <!-- Attribute selection -->
@@ -158,15 +179,13 @@ export class ChartSettings extends WidgetSettings {
                 <settings-panel displayName="time" expanded>
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- This/last selection of timeframe -->
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('prefixDefault')}" style="width: 100%;"
-                                      .options="${prefixOptions}" value="${timePrefix.toLowerCase()}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimePrefixSelect(ev)}"
-                        ></or-mwc-input>
+                        <or-vaadin-select .items=${prefixOptions} value=${timePrefix} @change=${(ev: Event) => this.onTimePrefixSelect(ev)}>
+                            <or-translate slot="label" value="prefixDefault"></or-translate>
+                        </or-vaadin-select>
                         <!-- Select time frame -->
-                        <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
-                                      .options="${windowOptions}" value="${timeWindow}"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeWindowSelect(ev)}"
-                        ></or-mwc-input>
+                        <or-vaadin-select .items=${windowOptions} .value=${timeWindow} @change=${(ev: Event) => this.onTimeWindowSelect(ev)}>
+                            <or-translate slot="label" value="timeframeDefault"></or-translate>
+                        </or-vaadin-select>
                     </div>  
                 </settings-panel>
                 <!-- Display options --> 
@@ -210,13 +229,15 @@ export class ChartSettings extends WidgetSettings {
                                     <span><or-translate value="dashboard.leftAxis"></or-translate></span>
                                 </div>
                             `)}
-                            <div style="display: flex;">
+                            <div style="display: flex; align-items: baseline;">
                                 ${max !== undefined ? html`
-                                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${max}" style="width: 100%;"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'max', ev)}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-number-field value=${max} @change=${(ev: Event) => this.onMinMaxValueChange("left", "max", ev)}>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                    </or-vaadin-number-field>
                                 ` : html`
-                                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
+                                    <or-vaadin-text-field value="auto" readonly>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                    </or-vaadin-text-field>
                                 `}
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'max', ev)}"
@@ -224,11 +245,13 @@ export class ChartSettings extends WidgetSettings {
                             </div>
                             <div style="display: flex; margin-top: 12px;">
                                 ${min !== undefined ? html`
-                                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${min}" style="width: 100%;"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'min', ev)}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-number-field value=${min} @change=${(ev: Event) => this.onMinMaxValueChange("left", "min", ev)}>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                    </or-vaadin-number-field>
                                 ` : html`
-                                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
+                                    <or-vaadin-text-field value="auto" readonly>
+                                        <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                    </or-vaadin-text-field>
                                 `}
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'min', ev)}"
@@ -247,25 +270,27 @@ export class ChartSettings extends WidgetSettings {
                                     </div>
                                     <div style="display: flex;">
                                         ${rightMax !== undefined ? html`
-                                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${rightMax}" style="width: 100%;"
-                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'max', ev)}"
-                                            ></or-mwc-input>
+                                            <or-vaadin-number-field value=${rightMax} @change=${(ev: Event) => this.onMinMaxValueChange("right", "max", ev)}>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                            </or-vaadin-number-field>
                                         ` : html`
-                                            <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto"
-                                                          style="width: 100%;"></or-mwc-input>
+                                            <or-vaadin-text-field value="auto" readonly>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
+                                            </or-vaadin-text-field>
                                         `}
                                         <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMax !== undefined}"
                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'max', ev)}"
                                         ></or-mwc-input>
                                     </div>
-                                    <div style="display: flex; margin-top: 12px;">
+                                    <div style="display: flex; margin-top: 12px; align-items: baseline;">
                                         ${rightMin !== undefined ? html`
-                                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${rightMin}" style="width: 100%;"
-                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'min', ev)}"
-                                            ></or-mwc-input>
+                                            <or-vaadin-number-field value=${rightMin} @change=${(ev: Event) => this.onMinMaxValueChange("right", "min", ev)}>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                            </or-vaadin-number-field>
                                         ` : html`
-                                            <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto"
-                                                          style="width: 100%;"></or-mwc-input>
+                                            <or-vaadin-text-field value="auto" readonly>
+                                                <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
+                                            </or-vaadin-text-field>
                                         `}
                                         <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMin !== undefined}"
                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'min', ev)}"
@@ -279,15 +304,15 @@ export class ChartSettings extends WidgetSettings {
 
                 <!-- Data sampling options -->
                 ${when(Array.from(this.samplingOptions?.keys()).length > 1, () => {
-                    const samplingOptions = Array.from(this.samplingOptions.entries());
-                    const samplingValue = samplingOptions?.find((entry => entry[1] === this.widgetConfig.datapointQuery.type))?.[0] ?? samplingOptions[0];
+                    const samplingOptions: SelectItem[] = Array.from(this.samplingOptions.entries()).map(o => ({value: o[0], label: i18next.t(o[1])}));
+                    const samplingValue = this.widgetConfig.datapointQuery.type;
                     return html`
                         <settings-panel displayName="dataSampling" expanded="${false}">
                             <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                                 <div>
-                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
-                                                  label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onSamplingQueryChange(ev)}"
-                                    ></or-mwc-input>
+                                    <or-vaadin-select .items=${samplingOptions} value=${samplingValue} @change=${(ev: Event) => this.onSamplingQueryChange(ev)}>
+                                        <or-translate slot="label" value="algorithm"></or-translate>
+                                    </or-vaadin-select>
                                 </div>
                                 <div>
                                     ${this.getSamplingOptionsTemplate(this.widgetConfig.datapointQuery.type)}
@@ -304,14 +329,15 @@ export class ChartSettings extends WidgetSettings {
         switch (type) {
             case "interval": {
                 const intervalQuery = this.widgetConfig.datapointQuery as AssetDatapointIntervalQuery;
-                const formulaOptions = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX];
+                const formulaOptions: SelectItem[] = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX]
+                    .map(o => ({value: o, label: i18next.t(o)}));
                 return html`
-                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
-                                  .value="${intervalQuery.formula}" label="${i18next.t("algorithmMethod")}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                      intervalQuery.formula = event.detail.value;
-                                      this.notifyConfigUpdate();
-                                  }}"
-                    ></or-mwc-input>
+                    <or-vaadin-select .items=${formulaOptions} value=${intervalQuery.formula} required @change=${(ev: Event) => {
+                        intervalQuery.formula = (ev.currentTarget as OrVaadinSelect).value as any;
+                        this.notifyConfigUpdate();
+                    }}>
+                        <or-translate slot="label" value="algorithmMethod"></or-translate>
+                    </or-vaadin-select>
                 `;
             }
             default:
@@ -471,9 +497,9 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
-    protected onTimePrefixSelect(ev: OrInputChangedEvent) {
+    protected onTimePrefixSelect(ev: Event) {
         let oldValue = this.widgetConfig.defaultTimePresetKey;
-        const newPrefix = ev.detail.value.toString();
+        const newPrefix = (ev.currentTarget as OrVaadinSelect).value;
         const prefixOptions = this.timePrefixOptions;
         if(!prefixOptions.find(o => oldValue.includes(o))) {
             oldValue = Array.from(this.timeWindowOptions.keys())[0]; // Old value was invalid, so we replace it in full
@@ -485,9 +511,9 @@ export class ChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onTimeWindowSelect(ev: OrInputChangedEvent) {
+    protected onTimeWindowSelect(ev: Event) {
         let oldValue = this.widgetConfig.defaultTimePresetKey;
-        const newWindow = ev.detail.value.toString();
+        const newWindow = (ev.currentTarget as OrVaadinSelect).value;
         const windowOptions = Array.from(this.timeWindowOptions.keys()).sort((a, b) => b.length - a.length);
         if(!windowOptions.find(o => oldValue.includes(o))) {
             oldValue = this.timePrefixOptions[0]; // Old value was invalid, so we replace it in full
@@ -536,16 +562,20 @@ export class ChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onMinMaxValueChange(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
-        this.setAxisMinMaxValue(axis, type, ev.detail.value);
+    protected onMinMaxValueChange(axis: 'left' | 'right', type: 'min' | 'max', ev: Event) {
+        const elem = ev.currentTarget as OrVaadinNumberField;
+        if(elem.checkValidity()) {
+            this.setAxisMinMaxValue(axis, type, Number(elem.value));
+        }
     }
 
     protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
         this.setAxisMinMaxValue(axis, type, (ev.detail.value ? (type === 'min' ? 0 : 100) : undefined));
     }
 
-    protected onSamplingQueryChange(ev: OrInputChangedEvent) {
-        this.widgetConfig.datapointQuery.type = this.samplingOptions.get(ev.detail.value)! as any;
+    protected onSamplingQueryChange(ev: Event) {
+        const elem = ev.currentTarget as OrVaadinSelect;
+        this.widgetConfig.datapointQuery.type = elem.value as any;
         this.notifyConfigUpdate();
     }
 }

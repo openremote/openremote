@@ -442,21 +442,21 @@ services:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     restart: always
     # RAM limits and PostgreSQL memory settings should be set appropriately for the expected load (see documentation)
-    shm_size: 156mb
+    shm_size: ${OR_DB_SHM:-156mb}
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: ${OR_DB_RAM:-512M}
     command:
       - postgres
       - -c
-      - shared_buffers=128MB
+      - shared_buffers=${OR_DB_SHARED_BUFFERS:-128MB}
       - -c
-      - effective_cache_size=384MB
+      - effective_cache_size=${OR_DB_CACHE_SIZE:-384MB}
       - -c
-      - maintenance_work_mem=56MB
+      - maintenance_work_mem=${OR_DB_MAINTENANCE_WORK_MEM:-56MB}
       - -c
-      - work_mem=4MB
+      - work_mem=${OR_DB_WORK_MEM:-4MB}
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       # Needs to be available on the same path as the manager for data exports to work
