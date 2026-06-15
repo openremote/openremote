@@ -28,6 +28,28 @@ import { AssetEventCause, AssetModelUtil, ClientRole } from "@openremote/model";
 
 import { beforeMount } from "@sand4rt/experimental-ct-web/hooks";
 
+const modbusAgentTypeInfo = {
+  assetDescriptor: {
+    descriptorType: "agent",
+    name: "ModbusTcpAgent",
+    agentLinkType: "ModbusAgentLink",
+  },
+  attributeDescriptors: [],
+  metaItemDescriptors: [],
+  valueDescriptors: [],
+};
+
+const simulatorAgentTypeInfo = {
+  assetDescriptor: {
+    descriptorType: "agent",
+    name: "SimulatorAgent",
+    agentLinkType: "SimulatorAgentLink",
+  },
+  attributeDescriptors: [],
+  metaItemDescriptors: [],
+  valueDescriptors: [],
+};
+
 // Playwright CT imports a component's module only when it is `mount()`ed, so a custom element that
 // only appears as a slotted/appended child inside the mounted component would never be defined. A
 // test declares such components via `hooksConfig.components` (see `ComponentHooksConfig`); their
@@ -58,7 +80,7 @@ window._i18next = i18next.use(HttpBackend);
  * @returns {string} The subscriptionId
  */
 function subscribeAssetEvents(ids, requestCurrentValues, callback) {
-  if (window._assets && window._assets.length) {
+  if (window._assets && window._assets.length && ids && ids.length) {
     const assetEvent = {
       eventType: "asset",
       asset: window._assets.find(({ id }) => id === ids[0]),
@@ -91,7 +113,7 @@ manager.init = async () => {
   };
   manager.rest.initialise("/api/master/");
   // Similar to `manager.doDescriptorsInit`, but without requesting the API
-  AssetModelUtil._assetTypeInfos = [thingAssetInfo];
+  AssetModelUtil._assetTypeInfos = [thingAssetInfo, modbusAgentTypeInfo, simulatorAgentTypeInfo];
   AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptors);
   AssetModelUtil._valueDescriptors = Object.values(valueDescriptors);
 

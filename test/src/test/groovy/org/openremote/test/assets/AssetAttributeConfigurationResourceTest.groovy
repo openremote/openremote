@@ -1,6 +1,9 @@
 package org.openremote.test.assets
 
+import jakarta.ws.rs.BadRequestException
 import org.openremote.agent.protocol.modbus.ModbusAgentLink
+import org.openremote.agent.protocol.modbus.ModbusTcpAgent
+import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetAttributeConfigurationDocument
 import org.openremote.model.asset.AssetAttributeConfigurationEntry
@@ -77,6 +80,13 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
         and: "an authenticated admin asset resource"
         def assetResource = adminAssetResource(container)
 
+        and: "a compatible agent is available for generic agent link IDs"
+        def modbusAgent = new ModbusTcpAgent("Modbus agent")
+            .setRealm(keycloakTestSetup.realmMaster.name)
+            .setHost("127.0.0.1")
+            .setPort(502)
+        modbusAgent = assetResource.create(null, modbusAgent)
+
         and: "a persisted target asset"
         def asset = new ThingAsset("Import preview endpoint asset")
             .setRealm(keycloakTestSetup.realmMaster.name)
@@ -130,7 +140,7 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
             new AssetAttributeConfigurationImportRequest(
                 draftAsset,
                 document,
-                [agentLinkId: "agent-1"]
+                [agentLinkId: modbusAgent.id]
             )
         )
 
@@ -144,7 +154,7 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
         and: "the patched attributes replace compatible metadata and preserve unrelated draft metadata"
         preview.patchedAttributes.get("temperature").get().meta.getValue(READ_ONLY).orElse(false)
         !preview.patchedAttributes.get("temperature").get().meta.has(LABEL)
-        preview.patchedAttributes.get("temperature").get().meta.get("agentLink").get().getValue(ModbusAgentLink.class).get().id == "agent-1"
+        preview.patchedAttributes.get("temperature").get().meta.get("agentLink").get().getValue(ModbusAgentLink.class).get().id == modbusAgent.id
         preview.patchedAttributes.get("humidity").get().meta.getValue(LABEL).orElse(null) == "Unsaved humidity label"
         preview.patchedAttributes.get("mode").get().meta.getValue(LABEL).orElse(null) == "Persisted mode label"
 
@@ -153,6 +163,24 @@ class AssetAttributeConfigurationResourceTest extends Specification implements M
         storedAsset.getAttribute("temperature").get().meta.getValue(LABEL).orElse(null) == "Persisted label"
         !storedAsset.getAttribute("temperature").get().meta.getValue(READ_ONLY).orElse(false)
         storedAsset.getAttribute("humidity").get().meta.getValue(LABEL).orElse(null) == "Persisted humidity label"
+
+        when: "the selected generic agent ID has a different agent link type"
+        def simulatorAgent = assetResource.create(
+            null,
+            new SimulatorAgent("Simulator agent").setRealm(keycloakTestSetup.realmMaster.name)
+        )
+        assetResource.previewAttributeConfigurationImport(
+            null,
+            asset.id,
+            new AssetAttributeConfigurationImportRequest(
+                draftAsset,
+                document,
+                [agentLinkId: simulatorAgent.id]
+            )
+        )
+
+        then: "the preview is rejected"
+        thrown(BadRequestException)
     }
 
     protected AssetResource adminAssetResource(container) {
