@@ -2252,7 +2252,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(OrEleme
       return false;
     }
 
-    this._assetInfo.asset.attributes = { ...preview.patchedAttributes };
+    this._assetInfo.asset = {
+      ...this._assetInfo.asset,
+      attributes: { ...preview.patchedAttributes },
+    };
     this._assetInfo.attributeTemplateMap = {};
     this._assetInfo.modified = true;
     this._doValidation();
