@@ -230,9 +230,9 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 name: this._ruleset.type == "realm" ? this._ruleset.realm : undefined
             };
             const promise = getAssetsByType(type, query);
-            this._activeAssetPromises.set(type, promise);
+            if(!query.ids) this._activeAssetPromises.set(type, promise);
             const data = await promise;
-            this._activeAssetPromises.delete(type);
+            if(!query.ids) this._activeAssetPromises.delete(type);
             return data.assets;
         }
     }
