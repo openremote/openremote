@@ -178,7 +178,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
             }
         };
 
-        const controls = [[centerControl, "bottom-left"], [coordinatesControl, "top-right"]]
+        const controls: (IControl | [IControl, ControlPosition?])[] = [[centerControl, "bottom-right"], [coordinatesControl, "top-right"]]
 
         if (!readonly) {
 
@@ -196,7 +196,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
             userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
                 setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
             });
-            controls.push([userLocationControl, "bottom-left"]);
+            controls.push([userLocationControl, "bottom-right"]);
         }
 
         let content = html`
