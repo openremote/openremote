@@ -1034,7 +1034,15 @@
   "MODE": "Mode",
   "SUM": "Sum",
   "mapPage": {
-    "legendTitle": "Legend"
+    "legendTitle": "Legend",
+    "filterAll": "Show all assets",
+    "filterCustom": "Custom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetBearing": "Reset bearing to north",
+    "searchLocation": "Search location",
+    "searchLocationPlaceholder": "Search location...",
+    "findMyLocation": "Find my location"
   },
   "alarm": {
     "": "Alarm",

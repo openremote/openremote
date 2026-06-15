@@ -1026,7 +1026,15 @@
   "MODE": "Modus",
   "SUM": "Som",
   "mapPage": {
-    "legendTitle": "Legenda"
+    "legendTitle": "Legenda",
+    "filterAll": "Alle assets weergeven",
+    "filterCustom": "Aangepast",
+    "zoomIn": "Inzoomen",
+    "zoomOut": "Uitzoomen",
+    "resetBearing": "Richting het noorden herstellen",
+    "searchLocation": "Locatie zoeken",
+    "searchLocationPlaceholder": "Locatie zoeken...",
+    "findMyLocation": "Mijn locatie zoeken"
   },
   "alarm": {
     "": "Alarm",

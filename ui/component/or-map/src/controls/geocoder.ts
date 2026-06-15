@@ -117,7 +117,7 @@ export class OrMapGeocoder extends LitElement {
     protected render() {
         if (this._collapsed) {
             return html`
-                <or-vaadin-button theme="icon" title="Search location" @click="${this._expand}">
+                <or-vaadin-button theme="icon" title="${i18next.t("mapPage.searchLocation")}" @click="${this._expand}">
                     <or-vaadin-icon icon="vaadin:search"></or-vaadin-icon>
                 </or-vaadin-button>
             `;
@@ -127,7 +127,7 @@ export class OrMapGeocoder extends LitElement {
                 .filteredItems="${this._suggestions}"
                 item-label-path="place_name"
                 item-value-path="place_name"
-                placeholder="Search location..."
+                placeholder="${i18next.t("mapPage.searchLocationPlaceholder")}"
                 clear-button-visible
                 @filter-changed="${(e: CustomEvent) => this._fetchSuggestions(e.detail.value)}"
                 @selected-item-changed="${this._onItemSelected}"

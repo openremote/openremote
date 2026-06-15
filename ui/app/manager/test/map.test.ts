@@ -754,12 +754,12 @@ test.describe("Navigation control", () => {
 
         const zoomBefore = await getZoom();
 
-        await page.getByRole("button", { name: "Zoom in" }).click();
+        await page.getByTitle("Zoom in").click();
         await waitForMapIdle();
         expect(await getZoom()).toBeGreaterThan(zoomBefore);
 
         const zoomAfterIn = await getZoom();
-        await page.getByRole("button", { name: "Zoom out" }).click();
+        await page.getByTitle("Zoom out").click();
         await waitForMapIdle();
         expect(await getZoom()).toBeLessThan(zoomAfterIn);
     });
@@ -790,7 +790,7 @@ test.describe("Navigation control", () => {
         const compass = page.locator('or-map-navigation or-icon[icon="or:compass"]');
         await expect(compass).toHaveAttribute("style", "transform: rotate(-90deg)");
 
-        await page.getByRole("button", { name: "Reset bearing to north" }).click();
+        await page.getByTitle("Reset bearing to north").click();
         await expect.poll(() =>
             page.locator("or-map").evaluate(el => (el as any)._map?._map?.isMoving())
         ).toBe(false);
@@ -828,10 +828,10 @@ test.describe("Geocoder control", () => {
         await manager.goToRealmStartPage("smartcity");
         await expect(page.locator("or-map")).toBeVisible();
 
-        await expect(page.getByRole("button", { name: "Search location" })).toBeVisible();
+        await expect(page.getByTitle("Search location")).toBeVisible();
         await expect(page.locator("or-vaadin-combo-box")).not.toBeVisible();
 
-        await page.getByRole("button", { name: "Search location" }).click();
+        await page.getByTitle("Search location").click();
         await expect(page.locator("or-vaadin-combo-box")).toBeVisible();
     });
 
@@ -856,7 +856,7 @@ test.describe("Geocoder control", () => {
         await manager.goToRealmStartPage("smartcity");
         await expect(page.locator("or-map")).toBeVisible();
 
-        await page.getByRole("button", { name: "Search location" }).click();
+        await page.getByTitle("Search location").click();
         await page.locator("or-vaadin-combo-box").getByRole("combobox").pressSequentially("Rotterdam");
 
         const suggestion = page.locator("vaadin-combo-box-item").filter({ hasText: "Rotterdam, Netherlands" });
@@ -887,7 +887,7 @@ test.describe("Geocoder control", () => {
         await expect(page.locator("or-map")).toBeVisible();
 
         const requestPromise = page.waitForRequest("https://nominatim.openstreetmap.org/search**");
-        await page.getByRole("button", { name: "Search location" }).click();
+        await page.getByTitle("Search location").click();
         await page.locator("or-vaadin-combo-box").getByRole("combobox").pressSequentially("Eindhoven");
 
         const request = await requestPromise;
@@ -928,8 +928,8 @@ test.describe("Geolocate control", () => {
         await manager.goToRealmStartPage("smartcity");
         await expect(page.locator("or-map")).toBeVisible();
 
-        await expect(page.getByRole("button", { name: "Find my location" })).toBeVisible();
-        await page.getByRole("button", { name: "Find my location" }).click();
+        await expect(page.getByTitle("Find my location")).toBeVisible();
+        await page.getByTitle("Find my location").click();
 
         await expect.poll(() =>
             page.locator("or-map").evaluate(el => (el as any)._map?._map?.isMoving())

@@ -21,6 +21,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
 import "@openremote/or-icon";
@@ -77,13 +78,13 @@ export class OrMapNavigation extends LitElement {
 
     protected render() {
         return html`
-            <or-vaadin-button theme="icon" title="Zoom in" @click="${() => this._map?.zoomIn()}">
+            <or-vaadin-button theme="icon" title="${i18next.t("mapPage.zoomIn")}" @click="${() => this._map?.zoomIn()}">
                 <or-vaadin-icon icon="vaadin:plus"></or-vaadin-icon>
             </or-vaadin-button>
-            <or-vaadin-button theme="icon" title="Zoom out" @click="${() => this._map?.zoomOut()}">
+            <or-vaadin-button theme="icon" title="${i18next.t("mapPage.zoomOut")}" @click="${() => this._map?.zoomOut()}">
                 <or-vaadin-icon icon="vaadin:minus"></or-vaadin-icon>
             </or-vaadin-button>
-            <or-vaadin-button theme="icon" title="Reset bearing to north" @click="${() => this._map?.resetNorthPitch({ duration: 200 })}">
+            <or-vaadin-button theme="icon" title="${i18next.t("mapPage.resetBearing")}" @click="${() => this._map?.resetNorthPitch({ duration: 200 })}">
                 <or-icon icon="or:compass" style="transform: rotate(${this._bearing}deg)"></or-icon>
             </or-vaadin-button>
         `;

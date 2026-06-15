@@ -18,6 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 import type { Map as MapGL } from "maplibre-gl";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
 import { OrMapBaseControl } from "./base";
@@ -32,7 +33,7 @@ export class OrMapGeolocateControl extends OrMapBaseControl {
 
         this._button = document.createElement("or-vaadin-button");
         this._button.setAttribute("theme", "icon");
-        this._button.setAttribute("title", "Find my location");
+        this._button.setAttribute("title", i18next.t("mapPage.findMyLocation"));
         const icon = document.createElement("or-vaadin-icon") as HTMLElement;
         icon.setAttribute("icon", "vaadin:crosshairs");
         icon.style.cssText = "width: 14px; height: 14px; color: black;";

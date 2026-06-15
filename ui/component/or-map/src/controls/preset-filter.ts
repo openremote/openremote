@@ -88,7 +88,7 @@ export class OrMapPresetFilter extends LitElement {
         const types = filter.types;
         const typeLabel = types?.length
             ? types.map(t => Util.getAssetTypeLabel(t).replace(/\s*asset\s*$/i, "").trim()).join(" + ")
-            : i18next.t("mapPage.filterCustom", { defaultValue: "Custom" });
+            : i18next.t("mapPage.filterCustom");
 
         const attrValues = (filter.attributes?.items ?? [] as any[])
             .map((item: any) => {
@@ -111,7 +111,7 @@ export class OrMapPresetFilter extends LitElement {
     }
 
     protected _buildOptions() {
-        const all = { value: "0", label: i18next.t("mapPage.filterAll", { defaultValue: "All" }), count: this.assets.length };
+        const all = { value: "0", label: i18next.t("mapPage.filterAll"), count: this.assets.length };
         const filters = this.filters
             .map((filter, i) => ({
                 value: String(i + 1),
