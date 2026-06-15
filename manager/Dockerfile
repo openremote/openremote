@@ -145,7 +145,7 @@ ENV OR_STORAGE_DIR=${OR_STORAGE_DIR}
 ARG OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE=172.17.0.1
 ENV OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE=${OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE}
 
-ARG JAVA_OPTS="-Xms500m -Xmx2g \
+ARG JAVA_OPTS="-XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0 \
     -XX:NativeMemoryTracking=summary \
     -Xlog:all=warning:stdout:uptime,level,tags \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/storage/dump.hprof \

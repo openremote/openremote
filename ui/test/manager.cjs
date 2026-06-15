@@ -28,8 +28,8 @@ console.log(`Classpath: ${classPath}`);
 // --- Prepare Java arguments ---
 // We split JAVA_OPTS by space if it exists, or use the default JVM options defined in our Dockerfile
 const javaOpts = process.env.JAVA_OPTS ? process.env.JAVA_OPTS.split(" ") : [
-    "-Xms500m",
-    "-Xmx2g",
+    "-XX:InitialRAMPercentage=75.0",
+    "-XX:MaxRAMPercentage=75.0",
     "-XX:NativeMemoryTracking=summary",
     "-Xlog:all=warning:stdout:uptime,level,tags",
     "-XX:+HeapDumpOnOutOfMemoryError",

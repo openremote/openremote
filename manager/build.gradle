@@ -106,7 +106,7 @@ distributions {
     main {
         contents {
             from(project.projectDir) {
-                include("*Dockerfile", "entrypoint.sh")
+                include("*Dockerfile", "entrypoint.sh, heapdump-rename.sh")
             }
             into ("web") {
                 from("${rootDir}/LICENSE.txt")
