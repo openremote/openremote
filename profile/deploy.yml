@@ -364,10 +364,8 @@ services:
       # OR_PATH_PREFIX: /openremote
 
       # Custom JVM options (override default manager options or append using JAVA_OPTS_APPEND)
-  #JAVA_OPTS: ${JAVA_OPTS:--XX:InitialRAMPercentage=75.0 -XX:MaxRAMPercentage=75.0
-  #  -XX:NativeMemoryTracking=summary
-  #  -Xlog:all=warning:stdout:uptime,level,tags
-  #  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+  #JAVA_OPTS:
+  #JAVA_OPTS_APPEND:
   #
   # THE FOLLOWING OPTIONS CAN BE USED TO ENABLE JMX; PORT MUST ALSO BE EXPOSED
   # ACCESS SHOULD BE RESTRICTED BY FIREWALL TO SPECIFIC IPs FOR DIAGNOSTIC PURPOSES
