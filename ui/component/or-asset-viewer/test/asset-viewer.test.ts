@@ -126,6 +126,69 @@ ct("Should export selected asset attribute configuration", async ({ page, mount 
     expect(download.suggestedFilename()).toBe("Configured Thing-attribute-config.json");
 });
 
+ct("Should export selected generic asset attribute configuration paths", async ({ page, mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: configuredId, editMode: true },
+    });
+
+    let requestBody: unknown;
+    await page.route("**/api/master/asset/configuredAsset/attribute-config/export", async (route) => {
+        requestBody = route.request().postDataJSON();
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                version: 1,
+                assetType: "ThingAsset",
+                attributes: {
+                    model: {
+                        type: "text",
+                        meta: {
+                            agentLink: {
+                                type: "ModbusAgentLink",
+                            },
+                        },
+                    },
+                    notes: {
+                        type: "text",
+                        meta: {
+                            agentLink: {
+                                type: "ModbusAgentLink",
+                            },
+                        },
+                    },
+                },
+                genericParameters: {
+                    agentLinkId: {
+                        type: "text",
+                        paths: [
+                            "attributes.model.meta.agentLink.id",
+                            "attributes.notes.meta.agentLink.id",
+                        ],
+                    },
+                },
+            }),
+        });
+    });
+
+    await component.locator("#export-attribute-config-btn").click();
+
+    const dialog = page.locator("or-mwc-dialog");
+    await expect(dialog).toContainText("Generic parameters");
+    await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.id']")).toBeVisible();
+    await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.unitId']")).toBeVisible();
+    await dialog.locator("[data-generic-parameter-path='meta.agentLink.id']").click();
+
+    const downloadPromise = page.waitForEvent("download");
+    await dialog.locator("[data-mdc-dialog-action='export']").click();
+    await downloadPromise;
+
+    expect(requestBody).toEqual({
+        attributeNames: ["model", "notes"],
+        genericParameterPaths: ["meta.agentLink.id"],
+    });
+});
+
 ct("Should preview imported asset attribute configuration", async ({ page, mount }) => {
     const component = await mount(OrAssetViewer, {
         props: { assetId: configuredId, editMode: true },

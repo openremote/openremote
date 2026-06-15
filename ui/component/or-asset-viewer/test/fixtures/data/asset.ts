@@ -16,8 +16,8 @@ export const configuredAsset: Asset = {
     realm: "master",
     type: "ThingAsset",
     attributes: {
-        notes: { ...notes, meta: { readOnly: true } },
-        model: { name: "model", type: "text", meta: { label: "Model" } },
+        notes: { ...notes, meta: { readOnly: true, agentLink: { type: "ModbusAgentLink", id: "agent-1", unitId: 3 } } },
+        model: { name: "model", type: "text", meta: { label: "Model", agentLink: { type: "ModbusAgentLink", id: "agent-1", unitId: 3 } } },
         location,
     },
 };

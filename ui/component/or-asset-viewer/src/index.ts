@@ -142,6 +142,7 @@ interface UserAssetLinkInfo {
 
 interface AssetAttributeConfigurationExportRequest {
     attributeNames: string[];
+    genericParameterPaths?: string[];
 }
 
 interface AssetAttributeConfigurationImportRequest {
@@ -165,6 +166,11 @@ interface AssetAttributeConfigurationEntry {
 interface AssetAttributeConfigurationGenericParameter {
     type?: string;
     paths?: string[];
+}
+
+interface AssetAttributeConfigurationGenericParameterCandidate {
+    path: string;
+    label: string;
 }
 
 interface AssetAttributeConfigurationImportPreview {
@@ -1529,10 +1535,24 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const selectedAttributeNames = new Set(exportableAttributes.map((attribute) => attribute.name!));
+        const selectedGenericParameterPaths = new Set<string>();
         let dialog: OrMwcDialog;
         let exportAction: DialogAction;
 
+        const getSelectedAttributes = () => exportableAttributes
+            .filter((attribute) => attribute.name && selectedAttributeNames.has(attribute.name));
+
+        const getGenericParameterCandidates = () => this._getAttributeConfigurationGenericParameterCandidates(asset, getSelectedAttributes());
+
+        const syncSelectedGenericParameterPaths = () => {
+            const candidatePaths = new Set(getGenericParameterCandidates().map((candidate) => candidate.path));
+            Array.from(selectedGenericParameterPaths)
+                .filter((path) => !candidatePaths.has(path))
+                .forEach((path) => selectedGenericParameterPaths.delete(path));
+        };
+
         const updateExportAction = () => {
+            syncSelectedGenericParameterPaths();
             exportAction.disabled = selectedAttributeNames.size === 0;
             dialog.requestUpdate();
         };
@@ -1540,7 +1560,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         exportAction = {
             actionName: "export",
             content: "export",
-            action: () => this._exportAttributeConfiguration(asset, Array.from(selectedAttributeNames))
+            action: () => {
+                syncSelectedGenericParameterPaths();
+                this._exportAttributeConfiguration(asset, Array.from(selectedAttributeNames), Array.from(selectedGenericParameterPaths));
+            }
         };
 
         dialog = showDialog(new OrMwcDialog()
@@ -1571,6 +1594,28 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             </div>
                         `;
                     })}
+                    ${getGenericParameterCandidates().length > 0 ? html`
+                        <section id="asset-attribute-config-export-generic-parameters">
+                            <h3><or-translate value="genericParameters"></or-translate></h3>
+                            <div class="asset-attribute-config-export-generic-parameter-list">
+                                ${getGenericParameterCandidates().map((candidate) => html`
+                                    <or-vaadin-checkbox
+                                        data-generic-parameter-path=${candidate.path}
+                                        label=${candidate.label}
+                                        .checked=${selectedGenericParameterPaths.has(candidate.path)}
+                                        @change=${(ev: Event) => {
+                                            if ((ev.currentTarget as OrVaadinCheckbox).checked) {
+                                                selectedGenericParameterPaths.add(candidate.path);
+                                            } else {
+                                                selectedGenericParameterPaths.delete(candidate.path);
+                                            }
+                                            updateExportAction();
+                                        }}
+                                    ></or-vaadin-checkbox>
+                                `)}
+                            </div>
+                        </section>
+                    ` : ``}
                 </div>
             `)
             .setStyles(html`
@@ -1595,6 +1640,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     .asset-attribute-config-export-attribute ul {
                         margin: 4px 0 0 34px;
                         padding: 0;
+                    }
+
+                    #asset-attribute-config-export-generic-parameters {
+                        border-top: 1px solid var(--or-app-color5);
+                        padding-top: 12px;
+                    }
+
+                    #asset-attribute-config-export-generic-parameters h3 {
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 8px;
+                    }
+
+                    .asset-attribute-config-export-generic-parameter-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 8px;
                     }
                 </style>
             `)
@@ -1856,9 +1918,79 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return Util.getMetaLabel(undefined, descriptor || metaName, asset.type, false, metaName);
     }
 
-    protected async _exportAttributeConfiguration(asset: Asset, attributeNames: string[]) {
+    protected _getAttributeConfigurationGenericParameterCandidates(asset: Asset, attributes: Attribute<any>[]): AssetAttributeConfigurationGenericParameterCandidate[] {
+        if (attributes.length === 0) {
+            return [];
+        }
+
+        const pathValueMaps = attributes.map((attribute) => this._getAttributeConfigurationGenericParameterPathValues(attribute));
+        const firstPathValueMap = pathValueMaps[0];
+        return Array.from(firstPathValueMap.entries())
+            .filter(([path, value]) =>
+                pathValueMaps.every((pathValueMap) =>
+                    pathValueMap.has(path)
+                    && this._areAttributeConfigurationGenericParameterValuesEqual(value, pathValueMap.get(path))
+                )
+            )
+            .map(([path]) => ({
+                path,
+                label: this._formatAttributeConfigurationGenericParameterPathLabel(asset, path)
+            }))
+            .sort(Util.sortByString((candidate) => candidate.label));
+    }
+
+    protected _getAttributeConfigurationGenericParameterPathValues(attribute: Attribute<any>): Map<string, any> {
+        const pathValues = new Map<string, any>();
+        Object.entries(attribute.meta || {}).forEach(([metaName, value]) => {
+            this._collectAttributeConfigurationGenericParameterPathValues(value, `meta.${metaName}`, pathValues);
+        });
+        return pathValues;
+    }
+
+    protected _collectAttributeConfigurationGenericParameterPathValues(value: any, path: string, pathValues: Map<string, any>) {
+        if (value === undefined || value === null) {
+            return;
+        }
+
+        if (Array.isArray(value)) {
+            pathValues.set(path, value);
+            return;
+        }
+
+        if (typeof value === "object") {
+            Object.entries(value).forEach(([childName, childValue]) => {
+                this._collectAttributeConfigurationGenericParameterPathValues(childValue, `${path}.${childName}`, pathValues);
+            });
+            return;
+        }
+
+        pathValues.set(path, value);
+    }
+
+    protected _areAttributeConfigurationGenericParameterValuesEqual(valueA: any, valueB: any): boolean {
+        return JSON.stringify(valueA) === JSON.stringify(valueB);
+    }
+
+    protected _formatAttributeConfigurationGenericParameterPathLabel(asset: Asset, path: string): string {
+        const pathParts = path.split(".");
+        if (pathParts.length < 2 || pathParts[0] !== "meta") {
+            return path;
+        }
+
+        const metaLabel = this._getAttributeConfigurationMetaLabel(asset, pathParts[1]);
+        if (pathParts.length === 2) {
+            return metaLabel;
+        }
+
+        return `${metaLabel} > ${pathParts.slice(2).map((pathPart) => Util.camelCaseToSentenceCase(pathPart)).join(" > ")}`;
+    }
+
+    protected async _exportAttributeConfiguration(asset: Asset, attributeNames: string[], genericParameterPaths: string[] = []) {
         try {
             const request: AssetAttributeConfigurationExportRequest = {attributeNames};
+            if (genericParameterPaths.length > 0) {
+                request.genericParameterPaths = genericParameterPaths;
+            }
             const response = await manager.rest.axiosInstance.post<AssetAttributeConfigurationDocument>(
                 `asset/${asset.id}/attribute-config/export`,
                 request
