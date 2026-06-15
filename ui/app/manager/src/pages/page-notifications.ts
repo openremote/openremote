@@ -203,12 +203,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     justify-content: space-between;
                 }
 
-                or-icon {
-                    vertical-align: middle;
-                    --or-icon-width: 20px;
-                    --or-icon-height: 20px;
-                }
-
                 #table-container {
                     flex: 1;
                     min-height: 0;
@@ -222,80 +216,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     flex: 0 1 auto;
                     min-height: 0;
                 }
-
-                /* Dialog and form specific styles */
-
-                .dialog-content {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                    padding: 0 24px;
-                }
-
-                .dialog-content or-mwc-input {
-                    margin-bottom: 16px;
-                }
-
-                .section {
-                    border-radius: 4px;
-                    padding: 20px;
-                    margin-bottom: 24px;
-                }
-
-                .section:last-child {
-                    margin-bottom: 0;
-                }
-
-                .section-title {
-                    color: var(--or-app-color3);
-                    font-size: 14px;
-                    font-weight: 500;
-                    margin-bottom: 16px;
-                }
-
-                .form-preview {
-                    display: grid;
-                    grid-template-columns: 2fr 1fr;
-                    gap: 24px;
-                    padding: 20px;
-                    width: 100%;
-                }
-
-                .right-column {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 24px;
-                }
-
-                .section {
-                    background: white;
-                    border-radius: 4px;
-                    padding: 20px;
-                }
-
-                .field-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                    width: 100%; /* Add this to ensure full width */
-                }
-
-                or-mwc-input[readonly] {
-                    --mdc-text-field-fill-color: #f5f5f5;
-                    --mdc-text-field-disabled-line-color: #e0e0e0;
-                }
-
-                .filter-section {
-                    padding: 0 10px 0 4px;
-                    border-radius: 4px;
-                    margin-left: auto;
-                    order: 2;
-                }
-
-                .create-btn {
-                    order: 3;
-                }
-
             `];
     }
 
@@ -512,7 +432,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     <span><or-translate value="notification_other"/></span>
                 </div>
 
-                <div class="filter-section">
+                <div>
                     <or-mwc-input
                             type="${InputType.SELECT}"
                             label="${i18next.t('source')}"
@@ -549,8 +469,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 this._loadData();
                             }}"
                     ></or-mwc-input>
-                </div>
-                <div class="create-btn">
+
                     ${writeNotifications ? html`
                         <or-mwc-input
                                 type="${InputType.BUTTON}"
