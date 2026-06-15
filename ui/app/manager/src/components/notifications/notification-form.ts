@@ -1,7 +1,6 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import manager, {DefaultColor3, Util} from "@openremote/core";
 import {
@@ -16,12 +15,20 @@ import {
     User
 } from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {live} from "lit/directives/live.js";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import "@openremote/or-asset-tree";
-import {ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+// or-vaadin-checkbox-group registers the native vaadin-checkbox used for its children
+import "@openremote/or-vaadin-components/or-vaadin-checkbox-group";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-vaadin-components/or-vaadin-text-area";
 
 export type NotificationMessage = PushNotificationMessage | EmailNotificationMessage;
+
+interface TargetOption {
+    label: string;
+    value: string;
+}
 
 export class NotificationFormChangedEvent extends CustomEvent<void> {
     static readonly NAME = "notification-form-changed";
@@ -50,33 +57,12 @@ export class NotificationForm extends LitElement {
             padding: 0 16px;
         }
 
-        .select-container {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        select {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            background-color: white;
-        }
-
-        select:disabled {
-            background-color: #f5f5f5;
-            cursor: not-allowed;
-        }
-
-        label {
-            font-size: 14px;
-            color: #666;
-        }
-
-        or-mwc-input {
+        or-vaadin-select,
+        or-vaadin-checkbox-group,
+        or-vaadin-text-field,
+        or-vaadin-text-area {
             width: 100%;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         or-asset-tree {
@@ -112,7 +98,6 @@ export class NotificationForm extends LitElement {
             position: absolute;
             display: flex;
             flex-direction: column;
-            z-index: 3;
             height: 100%;
             width: 100%;
         }
@@ -137,7 +122,6 @@ export class NotificationForm extends LitElement {
             font-weight: bolder;
             color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
             line-height: 1em;
-            /*margin-bottom: 10px;*/
             margin-top: 0;
             flex: 0 0 auto;
             letter-spacing: 0.025em;
@@ -148,28 +132,12 @@ export class NotificationForm extends LitElement {
 
         .target-area {
             flex: 1 1 auto;
-            z-index: 1;
             overflow: auto;
-        }
-
-        or-mwc-input {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Lift the focused input above its siblings so open select menus aren't overlapped by the fields below */
-        or-mwc-input:focus-within {
-            z-index: 4;
         }
 
         h5 {
             margin-top: 12px;
             margin-bottom: 6px;
-        }
-
-        :host([readonly]) or-mwc-input {
-            --mdc-text-field-fill-color: var(--or-app-color2);
-            pointer-events: none;
         }
 
         :host([readonly]) .form-container {
@@ -196,7 +164,7 @@ export class NotificationForm extends LitElement {
     protected _realms?: string[];
 
     @state()
-    protected _targetOptions: { text: string, value: string }[] = [];
+    protected _targetOptions: TargetOption[] = [];
 
     @state()
     protected _selectedAssetIds: string[] = [];
@@ -227,7 +195,7 @@ export class NotificationForm extends LitElement {
 
         if (canReadAssets) {
             this._targetOptions = (this._assets || []).map(asset => ({
-                text: asset.name,
+                label: asset.name,
                 value: asset.id
             }));
         } else if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
@@ -292,8 +260,7 @@ export class NotificationForm extends LitElement {
         }
     }
 
-    protected async _onTargetTypeChanged(e: OrInputChangedEvent) {
-        const type = e.detail.value;
+    protected async _onTargetTypeChanged(type: NotificationTargetType) {
         if (!type) return;
 
         this._targetType = type;
@@ -305,7 +272,7 @@ export class NotificationForm extends LitElement {
                     await this._loadUsers();
                 }
                 this._targetOptions = (this._users || []).map(user => ({
-                    text: user.username,
+                    label: user.username,
                     value: user.id
                 }));
                 break;
@@ -321,7 +288,7 @@ export class NotificationForm extends LitElement {
                     await this._loadRealms();
                 }
                 this._targetOptions = (this._realms || []).map(realm => ({
-                    text: realm,
+                    label: realm,
                     value: realm
                 }));
                 break;
@@ -361,9 +328,7 @@ export class NotificationForm extends LitElement {
 
         // Load target options based on type
         if (this.readonly) {
-            await this._onTargetTypeChanged({
-                detail: {value: this._targetType}
-            } as OrInputChangedEvent);
+            await this._onTargetTypeChanged(this._targetType);
         }
 
         await this.requestUpdate();
@@ -463,31 +428,30 @@ export class NotificationForm extends LitElement {
             `;
         }
 
-        const allowedTargetTypes: [NotificationTargetType, string][] = [];
+        const allowedTargetTypes: SelectItem[] = [];
         if (manager.hasRole("read:assets") || manager.hasRole("read:admin")) {
-            allowedTargetTypes.push([NotificationTargetType.ASSET, i18next.t("asset_plural")]);
+            allowedTargetTypes.push({label: i18next.t("asset_plural"), value: NotificationTargetType.ASSET});
         }
         if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
-            allowedTargetTypes.unshift([NotificationTargetType.USER, i18next.t("user_plural")]);
+            allowedTargetTypes.unshift({label: i18next.t("user_plural"), value: NotificationTargetType.USER});
         }
         if (!manager.isRestrictedUser() && manager.hasRole("read:admin")) {
-            allowedTargetTypes.push([NotificationTargetType.REALM, i18next.t("realm_plural")]);
+            allowedTargetTypes.push({label: i18next.t("realm_plural"), value: NotificationTargetType.REALM});
         }
 
         return html`
             <div class="targetContainer">
                 <h5 style="flex:0 0 auto;">${i18next.t("notifications.target")}</h5>
-                <or-mwc-input
+                <or-vaadin-select
                         style="flex:0 0 auto;"
-                        label="${i18next.t("notifications.targetType")}"
-                        type="${InputType.SELECT}"
-                        .options="${allowedTargetTypes}"
-                        ?disabled="${inputDisabled || allowedTargetTypes.length === 1}"
-                        required
                         id="targetType"
-                        .value="${this._targetType}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onTargetTypeChanged(e)}">
-                </or-mwc-input>
+                        required
+                        ?disabled="${inputDisabled || allowedTargetTypes.length === 1}"
+                        .items="${allowedTargetTypes}"
+                        value="${this._targetType}"
+                        @change="${(ev: Event) => this._onTargetTypeChanged((ev.currentTarget as OrVaadinSelect).value as NotificationTargetType)}">
+                    <or-translate slot="label" value="notifications.targetType"></or-translate>
+                </or-vaadin-select>
 
                 <div class="target-area">
                     ${when(this._targetType === NotificationTargetType.ASSET,
@@ -502,18 +466,25 @@ export class NotificationForm extends LitElement {
                                 ></or-asset-tree>
                             `,
                             () => html`
-                                <or-mwc-list
-                                        label="${i18next.t("notifications.target")}"
-                                        type="${ListType.MULTI_CHECKBOX}"
-                                        ?disabled="${inputDisabled || !this._targetOptions}"
-                                        required
+                                <or-vaadin-checkbox-group
                                         id="target"
-                                        .values="${this._targets}"
-                                        .listItems="${this._targetOptions.sort(Util.sortByString(option => option.text))}"
-                                        @or-mwc-list-changed="${(e: OrMwcListChangedEvent) => {
-                                            this._targets = e.detail.map(item => item.value);
+                                        required
+                                        theme="vertical"
+                                        ?disabled="${inputDisabled}"
+                                        .value="${this._targets}"
+                                        @value-changed="${(ev: CustomEvent) => {
+                                            // Guard against the value-changed re-firing when we re-bind .value, which would recurse
+                                            if (!Util.objectsEqual(ev.detail.value, this._targets, true)) {
+                                                this._targets = [...ev.detail.value];
+                                            }
                                         }}">
-                                </or-mwc-list>
+                                    <or-translate slot="label" value="notifications.target"></or-translate>
+                                    ${this._targetOptions
+                                            .sort(Util.sortByString((option: TargetOption) => option.label))
+                                            .map(option => html`
+                                                <vaadin-checkbox value="${option.value}" label="${option.label}"></vaadin-checkbox>
+                                            `)}
+                                </or-vaadin-checkbox-group>
                             `
                     )}
                 </div>
@@ -522,24 +493,23 @@ export class NotificationForm extends LitElement {
     }
 
     protected _renderMessageContentContainer(inputDisabled: boolean) {
-        const messageTypeOptions: [NotificationMessage["type"], string][] = [
-            ["push", i18next.t("notifications.types.push")],
-            ["email", i18next.t("notifications.types.email")]
+        const messageTypeOptions: SelectItem[] = [
+            {label: i18next.t("notifications.types.push"), value: "push"},
+            {label: i18next.t("notifications.types.email"), value: "email"}
         ];
 
         return html`
             <div class="messageContentContainer">
                 <h5>${i18next.t("content")}</h5>
-                <or-mwc-input
-                        label="${i18next.t("type")}"
-                        type="${InputType.SELECT}"
-                        .options="${messageTypeOptions}"
-                        ?disabled="${inputDisabled}"
-                        required
+                <or-vaadin-select
                         id="messageType"
-                        .value="${this._message.type}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMessageTypeChanged(e.detail.value)}">
-                </or-mwc-input>
+                        required
+                        ?disabled="${inputDisabled}"
+                        .items="${messageTypeOptions}"
+                        value="${this._message.type}"
+                        @change="${(ev: Event) => this._onMessageTypeChanged((ev.currentTarget as OrVaadinSelect).value as NotificationMessage["type"])}">
+                    <or-translate slot="label" value="type"></or-translate>
+                </or-vaadin-select>
                 ${this._message.type === "push"
                         ? this._renderPushContent(this._message as PushNotificationMessage, inputDisabled)
                         : this._renderEmailContent(this._message as EmailNotificationMessage, inputDisabled)}
@@ -549,107 +519,97 @@ export class NotificationForm extends LitElement {
 
     protected _renderPushContent(message: PushNotificationMessage, inputDisabled: boolean) {
         return html`
-            <or-mwc-input
-                    label="${i18next.t('title')}"
-                    type="${InputType.TEXT}"
-                    ?readonly="${inputDisabled}"
+            <or-vaadin-text-field
                     id="notificationTitle"
                     required
-                    .value="${live(message.title || '')}"
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                            this._updateMessage({title: e.detail.value})}"
-            ></or-mwc-input>
-
-            <or-mwc-input
-                    label="${i18next.t('body')}"
-                    type="${InputType.TEXTAREA}"
-                    style="display: flex; flex: 1; --mdc-text-field-height: 100%;"
-                    rows="4"
                     ?readonly="${inputDisabled}"
+                    value="${message.title || ''}"
+                    @change="${(ev: Event) => this._updateMessage({title: (ev.currentTarget as HTMLInputElement).value})}">
+                <or-translate slot="label" value="title"></or-translate>
+            </or-vaadin-text-field>
+
+            <or-vaadin-text-area
                     id="notificationBody"
                     required
-                    .value="${live(message.body || '')}"
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                            this._updateMessage({body: e.detail.value})}"
-            ></or-mwc-input>
+                    style="flex: 1;"
+                    min-rows="4"
+                    ?readonly="${inputDisabled}"
+                    value="${message.body || ''}"
+                    @change="${(ev: Event) => this._updateMessage({body: (ev.currentTarget as HTMLInputElement).value})}">
+                <or-translate slot="label" value="body"></or-translate>
+            </or-vaadin-text-area>
         `;
     }
 
     protected _renderEmailContent(message: EmailNotificationMessage, inputDisabled: boolean) {
         return html`
-            <or-mwc-input
-                    label="${i18next.t('subject')}"
-                    type="${InputType.TEXT}"
-                    ?readonly="${inputDisabled}"
+            <or-vaadin-text-field
                     id="notificationSubject"
                     required
-                    .value="${live(message.subject || '')}"
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                            this._updateMessage({subject: e.detail.value})}"
-            ></or-mwc-input>
-
-            <or-mwc-input
-                    label="${i18next.t('body')}"
-                    type="${InputType.TEXTAREA}"
-                    style="display: flex; flex: 1; --mdc-text-field-height: 100%;"
-                    rows="4"
                     ?readonly="${inputDisabled}"
+                    value="${message.subject || ''}"
+                    @change="${(ev: Event) => this._updateMessage({subject: (ev.currentTarget as HTMLInputElement).value})}">
+                <or-translate slot="label" value="subject"></or-translate>
+            </or-vaadin-text-field>
+
+            <or-vaadin-text-area
                     id="notificationEmailBody"
                     required
-                    .value="${live(message.html || '')}"
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                            this._updateMessage({html: e.detail.value})}"
-            ></or-mwc-input>
+                    style="flex: 1;"
+                    min-rows="4"
+                    ?readonly="${inputDisabled}"
+                    value="${message.html || ''}"
+                    @change="${(ev: Event) => this._updateMessage({html: (ev.currentTarget as HTMLInputElement).value})}">
+                <or-translate slot="label" value="body"></or-translate>
+            </or-vaadin-text-area>
         `;
     }
 
     protected _renderActionButtonContainer(inputDisabled: boolean) {
         const message = this._message as PushNotificationMessage;
+        const priorityOptions: SelectItem[] = [
+            {label: i18next.t('normal'), value: PushNotificationMessageMessagePriority.NORMAL},
+            {label: i18next.t('high'), value: PushNotificationMessageMessagePriority.HIGH}
+        ];
 
         return html`
             <div class="actionButtonContainer">
                 <h5>${i18next.t("actions")}</h5>
-                <or-mwc-input
-                        label="${i18next.t("openWebsiteUrl")}"
-                        type="${InputType.TEXT}"
-                        ?readonly="${inputDisabled}"
+                <or-vaadin-text-field
                         id="actionUrl"
-                        .value="${live(message.action?.url || '')}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                                this._updateMessage({action: e.detail.value ? {url: e.detail.value, openInBrowser: true} : undefined})}">
-                </or-mwc-input>
-
-                <or-mwc-input
-                        label="${i18next.t("buttonTextConfirm")}"
-                        type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
+                        value="${message.action?.url || ''}"
+                        @change="${(ev: Event) => {
+                            const url = (ev.currentTarget as HTMLInputElement).value;
+                            this._updateMessage({action: url ? {url, openInBrowser: true} : undefined});
+                        }}">
+                    <or-translate slot="label" value="openWebsiteUrl"></or-translate>
+                </or-vaadin-text-field>
+
+                <or-vaadin-text-field
                         id="openButtonText"
-                        .value="${live(message.buttons?.[0]?.title || '')}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._updateButton(0, e.detail.value)}">
-                </or-mwc-input>
-
-                <or-mwc-input
-                        label="${i18next.t("buttonTextDecline")}"
-                        type="${InputType.TEXT}"
                         ?readonly="${inputDisabled}"
+                        value="${message.buttons?.[0]?.title || ''}"
+                        @change="${(ev: Event) => this._updateButton(0, (ev.currentTarget as HTMLInputElement).value)}">
+                    <or-translate slot="label" value="buttonTextConfirm"></or-translate>
+                </or-vaadin-text-field>
+
+                <or-vaadin-text-field
                         id="closeButtonText"
-                        .value="${live(message.buttons?.[1]?.title || '')}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._updateButton(1, e.detail.value)}">
-                </or-mwc-input>
-
-                <or-mwc-input
-                        label="${i18next.t('priority')}"
-                        type="${InputType.SELECT}"
-                        .options="${[
-                            [PushNotificationMessageMessagePriority.NORMAL, i18next.t('normal')],
-                            [PushNotificationMessageMessagePriority.HIGH, i18next.t('high')]
-                        ]}"
                         ?readonly="${inputDisabled}"
+                        value="${message.buttons?.[1]?.title || ''}"
+                        @change="${(ev: Event) => this._updateButton(1, (ev.currentTarget as HTMLInputElement).value)}">
+                    <or-translate slot="label" value="buttonTextDecline"></or-translate>
+                </or-vaadin-text-field>
+
+                <or-vaadin-select
                         id="notificationPriority"
-                        .value="${live(message.priority || PushNotificationMessageMessagePriority.NORMAL)}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) =>
-                                this._updateMessage({priority: e.detail.value})}"
-                ></or-mwc-input>
+                        ?disabled="${inputDisabled}"
+                        .items="${priorityOptions}"
+                        value="${message.priority || PushNotificationMessageMessagePriority.NORMAL}"
+                        @change="${(ev: Event) => this._updateMessage({priority: (ev.currentTarget as OrVaadinSelect).value as PushNotificationMessageMessagePriority})}">
+                    <or-translate slot="label" value="priority"></or-translate>
+                </or-vaadin-select>
             </div>
         `;
     }
@@ -661,14 +621,11 @@ export class NotificationForm extends LitElement {
         this._updateMessage({buttons: buttons as PushNotificationButton[]});
     }
 
-    protected _renderReadOnlyField(label: string, value: string | string[] | undefined) {
+    protected _renderReadOnlyField(label: string, value: string | undefined) {
         return html`
-            <or-mwc-input
-                    label="${i18next.t(label)}"
-                    type="${InputType.TEXT}"
-                    .value="${value || '-'}"
-                    ?readonly="${true}">
-            </or-mwc-input>
+            <or-vaadin-text-field readonly value="${value || '-'}">
+                <or-translate slot="label" value="${label}"></or-translate>
+            </or-vaadin-text-field>
         `;
     }
 }
