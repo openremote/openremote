@@ -403,12 +403,13 @@ export class OrHeader extends LitElement {
     }
 
     protected _getRealmMenu(callback: (realm: string) => void): TemplateResult {
+        if (!manager.isSuperUser()) return html``;
 
         const currentRealm = this.realms.find((t) => t.name === this.realm);
         const items = this.realms.map(r => ({value: r.name, label: r.displayName}));
+
         return html`
-            <or-vaadin-select id="realm-picker" .items=${items} .value=${currentRealm?.name}
-                              ?readonly=${!manager.isSuperUser()} ?disabled=${(items?.length ?? 0) <= 1}
+            <or-vaadin-select id="realm-picker" .items=${items} .value=${currentRealm?.name} ?disabled=${(items?.length ?? 0) <= 1}
                               @change="${(ev: CustomEvent) => callback((ev.currentTarget as OrVaadinSelect).value)}"
             ></or-vaadin-select>
         `;

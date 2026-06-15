@@ -81,4 +81,6 @@ setup(`Login as "smartcity" user`, async ({ page, manager, context }) => {
     await manager.login("smartcity");
     await page.waitForURL("**/manager/**");
     await context.storageState({ path: userStatePath });
+    await expect(page.getByRole("menuitem", { name: "More options" })).toBeVisible();
+    await expect(page.locator("#realm-picker")).not.toBeVisible();
 });
