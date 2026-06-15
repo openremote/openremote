@@ -81,14 +81,6 @@ export const style = css`
     @media only screen and (max-width: 40em){
         :host(.has-filters) .maplibregl-ctrl-top-right {
             top: 46px;
-            left: 0;
-            right: auto;
-        }
-        :host(.has-filters) .maplibregl-ctrl-top-right .maplibregl-ctrl {
-            margin-left: 10px;
-            margin-right: 0;
-            float: left;
-            clear: left;
         }
     }
     .maplibregl-marker {

@@ -193,10 +193,8 @@ export class PageMap extends Page<MapStateKeyed> {
 
             @media only screen and (max-width: 40em){
                 or-map-preset-filter {
-                    top: 10px;
-                    left: 10px;
+                    left: auto;
                     right: 10px;
-                    width: auto;
                 }
 
                 or-map-legend {
