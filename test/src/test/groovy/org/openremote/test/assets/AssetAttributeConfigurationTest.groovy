@@ -474,6 +474,50 @@ class AssetAttributeConfigurationTest extends Specification {
         then: "the import fails"
         thrown(IllegalArgumentException)
 
+        when: "a generic parameter has an unsupported type"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            new AssetAttributeConfigurationDocument(
+                AssetAttributeConfigurationDocument.CURRENT_VERSION,
+                target.type,
+                [
+                    temperature: new AssetAttributeConfigurationEntry("number", new MetaMap([new MetaItem<>(READ_ONLY, true)]))
+                ],
+                [
+                    readOnly: new AssetAttributeConfigurationGenericParameter(
+                        "integer",
+                        ["attributes.temperature.meta.readOnly"]
+                    )
+                ]
+            )
+        )
+
+        then: "the import fails before asking for values"
+        def unsupportedTypeException = thrown(IllegalArgumentException)
+        unsupportedTypeException.message.contains("Unsupported generic parameter type")
+
+        when: "a generic parameter has a malformed document path"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            new AssetAttributeConfigurationDocument(
+                AssetAttributeConfigurationDocument.CURRENT_VERSION,
+                target.type,
+                [
+                    temperature: new AssetAttributeConfigurationEntry("number", new MetaMap([new MetaItem<>(READ_ONLY, true)]))
+                ],
+                [
+                    readOnly: new AssetAttributeConfigurationGenericParameter(
+                        "boolean",
+                        ["temperature.meta.readOnly"]
+                    )
+                ]
+            )
+        )
+
+        then: "the import fails before asking for values"
+        def malformedPathException = thrown(IllegalArgumentException)
+        malformedPathException.message.contains("Generic parameter document path")
+
         when: "an attribute entry is malformed"
         AssetAttributeConfigurationService.previewImportConfiguration(
             target,

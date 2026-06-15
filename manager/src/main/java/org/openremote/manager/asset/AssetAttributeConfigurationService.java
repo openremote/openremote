@@ -482,12 +482,20 @@ public class AssetAttributeConfigurationService {
             throw new IllegalArgumentException("Generic parameter type is required: " + genericParameterName);
         }
 
+        validateGenericParameterType(genericParameter.getType());
+
         if (genericParameter.getPaths() == null || genericParameter.getPaths().isEmpty()) {
             throw new IllegalArgumentException("Generic parameter paths are required: " + genericParameterName);
+        }
+
+        for (String path : genericParameter.getPaths()) {
+            validateGenericParameterDocumentPath(path);
         }
     }
 
     protected static void validateGenericParameterValue(String genericParameterName, String type, Object value) {
+        validateGenericParameterType(type);
+
         boolean valid = switch (type) {
             case "text" -> value instanceof CharSequence;
             case "number" -> value instanceof Number;
@@ -495,11 +503,20 @@ public class AssetAttributeConfigurationService {
             case "object" -> value instanceof Map<?, ?>;
             case "array" -> value instanceof Collection<?> || value.getClass().isArray();
             case "unknown" -> true;
-            default -> throw new IllegalArgumentException("Unsupported generic parameter type: " + type);
+            default -> false;
         };
 
         if (!valid) {
             throw new IllegalArgumentException("Generic parameter value has invalid type: " + genericParameterName);
+        }
+    }
+
+    protected static void validateGenericParameterType(String type) {
+        switch (type) {
+            case "text", "number", "boolean", "object", "array", "unknown":
+                return;
+            default:
+                throw new IllegalArgumentException("Unsupported generic parameter type: " + type);
         }
     }
 
@@ -701,6 +718,12 @@ public class AssetAttributeConfigurationService {
 
         for (Map.Entry<String, AssetAttributeConfigurationEntry> attributeEntry : configuration.getAttributes().entrySet()) {
             validateAttributeEntry(attributeEntry.getKey(), attributeEntry.getValue());
+        }
+
+        if (configuration.getGenericParameters() != null) {
+            for (Map.Entry<String, AssetAttributeConfigurationGenericParameter> genericParameterEntry : configuration.getGenericParameters().entrySet()) {
+                validateGenericParameter(genericParameterEntry.getKey(), genericParameterEntry.getValue());
+            }
         }
     }
 
