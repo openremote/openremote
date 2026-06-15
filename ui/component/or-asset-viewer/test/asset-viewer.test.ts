@@ -259,6 +259,7 @@ ct("Should preview imported asset attribute configuration", async ({ page, mount
     await expect(dialog).toContainText("notes (text)");
     await expect(dialog).toContainText("missing (number)");
     await expect(dialog).toContainText("model (number -> text)");
+    await expect(dialog).toContainText("overwrite existing metadata");
 
     expect(requestBody.configuration).toEqual(configuration);
     expect(requestBody.targetAsset.id).toBe("configuredAsset");
@@ -403,6 +404,10 @@ ct("Should apply previewed asset attribute configuration to the draft", async ({
     await expect(dialog).toContainText("notes (text)");
     await dialog.locator("[data-mdc-dialog-action='import']").click();
 
+    const resultDialog = page.locator("or-mwc-dialog");
+    await expect(resultDialog).toContainText("Attribute configuration import result");
+    await expect(resultDialog).toContainText("notes (text)");
+    await resultDialog.locator("[data-mdc-dialog-action='ok']").click();
     await expect(page.locator("or-mwc-dialog")).toHaveCount(0);
     await expect(component.locator("#save-btn")).not.toBeDisabled();
 
