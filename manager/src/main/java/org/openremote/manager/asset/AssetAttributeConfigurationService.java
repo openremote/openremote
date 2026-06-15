@@ -698,6 +698,10 @@ public class AssetAttributeConfigurationService {
         if (configuration.getAttributes() == null) {
             throw new IllegalArgumentException("Configuration attributes are required");
         }
+
+        for (Map.Entry<String, AssetAttributeConfigurationEntry> attributeEntry : configuration.getAttributes().entrySet()) {
+            validateAttributeEntry(attributeEntry.getKey(), attributeEntry.getValue());
+        }
     }
 
     protected static void validateAttributeEntry(String attributeName, AssetAttributeConfigurationEntry attributeConfiguration) {

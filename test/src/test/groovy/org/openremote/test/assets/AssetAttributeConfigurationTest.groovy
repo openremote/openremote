@@ -484,6 +484,30 @@ class AssetAttributeConfigurationTest extends Specification {
 
         then: "the import fails"
         thrown(IllegalArgumentException)
+
+        when: "an attribute entry is malformed in a document with generic parameters"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            new AssetAttributeConfigurationDocument(
+                AssetAttributeConfigurationDocument.CURRENT_VERSION,
+                target.type,
+                [
+                    temperature: null
+                ],
+                [
+                    readOnly: new AssetAttributeConfigurationGenericParameter(
+                        "boolean",
+                        ["attributes.temperature.meta.readOnly"]
+                    )
+                ]
+            ),
+            [
+                readOnly: true
+            ]
+        )
+
+        then: "the import fails"
+        thrown(IllegalArgumentException)
     }
 
     def "Configuration document JSON is user editable and omits attribute names"() {
