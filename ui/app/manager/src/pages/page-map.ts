@@ -191,6 +191,21 @@ export class PageMap extends Page<MapStateKeyed> {
                 flex: 1 1 auto;
             }
 
+            @media only screen and (max-width: 40em){
+                or-map-preset-filter {
+                    top: 10px;
+                    left: 10px;
+                    right: 10px;
+                    width: auto;
+                }
+
+                or-map-legend {
+                    bottom: 40px;
+                    left: 10px;
+                    right: auto;
+                }
+            }
+
             @media only screen and (min-width: 40em){
                 or-map-asset-card {
                     position: absolute;
@@ -465,7 +480,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
             ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" .excludedTypes="${this._excludedTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
 
-            <or-map id="map" class="or-map" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
+            <or-map id="map" class="or-map ${filters?.length ? 'has-filters' : ''}" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assetsOnScreen.sort((a,b) => {
                     const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;

@@ -69,8 +69,27 @@ export const style = css`
     }
     
     /* Prevents overflow from elements outside the map component (like menu overlays). See #1844 */
-    .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
+    .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left {
         z-index: 1;
+    }
+
+    .maplibregl-ctrl-top-right {
+        z-index: 1;
+        transition: top 0.3s;
+    }
+
+    @media only screen and (max-width: 40em){
+        :host(.has-filters) .maplibregl-ctrl-top-right {
+            top: 46px;
+            left: 0;
+            right: auto;
+        }
+        :host(.has-filters) .maplibregl-ctrl-top-right .maplibregl-ctrl {
+            margin-left: 10px;
+            margin-right: 0;
+            float: left;
+            clear: left;
+        }
     }
     .maplibregl-marker {
         pointer-events: none !important;
