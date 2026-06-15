@@ -1,12 +1,12 @@
 import { ct } from "./fixtures";
 import { expect } from "@openremote/test";
 import { OrAssetViewer } from "@openremote/or-asset-viewer";
-import { validAsset, invalidAsset, configuredAsset } from "./fixtures/data/asset";
+import { validAsset, invalidAsset, configuredAsset, partiallyConfiguredAsset } from "./fixtures/data/asset";
 
 ct.beforeEach(async ({ shared }) => {
     await shared.locales();
     await shared.fonts();
-    await shared.registerAssets([validAsset, invalidAsset, configuredAsset]);
+    await shared.registerAssets([validAsset, invalidAsset, configuredAsset, partiallyConfiguredAsset]);
 });
 
 // Due to how the component tests resolve imports, imported data with an object reference gets
@@ -185,6 +185,77 @@ ct("Should export selected generic asset attribute configuration paths", async (
 
     expect(requestBody).toEqual({
         attributeNames: ["model", "notes"],
+        genericParameterPaths: ["meta.agentLink.id"],
+    });
+});
+
+const partiallyConfiguredId = partiallyConfiguredAsset.id;
+ct("Should export generic paths shared by only some selected attributes", async ({ page, mount }) => {
+    const component = await mount(OrAssetViewer, {
+        props: { assetId: partiallyConfiguredId, editMode: true },
+    });
+
+    let requestBody: unknown;
+    await page.route("**/api/master/asset/partiallyConfiguredAsset/attribute-config/export", async (route) => {
+        requestBody = route.request().postDataJSON();
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                version: 1,
+                assetType: "ThingAsset",
+                attributes: {
+                    model: {
+                        type: "text",
+                        meta: {
+                            label: "Model",
+                            agentLink: {
+                                type: "ModbusAgentLink",
+                            },
+                        },
+                    },
+                    notes: {
+                        type: "text",
+                        meta: {
+                            readOnly: true,
+                            agentLink: {
+                                type: "ModbusAgentLink",
+                            },
+                        },
+                    },
+                    serialNumber: {
+                        type: "text",
+                        meta: {
+                            label: "Serial number",
+                        },
+                    },
+                },
+                genericParameters: {
+                    agentLinkId: {
+                        type: "text",
+                        paths: [
+                            "attributes.model.meta.agentLink.id",
+                            "attributes.notes.meta.agentLink.id",
+                        ],
+                    },
+                },
+            }),
+        });
+    });
+
+    await component.locator("#export-attribute-config-btn").click();
+
+    const dialog = page.locator("or-mwc-dialog");
+    await expect(dialog).toContainText("Generic parameters");
+    await expect(dialog.locator("[data-generic-parameter-path='meta.agentLink.id']")).toBeVisible();
+    await dialog.locator("[data-generic-parameter-path='meta.agentLink.id']").click();
+
+    const downloadPromise = page.waitForEvent("download");
+    await dialog.locator("[data-mdc-dialog-action='export']").click();
+    await downloadPromise;
+
+    expect(requestBody).toEqual({
+        attributeNames: ["model", "notes", "serialNumber"],
         genericParameterPaths: ["meta.agentLink.id"],
     });
 });

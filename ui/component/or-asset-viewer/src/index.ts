@@ -1930,14 +1930,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return [];
         }
 
-        const pathValueMaps = attributes.map((attribute) => this._getAttributeConfigurationGenericParameterPathValues(attribute));
-        const firstPathValueMap = pathValueMaps[0];
-        return Array.from(firstPathValueMap.entries())
-            .filter(([path, value]) =>
-                pathValueMaps.every((pathValueMap) =>
-                    pathValueMap.has(path)
-                    && this._areAttributeConfigurationGenericParameterValuesEqual(value, pathValueMap.get(path))
-                )
+        const pathValues = new Map<string, any[]>();
+        attributes
+            .map((attribute) => this._getAttributeConfigurationGenericParameterPathValues(attribute))
+            .forEach((pathValueMap) => pathValueMap.forEach((value, path) => {
+                const values = pathValues.get(path) || [];
+                values.push(value);
+                pathValues.set(path, values);
+            }));
+
+        return Array.from(pathValues.entries())
+            .filter(([, values]) =>
+                values.length > 1
+                && values.every((value) => this._areAttributeConfigurationGenericParameterValuesEqual(values[0], value))
             )
             .map(([path]) => ({
                 path,
