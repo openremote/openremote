@@ -398,6 +398,32 @@ class AssetAttributeConfigurationTest extends Specification {
 
         then: "the import fails"
         thrown(IllegalArgumentException)
+
+        when: "a generic parameter type does not match the target path schema"
+        AssetAttributeConfigurationService.previewImportConfiguration(
+            target,
+            new AssetAttributeConfigurationDocument(
+                AssetAttributeConfigurationDocument.CURRENT_VERSION,
+                target.type,
+                [
+                    error: new AssetAttributeConfigurationEntry("boolean", new MetaMap([
+                        new MetaItem<>("agentLink", null, [type: "ModbusAgentLink"])
+                    ]))
+                ],
+                [
+                    agentLinkUnitId: new AssetAttributeConfigurationGenericParameter(
+                        "text",
+                        ["attributes.error.meta.agentLink.unitId"]
+                    )
+                ]
+            ),
+            [
+                agentLinkUnitId: "3"
+            ]
+        )
+
+        then: "the import fails"
+        thrown(IllegalArgumentException)
     }
 
     def "Import rejects unsupported and unusable configuration documents"() {
