@@ -22,6 +22,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { AssetQuery } from "@openremote/model";
 import { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
+import "@openremote/or-vaadin-components/or-vaadin-badge";
 import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-item";
 import "@openremote/or-vaadin-components/or-vaadin-list-box";
@@ -67,15 +68,6 @@ export class OrMapPresetFilter extends LitElement {
                 right: 40px;
                 top: 50%;
                 transform: translateY(-50%);
-                background: #3A463A1A;
-                border-radius: 10px;
-                padding: 0 4px;
-                font-size: 0.8em;
-                width: 36px;
-                height: 20px;
-                line-height: 20px;
-                text-align: center;
-                box-sizing: border-box;
                 pointer-events: none;
             }
         `;
@@ -140,18 +132,6 @@ export class OrMapPresetFilter extends LitElement {
                 .filter-item__label {
                     flex: 1;
                 }
-                .filter-item__count {
-                    background: #3A463A1A;
-                    border-radius: 10px;
-                    padding: 0 4px;
-                    font-size: 0.8em;
-                    width: 36px;
-                    height: 20px;
-                    line-height: 20px;
-                    text-align: center;
-                    flex-shrink: 0;
-                    box-sizing: border-box;
-                }
                 or-vaadin-item.filter-option {
                     padding: unset;
                 }
@@ -161,7 +141,7 @@ export class OrMapPresetFilter extends LitElement {
                     <or-vaadin-item class="filter-option" value="${opt.value}" label="${opt.label}">
                         <div class="filter-item">
                             <span class="filter-item__label">${opt.label}</span>
-                            <span class="filter-item__count">${opt.count > 99 ? "99+" : opt.count}</span>
+                            <or-vaadin-badge class="filter-item__count">${opt.count > 99 ? "99+" : opt.count}</or-vaadin-badge>
                         </div>
                     </or-vaadin-item>
                 `)}
@@ -178,9 +158,7 @@ export class OrMapPresetFilter extends LitElement {
                     ${selectRenderer(this._renderFilterOptions, [this.filters, this.assets])}
                     @change="${this._onChange}"
                 ></or-vaadin-select>
-                <span class="filter-field-count">
-                    ${currentCount > 99 ? "99+" : currentCount}
-                </span>
+                <or-vaadin-badge class="filter-field-count">${currentCount > 99 ? "99+" : currentCount}</or-vaadin-badge>
             </div>
         `;
     }

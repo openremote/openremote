@@ -2213,6 +2213,7 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@vaadin/badge": "npm:~25.1.4"
     "@vaadin/button": "npm:~25.1.4"
     "@vaadin/checkbox": "npm:~25.1.4"
     "@vaadin/checkbox-group": "npm:~25.1.4"
@@ -3804,6 +3805,18 @@ __metadata:
     "@vaadin/component-base": "npm:~25.1.4"
     lit: "npm:^3.0.0"
   checksum: 10c0/a910c5c5cedc13ab8d100d50ab26ba5b4f9d2a3a1f925a23755803e407e632db4131ef9c31775dfb4f7e1c50b9af43a268575af117e6243b9204a1ac08169bf6
+  languageName: node
+  linkType: hard
+
+"@vaadin/badge@npm:~25.1.4":
+  version: 25.1.4
+  resolution: "@vaadin/badge@npm:25.1.4"
+  dependencies:
+    "@vaadin/a11y-base": "npm:~25.1.4"
+    "@vaadin/component-base": "npm:~25.1.4"
+    "@vaadin/vaadin-themable-mixin": "npm:~25.1.4"
+    lit: "npm:^3.0.0"
+  checksum: 10c0/bffeb9145c28ba00251171962f757f92ed7aed62aa5bf9fe458ce351cfb1c1cf92b09207a55ce781a1e8e663e489b660c3631751e23746e1fb733ad98ad2fec5
   languageName: node
   linkType: hard
 

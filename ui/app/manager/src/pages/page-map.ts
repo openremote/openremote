@@ -178,23 +178,6 @@ export class PageMap extends Page<MapStateKeyed> {
                 z-index: 3;
             }
 
-            .filter-field-count {
-                position: absolute;
-                right: 40px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: #3A463A1A;
-                border-radius: 10px;
-                padding: 0 4px;
-                font-size: 0.8em;
-                width: 36px;
-                height: 20px;
-                line-height: 20px;
-                text-align: center;
-                box-sizing: border-box;
-                pointer-events: none;
-            }
-
            or-map-legend {
                position: absolute;
                bottom: 10px;
