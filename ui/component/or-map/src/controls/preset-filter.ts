@@ -111,14 +111,15 @@ export class OrMapPresetFilter extends LitElement {
     }
 
     protected _buildOptions() {
-        return [
-            { value: "0", label: i18next.t("mapPage.filterAll", { defaultValue: "All" }), count: this.assets.length },
-            ...this.filters.map((filter, i) => ({
+        const all = { value: "0", label: i18next.t("mapPage.filterAll", { defaultValue: "All" }), count: this.assets.length };
+        const filters = this.filters
+            .map((filter, i) => ({
                 value: String(i + 1),
                 label: this._getFilterLabel(filter),
                 count: this._getFilterCount(i + 1)
             }))
-        ];
+            .sort((a, b) => a.label.localeCompare(b.label));
+        return [all, ...filters];
     }
 
     protected _renderFilterOptions(): TemplateResult {
