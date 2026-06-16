@@ -5,6 +5,7 @@ import maplibregl, {
     AttributionControl,
     IControl,
     LngLat,
+    LngLatBounds,
     LngLatLike,
     Map as MapGL,
     MapOptions,
@@ -266,7 +267,12 @@ export class BaseMap {
         });
 
         if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
-            this._geocoder = new OrMapGeocoderControl(this._viewSettings.geocodeUrl);
+            let bbox: [number, number, number, number] | undefined;
+            if (this._viewSettings.bounds) {
+                const b = LngLatBounds.convert(this._viewSettings.bounds as any);
+                bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+            }
+            this._geocoder = new OrMapGeocoderControl(this._viewSettings.geocodeUrl, bbox);
             this._map!.addControl(this._geocoder, 'top-right');
         }
 

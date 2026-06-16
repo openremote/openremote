@@ -23,6 +23,7 @@ import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
 import maplibregl from "maplibre-gl";
 import debounce from "lodash.debounce";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
@@ -90,6 +91,9 @@ export class OrMapGeocoder extends LitElement {
     @property({ type: String })
     public geocodeUrl = "";
 
+    @property({ type: Array })
+    public bbox?: [west: number, south: number, east: number, north: number];
+
     @state()
     private _collapsed = true;
 
@@ -99,6 +103,12 @@ export class OrMapGeocoder extends LitElement {
     private _hasValue = false;
     private _map?: MapGL;
     private _marker?: any;
+    private _onLanguageChanged = () => { if (!this._collapsed) this._fetchSuggestions.flush(); };
+
+    public connectedCallback() {
+        super.connectedCallback();
+        i18next.on("languageChanged", this._onLanguageChanged);
+    }
 
     public setMap(map: MapGL): void {
         this._map = map;
@@ -141,9 +151,19 @@ export class OrMapGeocoder extends LitElement {
         }
         const features: any[] = [];
         try {
-            const response = await fetch(
-                `${this.geocodeUrl}/search?q=${encodeURIComponent(query)}&format=geojson&polygon_geojson=1&addressdetails=1`
-            );
+            const params = new URLSearchParams({
+                q: query,
+                format: "geojson",
+                polygon_geojson: "1",
+                addressdetails: "1",
+                "accept-language": i18next.language || "en",
+            });
+            if (this.bbox) {
+                const [west, south, east, north] = this.bbox;
+                params.set("viewbox", `${west},${north},${east},${south}`);
+                params.set("bounded", "1");
+            }
+            const response = await fetch(`${this.geocodeUrl}/search?${params.toString()}`);
             const geojson = await response.json();
             for (const feature of geojson.features) {
                 const center = [
@@ -181,17 +201,19 @@ export class OrMapGeocoder extends LitElement {
 
     public disconnectedCallback() {
         super.disconnectedCallback();
+        i18next.off("languageChanged", this._onLanguageChanged);
         this._marker?.remove();
     }
 }
 
 export class OrMapGeocoderControl extends OrMapBaseControl {
-    constructor(private _geocodeUrl: string) { super(); }
+    constructor(private _geocodeUrl: string, private _bbox?: [number, number, number, number]) { super(); }
 
     onAdd(map: MapGL): HTMLElement {
         this._createContainer();
         const component = document.createElement("or-map-geocoder") as OrMapGeocoder;
         component.geocodeUrl = this._geocodeUrl;
+        if (this._bbox) component.bbox = this._bbox;
         component.setMap(map);
         this._container!.appendChild(component);
         return this._container!;
