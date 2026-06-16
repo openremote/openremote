@@ -144,6 +144,9 @@ export class OrMapLegend extends LitElement {
 
     protected render(): TemplateResult | typeof html {
         if (this.assetTypes.length < 2) return html``;
+        const sortedTypes = [...this.assetTypes].sort((a, b) =>
+            (this._assetTypesInfo[a]?.label ?? a).localeCompare(this._assetTypesInfo[b]?.label ?? b)
+        );
         return html`
             <div id="legend">
                 <div id="legend-title" class="${!this._contentHidden ? 'expanded' : ''}" @click="${() => { this._contentHidden = !this._contentHidden; }}">
@@ -151,7 +154,7 @@ export class OrMapLegend extends LitElement {
                     <or-vaadin-icon style="cursor: pointer" icon="${this._contentHidden ? 'vaadin:chevron-up' : 'vaadin:chevron-down'}"></or-vaadin-icon>
                 </div>
                 <or-vaadin-list-box id="legend-list" class="${this._contentHidden ? '' : 'expanded'}">
-                    ${this.assetTypes.map((assetType) => html`
+                    ${sortedTypes.map((assetType) => html`
                         <or-vaadin-item>
                             <div style="display: flex; align-items: center; width: 100%; gap: 6px; min-width: 200px;">
                                 <or-icon
