@@ -1,12 +1,13 @@
 import { IControl, LngLat, Map as MapGL } from "maplibre-gl";
-import { InputType, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-vaadin-components/or-vaadin-icon";
 
 export const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
 
 export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as OrMwcInput).value as string;
+            const valStr = (e.target as any).value as string;
             let value: LngLat | undefined = !valStr ? undefined : {} as LngLat;
 
             if (valStr) {
@@ -26,7 +27,7 @@ export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLa
 export class CoordinatesControl implements IControl {
     protected map?: MapGL;
     protected elem?: HTMLElement;
-    protected input!: OrMwcInput;
+    protected input?: HTMLElement;
     protected _readonly = false;
     protected _value: any;
     protected _valueChangedHandler: (value: LngLat | undefined) => void;
@@ -42,15 +43,18 @@ export class CoordinatesControl implements IControl {
         control.classList.add("maplibregl-ctrl");
         control.classList.add("maplibregl-ctrl-group");
 
-        const input = new OrMwcInput();
-        input.type = InputType.TEXT;
-        input.outlined = true;
-        input.compact = true;
-        input.readonly = this._readonly;
-        input.icon = "crosshairs-gps";
-        input.value = this._value;
-        input.pattern = CoordinatesRegexPattern;
-        input.onkeyup = getCoordinatesInputKeyHandler(this._valueChangedHandler);
+        const input = document.createElement("or-vaadin-text-field") as HTMLElement;
+        input.setAttribute("theme", "small");
+        if (this._readonly) input.setAttribute("readonly", "");
+        if (this._value != null) (input as any).value = this._value;
+        input.setAttribute("pattern", CoordinatesRegexPattern);
+        input.addEventListener("keyup", getCoordinatesInputKeyHandler(this._valueChangedHandler) as EventListener);
+
+        const icon = document.createElement("or-vaadin-icon") as HTMLElement;
+        icon.setAttribute("icon", "vaadin:crosshairs");
+        icon.setAttribute("slot", "prefix");
+        icon.style.cssText = "width: 14px; height: 14px;";
+        input.appendChild(icon);
 
         control.appendChild(input);
         this.elem = control;
@@ -58,22 +62,27 @@ export class CoordinatesControl implements IControl {
         return control;
     }
 
-    onRemove(map: MapGL) {
+    onRemove(_map: MapGL) {
         this.map = undefined;
         this.elem = undefined;
+        this.input = undefined;
     }
 
     public set readonly(readonly: boolean) {
         this._readonly = readonly;
         if (this.input) {
-            this.input.readonly = readonly;
+            if (readonly) {
+                this.input.setAttribute("readonly", "");
+            } else {
+                this.input.removeAttribute("readonly");
+            }
         }
     }
 
     public set value(value: any) {
         this._value = value;
         if (this.input) {
-            this.input.value = value;
+            (this.input as any).value = value;
         }
     }
 }
