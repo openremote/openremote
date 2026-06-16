@@ -17,62 +17,92 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+import { css, html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import type { Map as MapGL } from "maplibre-gl";
+import { OrMapBaseControl } from "./base";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
 import "@openremote/or-icon";
-import { OrMapBaseControl } from "./base";
 
-export class OrMapNavigationControl extends OrMapBaseControl {
+@customElement("or-map-navigation")
+export class OrMapNavigation extends LitElement {
+
+    static get styles() {
+        return css`
+            :host {
+                display: flex;
+                flex-direction: column;
+                background: white;
+                overflow: hidden;
+                border-radius: var(--lumo-border-radius-m, 4px);
+            }
+
+            or-vaadin-button {
+                --lumo-border-radius-m: 0;
+            }
+
+            or-vaadin-icon {
+                width: 14px;
+                height: 14px;
+                color: black;
+            }
+
+            or-icon {
+                --or-icon-width: 18px;
+                --or-icon-height: 18px;
+                transition: transform 0.1s ease;
+            }
+        `;
+    }
+
+    @state()
+    private _bearing = 0;
+
     private _map?: MapGL;
-    private _compassIcon?: HTMLElement;
 
     private _onRotate = () => {
-        if (this._compassIcon && this._map) {
-            this._compassIcon.style.transform = `rotate(${-this._map.getBearing()}deg)`;
-        }
+        this._bearing = -(this._map?.getBearing() ?? 0);
     };
 
-    onAdd(map: MapGL): HTMLElement {
+    public setMap(map: MapGL): void {
         this._map = map;
-        this._createContainer({ background: "white", display: "flex", flexDirection: "column", overflow: "hidden" });
-
-        this._container!.appendChild(this._vaadinBtn("vaadin:plus", "Zoom in", () => map.zoomIn()));
-        this._container!.appendChild(this._vaadinBtn("vaadin:minus", "Zoom out", () => map.zoomOut()));
-
-        this._compassIcon = document.createElement("or-icon") as HTMLElement;
-        this._compassIcon.setAttribute("icon", "or:compass");
-        this._compassIcon.style.cssText = "--or-icon-width: 18px; --or-icon-height: 18px; transition: transform 0.1s ease;";
-
-        const compassBtn = document.createElement("or-vaadin-button");
-        compassBtn.setAttribute("theme", "icon");
-        compassBtn.setAttribute("title", "Reset bearing to north");
-        compassBtn.style.setProperty("--lumo-border-radius-m", "0");
-        compassBtn.appendChild(this._compassIcon);
-        compassBtn.addEventListener("click", () => map.resetNorthPitch({ duration: 200 }));
-        this._container!.appendChild(compassBtn);
-
         map.on("rotate", this._onRotate);
+    }
+
+    public disconnectedCallback() {
+        super.disconnectedCallback();
+        this._map?.off("rotate", this._onRotate);
+    }
+
+    protected render() {
+        return html`
+            <or-vaadin-button theme="icon" title="Zoom in" @click="${() => this._map?.zoomIn()}">
+                <or-vaadin-icon icon="vaadin:plus"></or-vaadin-icon>
+            </or-vaadin-button>
+            <or-vaadin-button theme="icon" title="Zoom out" @click="${() => this._map?.zoomOut()}">
+                <or-vaadin-icon icon="vaadin:minus"></or-vaadin-icon>
+            </or-vaadin-button>
+            <or-vaadin-button theme="icon" title="Reset bearing to north" @click="${() => this._map?.resetNorthPitch({ duration: 200 })}">
+                <or-icon icon="or:compass" style="transform: rotate(${this._bearing}deg)"></or-icon>
+            </or-vaadin-button>
+        `;
+    }
+}
+
+export class OrMapNavigationControl extends OrMapBaseControl {
+    private _component?: OrMapNavigation;
+
+    onAdd(map: MapGL): HTMLElement {
+        this._createContainer();
+        this._component = document.createElement("or-map-navigation") as OrMapNavigation;
+        this._component.setMap(map);
+        this._container!.appendChild(this._component);
         return this._container!;
     }
 
-    private _vaadinBtn(icon: string, title: string, onClick: () => void): HTMLElement {
-        const btn = document.createElement("or-vaadin-button");
-        btn.setAttribute("theme", "icon");
-        btn.setAttribute("title", title);
-        btn.style.setProperty("--lumo-border-radius-m", "0");
-        const ic = document.createElement("or-vaadin-icon") as HTMLElement;
-        ic.setAttribute("icon", icon);
-        ic.style.cssText = "width: 14px; height: 14px; color: black;";
-        btn.appendChild(ic);
-        btn.addEventListener("click", onClick);
-        return btn;
-    }
-
     onRemove(): void {
-        this._map?.off("rotate", this._onRotate);
         super.onRemove();
-        this._map = undefined;
-        this._compassIcon = undefined;
+        this._component = undefined;
     }
 }
