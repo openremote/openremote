@@ -878,6 +878,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ids.forEach(assetLocks::lock);
 
                 persistenceService.doTransaction(em -> {
+                    // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+                    // and the minimum supported TimescaleDB version includes that fix.
+                    em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+
                     List<Asset<?>> assets = em
                         .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
                         .setParameter("ids", ids)
