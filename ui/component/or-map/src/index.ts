@@ -9,7 +9,6 @@ import "@openremote/or-vaadin-components/or-vaadin-text-field"
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
-    InputType,
     ValueInputProviderGenerator,
     ValueInputTemplateFunction
 } from "@openremote/or-mwc-components/or-mwc-input";
@@ -107,7 +106,6 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
     const compact = !!(options && options.compact);
-    const comfortable = !!(options && options.comfortable);
     const centerControl = new CenterControl();
 
     const valueChangeHandler = (value: LngLatLike | undefined) => {
@@ -254,10 +252,6 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     <or-vaadin-button theme="icon" @click=${onClick}>
                         <or-icon icon="crosshairs-gps"></or-icon>
                     </or-vaadin-button>
-                    <!--<div style="display: flex">
-                        <or-mwc-input .comfortable="${comfortable}" .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}"></or-mwc-input>
-                        <or-mwc-input style="width: unset" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @or-mwc-input-changed="${onClick}"></or-mwc-input>
-                    </div>-->
                 </div>
             `;
         }
