@@ -22,7 +22,7 @@ import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHand
 import { AssetMap } from "./asset-map";
 import { CenterControl } from "./controls/center";
 import { ifDefined } from "lit-html/directives/if-defined.js";
-import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail, MapGeocoderEventDetail } from "./types";
+import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail } from "./types";
 
 // Re-exports
 export {Util, LngLatLike, LngLat};
@@ -31,8 +31,9 @@ export * from "./markers/or-map-marker-asset";
 export * from "./markers/or-cluster-marker";
 export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
-export * from "./or-map-legend";
-export * from "./or-map-preset-filter";
+export * from "./controls/legend";
+export * from "./controls/preset-filter";
+export * from "./controls/geocoder";
 export type * from "./types";
 
 export class OrMapLoadedEvent extends CustomEvent<void> {
@@ -79,21 +80,6 @@ export class OrMapLongPressEvent extends CustomEvent<MapEventDetail> {
     }
 }
 
-export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail> {
-
-    public static readonly NAME = "or-map-geocoder-change";
-
-    constructor(geocode: any) {
-        super(OrMapGeocoderChangeEvent.NAME, {
-            detail: {
-                geocode
-            },
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
 export class OrMapMarkersChangedEvent extends CustomEvent<AssetWithLocation[]> {
 
     public static readonly NAME = "or-map-markers-changed";
@@ -112,7 +98,6 @@ declare global {
         [OrMapClickedEvent.NAME]: OrMapClickedEvent;
         [OrMapLoadedEvent.NAME]: OrMapLoadedEvent;
         [OrMapLongPressEvent.NAME]: OrMapLongPressEvent;
-        [OrMapGeocoderChangeEvent.NAME]: OrMapGeocoderChangeEvent;
         [OrMapMarkersChangedEvent.NAME]: OrMapMarkersChangedEvent;
     }
 }
@@ -382,6 +367,14 @@ export class OrMap extends LitElement {
 
     public removeAllAssets(): void {
         this._map?.removeAllAssets();
+    }
+
+    public addControl(control: IControl, position?: ControlPosition): void {
+        this._map?.addControl(control, position);
+    }
+
+    public removeControl(control: IControl): void {
+        this._map?.removeControl(control);
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {

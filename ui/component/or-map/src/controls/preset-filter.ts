@@ -27,15 +27,17 @@ import "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-item";
 import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import { selectRenderer } from "@openremote/or-vaadin-components/or-vaadin-select"
-import { AssetWithLocation } from "./types";
+import type { Map as MapGL } from "maplibre-gl";
+import { OrMapBaseControl } from "./base";
+import { AssetWithLocation } from "../types";
 
 export class OrMapPresetFilterEvent extends CustomEvent<AssetQuery | null> {
     public static readonly NAME = "or-map-preset-filter-changed";
 
     constructor(filter: AssetQuery | null) {
         super(OrMapPresetFilterEvent.NAME, {
-            bubbles: false,
-            composed: false,
+            bubbles: true,
+            composed: true,
             detail: filter
         });
     }
@@ -167,5 +169,34 @@ export class OrMapPresetFilter extends LitElement {
         this._activeIndex = parseInt((e.target as HTMLInputElement).value) || 0;
         const filter = this._activeIndex > 0 ? this.filters[this._activeIndex - 1] : null;
         this.dispatchEvent(new OrMapPresetFilterEvent(filter));
+    }
+}
+
+export class OrMapPresetFilterControl extends OrMapBaseControl {
+    private _component?: OrMapPresetFilter;
+
+    constructor(private _filters: AssetQuery[], private _assets: AssetWithLocation[]) { super(); }
+
+    onAdd(_map: MapGL): HTMLElement {
+        this._createContainer();
+        this._component = document.createElement("or-map-preset-filter") as OrMapPresetFilter;
+        this._component.filters = this._filters;
+        this._component.assets = this._assets;
+        this._container!.appendChild(this._component);
+        return this._container!;
+    }
+
+    onRemove(): void {
+        super.onRemove();
+        this._component = undefined;
+    }
+
+    set assets(assets: AssetWithLocation[]) {
+        this._assets = assets;
+        if (this._component) this._component.assets = assets;
+    }
+
+    get element(): OrMapPresetFilter | undefined {
+        return this._component;
     }
 }

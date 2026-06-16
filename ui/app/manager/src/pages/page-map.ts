@@ -14,7 +14,9 @@ import {
     OrMapMarkersChangedEvent,
     OrMapLegendEvent,
     OrMapLoadedEvent,
-    OrMapPresetFilterEvent
+    OrMapPresetFilterEvent,
+    OrMapPresetFilterControl,
+    OrMapLegendControl
 } from "@openremote/or-map";
 import manager, { Util } from "@openremote/core";
 import {createSelector} from "reselect";
@@ -171,37 +173,8 @@ export class PageMap extends Page<MapStateKeyed> {
                 z-index: 3;
             }
 
-            or-map-preset-filter {
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                z-index: 3;
-            }
-
-           or-map-legend {
-               position: absolute;
-               bottom: 10px;
-               right: 10px;
-               width: 254px;
-               margin: 10px 0;
-               z-index: 1;
-           }
-
             or-map {
                 flex: 1 1 auto;
-            }
-
-            @media only screen and (max-width: 40em){
-                or-map-preset-filter {
-                    left: auto;
-                    right: 10px;
-                }
-
-                or-map-legend {
-                    bottom: 40px;
-                    left: 10px;
-                    right: auto;
-                }
             }
 
             @media only screen and (min-width: 40em){
@@ -215,17 +188,6 @@ export class PageMap extends Page<MapStateKeyed> {
                     height: max-content;
                     max-height: calc(100vh - 150px);
                     z-index: 2;
-                }
-
-                or-map-legend {
-                    position: absolute;
-                    bottom: 10px;
-                    right: 10px;
-                    width: calc(100%);
-                    max-width: 254px;
-                    margin: 0;
-                    height: max-content;
-                    max-height: calc(100vh - 150px);
                 }
             }
         `;
@@ -255,6 +217,9 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _activeFilter: AssetQuery | null = null;
 
+    @state()
+    protected _assetCounts: Record<string, number> = {};
+
     protected _locatedAssetSelector = (state: MapStateKeyed) => state.map.locatedAssets;
     protected _unlocatedAssetSelector = (state: MapStateKeyed) => state.map.unlocatedAssets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
@@ -262,6 +227,9 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected _assetSubscriptionId: string;
     protected _attributeSubscriptionId: string;
+    protected _presetFilterControl?: OrMapPresetFilterControl;
+    protected _legendControl?: OrMapLegendControl;
+    protected _mapLoaded = false;
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -452,33 +420,28 @@ export class PageMap extends Page<MapStateKeyed> {
     shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has('_assets')) {
             const newTypes = [];
+            const counts: Record<string, number> = {};
             for (const { type } of this._assets) {
                 if (!newTypes.includes(type)) newTypes.push(type);
+                if (type) counts[type] = (counts[type] ?? 0) + 1;
             }
             this._assetTypes = newTypes;
+            this._assetCounts = counts;
         }
         return super.shouldUpdate(_changedProperties);
     }
 
     protected render() {
-        const showLegend = this.config?.legend?.show !== false && this._assetTypes.length > 1;
         const filters = this.config?.filters;
         this.style.setProperty("--card-top", filters?.length ? "56px" : "10px");
 
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            ${filters?.length ? html`
-                <or-map-preset-filter
-                    .filters="${filters}"
-                    .assets="${this._assets}"
-                    @or-map-preset-filter-changed="${this._onPresetFilterChanged}"
-                ></or-map-preset-filter>
-            ` : null}
-
-            ${showLegend ? html`<or-map-legend .assetTypes="${this._assetTypes}" .excludedTypes="${this._excludedTypes}" @or-map-legend-changed="${this._onMapLegendChanged}"></or-map-legend>` : null}
-
-            <or-map id="map" class="or-map ${filters?.length ? 'has-filters' : ''}" .cluster="${this.config.clustering}" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
+            <or-map id="map" class="or-map ${filters?.length ? 'has-filters' : ''}" .cluster="${this.config.clustering}" showGeoCodingControl
+                @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}"
+                @or-map-preset-filter-changed="${this._onPresetFilterChanged}"
+                @or-map-legend-changed="${this._onMapLegendChanged}">
                 ${this._assetsOnScreen.sort((a,b) => {
                     const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
@@ -533,7 +496,38 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected _onMapLoaded(e: OrMapLoadedEvent) {
+        this._mapLoaded = true;
         this._map?.addAssets(this._getVisibleAssets());
+
+        const filters = this.config?.filters;
+        if (filters?.length) {
+            this._presetFilterControl = new OrMapPresetFilterControl(filters, this._assets);
+            this._map?.addControl(this._presetFilterControl, 'top-left');
+        }
+
+        if (this.config?.legend?.show !== false) {
+            this._legendControl = new OrMapLegendControl(this._assetTypes, this._excludedTypes, this._assetCounts);
+            this._map?.addControl(this._legendControl, 'bottom-right');
+        }
+    }
+
+    protected updated(changedProperties: PropertyValues): void {
+        super.updated(changedProperties);
+        if (!this._mapLoaded) return;
+
+        if (changedProperties.has('_assets') && this._presetFilterControl) {
+            this._presetFilterControl.assets = this._assets;
+        }
+
+        if (this._legendControl) {
+            if (changedProperties.has('_assetTypes') || changedProperties.has('_assetCounts')) {
+                this._legendControl.assetTypes = this._assetTypes;
+                this._legendControl.assetCounts = this._assetCounts;
+            }
+            if (changedProperties.has('_excludedTypes')) {
+                this._legendControl.excludedTypes = this._excludedTypes;
+            }
+        }
     }
 
     protected _onMapLegendChanged(e: OrMapLegendEvent) {
