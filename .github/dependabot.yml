@@ -13,10 +13,25 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      vaadin:
+        group-by:
+          - "@vaadin/*"
+      playwright:
+        group-by:
+          - "@playwright/*"
+          - "@sand4rt/experimental-ct-web"
+      material:
+        group-by:
+          - "@material/*"
     cooldown: # Align with .yarnrc.yml npmMinimalAgeGate (1w) and npmPreapprovedPackages
       default-days: 7
       exclude:
         - "@openremote/*"
+    ignore:
+      - dependency-name: "@rsbuild/*"
+      - dependency-name: "@rsdoctor/*"
+      - dependency-name: "@rspack/*"
 
   # Maintain Java dependencies for the Gradle multi-project build.
   - package-ecosystem: "gradle"
