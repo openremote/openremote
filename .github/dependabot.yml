@@ -8,28 +8,15 @@ updates:
     ignore:
       - dependency-name: "openremote/openremote"
 
-  # Do not maintain npm/Yarn dependencies, including security update PRs.
-  #  - package-ecosystem: "npm"
-  #    directories:
-  #      - "/"
-  #      - "/ui/component/*"
-  #      - "/ui/test"
-  #      - "/ui/util"
-  #      - "/ui/app/manager"
-  #      - "/ui/app/storybook"
-  #      - "/ui/app/insights"
-  #      - "/ui/demo/demo-core"
-  #      - "/ui/demo/demo-rest"
-  #    schedule:
-  #      interval: "daily"
-  #    exclude-paths:
-  #      - "node_modules/**"
-  #      - "**/node_modules/**"
-  #      - "**/dist/**"
-  #      - "**/build/**"
-  #    open-pull-requests-limit: 0
-  #    ignore:
-  #      - dependency-name: "*"
+  # Maintain npm/Yarn dependencies
+  - package-ecosystem: "npm"
+    directories: "/"
+    schedule:
+      interval: "daily"
+    cooldown: # To be inline with the minimal age gate option in the .yarnrc.yml
+      default-days: 7
+      exclude:
+        - "@openremote/*"
 
   # Maintain Java dependencies for the Gradle multi-project build.
   - package-ecosystem: "gradle"
