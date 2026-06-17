@@ -31,6 +31,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -253,12 +254,16 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             try {
                 persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
                     String tempTableName = "tmp_export_attributes";
+                    String tempBoundsTableName = "tmp_export_bounds";
 
-                    // Create temp table and insert attribute refs safely via PreparedStatement
-                    // to prevent SQL injection (instead of string-interpolating IDs into the query)
+                    // Create temp tables and insert parameters safely via PreparedStatement
+                    // to prevent SQL injection (instead of string-interpolating IDs into the query).
                     try (Statement statement = connection.createStatement()) {
                         statement.execute(
                             "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
+                        );
+                        statement.execute(
+                            "create temp table " + tempBoundsTableName + " (from_timestamp timestamp, to_timestamp timestamp) on commit drop"
                         );
                     }
 
@@ -273,8 +278,16 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         insertStatement.executeBatch();
                     }
 
+                    try (PreparedStatement boundsStatement = connection.prepareStatement(
+                        "insert into " + tempBoundsTableName + " (from_timestamp, to_timestamp) values (?, ?)"
+                    )) {
+                        boundsStatement.setObject(1, toDatapointLocalDateTime(fromTimestamp));
+                        boundsStatement.setObject(2, toDatapointLocalDateTime(toTimestamp));
+                        boundsStatement.executeUpdate();
+                    }
+
                     // Build the COPY ... TO STDOUT query based on format
-                    String copyQuery = buildCopyToStdoutQuery(tempTableName, fromTimestamp, toTimestamp, format, attributeRefs);
+                    String copyQuery = buildCopyToStdoutQuery(tempTableName, tempBoundsTableName, format, attributeRefs);
 
                     try {
                         PGConnection pgConnection = connection.unwrap(PGConnection.class);
@@ -311,10 +324,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * Builds a COPY ... TO STDOUT query for streaming CSV data based on the export format.
      * Uses a temporary table for safe attribute filtering (SQL injection prevention).
      */
-    private String buildCopyToStdoutQuery(String tempTableName, long fromTimestamp, long toTimestamp,
+    private String buildCopyToStdoutQuery(String tempTableName, String tempBoundsTableName,
                                           DatapointExportFormat format, AttributeRef[] attributeRefs) {
-        long fromSeconds = fromTimestamp / 1000;
-        long toSeconds = toTimestamp / 1000;
         final String TO_STDOUT_WITH_CSV_FORMAT = ") TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER ',');";
 
         if (format == DatapointExportFormat.CSV_CROSSTAB || format == DatapointExportFormat.CSV_CROSSTAB_MINUTE) {
@@ -345,19 +356,21 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                         "from asset_datapoint ad " +
                         "join asset a on ad.entity_id = a.id " +
                         "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "cross join %s b " +
+                        "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
                         "group by bucket_timestamp, header " +
                         "order by bucket_timestamp, header",
-                        tempTableName, fromSeconds, toSeconds);
+                        tempTableName, tempBoundsTableName);
             } else {
                 innerQuery = String.format(
                         "select ad.timestamp, a.name || '' : '' || ad.attribute_name as header, ad.value " +
                         "from asset_datapoint ad " +
                         "join asset a on ad.entity_id = a.id " +
                         "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                        "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                        "cross join %s b " +
+                        "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
                         "order by ad.timestamp, header",
-                        tempTableName, fromSeconds, toSeconds);
+                        tempTableName, tempBoundsTableName);
             }
 
             return String.format(
@@ -370,9 +383,10 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     "from asset_datapoint ad " +
                     "join asset a on ad.entity_id = a.id " +
                     "join %s t on ad.entity_id = t.entity_id and ad.attribute_name = t.attribute_name " +
-                    "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                    "cross join %s b " +
+                    "where ad.timestamp >= b.from_timestamp and ad.timestamp <= b.to_timestamp " +
                     "order by ad.timestamp desc",
-                    tempTableName, fromSeconds, toSeconds);
+                    tempTableName, tempBoundsTableName);
             return "copy (" + innerQuery + TO_STDOUT_WITH_CSV_FORMAT;
         }
     }
@@ -399,11 +413,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * It returns a structure containing the parametrized query as a string and the parameter values.
      */
     protected ExportQuery getSelectExportQuery(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
-        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(?) and ad.timestamp <= to_timestamp(?) and ");
+        StringBuilder sb = new StringBuilder("select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= ? and ad.timestamp <= ? and ");
         Map<Integer, Object> parameters = new HashMap<>();
         int paramIndex = 1;
-        parameters.put(paramIndex++, fromTimestamp / 1000);
-        parameters.put(paramIndex++, toTimestamp / 1000);
+        parameters.put(paramIndex++, toDatapointLocalDateTime(fromTimestamp));
+        parameters.put(paramIndex++, toDatapointLocalDateTime(toTimestamp));
 
         sb.append("(ad.entity_id, ad.attribute_name) in (");
         for (int i = 0; i < attributeRefs.length; i++) {
@@ -428,5 +442,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             throw new IllegalArgumentException("Invalid asset id");
         }
         return assetId;
+    }
+
+    private static LocalDateTime toDatapointLocalDateTime(long timestamp) {
+        // Datapoints are stored in a timestamp-without-time-zone column using this same JVM-local conversion.
+        // Keep export bounds in that representation so PostgreSQL's session timezone does not affect filtering.
+        return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 }
