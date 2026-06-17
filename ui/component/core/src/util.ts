@@ -556,11 +556,12 @@ export function getComplexMetaItems(): MetaItemDescriptor[] {
 }
 
 export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
+    const fallbackName = typeof type === "string" ? type : undefined;
     if (typeof type === "string") {
         type = AssetModelUtil.getAssetDescriptor(type);
     }
     if (!type) {
-        return "";
+        return fallbackName ? camelCaseToSentenceCase(fallbackName) : "";
     }
     return i18next.t("label.asset." + type.name, {defaultValue: camelCaseToSentenceCase(type.name!)});
 }
