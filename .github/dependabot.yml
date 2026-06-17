@@ -13,7 +13,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    cooldown: # To be inline with the npmMinimalAgeGate setting in the .yarnrc.yml file
+    cooldown: # Align with .yarnrc.yml npmMinimalAgeGate (1w) and npmPreapprovedPackages
       default-days: 7
       exclude:
         - "@openremote/*"
