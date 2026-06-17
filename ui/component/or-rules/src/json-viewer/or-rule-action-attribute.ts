@@ -3,11 +3,13 @@ import {customElement, property, state} from "lit/decorators.js";
 import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {
     Asset,
+    AssetModelUtil,
+    AssetQuery,
+    AssetQueryMatch,
     AssetTypeInfo,
     RuleActionUpdateAttribute,
     RuleActionWriteAttribute,
-    WellknownValueTypes,
-    AssetModelUtil, AssetQuery
+    WellknownValueTypes
 } from "@openremote/model";
 import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
@@ -17,7 +19,12 @@ import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {when} from "lit/directives/when.js";
-import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {
+    ComboBoxDataProviderCallback,
+    ComboBoxDataProviderParams,
+    OrVaadinComboBox
+} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import debounce from "lodash.debounce";
 
 // language=CSS
 const style = css`
@@ -89,6 +96,19 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         return query ? getAssetTypeFromQuery(query) : undefined;
     }
 
+    protected _assetDataProvider = debounce((params: ComboBoxDataProviderParams, callback: ComboBoxDataProviderCallback<{value: any, label: string}>) => {
+        const query = this.action.target?.assets ?? this.action?.target?.matchedAssets;
+        const assetType = getAssetTypeFromQuery(query);
+        const ids = getAssetIdsFromQuery(query);
+        const idValue = ids && ids.length > 0 ? ids[0] : "*";
+        console.debug(`Searching for ${assetType} assets with filter '${params.filter}'...`);
+        this.loadAssets(assetType!, params.filter, idValue).finally(() => {
+            const assets = this._cache?.assets ?? [];
+            const filtered = assets.filter(a => a.name?.toLowerCase().includes(params.filter.toLowerCase()));
+            callback(filtered.map(a => ({value: a.id, label: a.name!})), filtered.length);
+        })
+    }, 500);
+
     protected render() {
 
         if (!this.action.target) {
@@ -103,18 +123,18 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
 
         const query = this.action.target.assets ? this.action.target.assets : this.action.target.matchedAssets ? this.action.target.matchedAssets : undefined;
         const assetDescriptor = this.assetInfos ? this.assetInfos.find(assetTypeInfo => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
+        const assetIds = getAssetIdsFromQuery(query);
 
         if (!assetDescriptor) {
             return html``;
         }
 
         if (!this._cache && !this._loading) {
-            this.loadAssets(assetType);
+            this.loadAssets(assetType, undefined, assetIds?.[0]);
         }
 
         // TODO: Add multiselect support
-        const ids = getAssetIdsFromQuery(query);
-        const idValue = ids && ids.length > 0 ? ids[0] : "*";
+        const idValue = assetIds?.[0] ?? "*";
         const idOptions: {value: any, label: string}[] = [
             {value: "*", label: i18next.t("matched")}
         ];
@@ -164,11 +184,19 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 }
                 
                 return html`
-                    <or-vaadin-combo-box id="matchSelect" class="min-width"
-                                         .items=${idOptions} value=${idValue} ?readonly=${this.readonly}
-                                         @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
-                        <or-translate slot="label" value="asset"></or-translate>
-                    </or-vaadin-combo-box>
+                    ${when(idOptions.length >= 100, () => html`
+                        <or-vaadin-combo-box id="matchSelect" class="min-width" value=${idValue} ?readonly=${this.readonly}
+                                             .filteredItems=${idOptions} .dataProvider=${this._assetDataProvider}
+                                             @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
+                            <or-translate slot="label" value="asset"></or-translate>
+                        </or-vaadin-combo-box>
+                    `, () => html`
+                        <or-vaadin-combo-box id="matchSelect" class="min-width"
+                                             .items=${idOptions} value=${idValue} ?readonly=${this.readonly}
+                                             @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
+                            <or-translate slot="label" value="asset"></or-translate>
+                        </or-vaadin-combo-box>
+                    `)}
                     ${when(attributes.length > 0, () => html`
                         <or-vaadin-combo-box id="attributeSelect" class="min-width" ?readonly=${this.readonly}
                                              .items=${attributes} value=${this.action.attributeName}
@@ -242,7 +270,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         const query: AssetQuery = { limit: 100 };
         if (search) {
             query.names ??= [];
-            query.names.push({ predicateType: "string", value: search });
+            query.names.push({ predicateType: "string", match: AssetQueryMatch.CONTAINS, value: search });
         }
         // If the cache contains assets from the same query, don't send HTTP request again
         const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
