@@ -1,5 +1,6 @@
 package org.openremote.test.system
 
+import org.openremote.manager.system.VersionInfo
 import org.openremote.model.util.VersionUtil
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -103,6 +104,13 @@ class VersionUtilTest extends Specification {
         VersionUtil.parsePart("0") == 0
         VersionUtil.parsePart("") == 0
         VersionUtil.parsePart("beta") == 0
+    }
+
+    def "loadVersion should load manager version from resources"() {
+        expect:
+        !VersionInfo.loadVersion().isBlank()
+        VersionInfo.loadVersion() == VersionInfo.VERSION
+        VersionInfo.loadVersion() == VersionInfo.getManagerVersion()
     }
 }
 
