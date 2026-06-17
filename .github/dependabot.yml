@@ -13,7 +13,7 @@ updates:
     directories: "/"
     schedule:
       interval: "daily"
-    cooldown: # To be inline with the minimal age gate option in the .yarnrc.yml file
+    cooldown: # To be inline with the npmMinimalAgeGate setting in the .yarnrc.yml file
       default-days: 7
       exclude:
         - "@openremote/*"
