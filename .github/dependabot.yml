@@ -23,14 +23,12 @@ updates:
           - "@sand4rt/experimental-ct-web"
           - "playwright-core"
           - "playwright"
-      material:
-        group-by:
-          - "@material/*"
     cooldown: # Align with .yarnrc.yml npmMinimalAgeGate (1w) and npmPreapprovedPackages
       default-days: 7
       exclude:
         - "@openremote/*"
     ignore:
+      - dependency-name: "@material/*" # Material components are deprecated and no longer maintained
       - dependency-name: "@rsbuild/*"
       - dependency-name: "@rsdoctor/*"
       - dependency-name: "@rspack/*"
