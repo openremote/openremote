@@ -15,10 +15,10 @@ updates:
       interval: "daily"
     groups:
       vaadin:
-        group-by:
+        patterns:
           - "@vaadin/*"
       playwright:
-        group-by:
+        patterns:
           - "@playwright/*"
           - "@sand4rt/experimental-ct-web"
           - "playwright-core"
