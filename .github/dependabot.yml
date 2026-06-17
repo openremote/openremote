@@ -21,6 +21,8 @@ updates:
         group-by:
           - "@playwright/*"
           - "@sand4rt/experimental-ct-web"
+          - "playwright-core"
+          - "playwright"
       material:
         group-by:
           - "@material/*"
