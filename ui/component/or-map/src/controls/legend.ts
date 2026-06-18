@@ -85,6 +85,10 @@ export class OrMapLegend extends LitElement {
                 padding: 4px 16px;
                 margin: 0 4px;
                 box-sizing: border-box;
+                font-size: var(--lumo-font-size-m);
+                /* Remove hover highlight */
+                --lumo-primary-color-10pct: transparent;
+                cursor: default;
             }
             or-vaadin-item:last-child {
                 margin-bottom: 4px;
