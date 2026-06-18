@@ -1,4 +1,24 @@
-import { IControl, LngLat, Map as MapGL } from "maplibre-gl";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+import { LngLat, Map as MapGL } from "maplibre-gl";
+import { OrMapBaseControl } from "./base";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
 import "@openremote/or-vaadin-components/or-vaadin-icon";
 
@@ -24,27 +44,22 @@ export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLa
     };
 }
 
-export class CoordinatesControl implements IControl {
-    protected map?: MapGL;
-    protected elem?: HTMLElement;
+export class CoordinatesControl extends OrMapBaseControl {
     protected input?: HTMLElement;
     protected _readonly = false;
     protected _value: any;
     protected _valueChangedHandler: (value: LngLat | undefined) => void;
 
     constructor(disabled = false, valueChangedHandler: (value: LngLat | undefined) => void) {
+        super();
         this._readonly = disabled;
         this._valueChangedHandler = valueChangedHandler;
     }
 
-    onAdd(map: MapGL): HTMLElement {
-        this.map = map;
-        const control = document.createElement("div");
-        control.classList.add("maplibregl-ctrl");
-        control.classList.add("maplibregl-ctrl-group");
+    onAdd(_map: MapGL): HTMLElement {
+        this._createContainer();
 
         const input = document.createElement("or-vaadin-text-field") as HTMLElement;
-        input.setAttribute("theme", "small");
         if (this._readonly) input.setAttribute("readonly", "");
         if (this._value != null) (input as any).value = this._value;
         input.setAttribute("pattern", CoordinatesRegexPattern);
@@ -53,18 +68,16 @@ export class CoordinatesControl implements IControl {
         const icon = document.createElement("or-vaadin-icon") as HTMLElement;
         icon.setAttribute("icon", "vaadin:crosshairs");
         icon.setAttribute("slot", "prefix");
-        icon.style.cssText = "width: 14px; height: 14px;";
+        icon.style.cssText = "width: 14px; height: 14px; margin-left: 4px; margin-right: 8px;";
         input.appendChild(icon);
 
-        control.appendChild(input);
-        this.elem = control;
+        this._container!.appendChild(input);
         this.input = input;
-        return control;
+        return this._container!;
     }
 
-    onRemove(_map: MapGL) {
-        this.map = undefined;
-        this.elem = undefined;
+    onRemove(): void {
+        super.onRemove();
         this.input = undefined;
     }
 

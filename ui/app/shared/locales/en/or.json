@@ -1042,7 +1042,8 @@
     "resetBearing": "Reset bearing to north",
     "searchLocation": "Search location",
     "searchLocationPlaceholder": "Search location...",
-    "findMyLocation": "Find my location"
+    "findMyLocation": "Find my location",
+    "centerOnLocation": "Center on location"
   },
   "alarm": {
     "": "Alarm",

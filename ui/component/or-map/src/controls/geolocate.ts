@@ -26,6 +26,12 @@ import { OrMapBaseControl } from "./base";
 export class OrMapGeolocateControl extends OrMapBaseControl {
     private _map?: MapGL;
     private _button?: HTMLElement;
+    private _onLocate?: (pos: GeolocationPosition) => void;
+
+    constructor(onLocate?: (pos: GeolocationPosition) => void) {
+        super();
+        this._onLocate = onLocate;
+    }
 
     onAdd(map: MapGL): HTMLElement {
         this._map = map;
@@ -48,7 +54,11 @@ export class OrMapGeolocateControl extends OrMapBaseControl {
         this._button.setAttribute("disabled", "");
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                this._map?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14 });
+                if (this._onLocate) {
+                    this._onLocate(pos);
+                } else {
+                    this._map?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14 });
+                }
                 this._button!.removeAttribute("disabled");
             },
             () => { this._button!.removeAttribute("disabled"); }

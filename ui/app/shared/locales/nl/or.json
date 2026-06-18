@@ -1034,7 +1034,8 @@
     "resetBearing": "Richting het noorden herstellen",
     "searchLocation": "Locatie zoeken",
     "searchLocationPlaceholder": "Locatie zoeken...",
-    "findMyLocation": "Mijn locatie zoeken"
+    "findMyLocation": "Mijn locatie zoeken",
+    "centerOnLocation": "Centreren op locatie"
   },
   "alarm": {
     "": "Alarm",

@@ -1,7 +1,7 @@
 import manager, {EventCallback} from "@openremote/core";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {IControl, LngLat, LngLatLike, GeolocateControl} from "maplibre-gl";
+import {IControl, LngLat, LngLatLike} from "maplibre-gl";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
@@ -19,7 +19,8 @@ import debounce from "lodash.debounce";
 import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
-import { CenterControl } from "./controls/center";
+import { OrMapCenterControl } from "./controls/center";
+import { OrMapGeolocateControl } from "./controls/geolocate";
 import { ifDefined } from "lit-html/directives/if-defined.js";
 import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail } from "./types";
 
@@ -106,7 +107,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
     const compact = !!(options && options.compact);
-    const centerControl = new CenterControl();
+    const centerControl = new OrMapCenterControl();
 
     const valueChangeHandler = (value: LngLatLike | undefined) => {
         if (!valueChangeNotifier) {
@@ -123,6 +124,19 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
 
     const coordinatesControl = new CoordinatesControl(disabled, valueChangeHandler);
     let pos: { lng: number, lat: number } | null | undefined;
+
+    // Indirection so the stable geolocate instance can call the per-render setPos.
+    let _setPos: ((lngLat: LngLatLike | null) => void) | undefined;
+    const controls: (IControl | [IControl, ControlPosition?])[] = [
+        [centerControl, "bottom-right"],
+        [coordinatesControl, "top-left"],
+    ];
+    if (!readonly) {
+        const userLocationControl = new OrMapGeolocateControl((currentLocation: GeolocationPosition) => {
+            _setPos?.(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
+        });
+        controls.push([userLocationControl, "bottom-right"]);
+    }
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
         let center: number[] | undefined;
@@ -141,7 +155,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
 
         let dialog: OrMwcDialog | undefined;
 
-        const setPos = (lngLat: LngLatLike | null) => {
+        _setPos = (lngLat: LngLatLike | null) => {
             if (readonly || disabled) {
                 return;
             }
@@ -160,27 +174,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                 valueChangeHandler(pos as LngLatLike);
             }
         };
-
-        const controls: (IControl | [IControl, ControlPosition?])[] = [[centerControl, "bottom-right"], [coordinatesControl, "top-right"]]
-
-        if (!readonly) {
-
-            const userLocationControl = new GeolocateControl({
-                positionOptions: {
-                    enableHighAccuracy: true
-                },
-                showAccuracyCircle: false,
-                showUserLocation: false
-            });
-        
-            userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
-                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-            });
-            userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
-                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-            });
-            controls.push([userLocationControl, "bottom-right"]);
-        }
+        const setPos = _setPos;
 
         let content = html`
             <or-map id="geo-json-point-map" class="or-map" @or-map-long-press="${(ev: OrMapLongPressEvent) => {setPos(ev.detail.lngLat);}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>

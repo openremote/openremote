@@ -27,6 +27,7 @@ export abstract class OrMapBaseControl implements IControl {
         el.className = "maplibregl-ctrl";
         Object.assign(el.style, {
             fontSize: "16px",
+            background: "white",
             boxShadow: "0px 2px 6px -1px var(--lumo-shade-10pct), 0px 8px 24px -4px var(--lumo-shade-30pct)",
             borderRadius: "var(--lumo-border-radius-m, 4px)",
             ...extra,
