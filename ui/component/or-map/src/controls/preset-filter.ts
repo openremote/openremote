@@ -59,11 +59,19 @@ export class OrMapPresetFilter extends LitElement {
             }
             .filter-container {
                 position: relative;
-                display: inline-block;
+                display: block;
             }
             or-vaadin-select {
                 width: 320px;
                 --vaadin-input-field-background: white;
+            }
+            @media only screen and (max-width: 40em) {
+                :host {
+                    width: 100%;
+                }
+                or-vaadin-select {
+                    width: 100%;
+                }
             }
             .filter-field-count {
                 position: absolute;
@@ -192,6 +200,7 @@ export class OrMapPresetFilterControl extends OrMapBaseControl {
 
     onAdd(_map: MapGL): HTMLElement {
         this._createContainer();
+        this._container!.classList.add("preset-filter-control");
         this._component = document.createElement("or-map-preset-filter") as OrMapPresetFilter;
         this._component.filters = this._filters;
         this._component.assets = this._assets;

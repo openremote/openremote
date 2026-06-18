@@ -14,6 +14,7 @@ import maplibregl, {
     StyleSpecification,
     GeoJSONSourceSpecification,
 } from "maplibre-gl";
+import { OrLogoControl } from "./controls/logo";
 import { OrMapNavigationControl } from "./controls/navigation";
 import { OrMapGeolocateControl } from "./controls/geolocate";
 import {
@@ -256,6 +257,7 @@ export class BaseMap {
 
         await this._styleLoaded();
 
+        this._map.addControl(new OrLogoControl, 'bottom-left');
         this._map.addControl(new AttributionControl({ compact: true }), 'bottom-left');
 
         this._map.on("click", (e: MapMouseEvent) => {

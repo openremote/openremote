@@ -436,7 +436,7 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            <or-map id="map" class="or-map ${filters?.length ? 'has-filters' : ''}" .cluster="${this.config.clustering}" showGeoCodingControl
+            <or-map id="map" class="or-map ${filters?.length ? 'has-filters' : ''} ${this._assetTypes.length >= 2 ? 'has-legend' : ''}" .cluster="${this.config.clustering}" showGeoCodingControl
                 @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}"
                 @or-map-preset-filter-changed="${this._onPresetFilterChanged}"
                 @or-map-legend-changed="${this._onMapLegendChanged}">

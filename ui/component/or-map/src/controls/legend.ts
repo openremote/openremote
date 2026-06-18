@@ -210,6 +210,7 @@ export class OrMapLegendControl extends OrMapBaseControl {
 
     onAdd(_map: MapGL): HTMLElement {
         this._createContainer();
+        this._container!.classList.add("legend-control");
         this._component = document.createElement("or-map-legend") as OrMapLegend;
         this._component.assetTypes = this._assetTypes;
         this._component.excludedTypes = this._excludedTypes;

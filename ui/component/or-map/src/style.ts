@@ -69,12 +69,15 @@ export const style = css`
     }
     
     /* Prevents overflow from elements outside the map component (like menu overlays). See #1844 */
-    .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left {
+    .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-top-left {
+        z-index: 1;
+    }
+
+    .maplibregl-ctrl-bottom-right {
         z-index: 1;
     }
 
     .maplibregl-ctrl-top-right {
-        z-index: 1;
         transition: top 0.3s;
     }
 
@@ -82,7 +85,23 @@ export const style = css`
         :host(.has-filters) .maplibregl-ctrl-top-right {
             top: 46px;
         }
+        :host(.has-filters) .maplibregl-ctrl-top-left {
+            right: 10px;
+        }
+        :host(.has-filters) .maplibregl-ctrl-top-left .preset-filter-control {
+            float: none;
+        }
+        .maplibregl-ctrl-bottom-right {
+            left: 10px;
+        }
+        .maplibregl-ctrl-bottom-right .legend-control {
+            float: none;
+        }
+        :host(.has-legend) .maplibregl-ctrl-bottom-left {
+            bottom: 50px;
+        }
     }
+
     .maplibregl-marker {
         pointer-events: none !important;
     }
@@ -138,22 +157,14 @@ export const style = css`
         --or-icon-height: var(--internal-or-map-marker-icon-active-height);
     }
     
-    #openremote {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        height: 24px;
-        width: 24px;
-        cursor: pointer;
-    }
-
-    #openremote img {
-        height: 24px;
-        width: 24px;
-    }
-
     .maplibregl-ctrl-bottom-left {
-        left: 30px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib {
+        order: 1;
     }
 `;
 
