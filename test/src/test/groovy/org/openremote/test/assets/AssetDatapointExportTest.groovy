@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
-import org.hibernate.cfg.AvailableSettings
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider
+import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
@@ -23,7 +24,6 @@ import spock.util.concurrent.PollingConditions
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.ZoneId
-import javax.sql.DataSource
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.value.ValueType.NUMBER
@@ -401,11 +401,11 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
     }
 
     private static void setDatabaseSessionTimeZone(PersistenceService persistenceService, String timeZone, int connectionCount) {
-        def dataSource = persistenceService.persistenceUnitProperties.get(AvailableSettings.DATASOURCE) as DataSource
+        def connectionProvider = getConnectionProvider(persistenceService)
         def connections = []
         try {
             connectionCount.times {
-                connections.add(dataSource.getConnection())
+                connections.add(connectionProvider.getConnection())
             }
             connections.each { connection ->
                 def statement = connection.createStatement()
@@ -417,7 +417,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             }
         } finally {
             connections.each { connection ->
-                connection.close()
+                connectionProvider.closeConnection(connection)
             }
         }
     }
@@ -440,13 +440,20 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
     }
 
     private static <T> T withConnection(PersistenceService persistenceService, Closure<T> closure) {
-        def dataSource = persistenceService.persistenceUnitProperties.get(AvailableSettings.DATASOURCE) as DataSource
-        def connection = dataSource.getConnection()
+        def connectionProvider = getConnectionProvider(persistenceService)
+        def connection = connectionProvider.getConnection()
         try {
             return closure.call(connection)
         } finally {
-            connection.close()
+            connectionProvider.closeConnection(connection)
         }
+    }
+
+    private static ConnectionProvider getConnectionProvider(PersistenceService persistenceService) {
+        return persistenceService.entityManagerFactory
+                .unwrap(SessionFactoryImplementor.class)
+                .serviceRegistry
+                .requireService(ConnectionProvider.class)
     }
 
 }
