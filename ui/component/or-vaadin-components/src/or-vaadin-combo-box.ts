@@ -28,6 +28,7 @@ import {PropertyValues, type LitElement} from "lit";
  * https://vaadin.com/docs/latest/components/combo-box/
  */
 export {comboBoxRenderer, ComboBoxLitRenderer} from "@vaadin/combo-box/lit";
+export {ComboBoxDataProviderCallback, ComboBoxDataProviderParams} from "@vaadin/combo-box";
 
 @customElement("or-vaadin-combo-box")
 export class OrVaadinComboBox extends (ComboBox as new () => ComboBox & LitElement) implements OrVaadinComponent {
