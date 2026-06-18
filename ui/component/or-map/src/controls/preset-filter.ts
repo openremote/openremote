@@ -111,8 +111,8 @@ export class OrMapPresetFilter extends LitElement {
 
     protected _getFilterCount(filterIndex: number): number {
         if (filterIndex === 0) return this.assets.length;
-        const filter = this.filters[filterIndex - 1];
-        return this.assets.filter(a => Util.assetMatchesQuery(a, filter)).length;
+        const query = new Util.AssetQueryHelper(this.filters[filterIndex - 1]);
+        return this.assets.filter(a => query.matches(a)).length;
     }
 
     protected _buildOptions() {

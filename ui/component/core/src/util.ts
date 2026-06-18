@@ -3,6 +3,9 @@ import {
     AssetModelUtil,
     AssetDescriptor,
     AssetQuery,
+    AssetQueryAccess,
+    AssetQueryOrderBy,
+    AssetQuerySelect,
     Attribute,
     AttributeDescriptor,
     AttributeEvent,
@@ -13,9 +16,13 @@ import {
     MetaHolder,
     NameHolder,
     NameValueHolder,
+    ParentPredicate,
+    PathPredicate,
     PushNotificationMessage,
+    RealmPredicate,
     RuleActionUnion,
     RuleCondition,
+    StringPredicate,
     ValueDescriptor,
     ValueDescriptorHolder,
     ValueFormat,
@@ -1082,63 +1089,95 @@ export function generateUniqueUUID(): string {
     );
 }
 
-export function evalValuePredicate(val: unknown, predicate: ValuePredicateUnion): boolean {
-    switch (predicate.predicateType) {
-        case "string": {
-            if (val === null || val === undefined) return false;
-            const haystack = predicate.caseSensitive !== false ? String(val) : String(val).toLowerCase();
-            const needle = predicate.caseSensitive !== false ? predicate.value : predicate.value?.toLowerCase();
-            let m: boolean;
-            switch (predicate.match) {
-                case "BEGIN":    m = haystack.startsWith(needle!); break;
-                case "END":      m = haystack.endsWith(needle!); break;
-                case "CONTAINS": m = haystack.includes(needle!); break;
-                default:         m = haystack === needle;
-            }
-            return predicate.negate ? !m : m;
-        }
-        case "boolean":
-            return val === predicate.value;
-        case "number": {
-            if (typeof val !== "number") return false;
-            let m: boolean;
-            switch (predicate.operator) {
-                case "GREATER_THAN":   m = val > predicate.value!; break;
-                case "GREATER_EQUALS": m = val >= predicate.value!; break;
-                case "LESS_THAN":      m = val < predicate.value!; break;
-                case "LESS_EQUALS":    m = val <= predicate.value!; break;
-                case "BETWEEN":        m = val >= predicate.value! && val <= predicate.rangeValue!; break;
-                default:               m = val === predicate.value;
-            }
-            return predicate.negate ? !m : m;
-        }
+export class AssetQueryHelper implements AssetQuery {
+    recursive?: boolean;
+    select?: AssetQuerySelect;
+    access?: AssetQueryAccess;
+    ids?: string[];
+    names?: StringPredicate[];
+    parents?: ParentPredicate[];
+    paths?: PathPredicate[];
+    realm?: RealmPredicate;
+    userIds?: string[];
+    types?: string[];
+    attributes?: LogicGroup<AttributePredicate>;
+    orderBy?: AssetQueryOrderBy;
+    limit?: number;
+    offset?: number;
+
+    constructor(query?: AssetQuery) {
+        if (query) Object.assign(this, query);
     }
-    return false;
-}
 
-export function evalAttributePredicate(asset: Asset, predicate: AttributePredicate): boolean {
-    const attrName = predicate.name?.value;
-    if (!attrName) return true;
-    const attribute = asset.attributes?.[attrName];
-    if (!attribute) return predicate.negated ? true : false;
-    const matches = predicate.value
-        ? evalValuePredicate(attribute.value, predicate.value as ValuePredicateUnion)
-        : true;
-    return predicate.negated ? !matches : matches;
-}
+    matches(asset: Asset): boolean {
+        if (this.types?.length && (!asset.type || !this.types.includes(asset.type))) return false;
+        if (this.attributes) return AssetQueryHelper._evalGroup(asset, this.attributes as LogicGroup<AttributePredicate>);
+        return true;
+    }
 
-export function evalAttributeGroup(asset: Asset, group: LogicGroup<AttributePredicate>): boolean {
-    const operator = group.operator ?? "AND";
-    const results: boolean[] = [
-        ...(group.items ?? []).map(item => evalAttributePredicate(asset, item)),
-        ...(group.groups ?? []).map(g => evalAttributeGroup(asset, g))
-    ];
-    if (!results.length) return true;
-    return operator === "OR" ? results.some(Boolean) : results.every(Boolean);
-}
+    collectAttributeNames(): string[] {
+        return this.attributes ? AssetQueryHelper._collectNames(this.attributes) : [];
+    }
 
-export function assetMatchesQuery(asset: Asset, query: AssetQuery): boolean {
-    if (query.types?.length && (!asset.type || !query.types.includes(asset.type))) return false;
-    if (query.attributes) return evalAttributeGroup(asset, query.attributes as LogicGroup<AttributePredicate>);
-    return true;
+    private static _evalValuePredicate(val: unknown, predicate: ValuePredicateUnion): boolean {
+        switch (predicate.predicateType) {
+            case "string": {
+                if (val === null || val === undefined) return false;
+                const haystack = predicate.caseSensitive !== false ? String(val) : String(val).toLowerCase();
+                const needle = predicate.caseSensitive !== false ? predicate.value : predicate.value?.toLowerCase();
+                let m: boolean;
+                switch (predicate.match) {
+                    case "BEGIN":    m = haystack.startsWith(needle!); break;
+                    case "END":      m = haystack.endsWith(needle!); break;
+                    case "CONTAINS": m = haystack.includes(needle!); break;
+                    default:         m = haystack === needle;
+                }
+                return predicate.negate ? !m : m;
+            }
+            case "boolean":
+                return val === predicate.value;
+            case "number": {
+                if (typeof val !== "number") return false;
+                let m: boolean;
+                switch (predicate.operator) {
+                    case "GREATER_THAN":   m = val > predicate.value!; break;
+                    case "GREATER_EQUALS": m = val >= predicate.value!; break;
+                    case "LESS_THAN":      m = val < predicate.value!; break;
+                    case "LESS_EQUALS":    m = val <= predicate.value!; break;
+                    case "BETWEEN":        m = val >= predicate.value! && val <= predicate.rangeValue!; break;
+                    default:               m = val === predicate.value;
+                }
+                return predicate.negate ? !m : m;
+            }
+        }
+        return false;
+    }
+
+    private static _evalPredicate(asset: Asset, predicate: AttributePredicate): boolean {
+        const attrName = predicate.name?.value;
+        if (!attrName) return true;
+        const attribute = asset.attributes?.[attrName];
+        if (!attribute) return predicate.negated ? true : false;
+        const matches = predicate.value
+            ? AssetQueryHelper._evalValuePredicate(attribute.value, predicate.value as ValuePredicateUnion)
+            : true;
+        return predicate.negated ? !matches : matches;
+    }
+
+    private static _evalGroup(asset: Asset, group: LogicGroup<AttributePredicate>): boolean {
+        const operator = group.operator ?? "AND";
+        const results: boolean[] = [
+            ...(group.items ?? []).map(item => AssetQueryHelper._evalPredicate(asset, item)),
+            ...(group.groups ?? []).map(g => AssetQueryHelper._evalGroup(asset, g)),
+        ];
+        if (!results.length) return true;
+        return operator === "OR" ? results.some(Boolean) : results.every(Boolean);
+    }
+
+    private static _collectNames(group: LogicGroup<AttributePredicate>): string[] {
+        return [
+            ...(group.items ?? []).map(item => item.name?.value).filter((n): n is string => !!n),
+            ...(group.groups ?? []).flatMap(g => AssetQueryHelper._collectNames(g)),
+        ];
+    }
 }

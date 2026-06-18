@@ -242,9 +242,7 @@ export class PageMap extends Page<MapStateKeyed> {
         }
 
         const filterAttributes = (this.config?.filters ?? [])
-            .flatMap(f => f.attributes?.items ?? [])
-            .map((item: any) => item.name?.value)
-            .filter((name): name is string => !!name);
+            .flatMap(f => new Util.AssetQueryHelper(f).collectAttributeNames());
 
         return [
             ...markerLabelAttributes,
@@ -541,7 +539,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected _isAssetVisible(asset: AssetWithLocation): boolean {
-        if (this._activeFilter && !Util.assetMatchesQuery(asset, this._activeFilter)) return false;
+        if (this._activeFilter && !new Util.AssetQueryHelper(this._activeFilter).matches(asset)) return false;
         return !this._excludedTypes.includes(asset.type);
     }
 
