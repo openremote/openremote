@@ -173,7 +173,7 @@ export class OrMapLegend extends LitElement {
                                     icon="${this._assetTypesInfo[assetType].icon}"
                                     style="color: #${this._assetTypesInfo[assetType].color}; flex-shrink: 0; --or-icon-width: 20px; --or-icon-height: 20px;"
                                 ></or-icon>
-                                <span style="flex: 1; font-size: var(--lumo-font-size-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     ${this._assetTypesInfo[assetType].label}
                                 </span>
                                 <or-vaadin-badge style="flex-shrink: 0;">${this.assetCounts[assetType] ?? 0}</or-vaadin-badge>
