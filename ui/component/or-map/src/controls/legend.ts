@@ -27,7 +27,7 @@ import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
 import "@openremote/or-vaadin-components/or-vaadin-checkbox";
 import "@openremote/or-vaadin-components/or-vaadin-badge";
-import "@openremote/or-vaadin-components/or-vaadin-icon";
+import "@openremote/or-icon";
 import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import "@openremote/or-vaadin-components/or-vaadin-item";
 
@@ -74,10 +74,10 @@ export class OrMapLegend extends LitElement {
                 border-radius: var(--lumo-border-radius-m, 3px) var(--lumo-border-radius-m, 3px) 0 0;
             }
 
-            or-vaadin-icon {
-                width: 12px;
-                height: 12px;
-                margin-right: 6px;
+            or-icon {
+                --or-icon-width: 18px;
+                --or-icon-height: 18px;
+                margin-right: 4px;
             }
 
             or-vaadin-item {
@@ -163,7 +163,7 @@ export class OrMapLegend extends LitElement {
             <div id="legend">
                 <div id="legend-title" class="${!this._contentHidden ? 'expanded' : ''}" @click="${() => { this._contentHidden = !this._contentHidden; }}">
                     <or-translate value="mapPage.legendTitle"></or-translate>
-                    <or-vaadin-icon style="cursor: pointer" icon="${this._contentHidden ? 'vaadin:chevron-up' : 'vaadin:chevron-down'}"></or-vaadin-icon>
+                    <or-icon style="cursor: pointer" icon="${this._contentHidden ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></or-icon>
                 </div>
                 <or-vaadin-list-box id="legend-list" class="${this._contentHidden ? '' : 'expanded'}">
                     ${sortedTypes.map((assetType) => html`

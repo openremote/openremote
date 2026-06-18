@@ -20,7 +20,7 @@
 import { LngLat, Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
 import "@openremote/or-vaadin-components/or-vaadin-text-field";
-import "@openremote/or-vaadin-components/or-vaadin-icon";
+import "@openremote/or-icon";
 
 export const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
 
@@ -65,10 +65,10 @@ export class CoordinatesControl extends OrMapBaseControl {
         input.setAttribute("pattern", CoordinatesRegexPattern);
         input.addEventListener("keyup", getCoordinatesInputKeyHandler(this._valueChangedHandler) as EventListener);
 
-        const icon = document.createElement("or-vaadin-icon") as HTMLElement;
-        icon.setAttribute("icon", "vaadin:crosshairs");
+        const icon = document.createElement("or-icon") as HTMLElement;
+        icon.setAttribute("icon", "mdi:crosshairs");
         icon.setAttribute("slot", "prefix");
-        icon.style.cssText = "width: 14px; height: 14px; margin-left: 4px; margin-right: 8px;";
+        icon.style.cssText = "--or-icon-width: 14px; --or-icon-height: 14px; margin-left: 4px; margin-right: 8px;";
         input.appendChild(icon);
 
         this._container!.appendChild(input);

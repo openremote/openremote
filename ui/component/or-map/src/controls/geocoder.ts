@@ -26,7 +26,7 @@ import debounce from "lodash.debounce";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-button";
-import "@openremote/or-vaadin-components/or-vaadin-icon";
+import "@openremote/or-icon";
 import type { MapGeocoderEventDetail } from "../types";
 
 export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail> {
@@ -65,13 +65,13 @@ export class OrMapGeocoder extends LitElement {
                 border-radius: var(--lumo-border-radius-m);
             }
 
-            or-vaadin-icon {
-                width: 14px;
-                height: 14px;
+            or-icon {
+                --or-icon-width: 18px;
+                --or-icon-height: 18px;
                 color: var(--lumo-secondary-text-color);
             }
 
-            or-vaadin-icon[slot="prefix"] {
+            or-icon[slot="prefix"] {
                 margin-left: 4px;
                 margin-right: 8px;
             }
@@ -123,8 +123,8 @@ export class OrMapGeocoder extends LitElement {
     protected render() {
         if (this._collapsed) {
             return html`
-                <or-vaadin-button theme="icon" title="${i18next.t("mapPage.searchLocation")}" @click="${this._expand}">
-                    <or-vaadin-icon icon="vaadin:search"></or-vaadin-icon>
+                <or-vaadin-button theme="icon" .title="${i18next.t("mapPage.searchLocation")}" @click="${this._expand}">
+                    <or-icon icon="mdi:magnify"></or-icon>
                 </or-vaadin-button>
             `;
         }
@@ -138,7 +138,7 @@ export class OrMapGeocoder extends LitElement {
                 @filter-changed="${this._onFilterChanged}"
                 @selected-item-changed="${this._onItemSelected}"
             >
-                <or-vaadin-icon slot="prefix" icon="vaadin:search"></or-vaadin-icon>
+                <or-icon slot="prefix" icon="mdi:magnify"></or-icon>
             </or-vaadin-combo-box>
         `;
     }
