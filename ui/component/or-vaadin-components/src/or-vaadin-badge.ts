@@ -26,6 +26,7 @@ import {type LitElement} from "lit";
 export class OrVaadinBadge extends (Badge as new () => Badge & LitElement) implements OrVaadinComponent {
     constructor() {
         super();
-        (window as any).Vaadin.featureFlags.badgeComponent = true;
+        const w = window as any;
+        ((w.Vaadin ??= {}).featureFlags ??= {}).badgeComponent = true;
     }
 }

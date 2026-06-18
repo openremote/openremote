@@ -124,7 +124,7 @@ export class OrMapGeocoder extends LitElement {
         }
         return html`
             <or-vaadin-combo-box
-                .filteredItems="${this._suggestions}"
+                .items="${this._suggestions}"
                 item-label-path="place_name"
                 item-value-path="place_name"
                 placeholder="${i18next.t("mapPage.searchLocationPlaceholder")}"
@@ -164,6 +164,7 @@ export class OrMapGeocoder extends LitElement {
                 params.set("bounded", "1");
             }
             const response = await fetch(`${this.geocodeUrl}/search?${params.toString()}`);
+            if (!response.ok) console.error(`Geocoder request failed: ${response.status}`);
             const geojson = await response.json();
             for (const feature of geojson.features) {
                 const center = [
@@ -202,6 +203,7 @@ export class OrMapGeocoder extends LitElement {
     public disconnectedCallback() {
         super.disconnectedCallback();
         i18next.off("languageChanged", this._onLanguageChanged);
+        this._fetchSuggestions.cancel();
         this._marker?.remove();
     }
 }

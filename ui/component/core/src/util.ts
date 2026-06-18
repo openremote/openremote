@@ -1112,9 +1112,8 @@ export function evalValuePredicate(val: unknown, predicate: ValuePredicateUnion)
             }
             return predicate.negate ? !m : m;
         }
-        default:
-            return true;
     }
+    return false;
 }
 
 export function evalAttributePredicate(asset: Asset, predicate: AttributePredicate): boolean {
