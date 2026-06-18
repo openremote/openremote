@@ -101,9 +101,15 @@ export class OrMapGeocoder extends LitElement {
     private _suggestions: any[] = [];
 
     private _hasValue = false;
+    private _lastQuery = "";
     private _map?: MapGL;
     private _marker?: any;
-    private _onLanguageChanged = () => { if (!this._collapsed) this._fetchSuggestions.flush(); };
+    private _onLanguageChanged = () => {
+        if (!this._collapsed && this._lastQuery.length >= 2) {
+            this._fetchSuggestions(this._lastQuery);
+            this._fetchSuggestions.flush();
+        }
+    };
 
     public connectedCallback() {
         super.connectedCallback();
@@ -129,7 +135,7 @@ export class OrMapGeocoder extends LitElement {
                 item-value-path="place_name"
                 placeholder="${i18next.t("mapPage.searchLocationPlaceholder")}"
                 clear-button-visible
-                @filter-changed="${(e: CustomEvent) => this._fetchSuggestions(e.detail.value)}"
+                @filter-changed="${this._onFilterChanged}"
                 @selected-item-changed="${this._onItemSelected}"
             >
                 <or-vaadin-icon slot="prefix" icon="vaadin:search"></or-vaadin-icon>
@@ -142,6 +148,11 @@ export class OrMapGeocoder extends LitElement {
         this.updateComplete.then(() => {
             (this.shadowRoot?.querySelector("or-vaadin-combo-box") as HTMLElement)?.focus?.();
         });
+    }
+
+    private _onFilterChanged(e: CustomEvent) {
+        this._lastQuery = e.detail.value;
+        this._fetchSuggestions(e.detail.value);
     }
 
     private _fetchSuggestions = debounce(async (query: string) => {
@@ -164,13 +175,13 @@ export class OrMapGeocoder extends LitElement {
                 params.set("bounded", "1");
             }
             const response = await fetch(`${this.geocodeUrl}/search?${params.toString()}`);
-            if (!response.ok) console.error(`Geocoder request failed: ${response.status}`);
+            if (!response.ok) return;
             const geojson = await response.json();
             for (const feature of geojson.features) {
-                const center = [
-                    feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2,
-                    feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2,
-                ];
+                const center: [number, number] = feature.bbox
+                    ? [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2,
+                       feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2]
+                    : feature.geometry.coordinates;
                 features.push({ place_name: feature.properties.display_name, center });
             }
         } catch (e) {
@@ -196,6 +207,8 @@ export class OrMapGeocoder extends LitElement {
             this._marker?.remove();
             this._marker = undefined;
             this._suggestions = [];
+            this._lastQuery = "";
+            this._fetchSuggestions.cancel();
             this._collapsed = true;
         }
     }
