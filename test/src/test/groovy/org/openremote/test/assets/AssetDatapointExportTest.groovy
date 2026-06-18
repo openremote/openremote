@@ -30,7 +30,8 @@ import static org.openremote.model.value.ValueType.NUMBER
 
 class AssetDatapointExportTest extends Specification implements ManagerContainerTrait {
 
-    private static final String EXPORT_TEST_DATABASE_TIME_ZONE = "Europe/Amsterdam"
+    // Important for test is that we use a different TZ for DB than for JVM
+    private static final String EXPORT_TEST_DATABASE_TIME_ZONE = ZoneId.systemDefault().id == "Europe/Amsterdam" ? "UTC" : "Europe/Amsterdam"
     private static final int EXPORT_TEST_DATABASE_POOL_SIZE = 5
 
     def "Test CSV export functionality for asset data points"() {
