@@ -259,9 +259,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     // Create temp tables and insert parameters safely via PreparedStatement
                     // to prevent SQL injection (instead of string-interpolating IDs into the query).
                     try (Statement statement = connection.createStatement()) {
+                        // We have 2 different tables because for attribute_name, we have one entry per exported attribute
                         statement.execute(
                             "create temp table " + tempTableName + " (entity_id text, attribute_name text) on commit drop"
                         );
+                        // but for timestamps, we always have only one row, as the export period is the same for all attributes
                         statement.execute(
                             "create temp table " + tempBoundsTableName + " (from_timestamp timestamp, to_timestamp timestamp) on commit drop"
                         );
