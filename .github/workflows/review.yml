@@ -23,15 +23,22 @@ jobs:
         with:
           files_yaml: |
             ui:
+              - '.yarn'
               - 'ui/**'
               - '!**/*.md'
               - '!**/*.yml'
+              - '.yarnrc.yml'
+              - 'package.json'
+              - 'yarn.lock'
             backend:
               - '!.ci_cd/**'
+              - '!.yarn'
               - '!deployment/**'
               - '!ui/**'
               - '!**/*.md'
               - '!**/*.yml'
+              - '!.yarnrc.yml'
+              - '!package.json'
               - '!yarn.lock'
 
   ui-check-dependencies:

@@ -150,7 +150,7 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
  * @then The When-Then rule should appear in the rule list
  */
 test("Create a When-Then rule by searching for an asset", async ({page, manager, shared}) => {
-    const multiplier = 100;
+    const multiplier = 200; // Using a multiplier above 100, which is the default querying limit
     const aLotOfAssets = generateALotOfAssets(multiplier);
     await manager.setup("smartcity", {assets: aLotOfAssets});
     await manager.goToRealmStartPage("smartcity");
