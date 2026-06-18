@@ -2308,8 +2308,6 @@ __metadata:
     "@vaadin/date-picker": "npm:~25.1.4"
     "@vaadin/date-time-picker": "npm:~25.1.4"
     "@vaadin/dialog": "npm:~25.1.4"
-    "@vaadin/icon": "npm:~25.1.4"
-    "@vaadin/icons": "npm:~25.1.4"
     "@vaadin/item": "npm:~25.1.4"
     "@vaadin/list-box": "npm:~25.1.4"
     "@vaadin/menu-bar": "npm:~25.1.4"
@@ -4063,15 +4061,6 @@ __metadata:
     "@vaadin/vaadin-themable-mixin": "npm:~25.1.4"
     lit: "npm:^3.0.0"
   checksum: 10c0/428f2f8efb8b8cd77a27bf34110ee7a7af7fbec99f6884532ba7529c6754c558f7c70a34a4b6d598b2dc1b6773827b5241d9dee3432064a294766fc17b2adeb1
-  languageName: node
-  linkType: hard
-
-"@vaadin/icons@npm:~25.1.4":
-  version: 25.1.4
-  resolution: "@vaadin/icons@npm:25.1.4"
-  dependencies:
-    "@vaadin/icon": "npm:~25.1.4"
-  checksum: 10c0/b1a48ffaf02a19b0e34b25310cad985b2b2ac8eb9f0999bdfc6bfbcb2de0e3f2538cb921ce0f4d8bca734902baea6fa9c87219a7a6d3b6fb67bce48172cc0466
   languageName: node
   linkType: hard
 
