@@ -59,27 +59,89 @@ Suggested columns:
 - `COLOUR`.
 - `DESCRIPTION`.
 - `ENABLED`.
-- `ATTRIBUTES`: JSON/JSONB array of attribute definitions.
+- `ATTRIBUTES`: JSON/JSONB array of authored attribute definitions.
 - `VERSION`: optimistic locking.
 - `CREATED_ON`, `CREATED_BY`, `UPDATED_ON`, `UPDATED_BY`.
 
 Suggested attribute definition fields:
 
 - `name`.
-- `label`.
-- `valueType`.
-- `required`.
+- `type`: existing `ValueDescriptor` name, for example `number`, `text`, `boolean`, or `number[]`.
+- `optional`.
 - `defaultValue`.
 - `units`.
-- `readOnly`.
-- `storeDataPoints`.
+- `format`.
 - `constraints`.
 - `meta`.
 - `position`.
 
+Convenience fields exposed in the UI, such as label, read-only, and datapoint storage, should be stored as existing meta items in `meta`:
+
+- `label` maps to `MetaItemType.LABEL`.
+- `readOnly`.
+- `storeDataPoints`.
+
+The persisted attribute definition should reuse existing value-model classes where they are stable authored data:
+
+- `ValueConstraint[]` for `constraints`.
+- `ValueFormat` for `format`.
+- `MetaMap` / `MetaItem` for `meta`.
+
+It should not persist runtime registry objects directly:
+
+- Store a value type as a `String` descriptor name, not as a `ValueDescriptor`.
+- Do not store `AssetDescriptor`, `AttributeDescriptor`, or `AssetTypeInfo` as the database representation.
+
 Do not include realm scope, `baseType`, `parentAssetType`, or any inheritance field in phase 1.
 
 The existing filesystem-backed dynamic model loading may remain as an internal or legacy mechanism, but it is not the storage path for user-authored definitions.
+
+### Mapping to Runtime Model
+
+The database row is an authored schema. The runtime model is generated from it.
+
+```text
+CUSTOM_ASSET_TYPE
+  NAME -------------------------------> AssetDescriptor.name
+  ICON -------------------------------> AssetDescriptor.icon
+  COLOUR -----------------------------> AssetDescriptor.colour
+  DISPLAY_NAME -----------------------> attribute/type label metadata or UI label source
+  ENABLED ----------------------------> include/exclude from AssetModelProvider
+
+  ATTRIBUTES[n].name -----------------> AttributeDescriptor.name
+  ATTRIBUTES[n].type --lookup--------> ValueDescriptor from ValueUtil
+  ATTRIBUTES[n].optional ------------> AttributeDescriptor.optional
+  ATTRIBUTES[n].constraints ---------> AttributeDescriptor.constraints
+  ATTRIBUTES[n].format --------------> AttributeDescriptor.format
+  ATTRIBUTES[n].units ---------------> AttributeDescriptor.units
+  ATTRIBUTES[n].meta ----------------> AttributeDescriptor.meta
+  ATTRIBUTES[n].position ------------> ordering before AssetTypeInfo construction
+
+  ATTRIBUTES[n].defaultValue --------> asset creation / initialization helper only
+                                      not part of AttributeDescriptor today
+```
+
+Generated runtime object:
+
+```text
+AssetTypeInfo
+  assetDescriptor:
+    new AssetDescriptor(name, icon, colour)
+    type == null
+    dynamic == true
+
+  attributeDescriptors:
+    platform baseline descriptors, if we decide custom assets should expose common Asset/ThingAsset attributes
+    + generated AttributeDescriptor[] from CUSTOM_ASSET_TYPE.ATTRIBUTES
+
+  metaItemDescriptors:
+    [] in phase 1, because custom definitions reuse existing global meta descriptors
+
+  valueDescriptors:
+    [] in phase 1, because custom definitions reuse existing global value descriptors
+```
+
+The platform baseline descriptor question should be handled in the converter, not by adding an inheritance field to the database. If custom assets should expose common `Asset` / `ThingAsset` attributes such as `location`, the converter must compose those descriptors into the generated `AssetTypeInfo`; the persisted custom definition should still contain only user-authored attributes.
 
 ## Implementation Plan
 
@@ -93,13 +155,18 @@ Implementation work:
 
 - Add persistence entity/table for `CUSTOM_ASSET_TYPE`.
 - Add API/domain DTOs for `CustomAssetTypeDefinition` and `CustomAssetTypeAttributeDefinition`.
-- Store attribute definitions as structured JSON for phase 1.
+- Store authored attribute definitions as structured JSON for phase 1.
+- Store `type` as a `ValueDescriptor` name string.
+- Store constraints, format, and meta using `ValueConstraint[]`, `ValueFormat`, and `MetaMap`.
+- Do not store `AssetTypeInfo`, `AssetDescriptor`, or `AttributeDescriptor` directly.
 - Add service methods for create, read, update, delete, list, and usage count by type name.
 - Keep the definition name immutable after creation.
 
 Tests first:
 
 - Persist and read back a definition with multiple attributes.
+- Persist and read back constraints, format, units, and meta.
+- Verify value types are stored as descriptor names, not serialized `ValueDescriptor` objects.
 - Reject duplicate definition names.
 - Verify definitions are global and do not carry realm scope.
 - Verify optimistic locking/version behavior on update.
@@ -158,7 +225,10 @@ Implementation work:
   - `type = null`
 - Convert each attribute definition into an `AttributeDescriptor`.
 - Reuse existing `ValueDescriptor`s from the model registry.
+- Sort generated attributes by `position` before constructing `AssetTypeInfo`.
 - Add label, units, read-only, constraints, and datapoint storage metadata through existing descriptor/meta mechanisms.
+- Keep `defaultValue` out of `AttributeDescriptor`; use it in asset creation/initialization helpers.
+- Decide in this converter whether common `Asset` / `ThingAsset` attribute descriptors should be composed into every custom type.
 - Do not create custom `ValueDescriptor`s in phase 1.
 
 Tests first:
@@ -167,6 +237,8 @@ Tests first:
 - Generated `AssetTypeInfo` contains the expected attributes in the expected order.
 - Attribute descriptors reference existing value descriptors.
 - Generated metadata drives labels, units, read-only flags, constraints, and datapoint storage flags.
+- Default values are not encoded into `AttributeDescriptor`.
+- Baseline `Asset` / `ThingAsset` descriptors are included or excluded consistently with the converter decision.
 - Invalid definitions cannot be converted.
 
 Likely areas:
