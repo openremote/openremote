@@ -1,5 +1,8 @@
 package org.openremote.test.assets
 
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider
+import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
@@ -27,17 +30,30 @@ import static org.openremote.model.value.ValueType.NUMBER
 
 class AssetDatapointExportTest extends Specification implements ManagerContainerTrait {
 
+    // Important for test is that we use a different TZ for DB than for JVM
+    private static final String EXPORT_TEST_DATABASE_TIME_ZONE = ZoneId.systemDefault().id == "Europe/Amsterdam" ? "UTC" : "Europe/Amsterdam"
+    private static final int EXPORT_TEST_DATABASE_POOL_SIZE = 5
+
     def "Test CSV export functionality for asset data points"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
-        and: "the container is started"
-        def container = startContainer(defaultConfig(), defaultServices())
+        and: "the container is started with a bounded DB connection pool"
+        def config = defaultConfig()
+        config.put(PersistenceService.OR_DB_POOL_MIN_SIZE, Integer.toString(EXPORT_TEST_DATABASE_POOL_SIZE))
+        config.put(PersistenceService.OR_DB_POOL_MAX_SIZE, Integer.toString(EXPORT_TEST_DATABASE_POOL_SIZE))
+        def container = startContainer(config, defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        def persistenceService = container.getService(PersistenceService.class)
+        setDatabaseSessionTimeZone(persistenceService, EXPORT_TEST_DATABASE_TIME_ZONE, EXPORT_TEST_DATABASE_POOL_SIZE)
         assetDatapointService.datapointExportLimit = 1000
+
+        and: "the database session timezone is different from the JVM timezone"
+        assert getDatabaseSessionTimeZone(persistenceService) == EXPORT_TEST_DATABASE_TIME_ZONE
+        assert ZoneId.systemDefault() != ZoneId.of(EXPORT_TEST_DATABASE_TIME_ZONE)
 
         when: "requesting the first light asset in City realm"
         def asset = assetStorageService.find(
@@ -159,7 +175,12 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         /* ------------------------- */
 
         cleanup: "Remove the limit on datapoint querying"
-        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT;
+        if (assetDatapointService != null) {
+            assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+        }
+        if (persistenceService != null) {
+            setDatabaseSessionTimeZone(persistenceService, "UTC", EXPORT_TEST_DATABASE_POOL_SIZE)
+        }
     }
 
     def "Export query is not vulnerable to SQL injection via attributeRefs"() {
@@ -377,6 +398,62 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         if (response != null) {
             response.disconnect()
         }
+    }
+
+    private static void setDatabaseSessionTimeZone(PersistenceService persistenceService, String timeZone, int connectionCount) {
+        def connectionProvider = getConnectionProvider(persistenceService)
+        def connections = []
+        try {
+            connectionCount.times {
+                connections.add(connectionProvider.getConnection())
+            }
+            connections.each { connection ->
+                def statement = connection.createStatement()
+                try {
+                    statement.execute("set time zone '${timeZone}'")
+                } finally {
+                    statement.close()
+                }
+            }
+        } finally {
+            connections.each { connection ->
+                connectionProvider.closeConnection(connection)
+            }
+        }
+    }
+
+    private static String getDatabaseSessionTimeZone(PersistenceService persistenceService) {
+        withConnection(persistenceService) { connection ->
+            def statement = connection.createStatement()
+            try {
+                def resultSet = statement.executeQuery("select current_setting('TimeZone')")
+                try {
+                    resultSet.next()
+                    return resultSet.getString(1)
+                } finally {
+                    resultSet.close()
+                }
+            } finally {
+                statement.close()
+            }
+        }
+    }
+
+    private static <T> T withConnection(PersistenceService persistenceService, Closure<T> closure) {
+        def connectionProvider = getConnectionProvider(persistenceService)
+        def connection = connectionProvider.getConnection()
+        try {
+            return closure.call(connection)
+        } finally {
+            connectionProvider.closeConnection(connection)
+        }
+    }
+
+    private static ConnectionProvider getConnectionProvider(PersistenceService persistenceService) {
+        return persistenceService.entityManagerFactory
+                .unwrap(SessionFactoryImplementor.class)
+                .serviceRegistry
+                .requireService(ConnectionProvider.class)
     }
 
 }
