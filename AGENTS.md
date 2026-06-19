@@ -3,7 +3,7 @@
 ## DB update scripts
 
 Flyway is used to automate execution of DB update scripts.  
-When naming scripts, use <date>_<time> as version number, date being YYYYMMDD and time being HHmm in UTC e.g. 20260611_0755
+When naming scripts, use \<date>_\<time> as version number, date being YYYYMMDD and time being HHmm in UTC e.g. `v20260611_0755__Changes.sql`
 
 ## Dev environment
 The backend is written in Java, we target JDK 21, use modern language features up to that version during implementation.  
