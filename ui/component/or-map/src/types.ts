@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-import { Asset, Attribute, GeoJsonConfig, WellknownAttributes } from "@openremote/model";
+import { Asset, AssetQuery, Attribute, GeoJsonConfig, WellknownAttributes } from "@openremote/model";
 import { LngLat, LngLatBoundsLike, LngLatLike } from "maplibre-gl";
 import { Point } from "geojson";
 
@@ -27,6 +27,11 @@ export interface AssetWithLocation extends Asset {
     attributes: { [index: string]: Attribute<any> } & {
         [WellknownAttributes.LOCATION]: MandatoryAttribute<Point>;
     };
+}
+
+export interface MapFilter {
+    label?: string;
+    query: AssetQuery;
 }
 
 export interface ClusterConfig {

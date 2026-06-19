@@ -15,6 +15,7 @@ import {
 import { markers } from "./fixtures/data/manager.js";
 import type { OrMap, OrClusterMarker } from "@openremote/or-map";
 import { type Asset, type AssetQuery, WellknownMetaItems } from "@openremote/model";
+import type { MapFilter } from "@openremote/or-map";
 
 test.use({ storageState: userStatePath });
 
@@ -574,29 +575,32 @@ test.describe("Preset filters", () => {
 
     const allAssets = [...thingAssets, ...thingAssetsWithError];
 
-    const filters: AssetQuery[] = [
+    const filters: MapFilter[] = [
         // Filter 1: match all ThingAssets
-        { types: ["ThingAsset"] },
+        { query: { types: ["ThingAsset"] } },
         // Filter 2: match only ThingAssets with notes="error"
         {
-            types: ["ThingAsset"],
-            attributes: {
-                items: [
-                    {
-                        name: { predicateType: "string", value: "notes" },
-                        value: { predicateType: "string", value: "error" },
-                    },
-                ],
+            query: {
+                types: ["ThingAsset"],
+                attributes: {
+                    items: [
+                        {
+                            name: { predicateType: "string", value: "notes" },
+                            value: { predicateType: "string", value: "error" },
+                        },
+                    ],
+                },
             },
         },
-        // Filter 3: match a type that has no assets on the map
-        { types: ["WaterMeterAsset"] },
+        // Filter 3: match a type that has no assets — label masks the unresolvable asset type name
+        { label: "Water Meters", query: { types: ["WaterMeterAsset"] } },
     ];
 
     // Mirrors assetMatchesQuery client-side logic for deriving expected counts from test data
-    function assetMatchesFilter(asset: Asset, filter: AssetQuery): boolean {
-        if (filter.types?.length && !filter.types.includes(asset.type!)) return false;
-        const items = ((filter.attributes as any)?.items ?? []) as any[];
+    function assetMatchesFilter(asset: Asset, filter: MapFilter): boolean {
+        const query = filter.query;
+        if (query.types?.length && !query.types.includes(asset.type!)) return false;
+        const items = ((query.attributes as any)?.items ?? []) as any[];
         return items.every((item: any) =>
             asset.attributes?.[item.name?.value]?.value === item.value?.value
         );
@@ -695,6 +699,35 @@ test.describe("Preset filters", () => {
             await expect(page.locator("or-map-preset-filter or-vaadin-select + or-vaadin-badge")).toHaveText(badgeText);
         });
     }
+
+    /**
+     * @given filters are configured, one of which has an explicit label and an unresolvable asset type
+     * @when opening the preset filter dropdown
+     * @then the labelled option displays the configured label instead of a derived type name
+     * @when selecting that option
+     * @then the select field shows the configured label as the selected value
+     *
+     * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+     */
+    test("should use label property instead of derived type name", async ({ page, manager, browserName }) => {
+        test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+        await manager.setup("smartcity", { assets: allAssets });
+        await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false }, filters } } });
+        await manager.goToRealmStartPage("smartcity");
+
+        await page.locator("or-vaadin-select").click();
+        await page.getByRole("option").first().waitFor({ state: "visible" });
+
+        // "WaterMeterAsset" is not a registered type — without a label, getAssetTypeLabel returns "".
+        // The label: "Water Meters" on filter 3 should appear as the option text instead.
+        await expect(
+            page.getByRole("option").and(page.locator('[value="3"]')).locator(".filter-item__label")
+        ).toHaveText("Water Meters");
+
+        await page.getByRole("option").and(page.locator('[value="3"]')).click();
+        await expect(page.locator("or-vaadin-select")).toContainText("Water Meters");
+    });
 
     /**
      * @given assets are set up in the "smartcity" realm

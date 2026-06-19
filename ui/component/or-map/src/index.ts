@@ -22,7 +22,7 @@ import { AssetMap } from "./asset-map";
 import { OrMapCenterControl } from "./controls/center";
 import { OrMapGeolocateControl } from "./controls/geolocate";
 import { ifDefined } from "lit-html/directives/if-defined.js";
-import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail } from "./types";
+import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail, MapFilter } from "./types";
 
 // Re-exports
 export {Util, LngLatLike, LngLat};
@@ -319,7 +319,7 @@ export class OrMap extends LitElement {
     public boundary: string[] = [];
 
     @property({type: Array})
-    public filters?: AssetQuery[];
+    public filters?: MapFilter[];
 
     @property({type: Boolean})
     public showLegend: boolean = true;

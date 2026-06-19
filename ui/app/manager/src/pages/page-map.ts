@@ -23,12 +23,12 @@ import {
     AttributeEvent,
     GeoJSONPoint,
     WellknownAttributes,
-    WellknownMetaItems
+    WellknownMetaItems,
 } from "@openremote/model";
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {GenericAxiosResponse} from "@openremote/rest";
-import { ClusterConfig, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
+import { ClusterConfig, MapFilter, Util as MapUtil, AssetWithLocation } from "@openremote/or-map";
 
 export interface MapState {
     locatedAssets: AssetWithLocation[];
@@ -130,7 +130,7 @@ export interface PageMapConfig {
     card?: MapAssetCardConfig,
     assetQuery?: AssetQuery,
     markers?: MapMarkerAssetConfig,
-    filters?: AssetQuery[]
+    filters?: MapFilter[]
 }
 
 export function pageMapProvider(store: Store<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
@@ -222,7 +222,7 @@ export class PageMap extends Page<MapStateKeyed> {
         }
 
         const filterAttributes = (this.config?.filters ?? [])
-            .flatMap(f => new Util.AssetQueryHelper(f).collectAttributeNames());
+            .flatMap(f => new Util.AssetQueryHelper(f.query).collectAttributeNames());
 
         return [
             ...markerLabelAttributes,

@@ -1,6 +1,6 @@
 import { CircleLayerSpecification, GeoJSONFeature, GeoJSONSource, MapSourceDataEvent, Marker } from "maplibre-gl";
 import { Feature, Point } from "geojson";
-import { AssetWithLocation, ClusterConfig } from "./types";
+import { AssetWithLocation, ClusterConfig, MapFilter } from "./types";
 import { BaseMap } from "./base-map";
 import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 import { getMarkerIconAndColorFromAssetType } from "./util";
@@ -40,7 +40,7 @@ export class AssetMap extends BaseMap {
 
     // Filter / legend state
     private _hostElement: HTMLElement;
-    private _filters?: AssetQuery[];
+    private _filters?: MapFilter[];
     private _showLegend: boolean;
     private _activeFilter: AssetQuery | null = null;
     private _excludedTypes: string[] = [];
@@ -89,7 +89,7 @@ export class AssetMap extends BaseMap {
         useZoomControls = true,
         showGeoJson = true,
         clusterConfig?: ClusterConfig,
-        filters?: AssetQuery[],
+        filters?: MapFilter[],
         showLegend = true
     ) {
         super(styleParent, mapContainer, showGeoCodingControl, showBoundaryBox, useZoomControls, showGeoJson);
@@ -175,7 +175,7 @@ export class AssetMap extends BaseMap {
 
     // ── Dynamic control updates ───────────────────────────────────────────────
 
-    public setFilters(filters: AssetQuery[] | undefined) {
+    public setFilters(filters: MapFilter[] | undefined) {
         this._filters = filters;
         if (!this._loaded) return;
         if (this._presetFilterControl) {

@@ -19,7 +19,6 @@
  */
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { AssetQuery } from "@openremote/model";
 import { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-badge";
@@ -29,8 +28,10 @@ import "@openremote/or-vaadin-components/or-vaadin-list-box";
 import { selectRenderer } from "@openremote/or-vaadin-components/or-vaadin-select"
 import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
-import { AssetWithLocation } from "../types";
+import { AssetWithLocation, MapFilter } from "../types";
 import { formatCount } from "../util";
+
+import { AssetQuery } from "@openremote/model";
 
 export class OrMapPresetFilterEvent extends CustomEvent<AssetQuery | null> {
     public static readonly NAME = "or-map-preset-filter-changed";
@@ -90,7 +91,7 @@ export class OrMapPresetFilter extends LitElement {
     }
 
     @property({ type: Array })
-    public filters: AssetQuery[] = [];
+    public filters: MapFilter[] = [];
 
     @property({ type: Array })
     public assets: AssetWithLocation[] = [];
@@ -98,13 +99,14 @@ export class OrMapPresetFilter extends LitElement {
     @state()
     protected _activeIndex = 0;
 
-    protected _getFilterLabel(filter: AssetQuery): string {
-        const types = filter.types;
+    protected _getFilterLabel(filter: MapFilter): string {
+        if (filter.label) return filter.label;
+        const { query } = filter;
+        const types = query.types;
         const typeLabel = types?.length
             ? types.map(t => Util.getAssetTypeLabel(t).replace(/\s*asset\s*$/i, "").trim()).join(" + ")
             : i18next.t("mapPage.filterCustom");
-
-        const attrValues = (filter.attributes?.items ?? [] as any[])
+        const attrValues = (query.attributes?.items ?? [] as any[])
             .map((item: any) => {
                 const val = item.value?.value;
                 if (val === undefined || val === null) return null;
@@ -114,13 +116,12 @@ export class OrMapPresetFilter extends LitElement {
                 return String(val);
             })
             .filter(Boolean);
-
         return attrValues.length ? `${typeLabel}: ${attrValues.join(", ")}` : typeLabel;
     }
 
     protected _getFilterCount(filterIndex: number): number {
         if (filterIndex === 0) return this.assets.length;
-        const query = new Util.AssetQueryHelper(this.filters[filterIndex - 1]);
+        const query = new Util.AssetQueryHelper(this.filters[filterIndex - 1].query);
         return this.assets.filter(a => query.matches(a)).length;
     }
 
@@ -189,7 +190,7 @@ export class OrMapPresetFilter extends LitElement {
 
     protected _onChange(e: Event) {
         this._activeIndex = parseInt((e.target as HTMLInputElement).value) || 0;
-        const filter = this._activeIndex > 0 ? this.filters[this._activeIndex - 1] : null;
+        const filter = this._activeIndex > 0 ? this.filters[this._activeIndex - 1].query : null;
         this.dispatchEvent(new OrMapPresetFilterEvent(filter));
     }
 }
@@ -197,7 +198,7 @@ export class OrMapPresetFilter extends LitElement {
 export class OrMapPresetFilterControl extends OrMapBaseControl {
     private _component?: OrMapPresetFilter;
 
-    constructor(private _filters: AssetQuery[], private _assets: AssetWithLocation[]) { super(); }
+    constructor(private _filters: MapFilter[], private _assets: AssetWithLocation[]) { super(); }
 
     onAdd(_map: MapGL): HTMLElement {
         this._createContainer();
