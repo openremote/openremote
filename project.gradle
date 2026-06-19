@@ -2,6 +2,19 @@
 
 import org.jetbrains.gradle.ext.JUnit
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
+import cz.habarta.typescript.generator.DateMapping
+import cz.habarta.typescript.generator.EnumMapping
+import cz.habarta.typescript.generator.Jackson2Configuration
+import cz.habarta.typescript.generator.JsonLibrary
+import cz.habarta.typescript.generator.ModuleDependency
+import cz.habarta.typescript.generator.NullabilityDefinition
+import cz.habarta.typescript.generator.OptionalProperties
+import cz.habarta.typescript.generator.RestNamespacing
+import cz.habarta.typescript.generator.TypeScriptFileType
+import cz.habarta.typescript.generator.TypeScriptOutputKind
+
+import java.io.Serializable
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFileAttributes
@@ -13,7 +26,6 @@ import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
 import org.jetbrains.gradle.ext.Application
-import org.jetbrains.gradle.ext.JUnit
 
 // Configure versions in gradle.properties (putting a gradle.properties file
 // in a subproject only overrides root properties of same name for the actual
@@ -226,10 +238,52 @@ def getYarnInstallTask() {
 /**
  * This defines reusable config for the typescript generator plugin
  */
+class SerializableJackson2Configuration
+        extends Jackson2Configuration
+        implements Serializable {
+    private static final long serialVersionUID = 1L
+}
+
+class SerializableModuleDependency
+        extends ModuleDependency
+        implements Serializable {
+    private static final long serialVersionUID = 1L
+
+    SerializableModuleDependency(
+            boolean global,
+            String importFrom,
+            String importAs,
+            File infoJson,
+            String npmPackageName,
+            String npmVersionRange,
+            boolean peerDependency
+    ) {
+        super(global, importFrom, importAs, infoJson, npmPackageName, npmVersionRange, peerDependency)
+    }
+
+    static SerializableModuleDependency module(
+            String importFrom,
+            String importAs,
+            File infoJson,
+            String npmPackageName = null,
+            String npmVersionRange = null
+    ) {
+        return new SerializableModuleDependency(
+                false,
+                importFrom,
+                importAs,
+                infoJson,
+                npmPackageName,
+                npmVersionRange,
+                false
+        )
+    }
+}
+
 def createTSGeneratorConfigForModel(String outputFileName, Project...customProjectsToScan) {
     def config = createTSGeneratorConfig(false, outputFileName, customProjectsToScan) <<
             {
-                extensions = [
+                extensionClasses = [
                         "org.openremote.model.util.AssetModelInfoExtension",
                         "CustomExtension",
                         "JsonSerializeExtension"
@@ -247,7 +301,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
 def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, Project...customProjectsToScan) {
     def config = createTSGeneratorConfig(true, outputFileName, customProjectsToScan) <<
             {
-                extensions = [
+                extensionClasses = [
                         "CustomExtension",
                         "JsonSerializeExtension",
                         "AggregatedApiClient",
@@ -265,15 +319,13 @@ def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, 
                         "org.openremote.model.value.ValueDescriptor<T>:Model.ValueDescriptor"
                 ]
                 moduleDependencies = [
-                        cz.habarta.typescript.generator.ModuleDependency.module(
+                        SerializableModuleDependency.module(
                                 "@openremote/model",
                                 "Model",
-                                modelInfoJson,
-                                (String) null,
-                                (String) null
+                                modelInfoJson
                         )
                 ]
-                restNamespacing = "perResource"
+                restNamespacing = RestNamespacing.perResource
             }
     return config
 }
@@ -299,12 +351,12 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
     }.toList()
 
     return {
-        jsonLibrary = "jackson2"
+        jsonLibrary = JsonLibrary.jackson2
         classPatterns = [
                 (outputAPIClient ? "org.openremote.model.**Resource" : "org.openremote.model.**")
         ] + classPatternGlobs
         customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
-        nullabilityDefinition = cz.habarta.typescript.generator.NullabilityDefinition.nullAndUndefinedInlineUnion
+        nullabilityDefinition = NullabilityDefinition.nullAndUndefinedInlineUnion
         nullableAnnotations = ["org.checkerframework.checker.nullness.qual.Nullable"]
         excludeClassPatterns = [
                 "org.openremote.model.event.shared.*Filter**",
@@ -315,19 +367,21 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
                 "org.hibernate.**",
                 "jakarta.**"
         ]
-        mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
-        mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
-        optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
-        outputFileType = "implementationFile"
-        outputKind = "module"
+        mapEnum = EnumMapping.asEnum
+        mapDate = DateMapping.asNumber
+        optionalProperties = OptionalProperties.all // TODO: cleanup model to be more explicit about optional params
+        outputFileType = TypeScriptFileType.implementationFile
+        outputKind = TypeScriptOutputKind.module
         outputFile = outputFileName
-        jackson2Configuration = [
-                fieldVisibility: "ANY",
-                creatorVisibility: "ANY",
-                getterVisibility: "NONE",
-                isGetterVisibility: "NONE",
-                setterVisibility: "NONE"
-        ]
+
+        def jackson2Config = new SerializableJackson2Configuration()
+        jackson2Config.fieldVisibility = Visibility.ANY
+        jackson2Config.creatorVisibility = Visibility.ANY
+        jackson2Config.getterVisibility = Visibility.NONE
+        jackson2Config.isGetterVisibility = Visibility.NONE
+        jackson2Config.setterVisibility = Visibility.NONE
+        jackson2Configuration.set(jackson2Config)
+
         jackson2Modules = [
                 "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
                 "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",

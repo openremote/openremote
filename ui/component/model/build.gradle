@@ -24,14 +24,21 @@ dependencies {
 
 generateTypeScript createTSGeneratorConfigForModel("src/model.ts")
 
+def generateTypeScriptTask = tasks.named("generateTypeScript")
+
 tasks.register('npmBuild', Exec) {
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "build"
 }
 
-build.dependsOn generateTypeScript, npmBuild
-npmBuild.dependsOn generateTypeScript
+tasks.named("build") {
+    dependsOn generateTypeScriptTask, tasks.named("npmBuild")
+}
+
+tasks.named("npmBuild") {
+    dependsOn generateTypeScriptTask
+}
 
 clean {
     doLast {

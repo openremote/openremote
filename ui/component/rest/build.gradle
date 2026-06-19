@@ -29,8 +29,15 @@ dependencies {
 //project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")
 //generateTypescriptModelInfo createTSGeneratorConfigForModel("$buildDir/model.ts")
 
-generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts", new File("${project(":ui:component:model").projectDir}/src/typescript-generator-info.json"))
-generateTypeScript.dependsOn resolveTask(":ui:component:model:generateTypeScript")
+generateTypeScript createTSGeneratorConfigForClient(
+    "src/restclient.ts",
+    new File("${project(":ui:component:model").projectDir}/src/typescript-generator-info.json")
+)
+
+def generateTypeScriptTask = tasks.named("generateTypeScript")
+generateTypeScriptTask.configure {
+    dependsOn resolveTask(":ui:component:model:generateTypeScript")
+}
 
 clean {
     doLast {
@@ -47,8 +54,13 @@ tasks.register('npmBuild', Exec) {
     commandLine npmCommand("yarn"), "run", "build"
 }
 
-build.dependsOn generateTypeScript, npmBuild
-npmBuild.dependsOn generateTypeScript
+tasks.named("build") {
+    dependsOn generateTypeScriptTask, tasks.named("npmBuild")
+}
+
+tasks.named("npmBuild") {
+    dependsOn generateTypeScriptTask
+}
 
 tasks.register('prepareUi') {
     dependsOn clean, build, npmPrepare
