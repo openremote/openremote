@@ -17,10 +17,10 @@ pluginManagement {
 
 plugins {
     id 'cz.habarta.typescript-generator' version "$typescriptGeneratorVersion" apply false
-    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0' apply false
-    id 'io.openremote.com.cherryperry.gradle-file-encrypt' version '2.1.0' apply false
-    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.2' apply false
-    id 'pl.allegro.tech.build.axion-release' version '1.21.1' apply false
+    id 'io.github.gradle-nexus.publish-plugin' version "$gradleNexusPublishPluginVersion" apply false
+    id 'io.openremote.com.cherryperry.gradle-file-encrypt' version "$gradleFileEncryptPluginVersion" apply false
+    id 'org.jetbrains.gradle.plugin.idea-ext' version "$ideaExtPluginVersion" apply false
+    id 'pl.allegro.tech.build.axion-release' version "$axionReleasePluginVersion" apply false
 }
 
 rootProject.name = "openremote"

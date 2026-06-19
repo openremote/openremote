@@ -5,6 +5,7 @@ import {IControl, LngLat, LngLatLike, GeolocateControl} from "maplibre-gl";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
+import "@openremote/or-vaadin-components/or-vaadin-text-field"
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
@@ -20,6 +21,7 @@ import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
 import { CenterControl } from "./controls/center";
+import { ifDefined } from "lit-html/directives/if-defined.js";
 import type { AssetWithLocation, ClusterConfig, ControlPosition, MapEventDetail, MapGeocoderEventDetail } from "./types";
 
 // Re-exports
@@ -260,10 +262,16 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     }
                 </style>
                 <div id="geo-json-point-input-compact-wrapper">
-                    <div style="display: flex">
+                    <or-vaadin-text-field style="width: auto;" value=${ifDefined(centerStr)} pattern=${CoordinatesRegexPattern}
+                                         @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}">
+                    </or-vaadin-text-field>
+                    <or-vaadin-button theme="icon" @click=${onClick}>
+                        <or-icon icon="crosshairs-gps"></or-icon>
+                    </or-vaadin-button>
+                    <!--<div style="display: flex">
                         <or-mwc-input .comfortable="${comfortable}" .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeHandler)(e)}"></or-mwc-input>
                         <or-mwc-input style="width: unset" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @or-mwc-input-changed="${onClick}"></or-mwc-input>
-                    </div>
+                    </div>-->
                 </div>
             `;
         }

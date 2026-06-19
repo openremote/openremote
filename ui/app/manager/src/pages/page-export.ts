@@ -2,11 +2,9 @@ import {css, html, unsafeCSS, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-rules";
 import {Store} from "@reduxjs/toolkit";
-import {Page, PageProvider} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
 import manager, { DefaultColor3, Util } from "@openremote/core";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrAssetAttributePickerPickedEvent, OrAssetAttributePicker} from "@openremote/or-attribute-picker";
 import { AttributeRef, DatapointExportFormat } from "@openremote/model";
 import moment from "moment";
@@ -17,6 +15,8 @@ import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 import { when } from "lit/directives/when.js";
+import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 
 export function pageExportProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -135,7 +135,6 @@ export class PageExport extends Page<AppStateKeyed> {
                     align-items: center;
                     font-size: 14px;
                     text-transform: uppercase;
-                    color: var(--or-app-color4);
                 }
                 .button or-icon {
                     --or-icon-fill: var(--or-app-color4);
@@ -207,11 +206,11 @@ export class PageExport extends Page<AppStateKeyed> {
     @property()
     protected _loading: boolean = false;
 
-    protected _exportFormats: Record<DatapointExportFormat, string> = {
-        [DatapointExportFormat.CSV]: i18next.t('exportFormatCSV'),
-        [DatapointExportFormat.CSV_CROSSTAB]: i18next.t('exportFormatCSVCrosstab'),
-        [DatapointExportFormat.CSV_CROSSTAB_MINUTE]: i18next.t('exportFormatCSVCrosstabMinute')
-    };
+    protected _exportFormats: {value: DatapointExportFormat, label: string}[] = [
+        {value: DatapointExportFormat.CSV, label: i18next.t('exportFormatCSV')},
+        {value: DatapointExportFormat.CSV_CROSSTAB, label: i18next.t('exportFormatCSVCrosstab')},
+        {value: DatapointExportFormat.CSV_CROSSTAB_MINUTE, label: i18next.t('exportFormatCSVCrosstabMinute')}
+    ];
 
     @property()
     private selectedFormat: DatapointExportFormat = DatapointExportFormat.CSV;
@@ -278,7 +277,10 @@ export class PageExport extends Page<AppStateKeyed> {
                             ${this.tableRowsHtml}
                             <tr class="mdc-data-table__row">
                                 <td colspan="100%">
-                                    <a class="button" @click="${() => this._openDialog()}"><or-icon icon="plus"></or-icon>${i18next.t("addAssetAttribute")}</a>
+                                    <a class="button" style="color: var(--or-app-color4);" @click="${() => this._openDialog()}">
+                                        <or-icon icon="plus"></or-icon>
+                                        ${i18next.t("addAssetAttribute")}
+                                    </a>
                                 </td>
                             </tr>
                             </tbody>
@@ -286,16 +288,29 @@ export class PageExport extends Page<AppStateKeyed> {
                     </div>
                     <div class="options">
                         <div class="timerange-wrapper">
-                            <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
-                            <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
+                            <or-vaadin-date-time-picker value=${OrVaadinDateTimePicker.getLocalizedISOString(new Date(this.oldestTimestamp))} style="width: 320px;"
+                                                        @change=${(ev: Event) => { this.oldestTimestamp = new Date((ev.currentTarget as OrVaadinDateTimePicker).value).getTime(); }}>
+                                <or-translate slot="label" value="exportFrom"></or-translate>
+                            </or-vaadin-date-time-picker>
+                            <or-vaadin-date-time-picker value=${OrVaadinDateTimePicker.getLocalizedISOString(new Date(this.latestTimestamp))} style="width: 320px;"
+                                                        @change=${(ev: Event) => { this.latestTimestamp = new Date((ev.currentTarget as OrVaadinDateTimePicker).value).getTime(); }}>
+                                <or-translate slot="label" value="to"></or-translate>
+                            </or-vaadin-date-time-picker>
                         </div>
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('exportFormat')}" .value="${this.selectedFormat}" style="width: 100%;" .options="${Object.entries(this._exportFormats)}"  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.selectedFormat = ev.detail.value}"></or-mwc-input>
-                        </div>
+                        <or-vaadin-select .items=${this._exportFormats} value=${this.selectedFormat}
+                                          @change=${(ev: Event) => { this.selectedFormat = (ev.currentTarget as OrVaadinSelect).value as DatapointExportFormat; }}>
+                            <or-translate slot="label" value="exportFormat"></or-translate>
+                        </or-vaadin-select>
                     </div>
                     <div class="export-btn-wrapper">
-                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @or-mwc-input-changed="${() => this.clearSelection()}"></or-mwc-input>
-                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @or-mwc-input-changed="${() => this.export()}"></or-mwc-input>
+                        <or-vaadin-button class="button" ?disabled=${this.isClearExportBtnDisabled}
+                                          @click=${() => this.clearSelection()}>
+                            <or-translate value="clearTable"></or-translate>
+                        </or-vaadin-button>
+                        <or-vaadin-button class="button" theme="primary" ?disabled=${this.isExportBtnDisabled}
+                                          @click=${() => this.export()}>
+                            <or-translate value="export"></or-translate>
+                        </or-vaadin-button>
                     </div>
                 </div>
             </div>

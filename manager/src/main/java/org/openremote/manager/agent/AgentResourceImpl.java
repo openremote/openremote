@@ -25,6 +25,7 @@ import org.openremote.container.util.CodecUtil;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.Agent;
@@ -108,6 +109,8 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     @Override
     public AssetTreeNode[] doProtocolAssetDiscovery(RequestParams requestParams, String agentId, String realm) {
 
+        assertWriteAssetsAllowed();
+
         if (!isSuperUser()) {
             realm = getAuthenticatedRealmName();
         }
@@ -147,6 +150,8 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
 
     @Override
     public AssetTreeNode[] doProtocolAssetImport(RequestParams requestParams, String agentId, String realm, FileInfo fileInfo) {
+
+        assertWriteAssetsAllowed();
 
         if (!isSuperUser()) {
             realm = getAuthenticatedRealmName();
@@ -191,6 +196,16 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         AssetTreeNode[] foundAssetsArr = foundAssets.toArray(new AssetTreeNode[0]);
         persistAssets(foundAssetsArr, agent, realm);
         return foundAssetsArr;
+    }
+
+    protected void assertWriteAssetsAllowed() {
+        if (!isAuthenticated()) {
+            throw new NotAuthorizedException("Must be authenticated");
+        }
+
+        if (!hasResourceRoleOrIsSuperUser(Constants.WRITE_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
+            throw new ForbiddenException("User must have write asset permission");
+        }
     }
 
     // TODO: Allow user to select which assets/attributes are actually added to the DB
