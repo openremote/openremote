@@ -4,11 +4,15 @@ import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {CustomAssetTypeAttributeDefinition, CustomAssetTypeDefinition} from "@openremote/model";
+import {AssetModelUtil, CustomAssetTypeAttributeDefinition, CustomAssetTypeDefinition} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
+import {OrVaadinTextArea} from "@openremote/or-vaadin-components/or-vaadin-text-area";
+import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import "@openremote/or-vaadin-components/or-vaadin-button";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -81,6 +85,30 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                 .panel-title p {
                     margin: 0;
+                }
+
+                .title-actions {
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                }
+
+                .form-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 14px 16px;
+                    padding: 16px 0 8px;
+                }
+
+                .full-width {
+                    grid-column: 1 / -1;
+                }
+
+                .actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 10px;
+                    margin: 14px 0 8px;
                 }
 
                 #table-custom-asset-types,
@@ -205,13 +233,25 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                     }
 
                     .details-grid,
+                    .form-grid,
                     .attribute-row {
                         grid-template-columns: 1fr;
+                    }
+
+                    .title-actions {
+                        align-items: stretch;
+                        flex-direction: column-reverse;
+                    }
+
+                    .title-actions or-vaadin-text-field {
+                        width: 100% !important;
                     }
                 }
             `,
         ];
     }
+
+    protected static readonly TYPE_NAME_PATTERN = /^\w+$/;
 
     @state()
     protected _definitions?: CustomAssetTypeDefinition[];
@@ -221,6 +261,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
     @state()
     protected _usageByName: Record<string, number> = {};
+
+    @state()
+    protected _draftDefinition?: CustomAssetTypeDefinition;
+
+    @state()
+    protected _creatingDefinition: boolean = false;
 
     get name(): string {
         return "customAssetTypes";
@@ -263,10 +309,17 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 <div class="panel">
                     <div class="panel-title" style="justify-content: space-between;">
                         <p><or-translate value="customAssetTypes"></or-translate></p>
-                        <or-vaadin-text-field placeholder=${i18next.t("search")} style="width: 240px;"
-                                              @input=${(ev: InputEvent) => this._onDefinitionSearch(ev)}>
-                            <or-icon slot="suffix" icon="magnify"></or-icon>
-                        </or-vaadin-text-field>
+                        <div class="title-actions">
+                            <or-vaadin-button theme="primary" ?disabled=${!!this._draftDefinition}
+                                              @click=${() => this._addDraftDefinition()}>
+                                <or-icon icon="plus"></or-icon>
+                                <or-translate value="addCustomAssetType"></or-translate>
+                            </or-vaadin-button>
+                            <or-vaadin-text-field placeholder=${i18next.t("search")} style="width: 240px;"
+                                                  @input=${(ev: InputEvent) => this._onDefinitionSearch(ev)}>
+                                <or-icon slot="suffix" icon="magnify"></or-icon>
+                            </or-vaadin-text-field>
+                        </div>
                     </div>
                     <div id="table-custom-asset-types" class="mdc-data-table">
                         <table class="mdc-data-table__table" aria-label="custom asset type list">
@@ -290,7 +343,8 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                             </tr>
                             </thead>
                             <tbody class="mdc-data-table__content">
-                            ${filteredDefinitions.length === 0 ? html`
+                            ${this._draftDefinition ? this._getDraftTemplate(this._draftDefinition) : html``}
+                            ${filteredDefinitions.length === 0 && !this._draftDefinition ? html`
                                 <tr>
                                     <td colspan="100%">
                                         <div class="empty"><or-translate value="noCustomAssetTypes"></or-translate></div>
@@ -305,9 +359,20 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         `;
     }
 
+    protected _addDraftDefinition(): void {
+        this._draftDefinition = {
+            name: "",
+            displayName: "",
+            icon: "cube-outline",
+            enabled: true,
+            attributes: []
+        };
+    }
+
     protected async _loadDefinitions(): Promise<void> {
         this._definitions = undefined;
         this._usageByName = {};
+        this._draftDefinition = undefined;
 
         if (!manager.authenticated || !manager.isSuperUser()) {
             this._definitions = [];
@@ -343,7 +408,10 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             }));
 
         if (this.isConnected) {
-            this._usageByName = Object.fromEntries(usageEntries);
+            this._usageByName = {
+                ...this._usageByName,
+                ...Object.fromEntries(usageEntries)
+            };
         }
     }
 
@@ -413,6 +481,53 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         `;
     }
 
+    protected _getDraftTemplate(definition: CustomAssetTypeDefinition): TemplateResult {
+        return html`
+            <tr class="details-row expanded">
+                <td colspan="100%">
+                    <div class="details-container">
+                        <div class="form-grid">
+                            <or-vaadin-text-field required minlength="1" maxlength="255" pattern="\\w+"
+                                                  manual-validation value=${definition.name || ""}
+                                                  @input=${(ev: InputEvent) => this._updateDraft({name: (ev.currentTarget as OrVaadinTextField).value})}>
+                                <or-translate slot="label" value="technicalName"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-field required minlength="1" maxlength="255" value=${definition.displayName || ""}
+                                                  @input=${(ev: InputEvent) => this._updateDraft({displayName: (ev.currentTarget as OrVaadinTextField).value})}>
+                                <or-translate slot="label" value="displayName"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-field maxlength="255" value=${definition.icon || ""}
+                                                  @input=${(ev: InputEvent) => this._updateDraft({icon: (ev.currentTarget as OrVaadinTextField).value})}>
+                                <or-translate slot="label" value="icon"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-field maxlength="7" value=${definition.colour || ""}
+                                                  @input=${(ev: InputEvent) => this._updateDraft({colour: (ev.currentTarget as OrVaadinTextField).value})}>
+                                <or-translate slot="label" value="colour"></or-translate>
+                            </or-vaadin-text-field>
+                            <or-vaadin-text-area class="full-width" maxlength="1024" value=${definition.description || ""}
+                                                 @input=${(ev: InputEvent) => this._updateDraft({description: (ev.currentTarget as OrVaadinTextArea).value})}>
+                                <or-translate slot="label" value="description"></or-translate>
+                            </or-vaadin-text-area>
+                            <or-vaadin-checkbox ?checked=${definition.enabled !== false}
+                                                @change=${(ev: Event) => this._updateDraft({enabled: (ev.currentTarget as OrVaadinCheckbox).checked})}>
+                                <label slot="label"><or-translate value="enabled"></or-translate></label>
+                            </or-vaadin-checkbox>
+                        </div>
+                        <div class="actions">
+                            <or-vaadin-button @click=${() => this._draftDefinition = undefined}>
+                                <or-translate value="cancel"></or-translate>
+                            </or-vaadin-button>
+                            <or-vaadin-button theme="primary" ?disabled=${!this._canCreateDefinition(definition)}
+                                              @click=${() => this._createDefinition(definition)}>
+                                <or-translate value="create"></or-translate>
+                            </or-vaadin-button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
     protected _getAttributeTemplate(attribute: CustomAssetTypeAttributeDefinition): TemplateResult {
         return html`
             <div class="attribute-row">
@@ -421,6 +536,106 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 <span><or-translate value=${attribute.optional ? "optional" : "required"}></or-translate></span>
             </div>
         `;
+    }
+
+    protected _updateDraft(patch: Partial<CustomAssetTypeDefinition>): void {
+        if (this._draftDefinition) {
+            this._draftDefinition = {...this._draftDefinition, ...patch};
+        }
+    }
+
+    protected _canCreateDefinition(definition: CustomAssetTypeDefinition): boolean {
+        const name = (definition.name || "").trim();
+        const displayName = (definition.displayName || "").trim();
+        return !this._creatingDefinition
+            && !!displayName
+            && PageCustomAssetTypes.TYPE_NAME_PATTERN.test(name)
+            && !(this._definitions || []).some(existing => existing.name === name);
+    }
+
+    protected async _createDefinition(definition: CustomAssetTypeDefinition, confirmExistingAssets = false): Promise<void> {
+        if (!this._canCreateDefinition(definition) && !confirmExistingAssets) {
+            return;
+        }
+
+        this._creatingDefinition = true;
+        const definitionToCreate = this._toCreatePayload(definition);
+
+        try {
+            const response = await manager.rest.api.CustomAssetTypeResource.create(
+                definitionToCreate,
+                {confirmExistingAssets}
+            );
+
+            if (!this.isConnected) {
+                return;
+            }
+
+            this._draftDefinition = undefined;
+            this._definitions = [
+                ...(this._definitions || []),
+                response.data
+            ].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            await this._loadUsageCounts([response.data]);
+            await this._refreshAssetModel();
+            showSnackbar(undefined, i18next.t("saveCustomAssetTypeSucceeded"));
+        } catch (e) {
+            if (this._getErrorStatus(e) === 409 && !confirmExistingAssets) {
+                const ok = await showOkCancelDialog(
+                    i18next.t("confirmCustomAssetTypeFallbackTitle"),
+                    i18next.t("confirmCustomAssetTypeFallback"),
+                    i18next.t("create")
+                );
+                if (ok) {
+                    await this._createDefinition(definition, true);
+                }
+            } else {
+                console.error("Failed to create custom asset type definition", e);
+                showSnackbar(undefined, i18next.t("saveCustomAssetTypeFailed"), "dismiss");
+            }
+        } finally {
+            if (this.isConnected) {
+                this._creatingDefinition = false;
+            }
+        }
+    }
+
+    protected _toCreatePayload(definition: CustomAssetTypeDefinition): CustomAssetTypeDefinition {
+        return {
+            name: definition.name!.trim(),
+            displayName: definition.displayName!.trim(),
+            icon: this._optionalText(definition.icon),
+            colour: this._optionalColour(definition.colour),
+            description: this._optionalText(definition.description),
+            enabled: definition.enabled !== false,
+            attributes: []
+        };
+    }
+
+    protected _optionalText(value?: string): string | undefined {
+        const trimmed = value?.trim();
+        return trimmed ? trimmed : undefined;
+    }
+
+    protected _optionalColour(value?: string): string | undefined {
+        const colour = this._optionalText(value);
+        return colour?.startsWith("#") ? colour.substring(1) : colour;
+    }
+
+    protected _getErrorStatus(error: any): number | undefined {
+        return error?.response?.status;
+    }
+
+    protected async _refreshAssetModel(): Promise<void> {
+        const [assetInfosResponse, metaItemDescriptorResponse, valueDescriptorResponse] = await Promise.all([
+            manager.rest.api.AssetModelResource.getAssetInfos(),
+            manager.rest.api.AssetModelResource.getMetaItemDescriptors(),
+            manager.rest.api.AssetModelResource.getValueDescriptors()
+        ]);
+
+        AssetModelUtil._assetTypeInfos = assetInfosResponse.data;
+        AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptorResponse.data);
+        AssetModelUtil._valueDescriptors = Object.values(valueDescriptorResponse.data);
     }
 
     protected _toggleDefinitionExpand(index: number): void {
