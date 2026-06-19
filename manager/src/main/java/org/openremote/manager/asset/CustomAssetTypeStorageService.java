@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
@@ -65,7 +66,8 @@ public class CustomAssetTypeStorageService implements ContainerService {
 
     public CustomAssetTypeDefinition merge(CustomAssetTypeDefinition definition) {
         return persistenceService.doReturningTransaction(em -> {
-            definitionValidator.validateForUpdate(definition);
+            CustomAssetTypeDefinition existingDefinition = em.find(CustomAssetTypeDefinition.class, definition.getName());
+            definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
             return em.merge(definition);
         });
     }
@@ -86,6 +88,9 @@ public class CustomAssetTypeStorageService implements ContainerService {
 
     public void delete(String name) {
         persistenceService.doTransaction(em -> {
+            if (getUsageCount(em, name) > 0) {
+                throw new IllegalStateException("Cannot delete custom asset type while assets exist: " + name);
+            }
             CustomAssetTypeDefinition definition = em.find(CustomAssetTypeDefinition.class, name);
             if (definition != null) {
                 em.remove(definition);
@@ -94,13 +99,15 @@ public class CustomAssetTypeStorageService implements ContainerService {
     }
 
     public long getUsageCount(String typeName) {
-        return persistenceService.doReturningTransaction(em -> {
-            TypedQuery<Long> query = em.createQuery(
-                "select count(asset.id) from Asset asset where asset.type = :typeName",
-                Long.class
-            );
-            query.setParameter("typeName", typeName);
-            return query.getSingleResult();
-        });
+        return persistenceService.doReturningTransaction(em -> getUsageCount(em, typeName));
+    }
+
+    protected long getUsageCount(EntityManager em, String typeName) {
+        TypedQuery<Long> query = em.createQuery(
+            "select count(asset.id) from Asset asset where asset.type = :typeName",
+            Long.class
+        );
+        query.setParameter("typeName", typeName);
+        return query.getSingleResult();
     }
 }

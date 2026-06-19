@@ -1,8 +1,11 @@
 package org.openremote.test.model
 
+import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.CustomAssetTypeStorageService
+import org.openremote.model.Constants
 import org.openremote.model.asset.CustomAssetTypeAttributeDefinition
 import org.openremote.model.asset.CustomAssetTypeDefinition
+import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.attribute.MetaMap
 import org.openremote.model.value.MetaItemType
@@ -16,9 +19,13 @@ class CustomAssetTypeDefinitionValidationTest extends Specification implements M
     @Shared
     static CustomAssetTypeStorageService customAssetTypeStorageService
 
+    @Shared
+    static AssetStorageService assetStorageService
+
     def setupSpec() {
         startContainer(defaultConfig(), defaultServices())
         customAssetTypeStorageService = container.getService(CustomAssetTypeStorageService.class)
+        assetStorageService = container.getService(AssetStorageService.class)
     }
 
     def "definition name must not collide with built-in asset types"() {
@@ -134,6 +141,76 @@ class CustomAssetTypeDefinitionValidationTest extends Specification implements M
         customAssetTypeStorageService.find("ValidatedAsset") != null
     }
 
+    def "in-use definitions allow adding optional attributes"() {
+        given:
+        def typeName = "InUseOptionalAttributeAsset"
+        customAssetTypeStorageService.persist(validDefinition(typeName))
+        persistCustomAsset(typeName)
+        def updatedDefinition = customAssetTypeStorageService.find(typeName)
+        updatedDefinition.attributes = updatedDefinition.attributes + [
+                attribute("pressure", "number").setOptional(true)
+        ]
+
+        when:
+        customAssetTypeStorageService.merge(updatedDefinition)
+
+        then:
+        customAssetTypeStorageService.find(typeName).attributes*.name.contains("pressure")
+    }
+
+    def "in-use definitions reject adding required attributes"() {
+        given:
+        def typeName = "InUseRequiredAttributeAsset"
+        customAssetTypeStorageService.persist(validDefinition(typeName))
+        persistCustomAsset(typeName)
+        def updatedDefinition = customAssetTypeStorageService.find(typeName)
+        updatedDefinition.attributes = updatedDefinition.attributes + [
+                attribute("pressure", "number")
+        ]
+
+        when:
+        customAssetTypeStorageService.merge(updatedDefinition)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "in-use definitions reject changing existing attributes"() {
+        given:
+        def typeName = "InUseChangedAttributeAsset"
+        customAssetTypeStorageService.persist(validDefinition(typeName))
+        persistCustomAsset(typeName)
+        def updatedDefinition = customAssetTypeStorageService.find(typeName)
+        updatedDefinition.attributes = [
+                attribute("temperature", "text").setDefaultValue("warm"),
+                attribute("enabled", "boolean").setOptional(true).setDefaultValue(true).setMeta(new MetaMap([
+                        new MetaItem<>(MetaItemType.LABEL, "Enabled"),
+                        new MetaItem<>(MetaItemType.READ_ONLY, true),
+                        new MetaItem<>(MetaItemType.STORE_DATA_POINTS, false)
+                ]))
+        ]
+
+        when:
+        customAssetTypeStorageService.merge(updatedDefinition)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "in-use definitions cannot be deleted"() {
+        given:
+        def typeName = "DeleteInUseAsset"
+        customAssetTypeStorageService.persist(validDefinition(typeName))
+        persistCustomAsset(typeName)
+
+        when:
+        customAssetTypeStorageService.delete(typeName)
+
+        then:
+        thrown(IllegalStateException)
+        customAssetTypeStorageService.find(typeName) != null
+    }
+
     private static CustomAssetTypeDefinition validDefinition(String name) {
         new CustomAssetTypeDefinition(
                 name,
@@ -165,5 +242,11 @@ class CustomAssetTypeDefinitionValidationTest extends Specification implements M
                 null,
                 null
         )
+    }
+
+    private static void persistCustomAsset(String typeName) {
+        def asset = new ThingAsset(typeName + " Instance").setRealm(Constants.MASTER_REALM)
+        asset.type = typeName
+        assetStorageService.merge(asset)
     }
 }

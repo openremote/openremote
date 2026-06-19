@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class CustomAssetTypeDefinitionValidator {
 
@@ -66,8 +67,20 @@ public class CustomAssetTypeDefinitionValidator {
     }
 
     public void validateForUpdate(CustomAssetTypeDefinition definition) {
+        validateForUpdate(definition, null, 0);
+    }
+
+    public void validateForUpdate(
+        CustomAssetTypeDefinition definition,
+        CustomAssetTypeDefinition existingDefinition,
+        long usageCount
+    ) {
         validate(definition);
         rejectBuiltInAssetTypeName(definition);
+
+        if (existingDefinition != null && usageCount > 0) {
+            validateInUseUpdate(existingDefinition, definition);
+        }
     }
 
     protected void validate(CustomAssetTypeDefinition definition) {
@@ -207,6 +220,43 @@ public class CustomAssetTypeDefinitionValidator {
     protected void rejectBuiltInAssetTypeName(CustomAssetTypeDefinition definition) {
         if (ValueUtil.getAssetDescriptor(definition.getName()).isPresent()) {
             throw new IllegalArgumentException("Custom asset type name collides with built-in asset type: " + definition.getName());
+        }
+    }
+
+    protected void validateInUseUpdate(
+        CustomAssetTypeDefinition existingDefinition,
+        CustomAssetTypeDefinition updatedDefinition
+    ) {
+        Map<String, CustomAssetTypeAttributeDefinition> existingAttributes = existingDefinition.getAttributes()
+            .stream()
+            .collect(Collectors.toMap(CustomAssetTypeAttributeDefinition::getName, attribute -> attribute));
+        Map<String, CustomAssetTypeAttributeDefinition> updatedAttributes = updatedDefinition.getAttributes()
+            .stream()
+            .collect(Collectors.toMap(CustomAssetTypeAttributeDefinition::getName, attribute -> attribute));
+
+        for (CustomAssetTypeAttributeDefinition existingAttribute : existingDefinition.getAttributes()) {
+            CustomAssetTypeAttributeDefinition updatedAttribute = updatedAttributes.get(existingAttribute.getName());
+            if (updatedAttribute == null) {
+                throw new IllegalArgumentException(
+                    "Cannot remove attribute from in-use custom asset type: "
+                        + existingDefinition.getName() + "." + existingAttribute.getName()
+                );
+            }
+            if (!ValueUtil.objectsEqualsWithJSONFallback(existingAttribute, updatedAttribute)) {
+                throw new IllegalArgumentException(
+                    "Cannot change attribute on in-use custom asset type: "
+                        + existingDefinition.getName() + "." + existingAttribute.getName()
+                );
+            }
+        }
+
+        for (CustomAssetTypeAttributeDefinition updatedAttribute : updatedDefinition.getAttributes()) {
+            if (!existingAttributes.containsKey(updatedAttribute.getName()) && !updatedAttribute.isOptional()) {
+                throw new IllegalArgumentException(
+                    "New attributes on in-use custom asset types must be optional: "
+                        + updatedDefinition.getName() + "." + updatedAttribute.getName()
+                );
+            }
         }
     }
 
