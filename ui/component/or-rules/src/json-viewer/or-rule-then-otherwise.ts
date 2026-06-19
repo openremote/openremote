@@ -33,7 +33,7 @@ const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 const ALARM_COLOR = "FC2D2D";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): SubMenuItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -84,6 +84,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
                 const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
                 const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
                 return {
+                    checked: selectedType && assetTypeInfo.assetDescriptor!.name === selectedType,
                     component: getMenuBarItem(icon, Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!), color),
                     value: assetTypeInfo.assetDescriptor!.name
                 } as SubMenuItem;
@@ -93,21 +94,26 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     menu.push({ component: "hr" }); // divider
 
     if (addEmailNotification) {
+        const value: ActionType = multiLanguage && addEmailLocalizedNotification ? ActionType.EMAIL_LOCALIZED : ActionType.EMAIL
         menu.push({
+            checked: selectedType && selectedType === value,
             component: getMenuBarItem("email", i18next.t("email"), NOTIFICATION_COLOR),
-            value: multiLanguage && addEmailLocalizedNotification ? ActionType.EMAIL_LOCALIZED : ActionType.EMAIL,
+            value: value,
         } as SubMenuItem);
     }
     
     if (addPushNotification) {
+        const value: ActionType = multiLanguage && addPushLocalizedNotification ? ActionType.PUSH_LOCALIZED : ActionType.PUSH_NOTIFICATION;
         menu.push({
+            checked: selectedType && selectedType === value,
             component: getMenuBarItem("cellphone-message", i18next.t("push-notification"), NOTIFICATION_COLOR),
-            value: multiLanguage && addPushLocalizedNotification ? ActionType.PUSH_LOCALIZED : ActionType.PUSH_NOTIFICATION,
+            value: value,
         } as SubMenuItem);
     }
 
     if (addWait) {
         menu.push({
+            checked: selectedType && selectedType === ActionType.WAIT,
             component: getMenuBarItem("timer", i18next.t("wait"), WAIT_COLOR),
             value: ActionType.WAIT,
         } as SubMenuItem);
@@ -115,6 +121,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
 
     if (addAlarm) {
         menu.push({
+            checked: selectedType && selectedType === ActionType.ALARM,
             component: getMenuBarItem("bell-outline", i18next.t("alarm."), ALARM_COLOR),
             value: ActionType.ALARM,
         } as SubMenuItem);
@@ -122,6 +129,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
 
     if (addWebhook) {
         menu.push({
+            checked: selectedType && selectedType === ActionType.WEBHOOK,
             component: getMenuBarItem("webhook", i18next.t("webhook"), NOTIFICATION_COLOR),
             value: ActionType.WEBHOOK,
         } as SubMenuItem);
@@ -361,7 +369,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             } else {
                 const menuItems: MenuBarItem[] = [{
                     component: createMenuBarItem(html`<or-icon icon=${buttonIcon ?? ""}></or-icon>`),
-                    children: getActionTypesMenu(this.config, this.assetInfos, action.action)
+                    children: getActionTypesMenu(this.config, this.assetInfos, type ?? action.action)
                 }]
                 typeTemplate = html`
                     <div id="type" style="--or-icon-fill: #${buttonColor}">
