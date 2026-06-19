@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-import { css, html, LitElement, TemplateResult } from "lit";
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
@@ -186,6 +186,16 @@ export class OrMapPresetFilter extends LitElement {
                 <or-vaadin-badge class="filter-field-count">${formatCount(currentCount)}</or-vaadin-badge>
             </div>
         `;
+    }
+
+    protected updated(changedProperties: PropertyValues) {
+        if (changedProperties.has("filters") && this.filters.length) {
+            const defaultIndex = this.filters.findIndex(f => f.default);
+            if (defaultIndex >= 0) {
+                this._activeIndex = defaultIndex + 1;
+                this.dispatchEvent(new OrMapPresetFilterEvent(this.filters[defaultIndex].query));
+            }
+        }
     }
 
     protected _onChange(e: Event) {

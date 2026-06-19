@@ -33,6 +33,7 @@ export interface MapFilter {
     label?: string;
     query: AssetQuery;
     realms?: string[];
+    default?: boolean;
 }
 
 export interface ClusterConfig {

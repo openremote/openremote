@@ -208,6 +208,11 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
 
+    protected _activeFiltersSelector = createSelector(
+        [this._realmSelector],
+        (realm) => this.config?.filters?.filter(f => !f.realms?.length || f.realms.includes(realm))
+    );
+
     protected _assetSubscriptionId: string;
     protected _attributeSubscriptionId: string;
 
@@ -395,8 +400,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        const realm = this._realmSelector(this.getState());
-        const filters = this.config?.filters?.filter(f => !f.realms?.length || f.realms.includes(realm));
+        const filters = this._activeFiltersSelector(this.getState());
         this.style.setProperty("--card-top", filters?.length ? "56px" : "10px");
 
         return html`

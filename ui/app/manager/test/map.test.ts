@@ -756,6 +756,45 @@ test.describe("Preset filters", () => {
         }
     });
 
+    /**
+     * @given a filter is configured with default: true
+     * @when navigating to the map page for the first time (no stored selection)
+     * @then that filter is pre-selected without any user interaction
+     * @and the marker count reflects the default filter
+     *
+     * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+     */
+    test("should pre-select the filter marked as default", async ({ page, manager, browserName }) => {
+        test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+        const filtersWithDefault: MapFilter[] = [
+            { query: { types: ["ThingAsset"] } },
+            {
+                label: "Errors",
+                default: true,
+                query: {
+                    types: ["ThingAsset"],
+                    attributes: {
+                        items: [{
+                            name: { predicateType: "string", value: "notes" },
+                            value: { predicateType: "string", value: "error" },
+                        }],
+                    },
+                },
+            },
+        ];
+
+        await manager.setup("smartcity", { assets: allAssets });
+        await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false }, filters: filtersWithDefault } } });
+        await manager.goToRealmStartPage("smartcity");
+        await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+
+        // The "Errors" filter is default — it should activate without any user interaction
+        const expectedCount = thingAssetsWithError.length;
+        await expect(page.locator(".or-map-marker")).toHaveCount(expectedCount);
+        await expect(page.locator("or-map-preset-filter or-vaadin-select + or-vaadin-badge")).toHaveText(String(expectedCount));
+    });
+
     test.describe(() => {
         test.use({ storageState: adminStatePath });
 
