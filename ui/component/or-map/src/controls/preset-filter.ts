@@ -19,7 +19,7 @@
  */
 import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Util } from "@openremote/core";
+import manager, { OREvent, Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-badge";
 import "@openremote/or-vaadin-components/or-vaadin-select";
@@ -50,6 +50,16 @@ declare global {
         [OrMapPresetFilterEvent.NAME]: OrMapPresetFilterEvent;
     }
 }
+
+// Registered once at module load — survives SPA navigation so it fires on login
+// regardless of which page is active.
+manager.addListener((event) => {
+    if (event !== OREvent.LOGIN) return;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("or-map-filter:")) localStorage.removeItem(key);
+    }
+});
 
 @customElement("or-map-preset-filter")
 export class OrMapPresetFilter extends LitElement {
@@ -188,18 +198,37 @@ export class OrMapPresetFilter extends LitElement {
         `;
     }
 
+    private _cachedStorageKey?: string;
+
+    private _getStorageKey(): string {
+        if (!this._cachedStorageKey) {
+            this._cachedStorageKey = `or-map-filter:${manager.displayRealm}:${manager.username}`;
+        }
+        return this._cachedStorageKey;
+    }
+
     protected updated(changedProperties: PropertyValues) {
         if (changedProperties.has("filters") && this.filters.length) {
-            const defaultIndex = this.filters.findIndex(f => f.default);
-            if (defaultIndex >= 0) {
-                this._activeIndex = defaultIndex + 1;
-                this.dispatchEvent(new OrMapPresetFilterEvent(this.filters[defaultIndex].query));
+            const stored = localStorage.getItem(this._getStorageKey());
+            const storedIndex = stored !== null ? parseInt(stored) : -1;
+            const isValidStored = storedIndex >= 0 && storedIndex <= this.filters.length;
+
+            if (isValidStored) {
+                this._activeIndex = storedIndex;
+            } else {
+                const defaultIndex = this.filters.findIndex(f => f.default);
+                if (defaultIndex >= 0) this._activeIndex = defaultIndex + 1;
+            }
+
+            if (this._activeIndex > 0) {
+                this.dispatchEvent(new OrMapPresetFilterEvent(this.filters[this._activeIndex - 1].query));
             }
         }
     }
 
     protected _onChange(e: Event) {
         this._activeIndex = parseInt((e.target as HTMLInputElement).value) || 0;
+        localStorage.setItem(this._getStorageKey(), String(this._activeIndex));
         const filter = this._activeIndex > 0 ? this.filters[this._activeIndex - 1].query : null;
         this.dispatchEvent(new OrMapPresetFilterEvent(filter));
     }

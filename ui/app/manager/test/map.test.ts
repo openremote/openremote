@@ -834,6 +834,37 @@ test.describe("Preset filters", () => {
             await expect(page.getByRole("option")).toHaveCount(3);
         });
     });
+
+    /**
+     * @given filters are configured and a non-default filter was previously selected
+     * @when the page is reloaded
+     * @then the previously selected filter is restored from localStorage
+     *
+     * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+     */
+    test("should restore last selected filter after page reload", async ({ page, manager, browserName }) => {
+        test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+        await manager.setup("smartcity", { assets: allAssets });
+        await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false }, filters } } });
+        await manager.goToRealmStartPage("smartcity");
+        await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+
+        // Select the error filter (value="2": filters[1], 2 matching assets)
+        await page.locator("or-vaadin-select").click();
+        await page.getByRole("option").first().waitFor({ state: "visible" });
+        await page.getByRole("option").and(page.locator('[value="2"]')).click();
+        await expect(page.locator(".or-map-marker")).toHaveCount(thingAssetsWithError.length);
+
+        // Reload the page — localStorage persists (only cleared on OREvent.LOGIN / new session, not on reload)
+        await page.reload();
+        await expect(page.locator("or-map")).toBeVisible();
+        await page.locator("or-map").evaluate((map: OrMap) => map.flyTo(undefined, 10));
+
+        // The previously selected filter should be restored
+        await expect(page.locator(".or-map-marker")).toHaveCount(thingAssetsWithError.length);
+        await expect(page.locator("or-map-preset-filter or-vaadin-select + or-vaadin-badge")).toHaveText(String(thingAssetsWithError.length));
+    });
 });
 
 test.describe("Navigation control", () => {
