@@ -29,6 +29,7 @@ import org.openremote.model.value.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,15 @@ public class AssetTypeInfo {
     @JsonCreator
     public AssetTypeInfo(AssetDescriptor<?> assetDescriptor, @JsonProperty("attributeDescriptors") AttributeDescriptor<?>[] attributeDescriptors, MetaItemDescriptor<?>[] metaItemDescriptors, ValueDescriptor<?>[] valueDescriptors) {
         this.assetDescriptor = assetDescriptor;
-        this.attributeDescriptors = Arrays.stream(attributeDescriptors).collect(Collectors.toMap(AbstractNameValueDescriptorHolder::getName, ad -> ad));
+        this.attributeDescriptors = Arrays.stream(attributeDescriptors)
+            .collect(Collectors.toMap(
+                AbstractNameValueDescriptorHolder::getName,
+                ad -> ad,
+                (existing, duplicate) -> {
+                    throw new IllegalStateException("Duplicate attribute descriptor found: " + existing.getName());
+                },
+                LinkedHashMap::new
+            ));
         this.metaItemDescriptors = metaItemDescriptors;
         this.valueDescriptors = valueDescriptors;
     }

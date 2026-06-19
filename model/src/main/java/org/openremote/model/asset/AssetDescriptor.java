@@ -88,7 +88,7 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
     AssetDescriptor() {}
 
     @JsonCreator
-    protected AssetDescriptor(String name, String icon, String colour) {
+    public AssetDescriptor(String name, String icon, String colour) {
         this.name = name;
         this.icon = icon;
         this.colour = colour;
