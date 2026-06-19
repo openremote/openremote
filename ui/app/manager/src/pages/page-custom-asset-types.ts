@@ -4,7 +4,12 @@ import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {AssetModelUtil, CustomAssetTypeAttributeDefinition, CustomAssetTypeDefinition} from "@openremote/model";
+import {
+    AssetModelUtil,
+    CustomAssetTypeAttributeDefinition,
+    CustomAssetTypeDefinition,
+    WellknownValueTypes
+} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -12,6 +17,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {OrVaadinTextArea} from "@openremote/or-vaadin-components/or-vaadin-text-area";
 import {OrVaadinCheckbox} from "@openremote/or-vaadin-components/or-vaadin-checkbox";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -109,6 +115,37 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                     justify-content: flex-end;
                     gap: 10px;
                     margin: 14px 0 8px;
+                }
+
+                .attribute-editor {
+                    border-top: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                    margin-top: 4px;
+                    padding-top: 14px;
+                }
+
+                .attribute-editor-heading {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    margin-bottom: 10px;
+                }
+
+                .attribute-editor-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+
+                .attribute-editor-row {
+                    display: grid;
+                    grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(96px, auto) 42px;
+                    gap: 12px;
+                    align-items: end;
+                }
+
+                .attribute-editor-row or-vaadin-button {
+                    align-self: center;
                 }
 
                 #table-custom-asset-types,
@@ -234,8 +271,18 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                     .details-grid,
                     .form-grid,
-                    .attribute-row {
+                    .attribute-row,
+                    .attribute-editor-row {
                         grid-template-columns: 1fr;
+                    }
+
+                    .attribute-editor-heading {
+                        align-items: stretch;
+                        flex-direction: column;
+                    }
+
+                    .attribute-editor-row or-vaadin-button {
+                        justify-self: flex-start;
                     }
 
                     .title-actions {
@@ -252,6 +299,22 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
     }
 
     protected static readonly TYPE_NAME_PATTERN = /^\w+$/;
+
+    protected static readonly VALUE_TYPE_OPTIONS: SelectItem[] = [
+        {value: WellknownValueTypes.BOOLEAN, label: "Boolean"},
+        {value: WellknownValueTypes.INTEGER, label: "Integer"},
+        {value: WellknownValueTypes.LONG, label: "Long"},
+        {value: WellknownValueTypes.NUMBER, label: "Number"},
+        {value: WellknownValueTypes.TEXT, label: "Text"},
+        {value: WellknownValueTypes.DATEANDTIME, label: "Date and time"},
+        {value: WellknownValueTypes.TIMESTAMP, label: "Timestamp"},
+        {value: WellknownValueTypes.TIMESTAMPISO8601, label: "Timestamp ISO 8601"},
+        {value: WellknownValueTypes.GEOJSONPOINT, label: "GeoJSON point"}
+    ];
+
+    protected static readonly VALUE_TYPES = new Set(
+        PageCustomAssetTypes.VALUE_TYPE_OPTIONS.map(option => option.value as string)
+    );
 
     @state()
     protected _definitions?: CustomAssetTypeDefinition[];
@@ -512,6 +575,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                                                 @change=${(ev: Event) => this._updateDraft({enabled: (ev.currentTarget as OrVaadinCheckbox).checked})}>
                                 <label slot="label"><or-translate value="enabled"></or-translate></label>
                             </or-vaadin-checkbox>
+                            ${this._getDraftAttributesTemplate(definition)}
                         </div>
                         <div class="actions">
                             <or-vaadin-button @click=${() => this._draftDefinition = undefined}>
@@ -525,6 +589,48 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                     </div>
                 </td>
             </tr>
+        `;
+    }
+
+    protected _getDraftAttributesTemplate(definition: CustomAssetTypeDefinition): TemplateResult {
+        return html`
+            <div class="attribute-editor full-width">
+                <div class="attribute-editor-heading">
+                    <div class="field-label"><or-translate value="attribute_plural"></or-translate></div>
+                    <or-vaadin-button @click=${() => this._addDraftAttribute()}>
+                        <or-icon icon="plus"></or-icon>
+                        <or-translate value="addAttribute"></or-translate>
+                    </or-vaadin-button>
+                </div>
+                <div class="attribute-editor-list">
+                    ${(definition.attributes || []).map((attribute, index) => this._getDraftAttributeTemplate(attribute, index))}
+                </div>
+            </div>
+        `;
+    }
+
+    protected _getDraftAttributeTemplate(attribute: CustomAssetTypeAttributeDefinition, index: number): TemplateResult {
+        return html`
+            <div class="attribute-editor-row">
+                <or-vaadin-text-field required minlength="1" maxlength="255" pattern="\\w+"
+                                      manual-validation value=${attribute.name || ""}
+                                      @input=${(ev: InputEvent) => this._updateDraftAttribute(index, {name: (ev.currentTarget as OrVaadinTextField).value})}>
+                    <or-translate slot="label" value="attributeName"></or-translate>
+                </or-vaadin-text-field>
+                <or-vaadin-select required
+                                  .items=${PageCustomAssetTypes.VALUE_TYPE_OPTIONS}
+                                  value=${attribute.type || WellknownValueTypes.NUMBER}
+                                  @change=${(ev: Event) => this._updateDraftAttribute(index, {type: (ev.currentTarget as OrVaadinSelect).value})}>
+                    <or-translate slot="label" value="valueType"></or-translate>
+                </or-vaadin-select>
+                <or-vaadin-checkbox ?checked=${attribute.optional === true}
+                                    @change=${(ev: Event) => this._updateDraftAttribute(index, {optional: (ev.currentTarget as OrVaadinCheckbox).checked})}>
+                    <label slot="label"><or-translate value="optional"></or-translate></label>
+                </or-vaadin-checkbox>
+                <or-vaadin-button theme="icon" title=${i18next.t("delete")} @click=${() => this._removeDraftAttribute(index)}>
+                    <or-icon icon="close-circle"></or-icon>
+                </or-vaadin-button>
+            </div>
         `;
     }
 
@@ -544,13 +650,60 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         }
     }
 
+    protected _addDraftAttribute(): void {
+        const attributes = [...(this._draftDefinition?.attributes || [])];
+        attributes.push({
+            name: "",
+            type: WellknownValueTypes.NUMBER,
+            optional: false,
+            position: attributes.length * 10
+        });
+        this._updateDraft({attributes});
+    }
+
+    protected _updateDraftAttribute(index: number, patch: Partial<CustomAssetTypeAttributeDefinition>): void {
+        const attributes = [...(this._draftDefinition?.attributes || [])];
+        if (!attributes[index]) {
+            return;
+        }
+
+        attributes[index] = {...attributes[index], ...patch};
+        this._updateDraft({attributes});
+    }
+
+    protected _removeDraftAttribute(index: number): void {
+        const attributes = [...(this._draftDefinition?.attributes || [])];
+        attributes.splice(index, 1);
+        this._updateDraft({attributes});
+    }
+
     protected _canCreateDefinition(definition: CustomAssetTypeDefinition): boolean {
         const name = (definition.name || "").trim();
         const displayName = (definition.displayName || "").trim();
         return !this._creatingDefinition
             && !!displayName
             && PageCustomAssetTypes.TYPE_NAME_PATTERN.test(name)
-            && !(this._definitions || []).some(existing => existing.name === name);
+            && !(this._definitions || []).some(existing => existing.name === name)
+            && this._areDraftAttributesValid(definition.attributes || []);
+    }
+
+    protected _areDraftAttributesValid(attributes: CustomAssetTypeAttributeDefinition[]): boolean {
+        const names = new Set<string>();
+
+        return attributes.every(attribute => {
+            const name = (attribute.name || "").trim();
+            const type = attribute.type || "";
+            if (!PageCustomAssetTypes.TYPE_NAME_PATTERN.test(name) || !PageCustomAssetTypes.VALUE_TYPES.has(type)) {
+                return false;
+            }
+
+            if (names.has(name)) {
+                return false;
+            }
+
+            names.add(name);
+            return true;
+        });
     }
 
     protected async _createDefinition(definition: CustomAssetTypeDefinition, confirmExistingAssets = false): Promise<void> {
@@ -608,7 +761,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             colour: this._optionalColour(definition.colour),
             description: this._optionalText(definition.description),
             enabled: definition.enabled !== false,
-            attributes: []
+            attributes: (definition.attributes || []).map((attribute, index) => ({
+                name: attribute.name!.trim(),
+                type: attribute.type,
+                optional: attribute.optional === true,
+                position: index * 10
+            }))
         };
     }
 
