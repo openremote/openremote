@@ -8,10 +8,10 @@ import "./markers/or-map-marker-asset";
 import "@openremote/or-vaadin-components/or-vaadin-text-field"
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
-import {
+import type {
     ValueInputProviderGenerator,
     ValueInputTemplateFunction
-} from "@openremote/or-mwc-components/or-mwc-input";
+} from "@openremote/or-vaadin-components/value-input-provider";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
