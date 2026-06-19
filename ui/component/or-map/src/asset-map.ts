@@ -6,7 +6,9 @@ import { OrClusterMarker, Slice } from "./markers/or-cluster-marker";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import { OrMapLoadedEvent, OrMapMarkersChangedEvent } from ".";
 import { Util } from "@openremote/core";
-import { AttributeEvent, WellknownAttributes } from "@openremote/model";
+import { AssetQuery, AttributeEvent, WellknownAttributes } from "@openremote/model";
+import { OrMapLegendControl, OrMapLegendEvent } from "./controls/legend";
+import { OrMapPresetFilterControl, OrMapPresetFilterEvent } from "./controls/preset-filter";
 
 type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
 
@@ -25,6 +27,9 @@ type IdentifiableAsset = AssetWithLocation & { id: string; type: string };
 export class AssetMap extends BaseMap {
     private static _clusterProperty = "assetType";
 
+    // All assets ever added — source of truth for filtering and control counts
+    private _allAssets: Record<string, AssetWithLocation> = {};
+    // Assets currently rendered in the GeoJSON source (visible subset)
     protected _assets: Record<string, AssetWithLocation | null> = {};
     protected _assetTypeColors: Record<string, string> = {};
     protected _assetsOnScreen: Record<string, AssetWithLocation> = {};
@@ -32,6 +37,27 @@ export class AssetMap extends BaseMap {
     protected _clustersOnScreen: Record<string, Marker> = {};
     protected _clusterConfig?: ClusterConfig;
     protected _source?: GeoJSONSource;
+
+    // Filter / legend state
+    private _hostElement: HTMLElement;
+    private _filters?: AssetQuery[];
+    private _showLegend: boolean;
+    private _activeFilter: AssetQuery | null = null;
+    private _excludedTypes: string[] = [];
+    private _allAssetTypes: string[] = [];
+    private _allAssetCounts: Record<string, number> = {};
+    private _presetFilterControl?: OrMapPresetFilterControl;
+    private _legendControl?: OrMapLegendControl;
+
+    // Stable event handler refs so they can be removed on cleanup
+    private _onPresetFilter = (e: Event) => {
+        this._activeFilter = (e as OrMapPresetFilterEvent).detail;
+        this._applyVisibilityFilters();
+    };
+    private _onLegendChange = (e: Event) => {
+        this._excludedTypes = (e as OrMapLegendEvent).detail;
+        this._applyVisibilityFilters();
+    };
 
     protected _onMove = () => this._updateMarkers();
     protected _onMoveEnd = (e: any) => {
@@ -57,14 +83,20 @@ export class AssetMap extends BaseMap {
     constructor(
         styleParent: Node,
         mapContainer: HTMLElement,
+        hostElement: HTMLElement,
         showGeoCodingControl = false,
         showBoundaryBox = false,
         useZoomControls = true,
         showGeoJson = true,
-        clusterConfig?: ClusterConfig
+        clusterConfig?: ClusterConfig,
+        filters?: AssetQuery[],
+        showLegend = true
     ) {
         super(styleParent, mapContainer, showGeoCodingControl, showBoundaryBox, useZoomControls, showGeoJson);
         this._clusterConfig = clusterConfig;
+        this._hostElement = hostElement;
+        this._filters = filters;
+        this._showLegend = showLegend;
     }
 
     override async build(): Promise<void> {
@@ -73,67 +105,38 @@ export class AssetMap extends BaseMap {
         });
     }
 
-    /**
-     * Add an asset as (asset) feature to the map.
-     *
-     * Use {@link addAssets} instead if adding multiple assets.
-     * @param asset The asset to add
-     */
+    // ── Public asset API (filter-aware) ──────────────────────────────────────
+
     public addAsset(asset: AssetWithLocation) {
-        if (!this._source) return;
-        const features = this._map!.querySourceFeatures("assets");
-
-        if (!this._hasRequired(asset) || !this._isMissing(asset, features)) {
-            return;
-        }
-
-        if (!(asset.type in this._assetTypeColors)) {
-            this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
-            this._source.workerOptions.clusterProperties = this._getClusterProperties();
-        }
-
-        this._assets[asset.id] = asset;
-        this._source.updateData({ add: [AssetMap._assetToFeature(asset)] });
+        if (!asset.id) return;
+        this._allAssets[asset.id] = asset;
+        this._syncAssetMeta();
+        if (this._presetFilterControl) this._presetFilterControl.assets = Object.values(this._allAssets);
+        if (this._isAssetVisible(asset)) this._sourceAddAsset(asset);
     }
 
-    /**
-     * Add multiple assets as (asset) features to the map. Optimized for adding multiple assets at once.
-     * @param assets The assets to add
-     */
     public addAssets(assets: AssetWithLocation[]) {
-        if (!this._source) return;
-        const features = this._map!.querySourceFeatures("assets");
-
-        let missing = assets.filter(this._hasRequired);
-        if (features?.length) {
-            missing = missing.filter((a) => this._isMissing(a, features));
-        }
-
-        if (!missing.length) {
-            return;
-        }
-
-        for (const asset of missing) {
-            if (!(asset.type in this._assetTypeColors)) {
-                this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
-            }
-            this._assets[asset.id] = asset;
-        }
-        this._source.workerOptions.clusterProperties = this._getClusterProperties();
-
-        this._source.updateData({
-            add: missing.map(AssetMap._assetToFeature),
-        });
+        for (const asset of assets) if (asset.id) this._allAssets[asset.id] = asset;
+        this._syncAssetMeta();
+        if (this._presetFilterControl) this._presetFilterControl.assets = Object.values(this._allAssets);
+        this._sourceAddAssets(assets.filter(a => this._isAssetVisible(a)));
     }
 
     public updateAttribute(event: AttributeEvent) {
         const id = event?.ref?.id;
+        if (!id) return;
 
-        if (!this._source || !id || !this._assets[id]) return;
+        if (this._allAssets[id]) {
+            this._allAssets[id] = Util.updateAsset(structuredClone(this._allAssets[id]), event);
+            if (this._presetFilterControl) this._presetFilterControl.assets = Object.values(this._allAssets);
+        }
+
+        // Update the GeoJSON source if the asset is currently visible
+        if (!this._source || !this._assets[id]) return;
 
         if (event.value == null && event.ref?.name === WellknownAttributes.LOCATION) {
             this._assets[id] = null;
-            this._source?.updateData({ remove: [id] });
+            this._source.updateData({ remove: [id] });
             return;
         }
 
@@ -142,39 +145,139 @@ export class AssetMap extends BaseMap {
         const newProperties = Object.entries(AssetMap._assetToFeature(asset as IdentifiableAsset).properties).map(
             ([key, value]) => ({ key, value })
         );
-        this._source?.updateData({ update: [{ id, newGeometry, addOrUpdateProperties: newProperties }] });
+        this._source.updateData({ update: [{ id, newGeometry, addOrUpdateProperties: newProperties }] });
     }
 
     public removeAssets(ids: string[]) {
+        for (const id of ids) delete this._allAssets[id];
+        this._syncAssetMeta();
+        if (this._presetFilterControl) this._presetFilterControl.assets = Object.values(this._allAssets);
         for (const id of ids) this._assets[id] = null;
         this._source?.updateData({ remove: ids });
     }
 
     public removeAllAssets() {
+        this._allAssets = {};
+        this._allAssetTypes = [];
+        this._allAssetCounts = {};
+        this._activeFilter = null;
+        this._excludedTypes = [];
+        this._hostElement.classList.remove('has-legend');
+        if (this._legendControl) {
+            this._legendControl.assetTypes = [];
+            this._legendControl.assetCounts = {};
+            this._legendControl.excludedTypes = [];
+        }
+        if (this._presetFilterControl) this._presetFilterControl.assets = [];
         this._assets = {};
         this._source?.updateData({ removeAll: true });
     }
 
-    /**
-     * Initialize asset sources, layers and data events
-     */
-    private async load() {
-        if (!this._map) {
-            console.warn("MapLibre Map not initialized!");
-            return;
-        }
+    // ── Dynamic control updates ───────────────────────────────────────────────
 
-        if (this._loaded) {
-            return;
+    public setFilters(filters: AssetQuery[] | undefined) {
+        this._filters = filters;
+        if (!this._loaded) return;
+        if (this._presetFilterControl) {
+            this._map?.removeControl(this._presetFilterControl);
+            this._presetFilterControl = undefined;
         }
+        if (filters?.length) {
+            this._presetFilterControl = new OrMapPresetFilterControl(filters, Object.values(this._allAssets));
+            this._map?.addControl(this._presetFilterControl, 'top-left');
+        }
+        this._hostElement.classList.toggle('has-filters', Boolean(filters?.length));
+    }
+
+    public setShowLegend(showLegend: boolean) {
+        this._showLegend = showLegend;
+        if (!this._loaded) return;
+        if (!showLegend && this._legendControl) {
+            this._map?.removeControl(this._legendControl);
+            this._legendControl = undefined;
+        } else if (showLegend && !this._legendControl) {
+            this._legendControl = new OrMapLegendControl(this._allAssetTypes, this._excludedTypes, this._allAssetCounts);
+            this._map?.addControl(this._legendControl, 'bottom-right');
+        }
+        this._syncAssetMeta();
+    }
+
+    // ── Source-level helpers (operate on _assets / GeoJSON source only) ───────
+
+    private _sourceAddAsset(asset: AssetWithLocation) {
+        if (!this._source) return;
+        const features = this._map!.querySourceFeatures("assets");
+        if (!this._hasRequired(asset) || !this._isMissing(asset, features)) return;
+        if (!(asset.type in this._assetTypeColors)) {
+            this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
+            this._source.workerOptions.clusterProperties = this._getClusterProperties();
+        }
+        this._assets[asset.id] = asset;
+        this._source.updateData({ add: [AssetMap._assetToFeature(asset)] });
+    }
+
+    private _sourceAddAssets(assets: AssetWithLocation[]) {
+        if (!this._source) return;
+        const features = this._map!.querySourceFeatures("assets");
+        let missing = assets.filter(this._hasRequired);
+        if (features?.length) missing = missing.filter(a => this._isMissing(a, features));
+        if (!missing.length) return;
+        for (const asset of missing) {
+            if (!(asset.type in this._assetTypeColors)) {
+                this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
+            }
+            this._assets[asset.id] = asset;
+        }
+        this._source.workerOptions.clusterProperties = this._getClusterProperties();
+        this._source.updateData({ add: missing.map(AssetMap._assetToFeature) });
+    }
+
+    // ── Filter / legend internals ─────────────────────────────────────────────
+
+    private _syncAssetMeta() {
+        const counts: Record<string, number> = {};
+        for (const id in this._allAssets) {
+            const type: string | undefined = this._allAssets[id]?.type;
+            if (type !== undefined && type !== '') counts[type] = (counts[type] ?? 0) + 1;
+        }
+        const types = Object.keys(counts);
+        const typesChanged = types.length !== this._allAssetTypes.length;
+        this._allAssetTypes = types;
+        this._allAssetCounts = counts;
+        this._hostElement.classList.toggle('has-legend', this._showLegend && types.length >= 2);
+        if (this._legendControl) {
+            if (typesChanged) this._legendControl.assetTypes = types;
+            this._legendControl.assetCounts = counts;
+        }
+    }
+
+    private _isAssetVisible(asset: AssetWithLocation): boolean {
+        if (this._activeFilter && !new Util.AssetQueryHelper(this._activeFilter).matches(asset)) return false;
+        if (!asset.type) return true;
+        return !this._excludedTypes.includes(asset.type);
+    }
+
+    private _applyVisibilityFilters() {
+        if (!this._source) return;
+        this._assets = {};
+        this._source.updateData({ removeAll: true });
+        this._sourceAddAssets(Object.values(this._allAssets).filter(a => this._isAssetVisible(a)));
+    }
+
+    public override unload() {
+        this._mapContainer.removeEventListener(OrMapPresetFilterEvent.NAME, this._onPresetFilter);
+        this._mapContainer.removeEventListener(OrMapLegendEvent.NAME, this._onLegendChange);
+        super.unload();
+    }
+
+    // ── Map lifecycle ─────────────────────────────────────────────────────────
+
+    private async load() {
+        if (!this._map || this._loaded) return;
 
         if (this._map.getSource("assets")) {
-            if (this._map.getLayer("asset")) {
-                this._map.removeLayer("asset");
-            }
-            if (this._map.getLayer("cluster")) {
-                this._map.removeLayer("cluster");
-            }
+            if (this._map.getLayer("asset")) this._map.removeLayer("asset");
+            if (this._map.getLayer("cluster")) this._map.removeLayer("cluster");
             this._map.removeSource("assets");
         }
 
@@ -200,6 +303,26 @@ export class AssetMap extends BaseMap {
         this._source = this._map.getSource("assets") as GeoJSONSource;
 
         this._map.on("data", this._onData);
+
+        // Create asset-specific controls
+        if (this._filters?.length) {
+            this._presetFilterControl = new OrMapPresetFilterControl(this._filters, Object.values(this._allAssets));
+            this._map?.addControl(this._presetFilterControl, 'top-left');
+        }
+        if (this._showLegend) {
+            this._legendControl = new OrMapLegendControl(this._allAssetTypes, this._excludedTypes, this._allAssetCounts);
+            this._map?.addControl(this._legendControl, 'bottom-right');
+        }
+        this._hostElement.classList.toggle('has-filters', Boolean(this._filters?.length));
+        this._hostElement.classList.toggle('has-legend', this._showLegend && this._allAssetTypes.length >= 2);
+
+        // Listen for filter/legend events from the controls (bubble through _mapContainer)
+        this._mapContainer.addEventListener(OrMapPresetFilterEvent.NAME, this._onPresetFilter);
+        this._mapContainer.addEventListener(OrMapLegendEvent.NAME, this._onLegendChange);
+
+        // Flush assets that were added before the source was ready
+        const buffered = Object.values(this._allAssets);
+        if (buffered.length) this._sourceAddAssets(buffered.filter(a => this._isAssetVisible(a)));
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;

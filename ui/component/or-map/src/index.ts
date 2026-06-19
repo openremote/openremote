@@ -1,4 +1,4 @@
-import manager, {EventCallback} from "@openremote/core";
+import manager, { EventCallback } from "@openremote/core";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {IControl, LngLat, LngLatLike} from "maplibre-gl";
@@ -16,7 +16,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
-import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
+import { AssetQuery, AttributeEvent, GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
 import { OrMapCenterControl } from "./controls/center";
@@ -318,6 +318,12 @@ export class OrMap extends LitElement {
     @property({type: Array})
     public boundary: string[] = [];
 
+    @property({type: Array})
+    public filters?: AssetQuery[];
+
+    @property({type: Boolean})
+    public showLegend: boolean = true;
+
     public controls?: (IControl | [IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -346,7 +352,7 @@ export class OrMap extends LitElement {
     }
 
     public updateAttribute(event: AttributeEvent) {
-        this._map?.updateAttribute(event)
+        this._map?.updateAttribute(event);
     }
 
     public removeAssets(ids: string[]) {
@@ -355,14 +361,6 @@ export class OrMap extends LitElement {
 
     public removeAllAssets(): void {
         this._map?.removeAllAssets();
-    }
-
-    public addControl(control: IControl, position?: ControlPosition): void {
-        this._map?.addControl(control, position);
-    }
-
-    public removeControl(control: IControl): void {
-        this._map?.removeControl(control);
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -398,6 +396,12 @@ export class OrMap extends LitElement {
         if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
             this._map?.createBoundaryBox(this.boundary)
         }
+        if (changedProperties.has("filters")) {
+            this._map?.setFilters(this.filters);
+        }
+        if (changedProperties.has("showLegend")) {
+            this._map?.setShowLegend(this.showLegend);
+        }
     }
 
     public refresh() {
@@ -416,7 +420,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new AssetMap(this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster)
+            this._map = new AssetMap(this.shadowRoot!, this._mapContainer, this, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson, this.cluster, this.filters, this.showLegend)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls)

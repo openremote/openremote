@@ -130,14 +130,6 @@ export class BaseMap {
         return this;
     }
 
-    public addControl(control: IControl, position?: ControlPosition): void {
-        this._map?.addControl(control, position);
-    }
-
-    public removeControl(control: IControl): void {
-        this._map?.removeControl(control);
-    }
-
     public setGeoJson(geoJsonConfig?: GeoJsonConfig): this {
         this._geoJsonConfig = geoJsonConfig;
         if (this._map) {

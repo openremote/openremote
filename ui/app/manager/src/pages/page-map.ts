@@ -1,4 +1,4 @@
-import {css, html, PropertyValues} from "lit";
+import {css, html} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
@@ -12,11 +12,6 @@ import {
     OrMapGeocoderChangeEvent,
     MapMarkerAssetConfig,
     OrMapMarkersChangedEvent,
-    OrMapLegendEvent,
-    OrMapLoadedEvent,
-    OrMapPresetFilterEvent,
-    OrMapPresetFilterControl,
-    OrMapLegendControl
 } from "@openremote/or-map";
 import manager, { Util } from "@openremote/core";
 import {createSelector} from "reselect";
@@ -206,19 +201,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected _currentAsset?: Asset;
 
     @state()
-    protected _assetTypes: string[] = [];
-
-    @state()
-    protected _excludedTypes: string[] = [];
-
-    @state()
     protected _assetsOnScreen: AssetWithLocation[] = [];
-
-    @state()
-    protected _activeFilter: AssetQuery | null = null;
-
-    @state()
-    protected _assetCounts: Record<string, number> = {};
 
     protected _locatedAssetSelector = (state: MapStateKeyed) => state.map.locatedAssets;
     protected _unlocatedAssetSelector = (state: MapStateKeyed) => state.map.unlocatedAssets;
@@ -227,9 +210,6 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected _assetSubscriptionId: string;
     protected _attributeSubscriptionId: string;
-    protected _presetFilterControl?: OrMapPresetFilterControl;
-    protected _legendControl?: OrMapLegendControl;
-    protected _mapLoaded = false;
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -312,7 +292,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     switch (event.cause) {
                         case "DELETE": this._map?.removeAssets([event.asset.id]); break;
                         case "CREATE":
-                            if (MapUtil.isAssetWithLocation(event.asset) && this._isAssetVisible(event.asset)) {
+                            if (MapUtil.isAssetWithLocation(event.asset)) {
                                 this._map?.addAsset(event.asset);
                             }
                             break;
@@ -342,7 +322,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     // Add the asset after map state has been updated
                     if (interested && asset) {
                         const located = this._assets.find(a => a.id === event.ref.id);
-                        if (located && this._isAssetVisible(located)) {
+                        if (located) {
                             this._map?.addAsset(located);
                         }
                     }
@@ -377,7 +357,6 @@ export class PageMap extends Page<MapStateKeyed> {
     protected getRealmState = createSelector(
       [this._realmSelector],
       async (realm) => {
-          this._excludedTypes = [];
           this.unsubscribeAssets();
           this.subscribeAssets(realm);
           this._map?.refresh();
@@ -415,20 +394,6 @@ export class PageMap extends Page<MapStateKeyed> {
         this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this._onLoadAssetEvent);
     }
 
-    shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has('_assets')) {
-            const newTypes = [];
-            const counts: Record<string, number> = {};
-            for (const { type } of this._assets) {
-                if (!newTypes.includes(type)) newTypes.push(type);
-                if (type) counts[type] = (counts[type] ?? 0) + 1;
-            }
-            this._assetTypes = newTypes;
-            this._assetCounts = counts;
-        }
-        return super.shouldUpdate(_changedProperties);
-    }
-
     protected render() {
         const filters = this.config?.filters;
         this.style.setProperty("--card-top", filters?.length ? "56px" : "10px");
@@ -436,10 +401,8 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
 
-            <or-map id="map" class="or-map ${filters?.length ? 'has-filters' : ''} ${this._assetTypes.length >= 2 ? 'has-legend' : ''}" .cluster="${this.config.clustering}" showGeoCodingControl
-                @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}"
-                @or-map-preset-filter-changed="${this._onPresetFilterChanged}"
-                @or-map-legend-changed="${this._onMapLegendChanged}">
+            <or-map id="map" class="or-map" .cluster="${this.config.clustering}" .filters="${filters}" ?showLegend="${this.config?.legend?.show !== false}" showGeoCodingControl
+                @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${this._assetsOnScreen.sort((a,b) => {
                     const pointA = a.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
                     const pointB = b.attributes[WellknownAttributes.LOCATION].value as GeoJSONPoint;
@@ -458,7 +421,6 @@ export class PageMap extends Page<MapStateKeyed> {
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this._onMapClick);
         this.addEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
-        this.addEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
     }
 
     public disconnectedCallback() {
@@ -466,7 +428,6 @@ export class PageMap extends Page<MapStateKeyed> {
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this._onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this._onMapClick);
         this.removeEventListener(OrMapMarkersChangedEvent.NAME, this._onMapMarkersChanged);
-        this.removeEventListener(OrMapLoadedEvent.NAME, this._onMapLoaded);
         this.unsubscribeAssets();
     }
 
@@ -491,67 +452,5 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected _onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
         router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
-    }
-
-    protected _onMapLoaded(e: OrMapLoadedEvent) {
-        this._mapLoaded = true;
-        this._map?.addAssets(this._getVisibleAssets());
-
-        const filters = this.config?.filters;
-        if (filters?.length) {
-            this._presetFilterControl = new OrMapPresetFilterControl(filters, this._assets);
-            this._map?.addControl(this._presetFilterControl, 'top-left');
-        }
-
-        if (this.config?.legend?.show !== false) {
-            this._legendControl = new OrMapLegendControl(this._assetTypes, this._excludedTypes, this._assetCounts);
-            this._map?.addControl(this._legendControl, 'bottom-right');
-        }
-    }
-
-    protected updated(changedProperties: PropertyValues): void {
-        super.updated(changedProperties);
-        if (!this._mapLoaded) return;
-
-        if (changedProperties.has('_assets') && this._presetFilterControl) {
-            this._presetFilterControl.assets = this._assets;
-        }
-
-        if (this._legendControl) {
-            if (changedProperties.has('_assetTypes') || changedProperties.has('_assetCounts')) {
-                this._legendControl.assetTypes = this._assetTypes;
-                this._legendControl.assetCounts = this._assetCounts;
-            }
-            if (changedProperties.has('_excludedTypes')) {
-                this._legendControl.excludedTypes = this._excludedTypes;
-            }
-        }
-    }
-
-    protected _onMapLegendChanged(e: OrMapLegendEvent) {
-        this._excludedTypes = e.detail;
-        this._applyVisibilityFilters();
-    }
-
-    protected _onPresetFilterChanged(e: OrMapPresetFilterEvent) {
-        this._activeFilter = e.detail;
-        this._applyVisibilityFilters();
-    }
-
-    protected _isAssetVisible(asset: AssetWithLocation): boolean {
-        if (this._activeFilter && !new Util.AssetQueryHelper(this._activeFilter).matches(asset)) return false;
-        return !this._excludedTypes.includes(asset.type);
-    }
-
-    protected _getVisibleAssets(): AssetWithLocation[] {
-        return this._assets.filter(a => this._isAssetVisible(a));
-    }
-
-    protected _applyVisibilityFilters() {
-        if (!this._map) return;
-        const visible = this._getVisibleAssets();
-        const visibleIds = new Set(visible.map(a => a.id));
-        this._map.removeAssets(this._assets.filter(a => !visibleIds.has(a.id)).map(a => a.id));
-        this._map.addAssets(visible);
     }
 }
