@@ -395,7 +395,8 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        const filters = this.config?.filters;
+        const realm = this._realmSelector(this.getState());
+        const filters = this.config?.filters?.filter(f => !f.realms?.length || f.realms.includes(realm));
         this.style.setProperty("--card-top", filters?.length ? "56px" : "10px");
 
         return html`

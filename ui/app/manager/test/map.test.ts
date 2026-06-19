@@ -755,6 +755,46 @@ test.describe("Preset filters", () => {
             await expect(page.getByRole("option").and(page.locator(`[value="${filterIndex}"]`)).locator("or-vaadin-badge")).toHaveText(badgeText);
         }
     });
+
+    test.describe(() => {
+        test.use({ storageState: adminStatePath });
+
+        /**
+         * @given filters configured with different realm restrictions
+         * @when in a realm not included in a filter's realms list
+         * @then that filter is absent from the dropdown
+         * @when switching to a realm that is included
+         * @then the filter appears in the dropdown
+         *
+         * @skip This test is skipped on Firefox because headless mode does not support WebGL required by maplibre
+         */
+         test("should show realm-scoped filters only in matching realms", async ({ page, manager, browserName }) => {
+            test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
+
+            const realmFilters: MapFilter[] = [
+                { label: "Global", query: { types: ["ThingAsset"] } },
+                { label: "Smartcity only", query: { types: ["ThingAsset"] }, realms: ["smartcity"] },
+            ];
+
+            await manager.setup("smartcity", { assets: allAssets });
+            await manager.configureAppConfig({ pages: { map: { clustering: { cluster: false }, filters: realmFilters } } });
+
+            // In master realm: the smartcity-only filter is inactive → "All" + 1 global = 2 options
+            await manager.goToRealmStartPage("master");
+            await expect(page.locator("or-map-preset-filter")).toBeVisible();
+            await page.locator("or-map-preset-filter or-vaadin-select").click();
+            await page.getByRole("option").first().waitFor({ state: "visible" });
+            await expect(page.getByRole("option")).toHaveCount(2);
+            await page.keyboard.press("Escape");
+
+            // Switch to smartcity: both filters are active → "All" + 2 = 3 options
+            await manager.switchToRealmByRealmPicker("smartcity");
+            await expect(page.locator("or-map-preset-filter")).toBeVisible();
+            await page.locator("or-map-preset-filter or-vaadin-select").click();
+            await page.getByRole("option").first().waitFor({ state: "visible" });
+            await expect(page.getByRole("option")).toHaveCount(3);
+        });
+    });
 });
 
 test.describe("Navigation control", () => {

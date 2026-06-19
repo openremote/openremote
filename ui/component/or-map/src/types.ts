@@ -32,6 +32,7 @@ export interface AssetWithLocation extends Asset {
 export interface MapFilter {
     label?: string;
     query: AssetQuery;
+    realms?: string[];
 }
 
 export interface ClusterConfig {
