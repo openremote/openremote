@@ -61,12 +61,18 @@ public class CustomAssetTypeResourceImpl extends ManagerWebResource implements C
     }
 
     @Override
-    public CustomAssetTypeDefinition create(RequestParams requestParams, CustomAssetTypeDefinition definition) {
+    public CustomAssetTypeDefinition create(
+        RequestParams requestParams,
+        boolean confirmExistingAssets,
+        CustomAssetTypeDefinition definition
+    ) {
         requireSuperAdmin("create custom asset type definitions");
         try {
-            return storageService.persist(definition);
+            return storageService.persist(definition, confirmExistingAssets);
         } catch (IllegalArgumentException ex) {
             throw isDuplicate(ex) ? conflict(ex) : badRequest(ex);
+        } catch (IllegalStateException ex) {
+            throw conflict(ex);
         }
     }
 

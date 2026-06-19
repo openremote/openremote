@@ -73,7 +73,7 @@ class CustomAssetTypeResourceTest extends Specification implements ManagerContai
         def typeName = "ApiManagedBoilerAsset"
 
         when:
-        def created = superAdminResource.create(null, validDefinition(typeName))
+        def created = superAdminResource.create(null, false, validDefinition(typeName))
 
         then:
         created.name == typeName
@@ -121,7 +121,7 @@ class CustomAssetTypeResourceTest extends Specification implements ManagerContai
     def "usage reports assets whose stored type exactly matches the custom type"() {
         given:
         def typeName = "ApiUsageBoilerAsset"
-        superAdminResource.create(null, validDefinition(typeName))
+        superAdminResource.create(null, false, validDefinition(typeName))
         def asset = new ThingAsset("API usage boiler").setRealm(Constants.MASTER_REALM)
         asset.type = typeName
         asset.addOrReplaceAttributes(new Attribute<>("temperature", ValueType.NUMBER, 21.5d))
@@ -140,7 +140,7 @@ class CustomAssetTypeResourceTest extends Specification implements ManagerContai
         assertStatus(ex, Response.Status.FORBIDDEN)
 
         when:
-        regularUserResource.create(null, validDefinition("ApiForbiddenAsset"))
+        regularUserResource.create(null, false, validDefinition("ApiForbiddenAsset"))
 
         then:
         ex = thrown(WebApplicationException)
@@ -156,7 +156,7 @@ class CustomAssetTypeResourceTest extends Specification implements ManagerContai
         ]
 
         when:
-        superAdminResource.create(null, definition)
+        superAdminResource.create(null, false, definition)
 
         then:
         def ex = thrown(WebApplicationException)
@@ -168,14 +168,39 @@ class CustomAssetTypeResourceTest extends Specification implements ManagerContai
     def "duplicate create returns conflict"() {
         given:
         def typeName = "ApiDuplicateAsset"
-        superAdminResource.create(null, validDefinition(typeName))
+        superAdminResource.create(null, false, validDefinition(typeName))
 
         when:
-        superAdminResource.create(null, validDefinition(typeName))
+        superAdminResource.create(null, false, validDefinition(typeName))
 
         then:
         def ex = thrown(WebApplicationException)
         assertStatus(ex, Response.Status.CONFLICT)
+    }
+
+    def "creating a definition over fallback assets requires confirmation"() {
+        given:
+        def typeName = "ApiFallbackExistingAsset"
+        def fallbackAsset = new ThingAsset("Existing fallback asset").setRealm(Constants.MASTER_REALM)
+        fallbackAsset.type = typeName
+        assetStorageService.merge(fallbackAsset)
+
+        when:
+        superAdminResource.create(null, false, validDefinition(typeName))
+
+        then:
+        def ex = thrown(WebApplicationException)
+        assertStatus(ex, Response.Status.CONFLICT)
+        customAssetTypeStorageService.find(typeName) == null
+        ValueUtil.getAssetInfo(typeName).isEmpty()
+
+        when:
+        def created = superAdminResource.create(null, true, validDefinition(typeName))
+
+        then:
+        created.name == typeName
+        superAdminResource.getUsage(null, typeName) == 1
+        ValueUtil.getAssetInfo(typeName).isPresent()
     }
 
     private static CustomAssetTypeDefinition validDefinition(String name) {

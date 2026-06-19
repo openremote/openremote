@@ -68,10 +68,20 @@ public class CustomAssetTypeStorageService implements ContainerService {
     }
 
     public CustomAssetTypeDefinition persist(CustomAssetTypeDefinition definition) {
+        return persist(definition, false);
+    }
+
+    public CustomAssetTypeDefinition persist(CustomAssetTypeDefinition definition, boolean confirmExistingAssets) {
         CustomAssetTypeDefinition persistedDefinition = persistenceService.doReturningTransaction(em -> {
             definitionValidator.validateForCreate(definition);
             if (em.find(CustomAssetTypeDefinition.class, definition.getName()) != null) {
                 throw new IllegalArgumentException("Custom asset type already exists: " + definition.getName());
+            }
+            if (!confirmExistingAssets && getUsageCount(em, definition.getName()) > 0) {
+                throw new IllegalStateException(
+                    "Existing fallback assets use this custom asset type name; confirmation is required: "
+                        + definition.getName()
+                );
             }
             em.persist(definition);
             return definition;

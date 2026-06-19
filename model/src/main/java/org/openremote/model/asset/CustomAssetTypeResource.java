@@ -32,6 +32,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import org.openremote.model.http.RequestParams;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -57,6 +58,7 @@ public interface CustomAssetTypeResource {
     @Operation(operationId = "createCustomAssetType", summary = "Create a custom asset type definition")
     CustomAssetTypeDefinition create(
         @BeanParam RequestParams requestParams,
+        @QueryParam("confirmExistingAssets") boolean confirmExistingAssets,
         @NotNull @Valid CustomAssetTypeDefinition definition
     );
 
