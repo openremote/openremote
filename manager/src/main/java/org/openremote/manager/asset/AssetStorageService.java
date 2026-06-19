@@ -731,16 +731,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                        return new IllegalStateException(msg);
                     });
 
-                 // Look through type hierarchy for a match - this allows sub types
-                 Class<?> clazz = asset.getClass();
-                 boolean typeMatch = childAssetType.equals(clazz.getSimpleName());
-
-                 while (!typeMatch && clazz != Asset.class) {
-                    clazz = clazz.getSuperclass();
-                    typeMatch = childAssetType.equals(clazz.getSimpleName());
-                 }
-
-                 if (!typeMatch) {
+                 if (!isAssetMatchingGroupChildType(asset, childAssetType)) {
                     String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
@@ -830,6 +821,29 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
 
         return assetId == null ? assetSupplier.get() : withAssetLock(assetId, assetSupplier);
+    }
+
+    protected static boolean isAssetMatchingGroupChildType(Asset<?> asset, String childAssetType) {
+        AssetTypeInfo childAssetTypeInfo = ValueUtil.getAssetInfo(childAssetType).orElse(null);
+        AssetTypeInfo assetTypeInfo = ValueUtil.getAssetInfo(asset.getType()).orElse(null);
+
+        if (
+            childAssetTypeInfo != null && childAssetTypeInfo.getAssetDescriptor().isDynamic()
+                || assetTypeInfo != null && assetTypeInfo.getAssetDescriptor().isDynamic()
+        ) {
+            return childAssetType.equals(asset.getType());
+        }
+
+        // Look through the Java type hierarchy for built-in assets; this allows built-in subtypes.
+        Class<?> clazz = asset.getClass();
+        boolean typeMatch = childAssetType.equals(clazz.getSimpleName());
+
+        while (!typeMatch && clazz != Asset.class) {
+            clazz = clazz.getSuperclass();
+            typeMatch = childAssetType.equals(clazz.getSimpleName());
+        }
+
+        return typeMatch;
     }
 
     /**
