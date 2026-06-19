@@ -4,7 +4,6 @@ import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil, AssetQuer
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "./or-rule-trigger-query";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {Util} from "@openremote/core";

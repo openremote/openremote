@@ -90,10 +90,6 @@ const style = css`
     .add-button-wrapper > * {
         margin-right: 6px;
     }
-    
-    .add-button-wrapper or-mwc-menu {
-        text-transform: capitalize;
-    }
 
     strong {
         margin: var(--internal-or-panel-heading-margin);

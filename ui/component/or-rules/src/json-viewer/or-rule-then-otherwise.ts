@@ -222,10 +222,6 @@ const style = css`
         margin-right: 6px;
     }
     
-    .add-button-wrapper or-mwc-menu {
-        text-transform: capitalize;
-    }
-    
     #type {
         white-space: nowrap;
         text-transform: capitalize;
