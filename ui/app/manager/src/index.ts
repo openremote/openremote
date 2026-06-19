@@ -8,6 +8,7 @@ import {
     headerItemAccount,
     headerItemAssets,
     headerItemConfiguration,
+    headerItemCustomAssetTypes,
     headerItemExport,
     headerItemGatewayConnection,
     headerItemGatewayTunnel,
@@ -45,6 +46,8 @@ import "./pages/page-roles";
 import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
+import "./pages/page-custom-asset-types";
+import {pageCustomAssetTypesProvider} from "./pages/page-custom-asset-types";
 import {pageExportProvider} from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
 import {pageAlarmsProvider} from "./pages/page-alarms";
@@ -82,6 +85,7 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageRolesProvider(store),
     pageUsersProvider(store),
     pageRealmsProvider(store),
+    pageCustomAssetTypesProvider(store),
     pageExportProvider(store),
     pageProvisioningProvider(store),
     pageConfigurationProvider(store),
@@ -105,6 +109,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     users: headerItemUsers(orApp),
     roles: headerItemRoles(orApp),
     realms: headerItemRealms(orApp),
+    assetTypes: headerItemCustomAssetTypes(orApp),
     export: headerItemExport(orApp),
     provisioning: headerItemProvisioning(orApp),
     appearance: headerItemConfiguration(orApp),

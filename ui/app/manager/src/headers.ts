@@ -140,6 +140,16 @@ export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(o
     };
 }
 
+export function headerItemCustomAssetTypes<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "shape-outline",
+        value: "asset-types",
+        href: "asset-types",
+        text: "customAssetTypes",
+        roles: () => manager.isSuperUser()
+    };
+}
+
 export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "database-export",
