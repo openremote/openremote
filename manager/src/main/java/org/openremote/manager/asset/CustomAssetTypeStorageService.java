@@ -30,6 +30,7 @@ import java.util.List;
 public class CustomAssetTypeStorageService implements ContainerService {
 
     protected PersistenceService persistenceService;
+    protected CustomAssetTypeDefinitionValidator definitionValidator = new CustomAssetTypeDefinitionValidator();
 
     @Override
     public int getPriority() {
@@ -53,13 +54,20 @@ public class CustomAssetTypeStorageService implements ContainerService {
 
     public CustomAssetTypeDefinition persist(CustomAssetTypeDefinition definition) {
         return persistenceService.doReturningTransaction(em -> {
+            definitionValidator.validateForCreate(definition);
+            if (em.find(CustomAssetTypeDefinition.class, definition.getName()) != null) {
+                throw new IllegalArgumentException("Custom asset type already exists: " + definition.getName());
+            }
             em.persist(definition);
             return definition;
         });
     }
 
     public CustomAssetTypeDefinition merge(CustomAssetTypeDefinition definition) {
-        return persistenceService.doReturningTransaction(em -> em.merge(definition));
+        return persistenceService.doReturningTransaction(em -> {
+            definitionValidator.validateForUpdate(definition);
+            return em.merge(definition);
+        });
     }
 
     public CustomAssetTypeDefinition find(String name) {
