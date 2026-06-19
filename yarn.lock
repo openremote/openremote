@@ -2290,6 +2290,7 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown

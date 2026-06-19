@@ -15,6 +15,12 @@ import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {
+    dialogFooterRenderer,
+    dialogHeaderRenderer,
+    dialogRenderer,
+    OrVaadinDialog
+} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
 
@@ -81,6 +87,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     @state()
     protected _activeMenu?: string;
+
+    @query("#language-dialog")
+    protected _languageDialog?: OrVaadinDialog;
 
     protected _onEvent = (ev: OREvent) => this._handleEvent(ev);
     protected _onVisibilityChanged = (ev: Event) => this._handleVisibilityChange(ev);
@@ -432,6 +441,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}
             
+            ${this._getLanguageDialogTemplate()}
+            
             <!-- Main content -->
             <main role="main" class="main-content d-none"></main>
             
@@ -471,6 +482,38 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._store.dispatch((setOffline(false)));
             }
         }
+    }
+
+    protected _getLanguageDialogTemplate(): TemplateResult {
+        const languages = Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES);
+        const selected = languages.findIndex(([key]) => key === manager.language);
+        const header = () => html`
+            <h2 style="padding-left: 7px; margin: 0;">
+                <or-translate value="language"></or-translate>
+            </h2>
+        `;
+        const content = () => html`
+            <or-vaadin-list-box selected=${selected} style="margin: 0 -18px 6px -18px;"
+                                @selected-changed=${(ev: CustomEvent) => {
+                                    const lang = languages[ev.detail.value]?.[0] ?? languages[0][0];
+                                    if (lang !== manager.language) {
+                                        manager.language = lang;
+                                        this._languageDialog?.close();
+                                    }
+                                }}>
+                ${languages.map(([key, value]) => html`
+                    <or-vaadin-item value=${key} ?selected=${key === manager.language}>
+                        <or-translate value=${value}></or-translate>
+                    </or-vaadin-item>
+                `)}
+            </or-vaadin-list-box>
+        `
+        return html`
+            <or-vaadin-dialog id="language-dialog" width="240px" 
+                              ${dialogHeaderRenderer(header)}
+                              ${dialogRenderer(content)}
+            ></or-vaadin-dialog>
+        `
     }
 
     // Offline timer logic
@@ -524,7 +567,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     public showLanguageModal() {
-        showDialog(new OrMwcDialog()
+        this._languageDialog?.open();
+
+        /*showDialog(new OrMwcDialog()
             .setHeading("language")
             .setDismissAction(null)
             .setStyles(html`<style>.selected { color: ${unsafeCSS(DefaultColor4)} }</style>`)
@@ -535,7 +580,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     action: () => {
                         manager.language = key;
                     }
-                }})));
+                }})));*/
     }
 
     protected doAppConfigInit() {
