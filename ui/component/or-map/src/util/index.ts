@@ -1,4 +1,5 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
+import { i18next } from "@openremote/or-translate";
 import {
     Asset,
     AssetDescriptor,
@@ -12,6 +13,19 @@ import {
 import {AttributeMarkerColoursRange, MapMarkerColours} from "../markers/or-map-marker-asset";
 import { Util } from "@openremote/core";
 import { AssetWithLocation } from "..";
+
+let _compactFormatter: Intl.NumberFormat | undefined;
+
+export function formatCount(n: number): string {
+    if (!_compactFormatter) {
+        _compactFormatter = new Intl.NumberFormat(i18next.language || navigator.language, {
+            notation: "compact",
+            compactDisplay: "short",
+            maximumFractionDigits: 1
+        });
+    }
+    return _compactFormatter.format(n).toLowerCase();
+}
 
 export function metersToPixelsAtMaxZoom(meters: number, latitude: number) {
     return meters / 0.075 / Math.cos(latitude * Math.PI / 180);

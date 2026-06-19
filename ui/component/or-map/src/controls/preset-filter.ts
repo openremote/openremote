@@ -30,6 +30,7 @@ import { selectRenderer } from "@openremote/or-vaadin-components/or-vaadin-selec
 import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
 import { AssetWithLocation } from "../types";
+import { formatCount } from "../util";
 
 export class OrMapPresetFilterEvent extends CustomEvent<AssetQuery | null> {
     public static readonly NAME = "or-map-preset-filter-changed";
@@ -164,7 +165,7 @@ export class OrMapPresetFilter extends LitElement {
                     <or-vaadin-item class="filter-option" value="${opt.value}" label="${opt.label}">
                         <div class="filter-item">
                             <span class="filter-item__label">${opt.label}</span>
-                            <or-vaadin-badge class="filter-item__count">${opt.count > 99 ? "99+" : opt.count}</or-vaadin-badge>
+                            <or-vaadin-badge class="filter-item__count">${formatCount(opt.count)}</or-vaadin-badge>
                         </div>
                     </or-vaadin-item>
                 `)}
@@ -181,7 +182,7 @@ export class OrMapPresetFilter extends LitElement {
                     ${selectRenderer(this._renderFilterOptions, [this.filters, this.assets])}
                     @change="${this._onChange}"
                 ></or-vaadin-select>
-                <or-vaadin-badge class="filter-field-count">${currentCount > 99 ? "99+" : currentCount}</or-vaadin-badge>
+                <or-vaadin-badge class="filter-field-count">${formatCount(currentCount)}</or-vaadin-badge>
             </div>
         `;
     }

@@ -665,7 +665,7 @@ test.describe("Preset filters", () => {
      */
     for (const { filterIndex, expectedCount } of filterCases) {
         const filterDesc = filterIndex === 0 ? `"All" default selection` : `filter option ${filterIndex}`;
-        const badgeText = expectedCount > 99 ? "99+" : String(expectedCount);
+        const badgeText = String(expectedCount);
 
         test(`should show ${expectedCount} markers for ${filterDesc}`, async ({ page, manager, browserName }) => {
             /**
@@ -717,7 +717,7 @@ test.describe("Preset filters", () => {
         await overlayOptions.first().waitFor({ state: "visible" });
 
         for (const { filterIndex, expectedCount } of filterCases) {
-            const badgeText = expectedCount > 99 ? "99+" : String(expectedCount);
+            const badgeText = String(expectedCount);
             // Select by value attribute (sort may reorder options relative to filterIndex)
             await expect(page.getByRole("option").and(page.locator(`[value="${filterIndex}"]`)).locator("or-vaadin-badge")).toHaveText(badgeText);
         }

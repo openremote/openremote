@@ -21,7 +21,7 @@ import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult }
 import { customElement, property, state } from "lit/decorators.js";
 import { mapAssetLegendStyle } from "../style";
 import { AssetModelUtil } from "@openremote/model";
-import { getMarkerIconAndColorFromAssetType } from "../util";
+import { formatCount, getMarkerIconAndColorFromAssetType } from "../util";
 import { Util } from "@openremote/core";
 import type { Map as MapGL } from "maplibre-gl";
 import { OrMapBaseControl } from "./base";
@@ -176,7 +176,7 @@ export class OrMapLegend extends LitElement {
                                 <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     ${this._assetTypesInfo[assetType].label}
                                 </span>
-                                <or-vaadin-badge style="flex-shrink: 0;">${this.assetCounts[assetType] ?? 0}</or-vaadin-badge>
+                                <or-vaadin-badge style="flex-shrink: 0;">${formatCount(this.assetCounts[assetType] ?? 0)}</or-vaadin-badge>
                                 <or-vaadin-checkbox
                                     .checked="${!this.excludedTypes.includes(assetType)}"
                                     @click="${(e: Event) => e.stopPropagation()}"
