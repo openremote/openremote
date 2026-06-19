@@ -45,6 +45,7 @@ import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.CustomAssetTypeDefinition;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.dashboard.Dashboard;
@@ -355,6 +356,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
+        entityClasses.add(CustomAssetTypeDefinition.class.getName());
         entityClasses.add(UserAssetLink.class.getName());
         entityClasses.add(AssetDatapoint.class.getName());
         entityClasses.add(SentNotification.class.getName());

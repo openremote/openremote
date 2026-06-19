@@ -7,6 +7,7 @@ org.openremote.manager.event.ClientEventService
 org.openremote.manager.rules.RulesetStorageService
 org.openremote.manager.rules.RulesService
 org.openremote.manager.asset.AssetStorageService
+org.openremote.manager.asset.CustomAssetTypeStorageService
 org.openremote.manager.datapoint.AssetDatapointService
 org.openremote.manager.asset.AttributeLinkingService
 org.openremote.manager.asset.AssetProcessingService
