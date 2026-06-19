@@ -27,6 +27,7 @@ import {OrTreeGroup} from "./or-tree-group";
 import {moveNodesToGroupNode} from "./util";
 import {OrTreeDragEvent, OrTreeSelectEvent, TreeMenuSelection, TreeMenuSorting, TreeNode} from "./model";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import "@openremote/or-translate";
 
 import "./or-tree-group";
 import "./or-tree-node";

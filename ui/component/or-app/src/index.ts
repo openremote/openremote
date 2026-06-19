@@ -496,7 +496,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                                 @selected-changed=${(ev: CustomEvent) => {
                                     const lang = languages[ev.detail.value]?.[0] ?? languages[0][0];
                                     if (lang !== manager.language) {
-                                        manager.language = lang;
+                                        this.setLanguage(lang);
                                         this._languageDialog?.close();
                                     }
                                 }}>
@@ -567,19 +567,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     public showLanguageModal() {
         this._languageDialog?.open();
-
-        /*showDialog(new OrMwcDialog()
-            .setHeading("language")
-            .setDismissAction(null)
-            .setStyles(html`<style>.selected { color: ${unsafeCSS(DefaultColor4)} }</style>`)
-            .setActions(Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES).map(([key, value]) => {
-                return {
-                    content: html`<span class="${(key === manager.language) ? 'selected' : ''}">${i18next.t(value)}</span>`,
-                    actionName: key,
-                    action: () => {
-                        manager.language = key;
-                    }
-                }})));*/
     }
 
     protected doAppConfigInit() {
