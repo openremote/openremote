@@ -42,6 +42,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.asset.CustomAssetTypeDefinition;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -204,8 +205,11 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
+    protected CustomAssetTypeStorageService customAssetTypeStorageService;
+    protected CustomAssetTypeInfoFactory customAssetTypeInfoFactory = new CustomAssetTypeInfoFactory();
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
     protected Path storageDir;
+    protected Container container;
 
     @Override
     public int getPriority() {
@@ -228,10 +232,14 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     @Override
     public void init(Container container) throws Exception {
 
+        this.container = container;
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
         persistenceService = container.getService(PersistenceService.class);
+        customAssetTypeStorageService = container.hasService(CustomAssetTypeStorageService.class)
+            ? container.getService(CustomAssetTypeStorageService.class)
+            : null;
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetModelResourceImpl(
@@ -260,18 +268,39 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                 throw new IllegalStateException("Asset model storage directory is not a directory: " + storageDir);
             }
 
-            dynamicAssetTypeInfos = loadDescriptors(AssetTypeInfo.class, storageDir)
-                .collect(Collectors.toMap(ati -> ati.getAssetDescriptor().getName(), ati -> ati));
+            Map<String, AssetTypeInfo> loadedAssetTypeInfos = new LinkedHashMap<>();
+            loadDescriptors(AssetTypeInfo.class, storageDir)
+                .forEach(assetTypeInfo -> loadedAssetTypeInfos.put(assetTypeInfo.getAssetDescriptor().getName(), assetTypeInfo));
+
+            if (customAssetTypeStorageService != null && persistenceService.getEntityManagerFactory() != null) {
+                customAssetTypeStorageService.findAll()
+                    .stream()
+                    .filter(CustomAssetTypeDefinition::isEnabled)
+                    .map(customAssetTypeInfoFactory::toAssetTypeInfo)
+                    .forEach(assetTypeInfo -> loadedAssetTypeInfos.put(assetTypeInfo.getAssetDescriptor().getName(), assetTypeInfo));
+            }
+
+            dynamicAssetTypeInfos = loadedAssetTypeInfos;
 
             LOG.fine("Loaded asset type infos from '" + storageDir + "': count = " + dynamicAssetTypeInfos.size());
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "':" + e.getMessage());
+            dynamicAssetTypeInfos = new LinkedHashMap<>();
+        }
+    }
+
+    public synchronized void refreshDynamicModel() {
+        dynamicAssetTypeInfos = null;
+        initDynamicModel();
+        if (container != null) {
+            ValueUtil.initialise(container);
+            ValueUtil.cacheCommonValueDescriptorSchemas();
         }
     }
 
     @Override
     public void start(Container container) throws Exception {
-        ValueUtil.cacheCommonValueDescriptorSchemas();
+        refreshDynamicModel();
     }
 
     @Override

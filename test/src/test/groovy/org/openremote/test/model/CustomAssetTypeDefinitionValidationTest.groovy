@@ -6,10 +6,12 @@ import org.openremote.model.Constants
 import org.openremote.model.asset.CustomAssetTypeAttributeDefinition
 import org.openremote.model.asset.CustomAssetTypeDefinition
 import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.attribute.MetaMap
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueConstraint
+import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -247,6 +249,7 @@ class CustomAssetTypeDefinitionValidationTest extends Specification implements M
     private static void persistCustomAsset(String typeName) {
         def asset = new ThingAsset(typeName + " Instance").setRealm(Constants.MASTER_REALM)
         asset.type = typeName
+        asset.addOrReplaceAttributes(new Attribute<>("temperature", ValueType.NUMBER, 21.5d))
         assetStorageService.merge(asset)
     }
 }

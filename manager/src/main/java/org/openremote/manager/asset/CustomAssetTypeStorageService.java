@@ -31,6 +31,7 @@ import java.util.List;
 public class CustomAssetTypeStorageService implements ContainerService {
 
     protected PersistenceService persistenceService;
+    protected AssetModelService assetModelService;
     protected CustomAssetTypeDefinitionValidator definitionValidator = new CustomAssetTypeDefinitionValidator();
 
     @Override
@@ -41,6 +42,9 @@ public class CustomAssetTypeStorageService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
+        assetModelService = container.hasService(AssetModelService.class)
+            ? container.getService(AssetModelService.class)
+            : null;
     }
 
     @Override
@@ -54,7 +58,7 @@ public class CustomAssetTypeStorageService implements ContainerService {
     }
 
     public CustomAssetTypeDefinition persist(CustomAssetTypeDefinition definition) {
-        return persistenceService.doReturningTransaction(em -> {
+        CustomAssetTypeDefinition persistedDefinition = persistenceService.doReturningTransaction(em -> {
             definitionValidator.validateForCreate(definition);
             if (em.find(CustomAssetTypeDefinition.class, definition.getName()) != null) {
                 throw new IllegalArgumentException("Custom asset type already exists: " + definition.getName());
@@ -62,14 +66,18 @@ public class CustomAssetTypeStorageService implements ContainerService {
             em.persist(definition);
             return definition;
         });
+        refreshAssetModel();
+        return persistedDefinition;
     }
 
     public CustomAssetTypeDefinition merge(CustomAssetTypeDefinition definition) {
-        return persistenceService.doReturningTransaction(em -> {
+        CustomAssetTypeDefinition mergedDefinition = persistenceService.doReturningTransaction(em -> {
             CustomAssetTypeDefinition existingDefinition = em.find(CustomAssetTypeDefinition.class, definition.getName());
             definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
             return em.merge(definition);
         });
+        refreshAssetModel();
+        return mergedDefinition;
     }
 
     public CustomAssetTypeDefinition find(String name) {
@@ -96,6 +104,7 @@ public class CustomAssetTypeStorageService implements ContainerService {
                 em.remove(definition);
             }
         });
+        refreshAssetModel();
     }
 
     public long getUsageCount(String typeName) {
@@ -109,5 +118,11 @@ public class CustomAssetTypeStorageService implements ContainerService {
         );
         query.setParameter("typeName", typeName);
         return query.getSingleResult();
+    }
+
+    protected void refreshAssetModel() {
+        if (assetModelService != null) {
+            assetModelService.refreshDynamicModel();
+        }
     }
 }

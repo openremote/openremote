@@ -218,7 +218,7 @@ public class CustomAssetTypeDefinitionValidator {
     }
 
     protected void rejectBuiltInAssetTypeName(CustomAssetTypeDefinition definition) {
-        if (ValueUtil.getAssetDescriptor(definition.getName()).isPresent()) {
+        if (ValueUtil.getAssetDescriptor(definition.getName()).filter(assetDescriptor -> !assetDescriptor.isDynamic()).isPresent()) {
             throw new IllegalArgumentException("Custom asset type name collides with built-in asset type: " + definition.getName());
         }
     }
