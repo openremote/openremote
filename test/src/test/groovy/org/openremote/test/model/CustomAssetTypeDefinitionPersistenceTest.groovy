@@ -62,7 +62,7 @@ class CustomAssetTypeDefinitionPersistenceTest extends Specification implements 
         )
 
         when: "the definition is persisted and read back"
-        customAssetTypeStorageService.merge(definition)
+        customAssetTypeStorageService.persist(definition)
         def stored = customAssetTypeStorageService.find("BoilerAsset")
 
         then: "the authored schema round-trips"

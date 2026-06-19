@@ -22,6 +22,9 @@ package org.openremote.manager.asset;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.CustomAssetTypeDefinition;
@@ -45,6 +48,13 @@ public class CustomAssetTypeStorageService implements ContainerService {
         assetModelService = container.hasService(AssetModelService.class)
             ? container.getService(AssetModelService.class)
             : null;
+        container.getService(ManagerWebService.class).addApiSingleton(
+            new CustomAssetTypeResourceImpl(
+                container.getService(TimerService.class),
+                container.getService(ManagerIdentityService.class),
+                this
+            )
+        );
     }
 
     @Override
@@ -74,7 +84,17 @@ public class CustomAssetTypeStorageService implements ContainerService {
         CustomAssetTypeDefinition mergedDefinition = persistenceService.doReturningTransaction(em -> {
             CustomAssetTypeDefinition existingDefinition = em.find(CustomAssetTypeDefinition.class, definition.getName());
             definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
-            return em.merge(definition);
+            if (existingDefinition == null) {
+                throw new IllegalArgumentException("Custom asset type does not exist: " + definition.getName());
+            }
+            existingDefinition
+                .setDisplayName(definition.getDisplayName())
+                .setIcon(definition.getIcon())
+                .setColour(definition.getColour())
+                .setDescription(definition.getDescription())
+                .setEnabled(definition.isEnabled())
+                .setAttributes(definition.getAttributes());
+            return existingDefinition;
         });
         refreshAssetModel();
         return mergedDefinition;
@@ -92,6 +112,21 @@ public class CustomAssetTypeStorageService implements ContainerService {
                 )
                 .getResultList()
         );
+    }
+
+    public void validate(CustomAssetTypeDefinition definition) {
+        persistenceService.doTransaction(em -> {
+            if (definition == null) {
+                definitionValidator.validateForCreate(null);
+                return;
+            }
+            CustomAssetTypeDefinition existingDefinition = em.find(CustomAssetTypeDefinition.class, definition.getName());
+            if (existingDefinition == null) {
+                definitionValidator.validateForCreate(definition);
+            } else {
+                definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
+            }
+        });
     }
 
     public void delete(String name) {
