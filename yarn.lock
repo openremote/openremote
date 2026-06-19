@@ -2205,7 +2205,7 @@ __metadata:
   resolution: "@openremote/or-rive-renderer@workspace:ui/component/or-rive-renderer"
   dependencies:
     "@openremote/util": "workspace:*"
-    "@rive-app/webgl2": "npm:^2.35.4"
+    "@rive-app/webgl2": "npm:^2.38.0"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
   languageName: unknown
@@ -2628,10 +2628,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rive-app/webgl2@npm:^2.35.4":
-  version: 2.35.4
-  resolution: "@rive-app/webgl2@npm:2.35.4"
-  checksum: 10c0/df8996510459d3388d027589c8fe628673bc49d550dd850ee5fc2752586706d78ccc7709332e40962f8aa30cd3febb94e51ff564ae35b36816917156476f4f03
+"@rive-app/webgl2@npm:^2.38.0":
+  version: 2.38.0
+  resolution: "@rive-app/webgl2@npm:2.38.0"
+  checksum: 10c0/be98672537fdcce67cbc7c1d9783c193ba86305e8b04b108a827642de71ddfcff42c2bb0749a93c15e55196cf19c302f2a3e08e58643c65d652dcac301000406
   languageName: node
   linkType: hard
 
