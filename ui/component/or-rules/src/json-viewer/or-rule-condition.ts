@@ -5,19 +5,18 @@ import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "./or-rule-trigger-query";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrRuleAssetQuery} from "./or-rule-asset-query";
+import {createMenuBarItem, MenuBarItem, SubMenuItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
 
-export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
+export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
 
     let addAssetTypes = true;
     let addAgentTypes = true;
@@ -29,59 +28,58 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
         addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIME) >= 0;
     }
 
-    const menu: (ListItem | null)[] = [];
+    const getMenuItem = (assetTypeInfo: AssetTypeInfo): SubMenuItem => {
+        const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
+        const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
+        return {
+            checked: selectedType && assetTypeInfo.assetDescriptor!.name === selectedType,
+            component: createMenuBarItem(html`
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <or-icon style=${color ? `--or-icon-fill: #${color}` : undefined}
+                             icon=${icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
+                    ></or-icon>
+                    <span>${Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!)}</span>
+                </div>
+            `),
+            value: assetTypeInfo.assetDescriptor!.name,
+        } as SubMenuItem;
+    }
+
+    const menu: SubMenuItem[] = [];
 
     if (assetInfos) {
 
         if (addAssetTypes) {
-            const items = assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
+            const items = assetInfos
+                .filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent")
+                .sort(Util.sortByString(assetTypeInfo => Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!)))
+                .map(getMenuItem);
 
-                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
-                const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
-                const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
-
-                return {
-                    text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
-                    value: assetTypeInfo.assetDescriptor!.name,
-                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
-                    styleMap: styleMap
-                } as ListItem;
-            });
-
-            menu.push(...items.sort(Util.sortByString((listItem) => listItem.text!)));
+            menu.push(...items);
         }
 
         if (addAssetTypes && addAgentTypes) {
-            menu.push(null);
+            menu.push({ component: "hr" });
         }
 
         if (addAgentTypes) {
-            const items = assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType === "agent").map((assetTypeInfo) => {
-
-                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
-                const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
-                const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
-
-                return {
-                    text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
-                    value: assetTypeInfo.assetDescriptor!.name,
-                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
-                    styleMap: styleMap
-                } as ListItem;
-            });
-
-            menu.push(...items.sort(Util.sortByString((listItem) => listItem.text!)));
+            const items = assetInfos
+                .filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType === "agent")
+                .sort(Util.sortByString(assetTypeInfo => Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!)))
+                .map(getMenuItem);
+            menu.push(...items);
         }
     }
 
     if (addTimer) {
-        menu.push(null);
+        menu.push({ component: "hr" });
         menu.push({
-            text: i18next.t("time"),
-            icon: "timer",
+            component: createMenuBarItem(html`
+                <or-icon style="--or-icon-fill: #${TIMER_COLOR}" icon="timer"></or-icon>
+                <or-translate value="time"></or-translate>
+            `),
             value: ConditionType.TIME,
-            styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}
-        } as ListItem);
+        } as SubMenuItem);
     }
 
     return menu;
@@ -183,22 +181,24 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             }
             if(this.readonly) {
                 typeTemplate = html`
-                <div id="type" style="--or-icon-fill: #${buttonColor}">
-                    <or-vaadin-button disabled theme="icon tertiary">
-                        <or-icon icon=${buttonIcon ?? ""}></or-icon>
-                    </or-vaadin-button>
-                </div>
+                    <div id="type" style="--or-icon-fill: #${buttonColor}">
+                        <or-vaadin-button disabled theme="icon tertiary">
+                            <or-icon icon=${buttonIcon ?? ""}></or-icon>
+                        </or-vaadin-button>
+                    </div>
                 `;
             } else {
+                const menuItems: MenuBarItem[] = [{
+                    component: createMenuBarItem(html`<or-icon icon=${buttonIcon ?? ""}></or-icon>`),
+                    children: getWhenTypesMenu(this.config, this.assetInfos, type)
+                }]
                 typeTemplate = html`
-                <div id="type" style="--or-icon-fill: #${buttonColor}">
-                    ${getContentWithMenuTemplate(
-                        html`<or-vaadin-button theme="icon tertiary"><or-icon icon=${buttonIcon ?? ""}></or-icon></or-vaadin-button>`,
-                        getWhenTypesMenu(this.config, this.assetInfos),
-                        type,
-                        (value) => this.type = value as ConditionType)}
-                </div>
-            `;
+                    <div id="type" style="--or-icon-fill: #${buttonColor}">
+                        <or-vaadin-menu-bar theme="icon" .items=${menuItems} 
+                                            @item-selected=${(ev: CustomEvent) => this.type = ev.detail.value.value}>
+                        </or-vaadin-menu-bar>
+                    </div>
+                `;
             }
 
         }
@@ -236,7 +236,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
     protected set type(value: string | ConditionType | undefined) {
         updateRuleConditionType(this.ruleCondition, value, this.config);
-        if (this._assetQuery) {
+        if (this._assetQuery?.refresh) {
             this._assetQuery.refresh();
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
