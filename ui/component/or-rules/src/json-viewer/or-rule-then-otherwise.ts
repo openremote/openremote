@@ -33,7 +33,7 @@ const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 const ALARM_COLOR = "FC2D2D";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): SubMenuItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
