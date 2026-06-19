@@ -38,8 +38,6 @@
     "@vaadin/date-picker": "~25.1.4",
     "@vaadin/date-time-picker": "~25.1.4",
     "@vaadin/dialog": "~25.1.4",
-    "@vaadin/icon": "~25.1.4",
-    "@vaadin/icons": "~25.1.4",
     "@vaadin/item": "~25.1.4",
     "@vaadin/list-box": "~25.1.4",
     "@vaadin/menu-bar": "~25.1.4",
