@@ -253,7 +253,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         @Override
         public Asset<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             JavaType jType = getValueType(ctxt);
-            if (jType != null) {
+            if (jType != null && ctxt.getAttribute(ASSET_TYPE_INFO_ATTRIBUTE) == null) {
                 // Make the asset type info available to the attribute deserialiser
                 ctxt.setAttribute(ASSET_TYPE_INFO_ATTRIBUTE, ValueUtil.getAssetInfo(jType.getRawClass().getSimpleName()).orElse(null));
             }

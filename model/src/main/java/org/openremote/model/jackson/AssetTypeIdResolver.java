@@ -60,6 +60,10 @@ public class AssetTypeIdResolver extends TypeIdResolverBase {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public JavaType typeFromId(DatabindContext context, String id) throws IOException {
+        context.setAttribute(
+            Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE,
+            ValueUtil.getAssetInfo(id).orElse(null)
+        );
         Class<?> assetClass = ValueUtil.getAssetDescriptor(id).map(AssetDescriptor::getType).orElse((Class) ThingAsset.class);
         return context.constructType(assetClass);
     }
