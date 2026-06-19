@@ -219,6 +219,18 @@ export class OrMapPresetFilterControl extends OrMapBaseControl {
         if (this._component) this._component.assets = assets;
     }
 
+    /** Returns the initial filter synchronously by reading localStorage — call before flushing the asset buffer. */
+    getInitialFilter(): AssetQuery | null {
+        const key = `or-map-filter:${manager.displayRealm}:${manager.username}`;
+        const stored = localStorage.getItem(key);
+        const storedIndex = stored !== null ? parseInt(stored) : -1;
+        const isValid = storedIndex >= 0 && storedIndex <= this._filters.length;
+        if (isValid && storedIndex > 0) return this._filters[storedIndex - 1].query;
+        const defaultIndex = this._filters.findIndex(f => f.default);
+        if (defaultIndex >= 0) return this._filters[defaultIndex].query;
+        return null;
+    }
+
     get element(): OrMapPresetFilter | undefined {
         return this._component;
     }

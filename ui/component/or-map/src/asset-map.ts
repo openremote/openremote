@@ -112,14 +112,14 @@ export class AssetMap extends BaseMap {
         this._allAssets[asset.id] = asset;
         this._syncAssetMeta();
         if (this._presetFilterControl) this._presetFilterControl.assets = Object.values(this._allAssets);
-        if (this._isAssetVisible(asset)) this._sourceAddAsset(asset);
+        this._sourceAddAsset(asset);
     }
 
     public addAssets(assets: AssetWithLocation[]) {
         for (const asset of assets) if (asset.id) this._allAssets[asset.id] = asset;
         this._syncAssetMeta();
         if (this._presetFilterControl) this._presetFilterControl.assets = Object.values(this._allAssets);
-        this._sourceAddAssets(assets.filter(a => this._isAssetVisible(a)));
+        this._sourceAddAssets(assets);
     }
 
     public updateAttribute(event: AttributeEvent) {
@@ -207,7 +207,7 @@ export class AssetMap extends BaseMap {
     private _sourceAddAsset(asset: AssetWithLocation) {
         if (!this._source) return;
         const features = this._map!.querySourceFeatures("assets");
-        if (!this._hasRequired(asset) || !this._isMissing(asset, features)) return;
+        if (!this._hasRequired(asset) || !this._isAssetVisible(asset) || !this._isMissing(asset, features)) return;
         if (!(asset.type in this._assetTypeColors)) {
             this._assetTypeColors[asset.type] = getMarkerIconAndColorFromAssetType(asset.type)?.color as string;
             this._source.workerOptions.clusterProperties = this._getClusterProperties();
@@ -219,7 +219,7 @@ export class AssetMap extends BaseMap {
     private _sourceAddAssets(assets: AssetWithLocation[]) {
         if (!this._source) return;
         const features = this._map!.querySourceFeatures("assets");
-        let missing = assets.filter(this._hasRequired);
+        let missing = assets.filter(this._hasRequired).filter(a => this._isAssetVisible(a));
         if (features?.length) missing = missing.filter(a => this._isMissing(a, features));
         if (!missing.length) return;
         for (const asset of missing) {
@@ -259,9 +259,37 @@ export class AssetMap extends BaseMap {
 
     private _applyVisibilityFilters() {
         if (!this._source) return;
-        this._assets = {};
-        this._source.updateData({ removeAll: true });
-        this._sourceAddAssets(Object.values(this._allAssets).filter(a => this._isAssetVisible(a)));
+
+        const toRemove: string[] = [];
+        const toAdd: IdentifiableAsset[] = [];
+
+        for (const id in this._assets) {
+            if (this._assets[id] && !this._isAssetVisible(this._assets[id]!)) {
+                this._assets[id] = null;
+                toRemove.push(id);
+            }
+        }
+
+        for (const id in this._allAssets) {
+            const asset = this._allAssets[id];
+            if (!asset || !this._hasRequired(asset) || this._assets[id]) continue;
+            if (this._isAssetVisible(asset)) {
+                const a = asset as IdentifiableAsset;
+                if (!(a.type in this._assetTypeColors)) {
+                    this._assetTypeColors[a.type] = getMarkerIconAndColorFromAssetType(a.type)?.color as string;
+                }
+                this._assets[a.id] = a;
+                toAdd.push(a);
+            }
+        }
+
+        if (!toRemove.length && !toAdd.length) return;
+
+        this._source.workerOptions.clusterProperties = this._getClusterProperties();
+        this._source.updateData({
+            ...(toRemove.length && { remove: toRemove }),
+            ...(toAdd.length && { add: toAdd.map(AssetMap._assetToFeature) }),
+        });
     }
 
     public override unload() {
@@ -320,9 +348,13 @@ export class AssetMap extends BaseMap {
         this._mapContainer.addEventListener(OrMapPresetFilterEvent.NAME, this._onPresetFilter);
         this._mapContainer.addEventListener(OrMapLegendEvent.NAME, this._onLegendChange);
 
+        // Restore the active filter synchronously so the buffer flush below applies it immediately,
+        // preventing _applyVisibilityFilters from needing to removeAll + re-add after load.
+        if (this._presetFilterControl) this._activeFilter = this._presetFilterControl.getInitialFilter();
+
         // Flush assets that were added before the source was ready
         const buffered = Object.values(this._allAssets);
-        if (buffered.length) this._sourceAddAssets(buffered.filter(a => this._isAssetVisible(a)));
+        if (buffered.length) this._sourceAddAssets(buffered);
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
