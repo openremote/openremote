@@ -19,26 +19,23 @@ import {
     ValueConstraintAllowedValues
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
+import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-button";
+import "@openremote/or-vaadin-components/or-vaadin-input";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";
 import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
 import {
-    getValueHolderInputTemplateProvider,
-    InputType,
-    OrInputChangedEvent,
-    OrInputChangedEventDetail,
-    SUPPORTED_WELLKNOWN_VALUE_TYPES,
-    SupportedWellknownValueTypes,
-    ValueInputProvider,
-    ValueInputProviderGenerator,
-    ValueInputProviderOptions,
-    ValueInputTemplateFunction
-} from "@openremote/or-mwc-components/or-mwc-input";
+    getValueHolderInputTemplateProvider, type ValueInputProvider,
+    ValueInputProviderGenerator, type ValueInputProviderOptions, type ValueInputTemplateFunction
+} from "@openremote/or-vaadin-components/value-input-provider";
+import {InputType, SUPPORTED_WELLKNOWN_VALUE_TYPES, SupportedWellknownValueTypes} from "@openremote/or-vaadin-components/util";
 import "@openremote/or-map";
 import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
+import {type OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import {agentIdRendererRegistryEntry} from "./renderers/agent-link";
 import {schedulerRendererRegistryEntry} from "./renderers/scheduler";
 
@@ -83,14 +80,11 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
 
     if (buttonIcon) {
         content = html`
-                ${content}
-                <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-            e.stopPropagation();
-            if (sendValue) {
-                sendValue();
-            }
-        }}"></or-mwc-input>
-            `;
+            ${content}
+            <or-vaadin-button id="send-btn" theme="icon" ?disabled=${disabled || loading} @click=${(ev: Event) => { ev.stopPropagation(); sendValue?.(); }}>
+                <or-icon icon=${buttonIcon}></or-icon>
+            </or-vaadin-button>
+        `;
     }
 
     return html`
@@ -192,7 +186,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clea
             }
         };
 
-        const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+        const templateFunction: ValueInputTemplateFunction = (value, _focused, _loading, _sending, _error, _helperText) => {
             // Schedule loading
             window.setTimeout(() => doLoad(value), 0);
 
@@ -220,9 +214,9 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider, clea
                                    .schema="${schema}" .uischema="${uiSchema}" .onChange="${onChanged}">
                     </or-json-forms>
                     ${when(clear, () => html`
-                        <or-mwc-input id="clear" outlined .type="${InputType.BUTTON}" icon="backspace" @or-mwc-input-changed="${
-                            () => valueChangeNotifier({ value: null })
-                        }"></or-mwc-input>
+                        <or-vaadin-button id="clear" theme="icon" @click="${() => valueChangeNotifier({ value: null })}">
+                            <or-icon icon="backspace"></or-icon>
+                        </or-vaadin-button>
                     `)}
                     </div>
                 </or-loading-wrapper>
@@ -265,7 +259,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 /*padding-right: 52px;*/
             }   
             
-            #wrapper or-mwc-input, #wrapper or-map {
+            #wrapper or-mwc-input, #wrapper or-vaadin-input, #wrapper or-map {
                 width: 100%;
             }
             
@@ -280,6 +274,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #wrapper {
                 display: flex;
                 position: relative;
+                align-items: center;
             }
             
             #wrapper.right-padding {
@@ -333,7 +328,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #send-btn { 
                 flex: 0;
                 margin-left: 4px;
-                margin-top: 4px;
+                --or-icon-width: 20px;
             }
         `];
     }
@@ -591,7 +586,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (value, updateImmediately) => valueChangeHandler({value, enterPressed: !!updateImmediately}), options);
         this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider, true)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
 
         if (!this._templateProvider) {

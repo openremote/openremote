@@ -1,0 +1,67 @@
+# Currently only used to test if it builds before merging to master
+name: Build deployment image
+
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
+      tag:
+        type: string
+        required: true
+
+jobs:
+  build-deployment-image:
+    name: Deployment image
+    if: ${{ !inputs.skip }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        with:
+          distribution: "temurin"
+          java-version: 21
+          cache: "gradle"
+
+      - name: Check deployment build.gradle
+        id: check_deployment_gradle
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          fail: true # Deployment must have a build.gradle file to prepare the deployment files in the deployment/build dir
+          files: "deployment/build.gradle"
+
+      - name: Check deployment dockerfile
+        id: check_deployment_dockerfile
+        uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029 # v3.1.0
+        with:
+          fail: true
+          files: "deployment/Dockerfile"
+
+      - name: Build deployment
+        shell: bash
+        run: ./gradlew -p deployment installDist # TODO: optimize the task graph
+
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+        with:
+          platforms: linux/amd64,linux/aarch64
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      - name: Build deployment image
+        timeout-minutes: 20
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: deployment/build
+          platforms: linux/amd64,linux/aarch64
+          load: false
+          push: false
+          tags: openremote/deployment:${{ inputs.tag }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false

@@ -1,0 +1,181 @@
+[versions]
+angusMail = "2.0.5"
+artemis = "2.53.0"
+apacheSshd = "2.16.0"
+bouncyCastle = "1.84"
+byteBuddy = "1.18.10"
+bluetooth = "0.64"
+californium = "3.14.0"
+calimero = "2.6"
+camel = "4.20.0"
+checkerframework = "3.55.1"
+classgraph = "4.8.184"
+corsFilter = "3.1"
+easyRules = "4.1.0"
+exp4j = "0.4.13"
+failsafe = "3.3.2"
+firebaseAdmin = "9.8.0"
+flywaydb = "12.8.1"
+friendlyId = "1.0.4"
+geotools = "34.3"
+glassfishSoteria = "3.0.4"
+greenmail = "2.1.2"
+grpc = "1.82.0"
+grpcAnnotations = "1.3.2"
+groovy = "5.0.6"
+groovySandbox = "4.3.2"
+guava = "33.6.0-jre"
+hibernate = "7.3.3.Final"
+hibernateValidator = "9.1.0.Final"
+hikaricp = "6.2.1"
+hiveMqttClient = "1.3.15"
+ical4j = "4.2.5"
+jackson = "2.21.3"
+jakartaEl = "4.0.2"
+jakartaElApi = "6.0.1"
+jakartaSecurityEnterpriseApi = "4.0.0"
+jakartaWsRs = "3.1.0"
+javaxAnnotationApi = "3.0.0"
+jaywayJsonPath = "2.10.0"
+jdom = "2.0.6.1"
+jserialcomm = "2.11.4"
+jsonassert = "1.5.3"
+junit = "6.0.3"
+keycloak = "25.0.3"
+micrometer = "1.16.5"
+mockito = "5.23.0"
+netty = "4.2.15.Final"
+niftyModbus = "0.17.0"
+nimbusJoseJwt = "10.4.2"
+objenesis = "3.4"
+moquette = "0.18.0"
+postgresJdbc = "42.7.11"
+prometheus = "1.6.1"
+quartz = "2.5.2"
+reflections = "0.10.2"
+resteasy = "6.2.16.Final"
+resteasyCache = "4.7.10.Final"
+saxonHe = "12.9"
+slf4j = "2.0.17"
+spock = "2.4-groovy-5.0"
+sqlite = "3.53.2.0"
+suncalc = "3.11"
+swagger = "2.2.49"
+typescriptGenerator = "3.2.1263"
+undertow = "2.3.24.Final"
+uuidGenerator = "5.2.0"
+victoolsJsonSchemaGenerator = "4.38.0"
+zwave = "3.4.0"
+
+[libraries]
+angusMail = { module = "org.eclipse.angus:angus-mail", version.ref = "angusMail" }
+artemisMqttProtocol = { module = "org.apache.artemis:artemis-mqtt-protocol", version.ref = "artemis" }
+artemisServer = { module = "org.apache.artemis:artemis-server", version.ref = "artemis" }
+byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byteBuddy" }
+byteBuddyAgent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "byteBuddy" }
+blessedBluez = { module = "com.github.weliem:blessed-bluez", version.ref = "bluetooth" }
+bouncycastleBcprovJdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncyCastle" }
+bouncycastleBcpkixJdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncyCastle" }
+californiumCore = { module = "org.eclipse.californium:californium-core", version.ref = "californium" }
+californiumScandium = { module = "org.eclipse.californium:scandium", version.ref = "californium" }
+calimeroCore = { module = "com.github.calimero:calimero-core", version.ref = "calimero" }
+calimeroServer = { module = "com.github.calimero:calimero-server", version.ref = "calimero" }
+calimeroTools = { module = "com.github.calimero:calimero-tools", version.ref = "calimero" }
+camelCore = { module = "org.apache.camel:camel-core", version.ref = "camel" }
+camelCoreModel = { module = "org.apache.camel:camel-core-model", version.ref = "camel" }
+camelHealth = { module = "org.apache.camel:camel-health", version.ref = "camel" }
+camelJackson = { module = "org.apache.camel:camel-jackson", version.ref = "camel" }
+camelManagement = { module = "org.apache.camel:camel-management", version.ref = "camel" }
+camelSnmp = { module = "org.apache.camel:camel-snmp", version.ref = "camel" }
+camelUndertow = { module = "org.apache.camel:camel-undertow", version.ref = "camel" }
+checkerQual = { module = "org.checkerframework:checker-qual", version.ref = "checkerframework" }
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+corsFilter = { module = "com.thetransactioncompany:cors-filter", version.ref = "corsFilter" }
+easyRulesCore = { module = "org.jeasy:easy-rules-core", version.ref = "easyRules" }
+exp4j = { module = "fr.neolegal:exp4j", version.ref = "exp4j" }
+failsafe = { module = "dev.failsafe:failsafe", version.ref = "failsafe" }
+firebaseAdmin = { module = "com.google.firebase:firebase-admin", version.ref = "firebaseAdmin" }
+flywayCore = { module = "org.flywaydb:flyway-core", version.ref = "flywaydb" }
+flywayDatabasePostgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flywaydb" }
+friendlyId = { module = "com.devskiller.friendly-id:friendly-id", version.ref = "friendlyId" }
+geotoolsMain = { module = "org.geotools:gt-main", version.ref = "geotools" }
+glassfishSoteria = { module = "org.glassfish.soteria:jakarta.security.enterprise", version.ref = "glassfishSoteria" }
+grpcNettyShaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+grpcProtobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpcStub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
+groovyAll = { module = "org.apache.groovy:groovy-all", version.ref = "groovy" }
+groovyJson = { module = "org.apache.groovy:groovy-json", version.ref = "groovy" }
+groovySandbox = { module = "org.craftercms:groovy-sandbox", version.ref = "groovySandbox" }
+groovyTest = { module = "org.apache.groovy:groovy-test", version.ref = "groovy" }
+groovyXml = { module = "org.apache.groovy:groovy-xml", version.ref = "groovy" }
+groovyYaml = { module = "org.apache.groovy:groovy-yaml", version.ref = "groovy" }
+greenmail = { module = "com.icegreen:greenmail", version.ref = "greenmail" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+hibernateCore = { module = "org.hibernate.orm:hibernate-core", version.ref = "hibernate" }
+hibernateHikaricp = { module = "org.hibernate.orm:hibernate-hikaricp", version.ref = "hibernate" }
+hibernateValidator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernateValidator" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+hiveMqttClient = { module = "com.hivemq:hivemq-mqtt-client", version.ref = "hiveMqttClient" }
+ical4j = { module = "org.mnode.ical4j:ical4j", version.ref = "ical4j" }
+jacksonDataformatCsv = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-csv", version.ref = "jackson" }
+jacksonDatabind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jacksonDatatypeJdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
+jacksonDatatypeJsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+jacksonModuleParameterNames = { module = "com.fasterxml.jackson.module:jackson-module-parameter-names", version.ref = "jackson" }
+jakartaAnnotationApi = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "javaxAnnotationApi" }
+jakartaEl = { module = "org.glassfish:jakarta.el", version.ref = "jakartaEl" }
+jakartaElApi = { module = "jakarta.el:jakarta.el-api", version.ref = "jakartaElApi" }
+jakartaSecurityEnterpriseApi = { module = "jakarta.security.enterprise:jakarta.security.enterprise-api", version.ref = "jakartaSecurityEnterpriseApi" }
+jakartaWsRsApi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakartaWsRs" }
+javaUuidGenerator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "uuidGenerator" }
+javaxAnnotationApi = { module = "javax.annotation:javax.annotation-api", version.ref = "grpcAnnotations" }
+jaywayJsonPath = { module = "com.jayway.jsonpath:json-path", version.ref = "jaywayJsonPath" }
+jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom" }
+jserialcomm = { module = "com.fazecast:jSerialComm", version.ref = "jserialcomm" }
+jsonassert = { module = "org.skyscreamer:jsonassert", version.ref = "jsonassert" }
+junitJupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junitJupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+junitJupiterParams = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
+keycloakAdminClient = { module = "org.keycloak:keycloak-admin-client", version.ref = "keycloak" }
+keycloakCore = { module = "org.keycloak:keycloak-core", version.ref = "keycloak" }
+micrometerCore = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+micrometerRegistryPrometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
+mockitoCore = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+nettyCodec = { module = "io.netty:netty-codec", version.ref = "netty" }
+nettyCodecHttp = { module = "io.netty:netty-codec-http", version.ref = "netty" }
+nettyCodecMqtt = { module = "io.netty:netty-codec-mqtt" }
+niftyModbusApi = { module = "net.solarnetwork.common:nifty-modbus-api", version.ref = "niftyModbus" }
+niftyModbusCore = { module = "net.solarnetwork.common:nifty-modbus-core", version.ref = "niftyModbus" }
+niftyModbusRtuJsc = { module = "net.solarnetwork.common:nifty-modbus-rtu-jsc", version.ref = "niftyModbus" }
+niftyModbusTcp = { module = "net.solarnetwork.common:nifty-modbus-tcp", version.ref = "niftyModbus" }
+nimbusJoseJwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusJoseJwt" }
+objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
+moquette = { module = "com.github.moquette-io:moquette", version.ref = "moquette" }
+orZwave = { module = "org.openremote:or-zwave", version.ref = "zwave" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresJdbc" }
+prometheusMetricsExporterHttpserver = { module = "io.prometheus:prometheus-metrics-exporter-httpserver", version.ref = "prometheus" }
+quartz = { module = "org.quartz-scheduler:quartz", version.ref = "quartz" }
+reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
+resteasyCacheCore = { module = "org.jboss.resteasy:resteasy-cache-core", version.ref = "resteasyCache" }
+resteasyClient = { module = "org.jboss.resteasy:resteasy-client", version.ref = "resteasy" }
+resteasyClientApi = { module = "org.jboss.resteasy:resteasy-client-api", version.ref = "resteasy" }
+resteasyJackson2Provider = { module = "org.jboss.resteasy:resteasy-jackson2-provider", version.ref = "resteasy" }
+resteasyMultipartProvider = { module = "org.jboss.resteasy:resteasy-multipart-provider", version.ref = "resteasy" }
+resteasyUndertow = { module = "org.jboss.resteasy:resteasy-undertow", version.ref = "resteasy" }
+resteasyValidatorProvider = { module = "org.jboss.resteasy:resteasy-validator-provider", version.ref = "resteasy" }
+saxonHe = { module = "net.sf.saxon:Saxon-HE", version.ref = "saxonHe" }
+slf4jJdk14 = { module = "org.slf4j:slf4j-jdk14", version.ref = "slf4j" }
+spockBom = { module = "org.spockframework:spock-bom", version.ref = "spock" }
+spockCore = { module = "org.spockframework:spock-core" }
+sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+suncalc = { module = "org.shredzone.commons:commons-suncalc", version.ref = "suncalc" }
+swaggerAnnotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
+swaggerJaxrs2Jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
+sshdNetty = { module = "org.apache.sshd:sshd-netty", version.ref = "apacheSshd" }
+typescriptGeneratorCore = { module = "cz.habarta.typescript-generator:typescript-generator-core", version.ref = "typescriptGenerator" }
+undertowCore = { module = "io.undertow:undertow-core", version.ref = "undertow" }
+undertowWebsocketsJsr = { module = "io.undertow:undertow-websockets-jsr", version.ref = "undertow" }
+victoolsJsonschemaGenerator = { module = "com.github.victools:jsonschema-generator", version.ref = "victoolsJsonSchemaGenerator" }
+victoolsJsonschemaModuleJackson = { module = "com.github.victools:jsonschema-module-jackson", version.ref = "victoolsJsonSchemaGenerator" }
+victoolsJsonschemaModuleJakartaValidation = { module = "com.github.victools:jsonschema-module-jakarta-validation", version.ref = "victoolsJsonSchemaGenerator" }

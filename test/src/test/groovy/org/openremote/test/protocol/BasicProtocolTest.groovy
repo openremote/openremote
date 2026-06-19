@@ -20,16 +20,24 @@
 package org.openremote.test.protocol
 
 
+import jakarta.ws.rs.ForbiddenException
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
+import org.openremote.model.file.FileInfo
+import org.openremote.model.query.AssetQuery
+import org.openremote.model.security.ClientRole
 import org.openremote.model.value.MathExpressionValueFilter
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueFilter
+import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -37,8 +45,10 @@ import org.openremote.setup.integration.protocol.MockAgent
 import org.openremote.setup.integration.protocol.MockAgentLink
 import org.openremote.setup.integration.protocol.MockProtocol
 
+import java.util.UUID
 import java.util.regex.Pattern
 
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.value.ValueType.*
 import static org.openremote.model.value.MetaItemType.*
@@ -493,5 +503,194 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         new PollingConditions(timeout: 3, initialDelay: 1).eventually {
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.size() == 0
         }
+    }
+
+    def "Protocol asset discovery requires asset write permission"() {
+
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        MockAgent agent = null
+
+        and: "a master realm user with read-only asset permission"
+        def username = "agentdiscoveryreadonly-${UUID.randomUUID()}"
+        keycloakTestSetup.createUser(
+            MASTER_REALM,
+            username,
+            username,
+            "Agent Discovery",
+            "Read Only",
+            "${username}@openremote.local",
+            true,
+            [ClientRole.READ_ASSETS] as ClientRole[]
+        )
+        def accessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
+
+        and: "a running mock protocol agent"
+        agent = new MockAgent("Mock discovery agent")
+            .setRealm(MASTER_REALM)
+            .setRequired(true)
+        agent = assetStorageService.merge(agent)
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) instanceof MockProtocol
+        }
+
+        and: "the agent resource"
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+
+        when: "the read-only user discovers assets through the agent endpoint"
+        agentResource.doProtocolAssetDiscovery(null, agent.id, MASTER_REALM)
+
+        then: "asset discovery should require write permission"
+        ForbiddenException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        and: "no discovered assets should be persisted"
+        conditions.eventually {
+            assert assetStorageService.findAll(new AssetQuery().parents(agent.id).recursive(true)).isEmpty()
+        }
+
+        cleanup: "remove agent and any discovered assets"
+        deleteAgentTree(assetStorageService, agent)
+    }
+
+    def "Protocol asset discovery allows asset write permission"() {
+
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        MockAgent agent = null
+
+        and: "a master realm user with asset write permission"
+        def username = "agentdiscoverywriter-${UUID.randomUUID()}"
+        keycloakTestSetup.createUser(
+            MASTER_REALM,
+            username,
+            username,
+            "Agent Discovery",
+            "Writer",
+            "${username}@openremote.local",
+            true,
+            [ClientRole.WRITE_ASSETS] as ClientRole[]
+        )
+        def accessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, username, username)
+
+        and: "a running mock protocol agent"
+        agent = new MockAgent("Mock discovery writer agent")
+            .setRealm(MASTER_REALM)
+            .setRequired(true)
+        agent = assetStorageService.merge(agent)
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) instanceof MockProtocol
+        }
+
+        and: "the agent resource"
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+
+        when: "the writer user discovers assets through the agent endpoint"
+        def assets = agentResource.doProtocolAssetDiscovery(null, agent.id, MASTER_REALM)
+
+        then: "discovered assets should be returned and persisted"
+        assert assets.length == 4
+        conditions.eventually {
+            assert assetStorageService.findAll(new AssetQuery().parents(agent.id).recursive(true)).size() == 4
+        }
+
+        cleanup: "remove agent and discovered assets"
+        deleteAgentTree(assetStorageService, agent)
+    }
+
+    def "Anonymous users cannot run protocol asset import"() {
+
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        MockAgent agent = null
+
+        and: "a running mock protocol agent"
+        agent = new MockAgent("Mock import auth agent")
+            .setRealm(MASTER_REALM)
+            .setRequired(true)
+        agent = assetStorageService.merge(agent)
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) instanceof MockProtocol
+        }
+
+        and: "an anonymous agent resource"
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AgentResource.class)
+
+        when: "an anonymous user imports assets through the agent endpoint"
+        agentResource.doProtocolAssetImport(null, agent.id, MASTER_REALM, new FileInfo("mock.txt", "ignored", false))
+
+        then: "anonymous asset import should be rejected"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        cleanup: "remove agent and any imported assets"
+        deleteAgentTree(assetStorageService, agent)
+    }
+
+    def "Anonymous users cannot run protocol asset discovery"() {
+
+        given: "the server container is started"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        MockAgent agent = null
+
+        and: "a running mock protocol agent"
+        agent = new MockAgent("Mock discovery auth agent")
+            .setRealm(MASTER_REALM)
+            .setRequired(true)
+        agent = assetStorageService.merge(agent)
+
+        conditions.eventually {
+            assert agentService.getProtocolInstance(agent.id) instanceof MockProtocol
+        }
+
+        and: "an anonymous agent resource"
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AgentResource.class)
+
+        when: "an anonymous user discovers assets through the agent endpoint"
+        agentResource.doProtocolAssetDiscovery(null, agent.id, MASTER_REALM)
+
+        then: "anonymous asset discovery should be rejected"
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable { r ->
+            assert r.status == 403
+            return true
+        }
+
+        cleanup: "remove agent and any discovered assets"
+        deleteAgentTree(assetStorageService, agent)
+    }
+
+    private void deleteAgentTree(AssetStorageService assetStorageService, MockAgent agent) {
+        if (assetStorageService == null || agent == null) {
+            return
+        }
+
+        def assetIds = assetStorageService.findAll(new AssetQuery().parents(agent.id).recursive(true))
+            .collect { it.id }
+        assetIds.add(agent.id)
+        assetStorageService.delete(assetIds, true)
     }
 }

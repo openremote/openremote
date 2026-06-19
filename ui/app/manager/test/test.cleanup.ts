@@ -36,5 +36,5 @@ cleanup(`Delete the "smartcity" realm`, async ({ page, manager, realmsPage }) =>
   await expect(page.getByRole("cell", { name: "smartcity", exact: true })).toHaveCount(0);
   await manager.goToRealmStartPage("master");
   await page.locator("#desktop-right").waitFor();
-  await expect(page.locator("#desktop-right #realm-picker")).not.toBeVisible();
+  await expect(page.locator("#desktop-right #realm-picker").getByRole("button")).toBeDisabled();
 });

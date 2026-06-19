@@ -18,9 +18,11 @@ import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlReader;
 
+import javax.xml.XMLConstants;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
@@ -48,6 +50,8 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "KNX";
+    protected static final String SUPPORT_DTD = XMLInputFactory.SUPPORT_DTD;
+    protected static final String SUPPORTING_EXTERNAL_ENTITIES = "javax.xml.stream.isSupportingExternalEntities";
 
     protected KNXConnection connection;
     final protected Map<AttributeRef, Datapoint> attributeActionMap = new HashMap<>();
@@ -222,15 +226,11 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
                     throw new IllegalStateException(msg);
                 }
 
-                // Create a transform factory instance.
-                TransformerFactory tfactory = new net.sf.saxon.TransformerFactoryImpl();
-
                 // Create a transformer for the stylesheet.
                 InputStream inputStream = KNXProtocol.class.getResourceAsStream("/org/openremote/agent/protocol/knx/ets_calimero_group_name.xsl");
                 String xsd = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
                 xsd = xsd.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
-                LOG.warning(xsd);
-                Transformer transformer = tfactory.newTransformer(new StreamSource(new StringReader(xsd)));
+                Transformer transformer = createSecureTransformerFactory().newTransformer(new StreamSource(new StringReader(xsd)));
 
                 // Set the URIResolver
                 transformer.setURIResolver(new ETSFileURIResolver(fileData));
@@ -238,7 +238,6 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
                 // Transform the source XML
                 String xml = IOUtils.toString(zin, StandardCharsets.UTF_8);
                 xml = xml.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
-                LOG.warning(xml);
                 StringWriter writer = new StringWriter();
                 StringReader reader = new StringReader(xml);
                 transformer.transform(new StreamSource(reader), new StreamResult(writer));
@@ -246,7 +245,8 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
 
                 // we use a map of state-based data points and read from the transformed xml
                 final DatapointMap<StateDP> datapoints = new DatapointMap<>();
-                try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new StringReader(xml))) {
+                validateSecureXml(xml);
+                try (final XmlReader r = tuwien.auto.calimero.xml.XmlInputFactory.newInstance().createXMLStreamReader(new StringReader(xml))) {
                     datapoints.load(r);
                 } catch (final KNXMLException e) {
                     String msg = "Error loading parsed ETS file: " + e.getMessage();
@@ -282,6 +282,45 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
                 }
             }
         }, null);
+    }
+
+    protected TransformerFactory createSecureTransformerFactory() throws Exception {
+        TransformerFactory factory = new net.sf.saxon.TransformerFactoryImpl();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+        return factory;
+    }
+
+    protected XMLInputFactory createSecureXmlInputFactory() {
+        XMLInputFactory factory = XMLInputFactory.newInstance();
+        factory.setProperty(SUPPORT_DTD, false);
+        factory.setProperty(SUPPORTING_EXTERNAL_ENTITIES, false);
+        setXmlInputFactoryPropertyIfSupported(factory, XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        setXmlInputFactoryPropertyIfSupported(factory, XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        return factory;
+    }
+
+    protected void setXmlInputFactoryPropertyIfSupported(XMLInputFactory factory, String property, Object value) {
+        try {
+            factory.setProperty(property, value);
+        } catch (IllegalArgumentException ignored) {
+            LOG.fine("XMLInputFactory does not support property: " + property);
+        }
+    }
+
+    protected void validateSecureXml(String xml) throws Exception {
+        XMLStreamReader reader = null;
+        try {
+            reader = createSecureXmlInputFactory().createXMLStreamReader(new StringReader(xml));
+            while (reader.hasNext()) {
+                reader.next();
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
     }
 
     protected void createAsset(StateDP datapoint, boolean isStatusGA, Map<String, Asset<?>> createdAssets) {
