@@ -71,6 +71,23 @@ class CustomAssetTypeAssetTest extends Specification implements ManagerContainer
         thrown(ConstraintViolationException)
     }
 
+    def "new custom assets initialise missing attributes from authored defaults"() {
+        given:
+        def typeName = "DefaultedBoilerAsset"
+        customAssetTypeStorageService.persist(validDefinition(typeName, 21.5d))
+        def asset = new ThingAsset("Defaulted boiler").setRealm(Constants.MASTER_REALM)
+        asset.type = typeName
+
+        when:
+        def saved = assetStorageService.merge(asset)
+        def found = assetStorageService.find(saved.id)
+
+        then:
+        found.type == typeName
+        found.getAttribute("temperature").map { it.type }.orElse(null).is(ValueType.NUMBER)
+        found.getAttribute("temperature").flatMap { it.getValue(Double) }.orElse(null) == 21.5d
+    }
+
     def "invalid custom attribute values fail asset validation"() {
         given:
         def asset = new ThingAsset("Invalid temperature").setRealm(Constants.MASTER_REALM)
@@ -123,6 +140,10 @@ class CustomAssetTypeAssetTest extends Specification implements ManagerContainer
     }
 
     private static CustomAssetTypeDefinition validDefinition(String name) {
+        validDefinition(name, null)
+    }
+
+    private static CustomAssetTypeDefinition validDefinition(String name, Object defaultValue) {
         new CustomAssetTypeDefinition(
                 name,
                 name,
@@ -135,7 +156,7 @@ class CustomAssetTypeAssetTest extends Specification implements ManagerContainer
                                 "temperature",
                                 "number",
                                 false,
-                                null,
+                                defaultValue,
                                 null,
                                 null,
                                 [new ValueConstraint.Min(0), new ValueConstraint.Max(120)] as ValueConstraint[],

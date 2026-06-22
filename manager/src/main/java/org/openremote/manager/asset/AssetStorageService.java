@@ -64,6 +64,7 @@ import org.openremote.model.util.LockByKey;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.AttributeDescriptor;
 import org.postgresql.util.PGobject;
 
 import java.sql.*;
@@ -231,6 +232,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
+    protected CustomAssetTypeStorageService customAssetTypeStorageService;
     protected ExecutorService executorService;
     protected final LockByKey assetLocks = new LockByKey();
 
@@ -318,6 +320,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+        customAssetTypeStorageService = container.hasService(CustomAssetTypeStorageService.class)
+            ? container.getService(CustomAssetTypeStorageService.class)
+            : null;
         executorService = container.getExecutor();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
@@ -632,6 +637,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 throw new IllegalStateException(msg);
             }
 
+            applyCustomAssetTypeDefaults(asset);
+
             // Do standard JSR-380 validation on the asset (includes custom validation using descriptors and constraints)
             // Only do validation on non gateway descendants as the asset types in the central instance may not
             // match the edge gateway
@@ -821,6 +828,38 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
 
         return assetId == null ? assetSupplier.get() : withAssetLock(assetId, assetSupplier);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected void applyCustomAssetTypeDefaults(Asset<?> asset) {
+        if (!TextUtil.isNullOrEmpty(asset.getId()) || customAssetTypeStorageService == null) {
+            return;
+        }
+
+        AssetTypeInfo assetTypeInfo = ValueUtil.getAssetInfo(asset.getType()).orElse(null);
+        if (assetTypeInfo == null || !assetTypeInfo.getAssetDescriptor().isDynamic()) {
+            return;
+        }
+
+        CustomAssetTypeDefinition definition = customAssetTypeStorageService.find(asset.getType());
+        if (definition == null || !definition.isEnabled()) {
+            return;
+        }
+
+        definition.getAttributes().stream()
+            .filter(attributeDefinition -> attributeDefinition.getDefaultValue() != null)
+            .filter(attributeDefinition -> asset.getAttribute(attributeDefinition.getName()).isEmpty())
+            .forEach(attributeDefinition -> {
+                AttributeDescriptor descriptor = assetTypeInfo.getAttributeDescriptors().get(attributeDefinition.getName());
+                if (descriptor == null) {
+                    return;
+                }
+
+                ValueUtil.getValueCoerced(attributeDefinition.getDefaultValue(), descriptor.getType().getType())
+                    .ifPresent(defaultValue ->
+                        asset.getAttributes().put(new Attribute(descriptor, defaultValue))
+                    );
+            });
     }
 
     protected static boolean isAssetMatchingGroupChildType(Asset<?> asset, String childAssetType) {
