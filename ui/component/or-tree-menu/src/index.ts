@@ -26,7 +26,7 @@ import {OrTreeNode} from "./or-tree-node";
 import {OrTreeGroup} from "./or-tree-group";
 import {moveNodesToGroupNode} from "./util";
 import {OrTreeDragEvent, OrTreeSelectEvent, TreeMenuSelection, TreeMenuSorting, TreeNode} from "./model";
-import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import {createMenuBarItem, MenuBarItem, SubMenuItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import "@openremote/or-translate";
 
 import "./or-tree-group";
@@ -327,13 +327,13 @@ export class OrTreeMenu extends LitElement {
      * @param options - The available sorting options
      */
     protected _getSortActionTemplate(value?: string, options?: TreeMenuSorting[]): TemplateResult {
-        const menuItems: MenuBarItem = [{
+        const menuItems: MenuBarItem[] = [{
             component: createMenuBarItem(html`<or-icon icon="sort-variant"></or-icon>`),
             children: (options ?? []).map(o => ({
                 checked: value && o === value,
                 component: createMenuBarItem(html`<or-translate value=${o}></or-translate>`),
                 value: o
-            }))
+            })) as SubMenuItem[]
         }]
         return html`
             <or-vaadin-menu-bar theme="icon" .items=${menuItems}

@@ -197,9 +197,9 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             const menuItems: MenuBarItem[] = [{
                 component: createMenuBarItem(html`
                     <div style="display: flex; align-items: center; gap: 0.25em;">
-                        <or-icon slot="prefix" icon="plus"></or-icon>
+                        <or-icon icon="plus"></or-icon>
                         <or-translate value="rulesEditorAddCondition"></or-translate>
-                    </or-vaadin-button>
+                    </div>
                 `),
                 children: getWhenTypesMenu(this.config, this.assetInfos)
             }]
