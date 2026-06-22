@@ -882,7 +882,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 }
             } else {
                 console.error("Failed to create custom asset type definition", e);
-                showSnackbar(undefined, i18next.t("saveCustomAssetTypeFailed"), "dismiss");
+                showSnackbar(undefined, this._getErrorMessage(e, "saveCustomAssetTypeFailed"), "dismiss");
             }
         } finally {
             if (this.isConnected) {
@@ -919,7 +919,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             showSnackbar(undefined, i18next.t("saveCustomAssetTypeSucceeded"));
         } catch (e) {
             console.error("Failed to update custom asset type definition", e);
-            showSnackbar(undefined, i18next.t("saveCustomAssetTypeFailed"), "dismiss");
+            showSnackbar(undefined, this._getUpdateErrorMessage(e, definitionToUpdate), "dismiss");
         } finally {
             if (this.isConnected) {
                 this._savingDefinition = false;
@@ -960,7 +960,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         } catch (e) {
             console.error("Failed to delete custom asset type definition", e);
             const message = this._getErrorStatus(e) === 409 ? "deleteCustomAssetTypeInUse" : "deleteCustomAssetTypeFailed";
-            showSnackbar(undefined, i18next.t(message), "dismiss");
+            showSnackbar(undefined, this._getErrorMessage(e, message), "dismiss");
         } finally {
             if (this.isConnected) {
                 this._deletingDefinitionName = undefined;
@@ -1121,6 +1121,128 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
     protected _getErrorStatus(error: any): number | undefined {
         return error?.response?.status;
+    }
+
+    protected _getErrorMessage(error: any, fallbackKey: string): string {
+        const fallback = i18next.t(fallbackKey);
+        const detail = this._getErrorDetail(error);
+        return detail ? fallback + ": " + detail : fallback;
+    }
+
+    protected _getUpdateErrorMessage(error: any, definition: CustomAssetTypeDefinition): string {
+        if (this._getErrorStatus(error) !== 409) {
+            return this._getErrorMessage(error, "saveCustomAssetTypeFailed");
+        }
+
+        const fallback = i18next.t("saveCustomAssetTypeFailed");
+        const detail = this._getInUseUpdateConflictDetail(definition)
+            || this._getErrorDetail(error)
+            || i18next.t("customAssetTypeVersionConflict");
+        return fallback + ": " + detail;
+    }
+
+    protected _getInUseUpdateConflictDetail(definition: CustomAssetTypeDefinition): string | undefined {
+        const name = this._editingDefinitionName;
+        const usageCount = name ? this._usageByName[name] : undefined;
+        if (!name || usageCount === undefined || usageCount <= 0) {
+            return;
+        }
+
+        const existingDefinition = (this._definitions || []).find(existing => existing.name === name);
+        if (!existingDefinition) {
+            return;
+        }
+
+        const existingAttributes = existingDefinition.attributes || [];
+        const updatedAttributes = definition.attributes || [];
+        const updatedAttributesByName = this._getAttributeDefinitionsByName(updatedAttributes);
+        const existingAttributesByName = this._getAttributeDefinitionsByName(existingAttributes);
+
+        for (let index = 0; index < existingAttributes.length; index++) {
+            const existingAttribute = existingAttributes[index];
+            if (!existingAttribute.name || !updatedAttributesByName.has(existingAttribute.name)) {
+                return i18next.t("customAssetTypeRemoveAttributeInUse", {attribute: existingAttribute.name});
+            }
+
+            const updatedAttribute = updatedAttributesByName.get(existingAttribute.name)!;
+            if (!this._areAttributeDefinitionsEqual(existingAttribute, updatedAttribute, index)) {
+                return i18next.t("customAssetTypeChangeAttributeInUse", {attribute: existingAttribute.name});
+            }
+        }
+
+        for (const updatedAttribute of updatedAttributes) {
+            if (updatedAttribute.name
+                && !existingAttributesByName.has(updatedAttribute.name)
+                && updatedAttribute.optional !== true) {
+                return i18next.t("customAssetTypeRequiredAttributeInUse", {attribute: updatedAttribute.name});
+            }
+        }
+        return;
+    }
+
+    protected _getAttributeDefinitionsByName(
+        attributes: CustomAssetTypeAttributeDefinition[]
+    ): Map<string, CustomAssetTypeAttributeDefinition> {
+        return new Map(attributes
+            .filter(attribute => !!attribute.name)
+            .map(attribute => [attribute.name!, attribute]));
+    }
+
+    protected _areAttributeDefinitionsEqual(
+        existingAttribute: CustomAssetTypeAttributeDefinition,
+        updatedAttribute: CustomAssetTypeAttributeDefinition,
+        index: number
+    ): boolean {
+        return JSON.stringify(this._normaliseAttributeForComparison(existingAttribute, index))
+            === JSON.stringify(this._normaliseAttributeForComparison(updatedAttribute, index));
+    }
+
+    protected _normaliseAttributeForComparison(
+        attribute: CustomAssetTypeAttributeDefinition,
+        index: number
+    ): CustomAssetTypeAttributeDefinition {
+        return {
+            name: attribute.name?.trim(),
+            type: attribute.type,
+            optional: attribute.optional === true,
+            defaultValue: this._normaliseAttributeDefaultValue(attribute),
+            units: this._normaliseAttributeUnits(attribute.units),
+            format: attribute.format,
+            constraints: attribute.constraints,
+            meta: this._normaliseAttributeMeta(attribute.meta),
+            position: attribute.position ?? index * 10
+        };
+    }
+
+    protected _getErrorDetail(error: any): string | undefined {
+        const data = error?.response?.data;
+        if (typeof data === "string") {
+            return this._normaliseErrorDetail(data);
+        }
+        if (data instanceof Blob) {
+            return;
+        }
+        if (data) {
+            const message = data.message || data.error || data.detail || data.title;
+            if (typeof message === "string") {
+                return this._normaliseErrorDetail(message);
+            }
+        }
+        if (typeof error?.message === "string") {
+            return this._normaliseErrorDetail(error.message);
+        }
+        return undefined;
+    }
+
+    protected _normaliseErrorDetail(detail: string): string | undefined {
+        const trimmed = detail.trim();
+        return trimmed
+            && !trimmed.startsWith("<!DOCTYPE")
+            && !trimmed.startsWith("<html")
+            && !trimmed.startsWith("Request failed with status code")
+            && !trimmed.startsWith("Request failed with HTTP error status")
+            ? trimmed
+            : undefined;
     }
 
     protected async _refreshAssetModel(): Promise<void> {
