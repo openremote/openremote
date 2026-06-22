@@ -21,6 +21,8 @@ package org.openremote.manager.asset;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -30,6 +32,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.asset.CustomAssetTypeDefinition;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class CustomAssetTypeStorageService implements ContainerService {
 
@@ -93,10 +96,11 @@ public class CustomAssetTypeStorageService implements ContainerService {
     public CustomAssetTypeDefinition merge(CustomAssetTypeDefinition definition) {
         CustomAssetTypeDefinition mergedDefinition = persistenceService.doReturningTransaction(em -> {
             CustomAssetTypeDefinition existingDefinition = em.find(CustomAssetTypeDefinition.class, definition.getName());
-            definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
             if (existingDefinition == null) {
                 throw new IllegalArgumentException("Custom asset type does not exist: " + definition.getName());
             }
+            validateVersion(definition, existingDefinition);
+            definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
             existingDefinition
                 .setDisplayName(definition.getDisplayName())
                 .setIcon(definition.getIcon())
@@ -110,12 +114,22 @@ public class CustomAssetTypeStorageService implements ContainerService {
         return mergedDefinition;
     }
 
+    protected void validateVersion(CustomAssetTypeDefinition definition, CustomAssetTypeDefinition existingDefinition) {
+        if (definition.getVersion() != existingDefinition.getVersion()) {
+            throw new IllegalStateException(
+                "Custom asset type version conflict: " + definition.getName()
+                    + " expected=" + existingDefinition.getVersion()
+                    + " actual=" + definition.getVersion()
+            );
+        }
+    }
+
     public CustomAssetTypeDefinition find(String name) {
-        return persistenceService.doReturningTransaction(em -> em.find(CustomAssetTypeDefinition.class, name));
+        return doReturningReadOnlyTransaction(em -> em.find(CustomAssetTypeDefinition.class, name));
     }
 
     public List<CustomAssetTypeDefinition> findAll() {
-        return persistenceService.doReturningTransaction(em ->
+        return doReturningReadOnlyTransaction(em ->
             em.createQuery(
                     "select definition from CustomAssetTypeDefinition definition order by definition.name",
                     CustomAssetTypeDefinition.class
@@ -125,10 +139,10 @@ public class CustomAssetTypeStorageService implements ContainerService {
     }
 
     public void validate(CustomAssetTypeDefinition definition) {
-        persistenceService.doTransaction(em -> {
+        doReturningReadOnlyTransaction(em -> {
             if (definition == null) {
                 definitionValidator.validateForCreate(null);
-                return;
+                return null;
             }
             CustomAssetTypeDefinition existingDefinition = em.find(CustomAssetTypeDefinition.class, definition.getName());
             if (existingDefinition == null) {
@@ -136,6 +150,7 @@ public class CustomAssetTypeStorageService implements ContainerService {
             } else {
                 definitionValidator.validateForUpdate(definition, existingDefinition, getUsageCount(em, definition.getName()));
             }
+            return null;
         });
     }
 
@@ -153,7 +168,7 @@ public class CustomAssetTypeStorageService implements ContainerService {
     }
 
     public long getUsageCount(String typeName) {
-        return persistenceService.doReturningTransaction(em -> getUsageCount(em, typeName));
+        return doReturningReadOnlyTransaction(em -> getUsageCount(em, typeName));
     }
 
     protected long getUsageCount(EntityManager em, String typeName) {
@@ -169,5 +184,21 @@ public class CustomAssetTypeStorageService implements ContainerService {
         if (assetModelService != null) {
             assetModelService.refreshDynamicModel();
         }
+    }
+
+    protected <T> T doReturningReadOnlyTransaction(Function<EntityManager, T> entityManagerFunction) {
+        return persistenceService.doReturningTransaction(em -> {
+            Session session = em.unwrap(Session.class);
+            FlushMode previousFlushMode = session.getHibernateFlushMode();
+            boolean previousDefaultReadOnly = session.isDefaultReadOnly();
+            session.setDefaultReadOnly(true);
+            session.setHibernateFlushMode(FlushMode.MANUAL);
+            try {
+                return entityManagerFunction.apply(em);
+            } finally {
+                session.setHibernateFlushMode(previousFlushMode);
+                session.setDefaultReadOnly(previousDefaultReadOnly);
+            }
+        });
     }
 }

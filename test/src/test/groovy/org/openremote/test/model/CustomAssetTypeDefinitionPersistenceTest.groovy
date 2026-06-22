@@ -118,6 +118,72 @@ class CustomAssetTypeDefinitionPersistenceTest extends Specification implements 
         thrown(RuntimeException)
     }
 
+    def "stale definition updates are rejected"() {
+        given:
+        def typeName = "OptimisticLockBoilerAsset"
+        customAssetTypeStorageService.persist(new CustomAssetTypeDefinition(
+                typeName,
+                "Optimistic lock boiler",
+                "cube-outline",
+                null,
+                null,
+                true,
+                []
+        ))
+        def firstCopy = customAssetTypeStorageService.find(typeName)
+        def staleCopy = customAssetTypeStorageService.find(typeName)
+
+        when:
+        firstCopy.displayName = "Updated boiler"
+        def updated = customAssetTypeStorageService.merge(firstCopy)
+
+        then:
+        updated.version > firstCopy.version
+
+        when:
+        staleCopy.description = "Stale description"
+        customAssetTypeStorageService.merge(staleCopy)
+
+        then:
+        thrown(IllegalStateException)
+        customAssetTypeStorageService.find(typeName).description == null
+    }
+
+    def "reading definitions does not advance the version"() {
+        given:
+        def typeName = "ReadOnlyCustomAsset"
+        customAssetTypeStorageService.persist(new CustomAssetTypeDefinition(
+                typeName,
+                "Read only custom asset",
+                "cube-outline",
+                null,
+                null,
+                true,
+                [
+                        new CustomAssetTypeAttributeDefinition(
+                                "temperature",
+                                "number",
+                                false,
+                                21.5d,
+                                null,
+                                null,
+                                null,
+                                null,
+                                10
+                        )
+                ]
+        ))
+        def version = customAssetTypeStorageService.find(typeName).version
+
+        when:
+        customAssetTypeStorageService.findAll()
+        customAssetTypeStorageService.find(typeName)
+        customAssetTypeStorageService.getUsageCount(typeName)
+
+        then:
+        customAssetTypeStorageService.find(typeName).version == version
+    }
+
     def "usage count matches assets by stored type"() {
         expect:
         customAssetTypeStorageService.getUsageCount("NoSuchCustomAsset") == 0

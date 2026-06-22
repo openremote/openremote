@@ -91,6 +91,8 @@ public class CustomAssetTypeResourceImpl extends ManagerWebResource implements C
             return storageService.merge(definition);
         } catch (IllegalArgumentException ex) {
             throw isCompatibilityConflict(ex) ? conflict(ex) : badRequest(ex);
+        } catch (IllegalStateException ex) {
+            throw conflict(ex);
         }
     }
 

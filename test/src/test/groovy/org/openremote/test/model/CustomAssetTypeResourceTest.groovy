@@ -178,6 +178,27 @@ class CustomAssetTypeResourceTest extends Specification implements ManagerContai
         assertStatus(ex, Response.Status.CONFLICT)
     }
 
+    def "stale update returns conflict"() {
+        given:
+        def typeName = "ApiStaleUpdateAsset"
+        superAdminResource.create(null, false, validDefinition(typeName))
+        def firstCopy = superAdminResource.get(null, typeName)
+        def staleCopy = superAdminResource.get(null, typeName)
+
+        when:
+        firstCopy.displayName = "Updated API asset"
+        superAdminResource.update(null, typeName, firstCopy)
+
+        and:
+        staleCopy.description = "Stale description"
+        superAdminResource.update(null, typeName, staleCopy)
+
+        then:
+        def ex = thrown(WebApplicationException)
+        assertStatus(ex, Response.Status.CONFLICT)
+        superAdminResource.get(null, typeName).description == null
+    }
+
     def "creating a definition over fallback assets requires confirmation"() {
         given:
         def typeName = "ApiFallbackExistingAsset"

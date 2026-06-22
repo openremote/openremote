@@ -976,6 +976,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             colour: this._optionalColour(definition.colour),
             description: this._optionalText(definition.description),
             enabled: definition.enabled !== false,
+            version: definition.version,
             attributes: (definition.attributes || []).map((attribute, index) => ({
                 name: attribute.name!.trim(),
                 type: attribute.type,
