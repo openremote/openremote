@@ -22,6 +22,7 @@ import {
 } from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
+import { ifDefined } from "lit/directives/if-defined.js";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -499,10 +500,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             </h2>
         `;
         const content = () => html`
-            <or-vaadin-list-box selected=${selected} style="margin: 0 -18px 6px -18px;"
+            <or-vaadin-list-box selected=${ifDefined(selected)} style="margin: 0 -18px 6px -18px;"
                                 @selected-changed=${(ev: CustomEvent) => onchange(ev)}>
                 ${languages.map(([key, value]) => html`
-                    <or-vaadin-item value=${key} ?selected=${key === manager.language}>
+                    <or-vaadin-item value=${key}>
                         <or-translate value=${value}></or-translate>
                     </or-vaadin-item>
                 `)}
