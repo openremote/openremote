@@ -161,6 +161,19 @@ public class CustomAssetTypeDefinitionValidator {
                     + definition.getName() + "." + attribute.getName()
             );
         }
+
+        Object coercedDefaultValue = ValueUtil.getValueCoerced(defaultValue, valueDescriptor.getType()).orElseThrow();
+        ValueConstraint[] constraints = attribute.getConstraints();
+        if (constraints != null) {
+            for (ValueConstraint constraint : constraints) {
+                if (constraint != null && !constraint.evaluate(coercedDefaultValue, Instant.now())) {
+                    throw new IllegalArgumentException(
+                        "Default value violates constraint for custom asset type attribute: "
+                            + definition.getName() + "." + attribute.getName()
+                    );
+                }
+            }
+        }
     }
 
     protected void validateConstraints(

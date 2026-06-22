@@ -119,6 +119,24 @@ class CustomAssetTypeDefinitionValidationTest extends Specification implements M
         thrown(IllegalArgumentException)
     }
 
+    def "default values must satisfy custom attribute constraints"() {
+        given:
+        def definition = validDefinition("InvalidConstrainedDefaultAsset")
+        definition.attributes = [
+                attribute("temperature", "number")
+                        .setDefaultValue(-1d)
+                        .setConstraints([
+                                new ValueConstraint.Min(0)
+                        ] as ValueConstraint[])
+        ]
+
+        when:
+        customAssetTypeStorageService.persist(definition)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
     def "unsupported meta items are rejected"() {
         given:
         def definition = validDefinition("UnsupportedMetaAsset")
