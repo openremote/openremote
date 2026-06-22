@@ -18,6 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { countBadgeStyle } from "./styles";
 import { customElement, property, state } from "lit/decorators.js";
 import { mapAssetLegendStyle } from "../style";
 import { AssetModelUtil } from "@openremote/model";
@@ -53,7 +54,7 @@ declare global {
 export class OrMapLegend extends LitElement {
 
     static get styles(): CSSResultGroup {
-        return [mapAssetLegendStyle, css`
+        return [mapAssetLegendStyle, countBadgeStyle, css`
             /* Override column-reverse: title always on top, list grows below */
             #legend {
                 flex-direction: column;
@@ -96,14 +97,6 @@ export class OrMapLegend extends LitElement {
 
             or-vaadin-item::part(checkmark) {
                 display: none;
-            }
-
-            or-vaadin-badge {
-                --vaadin-badge-background: var(--shades-contrast-10, #3A463A0D);
-                border-radius: calc(var(--lumo-border-radius-m) + 2px);
-                font-size: 12px;
-                color: var(--lumo-secondary-text-color);
-                padding: 0 calc(var(--lumo-space-m) - 4px);
             }
 
             /* List: flat top connecting to title, rounded bottom */

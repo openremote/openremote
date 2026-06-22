@@ -18,6 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { countBadgeStyle } from "./styles";
 import { customElement, property, state } from "lit/decorators.js";
 import manager, { OREvent, Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
@@ -65,7 +66,7 @@ manager.addListener((event) => {
 export class OrMapPresetFilter extends LitElement {
 
     static get styles() {
-        return css`
+        return [countBadgeStyle, css`
             :host {
                 display: block;
             }
@@ -96,13 +97,8 @@ export class OrMapPresetFilter extends LitElement {
                 top: 50%;
                 transform: translateY(-50%);
                 pointer-events: none;
-                --vaadin-badge-background: var(--shades-contrast-10, #3A463A0D);
-                border-radius: calc(var(--lumo-border-radius-m) + 2px);
-                font-size: 12px;
-                color: var(--lumo-secondary-text-color);
-                padding: 0 calc(var(--lumo-space-m) - 4px);
             }
-        `;
+        `];
     }
 
     @property({ type: Array })
@@ -168,13 +164,7 @@ export class OrMapPresetFilter extends LitElement {
                 or-vaadin-item.filter-option {
                     padding: unset;
                 }
-                or-vaadin-badge {
-                    --vaadin-badge-background: var(--shades-contrast-10, #3A463A0D);
-                    border-radius: calc(var(--lumo-border-radius-m) + 2px);
-                    font-size: 12px;
-                    color: var(--lumo-secondary-text-color);
-                    padding: 0 calc(var(--lumo-space-m) - 4px);
-                }
+                ${countBadgeStyle}
             </style>
             <or-vaadin-list-box>
                 ${options.map(opt => html`
