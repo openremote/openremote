@@ -1,5 +1,6 @@
 import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
 import {buttonStyle} from "../style";
 import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
@@ -66,12 +67,15 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
 
     const menu: SubMenuItem[] = [];
 
-    const getMenuBarItem = (icon?: string, text?: string, color?: string) => createMenuBarItem(html`
+    const getMenuBarItem = (icon?: string, content?: string | TemplateResult, color?: string) => createMenuBarItem(html`
         <div style="display: flex; align-items: center; gap: 6px;">
             <or-icon style=${color ? `--or-icon-fill: #${color}` : undefined}
                      icon=${icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
             ></or-icon>
-            <span>${text}</span>
+            ${when(typeof content === "string",
+                    () => html`<span>${content}</span>`,
+                    () => content
+            )}
         </div>
     `);
 
@@ -97,7 +101,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
         const value: ActionType = multiLanguage && addEmailLocalizedNotification ? ActionType.EMAIL_LOCALIZED : ActionType.EMAIL
         menu.push({
             checked: selectedType && selectedType === value,
-            component: getMenuBarItem("email", i18next.t("email"), NOTIFICATION_COLOR),
+            component: getMenuBarItem("email", html`<or-translate value="email"></or-translate>`, NOTIFICATION_COLOR),
             value: value,
         } as SubMenuItem);
     }
@@ -106,7 +110,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
         const value: ActionType = multiLanguage && addPushLocalizedNotification ? ActionType.PUSH_LOCALIZED : ActionType.PUSH_NOTIFICATION;
         menu.push({
             checked: selectedType && selectedType === value,
-            component: getMenuBarItem("cellphone-message", i18next.t("push-notification"), NOTIFICATION_COLOR),
+            component: getMenuBarItem("cellphone-message", html`<or-translate value="push-notification"></or-translate>`, NOTIFICATION_COLOR),
             value: value,
         } as SubMenuItem);
     }
@@ -114,7 +118,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
     if (addWait) {
         menu.push({
             checked: selectedType && selectedType === ActionType.WAIT,
-            component: getMenuBarItem("timer", i18next.t("wait"), WAIT_COLOR),
+            component: getMenuBarItem("timer", html`<or-translate value="wait"></or-translate>`, WAIT_COLOR),
             value: ActionType.WAIT,
         } as SubMenuItem);
     }
@@ -122,7 +126,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
     if (addAlarm) {
         menu.push({
             checked: selectedType && selectedType === ActionType.ALARM,
-            component: getMenuBarItem("bell-outline", i18next.t("alarm."), ALARM_COLOR),
+            component: getMenuBarItem("bell-outline", html`<or-translate value="alarm."></or-translate>`, ALARM_COLOR),
             value: ActionType.ALARM,
         } as SubMenuItem);
     }
@@ -130,7 +134,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], 
     if (addWebhook) {
         menu.push({
             checked: selectedType && selectedType === ActionType.WEBHOOK,
-            component: getMenuBarItem("webhook", i18next.t("webhook"), NOTIFICATION_COLOR),
+            component: getMenuBarItem("webhook", html`<or-translate value="webhook"></or-translate>`, NOTIFICATION_COLOR),
             value: ActionType.WEBHOOK,
         } as SubMenuItem);
     }
