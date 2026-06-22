@@ -85,6 +85,12 @@ export class OrMapGeocoder extends LitElement {
             or-vaadin-combo-box::part(toggle-button) {
                 display: none;
             }
+
+            @media only screen and (max-width: 450px) {
+                or-vaadin-combo-box {
+                    width: 100%;
+                }
+            }
         `;
     }
 
@@ -104,6 +110,11 @@ export class OrMapGeocoder extends LitElement {
     private _lastQuery = "";
     private _map?: MapGL;
     private _marker?: any;
+    private _mq = window.matchMedia("(max-width: 450px)");
+    private _onMqChange = (e: MediaQueryList | MediaQueryListEvent) => {
+        if (e.matches) this._collapsed = false;
+        else if (!this._hasValue) this._collapsed = true;
+    };
     private _onLanguageChanged = () => {
         if (!this._collapsed && this._lastQuery.length >= 2) {
             this._fetchSuggestions(this._lastQuery);
@@ -114,6 +125,8 @@ export class OrMapGeocoder extends LitElement {
     public connectedCallback() {
         super.connectedCallback();
         i18next.on("languageChanged", this._onLanguageChanged);
+        this._mq.addEventListener("change", this._onMqChange);
+        this._onMqChange(this._mq);
     }
 
     public setMap(map: MapGL): void {
@@ -202,20 +215,21 @@ export class OrMapGeocoder extends LitElement {
                 geometry: { type: "Point", coordinates: item.center },
             }));
         } else if (this._hasValue) {
-            // Clear button was clicked — collapse back
+            // Clear button was clicked — collapse back (unless small screen keeps it expanded)
             this._hasValue = false;
             this._marker?.remove();
             this._marker = undefined;
             this._suggestions = [];
             this._lastQuery = "";
             this._fetchSuggestions.cancel();
-            this._collapsed = true;
+            if (!this._mq.matches) this._collapsed = true;
         }
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         i18next.off("languageChanged", this._onLanguageChanged);
+        this._mq.removeEventListener("change", this._onMqChange);
         this._fetchSuggestions.cancel();
         this._marker?.remove();
     }
@@ -226,6 +240,7 @@ export class OrMapGeocoderControl extends OrMapBaseControl {
 
     onAdd(map: MapGL): HTMLElement {
         this._createContainer();
+        this._container!.classList.add("geocoder-control");
         const component = document.createElement("or-map-geocoder") as OrMapGeocoder;
         component.geocodeUrl = this._geocodeUrl;
         if (this._bbox) component.bbox = this._bbox;

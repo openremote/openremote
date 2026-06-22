@@ -102,6 +102,18 @@ export const style = css`
         }
     }
 
+    @media only screen and (max-width: 450px) {
+        :host(#map) .maplibregl-ctrl-top-right {
+            left: 10px;
+        }
+        :host(#map) .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
+            display: none;
+        }
+        :host(#map) .maplibregl-ctrl-top-right .geocoder-control {
+            width: calc(100% - 10px);
+        }
+    }
+
     .maplibregl-marker {
         pointer-events: none !important;
     }
