@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "@types/geojson": "^7946.0.7",
+    "@types/geojson": "^7946.0.16",
     "@types/lodash.debounce": "^4"
   },
   "publishConfig": {
