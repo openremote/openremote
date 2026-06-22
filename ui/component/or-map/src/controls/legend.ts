@@ -20,7 +20,6 @@
 import { css, CSSResultGroup, html, LitElement, PropertyValues, TemplateResult } from "lit";
 import { countBadgeStyle } from "./styles";
 import { customElement, property, state } from "lit/decorators.js";
-import { mapAssetLegendStyle } from "../style";
 import { AssetModelUtil } from "@openremote/model";
 import { formatCount, getMarkerIconAndColorFromAssetType } from "../util";
 import { Util } from "@openremote/core";
@@ -54,25 +53,32 @@ declare global {
 export class OrMapLegend extends LitElement {
 
     static get styles(): CSSResultGroup {
-        return [mapAssetLegendStyle, countBadgeStyle, css`
-            /* Override column-reverse: title always on top, list grows below */
+        return [countBadgeStyle, css`
+            :host {
+                display: block;
+            }
+
             #legend {
+                display: flex;
                 flex-direction: column;
                 min-width: 220px;
             }
 
-            /* Title: fully rounded when collapsed, flat bottom when expanded (list sits below) */
             #legend-title {
-                border-radius: var(--lumo-border-radius-m, 3px);
+                height: 38px;
+                line-height: 38px;
+                z-index: 99999;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-radius: var(--lumo-border-radius-m);
                 font-family: var(--lumo-font-family);
                 font-size: 16px;
                 color: black;
-                box-shadow: none;
-                border-bottom: none;
                 padding: 0 20px;
             }
             #legend-title.expanded {
-                border-radius: var(--lumo-border-radius-m, 3px) var(--lumo-border-radius-m, 3px) 0 0;
+                border-radius: var(--lumo-border-radius-m) var(--lumo-border-radius-m) 0 0;
             }
 
             or-icon {
@@ -104,7 +110,7 @@ export class OrMapLegend extends LitElement {
                 min-width: 220px;
                 margin: 0;
                 background: var(--lumo-base-color, white);
-                border-radius: 0 0 var(--lumo-border-radius-m, 3px) var(--lumo-border-radius-m, 3px);
+                border-radius: 0 0 var(--lumo-border-radius-m) var(--lumo-border-radius-m);
                 max-height: 0;
                 overflow: hidden;
                 opacity: 0;
