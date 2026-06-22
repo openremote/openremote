@@ -88,7 +88,7 @@ jobs:
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         id: manager-anchore-scan
         with:
-          image: ${{ steps.manager-docker-command.outputs.first_tag }}
+          image: ${{ steps.meta.outputs.first_tag }}
           fail-build: true
           severity-cutoff: critical
 
