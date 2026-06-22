@@ -486,6 +486,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _getLanguageDialogTemplate(): TemplateResult {
         const languages = Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES);
         const selected = languages.findIndex(([key]) => key === manager.language);
+        const onchange = (ev: CustomEvent) => {
+            const lang = languages[ev.detail.value]?.[0] ?? languages[0][0];
+            if (lang !== manager.language) {
+                this.setLanguage(lang);
+                this._languageDialog?.close();
+            }
+        }
         const header = () => html`
             <h2 style="padding-left: 7px; margin: 0;">
                 <or-translate value="language"></or-translate>
@@ -493,13 +500,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         `;
         const content = () => html`
             <or-vaadin-list-box selected=${selected} style="margin: 0 -18px 6px -18px;"
-                                @selected-changed=${(ev: CustomEvent) => {
-                                    const lang = languages[ev.detail.value]?.[0] ?? languages[0][0];
-                                    if (lang !== manager.language) {
-                                        this.setLanguage(lang);
-                                        this._languageDialog?.close();
-                                    }
-                                }}>
+                                @selected-changed=${(ev: CustomEvent) => onchange(ev)}>
                 ${languages.map(([key, value]) => html`
                     <or-vaadin-item value=${key} ?selected=${key === manager.language}>
                         <or-translate value=${value}></or-translate>
