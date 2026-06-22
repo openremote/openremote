@@ -77,6 +77,11 @@ export class OrMapPresetFilter extends LitElement {
                 width: 320px;
                 --vaadin-input-field-background: white;
             }
+            vaadin-select-item::part(content) {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: calc(100% - 40px);
+            }
             @media only screen and (max-width: 40em) {
                 :host {
                     width: 100%;
