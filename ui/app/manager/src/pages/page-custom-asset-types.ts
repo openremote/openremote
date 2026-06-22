@@ -140,7 +140,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                 .attribute-editor-row {
                     display: grid;
-                    grid-template-columns: repeat(4, minmax(130px, 1fr)) 42px;
+                    grid-template-columns: repeat(5, minmax(120px, 1fr)) 42px;
                     gap: 12px;
                     align-items: end;
                 }
@@ -150,7 +150,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 }
 
                 .attribute-options {
-                    grid-column: 1 / 5;
+                    grid-column: 1 / 6;
                     display: flex;
                     flex-wrap: wrap;
                     gap: 8px 18px;
@@ -673,6 +673,10 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                                       @input=${(ev: InputEvent) => this._updateDraftAttributeMeta(index, WellknownMetaItems.LABEL, (ev.currentTarget as OrVaadinTextField).value)}>
                     <or-translate slot="label" value="attributeLabel"></or-translate>
                 </or-vaadin-text-field>
+                <or-vaadin-text-field maxlength="255" value=${this._getAttributeDefaultValueText(attribute)}
+                                      @input=${(ev: InputEvent) => this._updateDraftAttributeDefaultValue(index, (ev.currentTarget as OrVaadinTextField).value)}>
+                    <or-translate slot="label" value="attributeDefaultValue"></or-translate>
+                </or-vaadin-text-field>
                 <or-vaadin-text-field maxlength="255" value=${this._getAttributeUnitsText(attribute)}
                                       @input=${(ev: InputEvent) => this._updateDraftAttributeUnits(index, (ev.currentTarget as OrVaadinTextField).value)}>
                     <or-translate slot="label" value="attributeUnits"></or-translate>
@@ -792,6 +796,13 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
     protected _updateDraftAttributeUnits(index: number, unitsText: string): void {
         this._updateDraftAttribute(index, {units: this._parseAttributeUnits(unitsText)});
+    }
+
+    protected _updateDraftAttributeDefaultValue(index: number, defaultValueText: string): void {
+        const attribute = this._draftDefinition?.attributes?.[index];
+        this._updateDraftAttribute(index, {
+            defaultValue: this._parseAttributeDefaultValue(defaultValueText, attribute?.type)
+        });
     }
 
     protected _canSaveDefinition(definition: CustomAssetTypeDefinition): boolean {
@@ -969,7 +980,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 name: attribute.name!.trim(),
                 type: attribute.type,
                 optional: attribute.optional === true,
-                defaultValue: attribute.defaultValue,
+                defaultValue: this._normaliseAttributeDefaultValue(attribute),
                 units: this._normaliseAttributeUnits(attribute.units),
                 format: attribute.format,
                 constraints: attribute.constraints,
@@ -997,6 +1008,53 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         return (attribute.units || []).join(", ");
     }
 
+    protected _getAttributeDefaultValueText(attribute: CustomAssetTypeAttributeDefinition): string {
+        const defaultValue = attribute.defaultValue;
+        if (defaultValue === undefined || defaultValue === null) {
+            return "";
+        }
+        if (typeof defaultValue === "object") {
+            return JSON.stringify(defaultValue);
+        }
+        return String(defaultValue);
+    }
+
+    protected _parseAttributeDefaultValue(defaultValueText?: string, type?: string): any {
+        const text = this._optionalText(defaultValueText);
+        if (text === undefined) {
+            return undefined;
+        }
+
+        if (type === WellknownValueTypes.BOOLEAN) {
+            const lowerText = text.toLowerCase();
+            if (lowerText === "true") {
+                return true;
+            }
+            if (lowerText === "false") {
+                return false;
+            }
+        }
+
+        if (type === WellknownValueTypes.INTEGER || type === WellknownValueTypes.LONG) {
+            return /^-?\d+$/.test(text) ? Number(text) : text;
+        }
+
+        if (type === WellknownValueTypes.NUMBER) {
+            const numberValue = Number(text);
+            return Number.isFinite(numberValue) ? numberValue : text;
+        }
+
+        if (type === WellknownValueTypes.GEOJSONPOINT && (text.startsWith("{") || text.startsWith("["))) {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return text;
+            }
+        }
+
+        return text;
+    }
+
     protected _parseAttributeUnits(unitsText?: string): string[] | undefined {
         const units = (unitsText || "")
             .split(",")
@@ -1007,6 +1065,10 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
     protected _normaliseAttributeUnits(units?: string[]): string[] | undefined {
         return this._parseAttributeUnits((units || []).join(","));
+    }
+
+    protected _normaliseAttributeDefaultValue(attribute: CustomAssetTypeAttributeDefinition): any {
+        return this._parseAttributeDefaultValue(this._getAttributeDefaultValueText(attribute), attribute.type);
     }
 
     protected _normaliseAttributeMeta(meta?: {[index: string]: any}): {[index: string]: any} | undefined {
@@ -1033,6 +1095,9 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         }
         if (units) {
             summary.push(i18next.t("attributeUnits") + ": " + units);
+        }
+        if (attribute.defaultValue !== undefined && attribute.defaultValue !== null) {
+            summary.push(i18next.t("attributeDefaultValue") + ": " + this._getAttributeDefaultValueText(attribute));
         }
         if (this._getAttributeMetaValue<boolean>(attribute, WellknownMetaItems.READONLY) === true) {
             summary.push(i18next.t("readOnly"));

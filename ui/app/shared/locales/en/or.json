@@ -153,6 +153,7 @@
   "optional": "Optional",
   "required": "Required",
   "attributeLabel": "Label",
+  "attributeDefaultValue": "Default value",
   "attributeUnits": "Units",
   "readOnly": "Read only",
   "storeDataPoints": "Store data points",
