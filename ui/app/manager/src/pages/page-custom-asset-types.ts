@@ -8,6 +8,7 @@ import {
     AssetModelUtil,
     CustomAssetTypeAttributeDefinition,
     CustomAssetTypeDefinition,
+    WellknownMetaItems,
     WellknownValueTypes
 } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
@@ -139,13 +140,22 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                 .attribute-editor-row {
                     display: grid;
-                    grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(96px, auto) 42px;
+                    grid-template-columns: repeat(4, minmax(130px, 1fr)) 42px;
                     gap: 12px;
                     align-items: end;
                 }
 
                 .attribute-editor-row or-vaadin-button {
                     align-self: center;
+                }
+
+                .attribute-options {
+                    grid-column: 1 / 5;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px 18px;
+                    min-height: 36px;
+                    align-items: center;
                 }
 
                 #table-custom-asset-types,
@@ -219,7 +229,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                 .attribute-row {
                     display: grid;
-                    grid-template-columns: minmax(140px, 1fr) minmax(110px, 160px) 90px;
+                    grid-template-columns: minmax(140px, 1fr) minmax(110px, 160px) 90px minmax(140px, 1fr);
                     gap: 12px;
                     align-items: center;
                     min-height: 28px;
@@ -283,6 +293,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                     .attribute-editor-row or-vaadin-button {
                         justify-self: flex-start;
+                    }
+
+                    .attribute-options {
+                        grid-column: auto;
+                        align-items: flex-start;
+                        flex-direction: column;
                     }
 
                     .title-actions {
@@ -623,13 +639,31 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                                   @change=${(ev: Event) => this._updateDraftAttribute(index, {type: (ev.currentTarget as OrVaadinSelect).value})}>
                     <or-translate slot="label" value="valueType"></or-translate>
                 </or-vaadin-select>
-                <or-vaadin-checkbox ?checked=${attribute.optional === true}
-                                    @change=${(ev: Event) => this._updateDraftAttribute(index, {optional: (ev.currentTarget as OrVaadinCheckbox).checked})}>
-                    <label slot="label"><or-translate value="optional"></or-translate></label>
-                </or-vaadin-checkbox>
+                <or-vaadin-text-field maxlength="255" value=${this._getAttributeMetaValue<string>(attribute, WellknownMetaItems.LABEL) || ""}
+                                      @input=${(ev: InputEvent) => this._updateDraftAttributeMeta(index, WellknownMetaItems.LABEL, (ev.currentTarget as OrVaadinTextField).value)}>
+                    <or-translate slot="label" value="attributeLabel"></or-translate>
+                </or-vaadin-text-field>
+                <or-vaadin-text-field maxlength="255" value=${this._getAttributeUnitsText(attribute)}
+                                      @input=${(ev: InputEvent) => this._updateDraftAttributeUnits(index, (ev.currentTarget as OrVaadinTextField).value)}>
+                    <or-translate slot="label" value="attributeUnits"></or-translate>
+                </or-vaadin-text-field>
                 <or-vaadin-button theme="icon" title=${i18next.t("delete")} @click=${() => this._removeDraftAttribute(index)}>
                     <or-icon icon="close-circle"></or-icon>
                 </or-vaadin-button>
+                <div class="attribute-options">
+                    <or-vaadin-checkbox ?checked=${attribute.optional === true}
+                                        @change=${(ev: Event) => this._updateDraftAttribute(index, {optional: (ev.currentTarget as OrVaadinCheckbox).checked})}>
+                        <label slot="label"><or-translate value="optional"></or-translate></label>
+                    </or-vaadin-checkbox>
+                    <or-vaadin-checkbox ?checked=${this._getAttributeMetaValue<boolean>(attribute, WellknownMetaItems.READONLY) === true}
+                                        @change=${(ev: Event) => this._updateDraftAttributeMeta(index, WellknownMetaItems.READONLY, (ev.currentTarget as OrVaadinCheckbox).checked)}>
+                        <label slot="label"><or-translate value="readOnly"></or-translate></label>
+                    </or-vaadin-checkbox>
+                    <or-vaadin-checkbox ?checked=${this._getAttributeMetaValue<boolean>(attribute, WellknownMetaItems.STOREDATAPOINTS) === true}
+                                        @change=${(ev: Event) => this._updateDraftAttributeMeta(index, WellknownMetaItems.STOREDATAPOINTS, (ev.currentTarget as OrVaadinCheckbox).checked)}>
+                        <label slot="label"><or-translate value="storeDataPoints"></or-translate></label>
+                    </or-vaadin-checkbox>
+                </div>
             </div>
         `;
     }
@@ -640,6 +674,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 <span>${attribute.name}</span>
                 <span>${attribute.type}</span>
                 <span><or-translate value=${attribute.optional ? "optional" : "required"}></or-translate></span>
+                <span>${this._getAttributeMetadataSummary(attribute)}</span>
             </div>
         `;
     }
@@ -675,6 +710,32 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         const attributes = [...(this._draftDefinition?.attributes || [])];
         attributes.splice(index, 1);
         this._updateDraft({attributes});
+    }
+
+    protected _updateDraftAttributeMeta(index: number, name: WellknownMetaItems, value: string | boolean): void {
+        const attributes = [...(this._draftDefinition?.attributes || [])];
+        const attribute = attributes[index];
+        if (!attribute) {
+            return;
+        }
+
+        const meta = {...(attribute.meta || {})};
+        const cleanedValue = typeof value === "string" ? this._optionalText(value) : value;
+        if (cleanedValue === undefined || cleanedValue === false) {
+            delete meta[name];
+        } else {
+            meta[name] = cleanedValue;
+        }
+
+        attributes[index] = {
+            ...attribute,
+            meta: Object.keys(meta).length > 0 ? meta : undefined
+        };
+        this._updateDraft({attributes});
+    }
+
+    protected _updateDraftAttributeUnits(index: number, unitsText: string): void {
+        this._updateDraftAttribute(index, {units: this._parseAttributeUnits(unitsText)});
     }
 
     protected _canCreateDefinition(definition: CustomAssetTypeDefinition): boolean {
@@ -765,6 +826,8 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 name: attribute.name!.trim(),
                 type: attribute.type,
                 optional: attribute.optional === true,
+                units: this._normaliseAttributeUnits(attribute.units),
+                meta: this._normaliseAttributeMeta(attribute.meta),
                 position: index * 10
             }))
         };
@@ -778,6 +841,60 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
     protected _optionalColour(value?: string): string | undefined {
         const colour = this._optionalText(value);
         return colour?.startsWith("#") ? colour.substring(1) : colour;
+    }
+
+    protected _getAttributeMetaValue<T>(attribute: CustomAssetTypeAttributeDefinition, name: WellknownMetaItems): T | undefined {
+        return attribute.meta?.[name] as T | undefined;
+    }
+
+    protected _getAttributeUnitsText(attribute: CustomAssetTypeAttributeDefinition): string {
+        return (attribute.units || []).join(", ");
+    }
+
+    protected _parseAttributeUnits(unitsText?: string): string[] | undefined {
+        const units = (unitsText || "")
+            .split(",")
+            .map(unit => unit.trim())
+            .filter(unit => !!unit);
+        return units.length > 0 ? units : undefined;
+    }
+
+    protected _normaliseAttributeUnits(units?: string[]): string[] | undefined {
+        return this._parseAttributeUnits((units || []).join(","));
+    }
+
+    protected _normaliseAttributeMeta(meta?: {[index: string]: any}): {[index: string]: any} | undefined {
+        const normalisedMeta: {[index: string]: any} = {};
+        const label = this._optionalText(meta?.[WellknownMetaItems.LABEL]);
+        if (label) {
+            normalisedMeta[WellknownMetaItems.LABEL] = label;
+        }
+        if (meta?.[WellknownMetaItems.READONLY] === true) {
+            normalisedMeta[WellknownMetaItems.READONLY] = true;
+        }
+        if (meta?.[WellknownMetaItems.STOREDATAPOINTS] === true) {
+            normalisedMeta[WellknownMetaItems.STOREDATAPOINTS] = true;
+        }
+        return Object.keys(normalisedMeta).length > 0 ? normalisedMeta : undefined;
+    }
+
+    protected _getAttributeMetadataSummary(attribute: CustomAssetTypeAttributeDefinition): string {
+        const summary = [];
+        const label = this._getAttributeMetaValue<string>(attribute, WellknownMetaItems.LABEL);
+        const units = this._getAttributeUnitsText(attribute);
+        if (label) {
+            summary.push(i18next.t("attributeLabel") + ": " + label);
+        }
+        if (units) {
+            summary.push(i18next.t("attributeUnits") + ": " + units);
+        }
+        if (this._getAttributeMetaValue<boolean>(attribute, WellknownMetaItems.READONLY) === true) {
+            summary.push(i18next.t("readOnly"));
+        }
+        if (this._getAttributeMetaValue<boolean>(attribute, WellknownMetaItems.STOREDATAPOINTS) === true) {
+            summary.push(i18next.t("storeDataPoints"));
+        }
+        return summary.join(" | ");
     }
 
     protected _getErrorStatus(error: any): number | undefined {
