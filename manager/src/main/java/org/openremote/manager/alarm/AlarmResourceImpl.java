@@ -73,10 +73,12 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
         try {
-            if (!isRealmActiveAndAccessible(getAuthenticatedRealmName())) {
-                throw new ForbiddenException("Realm '" + getAuthenticatedRealmName() + "' is nonexistent, inactive or inaccessible");
+            List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);
+            for (SentAlarm alarm : alarms) {
+                if (!isRealmActiveAndAccessible(alarm.getRealm())) {
+                    throw new ForbiddenException("Realm '" + alarm.getRealm() + "' is nonexistent, inactive or inaccessible");
+                }
             }
-            List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);;
             alarmService.removeAlarms(alarms, alarmIds);
         } catch (EntityNotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);

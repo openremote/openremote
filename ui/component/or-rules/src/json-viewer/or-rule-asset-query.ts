@@ -3,6 +3,8 @@ import {customElement, property, state} from "lit/decorators.js";
 import {
     Asset,
     AssetDescriptor,
+    AssetModelUtil,
+    AssetQuery,
     AssetQueryMatch,
     AssetQueryOperator as AQO,
     AssetTypeInfo,
@@ -15,8 +17,7 @@ import {
     ValueDescriptor,
     ValuePredicateUnion,
     WellknownMetaItems,
-    WellknownValueTypes,
-    AssetModelUtil, AssetQuery
+    WellknownValueTypes
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-attribute-input";
@@ -26,12 +27,17 @@ import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
-import { ifDefined } from "lit/directives/if-defined.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 import {when} from "lit/directives/when.js";
 import moment from "moment";
-import {OrVaadinComboBox} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
+import {
+    ComboBoxDataProviderCallback,
+    ComboBoxDataProviderParams,
+    OrVaadinComboBox
+} from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 import {InputType} from "@openremote/or-vaadin-components/util";
+import debounce from "lodash.debounce";
 
 // language=CSS
 const style = css`
@@ -415,9 +421,22 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
 
+    protected _assetDataProvider = debounce((params: ComboBoxDataProviderParams, callback: ComboBoxDataProviderCallback<{value: any, label: string}>) => {
+        const assetType = getAssetTypeFromQuery(this.query);
+        const ids = getAssetIdsFromQuery(this.query);
+        const idValue = ids && ids.length > 0 ? ids[0] : "*";
+        console.debug(`Searching for ${assetType} assets with filter '${params.filter}'...`);
+        this.loadAssets(assetType!, params.filter, idValue).finally(() => {
+            const assets = this._cache?.assets ?? [];
+            const filtered = assets.filter(a => a.name?.toLowerCase().includes(params.filter.toLowerCase()));
+            callback(filtered.map(a => ({value: a.id, label: a.name!})), filtered.length);
+        })
+    }, 500);
+
     protected render() {
 
         const assetType = getAssetTypeFromQuery(this.query);
+        const assetIds = getAssetIdsFromQuery(this.query);
 
         if (!assetType) {
             return html`<span class="invalidLabel">${i18next.t("errorOccurred")}</span>`;
@@ -430,7 +449,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
 
         if (!this._cache && !this._loading) {
-            this.loadAssets(assetType);
+            this.loadAssets(assetType, undefined, assetIds?.[0]);
         }
 
         if (!this.query.attributes) {
@@ -444,8 +463,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const showRemoveAttribute = !this.readonly && this.query.attributes && this.query.attributes.items && this.query.attributes.items.length > 1;
 
         // TODO: Add multiselect support
-        const ids = getAssetIdsFromQuery(this.query);
-        const idValue = ids && ids.length > 0 ? ids[0] : "*";
+        const idValue = assetIds?.[0] ?? "*";
         const idOptions: {value: any, label: string}[] = [
             {value: "*", label: i18next.t("anyOfThisType")}
         ];
@@ -455,8 +473,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         // If between 25 and 100 assets: display everything with search functionality
         // If >= 100 assets: only display if in line with search input
         const assets: Asset[] = this._cache ? this._cache.assets : [];
-
-        let searchProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             <div class="attribute-group">
@@ -483,10 +499,18 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     };
                     
                     return html`
-                        <or-vaadin-combo-box id="idSelect" class="min-width" ?readonly=${this.readonly} .items=${idOptions} value=${idValue}
-                                             @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
-                            <or-translate slot="label" value="asset"></or-translate>
-                        </or-vaadin-combo-box>
+                        ${when(idOptions.length >= 100, () => html`
+                            <or-vaadin-combo-box id="idSelect" class="min-width" ?readonly=${this.readonly} value=${idValue}
+                                                 .filteredItems=${idOptions} .dataProvider=${this._assetDataProvider}
+                                                 @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
+                                <or-translate slot="label" value="asset"></or-translate>
+                            </or-vaadin-combo-box>
+                        `, () => html`
+                            <or-vaadin-combo-box id="idSelect" class="min-width" ?readonly=${this.readonly} value=${idValue} .items=${idOptions}
+                                                 @change=${(ev: Event) => this._assetId = (ev.currentTarget as OrVaadinComboBox).value}>
+                                <or-translate slot="label" value="asset"></or-translate>
+                            </or-vaadin-combo-box>
+                        `)}
                         <div class="attributes">
                             ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate, index) => {
                                 return html`
@@ -955,7 +979,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const query: AssetQuery = { limit: 100 };
         if (search) {
             query.names ??= [];
-            query.names.push({ predicateType: "string", value: search });
+            query.names.push({ predicateType: "string", match: AssetQueryMatch.CONTAINS, value: search });
         }
         // If the cache contains assets from the same query, don't send HTTP request again
         const isQueryCached = this._cache?.query && Util.objectsEqual(this._cache.query, query, true);
