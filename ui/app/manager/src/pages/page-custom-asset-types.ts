@@ -204,7 +204,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 }
 
                 .details-row.expanded .details-container {
-                    max-height: 1000px;
+                    max-height: 3000px;
                     transition: max-height 0.4s ease-in;
                 }
 
@@ -219,6 +219,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                     font-weight: 600;
                     color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
                     margin-bottom: 3px;
+                }
+
+                .details-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 10px;
                 }
 
                 .attribute-list {
@@ -345,7 +351,10 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
     protected _draftDefinition?: CustomAssetTypeDefinition;
 
     @state()
-    protected _creatingDefinition: boolean = false;
+    protected _editingDefinitionName?: string;
+
+    @state()
+    protected _savingDefinition: boolean = false;
 
     get name(): string {
         return "customAssetTypes";
@@ -439,6 +448,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
     }
 
     protected _addDraftDefinition(): void {
+        this._editingDefinitionName = undefined;
         this._draftDefinition = {
             name: "",
             displayName: "",
@@ -452,6 +462,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         this._definitions = undefined;
         this._usageByName = {};
         this._draftDefinition = undefined;
+        this._editingDefinitionName = undefined;
 
         if (!manager.authenticated || !manager.isSuperUser()) {
             this._definitions = [];
@@ -522,6 +533,13 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 <td colspan="100%">
                     <div class="details-container">
                         <div class="details-grid">
+                            <div class="details-actions full-width">
+                                <or-vaadin-button ?disabled=${!!this._draftDefinition}
+                                                  @click=${() => this._editDefinition(definition)}>
+                                    <or-icon icon="pencil"></or-icon>
+                                    <or-translate value="edit"></or-translate>
+                                </or-vaadin-button>
+                            </div>
                             <div>
                                 <div class="field-label"><or-translate value="description"></or-translate></div>
                                 <div>${definition.description || i18next.t("assetTypes.noDescription")}</div>
@@ -561,13 +579,14 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
     }
 
     protected _getDraftTemplate(definition: CustomAssetTypeDefinition): TemplateResult {
+        const editing = !!this._editingDefinitionName;
         return html`
             <tr class="details-row expanded">
                 <td colspan="100%">
                     <div class="details-container">
                         <div class="form-grid">
                             <or-vaadin-text-field required minlength="1" maxlength="255" pattern="\\w+"
-                                                  manual-validation value=${definition.name || ""}
+                                                  manual-validation ?readonly=${editing} value=${definition.name || ""}
                                                   @input=${(ev: InputEvent) => this._updateDraft({name: (ev.currentTarget as OrVaadinTextField).value})}>
                                 <or-translate slot="label" value="technicalName"></or-translate>
                             </or-vaadin-text-field>
@@ -594,12 +613,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                             ${this._getDraftAttributesTemplate(definition)}
                         </div>
                         <div class="actions">
-                            <or-vaadin-button @click=${() => this._draftDefinition = undefined}>
+                            <or-vaadin-button @click=${() => this._cancelDraftDefinition()}>
                                 <or-translate value="cancel"></or-translate>
                             </or-vaadin-button>
-                            <or-vaadin-button theme="primary" ?disabled=${!this._canCreateDefinition(definition)}
-                                              @click=${() => this._createDefinition(definition)}>
-                                <or-translate value="create"></or-translate>
+                            <or-vaadin-button theme="primary" ?disabled=${!this._canSaveDefinition(definition)}
+                                              @click=${() => this._saveDefinition(definition)}>
+                                <or-translate value=${editing ? "save" : "create"}></or-translate>
                             </or-vaadin-button>
                         </div>
                     </div>
@@ -685,15 +704,41 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         }
     }
 
+    protected _editDefinition(definition: CustomAssetTypeDefinition): void {
+        this._editingDefinitionName = definition.name;
+        this._draftDefinition = this._copyDefinitionForDraft(definition);
+    }
+
+    protected _copyDefinitionForDraft(definition: CustomAssetTypeDefinition): CustomAssetTypeDefinition {
+        return {
+            ...definition,
+            attributes: (definition.attributes || []).map(attribute => ({
+                ...attribute,
+                units: attribute.units ? [...attribute.units] : undefined,
+                constraints: attribute.constraints ? [...attribute.constraints] : undefined,
+                meta: attribute.meta ? {...attribute.meta} : undefined
+            }))
+        };
+    }
+
+    protected _cancelDraftDefinition(): void {
+        this._draftDefinition = undefined;
+        this._editingDefinitionName = undefined;
+    }
+
     protected _addDraftAttribute(): void {
         const attributes = [...(this._draftDefinition?.attributes || [])];
         attributes.push({
             name: "",
             type: WellknownValueTypes.NUMBER,
             optional: false,
-            position: attributes.length * 10
+            position: this._nextDraftAttributePosition(attributes)
         });
         this._updateDraft({attributes});
+    }
+
+    protected _nextDraftAttributePosition(attributes: CustomAssetTypeAttributeDefinition[]): number {
+        return attributes.reduce((position, attribute) => Math.max(position, attribute.position ?? 0), -10) + 10;
     }
 
     protected _updateDraftAttribute(index: number, patch: Partial<CustomAssetTypeAttributeDefinition>): void {
@@ -738,13 +783,14 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         this._updateDraftAttribute(index, {units: this._parseAttributeUnits(unitsText)});
     }
 
-    protected _canCreateDefinition(definition: CustomAssetTypeDefinition): boolean {
+    protected _canSaveDefinition(definition: CustomAssetTypeDefinition): boolean {
         const name = (definition.name || "").trim();
         const displayName = (definition.displayName || "").trim();
-        return !this._creatingDefinition
+        return !this._savingDefinition
             && !!displayName
             && PageCustomAssetTypes.TYPE_NAME_PATTERN.test(name)
-            && !(this._definitions || []).some(existing => existing.name === name)
+            && (!this._editingDefinitionName || name === this._editingDefinitionName)
+            && !(this._definitions || []).some(existing => existing.name === name && existing.name !== this._editingDefinitionName)
             && this._areDraftAttributesValid(definition.attributes || []);
     }
 
@@ -767,13 +813,21 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         });
     }
 
+    protected async _saveDefinition(definition: CustomAssetTypeDefinition): Promise<void> {
+        if (this._editingDefinitionName) {
+            await this._updateDefinition(definition);
+        } else {
+            await this._createDefinition(definition);
+        }
+    }
+
     protected async _createDefinition(definition: CustomAssetTypeDefinition, confirmExistingAssets = false): Promise<void> {
-        if (!this._canCreateDefinition(definition) && !confirmExistingAssets) {
+        if (!this._canSaveDefinition(definition) && !confirmExistingAssets) {
             return;
         }
 
-        this._creatingDefinition = true;
-        const definitionToCreate = this._toCreatePayload(definition);
+        this._savingDefinition = true;
+        const definitionToCreate = this._toDefinitionPayload(definition);
 
         try {
             const response = await manager.rest.api.CustomAssetTypeResource.create(
@@ -786,6 +840,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             }
 
             this._draftDefinition = undefined;
+            this._editingDefinitionName = undefined;
             this._definitions = [
                 ...(this._definitions || []),
                 response.data
@@ -809,12 +864,48 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             }
         } finally {
             if (this.isConnected) {
-                this._creatingDefinition = false;
+                this._savingDefinition = false;
             }
         }
     }
 
-    protected _toCreatePayload(definition: CustomAssetTypeDefinition): CustomAssetTypeDefinition {
+    protected async _updateDefinition(definition: CustomAssetTypeDefinition): Promise<void> {
+        if (!this._editingDefinitionName || !this._canSaveDefinition(definition)) {
+            return;
+        }
+
+        this._savingDefinition = true;
+        const definitionToUpdate = this._toDefinitionPayload(definition);
+
+        try {
+            const response = await manager.rest.api.CustomAssetTypeResource.update(
+                this._editingDefinitionName,
+                definitionToUpdate
+            );
+
+            if (!this.isConnected) {
+                return;
+            }
+
+            this._draftDefinition = undefined;
+            this._editingDefinitionName = undefined;
+            this._definitions = (this._definitions || [])
+                .map(existing => existing.name === response.data.name ? response.data : existing)
+                .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            await this._loadUsageCounts([response.data]);
+            await this._refreshAssetModel();
+            showSnackbar(undefined, i18next.t("saveCustomAssetTypeSucceeded"));
+        } catch (e) {
+            console.error("Failed to update custom asset type definition", e);
+            showSnackbar(undefined, i18next.t("saveCustomAssetTypeFailed"), "dismiss");
+        } finally {
+            if (this.isConnected) {
+                this._savingDefinition = false;
+            }
+        }
+    }
+
+    protected _toDefinitionPayload(definition: CustomAssetTypeDefinition): CustomAssetTypeDefinition {
         return {
             name: definition.name!.trim(),
             displayName: definition.displayName!.trim(),
@@ -826,9 +917,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 name: attribute.name!.trim(),
                 type: attribute.type,
                 optional: attribute.optional === true,
+                defaultValue: attribute.defaultValue,
                 units: this._normaliseAttributeUnits(attribute.units),
+                format: attribute.format,
+                constraints: attribute.constraints,
                 meta: this._normaliseAttributeMeta(attribute.meta),
-                position: index * 10
+                position: attribute.position ?? index * 10
             }))
         };
     }
