@@ -88,6 +88,24 @@ class CustomAssetTypeAssetTest extends Specification implements ManagerContainer
         found.getAttribute("temperature").flatMap { it.getValue(Double) }.orElse(null) == 21.5d
     }
 
+    def "new custom assets initialise empty attributes from authored defaults"() {
+        given:
+        def typeName = "EmptyDefaultedBoilerAsset"
+        customAssetTypeStorageService.persist(validDefinition(typeName, 21.5d))
+        def asset = new ThingAsset("Empty defaulted boiler").setRealm(Constants.MASTER_REALM)
+        asset.type = typeName
+        asset.addOrReplaceAttributes(new Attribute<>("temperature", ValueType.NUMBER))
+
+        when:
+        def saved = assetStorageService.merge(asset)
+        def found = assetStorageService.find(saved.id)
+
+        then:
+        found.type == typeName
+        found.getAttribute("temperature").map { it.type }.orElse(null).is(ValueType.NUMBER)
+        found.getAttribute("temperature").flatMap { it.getValue(Double) }.orElse(null) == 21.5d
+    }
+
     def "invalid custom attribute values fail asset validation"() {
         given:
         def asset = new ThingAsset("Invalid temperature").setRealm(Constants.MASTER_REALM)

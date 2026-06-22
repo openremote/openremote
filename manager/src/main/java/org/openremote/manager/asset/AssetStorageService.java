@@ -848,7 +848,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         definition.getAttributes().stream()
             .filter(attributeDefinition -> attributeDefinition.getDefaultValue() != null)
-            .filter(attributeDefinition -> asset.getAttribute(attributeDefinition.getName()).isEmpty())
+            .filter(attributeDefinition -> asset.getAttribute(attributeDefinition.getName())
+                .map(attribute -> attribute.getValue().isEmpty())
+                .orElse(true))
             .forEach(attributeDefinition -> {
                 AttributeDescriptor descriptor = assetTypeInfo.getAttributeDescriptors().get(attributeDefinition.getName());
                 if (descriptor == null) {
