@@ -24,7 +24,10 @@ dependencies {
 
 generateTypeScript createTSGeneratorConfigForModel("src/model.ts")
 
-def generateTypeScriptTask = tasks.named("generateTypeScript")
+def generateTypeScriptTask = tasks.named("generateTypeScript") {
+    // Work around typescript-generator exposing non-serializable configuration objects as Gradle task inputs.
+    doNotTrackState("typescript-generator uses non-serializable task input types")
+}
 
 tasks.register('npmBuild', Exec) {
     mustRunAfter npmClean

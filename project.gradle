@@ -238,48 +238,6 @@ def getYarnInstallTask() {
 /**
  * This defines reusable config for the typescript generator plugin
  */
-class SerializableJackson2Configuration
-        extends Jackson2Configuration
-        implements Serializable {
-    private static final long serialVersionUID = 1L
-}
-
-class SerializableModuleDependency
-        extends ModuleDependency
-        implements Serializable {
-    private static final long serialVersionUID = 1L
-
-    SerializableModuleDependency(
-            boolean global,
-            String importFrom,
-            String importAs,
-            File infoJson,
-            String npmPackageName,
-            String npmVersionRange,
-            boolean peerDependency
-    ) {
-        super(global, importFrom, importAs, infoJson, npmPackageName, npmVersionRange, peerDependency)
-    }
-
-    static SerializableModuleDependency module(
-            String importFrom,
-            String importAs,
-            File infoJson,
-            String npmPackageName = null,
-            String npmVersionRange = null
-    ) {
-        return new SerializableModuleDependency(
-                false,
-                importFrom,
-                importAs,
-                infoJson,
-                npmPackageName,
-                npmVersionRange,
-                false
-        )
-    }
-}
-
 def createTSGeneratorConfigForModel(String outputFileName, Project...customProjectsToScan) {
     def config = createTSGeneratorConfig(false, outputFileName, customProjectsToScan) <<
             {
@@ -319,10 +277,12 @@ def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, 
                         "org.openremote.model.value.ValueDescriptor<T>:Model.ValueDescriptor"
                 ]
                 moduleDependencies = [
-                        SerializableModuleDependency.module(
+                        ModuleDependency.module(
                                 "@openremote/model",
                                 "Model",
-                                modelInfoJson
+                                modelInfoJson,
+                                (String) null,
+                                (String) null
                         )
                 ]
                 restNamespacing = RestNamespacing.perResource
@@ -374,7 +334,7 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
         outputKind = TypeScriptOutputKind.module
         outputFile = outputFileName
 
-        def jackson2Config = new SerializableJackson2Configuration()
+        def jackson2Config = new Jackson2Configuration()
         jackson2Config.fieldVisibility = Visibility.ANY
         jackson2Config.creatorVisibility = Visibility.ANY
         jackson2Config.getterVisibility = Visibility.NONE
