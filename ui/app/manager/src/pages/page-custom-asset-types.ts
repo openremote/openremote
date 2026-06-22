@@ -356,6 +356,9 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
     @state()
     protected _savingDefinition: boolean = false;
 
+    @state()
+    protected _deletingDefinitionName?: string;
+
     get name(): string {
         return "customAssetTypes";
     }
@@ -463,6 +466,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         this._usageByName = {};
         this._draftDefinition = undefined;
         this._editingDefinitionName = undefined;
+        this._deletingDefinitionName = undefined;
 
         if (!manager.authenticated || !manager.isSuperUser()) {
             this._definitions = [];
@@ -509,6 +513,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         const rowId = "custom-asset-type-row-" + index;
         const attributeCount = definition.attributes?.length || 0;
         const usageCount = definition.name ? this._usageByName[definition.name] : undefined;
+        const deleteDisabled = !!this._draftDefinition || !!this._deletingDefinitionName || usageCount === undefined || usageCount > 0;
 
         return html`
             <tr class="mdc-data-table__row" @click="${() => this._toggleDefinitionExpand(index)}">
@@ -538,6 +543,12 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                                                   @click=${() => this._editDefinition(definition)}>
                                     <or-icon icon="pencil"></or-icon>
                                     <or-translate value="edit"></or-translate>
+                                </or-vaadin-button>
+                                <or-vaadin-button theme="error" ?disabled=${deleteDisabled}
+                                                  title=${this._getDeleteDefinitionTitle(usageCount)}
+                                                  @click=${() => this._deleteDefinition(definition)}>
+                                    <or-icon icon="delete"></or-icon>
+                                    <or-translate value="delete"></or-translate>
                                 </or-vaadin-button>
                             </div>
                             <div>
@@ -905,6 +916,47 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         }
     }
 
+    protected async _deleteDefinition(definition: CustomAssetTypeDefinition): Promise<void> {
+        const name = definition.name;
+        if (!name || this._draftDefinition || this._deletingDefinitionName || this._usageByName[name] !== 0) {
+            return;
+        }
+
+        const ok = await showOkCancelDialog(
+            i18next.t("deleteCustomAssetType"),
+            i18next.t("deleteCustomAssetTypeConfirm", {name}),
+            i18next.t("delete")
+        );
+        if (!ok) {
+            return;
+        }
+
+        this._deletingDefinitionName = name;
+
+        try {
+            await manager.rest.api.CustomAssetTypeResource.delete(name);
+
+            if (!this.isConnected) {
+                return;
+            }
+
+            this._definitions = (this._definitions || []).filter(existing => existing.name !== name);
+            const usageByName = {...this._usageByName};
+            delete usageByName[name];
+            this._usageByName = usageByName;
+            await this._refreshAssetModel();
+            showSnackbar(undefined, i18next.t("deleteCustomAssetTypeSucceeded"));
+        } catch (e) {
+            console.error("Failed to delete custom asset type definition", e);
+            const message = this._getErrorStatus(e) === 409 ? "deleteCustomAssetTypeInUse" : "deleteCustomAssetTypeFailed";
+            showSnackbar(undefined, i18next.t(message), "dismiss");
+        } finally {
+            if (this.isConnected) {
+                this._deletingDefinitionName = undefined;
+            }
+        }
+    }
+
     protected _toDefinitionPayload(definition: CustomAssetTypeDefinition): CustomAssetTypeDefinition {
         return {
             name: definition.name!.trim(),
@@ -989,6 +1041,16 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             summary.push(i18next.t("storeDataPoints"));
         }
         return summary.join(" | ");
+    }
+
+    protected _getDeleteDefinitionTitle(usageCount?: number): string {
+        if (usageCount === undefined) {
+            return i18next.t("loading");
+        }
+        if (usageCount > 0) {
+            return i18next.t("deleteCustomAssetTypeInUse");
+        }
+        return i18next.t("delete");
     }
 
     protected _getErrorStatus(error: any): number | undefined {
