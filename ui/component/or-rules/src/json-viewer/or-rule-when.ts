@@ -266,7 +266,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                 }]
                 return html`
                     <or-panel>
-                        <strong>${i18next.t(!this.rule?.when?.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
+                        <strong><or-translate value=${this.rule?.when?.groups?.length ? "orWhen" : "when"}></or-translate>...</strong>
                         <span class="add-button-wrapper">
                             <or-vaadin-menu-bar .items=${menuItems}
                                                 @item-selected=${(ev: CustomEvent) => this.addGroup(this.rule!.when!, ev.detail.value.value)}
