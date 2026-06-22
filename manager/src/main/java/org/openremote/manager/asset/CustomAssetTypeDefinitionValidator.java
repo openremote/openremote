@@ -19,17 +19,22 @@
  */
 package org.openremote.manager.asset;
 
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.CustomAssetTypeAttributeDefinition;
 import org.openremote.model.asset.CustomAssetTypeDefinition;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
+import java.lang.reflect.Modifier;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -60,6 +65,8 @@ public class CustomAssetTypeDefinitionValidator {
         MetaItemType.READ_ONLY.getName(),
         MetaItemType.STORE_DATA_POINTS.getName()
     );
+
+    protected static final Set<String> BACKING_ATTRIBUTE_NAMES = getBackingAttributeNames();
 
     public void validateForCreate(CustomAssetTypeDefinition definition) {
         validate(definition);
@@ -114,6 +121,13 @@ public class CustomAssetTypeDefinitionValidator {
         if (!attributeNames.add(attribute.getName())) {
             throw new IllegalArgumentException(
                 "Duplicate custom asset type attribute: " + definition.getName() + "." + attribute.getName()
+            );
+        }
+
+        if (BACKING_ATTRIBUTE_NAMES.contains(attribute.getName())) {
+            throw new IllegalArgumentException(
+                "Custom asset type attribute collides with backing asset attribute: "
+                    + definition.getName() + "." + attribute.getName()
             );
         }
 
@@ -327,5 +341,22 @@ public class CustomAssetTypeDefinitionValidator {
 
     protected boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    protected static Set<String> getBackingAttributeNames() {
+        return Arrays.stream(new Class<?>[]{Asset.class, ThingAsset.class})
+            .flatMap(type -> Arrays.stream(type.getDeclaredFields()))
+            .filter(field ->
+                Modifier.isStatic(field.getModifiers())
+                    && Modifier.isPublic(field.getModifiers())
+                    && AttributeDescriptor.class.isAssignableFrom(field.getType()))
+            .map(field -> {
+                try {
+                    return ((AttributeDescriptor<?>) field.get(null)).getName();
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Failed to extract backing attribute descriptor field: " + field, e);
+                }
+            })
+            .collect(Collectors.toUnmodifiableSet());
     }
 }

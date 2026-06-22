@@ -75,6 +75,21 @@ class CustomAssetTypeDefinitionValidationTest extends Specification implements M
         thrown(IllegalArgumentException)
     }
 
+    def "attribute names must not collide with backing asset attributes"() {
+        given:
+        def definition = validDefinition("BackingAttributeCollisionAsset")
+        definition.attributes = [
+                attribute("notes", "text")
+        ]
+
+        when:
+        customAssetTypeStorageService.persist(definition)
+
+        then:
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains("backing asset attribute")
+    }
+
     def "value types must be in the phase one allowlist"() {
         given:
         def definition = validDefinition("UnsupportedValueTypeAsset")
