@@ -24,7 +24,6 @@ import {style} from './style';
 import {Dashboard} from '@openremote/model';
 import manager, {Util} from '@openremote/core';
 import {ListItem} from '@openremote/or-mwc-components/or-mwc-list';
-import '@openremote/or-mwc-components/or-mwc-menu';
 import {showOkCancelDialog} from '@openremote/or-mwc-components/or-mwc-dialog';
 import {i18next, translate} from '@openremote/or-translate';
 import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
