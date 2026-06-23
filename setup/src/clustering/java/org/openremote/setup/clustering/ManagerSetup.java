@@ -31,6 +31,8 @@ import org.reflections.Reflections;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -83,22 +85,23 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))
             .collect(Collectors.toMap(Class::getSimpleName, clazz -> clazz));
 
-        String[] typesToLoad = types.split(",");
-
-        AtomicInteger assets = new AtomicInteger(0);
-
-        for (String typeName : typesToLoad) {
+        List<Class<? extends Asset>> validClasses = new ArrayList<>();
+        for (String typeName : types.split(",")) {
             String cleanName = typeName.trim();
             Class<? extends Asset> clazz = assetRegistry.get(cleanName);
-
             if (clazz == null) {
                 LOG.severe("Skipping unknown asset type: " + cleanName);
                 continue;
             }
-
             // Skip asset types which either can't directly be initialized or are slow to init
             if (clazz.equals(UnknownAsset.class) || clazz.equals(GroupAsset.class) || clazz.equals(GatewayAsset.class)) continue;
+            validClasses.add(clazz);
+        }
 
+        int expectedAssetCount = assetsPerType * validClasses.size();
+        AtomicInteger assets = new AtomicInteger(0);
+
+        for (Class<? extends Asset> clazz : validClasses) {
             IntStream.range(0, assetsPerType).forEach(i -> {
                 executor.execute(() -> {
                     try {
@@ -113,7 +116,6 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
 
         // Wait until all assets are created
         Instant start = Instant.now();
-        int expectedAssetCount = assetsPerType * typesToLoad.length;
         LOG.info(String.format("Waiting for %s assets to be created", expectedAssetCount));
         while (assets.get() < expectedAssetCount) {
             LOG.info(String.format("%s/%s devices created", assets.get(), expectedAssetCount));
