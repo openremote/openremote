@@ -13,9 +13,8 @@ import {
     getRGBColor,
 } from "./fixtures/data/assets.js";
 import { markers } from "./fixtures/data/manager.js";
-import type { OrMap, OrClusterMarker } from "@openremote/or-map";
-import { type Asset, type AssetQuery, WellknownMetaItems } from "@openremote/model";
-import type { MapFilter } from "@openremote/or-map";
+import type { OrMap, OrClusterMarker, MapFilter } from "@openremote/or-map";
+import { type Asset, WellknownMetaItems } from "@openremote/model";
 
 test.use({ storageState: userStatePath });
 

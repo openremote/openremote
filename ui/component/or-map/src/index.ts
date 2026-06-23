@@ -16,7 +16,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
-import { AssetQuery, AttributeEvent, GeoJsonConfig } from "@openremote/model";
+import { AttributeEvent, GeoJsonConfig } from "@openremote/model";
 import { CoordinatesControl, CoordinatesRegexPattern, getCoordinatesInputKeyHandler } from "./controls/coordinates";
 import { AssetMap } from "./asset-map";
 import { OrMapCenterControl } from "./controls/center";
