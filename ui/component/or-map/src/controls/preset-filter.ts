@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from "lit";
 import { countBadgeStyle } from "./styles";
 import { customElement, property, state } from "lit/decorators.js";
 import manager, { OREvent, Util } from "@openremote/core";
@@ -137,13 +137,17 @@ export class OrMapPresetFilter extends LitElement {
     }
 
     protected _buildOptions() {
-        const all = { value: "0", label: i18next.t("mapPage.filterAll"), count: this.assets.length };
+        const all = { value: "0", label: i18next.t("mapPage.filterAll"), count: this.assets.length, warning: undefined as string | undefined };
         const filters = this.filters
-            .map((filter, i) => ({
-                value: String(i + 1),
-                label: this._getFilterLabel(filter),
-                count: this._getFilterCount(i + 1)
-            }))
+            .map((filter, i) => {
+                const unsupported = Util.AssetQueryHelper.getUnsupportedFields(filter.query);
+                return {
+                    value: String(i + 1),
+                    label: this._getFilterLabel(filter),
+                    count: this._getFilterCount(i + 1),
+                    warning: unsupported.length ? `Filter ${i + 1}: ${unsupported.join(", ")} not supported` : undefined,
+                };
+            })
             .sort((a, b) => a.label.localeCompare(b.label));
         return [all, ...filters];
     }
@@ -161,6 +165,14 @@ export class OrMapPresetFilter extends LitElement {
                 .filter-item__label {
                     flex: 1;
                 }
+                .filter-item__label--warning {
+                    color: var(--lumo-warning-text-color, #c46c0c);
+                }
+                .filter-item__warning {
+                    font-size: var(--lumo-font-size-xs);
+                    color: var(--lumo-warning-text-color, #c46c0c);
+                    white-space: nowrap;
+                }
                 or-vaadin-item.filter-option {
                     padding: unset;
                 }
@@ -170,7 +182,8 @@ export class OrMapPresetFilter extends LitElement {
                 ${options.map(opt => html`
                     <or-vaadin-item class="filter-option" value="${opt.value}" label="${opt.label}">
                         <div class="filter-item">
-                            <span class="filter-item__label">${opt.label}</span>
+                            <span class="filter-item__label ${opt.warning ? 'filter-item__label--warning' : ''}">${opt.warning ? '⚠ ' : ''}${opt.label}</span>
+                            ${opt.warning ? html`<span class="filter-item__warning">${opt.warning}</span>` : nothing}
                             <or-vaadin-badge class="filter-item__count">${formatCount(opt.count)}</or-vaadin-badge>
                         </div>
                     </or-vaadin-item>
