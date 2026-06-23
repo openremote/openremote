@@ -184,9 +184,13 @@ export class AssetMap extends BaseMap {
         }
         if (filters?.length) {
             this._presetFilterControl = new OrMapPresetFilterControl(filters, Object.values(this._allAssets));
+            this._activeFilter = this._presetFilterControl.getInitialFilter();
             this._map?.addControl(this._presetFilterControl, 'top-left');
+        } else {
+            this._activeFilter = null;
         }
         this._hostElement.classList.toggle('has-filters', Boolean(filters?.length));
+        this._applyVisibilityFilters();
     }
 
     public setShowLegend(showLegend: boolean) {
