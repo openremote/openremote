@@ -267,6 +267,10 @@ export class OrMapPresetFilterControl extends OrMapBaseControl {
         if (this._component) this._component.assets = assets;
     }
 
+    clear() {
+        this.assets = [];
+    }
+
     /** Returns the initial filter synchronously by reading localStorage — call before flushing the asset buffer. */
     getInitialFilter(): AssetQuery | null {
         const key = `or-map-filter:${manager.displayRealm}:${manager.username}`;

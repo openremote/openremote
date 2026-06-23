@@ -222,19 +222,32 @@ export class OrMapLegendControl extends OrMapBaseControl {
         this._component = undefined;
     }
 
+    update(types: string[], counts: Record<string, number>) {
+        const prevTypes = new Set(this._assetTypes);
+        const typesChanged = types.length !== prevTypes.size || types.some(t => !prevTypes.has(t));
+        if (typesChanged) this.assetTypes = types;
+        this.assetCounts = counts;
+    }
+
+    clear() {
+        this.assetTypes = [];
+        this.assetCounts = {};
+        this.excludedTypes = [];
+    }
+
     set assetTypes(types: string[]) {
         this._assetTypes = types;
         if (this._component) this._component.assetTypes = types;
     }
 
-    set excludedTypes(types: string[]) {
-        this._excludedTypes = types;
-        if (this._component) this._component.excludedTypes = types;
-    }
-
     set assetCounts(counts: Record<string, number>) {
         this._assetCounts = counts;
         if (this._component) this._component.assetCounts = counts;
+    }
+
+    set excludedTypes(types: string[]) {
+        this._excludedTypes = types;
+        if (this._component) this._component.excludedTypes = types;
     }
 
     get element(): OrMapLegend | undefined {

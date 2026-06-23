@@ -163,12 +163,8 @@ export class AssetMap extends BaseMap {
         this._activeFilter = null;
         this._excludedTypes = [];
         this._hostElement.classList.remove('has-legend');
-        if (this._legendControl) {
-            this._legendControl.assetTypes = [];
-            this._legendControl.assetCounts = {};
-            this._legendControl.excludedTypes = [];
-        }
-        if (this._presetFilterControl) this._presetFilterControl.assets = [];
+        this._legendControl?.clear();
+        this._presetFilterControl?.clear();
         this._assets = {};
         this._source?.updateData({ removeAll: true });
     }
@@ -245,15 +241,10 @@ export class AssetMap extends BaseMap {
             if (type !== undefined && type !== '') counts[type] = (counts[type] ?? 0) + 1;
         }
         const types = Object.keys(counts);
-        const prevTypes = new Set(this._allAssetTypes);
-        const typesChanged = types.length !== prevTypes.size || types.some(t => !prevTypes.has(t));
         this._allAssetTypes = types;
         this._allAssetCounts = counts;
         this._hostElement.classList.toggle('has-legend', this._showLegend && types.length >= 2);
-        if (this._legendControl) {
-            if (typesChanged) this._legendControl.assetTypes = types;
-            this._legendControl.assetCounts = counts;
-        }
+        this._legendControl?.update(types, counts);
     }
 
     private _isAssetVisible(asset: AssetWithLocation): boolean {
