@@ -84,9 +84,18 @@ public class CalendarEvent implements Serializable {
     protected Date end;
 
     @JsonSerialize(converter = RecurStringConverter.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(converter = RecurStringConverterJackson2.class)
     protected Recur<LocalDateTime> recurrence;
 
     public static class RecurStringConverter extends StdConverter<Recur<?>, String> {
+
+        @Override
+        public String convert(Recur<?> value) {
+            return value.toString();
+        }
+    }
+
+    public static class RecurStringConverterJackson2 extends com.fasterxml.jackson.databind.util.StdConverter<Recur<?>, String> {
 
         @Override
         public String convert(Recur<?> value) {

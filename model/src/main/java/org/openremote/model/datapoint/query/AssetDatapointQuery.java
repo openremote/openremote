@@ -68,6 +68,7 @@ public abstract class AssetDatapointQuery implements Serializable {
     public long toTimestamp;
 
     @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializerJackson2.class)
     @Schema(description = "Inclusive lower range bound for `all`, `interval`, and `lttb` as an ISO local or "
             + "offset date-time. A local value is interpreted in the server time zone; an offset value is "
             + "converted to the server time zone. Takes precedence over `fromTimestamp` and is ignored by "
@@ -76,6 +77,7 @@ public abstract class AssetDatapointQuery implements Serializable {
     public LocalDateTime fromTime;
 
     @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializerJackson2.class)
     @Schema(description = "Inclusive upper range bound for `all`, `interval`, and `lttb` as an ISO local or "
             + "offset date-time. A local value is interpreted in the server time zone; an offset value is "
             + "converted to the server time zone. Takes precedence over `toTimestamp` and is ignored by "
