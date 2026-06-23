@@ -15,10 +15,13 @@ import { Util } from "@openremote/core";
 import { AssetWithLocation } from "..";
 
 let _compactFormatter: Intl.NumberFormat | undefined;
+let _compactFormatterLocale: string | undefined;
 
 export function formatCount(n: number): string {
-    if (!_compactFormatter) {
-        _compactFormatter = new Intl.NumberFormat(i18next.language || navigator.language, {
+    const locale = i18next.language || navigator.language;
+    if (!_compactFormatter || locale !== _compactFormatterLocale) {
+        _compactFormatterLocale = locale;
+        _compactFormatter = new Intl.NumberFormat(_compactFormatterLocale, {
             notation: "compact",
             compactDisplay: "short",
             maximumFractionDigits: 1

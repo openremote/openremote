@@ -81,7 +81,7 @@ export class OrMapPresetFilter extends LitElement {
             vaadin-select-item::part(content) {
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: calc(100% - 40px);
+                max-width: calc(100% - 60px);
             }
             @media only screen and (max-width: 40em) {
                 :host {
