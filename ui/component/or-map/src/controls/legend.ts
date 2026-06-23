@@ -67,7 +67,6 @@ export class OrMapLegend extends LitElement {
             #legend-title {
                 height: 38px;
                 line-height: 38px;
-                z-index: 99999;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
