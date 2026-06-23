@@ -45,8 +45,10 @@ public abstract class AssetDatapointQuery implements Serializable {
     public long fromTimestamp;
     public long toTimestamp;
     @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializerJackson2.class)
     public LocalDateTime fromTime;
     @JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = AssetDatapointQueryLocalDateTimeDeserializerJackson2.class)
     public LocalDateTime toTime;
 
     public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {

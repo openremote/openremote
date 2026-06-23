@@ -38,16 +38,9 @@ import java.time.format.DateTimeParseException;
  */
 public class AssetDatapointQueryLocalDateTimeDeserializer extends ValueDeserializer<LocalDateTime> {
 
-    @Override
-    public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
-        if (p.currentToken() == JsonToken.VALUE_NULL) {
-            return null;
-        }
-        if (p.currentToken() != JsonToken.VALUE_STRING) {
-            return (LocalDateTime) ctxt.handleUnexpectedToken(LocalDateTime.class, p);
-        }
+    static final String EXPECTED_FORMAT_MESSAGE = "Expected ISO_LOCAL_DATE_TIME or ISO_OFFSET_DATE_TIME for AssetDatapointQuery time field";
 
-        String raw = p.getText();
+    static LocalDateTime parse(String raw) {
         String value = raw != null ? raw.trim() : "";
         if (value.isEmpty()) {
             return null;
@@ -59,15 +52,27 @@ public class AssetDatapointQueryLocalDateTimeDeserializer extends ValueDeseriali
             // Keep trying offset-aware parsing below.
         }
 
+        return OffsetDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .toLocalDateTime();
+    }
+
+    @Override
+    public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+        if (p.currentToken() == JsonToken.VALUE_NULL) {
+            return null;
+        }
+        if (p.currentToken() != JsonToken.VALUE_STRING) {
+            return (LocalDateTime) ctxt.handleUnexpectedToken(LocalDateTime.class, p);
+        }
+
         try {
-            return OffsetDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-                    .atZoneSameInstant(ZoneId.systemDefault())
-                    .toLocalDateTime();
+            return parse(p.getText());
         } catch (DateTimeParseException ex) {
             throw InvalidFormatException.from(
                     p,
-                    "Expected ISO_LOCAL_DATE_TIME or ISO_OFFSET_DATE_TIME for AssetDatapointQuery time field",
-                    value,
+                    EXPECTED_FORMAT_MESSAGE,
+                    p.getText(),
                     LocalDateTime.class
             );
         }
