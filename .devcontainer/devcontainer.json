@@ -1,0 +1,25 @@
+{
+  "name": "OpenRemote Devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "workspaceFolder": "/workspaces/openremote",
+  "remoteUser": "root",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/git-lfs:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "jdkDistro": "open",
+      "installGradle": "true",
+      "installGroovy": "true"
+    }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind,readonly"
+  ],
+  "forwardPorts": [8080],
+  "onCreateCommand": "echo 'devcontainer readye'",
+  "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
+}
