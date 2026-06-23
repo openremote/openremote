@@ -2200,8 +2200,8 @@ __metadata:
   resolution: "@openremote/or-tree-menu@workspace:ui/component/or-tree-menu"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/or-mwc-components": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^3.3.1"
   languageName: unknown

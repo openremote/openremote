@@ -9,9 +9,7 @@
   ],
   "references": [
     { "path": "../core" },
-    { "path": "../rest" },
-    { "path": "../model" },
-    { "path": "../or-mwc-components" },
-    { "path": "../or-translate" }
+    { "path": "../or-translate" },
+    { "path": "../or-vaadin-components" }
 ]
 }
