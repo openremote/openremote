@@ -218,7 +218,7 @@ export class OrMapPresetFilter extends LitElement {
     protected updated(changedProperties: PropertyValues) {
         if (changedProperties.has("filters") && this.filters.length) {
             const stored = localStorage.getItem(this._getStorageKey());
-            const storedIndex = stored !== null ? parseInt(stored) : -1;
+            const storedIndex = stored !== null ? parseInt(stored, 10) : -1;
             const isValidStored = storedIndex >= 0 && storedIndex <= this.filters.length;
 
             if (isValidStored) {
@@ -235,7 +235,7 @@ export class OrMapPresetFilter extends LitElement {
     }
 
     protected _onChange(e: Event) {
-        this._activeIndex = parseInt((e.target as HTMLInputElement).value) || 0;
+        this._activeIndex = parseInt((e.target as HTMLInputElement).value, 10) || 0;
         localStorage.setItem(this._getStorageKey(), String(this._activeIndex));
         const filter = this._activeIndex > 0 ? this.filters[this._activeIndex - 1].query : null;
         this.dispatchEvent(new OrMapPresetFilterEvent(filter));
@@ -271,7 +271,7 @@ export class OrMapPresetFilterControl extends OrMapBaseControl {
     getInitialFilter(): AssetQuery | null {
         const key = `or-map-filter:${manager.displayRealm}:${manager.username}`;
         const stored = localStorage.getItem(key);
-        const storedIndex = stored !== null ? parseInt(stored) : -1;
+        const storedIndex = stored !== null ? parseInt(stored, 10) : -1;
         const isValid = storedIndex >= 0 && storedIndex <= this._filters.length;
         if (isValid && storedIndex > 0) return this._filters[storedIndex - 1].query;
         const defaultIndex = this._filters.findIndex(f => f.default);
