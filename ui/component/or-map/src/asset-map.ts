@@ -241,7 +241,8 @@ export class AssetMap extends BaseMap {
             if (type !== undefined && type !== '') counts[type] = (counts[type] ?? 0) + 1;
         }
         const types = Object.keys(counts);
-        const typesChanged = types.length !== this._allAssetTypes.length;
+        const prevTypes = new Set(this._allAssetTypes);
+        const typesChanged = types.length !== prevTypes.size || types.some(t => !prevTypes.has(t));
         this._allAssetTypes = types;
         this._allAssetCounts = counts;
         this._hostElement.classList.toggle('has-legend', this._showLegend && types.length >= 2);
