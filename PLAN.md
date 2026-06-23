@@ -430,6 +430,381 @@ Tests:
 - Verify unknown fallback assets still work.
 - Verify confirmed creation of a custom definition over existing fallback assets changes descriptor behavior as expected.
 
+## Manual Test Plan
+
+Use this section for the phase 1 prototype validation pass. Record the Manager version/commit, browser, realm, user, and any console or network errors for failed cases.
+
+Suggested naming convention for manual data:
+
+- Custom type prefix: `Manual`
+- Primary type: `ManualBoilerAsset`
+- Unused type: `ManualUnusedAsset`
+- Fallback test type: `ManualFallbackAsset`
+- Assets: `Manual Boiler 1`, `Manual Boiler 2`, `Manual Generic Thing`
+
+Custom type names must only use word characters (`A-Z`, `a-z`, `0-9`, `_`).
+
+### Manual Test Report Template
+
+```text
+Commit / build:
+Browser:
+Realm:
+Super admin user:
+Regular user:
+
+Test case:
+Result: PASS / FAIL / BLOCKED
+Observed:
+Expected:
+Screenshots / logs:
+Notes:
+```
+
+### 1. Super Admin Access
+
+Steps:
+
+1. Log in as a super admin.
+2. Open the custom asset types page.
+3. Verify the page loads and the add button is available.
+4. Log in as a regular non-super-admin user.
+5. Verify the custom asset types page is not available from navigation.
+6. Try opening the page URL directly as the regular user.
+
+Expected:
+
+- Super admins can list and manage custom asset type definitions.
+- Non-super-admin users cannot access the management UI.
+- Direct URL access as a non-super-admin shows an access-denied or unsupported state, not the editor.
+
+Manual result:
+
+- PASS. Direct access as a non-super-admin displayed `Not supported` in the main page frame.
+
+### 2. Create a Basic Custom Asset Type
+
+Create `ManualBoilerAsset` with:
+
+- Display name: `Manual Boiler`
+- Icon: any valid icon, for example `water-boiler`
+- Colour: any valid colour, for example `#1976d2`
+- Description: `Manual test boiler type`
+- Attribute `temperature`
+  - Type: `number`
+  - Required
+  - Label: `Temperature`
+  - Units: `C`
+  - Default value: `21`
+  - Store datapoints: enabled
+- Attribute `enabled`
+  - Type: `boolean`
+  - Optional
+  - Label: `Enabled`
+  - Default value: `true`
+- Attribute `serialNumber`
+  - Type: `text`
+  - Optional
+  - Label: `Serial number`
+
+Steps:
+
+1. Click add custom asset type.
+2. Fill in the metadata and attributes above.
+3. Save.
+4. Stay on the page and inspect the saved row.
+
+Expected:
+
+- Save succeeds.
+- A success toast is shown.
+- The saved row appears without page reload.
+- Usage count is `0`.
+- The row shows the expected display name, attribute count, enabled state, icon, colour, and description.
+
+Manual result:
+
+- PASS. The type was created successfully.
+- Follow-up: expanded row display had a large gap and attribute information was truncated on the right. Adjusted the read-only details layout so the attributes section uses the full width and wraps long metadata.
+- Retest PASS. The expanded row display issue is fixed.
+
+### 3. Add an Asset of the New Custom Type
+
+Steps:
+
+1. Open the normal asset tree/add asset flow.
+2. Open the asset type selector.
+3. Select `ManualBoilerAsset`.
+4. Create asset `Manual Boiler 1`.
+5. Open the asset details.
+
+Expected:
+
+- `ManualBoilerAsset` appears in the add-asset selector without restarting Manager.
+- The selector does not require typing an arbitrary unknown type name.
+- The created asset is saved and appears in the asset tree.
+- The asset keeps `type = ManualBoilerAsset`.
+- Descriptor-driven fields render for `temperature`, `enabled`, and `serialNumber`.
+- Default values are applied on creation where configured.
+
+Verification note:
+
+- Functional check: inspect the asset API response in the browser network panel and verify the asset JSON has `"type": "ManualBoilerAsset"`.
+- Stored-value check: query the database with `select id, name, type from asset where realm = '<realm>' and name = 'Manual Boiler 1';` and verify `type = ManualBoilerAsset`.
+
+Manual result:
+
+- PASS. Asset creation, selector behavior, tree visibility, descriptor-driven fields, API `type`, and database `type` were verified successfully.
+
+### 4. Usage Count Refresh
+
+Steps:
+
+1. Return to the custom asset types page.
+2. Locate `ManualBoilerAsset`.
+
+Expected:
+
+- Usage count is at least `1`.
+- Delete action is disabled or otherwise blocked while usage is greater than `0`.
+
+Manual result:
+
+- PASS.
+
+### 5. Compatible Update on an In-Use Type
+
+Steps:
+
+1. Edit `ManualBoilerAsset`.
+2. Add attribute `setpoint`.
+3. Set type to `number`.
+4. Mark it optional.
+5. Set label `Setpoint`, units `C`, and default value `19`.
+6. Save.
+7. Create `Manual Boiler 2` using `ManualBoilerAsset`.
+8. Open `Manual Boiler 2`.
+
+Expected:
+
+- Save succeeds because the added attribute is optional.
+- The asset model refreshes without restart.
+- New assets of this type include or can render the new `setpoint` attribute.
+- The configured default value is applied to new assets where the creation flow initializes defaults.
+
+Manual result:
+
+- PASS.
+
+### 6. Blocked Updates on an In-Use Type
+
+Use `ManualBoilerAsset` after at least one asset exists. After each failed attempt, cancel or reload the editor before trying the next one.
+
+Steps and expected results:
+
+1. Remove existing attribute `temperature` and save.
+   - Expected: save fails with a message explaining that an attribute cannot be removed while assets use the custom type.
+2. Add new attribute `pressure`, type `number`, required, and save.
+   - Expected: save fails with a message explaining that new attributes must be optional while assets use the custom type.
+3. Change existing attribute `temperature`, for example by changing its type, label, units, default, or metadata, and save.
+   - Expected: save fails with a message explaining that an existing attribute cannot be changed while assets use the custom type.
+
+Also verify:
+
+- The toast does not show only a generic `409 Conflict` wrapper.
+- The definition remains unchanged after each failed save.
+
+Manual result:
+
+- PASS.
+- Follow-up: the delete cross button in the attribute editor was visually truncated. Adjusted the editor action column and icon button sizing so the cross button has stable space.
+- Retest FAIL. The delete cross button was still visually truncated. Replaced the Vaadin icon button with a fixed-size native icon button for this attribute-row action.
+- Retest PARTIAL. Clipping was fixed, but the cross was not centered and the button was not aligned with the row. Adjusted the native icon button alignment and icon centering.
+
+### 7. Delete Behavior
+
+Steps:
+
+1. Try to delete `ManualBoilerAsset` while `Manual Boiler 1` or `Manual Boiler 2` still exists.
+2. Create a separate type `ManualUnusedAsset` with one optional text attribute.
+3. Save `ManualUnusedAsset`.
+4. Delete `ManualUnusedAsset`.
+5. Open the add-asset type selector.
+
+Expected:
+
+- `ManualBoilerAsset` cannot be deleted while assets use it.
+- `ManualUnusedAsset` can be deleted after confirmation.
+- Deleted custom types disappear from the custom asset type list.
+- Deleted custom types disappear from the add-asset selector without restart.
+
+Manual result:
+
+- PASS. The UI disabled deletion while `ManualBoilerAsset` was in use, direct API deletion returned `409 Conflict`, `ManualUnusedAsset` could be deleted, and deleted custom types disappeared from the list and add-asset selector.
+
+### 8. Validation and Editor Guardrails
+
+Steps and expected results:
+
+1. Try a type name containing spaces or dashes, for example `Manual Boiler-Asset`.
+   - Expected: save is blocked by the UI.
+2. Try duplicate attribute names.
+   - Expected: save is blocked by the UI.
+3. Open the value type selector.
+   - Expected: only the phase 1 allowlist is available.
+4. Try a default value that does not match the selected value type, for example `abc` for a `number` attribute.
+   - Expected: save fails with a validation message, and the definition is not persisted.
+5. Try a built-in type name such as `ThingAsset`.
+   - Expected: save fails because custom definitions cannot collide with built-in asset types.
+
+Manual result:
+
+- 8.1 PASS in UI. The create button was disabled for an invalid type name. API verification still required.
+- 8.2 PASS in UI. The create button was disabled for duplicate attribute names. API verification still required.
+- 8.3 PASS. The value type selector only exposed the expected allowlist.
+- 8.4 PASS for validation behavior, but the toast was generic. Added local UI detail for invalid default values.
+- 8.5 PASS for validation behavior, but the toast was generic. Added local UI detail for built-in asset type name collisions.
+- API verification for 8.1 and 8.2 PASS. Direct create calls returned `400 Bad Request`.
+- Retest PASS for 8.4 and 8.5. The generic save-failure toast issue is fixed for invalid default values and built-in type name collisions.
+
+### 9. Existing Fallback Asset Confirmation
+
+This case requires an existing asset whose stored type is unknown to the runtime model. If the UI cannot create one directly, seed it through an API call, test fixture, or database setup before starting the UI steps.
+
+Setup:
+
+1. Create or seed an asset with stored `type = ManualFallbackAsset`.
+2. Verify there is no saved custom definition named `ManualFallbackAsset`.
+
+Steps:
+
+1. Open the custom asset types page as super admin.
+2. Create a new definition named `ManualFallbackAsset`.
+3. Save.
+4. Cancel the confirmation dialog.
+5. Verify no definition was created.
+6. Create the same definition again.
+7. Confirm the warning dialog.
+8. Re-open the existing fallback asset.
+
+Expected:
+
+- First save attempt warns that existing fallback assets use this type name.
+- Cancelling leaves the system unchanged.
+- Confirming creates the definition.
+- Usage count reflects the existing fallback asset.
+- The existing asset now resolves against the custom type descriptors.
+
+Manual result:
+
+- PASS.
+
+### 10. Unknown Fallback Behavior Remains
+
+This case also requires an asset with an unknown stored type that has no matching custom definition.
+
+Steps:
+
+1. Create or seed an asset with stored `type = ManualStillUnknownAsset`.
+2. Do not create a custom definition for that type.
+3. Open or read the asset.
+
+Expected:
+
+- The asset remains readable.
+- Existing generic fallback behavior is preserved.
+- The type is not treated as an authored custom type.
+- The type does not appear in the add-asset selector as a saved custom definition.
+
+Manual result:
+
+- PASS. API checks verified the unknown asset remained readable, no custom definition existed, and the type was not exposed through the runtime model.
+
+### 11. Restart Persistence
+
+Steps:
+
+1. Keep `ManualBoilerAsset` and at least one `ManualBoilerAsset` asset.
+2. Restart the Manager.
+3. Log back in as super admin.
+4. Open the custom asset types page.
+5. Open the add-asset type selector.
+6. Open an existing `ManualBoilerAsset` asset.
+
+Expected:
+
+- The custom definition persists after restart.
+- The runtime model loads the custom type at startup.
+- The add-asset selector includes the custom type.
+- Existing custom assets still read back with `type = ManualBoilerAsset`.
+- Descriptor-driven attributes still render correctly.
+
+Manual result:
+
+- PASS.
+
+### 12. Exact Type Matching for Queries and Groups
+
+This case may require API calls or an existing UI path for group asset setup.
+
+Setup:
+
+1. Ensure `ManualBoilerAsset` exists.
+2. Create `Manual Boiler 1` with stored type `ManualBoilerAsset`.
+3. Create `Manual Generic Thing` with stored type `ThingAsset`.
+
+Query checks:
+
+1. Query assets by type `ThingAsset`.
+2. Query assets by type `ManualBoilerAsset`.
+3. Query assets by both `ThingAsset` and `ManualBoilerAsset`.
+
+Expected:
+
+- `ThingAsset` query returns `Manual Generic Thing`, not `Manual Boiler 1`.
+- `ManualBoilerAsset` query returns `Manual Boiler 1`.
+- Combined query returns both assets.
+
+Manual result:
+
+- Query checks PASS. Type-only `asset/query` payloads were used; the attempted `names` filter was not accepted by the API.
+
+Group checks:
+
+1. Create a group with `childAssetType = ManualBoilerAsset`.
+2. Try assigning `Manual Boiler 1` as a child.
+3. Try assigning `Manual Generic Thing` as a child.
+4. Create a group with `childAssetType = ThingAsset`.
+5. Try assigning `Manual Boiler 1` as a child.
+
+Expected:
+
+- A group configured for `ManualBoilerAsset` accepts only assets whose stored type is exactly `ManualBoilerAsset`.
+- A group configured for `ThingAsset` does not accept assets whose stored type is `ManualBoilerAsset`.
+- Existing built-in Java hierarchy behavior for built-in asset types is unchanged.
+
+Manual result:
+
+- PASS. Invalid parent assignments failed as expected when editing the child asset. The UI showed a generic `Failed to save asset` toast, but the system behavior was correct.
+
+### 13. Cleanup
+
+Steps:
+
+1. Delete manual assets created during testing.
+2. Delete manual custom asset types after their usage count reaches `0`.
+3. Restart Manager if needed and verify deleted custom types do not reappear.
+
+Expected:
+
+- Types in use remain protected from deletion.
+- Unused types can be deleted.
+- Deleted types are removed from the runtime model and UI after refresh or restart.
+
+Manual result:
+
+- PASS.
+
 ## Phase 2 Items
 
 - Cluster-wide model refresh propagation.

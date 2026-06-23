@@ -140,13 +140,37 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                 .attribute-editor-row {
                     display: grid;
-                    grid-template-columns: repeat(5, minmax(120px, 1fr)) 42px;
+                    grid-template-columns: repeat(5, minmax(120px, 1fr)) 56px;
                     gap: 12px;
                     align-items: end;
                 }
 
-                .attribute-editor-row or-vaadin-button {
-                    align-self: center;
+                .attribute-remove-button {
+                    align-self: start;
+                    justify-self: center;
+                    width: 42px;
+                    height: 42px;
+                    margin-top: 31px;
+                    border: none;
+                    border-radius: 5px;
+                    background: #f7f7f7;
+                    color: var(--or-app-color4, #4d9d2a);
+                    position: relative;
+                    cursor: pointer;
+                    padding: 0;
+                }
+
+                .attribute-remove-button:hover {
+                    background: #efefef;
+                }
+
+                .attribute-remove-button or-icon {
+                    --or-icon-width: 24px;
+                    --or-icon-height: 24px;
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
                 }
 
                 .attribute-options {
@@ -201,6 +225,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                     max-height: 0;
                     transition: max-height 0.25s ease-out;
                     padding: 0 16px;
+                    white-space: normal;
                 }
 
                 .details-row.expanded .details-container {
@@ -235,10 +260,15 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
 
                 .attribute-row {
                     display: grid;
-                    grid-template-columns: minmax(140px, 1fr) minmax(110px, 160px) 90px minmax(140px, 1fr);
+                    grid-template-columns: minmax(160px, 1fr) minmax(110px, 160px) minmax(90px, 120px) minmax(260px, 2fr);
                     gap: 12px;
                     align-items: center;
                     min-height: 28px;
+                }
+
+                .attribute-row span {
+                    min-width: 0;
+                    overflow-wrap: anywhere;
                 }
 
                 .swatch {
@@ -571,7 +601,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                                     ${definition.colour || ""}
                                 </div>
                             </div>
-                            <div>
+                            <div class="full-width">
                                 <div class="field-label"><or-translate value="attribute_plural"></or-translate></div>
                                 <div class="attribute-list">
                                     ${attributeCount === 0 ? html`<span><or-translate value="noAttributesToShow"></or-translate></span>` : html`
@@ -681,9 +711,9 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                                       @input=${(ev: InputEvent) => this._updateDraftAttributeUnits(index, (ev.currentTarget as OrVaadinTextField).value)}>
                     <or-translate slot="label" value="attributeUnits"></or-translate>
                 </or-vaadin-text-field>
-                <or-vaadin-button theme="icon" title=${i18next.t("delete")} @click=${() => this._removeDraftAttribute(index)}>
+                <button class="attribute-remove-button" title=${i18next.t("delete")} @click=${() => this._removeDraftAttribute(index)}>
                     <or-icon icon="close-circle"></or-icon>
-                </or-vaadin-button>
+                </button>
                 <div class="attribute-options">
                     <or-vaadin-checkbox ?checked=${attribute.optional === true}
                                         @change=${(ev: Event) => this._updateDraftAttribute(index, {optional: (ev.currentTarget as OrVaadinCheckbox).checked})}>
@@ -882,7 +912,7 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
                 }
             } else {
                 console.error("Failed to create custom asset type definition", e);
-                showSnackbar(undefined, this._getErrorMessage(e, "saveCustomAssetTypeFailed"), "dismiss");
+                showSnackbar(undefined, this._getSaveErrorMessage(e, definitionToCreate), "dismiss");
             }
         } finally {
             if (this.isConnected) {
@@ -1129,9 +1159,15 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
         return detail ? fallback + ": " + detail : fallback;
     }
 
+    protected _getSaveErrorMessage(error: any, definition: CustomAssetTypeDefinition): string {
+        const fallback = i18next.t("saveCustomAssetTypeFailed");
+        const detail = this._getLocalValidationDetail(definition) || this._getErrorDetail(error);
+        return detail ? fallback + ": " + detail : fallback;
+    }
+
     protected _getUpdateErrorMessage(error: any, definition: CustomAssetTypeDefinition): string {
         if (this._getErrorStatus(error) !== 409) {
-            return this._getErrorMessage(error, "saveCustomAssetTypeFailed");
+            return this._getSaveErrorMessage(error, definition);
         }
 
         const fallback = i18next.t("saveCustomAssetTypeFailed");
@@ -1139,6 +1175,66 @@ export class PageCustomAssetTypes extends Page<AppStateKeyed> {
             || this._getErrorDetail(error)
             || i18next.t("customAssetTypeVersionConflict");
         return fallback + ": " + detail;
+    }
+
+    protected _getLocalValidationDetail(definition: CustomAssetTypeDefinition): string | undefined {
+        const name = definition.name?.trim() || "";
+        if (!PageCustomAssetTypes.TYPE_NAME_PATTERN.test(name)) {
+            return i18next.t("customAssetTypeInvalidName", {name});
+        }
+
+        const assetDescriptor = AssetModelUtil.getAssetDescriptor(name);
+        if (assetDescriptor && assetDescriptor.dynamic !== true) {
+            return i18next.t("customAssetTypeBuiltInName", {name});
+        }
+
+        const attributeNames = new Set<string>();
+        for (const attribute of definition.attributes || []) {
+            const attributeName = attribute.name?.trim() || "";
+            if (!PageCustomAssetTypes.TYPE_NAME_PATTERN.test(attributeName)) {
+                return i18next.t("customAssetTypeInvalidAttributeName", {attribute: attributeName});
+            }
+            if (attributeNames.has(attributeName)) {
+                return i18next.t("customAssetTypeDuplicateAttribute", {attribute: attributeName});
+            }
+            attributeNames.add(attributeName);
+
+            if (!attribute.type || !PageCustomAssetTypes.VALUE_TYPES.has(attribute.type)) {
+                return i18next.t("customAssetTypeUnsupportedValueType", {attribute: attributeName, type: attribute.type});
+            }
+            if (this._isAttributeDefaultValueInvalid(attribute)) {
+                return i18next.t("customAssetTypeInvalidDefaultValue", {
+                    attribute: attributeName,
+                    type: this._getValueTypeLabel(attribute.type)
+                });
+            }
+        }
+        return;
+    }
+
+    protected _isAttributeDefaultValueInvalid(attribute: CustomAssetTypeAttributeDefinition): boolean {
+        const value = attribute.defaultValue;
+        if (value === undefined || value === null) {
+            return false;
+        }
+
+        switch (attribute.type) {
+            case WellknownValueTypes.BOOLEAN:
+                return typeof value !== "boolean";
+            case WellknownValueTypes.INTEGER:
+            case WellknownValueTypes.LONG:
+                return typeof value !== "number" || !Number.isInteger(value);
+            case WellknownValueTypes.NUMBER:
+                return typeof value !== "number" || !Number.isFinite(value);
+            case WellknownValueTypes.GEOJSONPOINT:
+                return typeof value !== "object" || Array.isArray(value);
+            default:
+                return false;
+        }
+    }
+
+    protected _getValueTypeLabel(type?: string): string {
+        return PageCustomAssetTypes.VALUE_TYPE_OPTIONS.find(option => option.value === type)?.label || type || "";
     }
 
     protected _getInUseUpdateConflictDetail(definition: CustomAssetTypeDefinition): string | undefined {
