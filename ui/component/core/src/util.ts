@@ -1127,10 +1127,28 @@ export class AssetQueryHelper implements AssetQuery {
         if (query) Object.assign(this, query);
     }
 
+    // Single source of truth for which AssetQuery fields matches() evaluates.
+    // getUnsupportedFields derives from this — keep it in sync with matches().
+    private static readonly _SUPPORTED_FIELDS = new Set<string>([
+        "ids", "types", "names", "parents", "paths", "realm", "attributes",
+    ]);
+
     matches(asset: Asset): boolean {
+        if (this.ids?.length && (!asset.id || !this.ids.includes(asset.id))) return false;
         if (this.types?.length && (!asset.type || !this.types.includes(asset.type))) return false;
+        if (this.realm?.name && asset.realm !== this.realm.name) return false;
+        if (this.parents?.length && !this.parents.some(p => !p.id || asset.parentId === p.id)) return false;
+        if (this.paths?.length) {
+            const assetPath = asset.path ?? [];
+            if (!this.paths.some(p => (p.path ?? []).every((id, i) => assetPath[i] === id))) return false;
+        }
+        if (this.names?.length && !this.names.every(p => AssetQueryHelper._evalValuePredicate(asset.name, p as ValuePredicateUnion))) return false;
         if (this.attributes) return AssetQueryHelper._evalGroup(asset, this.attributes as LogicGroup<AttributePredicate>);
         return true;
+    }
+
+    static getUnsupportedFields(query: AssetQuery): string[] {
+        return Object.keys(query).filter(k => !AssetQueryHelper._SUPPORTED_FIELDS.has(k));
     }
 
     collectAttributeNames(): string[] {
