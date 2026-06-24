@@ -27,13 +27,12 @@ export class UsersPage implements BasePage {
    * @param roles The roles to toggle
    */
   async toggleUserRoles(...roles: string[]) {
-    const roleSelector = this.page.getByRole("button", { name: "Manager roles" });
-    const itemSelector = this.page.locator("li");
-    await roleSelector.click({ delay: 500 });
-    for (const role of roles) {
-      await itemSelector.filter({ hasText: role }).click();
-    }
+    const roleSelector = this.page.locator("or-vaadin-multi-select-combo-box", { hasText: "Manager roles" });
     await roleSelector.click();
+    for (const role of roles) {
+      await this.page.getByRole("option", {name: role}).click();
+    }
+    await roleSelector.locator("#toggleButton").click();
   }
 
   /**
@@ -67,14 +66,11 @@ export class UsersPage implements BasePage {
       .filter({ hasText: "Regular users" })
       .getByRole("button", { name: "Add User" })
       .click();
-    await this.page.locator("label").filter({ hasText: "Username" }).fill(username);
-    await this.page
-      .locator("label")
-      .filter({ hasText: /Password/ })
-      .fill(password);
-    await this.page.locator("label").filter({ hasText: "Repeat password" }).fill(password);
+    await this.page.getByLabel("Username", {exact: true}).fill(username);
+    await this.page.getByLabel("Password", {exact: true}).fill(password);
+    await this.page.getByLabel("Repeat password", {exact: true}).fill(password);
     if (tag) {
-      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+        await this.page.getByLabel("Tag", {exact: true}).fill(tag);
     }
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);
@@ -96,9 +92,9 @@ export class UsersPage implements BasePage {
       .filter({ hasText: "Service users" })
       .getByRole("button", { name: "Add User" })
       .click();
-    await this.page.locator("label").filter({ hasText: "Username" }).fill(username);
+    await this.page.getByLabel("Username").fill(username);
     if (tag) {
-      await this.page.locator("label").filter({ hasText: "Tag" }).fill(tag);
+      await this.page.getByLabel("Tag").fill(tag);
     }
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);
@@ -114,7 +110,7 @@ export class UsersPage implements BasePage {
    */
   async searchRegularUsers(searchTerm: string) {
     const panel = this.page.locator("#content").filter({ hasText: "Regular users" }).first();
-    const input = panel.locator('or-mwc-input[placeholder="Search"] input');
+    const input = panel.locator('*[placeholder="Search"] input');
     await input.fill(searchTerm);
   }
 
@@ -124,7 +120,7 @@ export class UsersPage implements BasePage {
    */
   async searchServiceUsers(searchTerm: string) {
     const panel = this.page.locator("#content").filter({ hasText: "Service users" }).first();
-    const input = panel.locator('or-mwc-input[placeholder="Search"] input');
+    const input = panel.locator('*[placeholder="Search"] input');
     await input.fill(searchTerm);
   }
 }

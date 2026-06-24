@@ -65,9 +65,12 @@ export const defineAppConfig = (path: string) => {
       /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
       trace: "retain-on-failure",
       video: "on",
+      locale: "en",
     },
     webServer: {
-      command: `node ${join(__dirname, "manager.cjs")}`
+      command: `node ${join(__dirname, "manager.cjs")}`,
+      url: 'http://localhost:8080',
+      reuseExistingServer: !process.env.CI,
     },
     /* Configure projects */
     projects: [

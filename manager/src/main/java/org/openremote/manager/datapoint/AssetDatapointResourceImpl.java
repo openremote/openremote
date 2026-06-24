@@ -108,14 +108,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            // If restricted, the attribute should also be restricted
-            if(isRestrictedUser()) {
-                attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_READ).ifPresentOrElse((v) -> {
-                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
-                }, () -> {
-                    throw new WebApplicationException(Response.Status.FORBIDDEN);
-                });
-            }
+            checkRestrictedAttributeRead(attribute);
 
             // If not logged in, attribute should be PUBLIC READ
             if(!isAuthenticated()) {
@@ -160,6 +153,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
+            checkRestrictedAttributeRead(attribute);
+
             return assetDatapointService.getDatapointPeriod(assetId, attributeName);
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ex);
@@ -196,9 +191,11 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
 
-                asset.getAttribute(attributeRef.getName()).orElseThrow(() ->
+                Attribute<?> attribute = asset.getAttribute(attributeRef.getName()).orElseThrow(() ->
                         new WebApplicationException(Response.Status.NOT_FOUND)
                 );
+
+                checkRestrictedAttributeRead(attribute);
             }
 
             DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp + " in format " + format);
@@ -240,6 +237,12 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
         } catch (IOException ex) {
             asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
             DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to create piped output stream: ", ex);
+        }
+    }
+
+    private void checkRestrictedAttributeRead(Attribute<?> attribute) {
+        if (isRestrictedUser() && !attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
     }
 }

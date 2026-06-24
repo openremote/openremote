@@ -5,6 +5,7 @@
         "@types/react", // Required by mdx which is used in Storybook
         "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
         "@types/offscreencanvas", // Referenced in the tsconfig file
+        "inter-ui", // Only imports CSS files
         "@vaadin/vaadin-lumo-styles", // Only imports CSS files
         "@openremote/theme", // Only imports CSS files
         // --- HOISTED UTIL PACKAGE TOOLING ---
@@ -12,6 +13,7 @@
         // AND stops Knip from flagging them as "Unlisted" when used by other workspaces.
         "@custom-elements-manifest/analyzer",
         "@rspack/cli",
+        "@types/eslint-scope",
         "@typescript-eslint/eslint-plugin",
         "@typescript-eslint/parser",
         "@wc-toolkit/cem-inheritance",

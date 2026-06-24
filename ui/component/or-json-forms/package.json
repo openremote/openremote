@@ -27,7 +27,8 @@
     "@openremote/or-components": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
-    "ajv": "^8.8.2",
+    "@openremote/or-vaadin-components": "workspace:*",
+    "ajv": "^8.20.0",
     "lit": "^3.3.1"
   },
   "devDependencies": {
