@@ -185,6 +185,9 @@ export class AttributesPanel extends LitElement {
     @property({type: Boolean})
     public onlyDataAttrs = false;
 
+    @property({type: Boolean})
+    public includePredictedDataAttrs = false;
+
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
 
@@ -269,9 +272,9 @@ export class AttributesPanel extends LitElement {
     protected openAttributeSelector(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
         let dialog: OrAssetAttributePicker;
         if (attributeRefs != null) {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setAttributeFilter(attributeFilter));
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setShowPredictedDataAttrs(this.includePredictedDataAttrs).setAttributeFilter(attributeFilter));
         } else {
-            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs));
+            dialog = showDialog(new OrAssetAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs).setShowPredictedDataAttrs(this.includePredictedDataAttrs));
         }
         dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.attributeRefs = event.detail;
