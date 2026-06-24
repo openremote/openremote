@@ -94,7 +94,7 @@ export class OrMapLegend extends LitElement {
                 font-size: var(--lumo-font-size-m);
                 /* Remove hover highlight */
                 --lumo-primary-color-10pct: transparent;
-                cursor: default;
+                cursor: pointer;
             }
             or-vaadin-item:last-child {
                 margin-bottom: 4px;
@@ -152,6 +152,18 @@ export class OrMapLegend extends LitElement {
         return super.shouldUpdate(changedProperties);
     }
 
+    private _setExcluded(assetType: string, excluded: boolean) {
+        if (excluded === this.excludedTypes.includes(assetType)) return;
+        this.excludedTypes = excluded
+            ? [...this.excludedTypes, assetType]
+            : this.excludedTypes.filter(t => t !== assetType);
+        this.dispatchEvent(new OrMapLegendEvent(this.excludedTypes));
+    }
+
+    private _toggleType(assetType: string) {
+        this._setExcluded(assetType, !this.excludedTypes.includes(assetType));
+    }
+
     protected render(): TemplateResult | typeof html {
         if (this.assetTypes.length < 2) return html``;
         const sortedTypes = [...this.assetTypes].sort((a, b) =>
@@ -165,7 +177,7 @@ export class OrMapLegend extends LitElement {
                 </div>
                 <or-vaadin-list-box id="legend-list" class="${this._contentHidden ? '' : 'expanded'}">
                     ${sortedTypes.map((assetType) => html`
-                        <or-vaadin-item>
+                        <or-vaadin-item @click="${() => this._toggleType(assetType)}">
                             <div style="display: flex; align-items: center; width: 100%; gap: 6px; min-width: 200px;">
                                 <or-icon
                                     icon="${this._assetTypesInfo[assetType].icon}"
@@ -180,12 +192,7 @@ export class OrMapLegend extends LitElement {
                                     @click="${(e: Event) => e.stopPropagation()}"
                                     @change="${(ev: Event) => {
                                         const checked = (ev.currentTarget as any).checked;
-                                        if (checked) {
-                                            this.excludedTypes = this.excludedTypes.filter(t => t !== assetType);
-                                        } else {
-                                            this.excludedTypes = [...this.excludedTypes, assetType];
-                                        }
-                                        this.dispatchEvent(new OrMapLegendEvent(this.excludedTypes));
+                                        this._setExcluded(assetType, !checked);
                                     }}"
                                 ></or-vaadin-checkbox>
                             </div>
