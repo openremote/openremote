@@ -35,7 +35,7 @@ const ALARM_COLOR = "FC2D2D";
 
 type NotificationMessage = EmailNotificationMessage | LocalizedNotificationMessage | PushNotificationMessage;
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
     let addAssetTypes = true;
     let addWait = true;
     let addAlarm = true;

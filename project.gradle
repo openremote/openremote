@@ -333,13 +333,13 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
         outputFileType = TypeScriptFileType.implementationFile
         outputKind = TypeScriptOutputKind.module
         outputFile = outputFileName
-        jackson2Configuration = [
-                fieldVisibility: "ANY",
-                creatorVisibility: "ANY",
-                getterVisibility: "NONE",
-                isGetterVisibility: "NONE",
-                setterVisibility: "NONE"
-        ]
+        jackson2Configuration = new Jackson2Configuration(
+                fieldVisibility: Visibility.ANY,
+                creatorVisibility: Visibility.ANY,
+                getterVisibility: Visibility.NONE,
+                isGetterVisibility: Visibility.NONE,
+                setterVisibility: Visibility.NONE
+        )
     }
 }
 

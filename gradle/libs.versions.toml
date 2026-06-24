@@ -30,7 +30,8 @@ hibernateValidator = "9.1.0.Final"
 hikaricp = "6.2.1"
 hiveMqttClient = "1.3.15"
 ical4j = "4.2.5"
-jackson = "3.1.3"
+jackson = "2.21.3"
+jackson3 = "3.1.3"
 jakartaEl = "4.0.2"
 jakartaElApi = "6.0.1"
 jakartaSecurityEnterpriseApi = "4.0.0"
@@ -118,11 +119,12 @@ hibernateValidator = { module = "org.hibernate.validator:hibernate-validator", v
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 hiveMqttClient = { module = "com.hivemq:hivemq-mqtt-client", version.ref = "hiveMqttClient" }
 ical4j = { module = "org.mnode.ical4j:ical4j", version.ref = "ical4j" }
-jacksonDataformatCsv = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-csv", version.ref = "jackson" }
+jacksonDataformatCsv = { module = "tools.jackson.dataformat:jackson-dataformat-csv", version.ref = "jackson3" }
 jacksonDatabind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jacksonDatatypeJdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
 jacksonDatatypeJsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 jacksonModuleParameterNames = { module = "com.fasterxml.jackson.module:jackson-module-parameter-names", version.ref = "jackson" }
+jackson3Databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson3" }
 jakartaAnnotationApi = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "javaxAnnotationApi" }
 jakartaEl = { module = "org.glassfish:jakarta.el", version.ref = "jakartaEl" }
 jakartaElApi = { module = "jakarta.el:jakarta.el-api", version.ref = "jakartaElApi" }
