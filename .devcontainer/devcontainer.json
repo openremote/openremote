@@ -8,7 +8,7 @@
     "ghcr.io/devcontainers/features/node:1": {},
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers-extra/features/git-lfs:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {},
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
       "jdkDistro": "open",
@@ -20,6 +20,6 @@
     "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind"
   ],
   "forwardPorts": [8080],
-  "onCreateCommand": "echo 'devcontainer ready'",
+  "onCreateCommand": "git lfs install && echo 'devcontainer ready'",
   "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
 }
