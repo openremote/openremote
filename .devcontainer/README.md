@@ -3,6 +3,7 @@
 This devcontainer provides a complete development environment for OpenRemote with Java 21, Node.js, Docker, and all necessary tools pre-configured.
 
 Please note that this feature is still in beta and may not be supported or work correctly in all IDEs.
+Tested and working with IntelliJ.
 
 ## Quick Start
 
