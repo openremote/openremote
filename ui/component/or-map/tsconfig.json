@@ -6,7 +6,6 @@
   },
   "include": [
     "./src", 
-    "../or-map/@types"
   ],
   "references": [
     { "path": "../core" },
