@@ -17,9 +17,9 @@
     }
   },
   "mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind,readonly"
+    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind"
   ],
   "forwardPorts": [8080],
-  "onCreateCommand": "echo 'devcontainer readye'",
+  "onCreateCommand": "echo 'devcontainer ready'",
   "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
 }
