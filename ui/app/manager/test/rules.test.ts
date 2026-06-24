@@ -108,13 +108,13 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("Rules");
     await page.click(".mdi-plus >> nth=0");
-    await page.locator("li").filter({hasText: "When-Then"}).click();
+    await page.getByRole("menuitem", {name: "When-Then", exact: true}).click();
     await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
 
     // When clause
     const when = page.locator("or-rule-when");
-    await when.getByRole("button", { name: "Add condition", exact: true }).click();
-    await when.locator("li[role='menuitem']").filter({hasText: energyRule.asset_type}).click();
+    await when.getByRole("menuitem", {name: "Add condition"}).click();
+    await when.getByRole("menuitem", {name: energyRule.asset_type}).click();
     await when.getByRole("combobox", { name: "Asset", exact: true }).click();
     await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
     await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
@@ -125,8 +125,8 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
 
     // Then clause
     const then = page.locator("or-rule-then-otherwise")
-    await then.getByRole("button", {name: "Add action", exact: true}).click();
-    await then.locator("li[role='menuitem']").filter({hasText: energyRule.asset_type}).click();
+    await then.getByRole("menuitem", {name: "Add action"}).click();
+    await then.getByRole("menuitem", {name: energyRule.asset_type}).click();
     await then.getByRole("combobox", { name: "Asset", exact: true }).click();
     await then.getByRole("option", { name: energyRule.asset, exact: true }).click();
     await then.getByRole("combobox", {name: "Attribute", exact: true}).click();
@@ -150,7 +150,7 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
  * @then The When-Then rule should appear in the rule list
  */
 test("Create a When-Then rule by searching for an asset", async ({page, manager, shared}) => {
-    const multiplier = 100;
+    const multiplier = 200; // Using a multiplier above 100, which is the default querying limit
     const aLotOfAssets = generateALotOfAssets(multiplier);
     await manager.setup("smartcity", {assets: aLotOfAssets});
     await manager.goToRealmStartPage("smartcity");
@@ -164,13 +164,13 @@ test("Create a When-Then rule by searching for an asset", async ({page, manager,
     expect(lastAssetName).toContain(energyRule.asset);
 
     await page.click(".mdi-plus >> nth=0");
-    await page.locator("li").filter({hasText: "When-Then"}).click();
+    await page.getByRole("menuitem", {name: "When-Then", exact: true}).click();
     await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
 
     // Select asset type of the When clause, search for the last asset in the list, and select the attribute
     const when = page.locator("or-rule-when")
-    await when.getByRole("button", { name: "Add condition" }).click();
-    await when.locator("li[role='menuitem']").filter({hasText: energyRule.asset_type}).click();
+    await when.getByRole("menuitem", {name: "Add condition"}).click();
+    await when.getByRole("menuitem", {name: energyRule.asset_type}).click();
     await when.getByRole("combobox", {name: "Asset", exact: true}).fill(lastAssetName);
     await when.getByRole("option", { name: lastAssetName, exact: true }).click();
     await when.getByRole("combobox", {name: "Attribute", exact: true}).fill(energyRule.attribute_when);
@@ -181,8 +181,8 @@ test("Create a When-Then rule by searching for an asset", async ({page, manager,
 
     // Configure Then clause
     const then = page.locator("or-rule-then-otherwise");
-    await then.getByRole("button", {name: "Add action"}).click();
-    await then.locator("li[role='menuitem']").filter({hasText: energyRule.asset_type}).click();
+    await then.getByRole("menuitem", {name: "Add action"}).click();
+    await then.getByRole("menuitem", {name: energyRule.asset_type}).click();
     await then.getByRole("combobox", {name: "Asset", exact: true}).fill(firstAssetName);
     await then.getByRole("option", {name: firstAssetName, exact: true}).click();
     await then.getByRole("combobox", {name: "Attribute", exact: true}).fill(energyRule.attribute_then);
@@ -211,7 +211,7 @@ test("Create a Flow rule for an asset with logic connections", async ({page, sha
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("Rules");
     await page.click(".mdi-plus >> nth=0");
-    await page.locator("li", {hasText: "Flow"}).click();
+    await page.getByRole("menuitem", {name: "Flow", exact: true}).click();
     await page.getByRole("textbox", { name: "Rule name" }).fill("Solar panel");
 
     await page.locator(".node-item.input-node", {hasText: "Attribute value"}).hover();
@@ -294,7 +294,7 @@ test("Legacy JavaScript rules are visible but read-only in the rules UI", async 
     await expect(page.locator("or-rule-tree").locator("or-mwc-input[icon='content-copy']")).toHaveCount(0);
 
     await page.click(".mdi-plus >> nth=0");
-    await expect(page.locator("li").filter({hasText: "JavaScript"})).toHaveCount(0);
+    await expect(page.getByRole("menuitem", {name: "JavaScript", exact: true})).toHaveCount(0);
 
     expect(api.postRequests).toBe(0);
     expect(api.putRequests).toBe(0);

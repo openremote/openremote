@@ -21,15 +21,13 @@ import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, queryAll} from "lit/decorators.js";
 import {map} from "lit/directives/map.js";
 import {when} from "lit/directives/when.js";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Util} from "@openremote/core";
 import {OrTreeNode} from "./or-tree-node";
 import {OrTreeGroup} from "./or-tree-group";
 import {moveNodesToGroupNode} from "./util";
 import {OrTreeDragEvent, OrTreeSelectEvent, TreeMenuSelection, TreeMenuSorting, TreeNode} from "./model";
-import {i18next} from "@openremote/or-translate";
+import {createMenuBarItem, MenuBarItem, SubMenuItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
+import "@openremote/or-translate";
 
 import "./or-tree-group";
 import "./or-tree-node";
@@ -329,12 +327,19 @@ export class OrTreeMenu extends LitElement {
      * @param options - The available sorting options
      */
     protected _getSortActionTemplate(value?: string, options?: TreeMenuSorting[]): TemplateResult {
-        return getContentWithMenuTemplate(
-            html`<or-mwc-input type=${InputType.BUTTON} icon="sort-variant" title="${i18next.t("sort")}"></or-mwc-input>`,
-            (options || []).map(sort => ({ value: sort, text: sort } as ListItem)),
-            value,
-            value => this._onSortClick(String(value))
-        );
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-icon icon="sort-variant"></or-icon>`),
+            children: (options ?? []).map(o => ({
+                checked: value && o === value,
+                component: createMenuBarItem(html`<or-translate value=${o}></or-translate>`),
+                value: o
+            })) as SubMenuItem[]
+        }]
+        return html`
+            <or-vaadin-menu-bar theme="icon" .items=${menuItems}
+                                @item-selected=${(ev: CustomEvent) => this._onSortClick(ev.detail.value.value)}
+            ></or-vaadin-menu-bar>
+        `;
     }
 
     /**
