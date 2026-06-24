@@ -23,7 +23,6 @@
   "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@maplibre/maplibre-gl-geocoder": "^1.5.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
