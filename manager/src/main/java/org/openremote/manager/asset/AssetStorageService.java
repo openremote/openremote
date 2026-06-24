@@ -51,6 +51,7 @@ import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.EventSubscription;
@@ -878,10 +879,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ids.forEach(assetLocks::lock);
 
                 persistenceService.doTransaction(em -> {
-                    // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
-                    // and the minimum supported TimescaleDB version includes that fix.
-                    em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
-
                     List<Asset<?>> assets = em
                         .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
                         .setParameter("ids", ids)
@@ -892,6 +889,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     }
 
                     assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
+                    deleteAssetDatapointsBySegment(em, ids);
                     assets.forEach(em::remove);
                     em.flush();
                 });
@@ -904,6 +902,38 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
         }
         return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void deleteAssetDatapointsBySegment(EntityManager em, List<String> assetIds) {
+        // TODO: Remove when https://github.com/timescale/timescaledb/issues/9916 is fixed
+        // and the minimum supported TimescaleDB version includes that fix.
+        em.createNativeQuery("SET LOCAL plan_cache_mode = force_custom_plan").executeUpdate();
+
+        // asset_datapoint is segmented by entity_id and attribute_name; deleting on the full segment key avoids
+        // decompressing columnstore chunks when assets are removed.
+        List<Object[]> segments = em.createNativeQuery(
+                "select distinct entity_id, attribute_name from " + AssetDatapoint.TABLE_NAME + " where entity_id in (:assetIds)"
+            )
+            .setParameter("assetIds", assetIds)
+            .getResultList();
+
+        if (segments.isEmpty()) {
+            return;
+        }
+
+        em.unwrap(Session.class).doWork(connection -> {
+            try (PreparedStatement st = connection.prepareStatement(
+                "delete from " + AssetDatapoint.TABLE_NAME + " where entity_id = ? and attribute_name = ?"
+            )) {
+                for (Object[] segment : segments) {
+                    st.setString(1, (String) segment[0]);
+                    st.setString(2, (String) segment[1]);
+                    st.addBatch();
+                }
+                st.executeBatch();
+            }
+        });
     }
 
     public boolean isUserAsset(String assetId) {
