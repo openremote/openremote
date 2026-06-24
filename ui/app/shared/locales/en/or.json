@@ -1142,7 +1142,7 @@
     "successfullySentNotification": "Successfully sent notification.",
     "missingFields": "Failed to create notification, missing required fields.",
     "details": "Notification details",
-    "createNotification": "Create notification",
+    "createNotification": "Send notification",
     "sendNew": "Send new"
   },
   "services": "Services",
