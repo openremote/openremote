@@ -23,7 +23,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
-import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
+import {AttributeAction, AttributeActionEvent, AttributeReplaceEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {BarChartWidgetConfig} from "../widgets/barchart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
@@ -158,6 +158,7 @@ export class BarChartSettings extends WidgetSettings {
                     <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       .attributeIconCallback=${attributeIconCallback} .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
+                                      @attribute-replace="${(ev: AttributeReplaceEvent) => this.onAttributeReplace(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-chart-panel>
                 </settings-panel>
@@ -395,6 +396,33 @@ export class BarChartSettings extends WidgetSettings {
                 this.widgetConfig.attributeSettings.methodAvgAttributes.push(ref);
             }
         });
+        this.notifyConfigUpdate();
+    }
+
+    /**
+     * Handles an in-place replacement of an {@link AttributeRef}. All per-attribute configuration
+     * (aggregation method, alignment, custom color, ...) is migrated from the old reference to the
+     * new one, so the new attribute inherits the full configuration of the one it replaces.
+     */
+    protected onAttributeReplace(ev: AttributeReplaceEvent) {
+        const {oldRef, newRef} = ev.detail;
+        const matches = (ar: AttributeRef) => ar.id === oldRef.id && ar.name === oldRef.name;
+
+        // Migrate the attribute settings categories (aggregation methods, alignment, ...)
+        const settings = this.widgetConfig.attributeSettings;
+        (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
+            settings[key] = settings[key]!.map((ar: AttributeRef) => matches(ar) ? {id: newRef.id, name: newRef.name} : ar);
+        });
+
+        // Migrate the custom color, if any
+        this.widgetConfig.attributeColors = (this.widgetConfig.attributeColors ?? [])
+            .map(entry => matches(entry[0]) ? [{id: newRef.id, name: newRef.name}, entry[1]] : entry);
+
+        // Swap the reference in place, keeping its position in the list
+        const index = this.widgetConfig.attributeRefs.findIndex(matches);
+        if (index >= 0) {
+            this.widgetConfig.attributeRefs[index] = {id: newRef.id, name: newRef.name};
+        }
         this.notifyConfigUpdate();
     }
 

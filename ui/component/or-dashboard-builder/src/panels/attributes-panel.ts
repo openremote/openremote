@@ -74,6 +74,22 @@ export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[], attrib
     }
 }
 
+export class AttributeReplaceEvent extends CustomEvent<{ oldRef: AttributeRef, newRef: AttributeRef }> {
+
+    public static readonly NAME = "attribute-replace";
+
+    constructor(oldRef: AttributeRef, newRef: AttributeRef) {
+        super(AttributeReplaceEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                oldRef: oldRef,
+                newRef: newRef
+            }
+        });
+    }
+}
+
 const styling = css`
     #attribute-list {
         overflow: auto;
@@ -200,6 +216,9 @@ export class AttributesPanel extends LitElement {
     @property({type: Boolean})
     public onlyDataAttrs = false;
 
+    @property({type: Boolean})
+    public includePredictedDataAttrs = false;
+
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
 
@@ -252,6 +271,35 @@ export class AttributesPanel extends LitElement {
         if (this.attributeRefs != null) {
             this.attributeRefs = this.attributeRefs.filter(ar => ar !== attributeRef);
         }
+    }
+
+    protected replaceWidgetAttribute(oldRef: AttributeRef) {
+        const dialog = showDialog(new OrAssetAttributePicker()
+            .setMultiSelect(false)
+            .setShowOnlyDatapointAttrs(this.onlyDataAttrs)
+            .setShowPredictedDataAttrs(this.includePredictedDataAttrs)
+            .setAttributeFilter(this.attributeFilter));
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
+            const newRef: AttributeRef | undefined = (event.detail as AttributeRef[])?.[0];
+            if (!newRef) {
+                return;
+            }
+            const index = this.attributeRefs.findIndex(ar => ar.id === oldRef.id && ar.name === oldRef.name);
+            if (index < 0) {
+                return;
+            }
+            // Guard against creating a duplicate reference.
+            if (this.attributeRefs.some(ar => ar.id === newRef.id && ar.name === newRef.name)) {
+                showSnackbar(undefined, "dashboard.attributeAlreadyAdded");
+                return;
+            }
+            // Notify listeners first so they can migrate per-attribute config (colors, axis, ...) before
+            // the list change propagates as a regular attribute-select event.
+            this.dispatchEvent(new AttributeReplaceEvent(oldRef, newRef));
+            const updated = [...this.attributeRefs];
+            updated[index] = newRef;
+            this.attributeRefs = updated;
+        });
     }
 
     protected async loadAssets(): Promise<Asset[]> {
@@ -387,6 +435,9 @@ export class AttributesPanel extends LitElement {
     protected _getBrokenAttributeActionsTemplate(attributeRef: AttributeRef): TemplateResult {
         return html`
             <div class="attribute-list-item-actions">
+                <button class="button-action" title="${i18next.t("dashboard.replaceAttribute")}" @click="${() => this.replaceWidgetAttribute(attributeRef)}">
+                    <or-icon icon="swap-horizontal"></or-icon>
+                </button>
                 <button class="button-action" title="${i18next.t("delete")}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                     <or-icon icon="close-circle"></or-icon>
                 </button>

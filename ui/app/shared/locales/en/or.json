@@ -934,7 +934,9 @@
     "fill": "Fill",
     "extendData": "Extend latest datapoint",
     "lineColor": "Line color",
-    "barColor": "Bar color"
+    "barColor": "Bar color",
+    "replaceAttribute": "Replace attribute",
+    "attributeAlreadyAdded": "This attribute is already added to the widget."
   },
   "south": "South",
   "east": "East",
