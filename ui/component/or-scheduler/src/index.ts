@@ -106,6 +106,10 @@ declare global {
 @customElement("or-scheduler")
 export class OrScheduler extends translate(i18next)(LitElement) {
     static styles = css`
+        or-vaadin-dialog::part(overlay) {
+            max-width: 600px;
+        }
+
         .time-label {
             display: flex;
             &>:first-child {

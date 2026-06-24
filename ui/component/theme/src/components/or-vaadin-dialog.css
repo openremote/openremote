@@ -21,7 +21,6 @@
 
 @media lumo_components_dialog-overlay-internal {
     :host::part(overlay) {
-        max-width: 600px;
         width: 100%;
     }
 }
