@@ -42,7 +42,6 @@ import {isAxiosError} from "@openremote/rest";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {cache} from "lit/directives/cache.js";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import {createMenuBarItem, MenuBarItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import {when} from "lit/directives/when.js";

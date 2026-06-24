@@ -1,4 +1,5 @@
 import { svg as html /** Aliased for syntax highlighting */, LitElement, TemplateResult, SVGTemplateResult } from "lit";
+import { formatCount } from "../util";
 import { customElement } from "lit/decorators.js";
 import { GeoJSONSource, Map } from "maplibre-gl";
 
@@ -19,9 +20,6 @@ export class OrClusterMarker extends LitElement {
     protected _clusterId?: number;
     protected _map: Map;
 
-    protected _highThreshold = 99;
-    protected _midTreshold = this._highThreshold / 10;
-    protected _lowTreshold = this._midTreshold / 10;
 
     constructor(slices: Slice[], clusterId: number, lng: number, lat: number, map: Map) {
         super();
@@ -61,14 +59,12 @@ export class OrClusterMarker extends LitElement {
             total += slice[2];
         }
 
-        const fontSize = total >= this._highThreshold ? 18 : total >= this._midTreshold ? 16 : total >= this._lowTreshold ? 14 : 12;
-        const r = total >= this._highThreshold ? 32 : total >= this._midTreshold ? 26 : total >= this._lowTreshold ? 16 : 12;
-        const r2 = total >= this._highThreshold ? 28 : total >= this._midTreshold ? 24 : total >= this._lowTreshold ? 16 : 8;
+        const fontSize = total >= 1000 ? 18 : total >= 100 ? 16 : 14;
+        const r = total >= 1000 ? 32 : total >= 100 ? 26 : 16;
+        const r2 = total >= 1000 ? 28 : total >= 100 ? 24 : 16;
         const dR = r - r2;
         const innerRadius: number = Math.round(r * 0.6);
         const w: number = r * 2;
-
-        const isClusterCountlimitSurpassed = total > this._highThreshold
 
         return html`
             <svg
@@ -86,7 +82,7 @@ export class OrClusterMarker extends LitElement {
                     ))}
                     <circle cx="${r}" cy="${r}" r="${innerRadius}" fill="white" />
                     <text dominant-baseline="central" transform="translate(${r}, ${r})">
-                        ${(isClusterCountlimitSurpassed ? this._highThreshold : total).toLocaleString() + (isClusterCountlimitSurpassed ? "+" : "")}
+                        ${formatCount(total)}
                     </text>
             </svg>
         `;

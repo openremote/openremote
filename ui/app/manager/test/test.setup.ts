@@ -26,6 +26,7 @@ setup(`Wait for the manager to be healthy`, async ({ manager }) => {
         intervals: [5_000, 1_000, 2_000, 5_000],
         timeout: 60_000
     }).toBe(200);
+    await manager.resetLocale("master", "admin", admin.password);
 });
 
 setup(`Login as "admin" user`, async ({ page, manager, context }) => {
@@ -77,6 +78,7 @@ setup.describe(async () => {
 });
 
 setup(`Login as "smartcity" user`, async ({ page, manager, context }) => {
+    await manager.resetLocale("smartcity", "smartcity", smartcity.password);
     await manager.goToRealmStartPage("smartcity");
     await manager.login("smartcity");
     await page.waitForURL("**/manager/**");
