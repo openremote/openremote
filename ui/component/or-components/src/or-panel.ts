@@ -3,10 +3,6 @@ import {customElement, property, query} from "lit/decorators.js";
 import {DefaultColor2, DefaultColor3} from "@openremote/core";
 import {when} from "lit/directives/when.js";
 
-// TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const simpleBarStyle = require("simplebar/dist/simplebar.css");
-const elevationStyle = require("@material/elevation/dist/mdc.elevation.css");
-
 // language=CSS
 const style = css`
     
@@ -56,11 +52,7 @@ const style = css`
 export class OrPanel extends LitElement {
 
     static get styles() {
-        return [
-            css `${unsafeCSS(elevationStyle)}`,
-            css `${unsafeCSS(simpleBarStyle)}`,
-            style
-        ];
+        return [style];
     }
 
     @property({type: Number})

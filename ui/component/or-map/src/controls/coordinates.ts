@@ -1,12 +1,33 @@
-import { IControl, LngLat, Map as MapGL } from "maplibre-gl";
-import { InputType, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+import { LngLat, Map as MapGL } from "maplibre-gl";
+import { OrMapBaseControl } from "./base";
+import "@openremote/or-vaadin-components/or-vaadin-text-field";
+import "@openremote/or-icon";
 
 export const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
 
 export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as OrMwcInput).value as string;
+            const valStr = (e.target as any).value as string;
             let value: LngLat | undefined = !valStr ? undefined : {} as LngLat;
 
             if (valStr) {
@@ -23,57 +44,58 @@ export function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLa
     };
 }
 
-export class CoordinatesControl implements IControl {
-    protected map?: MapGL;
-    protected elem?: HTMLElement;
-    protected input!: OrMwcInput;
+export class CoordinatesControl extends OrMapBaseControl {
+    protected input?: HTMLElement;
     protected _readonly = false;
     protected _value: any;
     protected _valueChangedHandler: (value: LngLat | undefined) => void;
 
     constructor(disabled = false, valueChangedHandler: (value: LngLat | undefined) => void) {
+        super();
         this._readonly = disabled;
         this._valueChangedHandler = valueChangedHandler;
     }
 
-    onAdd(map: MapGL): HTMLElement {
-        this.map = map;
-        const control = document.createElement("div");
-        control.classList.add("maplibregl-ctrl");
-        control.classList.add("maplibregl-ctrl-group");
+    onAdd(_map: MapGL): HTMLElement {
+        this._createContainer();
 
-        const input = new OrMwcInput();
-        input.type = InputType.TEXT;
-        input.outlined = true;
-        input.compact = true;
-        input.readonly = this._readonly;
-        input.icon = "crosshairs-gps";
-        input.value = this._value;
-        input.pattern = CoordinatesRegexPattern;
-        input.onkeyup = getCoordinatesInputKeyHandler(this._valueChangedHandler);
+        const input = document.createElement("or-vaadin-text-field") as HTMLElement;
+        if (this._readonly) input.setAttribute("readonly", "");
+        if (this._value != null) (input as any).value = this._value;
+        input.setAttribute("pattern", CoordinatesRegexPattern);
+        input.addEventListener("keyup", getCoordinatesInputKeyHandler(this._valueChangedHandler) as EventListener);
 
-        control.appendChild(input);
-        this.elem = control;
+        const icon = document.createElement("or-icon") as HTMLElement;
+        icon.setAttribute("icon", "mdi:crosshairs");
+        icon.setAttribute("slot", "prefix");
+        icon.style.cssText = "--or-icon-width: 14px; --or-icon-height: 14px; margin-left: 4px; margin-right: 8px;";
+        input.appendChild(icon);
+
+        this._container!.appendChild(input);
         this.input = input;
-        return control;
+        return this._container!;
     }
 
-    onRemove(map: MapGL) {
-        this.map = undefined;
-        this.elem = undefined;
+    onRemove(): void {
+        super.onRemove();
+        this.input = undefined;
     }
 
     public set readonly(readonly: boolean) {
         this._readonly = readonly;
         if (this.input) {
-            this.input.readonly = readonly;
+            if (readonly) {
+                this.input.setAttribute("readonly", "");
+            } else {
+                this.input.removeAttribute("readonly");
+            }
         }
     }
 
     public set value(value: any) {
         this._value = value;
         if (this.input) {
-            this.input.value = value;
+            (this.input as any).value = value;
         }
     }
 }
