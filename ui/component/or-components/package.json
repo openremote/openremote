@@ -35,7 +35,7 @@
     "@openremote/or-translate": "workspace:*",
     "ace-builds": "^1.41.0",
     "lit": "^3.3.1",
-    "simplebar": "^5.3.6"
+    "simplebar": "^6.3.3"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
