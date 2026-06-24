@@ -2,21 +2,21 @@ import { GeoJsonConfig } from "@openremote/model";
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl, {
     AddLayerObject,
+    AttributionControl,
     IControl,
-    GeolocateControl,
     LngLat,
+    LngLatBounds,
     LngLatLike,
     Map as MapGL,
     MapOptions,
     MapMouseEvent,
     Marker,
-    NavigationControl,
     StyleSpecification,
     GeoJSONSourceSpecification,
 } from "maplibre-gl";
-import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
-import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
-import debounce from "lodash.debounce";
+import { OrLogoControl } from "./controls/logo";
+import { OrMapNavigationControl } from "./controls/navigation";
+import { OrMapGeolocateControl } from "./controls/geolocate";
 import {
     ControlPosition,
     OrMapClickedEvent,
@@ -24,13 +24,13 @@ import {
     OrMapLongPressEvent,
     ViewSettings,
 } from "./index";
+import { OrMapGeocoderControl } from "./controls/geocoder";
 import { OrMapMarker } from "./markers/or-map-marker";
 import { getLngLat, isWebglSupported, metersToPixelsAtMaxZoom } from "./util";
 import { isMapboxURL, transformMapboxUrl } from "./util/mapbox-url";
 import { Feature, FeatureCollection } from "geojson";
 
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
-const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
 
 let pkey: string | null;
 
@@ -124,8 +124,7 @@ export class BaseMap {
                     }
                 });
             } else {
-                // Add zoom and rotation controls to the map
-                this._map.addControl(new NavigationControl());
+                this._map.addControl(new OrMapNavigationControl());
             }
         }
         return this;
@@ -195,16 +194,11 @@ export class BaseMap {
         style.textContent = maplibreGlStyles;
         this._styleParent.appendChild(style);
 
-        style = document.createElement("style");
-        style.id = "maplibreGeoCoderStyles";
-        style.textContent = maplibreGeoCoderStyles;
-        this._styleParent.appendChild(style);
-
         const map: typeof import("maplibre-gl") = await import(/* webpackChunkName: "maplibre-gl" */ "maplibre-gl");
         const settings = await this.loadViewSettings();
 
         const options: MapOptions = {
-            attributionControl: {compact: true},
+            attributionControl: false,
             container: this._mapContainer,
             style: settings as StyleSpecification,
             transformRequest: (url, resourceType) => {
@@ -255,6 +249,9 @@ export class BaseMap {
 
         await this._styleLoaded();
 
+        this._map.addControl(new OrLogoControl, 'bottom-left');
+        this._map.addControl(new AttributionControl({ compact: true }), 'bottom-left');
+
         this._map.on("click", (e: MapMouseEvent) => {
             this._onMapClick(e.lngLat);
         });
@@ -264,65 +261,13 @@ export class BaseMap {
         });
 
         if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
-            this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { maplibregl, showResultsWhileTyping: true });
-            // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
-            this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
-                var ESC_KEY_CODE = 27,
-                TAB_KEY_CODE = 9;
-          
-              if (e.keyCode === ESC_KEY_CODE && this._geocoder.options.clearAndBlurOnEsc) {
-                this._geocoder._clear(e);
-                return this._geocoder._inputEl.blur();
-              }
-          
-              // if target has shadowRoot, then get the actual active element inside the shadowRoot
-              var value = this._geocoder._inputEl.value || e.key;
-          
-              if (!value) {
-                this._geocoder.fresh = true;
-                // the user has removed all the text
-                if (e.keyCode !== TAB_KEY_CODE) this._geocoder.clear(e);
-                return (this._geocoder._clearEl.style.display = "none");
-              }
-          
-              // TAB, ESC, LEFT, RIGHT, UP, DOWN
-              if (
-                e.metaKey ||
-                [TAB_KEY_CODE, ESC_KEY_CODE, 37, 39, 38, 40].indexOf(e.keyCode) !== -1
-              )
-                return;
-          
-              // ENTER
-              if (e.keyCode === 13) {
-                if (!this._geocoder.options.showResultsWhileTyping) {
-                  if (!this._geocoder._typeahead.list.selectingListItem)
-                  this._geocoder._geocode(value);
-                } else {
-                  if (this._geocoder.options.showResultMarkers) {
-                    this._geocoder._fitBoundsForMarkers();
-                  }
-                  this._geocoder._inputEl.value = this._geocoder._typeahead.query;
-                  this._geocoder.lastSelected = null;
-                  this._geocoder._typeahead.selected = null;
-                  return;
-                }
-              }
-          
-              if (
-                value.length >= this._geocoder.options.minLength &&
-                this._geocoder.options.showResultsWhileTyping
-              ) {
-                this._geocoder._geocode(value);
-              }
-            }, 300);
-            this._map!.addControl(this._geocoder, 'top-left');
-
-            // There's no callback parameter in the options of the MaplibreGeocoder,
-            // so this is how we get the selected result.
-            this._geocoder._inputEl.addEventListener("change", () => {
-                var selected = this._geocoder._typeahead.selected;
-                this._onGeocodeChange(selected);
-            });
+            let bbox: [number, number, number, number] | undefined;
+            if (this._viewSettings.bounds) {
+                const b = LngLatBounds.convert(this._viewSettings.bounds as any);
+                bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+            }
+            this._geocoder = new OrMapGeocoderControl(this._viewSettings.geocodeUrl, bbox);
+            this._map!.addControl(this._geocoder, 'top-right');
         }
 
         // Add custom controls
@@ -336,16 +281,8 @@ export class BaseMap {
                 }
             });
         } else {
-            // Add zoom and rotation controls to the map
-            this._map.addControl(new NavigationControl());
-            // Add current location controls to the map
-            this._map.addControl(new GeolocateControl({
-                positionOptions: {
-                    enableHighAccuracy: true
-                },
-                showAccuracyCircle: true,
-                showUserLocation: true
-            }));
+            this._map.addControl(new OrMapNavigationControl());
+            this._map.addControl(new OrMapGeolocateControl());
         }
 
         // Unload all GeoJSON that is present, and load new layers if present
