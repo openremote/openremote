@@ -925,7 +925,9 @@
     "fill": "Vullen",
     "extendData": "Verleng laatste datapunt",
     "lineColor": "Lijnkleur",
-    "barColor": "Kleur van de balk"
+    "barColor": "Kleur van de balk",
+    "replaceAttribute": "Vervang atribuut",
+    "attributeAlreadyAdded": "Dit atribuut is al toegevoegd."
   },
   "south": "Zuid",
   "east": "Oost",

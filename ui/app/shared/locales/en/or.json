@@ -936,7 +936,7 @@
     "lineColor": "Line color",
     "barColor": "Bar color",
     "replaceAttribute": "Replace attribute",
-    "attributeAlreadyAdded": "This attribute is already added to the widget."
+    "attributeAlreadyAdded": "This attribute is already added."
   },
   "south": "South",
   "east": "East",
