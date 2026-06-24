@@ -761,13 +761,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@juggle/resize-observer@npm:^3.3.1":
-  version: 3.4.0
-  resolution: "@juggle/resize-observer@npm:3.4.0"
-  checksum: 10c0/12930242357298c6f2ad5d4ec7cf631dfb344ca7c8c830ab7f64e6ac11eb1aae486901d8d880fd08fb1b257800c160a0da3aee1e7ed9adac0ccbb9b7c5d93347
-  languageName: node
-  linkType: hard
-
 "@leichtgewicht/ip-codec@npm:^2.0.1":
   version: 2.0.4
   resolution: "@leichtgewicht/ip-codec@npm:2.0.4"
@@ -1929,7 +1922,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-components@workspace:ui/component/or-components"
   dependencies:
-    "@material/elevation": "npm:^9.0.0"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
     "@openremote/or-icon": "workspace:*"
@@ -1937,7 +1929,6 @@ __metadata:
     "@openremote/util": "workspace:*"
     ace-builds: "npm:^1.41.0"
     lit: "npm:^3.3.1"
-    simplebar: "npm:^5.3.6"
   languageName: unknown
   linkType: soft
 
@@ -5278,13 +5269,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"can-use-dom@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "can-use-dom@npm:0.1.0"
-  checksum: 10c0/baeb98ded2744418c12ec865736eb4c2ef4481e5300874b616ca4944f13457d32cb05f91713b4aa6cabd1d83742ea0fe8a9e4b8e6a667d0c7d25c895f36892e5
-  languageName: node
-  linkType: hard
-
 "caniuse-lite@npm:^1.0.30001782":
   version: 1.0.30001799
   resolution: "caniuse-lite@npm:1.0.30001799"
@@ -5572,13 +5556,6 @@ __metadata:
   version: 0.7.2
   resolution: "cookie@npm:0.7.2"
   checksum: 10c0/9596e8ccdbf1a3a88ae02cf5ee80c1c50959423e1022e4e60b91dd87c622af1da309253d8abdb258fb5e3eacb4f08e579dc58b4897b8087574eee0fd35dfa5d2
-  languageName: node
-  linkType: hard
-
-"core-js@npm:^3.0.1":
-  version: 3.35.1
-  resolution: "core-js@npm:3.35.1"
-  checksum: 10c0/ebc8e22c36d13bcf2140cbc1d8ad65d1b08192bff4c43ade70c72eac103cb4dcfbc521f2b1ad1c74881b0a4353e64986537893ae4f07888e49228340efa13ae6
   languageName: node
   linkType: hard
 
@@ -8457,13 +8434,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash.memoize@npm:^4.1.2":
-  version: 4.1.2
-  resolution: "lodash.memoize@npm:4.1.2"
-  checksum: 10c0/c8713e51eccc650422716a14cece1809cfe34bc5ab5e242b7f8b4e2241c2483697b971a604252807689b9dd69bfe3a98852e19a5b89d506b000b4187a1285df8
-  languageName: node
-  linkType: hard
-
 "lodash.throttle@npm:^4.1.1":
   version: 4.1.1
   resolution: "lodash.throttle@npm:4.1.1"
@@ -10476,20 +10446,6 @@ __metadata:
   version: 3.0.7
   resolution: "signal-exit@npm:3.0.7"
   checksum: 10c0/25d272fa73e146048565e08f3309d5b942c1979a6f4a58a8c59d5fa299728e9c2fcd1a759ec870863b1fd38653670240cd420dad2ad9330c71f36608a6a1c912
-  languageName: node
-  linkType: hard
-
-"simplebar@npm:^5.3.6":
-  version: 5.3.9
-  resolution: "simplebar@npm:5.3.9"
-  dependencies:
-    "@juggle/resize-observer": "npm:^3.3.1"
-    can-use-dom: "npm:^0.1.0"
-    core-js: "npm:^3.0.1"
-    lodash.debounce: "npm:^4.0.8"
-    lodash.memoize: "npm:^4.1.2"
-    lodash.throttle: "npm:^4.1.1"
-  checksum: 10c0/6a12b64a1ff4abde88fb74bea76a47755f1f31e63bb3f151a7d640e801847dbde4f0c8ccaf0b0504f1bd45ecc77cc91c12c066e8f7f282ab1ff68ec5bf7006bf
   languageName: node
   linkType: hard
 
