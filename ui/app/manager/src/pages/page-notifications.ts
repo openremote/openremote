@@ -1,5 +1,6 @@
 import {css, html, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
+import {keyed} from "lit/directives/keyed.js";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {
@@ -17,7 +18,8 @@ import {AxiosError, isAxiosError} from "@openremote/rest";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-button";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {dialogRenderer, dialogFooterRenderer} from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {NotificationForm} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
 import {NotificationTableClickEvent, OrNotificationsPageChangedEvent} from "../components/notifications/or-notifications-table";
@@ -268,6 +270,17 @@ export class PageNotifications extends Page<AppStateKeyed> {
     @state()
     protected _pageSize: number = 10;
 
+    @state()
+    protected _createDialogOpen: boolean = false;
+
+    @state()
+    protected _detailsDialogOpen: boolean = false;
+
+    @state()
+    protected _createFormValid: boolean = false;
+
+    protected _createForm?: NotificationForm;
+
     protected _loading: boolean = false;
 
     protected notificationService: NotificationService;
@@ -368,25 +381,12 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
     }
 
-    protected _getNotification(dialog: OrMwcDialog): Notification | null {
-        const form = dialog.shadowRoot?.querySelector<NotificationForm>("notification-form");
-        if (!form) {
-            return null;
-        }
-
-        const notification = form.getNotification();
+    protected async _handleCreateNotification() {
+        const notification = this._createForm?.getNotification();
 
         // validate required fields per schema
         if (!notification) {
             showSnackbar(undefined, i18next.t("notifications.missingFields"));
-            return null;
-        }
-        return notification;
-    }
-
-    protected async _handleCreateNotification(dialog: OrMwcDialog) {
-        const notification = this._getNotification(dialog);
-        if (!notification) {
             return;
         }
 
@@ -394,11 +394,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
             await this.notificationService.sendNotification(notification);
 
             showSnackbar(undefined, i18next.t("notifications.successfullySentNotification"));
-            dialog.close();
+            this._createDialogOpen = false; // closing triggers a reload via @opened-changed
         } catch (error) {
             console.error("Error creating notification:", error);
             showSnackbar(undefined, i18next.t("notifications.failedToCreateNotification", error));
-        } finally {
             await this._loadData();
         }
     }
@@ -429,7 +428,87 @@ export class PageNotifications extends Page<AppStateKeyed> {
                         `
                 }
             </div>
+            ${this._renderCreateDialog()}
+            ${this._renderDetailsDialog()}
         `;
+    }
+
+    protected _renderCreateDialog() {
+        return html`
+            <or-vaadin-dialog
+                    id="createDialog"
+                    width="1024px"
+                    header-title="${i18next.t("notifications.createNotification")}"
+                    ?opened="${this._createDialogOpen}"
+                    @opened-changed="${(ev: CustomEvent) => {
+                        if (!ev.detail.value && this._createDialogOpen) {
+                            this._createDialogOpen = false;
+                            this._loadData(); // reload after the dialog closes (cancel or create)
+                        }
+                    }}"
+                    ${dialogRenderer(() => this._renderCreateForm(), [this.realm])}
+                    ${dialogFooterRenderer(() => html`
+                        <or-vaadin-button theme="tertiary" @click="${() => this._createDialogOpen = false}">
+                            <or-translate value="cancel"></or-translate>
+                        </or-vaadin-button>
+                        <or-vaadin-button theme="primary" ?disabled="${!this._createFormValid}"
+                                          @click="${() => this._handleCreateNotification()}">
+                            <or-translate value="create"></or-translate>
+                        </or-vaadin-button>
+                    `, [this._createFormValid])}>
+            </or-vaadin-dialog>
+        `;
+    }
+
+    protected _renderDetailsDialog() {
+        return html`
+            <or-vaadin-dialog
+                    id="detailsDialog"
+                    width="1024px"
+                    header-title="${i18next.t("notifications.details")}"
+                    ?opened="${this._detailsDialogOpen}"
+                    @opened-changed="${(ev: CustomEvent) => {
+                        if (!ev.detail.value && this._detailsDialogOpen) {
+                            this._detailsDialogOpen = false;
+                            this._loadData();
+                        }
+                    }}"
+                    ${dialogRenderer(() => this._renderDetailsForm(this.notification), [this.notification, this.realm])}
+                    ${dialogFooterRenderer(() => html`
+                        <or-vaadin-button theme="primary" @click="${() => this._detailsDialogOpen = false}">
+                            <or-translate value="close"></or-translate>
+                        </or-vaadin-button>
+                    `, [])}>
+            </or-vaadin-dialog>
+        `;
+    }
+
+    protected _renderCreateForm() {
+        // Key on the realm so a fresh form (which loads its users/assets/realms for the
+        // active realm) is created when the realm changes, rather than reusing a stale instance
+        return html`${keyed(this.realm, html`
+            <notification-form
+                    id="notificationForm"
+                    @notification-form-changed="${(ev: Event) => this._onCreateFormChanged(ev)}">
+            </notification-form>
+        `)}`;
+    }
+
+    protected _renderDetailsForm(notification?: SentNotification) {
+        return html`${keyed(this.realm, html`
+            <notification-form
+                    .notification=${notification}
+                    ?readonly=${true}>
+            </notification-form>
+        `)}`;
+    }
+
+    protected _onCreateFormChanged(ev: Event) {
+        this._createForm = ev.target as NotificationForm;
+        const valid = !!this._createForm.getNotification();
+        if (valid !== this._createFormValid) {
+            this._createFormValid = valid;
+        }
     }
 
     protected _renderHeader(writeNotifications: boolean, hasRecipientType: boolean = true) {
@@ -520,79 +599,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
 
-    protected _renderForm(notification?: SentNotification, onChange?: (ev: Event) => void) {
-        if (!notification) {
-            return html`
-                <div class="dialog-content">
-                    <notification-form
-                            id="notificationForm"
-                            ?disabled="${false}"
-                            @notification-form-changed="${onChange}">
-                    </notification-form>
-                </div>
-            `
-        }
-
-        return html`
-            <div class="form-preview">
-                <notification-form
-                        .notification=${notification}
-                        ?readonly=${true}
-                ></notification-form>
-            </div>
-        `;
-    }
-
-    protected async _showCreateDialog() {
-        await customElements.whenDefined('notification-form');
-
-        // Re-evaluate form validity on every form change and enable/disable the create button accordingly
-        const onFormChanged = (ev: Event) => {
-            const form = ev.target as NotificationForm;
-            const shouldDisable = !form.getNotification();
-            const createAction = dialog.actions?.find(action => action.actionName === "create");
-            if (createAction && createAction.disabled !== shouldDisable) {
-                createAction.disabled = shouldDisable;
-                dialog.requestUpdate();
-            }
-        };
-
-        const dialog = showDialog(
-            new OrMwcDialog()
-                .setHeading(i18next.t("notifications.createNotification"))
-                .setContent(this._renderForm(undefined, onFormChanged))
-                // .setDismissAction(null)
-                .setActions([
-                    {
-                        actionName: "cancel",
-                        content: i18next.t("cancel"),
-                        action: () => {
-                            dialog.close();
-                            this._loadData(); // reload after cancel
-                        }
-                    },
-                    {
-                        actionName: "create",
-                        content: i18next.t("create"),
-                        disabled: true,
-                        action: async () => this._handleCreateNotification(dialog)
-                        // note: _loadData is already called in _handleCreateNotification
-                    }
-                ])
-                .setStyles(html`
-                    <style>
-                        .mdc-dialog__surface {
-                            width: 1024px;
-                        }
-
-                        .mdc-dialog__content {
-                            padding: 0 !important;
-                            border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
-                            border-top: solid var(--or-app-color5, #CCCCCC) 1px;
-                        }
-                    </style>
-                `)
-        )
+    protected _showCreateDialog() {
+        this._createForm = undefined;
+        this._createFormValid = false;
+        this._createDialogOpen = true;
     }
 
     private _onRowClick(e: NotificationTableClickEvent) {
@@ -609,41 +619,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
             return;
         }
 
-        const dialog = showDialog(
-            new OrMwcDialog()
-                .setHeading(i18next.t("notifications.details"))
-                .setContent(this._renderForm(notification))
-                .setDismissAction({
-                    actionName: "cancel",
-                    action: () => {
-                        dialog.close();
-                        this._loadData();
-                    },
-                })
-                .setActions([
-                    {
-                        actionName: "close",
-                        content: i18next.t("close"),
-                        action: () => {
-                            dialog.close();
-                            this._loadData();
-                        }
-                    }
-                ])
-                .setStyles(html`
-                    <style>
-                        .mdc-dialog__surface {
-                            width: 1024px;
-                        }
-
-                        .mdc-dialog__content {
-                            padding: 0 !important;
-                            border-bottom: solid var(--or-app-color5, #CCCCCC) 1px;
-                            border-top: solid var(--or-app-color5, #CCCCCC) 1px;
-                        }
-                    </style>
-                `)
-        );
+        this.notification = notification;
+        this._detailsDialogOpen = true;
     }
 }
 
