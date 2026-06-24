@@ -1042,6 +1042,7 @@
     "resetBearing": "Reset bearing to north",
     "searchLocation": "Search location",
     "searchLocationPlaceholder": "Search location...",
+    "searchNoResults": "No results found",
     "findMyLocation": "Find my location",
     "centerOnLocation": "Center on location"
   },

@@ -27,6 +27,7 @@ import { i18next } from "@openremote/or-translate";
 import "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import "@openremote/or-vaadin-components/or-vaadin-button";
 import "@openremote/or-icon";
+import type { ComboBoxDataProviderCallback, ComboBoxDataProviderParams } from "@openremote/or-vaadin-components/or-vaadin-combo-box";
 import type { MapGeocoderEventDetail } from "../types";
 
 export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail> {
@@ -86,6 +87,11 @@ export class OrMapGeocoder extends LitElement {
                 display: none;
             }
 
+            vaadin-combo-box-item.no-results-item {
+                pointer-events: none;
+                color: var(--lumo-disabled-text-color);
+            }
+
             @media only screen and (max-width: 450px) {
                 or-vaadin-combo-box {
                     width: 100%;
@@ -103,11 +109,7 @@ export class OrMapGeocoder extends LitElement {
     @state()
     private _collapsed = true;
 
-    @state()
-    private _suggestions: any[] = [];
-
     private _hasValue = false;
-    private _lastQuery = "";
     private _map?: MapGL;
     private _marker?: any;
     private _mq = window.matchMedia("(max-width: 450px)");
@@ -116,10 +118,7 @@ export class OrMapGeocoder extends LitElement {
         else if (!this._hasValue) this._collapsed = true;
     };
     private _onLanguageChanged = () => {
-        if (!this._collapsed && this._lastQuery.length >= 2) {
-            this._fetchSuggestions(this._lastQuery);
-            this._fetchSuggestions.flush();
-        }
+        (this.shadowRoot?.querySelector("or-vaadin-combo-box") as any)?.clearCache?.();
     };
 
     public connectedCallback() {
@@ -143,12 +142,12 @@ export class OrMapGeocoder extends LitElement {
         }
         return html`
             <or-vaadin-combo-box
-                .items="${this._suggestions}"
+                .dataProvider="${this._dataProvider}"
+                .itemClassNameGenerator="${this._itemClassNameGenerator}"
                 item-label-path="place_name"
                 item-value-path="place_name"
                 placeholder="${i18next.t("mapPage.searchLocationPlaceholder")}"
                 clear-button-visible
-                @filter-changed="${this._onFilterChanged}"
                 @selected-item-changed="${this._onItemSelected}"
             >
                 <or-icon slot="prefix" icon="mdi:magnify"></or-icon>
@@ -163,14 +162,13 @@ export class OrMapGeocoder extends LitElement {
         });
     }
 
-    private _onFilterChanged(e: CustomEvent) {
-        this._lastQuery = e.detail.value;
-        this._fetchSuggestions(e.detail.value);
-    }
+    private _dataProvider = (params: ComboBoxDataProviderParams, callback: ComboBoxDataProviderCallback<any>) => {
+        this._fetchSuggestions(params.filter, callback);
+    };
 
-    private _fetchSuggestions = debounce(async (query: string) => {
+    private _fetchSuggestions = debounce(async (query: string, callback: ComboBoxDataProviderCallback<any>) => {
         if (!query || query.length < 2) {
-            this._suggestions = [];
+            callback([], 0);
             return;
         }
         const features: any[] = [];
@@ -188,7 +186,10 @@ export class OrMapGeocoder extends LitElement {
                 params.set("bounded", "1");
             }
             const response = await fetch(`${this.geocodeUrl}/search?${params.toString()}`);
-            if (!response.ok) return;
+            if (!response.ok) {
+                callback([], 0);
+                return;
+            }
             const geojson = await response.json();
             for (const feature of geojson.features) {
                 const center: [number, number] = feature.bbox
@@ -199,12 +200,22 @@ export class OrMapGeocoder extends LitElement {
             }
         } catch (e) {
             console.error("Failed to forwardGeocode:", e);
+            callback([], 0);
+            return;
         }
-        this._suggestions = features;
+        if (features.length) {
+            callback(features, features.length);
+        } else {
+            const noResults = [{ place_name: i18next.t("mapPage.searchNoResults"), noResults: true }];
+            callback(noResults, noResults.length);
+        }
     }, 300);
+
+    private _itemClassNameGenerator = (item: any) => item?.noResults ? "no-results-item" : "";
 
     private _onItemSelected(e: CustomEvent) {
         const item = e.detail.value;
+        if (item?.noResults) return;
         if (item) {
             this._hasValue = true;
             this._marker?.remove();
@@ -219,8 +230,6 @@ export class OrMapGeocoder extends LitElement {
             this._hasValue = false;
             this._marker?.remove();
             this._marker = undefined;
-            this._suggestions = [];
-            this._lastQuery = "";
             this._fetchSuggestions.cancel();
             if (!this._mq.matches) this._collapsed = true;
         }
