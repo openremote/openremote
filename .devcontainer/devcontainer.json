@@ -16,10 +16,12 @@
       "installGroovy": "true"
     }
   },
-  "mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind"
+  "runArgs": [
+    "-v", "${localEnv:HOME}/.gradle:/root/.gradle"
   ],
   "forwardPorts": [8080],
-  "onCreateCommand": "git lfs install && echo 'devcontainer ready'",
   "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
+  "remoteEnv": {
+    "GRADLE_USER_HOME": "/root/.gradle",
+  }
 }
