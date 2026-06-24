@@ -1131,7 +1131,7 @@
     "successfullySentNotification": "Notificatie verstuurd",
     "missingFields": "Notificatie maken mislukt, niet alle verplichte velden waren gevuld.",
     "details": "Notificatie details",
-    "createNotification": "Notificatie aanmaken",
+    "createNotification": "Notificatie versturen",
     "sendNew": "Aanmaken"
   },
   "services": "Services",
