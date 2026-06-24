@@ -1,0 +1,7 @@
+@import "@vaadin/vaadin-lumo-styles/components/badge.css";
+
+:root::before,
+:host::before {
+  --_lumo-vaadin-badge-inject: 1;
+  --_lumo-vaadin-badge-inject-modules: lumo_components_badge;
+}

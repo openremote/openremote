@@ -1,7 +1,30 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 import {
     Asset,
     AssetModelUtil,
     AssetDescriptor,
+    AssetQuery,
+    AssetQueryAccess,
+    AssetQueryOrderBy,
+    AssetQuerySelect,
     Attribute,
     AttributeDescriptor,
     AttributeEvent,
@@ -12,12 +35,17 @@ import {
     MetaHolder,
     NameHolder,
     NameValueHolder,
+    ParentPredicate,
+    PathPredicate,
     PushNotificationMessage,
+    RealmPredicate,
     RuleActionUnion,
     RuleCondition,
+    StringPredicate,
     ValueDescriptor,
     ValueDescriptorHolder,
     ValueFormat,
+    ValuePredicateUnion,
     WellknownMetaItems,
     ValueConstraint,
     AbstractNameValueDescriptorHolder,
@@ -1077,4 +1105,115 @@ export function generateUniqueUUID(): string {
     return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
       (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
     );
+}
+
+export class AssetQueryHelper implements AssetQuery {
+    recursive?: boolean;
+    select?: AssetQuerySelect;
+    access?: AssetQueryAccess;
+    ids?: string[];
+    names?: StringPredicate[];
+    parents?: ParentPredicate[];
+    paths?: PathPredicate[];
+    realm?: RealmPredicate;
+    userIds?: string[];
+    types?: string[];
+    attributes?: LogicGroup<AttributePredicate>;
+    orderBy?: AssetQueryOrderBy;
+    limit?: number;
+    offset?: number;
+
+    constructor(query?: AssetQuery) {
+        if (query) Object.assign(this, query);
+    }
+
+    // Single source of truth for which AssetQuery fields matches() evaluates.
+    // getUnsupportedFields derives from this — keep it in sync with matches().
+    private static readonly _SUPPORTED_FIELDS = new Set<string>([
+        "ids", "types", "names", "parents", "paths", "realm", "attributes",
+    ]);
+
+    matches(asset: Asset): boolean {
+        if (this.ids?.length && (!asset.id || !this.ids.includes(asset.id))) return false;
+        if (this.types?.length && (!asset.type || !this.types.includes(asset.type))) return false;
+        if (this.realm?.name && asset.realm !== this.realm.name) return false;
+        if (this.parents?.length && !this.parents.some(p => !p.id || asset.parentId === p.id)) return false;
+        if (this.paths?.length) {
+            const assetPath = asset.path ?? [];
+            if (!this.paths.some(p => (p.path ?? []).every((id, i) => assetPath[i] === id))) return false;
+        }
+        if (this.names?.length && !this.names.every(p => AssetQueryHelper._evalValuePredicate(asset.name, p as ValuePredicateUnion))) return false;
+        if (this.attributes) return AssetQueryHelper._evalGroup(asset, this.attributes as LogicGroup<AttributePredicate>);
+        return true;
+    }
+
+    static getUnsupportedFields(query: AssetQuery): string[] {
+        return Object.keys(query).filter(k => !AssetQueryHelper._SUPPORTED_FIELDS.has(k));
+    }
+
+    collectAttributeNames(): string[] {
+        return this.attributes ? AssetQueryHelper._collectNames(this.attributes) : [];
+    }
+
+    private static _evalValuePredicate(val: unknown, predicate: ValuePredicateUnion): boolean {
+        switch (predicate.predicateType) {
+            case "string": {
+                if (val === null || val === undefined) return false;
+                const haystack = predicate.caseSensitive !== false ? String(val) : String(val).toLowerCase();
+                const needle = predicate.caseSensitive !== false ? predicate.value : predicate.value?.toLowerCase();
+                let m: boolean;
+                switch (predicate.match) {
+                    case "BEGIN":    m = haystack.startsWith(needle!); break;
+                    case "END":      m = haystack.endsWith(needle!); break;
+                    case "CONTAINS": m = haystack.includes(needle!); break;
+                    default:         m = haystack === needle;
+                }
+                return predicate.negate ? !m : m;
+            }
+            case "boolean":
+                return val === predicate.value;
+            case "number": {
+                if (typeof val !== "number") return false;
+                let m: boolean;
+                switch (predicate.operator) {
+                    case "GREATER_THAN":   m = val > predicate.value!; break;
+                    case "GREATER_EQUALS": m = val >= predicate.value!; break;
+                    case "LESS_THAN":      m = val < predicate.value!; break;
+                    case "LESS_EQUALS":    m = val <= predicate.value!; break;
+                    case "BETWEEN":        m = val >= predicate.value! && val <= predicate.rangeValue!; break;
+                    default:               m = val === predicate.value;
+                }
+                return predicate.negate ? !m : m;
+            }
+        }
+        return false;
+    }
+
+    private static _evalPredicate(asset: Asset, predicate: AttributePredicate): boolean {
+        const attrName = predicate.name?.value;
+        if (!attrName) return true;
+        const attribute = asset.attributes?.[attrName];
+        if (!attribute) return predicate.negated ? true : false;
+        const matches = predicate.value
+            ? AssetQueryHelper._evalValuePredicate(attribute.value, predicate.value as ValuePredicateUnion)
+            : true;
+        return predicate.negated ? !matches : matches;
+    }
+
+    private static _evalGroup(asset: Asset, group: LogicGroup<AttributePredicate>): boolean {
+        const operator = group.operator ?? "AND";
+        const results: boolean[] = [
+            ...(group.items ?? []).map(item => AssetQueryHelper._evalPredicate(asset, item)),
+            ...(group.groups ?? []).map(g => AssetQueryHelper._evalGroup(asset, g)),
+        ];
+        if (!results.length) return true;
+        return operator === "OR" ? results.some(Boolean) : results.every(Boolean);
+    }
+
+    private static _collectNames(group: LogicGroup<AttributePredicate>): string[] {
+        return [
+            ...(group.items ?? []).map(item => item.name?.value).filter((n): n is string => !!n),
+            ...(group.groups ?? []).flatMap(g => AssetQueryHelper._collectNames(g)),
+        ];
+    }
 }
