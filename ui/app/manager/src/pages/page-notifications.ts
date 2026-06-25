@@ -394,7 +394,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
             await this.notificationService.sendNotification(notification);
 
             showSnackbar(undefined, i18next.t("notifications.successfullySentNotification"));
-            this._createDialogOpen = false; // closing triggers a reload via @opened-changed
+            this._createDialogOpen = false;
+            // Reload explicitly: setting _createDialogOpen=false above means the @opened-changed handler's
+            // guard is already false, so it won't reload for us. Without this the new notification only
+            // appears after the next refetch (e.g. a filter change).
+            await this._loadData();
         } catch (error) {
             console.error("Error creating notification:", error);
             showSnackbar(undefined, i18next.t("notifications.failedToCreateNotification", error));
