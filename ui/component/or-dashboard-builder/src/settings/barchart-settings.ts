@@ -377,7 +377,7 @@ export class BarChartSettings extends WidgetSettings {
         // Add colors
         this.widgetConfig.attributeColors ??= [];
         ev.detail.attributeRefs.forEach(((attrRef, index) => {
-            const color = this.widgetConfig.attributeColors.find(x => x[0].id === attrRef.id && x[0].name === ref.name);
+            const color = this.widgetConfig.attributeColors.find(x => x[0].id === attrRef.id && x[0].name === attrRef.name);
             if(!color) {
                 const newColor = OrAttributeBarChart.DEFAULT_COLORS[index] ?? "#000000";
                 this.widgetConfig.attributeColors.push([attrRef, newColor]);

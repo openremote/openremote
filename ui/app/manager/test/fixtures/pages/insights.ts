@@ -127,4 +127,83 @@ export class InsightsPage implements BasePage {
         }
         await dialog.getByRole("button", { name: "Add" }).click();
     }
+
+    /**
+     * Selects a widget (opens its settings).
+     * @param widget The `or-dashboard-widget-container` locator
+     */
+    async selectWidget(widget: Locator) {
+        await widget.scrollIntoViewIfNeeded();
+        await widget.click({ force: true });
+    }
+
+    /**
+     * "Broken Reference" entries, both in chart widget legends and in the widget
+     * settings attribute list.
+     * @param options Optional locator options (e.g. scope via `has`)
+     */
+    getBrokenReferences(options?: any) {
+        return this.page.locator('or-translate[value="brokenReference"]', options);
+    }
+
+    /**
+     * Broken attribute rows shown in the widget settings attribute list.
+     */
+    getBrokenAttributeRows(options?: any) {
+        return this.getWidgetSettings().locator(".attribute-list-item.broken", options);
+    }
+
+    /**
+     * Opens the attribute picker for the replace ("swap-horizontal") action on a
+     * given attribute row and returns the picker dialog locator.
+     * @param row The attribute row locator (broken or healthy)
+     */
+    async openReplacePicker(row: Locator): Promise<Locator> {
+        const button = row.locator('button[title="Replace attribute"]');
+        await expect(button).toBeVisible();
+        await button.dispatchEvent("click");
+        const dialog = this.page.locator("#dialog");
+        await expect(dialog).toBeVisible();
+        return dialog;
+    }
+
+    /**
+     * Sets the custom line/bar colour of the (single) attribute in the open widget
+     * settings.
+     * @param hex The colour to set, e.g. `#ff0000`
+     */
+    async setAttributeColor(hex: string) {
+        const settings = this.getWidgetSettings();
+        // Action buttons on a healthy row are only visible while the row is hovered
+        await settings.locator(".attribute-list-item").first().hover();
+        await settings.locator('button:has(or-icon[icon="palette"])').click();
+        const colorInput = settings.locator('input[id^="chart-color-"]');
+        await colorInput.evaluate((el, value) => {
+            (el as HTMLInputElement).value = value;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+        }, hex);
+        // The colour change is written to the config behind a debounce; wait for it
+        // to flush so the colour persists when the dashboard is saved.
+        await expect
+            .poll(async () => (await this.getAttributeColors()).some(([, c]) => c?.toLowerCase() === hex.toLowerCase()))
+            .toBe(true);
+    }
+
+    /**
+     * Reads the current value of the (single) custom colour input in the open
+     * widget settings.
+     */
+    getAttributeColorInput(): Locator {
+        return this.getWidgetSettings().locator('input[id^="chart-color-"]');
+    }
+
+    /**
+     * Reads the `attributeColors` config (`[AttributeRef, hex]` entries) off the
+     * open chart/barchart settings element.
+     */
+    getAttributeColors(): Promise<[{ id?: string; name?: string }, string][]> {
+        return this.getWidgetSettings()
+            .locator("chart-settings, barchart-settings")
+            .evaluate((el: any) => el?.widgetConfig?.attributeColors ?? []);
+    }
 }
