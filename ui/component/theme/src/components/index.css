@@ -22,6 +22,7 @@
  * The import order can affect whether styling will be applied or not. This only
  * seems to be an issue when using Rspack.
  */
+@import "./or-vaadin-badge.css";
 @import "./or-vaadin-button.css";
 @import "./or-vaadin-checkbox-group.css";
 @import "./or-vaadin-checkbox.css"; /* Must be after the checkbox-group */
@@ -29,7 +30,6 @@
 @import "./or-vaadin-date-time-picker.css";
 @import "./or-vaadin-date-picker.css"; /* Must be after the date-time-picker */
 @import "./or-vaadin-dialog.css";
-@import "./or-vaadin-icon.css";
 @import "./or-vaadin-item.css";
 @import "./or-vaadin-list-box.css";
 @import "./or-vaadin-menu-bar.css";

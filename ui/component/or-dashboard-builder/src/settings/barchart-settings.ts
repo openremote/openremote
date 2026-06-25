@@ -436,7 +436,7 @@ export class BarChartSettings extends WidgetSettings {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
 
-            // Listen for changes
+            //Listen for changes
             inputElem.addEventListener("input", debounce(() => {
                 const color = inputElem.value;
                 this.widgetConfig.attributeColors ??= [];
@@ -446,6 +446,7 @@ export class BarChartSettings extends WidgetSettings {
                 } else {
                     this.widgetConfig.attributeColors.push([attributeRef, color]);
                 }
+                this.widgetConfig.attributeColors = [...this.widgetConfig.attributeColors];
                 this.notifyConfigUpdate();
             }, 200));
 

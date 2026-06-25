@@ -165,6 +165,7 @@
   "longPressSetLoc": "Long press to set location",
   "this": "Current",
   "last": "Last",
+  "next": "Next",
   "60minutes": "60 minutes",
   "hour": "Hour",
   "6hours": "6 hours",
@@ -1034,7 +1035,17 @@
   "MODE": "Mode",
   "SUM": "Sum",
   "mapPage": {
-    "legendTitle": "Legend"
+    "legendTitle": "Legend",
+    "filterAll": "Show all assets",
+    "filterCustom": "Custom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetBearing": "Reset bearing to north",
+    "searchLocation": "Search location",
+    "searchLocationPlaceholder": "Search location...",
+    "searchNoResults": "No results found",
+    "findMyLocation": "Find my location",
+    "centerOnLocation": "Center on location"
   },
   "alarm": {
     "": "Alarm",
