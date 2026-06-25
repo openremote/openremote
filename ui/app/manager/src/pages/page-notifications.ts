@@ -1,6 +1,5 @@
 import {css, html, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {keyed} from "lit/directives/keyed.js";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {
@@ -487,24 +486,27 @@ export class PageNotifications extends Page<AppStateKeyed> {
         `;
     }
 
+    // The form stays mounted across opens (so closing the dialog doesn't visibly clear it before it animates out);
+    // _showCreateDialog calls form.reset() on each open instead, which clears prior input and reloads the active
+    // realm's users/assets/realms.
     protected _renderCreateForm() {
-        // Key on the realm so a fresh form (which loads its users/assets/realms for the
-        // active realm) is created when the realm changes, rather than reusing a stale instance
-        return html`${keyed(this.realm, html`
+        return html`
             <notification-form
                     id="notificationForm"
+                    .realm=${this.realm}
                     @notification-form-changed="${(ev: Event) => this._onCreateFormChanged(ev)}">
             </notification-form>
-        `)}`;
+        `;
     }
 
     protected _renderDetailsForm(notification?: SentNotification) {
-        return html`${keyed(this.realm, html`
+        return html`
             <notification-form
+                    .realm=${this.realm}
                     .notification=${notification}
                     ?readonly=${true}>
             </notification-form>
-        `)}`;
+        `;
     }
 
     protected _onCreateFormChanged(ev: Event) {
@@ -604,7 +606,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
 
     protected _showCreateDialog() {
-        this._createForm = undefined;
+        // The form persists between opens, so clear any input left over from a previous open
+        this._createForm?.reset();
         this._createFormValid = false;
         this._createDialogOpen = true;
     }

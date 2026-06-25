@@ -178,6 +178,10 @@ export class NotificationForm extends LitElement {
     @property({type: Object})
     public notification?: SentNotification;
 
+    // The realm to load target data for; supplied by the page from the store so it stays in sync with the app realm
+    @property({type: String})
+    public realm?: string;
+
     async firstUpdated() {
         const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
 
@@ -207,10 +211,34 @@ export class NotificationForm extends LitElement {
         if (changedProps.has('notification') && this.notification) {
             this._populateFromNotification()
         }
+        // Reload target data when the realm changes; skip the initial assignment (handled by firstUpdated)
+        if (changedProps.has('realm') && changedProps.get('realm') !== undefined) {
+            this._reloadTargetData();
+        }
         // Notify listeners (e.g. the create dialog) so they can re-evaluate form validity
         if (!this.readonly) {
             this.dispatchEvent(new NotificationFormChangedEvent());
         }
+    }
+
+    /**
+     * Resets the form to its initial empty state. Called when the create dialog is (re)opened, since the form
+     * instance persists between opens. Target data isn't reloaded here — that's driven by the realm property.
+     */
+    public reset() {
+        this._message = {type: "push"};
+        this._targets = [];
+        this._selectedAssetIds = [];
+        const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
+        return this._onTargetTypeChanged(canReadAssets ? NotificationTargetType.ASSET : NotificationTargetType.USER);
+    }
+
+    /** Drops cached realm-specific target data and rebuilds the options for the current target type. */
+    protected _reloadTargetData() {
+        this._users = undefined;
+        this._assets = undefined;
+        this._realms = undefined;
+        return this._onTargetTypeChanged(this._targetType);
     }
 
     protected async _loadUsers(): Promise<User[]> {
@@ -219,7 +247,7 @@ export class NotificationForm extends LitElement {
         }
         try {
             const response = await manager.rest.api.UserResource.query({
-                realmPredicate: { name: manager.displayRealm },
+                realmPredicate: { name: this.realm ?? manager.displayRealm },
                 serviceUsers: false
             });
             // filter out keycloak service account
@@ -237,7 +265,7 @@ export class NotificationForm extends LitElement {
         }
         try {
             const response = await manager.rest.api.AssetResource.queryAssets({
-                realm: {name: manager.displayRealm}
+                realm: { name: this.realm ?? manager.displayRealm }
             });
             this._assets = response.data;
             return response.data;
