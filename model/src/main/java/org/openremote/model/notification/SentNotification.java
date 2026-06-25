@@ -193,7 +193,6 @@ public class SentNotification {
         return this;
     }
 
-    // add realm getters and setters
     public String getRealm() {
         return realm;
     }
