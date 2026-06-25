@@ -1071,4 +1071,162 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         /*when: "if the notification became valid, and the TRIGGER_ASSETS placeholder is inserted"
         ((LocalizedNotificationMessage) invalidNotification.getMessage()).setMessage("nl", new PushNotificationMessage())*/
     }
+
+    def "Check get notifications by realm access control"() {
+
+        List<Message> sentEmails = new CopyOnWriteArrayList<>()
+
+        given: "the container environment is started with a mock email handler"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def notificationService = container.getService(NotificationService.class)
+        def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+
+        and: "a mock email notification handler that records sent emails (so notifications get persisted without SMTP)"
+        EmailNotificationHandler mockEmailNotificationHandler = Spy(emailNotificationHandler)
+        mockEmailNotificationHandler.isValid() >> true
+        mockEmailNotificationHandler.sendMessage(_ as Message) >> {
+            Message email ->
+                sentEmails << email
+                return NotificationSendResult.success()
+        }
+        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
+
+        and: "the building realm and the ids of two of its users"
+        def buildingRealm = managerTestSetup.realmBuildingName
+        def testuser2Id = keycloakTestSetup.testuser2Id
+        // building user: has read:notifications and receives the realm email; testuser2: receives the email but has no read:notifications
+        def buildingUserId = keycloakTestSetup.buildingUserId
+
+        and: "a transient building user whose ONLY granting role is read:notifications"
+        // Created in-test (not in KeycloakTestSetup) so the shared fixture and the user-count assertions of other
+        // specs are untouched; startContainer purges users that aren't part of the fixture baseline between features.
+        def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+        def notifUserInput = new User()
+        notifUserInput.username = "notifuser"
+        notifUserInput.firstName = "Notif"
+        notifUserInput.lastName = "User"
+        notifUserInput.email = "notifuser@openremote.local"
+        notifUserInput.enabled = true
+        def notifUser = identityProvider.createUpdateUser(buildingRealm, notifUserInput, "notifuser", true)
+        identityProvider.updateUserClientRoles(buildingRealm, notifUser.id, KEYCLOAK_CLIENT_ID, READ_NOTIFICATIONS_ROLE)
+        def notifUserId = notifUser.id
+
+        and: "authenticated users with differing permissions"
+        def adminAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, MASTER_REALM_ADMIN_USER, getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT))
+        def testuser2AccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2")
+        def buildingUserAccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "building", "building")
+        def notifUserAccessToken = authenticate(container, buildingRealm, KEYCLOAK_CLIENT_ID, "notifuser", "notifuser")
+
+        and: "a helper that requests notifications for a realm over REST as the given user"
+        // The realm is taken from the (unused) path segment and the realmId query param, matching the UI client
+        def requestNotificationsByRealm = { String pathRealm, String token, String realmId ->
+            getClientApiTarget(serverUri(serverPort), pathRealm, token)
+                    .path("notification").path(realmId).queryParam("realmId", realmId)
+                    .request().get()
+        }
+
+        when: "an email notification is sent to the entire building realm"
+        def notification = new Notification(
+                "RealmAccessTest",
+                new EmailNotificationMessage().setSubject("Realm access test").setText("Hello building"),
+                Collections.singletonList(new Notification.Target(Notification.TargetType.REALM, buildingRealm)), null, null)
+        notificationService.sendNotification(notification, Notification.Source.REALM_RULESET, buildingRealm)
+
+        then: "all three recipients' notifications are persisted correctly and a superuser can read them in full, cross-realm from master"
+        conditions.eventually {
+            assert sentEmails.size() == 3
+            def response = requestNotificationsByRealm(MASTER_REALM, adminAccessToken, buildingRealm)
+            assert response.status == 200
+            def sent = response.readEntity(SentNotification[].class).findAll { it.name == "RealmAccessTest" }
+            response.close()
+
+            // one persisted notification per email recipient, each fully populated and unredacted for the superuser
+            assert sent.size() == 3
+            assert sent.collect { it.targetId }.toSet() == [testuser2Id, buildingUserId, notifUserId].toSet()
+            assert sent.every { it.id != null }
+            assert sent.every { it.name == "RealmAccessTest" }
+            assert sent.every { it.type == EmailNotificationMessage.TYPE }
+            assert sent.every { it.target == Notification.TargetType.USER }
+            assert sent.every { it.source == Notification.Source.REALM_RULESET }
+            assert sent.every { it.sourceId == buildingRealm }
+            assert sent.every { it.realm == buildingRealm }
+            assert sent.every { it.sentOn != null && it.deliveredOn == null && it.acknowledgedOn == null && it.error == null }
+            assert sent.every { (it.message as EmailNotificationMessage).subject == "Realm access test" }
+            assert sent.every { (it.message as EmailNotificationMessage).text == "Hello building" }
+        }
+
+        when: "a user without read:notifications or read:admin requests notifications for their realm"
+        def forbiddenResponse = requestNotificationsByRealm(buildingRealm, testuser2AccessToken, buildingRealm)
+
+        then: "access is forbidden by the endpoint role check"
+        forbiddenResponse.status == 403
+        forbiddenResponse.close()
+
+        when: "a user with read:notifications (and read:users) requests notifications for their own realm"
+        def ownRealmResponse = requestNotificationsByRealm(buildingRealm, buildingUserAccessToken, buildingRealm)
+        def ownNotifications = ownRealmResponse.readEntity(SentNotification[].class)
+        ownRealmResponse.close()
+        def ownSent = ownNotifications.findAll { it.name == "RealmAccessTest" }
+
+        then: "they can read only the notification that targets them, with full details"
+        ownRealmResponse.status == 200
+        ownSent.size() == 1
+        ownSent[0].name == "RealmAccessTest"
+        ownSent[0].type == EmailNotificationMessage.TYPE
+        ownSent[0].target == Notification.TargetType.USER
+        ownSent[0].targetId == buildingUserId
+        ownSent[0].source == Notification.Source.REALM_RULESET
+        ownSent[0].sourceId == buildingRealm
+        ownSent[0].realm == buildingRealm
+        (ownSent[0].message as EmailNotificationMessage).subject == "Realm access test"
+        // the ownership filter hides notifications addressed to other users in the realm
+        !ownNotifications.any { it.targetId == testuser2Id }
+        !ownNotifications.any { it.targetId == notifUserId }
+
+        when: "a user whose ONLY granting role is read:notifications requests their realm's notifications"
+        def notifUserResponse = requestNotificationsByRealm(buildingRealm, notifUserAccessToken, buildingRealm)
+        def notifNotifications = notifUserResponse.readEntity(SentNotification[].class)
+        notifUserResponse.close()
+        def notifSent = notifNotifications.findAll { it.name == "RealmAccessTest" }
+
+        then: "read:notifications alone grants read access to the notification they received, but ids are sanitized away"
+        notifUserResponse.status == 200
+        notifSent.size() == 1
+        // the notification and its content remain readable...
+        notifSent[0].name == "RealmAccessTest"
+        notifSent[0].type == EmailNotificationMessage.TYPE
+        notifSent[0].target == Notification.TargetType.USER
+        notifSent[0].source == Notification.Source.REALM_RULESET
+        notifSent[0].realm == buildingRealm
+        (notifSent[0].message as EmailNotificationMessage).subject == "Realm access test"
+        // ...but without read:users/read:assets the recipient and source ids are stripped
+        notifSent[0].targetId == null
+        notifSent[0].sourceId == null
+
+        when: "the building user requests notifications for another realm they cannot access"
+        def otherRealmResponse = requestNotificationsByRealm(buildingRealm, buildingUserAccessToken, MASTER_REALM)
+        def otherNotifications = otherRealmResponse.readEntity(SentNotification[].class)
+        otherRealmResponse.close()
+
+        then: "they receive none of that realm's notifications, nor any building-realm notification"
+        // NOTE: the current endpoint returns an empty result here; with the realm-scoped refactor this should become a 403
+        otherRealmResponse.status == 200
+        otherNotifications.findAll { it.name == "RealmAccessTest" }.isEmpty()
+        otherNotifications.every { it.realm != buildingRealm }
+
+        when: "a user with read:notifications requests notifications without specifying a realm"
+        def badResponse = getClientApiTarget(serverUri(serverPort), buildingRealm, buildingUserAccessToken)
+                .path("notification").path(buildingRealm)
+                .request().get()
+
+        then: "the request is rejected as a bad request"
+        badResponse.status == 400
+        badResponse.close()
+
+        cleanup: "the mock is removed"
+        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
+    }
 }
