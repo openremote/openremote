@@ -21,6 +21,6 @@
   "forwardPorts": [ 8080 ],
   "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d && ./gradlew clean installDist",
   "remoteEnv": {
-    "GRADLE_USER_HOME": "/root/.gradle"
+    "GRADLE_USER_HOME": "/root/.gradle",
   }
 }
