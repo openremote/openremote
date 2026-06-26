@@ -1,15 +1,15 @@
-# OpenRemote Devcontainer Setup (Beta)
+# OpenRemote DevContainer Setup (Beta)
 
-This devcontainer provides a complete development environment for OpenRemote with Java 21, Node.js, Docker, and all necessary tools pre-configured.
+This DevContainer provides a complete development environment for OpenRemote with Java 21, Node.js, Docker, and all necessary tools pre-configured.
 
 Please note that this feature is still in beta and may not be supported or work correctly in all IDEs.
 Tested and working with IntelliJ.
 
 ## Quick Start
 
-1. **Open in Devcontainer**: IntelliJ should automatically detect the devcontainer configuration and prompt you to reopen in container.
+1. **Open in DevContainer**: IntelliJ should automatically detect the DevContainer configuration and prompt you to reopen in container.
 
-2. **Wait for Setup**: The devcontainer will automatically:
+2. **Wait for Setup**: The DevContainer will automatically:
     - Install Java 21, Node.js, and required tools
     - Start Docker services (PostgreSQL, Keycloak)
     - Build the project with `./gradlew clean installDist`

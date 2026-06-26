@@ -1,5 +1,5 @@
 {
-  "name": "OpenRemote Devcontainer",
+  "name": "OpenRemote DevContainer",
   "image": "mcr.microsoft.com/devcontainers/base:bookworm",
   "remoteUser": "root",
   "features": {
@@ -15,11 +15,12 @@
       "installGroovy": "true"
     }
   },
-  "runArgs": [
-    "-v", "${localEnv:HOME}/.gradle:/root/.gradle"
+  "mounts": [
+    "source=${localEnv:HOME}/.gradle,target=/root/.gradle,type=bind"
   ],
   "forwardPorts": [ 8080 ],
-  "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d && ./gradlew clean installDist",
+  "postCreateCommand": "./gradlew clean installDist",
+  "postStartCommand": "docker compose -p openremote -f profile/dev-testing.yml up -d",
   "remoteEnv": {
     "GRADLE_USER_HOME": "/root/.gradle"
   }
