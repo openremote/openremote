@@ -23,6 +23,9 @@
     :host::part(overlay) {
         width: 100%;
     }
+    :host(:not([has-footer])) [part="content"] {
+      padding: 0 var(--lumo-space-l) var(--lumo-space-l) !important;
+    }
 }
 
 :root::before,

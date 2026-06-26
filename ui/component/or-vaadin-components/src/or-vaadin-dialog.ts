@@ -49,6 +49,10 @@ export class OrVaadinDialog extends (Dialog as new () => Dialog & LitElement) im
                 ::part(content) {
                     background-color: var(--lumo-contrast-5pct);
                 }
+                ::part(header) {
+                    /* Colour header icons (e.g. the close cross) with the primary colour */
+                    --internal-or-icon-fill: var(--lumo-primary-color);
+                }
                 ::part(header),
                 ::part(footer) {
                     padding: var(--lumo-space-l);
