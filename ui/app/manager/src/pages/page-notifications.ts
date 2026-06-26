@@ -17,7 +17,7 @@ import {AxiosError, isAxiosError} from "@openremote/rest";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-button";
-import {dialogRenderer, dialogFooterRenderer} from "@openremote/or-vaadin-components/or-vaadin-dialog";
+import {dialogRenderer, dialogFooterRenderer, dialogHeaderRenderer} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {NotificationForm} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
@@ -475,12 +475,12 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             this._loadData();
                         }
                     }}"
-                    ${dialogRenderer(() => this._renderDetailsForm(this.notification), [this.notification, this.realm])}
-                    ${dialogFooterRenderer(() => html`
-                        <or-vaadin-button theme="primary" @click="${() => this._detailsDialogOpen = false}">
-                            <or-translate value="close"></or-translate>
+                    ${dialogHeaderRenderer(() => html`
+                        <or-vaadin-button theme="tertiary" @click="${() => this._detailsDialogOpen = false}">
+                            <or-icon icon="mdi:close"></or-icon>
                         </or-vaadin-button>
-                    `, [])}>
+                    `, [])}
+                    ${dialogRenderer(() => this._renderDetailsForm(this.notification), [this.notification, this.realm])}>
             </or-vaadin-dialog>
         `;
     }

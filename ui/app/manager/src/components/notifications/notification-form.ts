@@ -1,4 +1,5 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
+import {globals} from "@openremote/theme";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
 import { i18next } from "@openremote/or-translate";
@@ -44,6 +45,7 @@ export class NotificationFormChangedEvent extends CustomEvent<void> {
 @customElement("notification-form")
 export class NotificationForm extends LitElement {
     static styles = css`
+        ${unsafeCSS(globals)}
         :host {
             height: 76vh;
             display: block;
@@ -92,6 +94,8 @@ export class NotificationForm extends LitElement {
         [class*="formGridContainer"] > * {
             background-color: white;
             border-radius: var(--lumo-border-radius-m);
+            box-sizing: border-box;
+            padding: var(--lumo-space-l);
         }
 
         .targetContainer {
@@ -99,36 +103,19 @@ export class NotificationForm extends LitElement {
             position: absolute;
             width: 100%;
             height: 100%;
-            padding: 0 var(--lumo-space-l);
         }
 
         .messageContentContainer {
             grid-area: messageContentContainer;
             height: 100%;
-            padding: 0 var(--lumo-space-l);
         }
 
         .actionButtonContainer {
             grid-area: actionButtonContainer;
-            padding: 0 var(--lumo-space-l);
         }
 
         .propContainer {
             grid-area: propContainer;
-            padding: 0 var(--lumo-space-l);
-        }
-
-        .section-title {
-            text-transform: uppercase;
-            font-weight: bolder;
-            color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-            line-height: 1em;
-            margin-top: 0;
-            flex: 0 0 auto;
-            letter-spacing: 0.025em;
-            display: flex;
-            align-items: center;
-            min-height: 36px;
         }
 
         .target-area {
@@ -136,9 +123,12 @@ export class NotificationForm extends LitElement {
             overflow: auto;
         }
 
-        h5 {
-            margin-top: 12px;
-            margin-bottom: 6px;
+        h4 {
+            margin: 0;
+            padding-bottom: var(--lumo-space-m);
+            font-size: var(--lumo-font-size-l);
+            font-weight: 600;
+            line-height: 125.303%;
         }
 
         :host([readonly]) .form-container {
@@ -432,7 +422,7 @@ export class NotificationForm extends LitElement {
 
         return html`
             <div class="propContainer">
-                <h5>${i18next.t("properties")}</h5>
+                <h4><or-translate value="properties"></or-translate></h4>
                 ${this._renderReadOnlyField("source", this._normalizeValue(source))}
                 ${this._renderReadOnlyField("status", status)}
                 ${this._renderReadOnlyField("sent", sent)}
@@ -450,7 +440,7 @@ export class NotificationForm extends LitElement {
             const targetDisplay = canSeeTargetId ? this._normalizeValue(this._targets[0]) : '-';
             return html`
                 <div class="targetContainer">
-                    <h5 style="flex:0 0 auto;">${i18next.t("notifications.target")}</h5>
+                    <h4 style="flex:0 0 auto;"><or-translate value="notifications.target"></or-translate></h4>
                     ${this._renderReadOnlyField("notifications.targetType", this._normalizeValue(this._targetType))}
                     ${this._renderReadOnlyField("notifications.target", targetDisplay)}
                 </div>
@@ -470,7 +460,7 @@ export class NotificationForm extends LitElement {
 
         return html`
             <div class="targetContainer">
-                <h5 style="flex:0 0 auto;">${i18next.t("notifications.target")}</h5>
+                <h4 style="flex:0 0 auto;"><or-translate value="notifications.target"></or-translate></h4>
                 <or-vaadin-select
                         style="flex:0 0 auto;"
                         id="targetType"
@@ -529,7 +519,7 @@ export class NotificationForm extends LitElement {
 
         return html`
             <div class="messageContentContainer">
-                <h5>${i18next.t("content")}</h5>
+                <h4><or-translate value="content"></or-translate></h4>
                 <or-vaadin-select
                         id="messageType"
                         required
@@ -603,7 +593,7 @@ export class NotificationForm extends LitElement {
 
         return html`
             <div class="actionButtonContainer">
-                <h5>${i18next.t("actions")}</h5>
+                <h4><or-translate value="actions"></or-translate></h4>
                 <or-vaadin-text-field
                         id="actionUrl"
                         ?readonly="${inputDisabled}"
