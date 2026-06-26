@@ -230,7 +230,7 @@ export const style = css`
         margin-left: 20px;
     }
 
-    #edit-btn {
+    #export-attribute-config-btn, #import-attribute-config-btn, #edit-btn {
         margin-left: 15px;
     }
     

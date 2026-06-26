@@ -13,7 +13,7 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {type DialogAction, OrMwcDialog, OrMwcDialogClosedEvent, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -21,9 +21,12 @@ import manager, {OPENREMOTE_CLIENT_ID, RESTRICTED_USER_REALM_ROLE, subscribe, Ut
 import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import "@openremote/or-vaadin-components/or-vaadin-number-field";
 import {type OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {type OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 import {type OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {
+    Agent,
     AgentDescriptor,
     Asset,
     AssetEvent,
@@ -136,6 +139,63 @@ interface UserAssetLinkInfo {
     userId: string;
     usernameAndId: string;
     restrictedUser: boolean;
+}
+
+interface AssetAttributeConfigurationExportRequest {
+    attributeNames: string[];
+    genericParameterPaths?: string[];
+}
+
+interface AssetAttributeConfigurationImportRequest {
+    targetAsset: Asset;
+    configuration: AssetAttributeConfigurationDocument;
+    genericParameterValues?: {[name: string]: any};
+}
+
+interface AssetAttributeConfigurationDocument {
+    version: number;
+    assetType?: string;
+    attributes: {[name: string]: AssetAttributeConfigurationEntry};
+    genericParameters?: {[name: string]: AssetAttributeConfigurationGenericParameter};
+}
+
+interface AssetAttributeConfigurationEntry {
+    type?: string;
+    meta?: {[name: string]: any};
+}
+
+interface AssetAttributeConfigurationGenericParameter {
+    type?: string;
+    paths?: string[];
+}
+
+interface AssetAttributeConfigurationGenericParameterCandidate {
+    path: string;
+    label: string;
+}
+
+interface AssetAttributeConfigurationImportPreview {
+    assetTypeMismatch?: AssetAttributeConfigurationAssetTypeMismatch;
+    importableAttributes?: AssetAttributeConfigurationAttribute[];
+    missingAttributes?: AssetAttributeConfigurationAttribute[];
+    typeMismatches?: AssetAttributeConfigurationTypeMismatch[];
+    patchedAttributes: {[name: string]: Attribute<any>};
+}
+
+interface AssetAttributeConfigurationAssetTypeMismatch {
+    expected?: string;
+    actual?: string;
+}
+
+interface AssetAttributeConfigurationAttribute {
+    name?: string;
+    type?: string;
+}
+
+interface AssetAttributeConfigurationTypeMismatch {
+    name?: string;
+    importedType?: string;
+    targetType?: string;
 }
 
 interface AssetInfo {
@@ -1437,6 +1497,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             <or-vaadin-button id="save-btn" theme="primary" ?disabled=${!this.isModified()} @click=${() => this._onSaveClicked()}>
                                 <or-translate value="save"></or-translate>
                             </or-vaadin-button>
+                            <or-vaadin-button id="export-attribute-config-btn" ?disabled=${this.isModified() || !this._assetInfo?.asset.id} @click=${() => this._onExportAttributeConfigurationClicked()}>
+                                <or-icon slot="prefix" icon="download"></or-icon>
+                                <or-translate value="export"></or-translate>
+                            </or-vaadin-button>
+                            <or-vaadin-button id="import-attribute-config-btn" ?disabled=${!this._assetInfo?.asset.id} @click=${() => this._onImportAttributeConfigurationClicked()}>
+                                <or-icon slot="prefix" icon="upload"></or-icon>
+                                <or-translate value="import"></or-translate>
+                            </or-vaadin-button>
                         `)}
                         ${when(!this._isReadonly(), () => html`
                             <or-vaadin-button id="edit-btn" ?disabled=${!this._assetInfo?.asset.id} @click=${() => this._onEditToggleClicked(!this.editMode)}>
@@ -1453,6 +1521,833 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     protected _toggleHeaderShadow() {
         (this.containerElem.scrollTop > 0) ? this.headerElem.classList.add('scrolled') : this.headerElem.classList.remove('scrolled');
+    }
+
+    protected _onExportAttributeConfigurationClicked() {
+        const asset = this._assetInfo?.asset;
+        if (!asset?.id) {
+            return;
+        }
+
+        const exportableAttributes = this._getAttributeConfigurationExportCandidates(asset);
+        if (exportableAttributes.length === 0) {
+            showOkDialog("assetAttributeConfigurationExport", i18next.t("noAttributeConfigurationToExport"));
+            return;
+        }
+
+        const selectedAttributeNames = new Set(exportableAttributes.map((attribute) => attribute.name!));
+        const selectedGenericParameterPaths = new Set<string>();
+        let dialog: OrMwcDialog;
+        let exportAction: DialogAction;
+
+        const getSelectedAttributes = () => exportableAttributes
+            .filter((attribute) => attribute.name && selectedAttributeNames.has(attribute.name));
+
+        const getGenericParameterCandidates = () => this._getAttributeConfigurationGenericParameterCandidates(asset, getSelectedAttributes());
+
+        const syncSelectedGenericParameterPaths = () => {
+            const candidatePaths = new Set(getGenericParameterCandidates().map((candidate) => candidate.path));
+            Array.from(selectedGenericParameterPaths)
+                .filter((path) => !candidatePaths.has(path))
+                .forEach((path) => selectedGenericParameterPaths.delete(path));
+        };
+
+        const updateExportAction = () => {
+            syncSelectedGenericParameterPaths();
+            exportAction.disabled = selectedAttributeNames.size === 0;
+            dialog.requestUpdate();
+        };
+
+        exportAction = {
+            actionName: "export",
+            content: "export",
+            action: () => {
+                syncSelectedGenericParameterPaths();
+                this._exportAttributeConfiguration(asset, Array.from(selectedAttributeNames), Array.from(selectedGenericParameterPaths));
+            }
+        };
+
+        dialog = showDialog(new OrMwcDialog()
+            .setHeading("assetAttributeConfigurationExport")
+            .setContent(() => html`
+                <div id="asset-attribute-config-export">
+                    ${exportableAttributes.map((attribute) => {
+                        const attributeName = attribute.name!;
+                        return html`
+                            <div class="asset-attribute-config-export-attribute">
+                                <or-vaadin-checkbox
+                                    label=${this._getAttributeConfigurationAttributeLabel(asset, attribute)}
+                                    .checked=${selectedAttributeNames.has(attributeName)}
+                                    @change=${(ev: Event) => {
+                                        if ((ev.currentTarget as OrVaadinCheckbox).checked) {
+                                            selectedAttributeNames.add(attributeName);
+                                        } else {
+                                            selectedAttributeNames.delete(attributeName);
+                                        }
+                                        updateExportAction();
+                                    }}
+                                ></or-vaadin-checkbox>
+                                <ul>
+                                    ${this._getAttributeConfigurationMetaNames(attribute).map((metaName) => html`
+                                        <li>${this._getAttributeConfigurationMetaLabel(asset, metaName)}</li>
+                                    `)}
+                                </ul>
+                            </div>
+                        `;
+                    })}
+                    ${getGenericParameterCandidates().length > 0 ? html`
+                        <section id="asset-attribute-config-export-generic-parameters">
+                            <h3><or-translate value="genericParameters"></or-translate></h3>
+                            <div class="asset-attribute-config-export-generic-parameter-list">
+                                ${getGenericParameterCandidates().map((candidate) => html`
+                                    <or-vaadin-checkbox
+                                        data-generic-parameter-path=${candidate.path}
+                                        label=${candidate.label}
+                                        .checked=${selectedGenericParameterPaths.has(candidate.path)}
+                                        @change=${(ev: Event) => {
+                                            if ((ev.currentTarget as OrVaadinCheckbox).checked) {
+                                                selectedGenericParameterPaths.add(candidate.path);
+                                            } else {
+                                                selectedGenericParameterPaths.delete(candidate.path);
+                                            }
+                                            updateExportAction();
+                                        }}
+                                    ></or-vaadin-checkbox>
+                                `)}
+                            </div>
+                        </section>
+                    ` : ``}
+                </div>
+            `)
+            .setStyles(html`
+                <style>
+                    #asset-attribute-config-export {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 16px;
+                        min-width: 360px;
+                    }
+
+                    .asset-attribute-config-export-attribute {
+                        border-bottom: 1px solid var(--or-app-color5);
+                        padding-bottom: 12px;
+                    }
+
+                    .asset-attribute-config-export-attribute:last-child {
+                        border-bottom: 0;
+                        padding-bottom: 0;
+                    }
+
+                    .asset-attribute-config-export-attribute ul {
+                        margin: 4px 0 0 34px;
+                        padding: 0;
+                    }
+
+                    #asset-attribute-config-export-generic-parameters {
+                        border-top: 1px solid var(--or-app-color5);
+                        padding-top: 12px;
+                    }
+
+                    #asset-attribute-config-export-generic-parameters h3 {
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 8px;
+                    }
+
+                    .asset-attribute-config-export-generic-parameter-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 8px;
+                    }
+                </style>
+            `)
+            .setActions([
+                {
+                    actionName: "cancel",
+                    content: "cancel",
+                    default: true
+                },
+                exportAction
+            ])
+            .setDismissAction(null));
+    }
+
+    protected _onImportAttributeConfigurationClicked() {
+        const asset = this._assetInfo?.asset;
+        if (!asset?.id) {
+            return;
+        }
+
+        let dialog: OrMwcDialog;
+        let fileName: string | undefined;
+        let configuration: AssetAttributeConfigurationDocument | undefined;
+        let preview: AssetAttributeConfigurationImportPreview | undefined;
+        let errorMessage: string | undefined;
+        let loading = false;
+        let importAction: DialogAction;
+        let appliedPreview: AssetAttributeConfigurationImportPreview | undefined;
+        let genericParameterValues: {[name: string]: any} = {};
+        let genericParameterValueTexts: {[name: string]: string} = {};
+        let genericParameterErrors: {[name: string]: string | undefined} = {};
+        let genericParameterAgents: Agent[] | undefined;
+
+        const updateDialog = () => {
+            importAction.disabled = !preview || loading || !!errorMessage;
+            dialog.requestUpdate();
+        };
+
+        const getGenericParameterEntries = () => this._getAttributeConfigurationGenericParameterEntries(configuration);
+
+        const hasValidGenericParameterValues = () => getGenericParameterEntries()
+            .every(([name, genericParameter]) =>
+                this._isAttributeConfigurationGenericParameterValueReady(name, genericParameter, genericParameterValues, genericParameterErrors)
+            );
+
+        const hasAgentLinkGenericParameters = () => getGenericParameterEntries()
+            .some(([, genericParameter]) => !!this._getAttributeConfigurationGenericParameterAgentLinkType(configuration, genericParameter));
+
+        const loadGenericParameterAgents = async () => {
+            if (genericParameterAgents || !hasAgentLinkGenericParameters()) {
+                return;
+            }
+
+            genericParameterAgents = await this._loadAttributeConfigurationGenericParameterAgents();
+        };
+
+        const previewSelectedConfiguration = async () => {
+            if (!configuration) {
+                return;
+            }
+
+            preview = undefined;
+            errorMessage = undefined;
+            loading = true;
+            updateDialog();
+
+            try {
+                preview = await this._previewAttributeConfigurationImport(
+                    asset,
+                    configuration,
+                    getGenericParameterEntries().length > 0 ? genericParameterValues : undefined
+                );
+            } catch (e) {
+                console.error("Failed to preview asset attribute configuration import", e);
+                errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
+            } finally {
+                loading = false;
+                updateDialog();
+            }
+        };
+
+        const onGenericParameterValueChanged = (name: string, genericParameter: AssetAttributeConfigurationGenericParameter, value: string | boolean) => {
+            preview = undefined;
+            const parsedValue = this._parseAttributeConfigurationGenericParameterValue(genericParameter, value);
+            if (typeof value === "string") {
+                genericParameterValueTexts[name] = value;
+            }
+            if (parsedValue.valid) {
+                genericParameterValues[name] = parsedValue.value;
+                delete genericParameterErrors[name];
+            } else {
+                delete genericParameterValues[name];
+                genericParameterErrors[name] = i18next.t("invalidGenericParameterValue");
+            }
+            updateDialog();
+        };
+
+        importAction = {
+            actionName: "import",
+            content: "import",
+            disabled: true,
+            action: () => {
+                if (preview && this._applyAttributeConfigurationImportPreview(asset, preview)) {
+                    appliedPreview = preview;
+                }
+            }
+        };
+
+        const onFileSelected = async (ev: Event) => {
+            const fileInput = ev.currentTarget as HTMLInputElement;
+            const file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : undefined;
+            if (!file) {
+                return;
+            }
+
+            fileName = file.name;
+            preview = undefined;
+            errorMessage = undefined;
+            configuration = undefined;
+            genericParameterValues = {};
+            genericParameterValueTexts = {};
+            genericParameterErrors = {};
+            genericParameterAgents = undefined;
+            loading = true;
+            updateDialog();
+
+            try {
+                configuration = JSON.parse(await file.text()) as AssetAttributeConfigurationDocument;
+            } catch (e) {
+                console.error("Failed to preview asset attribute configuration import", e);
+                errorMessage = i18next.t("invalidAttributeConfigurationFile");
+                loading = false;
+                updateDialog();
+                return;
+            }
+
+            try {
+                await loadGenericParameterAgents();
+            } catch (e) {
+                console.error("Failed to load agents for asset attribute configuration import", e);
+                errorMessage = i18next.t("attributeConfigurationImportPreviewFailed");
+                loading = false;
+                updateDialog();
+                return;
+            }
+
+            for (const [name, genericParameter] of getGenericParameterEntries()) {
+                if ((genericParameter.type || "text") === "boolean") {
+                    genericParameterValues[name] = false;
+                }
+            }
+
+            if (getGenericParameterEntries().length > 0) {
+                loading = false;
+                updateDialog();
+                return;
+            }
+
+            await previewSelectedConfiguration();
+        };
+
+        dialog = showDialog(new OrMwcDialog()
+            .setHeading("assetAttributeConfigurationImport")
+            .setContent(() => html`
+                <div id="asset-attribute-config-import">
+                    <div id="asset-attribute-config-import-file-picker">
+                        <or-vaadin-button @click=${() => dialog.shadowRoot?.getElementById("asset-attribute-config-import-file")?.click()}>
+                            <or-translate value="selectFile"></or-translate>
+                        </or-vaadin-button>
+                        <span>${fileName || ""}</span>
+                        <input id="asset-attribute-config-import-file" type="file" accept="application/json,.json" @change=${onFileSelected}/>
+                    </div>
+                    ${loading ? html`<span><or-translate value="loading"></or-translate></span>` : ``}
+                    ${errorMessage ? html`<span class="error">${errorMessage}</span>` : ``}
+                    ${getGenericParameterEntries().length > 0 ? html`
+                        <section id="asset-attribute-config-generic-parameters" class="asset-attribute-config-import-section">
+                            <h3><or-translate value="genericParameters"></or-translate></h3>
+                            <div class="asset-attribute-config-generic-parameter-list">
+                                ${getGenericParameterEntries().map(([name, genericParameter]) => this._getAttributeConfigurationGenericParameterInputTemplate(
+                                    name,
+                                    genericParameter,
+                                    genericParameterValueTexts[name] || "",
+                                    genericParameterValues[name],
+                                    genericParameterErrors[name],
+                                    onGenericParameterValueChanged,
+                                    configuration,
+                                    genericParameterAgents
+                                ))}
+                            </div>
+                            <or-vaadin-button id="asset-attribute-config-preview-btn" ?disabled=${loading || !hasValidGenericParameterValues()} @click=${previewSelectedConfiguration}>
+                                <or-translate value="preview"></or-translate>
+                            </or-vaadin-button>
+                        </section>
+                    ` : ``}
+                    ${preview ? this._getAttributeConfigurationImportPreviewTemplate(preview, true) : ``}
+                </div>
+            `)
+            .setStyles(html`
+                <style>
+                    #asset-attribute-config-import {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 16px;
+                        min-width: 420px;
+                    }
+
+                    #asset-attribute-config-import-file-picker {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    #asset-attribute-config-import-file {
+                        display: none;
+                    }
+
+                    .asset-attribute-config-import-section {
+                        border-top: 1px solid var(--or-app-color5);
+                        padding-top: 12px;
+                    }
+
+                    .asset-attribute-config-import-section:first-child {
+                        border-top: 0;
+                        padding-top: 0;
+                    }
+
+                    .asset-attribute-config-import-section h3 {
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 6px;
+                    }
+
+                    .asset-attribute-config-import-section ul {
+                        margin: 0 0 0 20px;
+                        padding: 0;
+                    }
+
+                    .asset-attribute-config-generic-parameter-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                        margin-bottom: 12px;
+                    }
+
+                    .asset-attribute-config-generic-parameter {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                    }
+
+                    .asset-attribute-config-generic-parameter or-mwc-input {
+                        width: 100%;
+                    }
+
+                    .error {
+                        color: var(--or-app-color-error, #c62828);
+                    }
+                </style>
+            `)
+            .setActions([
+                {
+                    actionName: "cancel",
+                    content: "cancel",
+                    default: true
+                },
+                importAction
+            ])
+            .setDismissAction(null));
+        dialog.addEventListener(OrMwcDialogClosedEvent.NAME, (ev) => {
+            if ((ev as OrMwcDialogClosedEvent).detail === "import" && appliedPreview) {
+                const resultPreview = appliedPreview;
+                window.setTimeout(() => this._showAttributeConfigurationImportResult(resultPreview), 0);
+            }
+        });
+    }
+
+    protected _getAttributeConfigurationExportCandidates(asset: Asset): Attribute<any>[] {
+        return Object.values(asset.attributes || {})
+            .filter((attribute) => !!attribute.name && !!attribute.meta && Object.keys(attribute.meta).length > 0)
+            .sort(Util.sortByString((attribute) => attribute.name!));
+    }
+
+    protected _getAttributeConfigurationMetaNames(attribute: Attribute<any>): string[] {
+        return Object.keys(attribute.meta || {}).sort();
+    }
+
+    protected _getAttributeConfigurationAttributeLabel(asset: Asset, attribute: Attribute<any>): string {
+        const descriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, asset.type!);
+        const label = Util.getAttributeLabel(attribute, descriptor, asset.type, false, attribute.name);
+        return attribute.type ? `${label} (${attribute.type})` : label;
+    }
+
+    protected _getAttributeConfigurationMetaLabel(asset: Asset, metaName: string): string {
+        const descriptor = AssetModelUtil.getMetaItemDescriptor(metaName);
+        return Util.getMetaLabel(undefined, descriptor || metaName, asset.type, false, metaName);
+    }
+
+    protected _getAttributeConfigurationGenericParameterCandidates(asset: Asset, attributes: Attribute<any>[]): AssetAttributeConfigurationGenericParameterCandidate[] {
+        if (attributes.length === 0) {
+            return [];
+        }
+
+        const pathValues = new Map<string, any[]>();
+        attributes
+            .map((attribute) => this._getAttributeConfigurationGenericParameterPathValues(attribute))
+            .forEach((pathValueMap) => pathValueMap.forEach((value, path) => {
+                const values = pathValues.get(path) || [];
+                values.push(value);
+                pathValues.set(path, values);
+            }));
+
+        return Array.from(pathValues.entries())
+            .filter(([path]) => !this._isAttributeConfigurationAgentLinkTypeGenericParameterPath(path))
+            .filter(([, values]) =>
+                values.length > 1
+                && values.every((value) => this._areAttributeConfigurationGenericParameterValuesEqual(values[0], value))
+            )
+            .map(([path]) => ({
+                path,
+                label: this._formatAttributeConfigurationGenericParameterPathLabel(asset, path)
+            }))
+            .sort(Util.sortByString((candidate) => candidate.label));
+    }
+
+    protected _getAttributeConfigurationGenericParameterPathValues(attribute: Attribute<any>): Map<string, any> {
+        const pathValues = new Map<string, any>();
+        Object.entries(attribute.meta || {}).forEach(([metaName, value]) => {
+            this._collectAttributeConfigurationGenericParameterPathValues(value, `meta.${metaName}`, pathValues);
+        });
+        return pathValues;
+    }
+
+    protected _collectAttributeConfigurationGenericParameterPathValues(value: any, path: string, pathValues: Map<string, any>) {
+        if (value === undefined || value === null) {
+            return;
+        }
+
+        if (Array.isArray(value)) {
+            pathValues.set(path, value);
+            return;
+        }
+
+        if (typeof value === "object") {
+            Object.entries(value).forEach(([childName, childValue]) => {
+                this._collectAttributeConfigurationGenericParameterPathValues(childValue, `${path}.${childName}`, pathValues);
+            });
+            return;
+        }
+
+        pathValues.set(path, value);
+    }
+
+    protected _areAttributeConfigurationGenericParameterValuesEqual(valueA: any, valueB: any): boolean {
+        return JSON.stringify(valueA) === JSON.stringify(valueB);
+    }
+
+    protected _formatAttributeConfigurationGenericParameterPathLabel(asset: Asset, path: string): string {
+        const pathParts = path.split(".");
+        if (pathParts.length < 2 || pathParts[0] !== "meta") {
+            return path;
+        }
+
+        const metaLabel = this._getAttributeConfigurationMetaLabel(asset, pathParts[1]);
+        if (pathParts.length === 2) {
+            return metaLabel;
+        }
+
+        return `${metaLabel} > ${pathParts.slice(2).map((pathPart) => Util.camelCaseToSentenceCase(pathPart)).join(" > ")}`;
+    }
+
+    protected _isAttributeConfigurationAgentLinkTypeGenericParameterPath(path: string): boolean {
+        return path === `meta.${WellknownMetaItems.AGENTLINK}.type`;
+    }
+
+    protected async _exportAttributeConfiguration(asset: Asset, attributeNames: string[], genericParameterPaths: string[] = []) {
+        try {
+            const request: AssetAttributeConfigurationExportRequest = {attributeNames};
+            if (genericParameterPaths.length > 0) {
+                request.genericParameterPaths = genericParameterPaths;
+            }
+            const response = await manager.rest.axiosInstance.post<AssetAttributeConfigurationDocument>(
+                `asset/${asset.id}/attribute-config/export`,
+                request
+            );
+            this._downloadAttributeConfiguration(asset, response.data);
+            showSnackbar(undefined, "attributeConfigurationExported");
+        } catch (e) {
+            console.error("Failed to export asset attribute configuration", e);
+            showSnackbar(undefined, "errorOccurred");
+        }
+    }
+
+    protected _downloadAttributeConfiguration(asset: Asset, document: AssetAttributeConfigurationDocument) {
+        const data = JSON.stringify(document, undefined, 2);
+        const url = window.URL.createObjectURL(new Blob([data], {type: "application/json"}));
+        const link = window.document.createElement("a");
+        link.href = url;
+        link.download = `${asset.name || asset.id || "asset"}-attribute-config.json`;
+        window.document.body.appendChild(link);
+        link.click();
+        window.setTimeout(() => {
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        }, 0);
+    }
+
+    protected _applyAttributeConfigurationImportPreview(asset: Asset, preview: AssetAttributeConfigurationImportPreview): boolean {
+        if (!this._assetInfo || this._assetInfo.asset.id !== asset.id) {
+            return false;
+        }
+
+        this._assetInfo.asset = {
+            ...this._assetInfo.asset,
+            attributes: {...preview.patchedAttributes}
+        };
+        this._assetInfo.attributeTemplateMap = {};
+        this._assetInfo.modified = true;
+        this._doValidation();
+        this.requestUpdate("_assetInfo");
+        showSnackbar(undefined, "attributeConfigurationImported");
+        return true;
+    }
+
+    protected _showAttributeConfigurationImportResult(preview: AssetAttributeConfigurationImportPreview) {
+        showOkDialog(
+            "assetAttributeConfigurationImportResult",
+            this._getAttributeConfigurationImportPreviewTemplate(preview)
+        );
+    }
+
+    protected _getAttributeConfigurationGenericParameterEntries(configuration?: AssetAttributeConfigurationDocument): [string, AssetAttributeConfigurationGenericParameter][] {
+        return Object.entries(configuration?.genericParameters || {})
+            .sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
+    }
+
+    protected async _loadAttributeConfigurationGenericParameterAgents(): Promise<Agent[]> {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            realm: {
+                name: manager.displayRealm
+            },
+            types: [
+                "Agent"
+            ],
+            select: {
+                attributes: []
+            }
+        });
+        return (response.data || []) as Agent[];
+    }
+
+    protected _getAttributeConfigurationGenericParameterAgentLinkType(configuration: AssetAttributeConfigurationDocument | undefined, genericParameter: AssetAttributeConfigurationGenericParameter): string | undefined {
+        if (!configuration || !genericParameter.paths) {
+            return;
+        }
+
+        let agentLinkType: string | undefined;
+        for (const path of genericParameter.paths) {
+            const pathAgentLinkType = this._getAttributeConfigurationGenericParameterPathAgentLinkType(configuration, path);
+            if (pathAgentLinkType === undefined) {
+                continue;
+            }
+            if (!pathAgentLinkType) {
+                return;
+            }
+            if (!agentLinkType) {
+                agentLinkType = pathAgentLinkType;
+                continue;
+            }
+            if (agentLinkType !== pathAgentLinkType) {
+                return;
+            }
+        }
+        return agentLinkType;
+    }
+
+    protected _getAttributeConfigurationGenericParameterPathAgentLinkType(configuration: AssetAttributeConfigurationDocument, path: string): string | null | undefined {
+        const pathParts = path.split(".");
+        if (
+            pathParts.length !== 5
+            || pathParts[0] !== "attributes"
+            || pathParts[2] !== "meta"
+            || pathParts[3] !== WellknownMetaItems.AGENTLINK
+            || pathParts[4] !== "id"
+        ) {
+            return;
+        }
+
+        const agentLink = configuration.attributes?.[pathParts[1]]?.meta?.[WellknownMetaItems.AGENTLINK];
+        if (!agentLink || typeof agentLink !== "object" || Array.isArray(agentLink)) {
+            return null;
+        }
+
+        const agentLinkType = (agentLink as {type?: unknown}).type;
+        return typeof agentLinkType === "string" && agentLinkType.length > 0 ? agentLinkType : null;
+    }
+
+    protected _getAttributeConfigurationGenericParameterAgentOptions(agents: Agent[], agentLinkType: string): [string, string][] {
+        return agents
+            .filter((agent) => !!agent.id && this._getAttributeConfigurationAgentLinkType(agent) === agentLinkType)
+            .sort(Util.sortByString((agent) => agent.name || agent.id || ""))
+            .map((agent) => [agent.id!, `${agent.name || agent.id} (${agent.id})`]);
+    }
+
+    protected _getAttributeConfigurationAgentLinkType(agent: Agent): string | undefined {
+        const descriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor | undefined;
+        return descriptor?.agentLinkType;
+    }
+
+    protected _getAttributeConfigurationGenericParameterInputTemplate(
+        name: string,
+        genericParameter: AssetAttributeConfigurationGenericParameter,
+        textValue: string,
+        value: any,
+        errorMessage: string | undefined,
+        onValueChanged: (name: string, genericParameter: AssetAttributeConfigurationGenericParameter, value: string | boolean) => void,
+        configuration?: AssetAttributeConfigurationDocument,
+        agents?: Agent[]
+    ): TemplateResult {
+        const id = `asset-attribute-config-generic-${name}`;
+        const agentLinkType = this._getAttributeConfigurationGenericParameterAgentLinkType(configuration, genericParameter);
+        const agentOptions = agentLinkType
+            ? this._getAttributeConfigurationGenericParameterAgentOptions(agents || [], agentLinkType)
+            : [];
+        const type = genericParameter.type || "text";
+        const label = agentLinkType ? i18next.t("agentId") : `${Util.camelCaseToSentenceCase(name)} (${type})`;
+
+        return html`
+            <div class="asset-attribute-config-generic-parameter">
+                ${type === "boolean" ? html`
+                    <or-vaadin-checkbox
+                        id=${id}
+                        label=${label}
+                        .checked=${!!value}
+                        @change=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinCheckbox).checked)}
+                    ></or-vaadin-checkbox>
+                ` : type === "number" ? html`
+                    <or-vaadin-number-field
+                        id=${id}
+                        label=${label}
+                        .value=${textValue}
+                        @input=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinNumberField).value)}
+                        @change=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinNumberField).value)}
+                    ></or-vaadin-number-field>
+                ` : agentLinkType ? html`
+                    <or-mwc-input
+                        id=${id}
+                        type=${InputType.SELECT}
+                        label=${label}
+                        required
+                        ?disabled=${!agents}
+                        .value=${value || ""}
+                        .placeholder=${i18next.t("selectAgent")}
+                        .options=${agentOptions}
+                        @or-mwc-input-changed=${(ev: OrInputChangedEvent) => onValueChanged(name, genericParameter, ev.detail.value)}
+                    ></or-mwc-input>
+                ` : html`
+                    <or-vaadin-text-field
+                        id=${id}
+                        label=${label}
+                        .value=${textValue}
+                        @input=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinTextField).value)}
+                        @change=${(ev: Event) => onValueChanged(name, genericParameter, (ev.currentTarget as OrVaadinTextField).value)}
+                    ></or-vaadin-text-field>
+                `}
+                ${errorMessage ? html`<span class="error">${errorMessage}</span>` : ``}
+            </div>
+        `;
+    }
+
+    protected _parseAttributeConfigurationGenericParameterValue(genericParameter: AssetAttributeConfigurationGenericParameter, value: string | boolean): {valid: boolean, value?: any} {
+        const type = genericParameter.type || "text";
+        if (type === "boolean") {
+            return {valid: true, value: !!value};
+        }
+
+        const textValue = typeof value === "string" ? value.trim() : "";
+        if (textValue.length === 0) {
+            return {valid: false};
+        }
+
+        if (type === "number") {
+            const numberValue = Number(textValue);
+            return Number.isNaN(numberValue) ? {valid: false} : {valid: true, value: numberValue};
+        }
+
+        if (type === "object" || type === "array") {
+            try {
+                const jsonValue = JSON.parse(textValue);
+                if (type === "object" && (jsonValue === null || Array.isArray(jsonValue) || typeof jsonValue !== "object")) {
+                    return {valid: false};
+                }
+                if (type === "array" && !Array.isArray(jsonValue)) {
+                    return {valid: false};
+                }
+                return {valid: true, value: jsonValue};
+            } catch (e) {
+                return {valid: false};
+            }
+        }
+
+        return {valid: true, value: textValue};
+    }
+
+    protected _isAttributeConfigurationGenericParameterValueReady(
+        name: string,
+        genericParameter: AssetAttributeConfigurationGenericParameter,
+        genericParameterValues: {[name: string]: any},
+        genericParameterErrors: {[name: string]: string | undefined}
+    ): boolean {
+        return (genericParameter.type || "text") === "boolean"
+            || (!genericParameterErrors[name] && Object.prototype.hasOwnProperty.call(genericParameterValues, name));
+    }
+
+    protected async _previewAttributeConfigurationImport(asset: Asset, configuration: AssetAttributeConfigurationDocument, genericParameterValues?: {[name: string]: any}): Promise<AssetAttributeConfigurationImportPreview> {
+        const request: AssetAttributeConfigurationImportRequest = {
+            targetAsset: asset,
+            configuration
+        };
+        if (genericParameterValues && Object.keys(genericParameterValues).length > 0) {
+            request.genericParameterValues = genericParameterValues;
+        }
+        const response = await manager.rest.axiosInstance.post<AssetAttributeConfigurationImportPreview>(
+            `asset/${asset.id}/attribute-config/import/preview`,
+            request
+        );
+        return response.data;
+    }
+
+    protected _getAttributeConfigurationImportPreviewTemplate(preview: AssetAttributeConfigurationImportPreview, includeOverwriteWarning = false): TemplateResult {
+        const importableAttributes = preview.importableAttributes || [];
+        const missingAttributes = preview.missingAttributes || [];
+        const typeMismatches = preview.typeMismatches || [];
+
+        return html`
+            <div id="asset-attribute-config-import-preview">
+                ${preview.assetTypeMismatch ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <h3><or-translate value="assetTypeMismatch"></or-translate></h3>
+                        <span>${preview.assetTypeMismatch.expected} -> ${preview.assetTypeMismatch.actual}</span>
+                    </section>
+                ` : ``}
+                ${includeOverwriteWarning ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <span><or-translate value="attributeConfigurationImportOverwriteWarning"></or-translate></span>
+                    </section>
+                ` : ``}
+                <section class="asset-attribute-config-import-section">
+                    <h3><or-translate value="importableAttributes"></or-translate></h3>
+                    ${this._getAttributeConfigurationAttributeListTemplate(importableAttributes)}
+                </section>
+                ${missingAttributes.length > 0 ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <h3><or-translate value="missingAttributes"></or-translate></h3>
+                        ${this._getAttributeConfigurationAttributeListTemplate(missingAttributes)}
+                    </section>
+                ` : ``}
+                ${typeMismatches.length > 0 ? html`
+                    <section class="asset-attribute-config-import-section">
+                        <h3><or-translate value="typeMismatches"></or-translate></h3>
+                        <ul>
+                            ${typeMismatches.map((typeMismatch) => html`
+                                <li>${this._formatAttributeConfigurationTypeMismatch(typeMismatch)}</li>
+                            `)}
+                        </ul>
+                    </section>
+                ` : ``}
+            </div>
+        `;
+    }
+
+    protected _getAttributeConfigurationAttributeListTemplate(attributes: AssetAttributeConfigurationAttribute[]): TemplateResult {
+        if (attributes.length === 0) {
+            return html`<span><or-translate value="none"></or-translate></span>`;
+        }
+
+        return html`
+            <ul>
+                ${attributes.map((attribute) => html`
+                    <li>${this._formatAttributeConfigurationAttribute(attribute)}</li>
+                `)}
+            </ul>
+        `;
+    }
+
+    protected _formatAttributeConfigurationAttribute(attribute: AssetAttributeConfigurationAttribute): string {
+        return attribute.type ? `${attribute.name} (${attribute.type})` : (attribute.name || "");
+    }
+
+    protected _formatAttributeConfigurationTypeMismatch(typeMismatch: AssetAttributeConfigurationTypeMismatch): string {
+        return `${typeMismatch.name} (${typeMismatch.importedType} -> ${typeMismatch.targetType})`;
     }
 
     protected _isReadonly() {

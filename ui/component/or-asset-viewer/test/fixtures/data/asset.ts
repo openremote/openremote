@@ -10,6 +10,28 @@ export const validAsset: Asset = {
     type: "ThingAsset",
     attributes: { ...commonAttrs },
 };
+export const configuredAsset: Asset = {
+    id: "configuredAsset",
+    name: "Configured Thing",
+    realm: "master",
+    type: "ThingAsset",
+    attributes: {
+        notes: { ...notes, meta: { readOnly: true, agentLink: { type: "ModbusAgentLink", id: "agent-1", unitId: 3 } } },
+        model: { name: "model", type: "text", meta: { label: "Model", agentLink: { type: "ModbusAgentLink", id: "agent-1", unitId: 3 } } },
+        location,
+    },
+};
+export const partiallyConfiguredAsset: Asset = {
+    id: "partiallyConfiguredAsset",
+    name: "Partially Configured Thing",
+    realm: "master",
+    type: "ThingAsset",
+    attributes: {
+        notes: { ...notes, meta: { readOnly: true, agentLink: { type: "ModbusAgentLink", id: "agent-1" } } },
+        model: { name: "model", type: "text", meta: { label: "Model", agentLink: { type: "ModbusAgentLink", id: "agent-1" } } },
+        serialNumber: { name: "serialNumber", type: "text", meta: { label: "Serial number" } },
+    },
+};
 export const invalidAsset: Asset = {
     id: "invalidAsset",
     name: "Thing",

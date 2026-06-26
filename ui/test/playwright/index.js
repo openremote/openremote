@@ -8,6 +8,28 @@ import HttpBackend from "i18next-http-backend";
 import { IconSets, OrIconSet, createMdiIconSet, createSvgIconSet } from "@openremote/or-icon";
 import { AssetEventCause, AssetModelUtil, ClientRole } from "@openremote/model";
 
+const modbusAgentTypeInfo = {
+    assetDescriptor: {
+        descriptorType: "agent",
+        name: "ModbusTcpAgent",
+        agentLinkType: "ModbusAgentLink",
+    },
+    attributeDescriptors: [],
+    metaItemDescriptors: [],
+    valueDescriptors: [],
+};
+
+const simulatorAgentTypeInfo = {
+    assetDescriptor: {
+        descriptorType: "agent",
+        name: "SimulatorAgent",
+        agentLinkType: "SimulatorAgentLink",
+    },
+    attributeDescriptors: [],
+    metaItemDescriptors: [],
+    valueDescriptors: [],
+};
+
 const style = document.createElement("style");
 style.textContent = themeCss;
 document.head.appendChild(style);
@@ -25,7 +47,7 @@ window._i18next = i18next.use(HttpBackend);
  * @returns {string} The subscriptionId
  */
 function subscribeAssetEvents(ids, requestCurrentValues, callback) {
-    if (window._assets && window._assets.length) {
+    if (window._assets && window._assets.length && ids && ids.length) {
         const assetEvent = {
             eventType: "asset",
             asset: window._assets.find(({ id }) => id === ids[0]),
@@ -57,8 +79,9 @@ manager.init = async () => {
         unsubscribe: async () => "",
         unsubscribeStatusChange: () => null,
     };
+    manager.rest.initialise("/api/master/");
     // Similar to `manager.doDescriptorsInit`, but without requesting the API
-    AssetModelUtil._assetTypeInfos = [thingAssetInfo];
+    AssetModelUtil._assetTypeInfos = [thingAssetInfo, modbusAgentTypeInfo, simulatorAgentTypeInfo];
     AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptors);
     AssetModelUtil._valueDescriptors = Object.values(valueDescriptors);
 
