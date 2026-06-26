@@ -20,6 +20,7 @@
 package org.openremote.model.security;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserSession {
     protected final String ID;
@@ -28,7 +29,10 @@ public class UserSession {
     protected final String remoteAddress;
 
     @JsonCreator
-    public UserSession(String ID, String username, long startTimeMillis, String remoteAddress) {
+    public UserSession(@JsonProperty("ID") String ID,
+                       @JsonProperty("username") String username,
+                       @JsonProperty("startTimeMillis") long startTimeMillis,
+                       @JsonProperty("remoteAddress") String remoteAddress) {
         this.ID = ID;
         this.username = username;
         this.startTimeMillis = startTimeMillis;

@@ -1,11 +1,11 @@
-import { BasePage, Page, Shared } from "@openremote/test";
+import { BasePage, Page, Shared, expect } from "@openremote/test";
 import { Manager } from "../manager";
 
 export class RealmsPage implements BasePage {
   constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
-    this.manager.navigateToMenuItem("Realms");
+    await this.manager.navigateToMenuItem("Realms");
   }
 
   /**
@@ -13,20 +13,30 @@ export class RealmsPage implements BasePage {
    * @param name The realm name
    */
   async addRealm(name: string) {
-    const locator = this.page.getByRole("button", { name, exact: true });
     await this.page.getByRole("button", { name: "Master", exact: true }).waitFor();
-    if (await locator.isVisible()) {
+    await this.page.getByRole("cell", { name: "master", exact: true }).first().waitFor();
+    const existingRealmCell = this.page.getByRole("cell", { name, exact: true }).first();
+    if (await existingRealmCell.isVisible()) {
       console.warn(`Realm "${name}" already present`);
     } else {
       await this.page.click("text=Add Realm");
-      const realmRow = this.page.locator("#realm-row-1");
+      const realmRow = this.page.locator("tr.realm-row").filter({
+        has: this.page.getByRole("button", { name: /Create|create/i })
+      });
       const realmNameInput = realmRow.getByLabel("Realm");
-      const displayNameInput = realmRow.getByLabel("Friendly name");
+      const displayNameInput = realmRow.getByLabel(/Friendly name|displayName/i);
+      await expect(realmRow).toBeVisible();
+      await expect(realmNameInput).toBeEditable();
       await realmNameInput.fill(name);
       await realmNameInput.dispatchEvent("change");
       await displayNameInput.fill(name);
       await displayNameInput.dispatchEvent("change");
-      await this.page.getByRole("button", { name: "create" }).click();
+      const response = this.page.waitForResponse((res) =>
+        res.request().method() === "POST" && res.url().endsWith("/api/master/realm")
+      );
+      await realmRow.getByRole("button", { name: /Create|create/i }).click();
+      expect((await response).status()).toBe(204);
+      await expect(existingRealmCell).toBeVisible();
     }
   }
 

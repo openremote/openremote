@@ -21,8 +21,8 @@ package org.openremote.model.calendar;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.util.Pair;
@@ -84,9 +84,18 @@ public class CalendarEvent implements Serializable {
     protected Date end;
 
     @JsonSerialize(converter = RecurStringConverter.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(converter = RecurStringConverterJackson2.class)
     protected Recur<LocalDateTime> recurrence;
 
     public static class RecurStringConverter extends StdConverter<Recur<?>, String> {
+
+        @Override
+        public String convert(Recur<?> value) {
+            return value.toString();
+        }
+    }
+
+    public static class RecurStringConverterJackson2 extends com.fasterxml.jackson.databind.util.StdConverter<Recur<?>, String> {
 
         @Override
         public String convert(Recur<?> value) {

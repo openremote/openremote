@@ -354,7 +354,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 : await manager.rest.api.AlarmResource.createAlarm(alarm, {assetIds: assetsIds}).then(async (response) => {
                     if (alarm.alarmAssetLinks.length > 0) {
                         alarm.alarmAssetLinks.forEach((link) => {
-                            link.id.sentalarmId = response.data.id;
+                            link.id.alarmId = response.data.id;
                             link.id.realm = response.data.realm;
                         })
                         await manager.rest.api.AlarmResource.setAssetLinks(alarm.alarmAssetLinks);
@@ -882,7 +882,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             alarm.alarmAssetLinks = e.detail.newNodes.map(node => {
                 const alarmAssetLink: AlarmAssetLink = {
                     id: {
-                        sentalarmId: alarm.id,
+                        alarmId: alarm.id,
                         realm: alarm.realm,
                         assetId: node.asset.id
                     }

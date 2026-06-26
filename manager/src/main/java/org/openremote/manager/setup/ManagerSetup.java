@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.setup;
 
+import tools.jackson.core.JacksonException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -430,7 +431,7 @@ public class ManagerSetup implements Setup {
                         Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                         asset = assetStorageService.merge(asset);
                         LOG.log(System.Logger.Level.INFO, "Asset merged: " + asset);
-                    } catch (IOException e) {
+                    } catch (JacksonException e) {
                         LOG.log(System.Logger.Level.INFO, "Processing of file " + file.getFileName() + " went wrong", e);
                     }
                 });

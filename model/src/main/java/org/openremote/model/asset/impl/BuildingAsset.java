@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
@@ -103,18 +105,21 @@ public class BuildingAsset extends CityAsset {
         return this;
     }
 
+    @JsonProperty
     @Override
     public BuildingAsset setAttributes(AttributeMap attributes) {
         super.setAttributes(attributes);
         return this;
     }
 
+    @JsonIgnore
     @Override
     public Asset<?> setAttributes(Attribute<?>... attributes) {
         super.setAttributes(attributes);
         return this;
     }
 
+    @JsonIgnore
     @Override
     public BuildingAsset setAttributes(Collection<Attribute<?>> attributes) {
         super.setAttributes(attributes);

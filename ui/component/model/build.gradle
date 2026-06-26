@@ -16,9 +16,6 @@ dependencies {
     compileOnly project(":model-util")
     implementation project(":model")
     implementation project(":agent")
-    implementation libs.jacksonDatatypeJdk8
-    implementation libs.jacksonDatatypeJsr310
-    implementation libs.jacksonModuleParameterNames
     implementation libs.typescriptGeneratorCore
 }
 

@@ -40,6 +40,8 @@ const style = css`
     }
 `;
 
+type NotificationMessage = EmailNotificationMessage | LocalizedNotificationMessage | PushNotificationMessage;
+
 @customElement("or-rule-action-notification")
 export class OrRuleActionNotification extends LitElement {
 
@@ -94,19 +96,19 @@ export class OrRuleActionNotification extends LitElement {
         // Upon rule change, we update the name of the "Notification action" to a sensible value, for example with the subject of an email
         // This is to prevent the NAME (for example showing up in the logs) being NULL or not identifiable.
         if(this.action.notification) {
-            const message = this.action.notification.message;
+            const message = this.action.notification.message as NotificationMessage | undefined;
             if(message?.type === "localized") {
                 const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.default?.defaultLanguage || manager.config.defaultLanguage!;
-                const msg = message.languages?.[locale]; // if localized, we use the default language
+                const msg = (message as LocalizedNotificationMessage).languages?.[locale] as NotificationMessage | undefined; // if localized, we use the default language
                 if(msg?.type === "push") {
-                    this.action.notification.name = msg.title;
+                    this.action.notification.name = (msg as PushNotificationMessage).title;
                 } else if(msg?.type === "email") {
-                    this.action.notification.name = msg.subject;
+                    this.action.notification.name = (msg as EmailNotificationMessage).subject;
                 }
             } else if (message?.type === "push") {
-                this.action.notification.name = message.title;
+                this.action.notification.name = (message as PushNotificationMessage).title;
             } else if (message?.type === "email") {
-                this.action.notification.name = message.subject;
+                this.action.notification.name = (message as EmailNotificationMessage).subject;
             }
         }
     }

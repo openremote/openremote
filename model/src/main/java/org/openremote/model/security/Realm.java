@@ -19,9 +19,10 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -31,7 +32,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.openremote.model.persistence.PasswordPolicyConverter;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
@@ -48,10 +48,10 @@ public class Realm {
         );
     private static final PasswordPolicyConverter PASSWORD_POLICY_CONVERTER = new PasswordPolicyConverter();
 
-    public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
+    public static class PasswordPolicyDeserializer extends ValueDeserializer<List<String>> {
         @Override
-        public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            JsonNode node = p.getCodec().readTree(p);
+        public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+            JsonNode node = ctxt.readTree(p);
             List<String> policies = new ArrayList<>();
             if (node.isArray()) {
                 node.forEach(element -> policies.add(element.asText()));

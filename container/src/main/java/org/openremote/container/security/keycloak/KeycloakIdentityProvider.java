@@ -19,6 +19,7 @@
  */
 package org.openremote.container.security.keycloak;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
@@ -66,6 +67,7 @@ import static org.openremote.model.util.MapAccess.getString;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record DiscoveryResult (
         String issuer
     ) {}

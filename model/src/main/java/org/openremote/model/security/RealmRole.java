@@ -21,6 +21,7 @@ package org.openremote.model.security;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.annotations.Subselect;
 
 import jakarta.persistence.Column;
@@ -45,7 +46,7 @@ public class RealmRole {
     protected RealmRole() {}
 
     @JsonCreator
-    public RealmRole(String id, String name, String description) {
+    public RealmRole(@JsonProperty("id") String id, @JsonProperty("name") String name, @JsonProperty("description") String description) {
         this.id = id;
         this.name = name;
         this.description = description;

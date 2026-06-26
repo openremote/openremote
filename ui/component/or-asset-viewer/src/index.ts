@@ -1503,14 +1503,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (saveResult.success) {
             try {
                 const assetInfo = await this.loadAssetInfo(saveResult.asset!);
+                assetInfo.modified = false;
                 this._assetInfo = assetInfo;
                 this.assetId = saveResult.asset?.id;
             } catch (e) {
                 // We can ignore this as it should indicate that the asset has changed
             }
             if (this.saveBtnElem) {
-                this.saveBtnElem.disabled = false;
+                this.saveBtnElem.disabled = !this.isModified();
             }
+            this.requestUpdate();
         }
         this._saveInProgress = false;
         this.wrapperElem?.classList.remove("saving");

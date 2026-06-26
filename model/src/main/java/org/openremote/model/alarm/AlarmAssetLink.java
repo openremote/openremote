@@ -19,6 +19,8 @@
  */
 package org.openremote.model.alarm;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.annotations.Formula;
 
 
@@ -32,33 +34,40 @@ import java.util.Objects;
 @Table(name = "ALARM_ASSET_LINK")
 public class AlarmAssetLink {
     public static class Id implements Serializable {
+        @JsonProperty
         @Column(name = "REALM", nullable = false, length = 36)
         protected String realm;
 
+        @JsonProperty("alarmId")
         @Column(name = "SENTALARM_ID", nullable = false)
         protected Long sentalarmId;
 
 
+        @JsonProperty
         @Column(name = "ASSET_ID", nullable = false)
         protected String assetId;
 
         protected Id() {
         }
 
-        public Id(String realm, Long alarmId, String assetId) {
+        @JsonCreator
+        public Id(@JsonProperty("realm") String realm, @JsonProperty("alarmId") Long alarmId, @JsonProperty("assetId") String assetId) {
             this.realm = realm;
             this.sentalarmId = alarmId;
             this.assetId = assetId;
         }
 
+        @JsonProperty
         public String getRealm() {
             return realm;
         }
 
+        @JsonProperty
         public Long getAlarmId() {
             return sentalarmId;
         }
 
+        @JsonProperty
         public String getAssetId() {
             return assetId;
         }
@@ -91,6 +100,7 @@ public class AlarmAssetLink {
     }
 
     @EmbeddedId
+    @JsonProperty
     protected Id id;
 
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
@@ -113,6 +123,7 @@ public class AlarmAssetLink {
         this(new AlarmAssetLink.Id(realm, alarmId, assetId));
     }
 
+    @JsonProperty
     public Id getId() {
         return id;
     }

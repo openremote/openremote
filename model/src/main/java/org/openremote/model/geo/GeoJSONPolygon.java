@@ -20,8 +20,8 @@
 package org.openremote.model.geo;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 import org.locationtech.jts.geom.Coordinate;
 
 import java.util.ArrayList;
@@ -45,24 +45,15 @@ public class GeoJSONPolygon extends GeoJSONGeometry {
 
         @Override
         public double[][][] convert(List<Coordinate[]> rings) {
-            if (rings == null || rings.isEmpty()) {
-                return new double[0][][];
-            }
+            return coordinateRingsToArray(rings);
+        }
+    }
 
-            double[][][] result = new double[rings.size()][][];
-            for (int i = 0; i < rings.size(); i++) {
-                Coordinate[] ring = rings.get(i);
-                result[i] = new double[ring.length][];
-                for (int j = 0; j < ring.length; j++) {
-                    Coordinate coord = ring[j];
-                    if (Double.isNaN(coord.getZ())) {
-                        result[i][j] = new double[]{coord.x, coord.y};
-                    } else {
-                        result[i][j] = new double[]{coord.x, coord.y, coord.getZ()};
-                    }
-                }
-            }
-            return result;
+    public static class CoordinateArrayListConverterJackson2 extends com.fasterxml.jackson.databind.util.StdConverter<List<Coordinate[]>, double[][][]> {
+
+        @Override
+        public double[][][] convert(List<Coordinate[]> rings) {
+            return coordinateRingsToArray(rings);
         }
     }
 
@@ -71,7 +62,29 @@ public class GeoJSONPolygon extends GeoJSONGeometry {
     @JsonProperty
     @JsonFormat(shape = JsonFormat.Shape.ARRAY)
     @JsonSerialize(converter = CoordinateArrayListConverter.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(converter = CoordinateArrayListConverterJackson2.class)
     protected List<Coordinate[]> coordinates;
+
+    private static double[][][] coordinateRingsToArray(List<Coordinate[]> rings) {
+        if (rings == null || rings.isEmpty()) {
+            return new double[0][][];
+        }
+
+        double[][][] result = new double[rings.size()][][];
+        for (int i = 0; i < rings.size(); i++) {
+            Coordinate[] ring = rings.get(i);
+            result[i] = new double[ring.length][];
+            for (int j = 0; j < ring.length; j++) {
+                Coordinate coord = ring[j];
+                if (Double.isNaN(coord.getZ())) {
+                    result[i][j] = new double[]{coord.x, coord.y};
+                } else {
+                    result[i][j] = new double[]{coord.x, coord.y, coord.getZ()};
+                }
+            }
+        }
+        return result;
+    }
 
     @JsonCreator
     public GeoJSONPolygon(@JsonProperty("coordinates") double[][][] coordinates) {

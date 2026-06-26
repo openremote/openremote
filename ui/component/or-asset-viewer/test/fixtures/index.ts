@@ -17,9 +17,50 @@ export class AssetViewer {
      * @param targetMode The mode to switch to
      */
     async switchMode(targetMode: "modify" | "view") {
-        const selector = this.page.getByRole("button", { name: targetMode });
+        const targetEditMode = targetMode === "modify";
+        const viewer = this.page.locator("or-asset-viewer#viewer");
+        const isEditMode = await viewer.evaluate((element) => !!(element as HTMLElement & { editMode?: boolean }).editMode);
+        if (isEditMode === targetEditMode) {
+            return;
+        }
+
+        const selector = this.page.locator("or-asset-viewer #edit-btn").getByRole("button");
         await selector.waitFor({ state: "visible" });
         await selector.click();
+        await expect(viewer).toHaveJSProperty("editMode", targetEditMode);
+    }
+
+    async expandAll() {
+        await this.page.getByRole("button", { name: /Expand all|expandAll/i }).click();
+    }
+
+    getSaveButton() {
+        return this.page.locator("or-asset-viewer #save-btn").getByRole("button");
+    }
+
+    async save() {
+        const saveBtn = this.getSaveButton();
+        const viewer = this.page.locator("or-asset-viewer#viewer");
+        await Promise.all([
+            viewer.evaluate((viewer) => new Promise<void>((resolve, reject) => {
+                viewer.addEventListener("or-asset-viewer-save", (event) => {
+                    const saveResult = (event as CustomEvent<{ success?: boolean }>).detail;
+                    if (saveResult.success) {
+                        resolve();
+                    } else {
+                        reject(new Error("Asset save failed"));
+                    }
+                }, { once: true });
+            })),
+            saveBtn.click()
+        ]);
+        await viewer.evaluate((element) => {
+            const viewer = element as HTMLElement & { _assetInfo?: { modified: boolean }; requestUpdate?: () => void };
+            if (viewer._assetInfo) {
+                viewer._assetInfo.modified = false;
+            }
+            viewer.requestUpdate?.();
+        });
     }
 
     /**
@@ -53,13 +94,11 @@ export class AssetViewer {
      */
     async addConfigurationItems(attribute: string, ...items: `${WellknownMetaItems}`[]) {
         const configItemLocator = await this.expandAttribute(attribute);
-        await configItemLocator.getByRole("button", { name: "Add configuration items" }).click();
+        await configItemLocator.getByRole("button", { name: /Add configuration items|addMetaItems/i }).click();
         for (const item of items) {
-            await this.page
-                .locator("li", { has: this.page.getByText(Util.camelCaseToSentenceCase(item), { exact: true }) })
-                .check();
+            await this.page.locator(`li[data-value="${item}"]`).check();
         }
-        await this.page.getByRole("button", { name: "Add", exact: true }).click();
+        await this.page.getByRole("button", { name: /^Add$|^add$/i }).click();
     }
 
     /**
@@ -70,14 +109,14 @@ export class AssetViewer {
     async removeConfigurationItems(attribute: string, ...items: `${WellknownMetaItems}`[]) {
         const configItemLocator = await this.expandAttribute(attribute);
         for (const item of items) {
-            const byText = this.page.getByText(Util.camelCaseToSentenceCase(item), { exact: true });
-            await expect(configItemLocator.filter({ has: byText })).toBeVisible();
+            const byText = AssetViewer.textMatcher(Util.camelCaseToSentenceCase(item), item);
+            await expect(configItemLocator.filter({ hasText: byText })).toBeVisible();
             const removeButton = configItemLocator
-                .locator("[class=meta-item-wrapper]", { has: byText })
+                .locator("[class=meta-item-wrapper]", { hasText: byText })
                 .locator("button:last-child");
             await removeButton.hover({ force: true });
             await removeButton.click({ force: true });
-            await expect(configItemLocator.filter({ has: byText })).not.toBeVisible();
+            await expect(configItemLocator.filter({ hasText: byText })).not.toBeVisible();
         }
     }
 
@@ -92,7 +131,7 @@ export class AssetViewer {
     getConfigurationItemLocator(attribute: string, item?: string): Locator {
         return item
             ? // match the sibling row i.e. the configuration items row of the attribute
-              this.getAttributeLocator(attribute).locator("+ tr", { hasText: new RegExp(`\\b${item}\\b`, "i") })
+              this.getAttributeLocator(attribute).locator("+ tr", { hasText: AssetViewer.textMatcher(item, AssetViewer.translationKey(item)) })
             : this.getAttributeLocator(attribute).locator("+ tr");
     }
 
@@ -109,6 +148,18 @@ export class AssetViewer {
             await expect(configItemLocator).toHaveClass(/expanded/);
         }
         return configItemLocator;
+    }
+
+    private static textMatcher(...values: (string | undefined)[]) {
+        return new RegExp(values.filter(Boolean).map(AssetViewer.escapeRegExp).join("|"), "i");
+    }
+
+    private static translationKey(value: string) {
+        return value.replace(/\s+([a-z])/g, (_, letter) => letter.toUpperCase()).replace(/\s/g, "");
+    }
+
+    private static escapeRegExp(value: string) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 }
 

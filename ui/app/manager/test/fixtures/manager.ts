@@ -30,6 +30,19 @@ export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 export class Manager {
     private readonly clientId = "openremote";
     private readonly managerHost: String;
+    private readonly menuItemAliases = new Map<string, string>([
+        ["Export", "dataExport"],
+        ["Realms", "realm_plural"],
+        ["Roles", "role_plural"],
+        ["Users", "user_plural"],
+        ["export", "dataExport"],
+    ]);
+    private readonly tabAliases = new Map<string, string>([
+        ["Assets", "asset_plural"],
+        ["Insights", "insights"],
+        ["Rules", "rule_plural"],
+        ["asset", "asset_plural"],
+    ]);
     readonly api: RestApi["api"];
     readonly axios: RestApi["_axiosInstance"];
 
@@ -78,7 +91,16 @@ export class Manager {
     }
 
     async goToRealmStartPage(realm: string) {
+        this.realm = realm;
         await this.page.goto(this.getAppUrl(realm));
+    }
+
+    async clearStoredConsole() {
+        await this.page.evaluate(() => {
+            Object.keys(localStorage)
+                .filter((key) => key.startsWith("OpenRemoteConsole:"))
+                .forEach((key) => localStorage.removeItem(key));
+        });
     }
 
     /**
@@ -87,7 +109,7 @@ export class Manager {
      */
     async navigateToMenuItem(setting: string) {
         await this.page.click("#drawer-menu");
-        const menu = this.page.locator("#drawer-menu").getByRole("menuitem").filter({ hasText: setting });
+        const menu = this.page.locator("#drawer-menu").getByRole("menuitem").filter({ hasText: this.getNavigationTextMatcher(setting, this.menuItemAliases) });
         await menu.waitFor({ state: "visible" });
         await menu.click();
     }
@@ -99,6 +121,7 @@ export class Manager {
     async switchToRealmByRealmPicker(realm: string) {
         await this.page.click("#realm-picker");
         await this.page.locator("#realm-picker").getByRole("option").filter({ hasText: realm }).click();
+        this.realm = realm;
     }
 
     /**
@@ -106,7 +129,8 @@ export class Manager {
      * @param tab Tab name
      */
     async navigateToTab(tab: string) {
-        await this.page.click(`#desktop-left a:has-text("${tab}")`);
+        const tabLink = this.page.locator("#desktop-left a").filter({ hasText: this.getNavigationTextMatcher(tab, this.tabAliases) });
+        await tabLink.click();
     }
 
     /**
@@ -298,6 +322,19 @@ export class Manager {
         }
     }
 
+    async updateUserRolesByUsername(realm: string, username: string, roles: string[]) {
+        const access_token = await this.getAccessToken("master", admin.username, admin.password);
+        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const usersResponse = await rest.api.UserResource.query({ realmPredicate: { name: realm } }, config);
+        expect(usersResponse.status).toBe(200);
+        const user = usersResponse.data.find((user) => user.username === username);
+        expect(user?.id, { message: `Failed to find user ${username}` }).toBeTruthy();
+        const response = await rest.api.UserResource.updateUserClientRoles(realm, user!.id!, this.clientId, roles, config);
+        expect(response.status).toBe(204);
+        this.realm = realm;
+        this.user = user as UserModel;
+    }
+
     /**
      * Create an asset
      * @param asset The asset to create
@@ -473,6 +510,16 @@ export class Manager {
 
     getAppUrl(realm: string) {
         return `${new URL(this.baseURL).origin}/manager/?realm=${realm}`;
+    }
+
+    private getNavigationTextMatcher(text: string, aliases: Map<string, string>) {
+        const alias = aliases.get(text);
+        const options = alias ? [text, alias] : [text];
+        return new RegExp(options.map(Manager.escapeRegExp).join("|"), "i");
+    }
+
+    private static escapeRegExp(value: string) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 }
 

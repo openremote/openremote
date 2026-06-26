@@ -32,6 +32,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
+import org.openremote.container.json.Jackson2Config;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
@@ -189,6 +190,7 @@ public class WebTargetBuilder {
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
+            .register(new Jackson2Config())
             .register(new JacksonConfig())
             .register(new GZIPDecodingInterceptor());
 

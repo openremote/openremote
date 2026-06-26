@@ -117,7 +117,7 @@ public class ArtnetLightAsset extends LightAsset {
 //                    new HashMap<String, Integer>(this.receivedValues).keySet().forEach(keyIndicator -> {
 //                        this.receivedValues.put(keyIndicator, node.get(keyIndicator).asInt());
 //                    });
-//                } catch (JsonProcessingException e) {
+//                } catch (JacksonException e) {
 //                    e.printStackTrace();
 //                }
 //            }

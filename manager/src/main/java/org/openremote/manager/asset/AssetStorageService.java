@@ -2124,21 +2124,36 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int pos = binders.size() + 1;
                 java.sql.Timestamp when = new java.sql.Timestamp(((CalendarEventPredicate)nameValuePredicate.value).timestamp.getTime());
 
-                // The recurrence logic is applied post DB query just check start key is present and in the past and also
-                // that the end key is numeric and in the future if no recurrence value
+                // The recurrence logic is applied post DB query; this pre-filter only checks the event window.
                 attributeBuilder.append("(jsonb_typeof(");
                 valuePathInserter.accept(attributeBuilder, binders);
                 attributeBuilder
-                    .append(" #> '{start}') = 'number' AND jsonb_typeof(");
+                    .append(") = 'object' AND jsonb_typeof(");
                 valuePathInserter.accept(attributeBuilder, binders);
                 attributeBuilder
-                    .append(" #> '{end}') = 'number' AND to_timestamp((");
+                    .append(" #> '{start}') IN ('number', 'string') AND jsonb_typeof(");
                 valuePathInserter.accept(attributeBuilder, binders);
                 attributeBuilder
-                    .append(" #>> '{start}')\\:\\:float / 1000) <= ?").append(pos).append(" AND (to_timestamp((");
+                    .append(" #> '{end}') IN ('number', 'string') AND (CASE jsonb_typeof(");
                 valuePathInserter.accept(attributeBuilder, binders);
                 attributeBuilder
-                    .append(" #>> '{end}')\\:\\:float / 1000) > ?").append(pos+1).append(" OR jsonb_typeof(");
+                    .append(" #> '{start}') WHEN 'number' THEN to_timestamp((");
+                valuePathInserter.accept(attributeBuilder, binders);
+                attributeBuilder
+                    .append(" #>> '{start}')\\:\\:float / 1000) ELSE (");
+                valuePathInserter.accept(attributeBuilder, binders);
+                attributeBuilder
+                    .append(" #>> '{start}')\\:\\:timestamptz END) <= ?").append(pos)
+                    .append(" AND ((CASE jsonb_typeof(");
+                valuePathInserter.accept(attributeBuilder, binders);
+                attributeBuilder
+                    .append(" #> '{end}') WHEN 'number' THEN to_timestamp((");
+                valuePathInserter.accept(attributeBuilder, binders);
+                attributeBuilder
+                    .append(" #>> '{end}')\\:\\:float / 1000) ELSE (");
+                valuePathInserter.accept(attributeBuilder, binders);
+                attributeBuilder
+                    .append(" #>> '{end}')\\:\\:timestamptz END) > ?").append(pos+1).append(" OR jsonb_typeof(");
                 valuePathInserter.accept(attributeBuilder, binders);
                 attributeBuilder
                     .append(" #> '{recurrence}') = 'string'))");

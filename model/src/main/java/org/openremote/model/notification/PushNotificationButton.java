@@ -36,6 +36,7 @@ public class PushNotificationButton {
         this.action = action;
     }
 
+    @JsonProperty
     public String getTitle() {
         return title;
     }
@@ -44,6 +45,7 @@ public class PushNotificationButton {
         this.title = title;
     }
 
+    @JsonProperty
     public PushNotificationAction getAction() {
         return action;
     }

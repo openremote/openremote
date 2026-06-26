@@ -16,8 +16,8 @@
 
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.util.StdConverter;
 import org.openremote.model.Constants;
 import org.openremote.model.value.impl.PeriodAndDuration;
 

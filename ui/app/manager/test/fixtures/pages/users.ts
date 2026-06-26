@@ -7,7 +7,7 @@ export class UsersPage implements BasePage {
   constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
-    this.manager.navigateToMenuItem("Users");
+    await this.manager.navigateToMenuItem("Users");
   }
 
   async gotoUserCreation(realm: string, type: "serviceuser" | "regular") {
@@ -27,10 +27,10 @@ export class UsersPage implements BasePage {
    * @param roles The roles to toggle
    */
   async toggleUserRoles(...roles: string[]) {
-    const roleSelector = this.page.locator("or-vaadin-multi-select-combo-box", { hasText: "Manager roles" });
+    const roleSelector = this.page.locator("or-vaadin-multi-select-combo-box", { hasText: /Manager roles|manager_role_plural/i });
     await roleSelector.click();
     for (const role of roles) {
-      await this.page.getByRole("option", {name: role}).click();
+      await this.page.getByRole("option", { name: new RegExp(`^\\s*${escapeRegExp(role)}\\s*$`, "i") }).click();
     }
     await roleSelector.locator("#toggleButton").click();
   }
@@ -63,21 +63,21 @@ export class UsersPage implements BasePage {
   async addUser(username: string, password: string, tag?: string) {
     await this.page
       .locator("#content")
-      .filter({ hasText: "Regular users" })
-      .getByRole("button", { name: "Add User" })
+      .filter({ hasText: /Regular users|regularUser_plural/i })
+      .getByRole("button", { name: /Add User|add user/i })
       .click();
-    await this.page.getByLabel("Username", {exact: true}).fill(username);
-    await this.page.getByLabel("Password", {exact: true}).fill(password);
-    await this.page.getByLabel("Repeat password", {exact: true}).fill(password);
+    await this.page.getByLabel(/Username|username/i, { exact: true }).fill(username);
+    await this.page.getByLabel(/^Password$|^password$/i, { exact: true }).fill(password);
+    await this.page.getByLabel(/Repeat password|repeatPassword/i, { exact: true }).fill(password);
     if (tag) {
-        await this.page.getByLabel("Tag", {exact: true}).fill(tag);
+      await this.page.getByLabel(/Tag|tag/i, { exact: true }).fill(tag);
     }
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
-    await this.page.getByRole("button", { name: "Create" }).click();
+    await this.page.getByRole("button", { name: /Create|create/i }).click();
   }
 
   /**
@@ -89,19 +89,19 @@ export class UsersPage implements BasePage {
   async addServiceUser(username: string, tag?: string): Promise<void> {
     await this.page
       .locator("#content")
-      .filter({ hasText: "Service users" })
-      .getByRole("button", { name: "Add User" })
+      .filter({ hasText: /Service users|serviceUser_plural/i })
+      .getByRole("button", { name: /Add User|add user/i })
       .click();
-    await this.page.getByLabel("Username").fill(username);
+    await this.page.getByLabel(/Username|username/i).fill(username);
     if (tag) {
-      await this.page.getByLabel("Tag").fill(tag);
+      await this.page.getByLabel(/Tag|tag/i).fill(tag);
     }
     await this.toggleUserRoles("Read", "Write");
     await this.toHavePermissions(...permissions);
     await this.shared.interceptResponse<UserModel>(`user/${this.manager.realm}/users`, (user) => {
       if (user) this.manager.user = user;
     });
-    await this.page.getByRole("button", { name: "Create" }).click();
+    await this.page.getByRole("button", { name: /Create|create/i }).click();
   }
 
   /**
@@ -109,7 +109,7 @@ export class UsersPage implements BasePage {
    * @param searchTerm The term to search for
    */
   async searchRegularUsers(searchTerm: string) {
-    const panel = this.page.locator("#content").filter({ hasText: "Regular users" }).first();
+    const panel = this.page.locator("#content").filter({ hasText: /Regular users|regularUser_plural/i }).first();
     const input = panel.locator('*[placeholder="Search"] input');
     await input.fill(searchTerm);
   }
@@ -119,8 +119,12 @@ export class UsersPage implements BasePage {
    * @param searchTerm The term to search for
    */
   async searchServiceUsers(searchTerm: string) {
-    const panel = this.page.locator("#content").filter({ hasText: "Service users" }).first();
+    const panel = this.page.locator("#content").filter({ hasText: /Service users|serviceUser_plural/i }).first();
     const input = panel.locator('*[placeholder="Search"] input');
     await input.fill(searchTerm);
   }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

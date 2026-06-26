@@ -19,11 +19,12 @@
  */
 package org.openremote.model.asset.agent;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
@@ -54,6 +55,15 @@ public class AgentDescriptor<T extends Agent<T, U, V>, U extends Protocol<T>, V 
     protected Class<V> agentLinkClass;
     @JsonSerialize(converter = DiscoveryBooleanConverter.class)
     protected Class<? extends ProtocolInstanceDiscovery> instanceDiscoveryProvider;
+
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    protected AgentDescriptor(@JsonProperty("name") String name,
+                              @JsonProperty("icon") String icon,
+                              @JsonProperty("colour") String colour,
+                              @JsonProperty("type") Class<T> type) {
+        super(name, icon, colour);
+        this.type = type;
+    }
 
     public AgentDescriptor(Class<T> agentClass, Class<U> protocolClass, Class<V> agentLinkClass) {
         this(agentClass, protocolClass, agentLinkClass, null);

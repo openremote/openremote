@@ -247,7 +247,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
                         "JsonSerializeExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
+                        "tools.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any"
                 ]
@@ -266,7 +266,7 @@ def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, 
                         "cz.habarta.typescript.generator.ext.AxiosClientExtension"
                 ]
                 customTypeMappings = [
-                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
+                        "tools.jackson.databind.node.ObjectNode:{ [id: string]: unknown }",
                         "java.lang.Class<T>:string",
                         "org.openremote.model.attribute.MetaItem<T>:any",
                         "org.openremote.model.asset.Asset<T>:Model.Asset",
@@ -333,20 +333,13 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
         outputFileType = TypeScriptFileType.implementationFile
         outputKind = TypeScriptOutputKind.module
         outputFile = outputFileName
-
-        def jackson2Config = new Jackson2Configuration()
-        jackson2Config.fieldVisibility = Visibility.ANY
-        jackson2Config.creatorVisibility = Visibility.ANY
-        jackson2Config.getterVisibility = Visibility.NONE
-        jackson2Config.isGetterVisibility = Visibility.NONE
-        jackson2Config.setterVisibility = Visibility.NONE
-        jackson2Configuration.set(jackson2Config)
-
-        jackson2Modules = [
-                "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
-                "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
-                "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
-        ]
+        jackson2Configuration = new Jackson2Configuration(
+                fieldVisibility: Visibility.ANY,
+                creatorVisibility: Visibility.ANY,
+                getterVisibility: Visibility.NONE,
+                isGetterVisibility: Visibility.NONE,
+                setterVisibility: Visibility.NONE
+        )
     }
 }
 

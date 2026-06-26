@@ -8,7 +8,6 @@ import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {createMenuBarItem, MenuBarItem, SubMenuItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {
-    AbstractNotificationMessageUnion,
     AlarmSeverity,
     AlarmStatus,
     Asset,
@@ -34,8 +33,9 @@ const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 const ALARM_COLOR = "FC2D2D";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
+type NotificationMessage = EmailNotificationMessage | LocalizedNotificationMessage | PushNotificationMessage;
 
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
     let addAssetTypes = true;
     let addWait = true;
     let addAlarm = true;
@@ -590,7 +590,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action = action as RuleActionNotification;
             action.action = "notification";
             const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.["default"]?.defaultLanguage || manager.config.defaultLanguage || "en";
-            const languages: { [p: string]: AbstractNotificationMessageUnion } = {};
+            const languages: { [p: string]: NotificationMessage } = {};
             if(value === ActionType.EMAIL_LOCALIZED) {
                 languages[locale] = {
                     type: "email",

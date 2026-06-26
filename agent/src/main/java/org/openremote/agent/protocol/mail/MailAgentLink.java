@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.mail;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.query.filter.StringPredicate;
 

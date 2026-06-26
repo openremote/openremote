@@ -20,10 +20,12 @@
 package org.openremote.container.web;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OAuthServerResponse {
 
     @JsonProperty("token_type")
@@ -69,6 +71,7 @@ public class OAuthServerResponse {
         this.refreshToken = refreshToken;
     }
 
+    @JsonIgnore
     public LocalDateTime getExpiryDateTime() {
         return createdDateTime.plusSeconds(expiresIn);
     }

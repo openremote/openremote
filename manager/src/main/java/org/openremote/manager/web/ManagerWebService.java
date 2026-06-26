@@ -19,7 +19,13 @@
  */
 package org.openremote.manager.web;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
@@ -51,7 +57,6 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.openremote.model.util.MapAccess.getString;
-import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
 
@@ -144,7 +149,7 @@ public class ManagerWebService extends WebService {
 
     protected Object getOpenApiResource() {
         // Modify swagger object mapper to match ours
-        configureObjectMapper(Json.mapper());
+        configureSwaggerObjectMapper(Json.mapper());
         Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
         Json.mapper().addMixIn(ServerVariable.class, ServerVariableMixin.class);
 
@@ -184,6 +189,18 @@ public class ManagerWebService extends WebService {
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
         return openApiResource;
+    }
+
+    protected void configureSwaggerObjectMapper(com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
+        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
+        objectMapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false);
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        objectMapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
     }
 
     /**

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.flow.catalog.console;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.Slot;
 import org.openremote.model.flow.catalog.CatalogCategory;

@@ -19,7 +19,8 @@
  */
 package org.openremote.manager.app;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.node.ObjectNode;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;
@@ -136,8 +137,8 @@ public class ConfigurationService implements ContainerService {
         }
         try {
             return (ObjectNode) ValueUtil.JSON.readTree(mapSettingsPath.toFile());
-        } catch (IOException e) {
-            LOG.severe("Could not read map_settings.json from " + mapSettingsPath);
+        } catch (JacksonException e) {
+            LOG.severe("Could not parse map_settings.json from " + mapSettingsPath);
         }
 
         return null;

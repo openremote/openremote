@@ -49,6 +49,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.openremote.container.json.Jackson2Config;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
@@ -261,6 +262,7 @@ public abstract class WebService implements ContainerService {
     public static List<Object> getStandardProviders(boolean devMode) {
         return Lists.newArrayList(
             new WebServiceExceptions.JAXRSExceptionMapper(devMode),
+            new Jackson2Config(),
             new JacksonConfig(),
             new ClientErrorExceptionHandler()
         );
