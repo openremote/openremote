@@ -74,6 +74,7 @@ export class OrMapLegend extends LitElement {
                 font-family: var(--lumo-font-family);
                 font-size: 16px;
                 color: black;
+                cursor: pointer;
                 padding: 0 20px;
             }
             #legend-title.expanded {
