@@ -97,14 +97,16 @@ export class InsightsPage implements BasePage {
         const [cellWidth, cellHeight] = await this.getGridCellDimensions();
         const [width, height] = [cellsWidth * cellWidth, cellsHeight * cellHeight];
 
-        await this.page.dragAndDrop(`.ui-resizable-handle.ui-resizable-se`, ".maingrid", {
             // We apply -cellWidth/Height / 2 as the handle causes the source position to be offset
-            targetPosition: {
-                x: gridX * cellWidth + width - cellWidth / 2,
-                y: gridY * cellHeight + height - cellHeight / 2,
-            },
-            steps: 10,
-        });
+        const handle = widget.locator("..").locator("..").locator(".ui-resizable-handle.ui-resizable-se");
+        const handleBox = await handle.boundingBox();
+        const gridBox = await this.page.locator(".maingrid").boundingBox();
+        const targetX = gridBox!.x + gridX * cellWidth + width - cellWidth / 2;
+        const targetY = gridBox!.y + gridY * cellHeight + height - cellHeight / 2;
+        await this.page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
+        await this.page.mouse.down();
+        await this.page.mouse.move(targetX, targetY, { steps: 10 });
+        await this.page.mouse.up();
 
         const bbox = await widget.boundingBox();
         // The dashboard dimensions should be equal to the specified cells,
@@ -134,7 +136,7 @@ export class InsightsPage implements BasePage {
      */
     async selectWidget(widget: Locator) {
         await widget.scrollIntoViewIfNeeded();
-        await widget.click({ force: true });
+        await widget.locator(".panel-title").click();
     }
 
     /**

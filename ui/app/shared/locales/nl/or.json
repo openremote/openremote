@@ -155,6 +155,7 @@
   "loading": "Aan het laden...",
   "noResults": "Geen resultaten gevonden.",
   "noAssetsFound": "Geen assets gevonden",
+  "brokenReference": "Gebroken verwijzing",
   "filterInvite": "Filter met minsters 3 karakters",
   "location": "Locatie",
   "longPressSetLoc": "Druk lang op de kaart om locatie in te stellen",

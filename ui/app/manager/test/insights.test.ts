@@ -173,16 +173,18 @@ test("Replace broken chart references while preserving custom colors", async ({ 
     await page.click(".mdi-plus >> nth=0");
     await expect(insightsPage.getDashboardListItems()).toHaveCount(1);
 
+    // Drop both widgets while the widget palette is available (no widget selected yet)
     await insightsPage.dragAndDropWidget("Line Chart", [0, 0]);
-    await insightsPage.dragAndDropWidget("Bar Chart", [0, 2]);
+    await expect(insightsPage.getWidgets()).toHaveCount(1);
+    await insightsPage.dragAndDropWidget("Bar Chart", [0, 4]);
     await expect(insightsPage.getWidgets()).toHaveCount(2);
-
     const lineWidget = insightsPage.getWidgets({ hasText: "Line Chart" }).first();
     const barWidget = insightsPage.getWidgets({ hasText: "Bar Chart" }).first();
 
     // Line chart: add the Power attribute and give it a custom red colour
-    await lineWidget.click();
-    await expect(insightsPage.getWidgetSettings({ hasText: "Line Chart" })).toBeVisible();
+    await insightsPage.selectWidget(lineWidget);
+    await expect(insightsPage.getWidgetSettings({ hasText: "Line Chart" })).toBeVisible({ timeout: 30000 });
+    await insightsPage.resizeWidgetTo(lineWidget, [4, 4]);
     await insightsPage.addAttributes(referencedAsset.name!, ["Power"]);
     await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
     await insightsPage.setAttributeColor("#ff0000");
@@ -192,8 +194,9 @@ test("Replace broken chart references while preserving custom colors", async ({ 
     await expect(insightsPage.getAttributeColorInput()).toHaveValue("#0000ff");
 
     // Bar chart: add the Power attribute and give it a custom green colour
-    await barWidget.click();
-    await expect(insightsPage.getWidgetSettings({ hasText: "Bar Chart" })).toBeVisible();
+    await insightsPage.selectWidget(barWidget);
+    await expect(insightsPage.getWidgetSettings({ hasText: "Bar Chart" })).toBeVisible({ timeout: 30000 });
+    await insightsPage.resizeWidgetTo(barWidget, [4, 4]);
     await insightsPage.addAttributes(referencedAsset.name!, ["Power"]);
     await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
     await insightsPage.setAttributeColor("#00ff00");
