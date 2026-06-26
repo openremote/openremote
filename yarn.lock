@@ -48,7 +48,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.17.2, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.17.2":
   version: 7.23.9
   resolution: "@babel/runtime@npm:7.23.9"
   dependencies:
@@ -1639,7 +1639,7 @@ __metadata:
     "@types/qs": "npm:^6.9.7"
     axios: "npm:1.16.1"
     i18next: "npm:^21.5.3"
-    i18next-http-backend: "npm:^1.3.1"
+    i18next-http-backend: "npm:^4.0.0"
     keycloak-js: "npm:^25.0.1"
     lodash.transform: "npm:^4.6.0"
     moment: "npm:^2.29.4"
@@ -1685,7 +1685,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@reduxjs/toolkit": "npm:^1.8.1"
+    "@reduxjs/toolkit": "npm:^2.12.0"
     "@rspack/core": "npm:~1.7.10"
     lit: "npm:^3.3.1"
   languageName: unknown
@@ -1717,7 +1717,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/theme": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@reduxjs/toolkit": "npm:^1.8.1"
+    "@reduxjs/toolkit": "npm:^2.12.0"
     "@rsbuild/core": "npm:~1.7.5"
     "@rsdoctor/rspack-plugin": "npm:~1.5.13"
     "@rspack/core": "npm:~1.7.10"
@@ -1745,7 +1745,7 @@ __metadata:
     "@openremote/or-translate": "workspace:*"
     "@openremote/or-vaadin-components": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@reduxjs/toolkit": "npm:^1.8.1"
+    "@reduxjs/toolkit": "npm:^2.12.0"
     "@webcomponents/webcomponentsjs": "npm:^2.6.0"
     lit: "npm:^3.3.1"
     navigo: "npm:^8.11.1"
@@ -2093,7 +2093,7 @@ __metadata:
   resolution: "@openremote/or-rive-renderer@workspace:ui/component/or-rive-renderer"
   dependencies:
     "@openremote/util": "workspace:*"
-    "@rive-app/webgl2": "npm:^2.38.0"
+    "@rive-app/webgl2": "npm:^2.38.1"
     lit: "npm:^3.3.1"
     lodash.debounce: "npm:^4.0.8"
   languageName: unknown
@@ -2259,7 +2259,7 @@ __metadata:
     css-loader: "npm:^6.5.1"
     html-webpack-plugin: "npm:^5.6.6"
     i18next: "npm:^21.5.3"
-    i18next-http-backend: "npm:^1.3.1"
+    i18next-http-backend: "npm:^4.0.0"
     playwright: "npm:1.59.1"
     playwright-core: "npm:1.59.1"
     ts-loader: "npm:~9.5.2"
@@ -2498,30 +2498,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reduxjs/toolkit@npm:^1.8.1":
-  version: 1.9.7
-  resolution: "@reduxjs/toolkit@npm:1.9.7"
+"@reduxjs/toolkit@npm:^2.12.0":
+  version: 2.12.0
+  resolution: "@reduxjs/toolkit@npm:2.12.0"
   dependencies:
-    immer: "npm:^9.0.21"
-    redux: "npm:^4.2.1"
-    redux-thunk: "npm:^2.4.2"
-    reselect: "npm:^4.1.8"
+    "@standard-schema/spec": "npm:^1.0.0"
+    "@standard-schema/utils": "npm:^0.3.0"
+    immer: "npm:^11.0.0"
+    redux: "npm:^5.0.1"
+    redux-thunk: "npm:^3.1.0"
+    reselect: "npm:^5.1.0"
   peerDependencies:
-    react: ^16.9.0 || ^17.0.0 || ^18
-    react-redux: ^7.2.1 || ^8.0.2
+    react: ^16.9.0 || ^17.0.0 || ^18 || ^19
+    react-redux: ^7.2.1 || ^8.1.3 || ^9.0.0
   peerDependenciesMeta:
     react:
       optional: true
     react-redux:
       optional: true
-  checksum: 10c0/fa0aa4b7c6973ac87ce0ac7e45faa02c73b66c4ee0bc950d178494539a42a1bb908d109297102458b7ea14d5e7dae356e7a7ce9a1b9849b0e8451e6dd70fca9c
+  checksum: 10c0/2b85e31294a7139994fd78b08eb3ce706ce3b03b5081c13403b93ba4883a152d637171e4d9d969766238851f8915b1daa9f36b5a0a458aff0ff7600ee38795c9
   languageName: node
   linkType: hard
 
-"@rive-app/webgl2@npm:^2.38.0":
-  version: 2.38.0
-  resolution: "@rive-app/webgl2@npm:2.38.0"
-  checksum: 10c0/be98672537fdcce67cbc7c1d9783c193ba86305e8b04b108a827642de71ddfcff42c2bb0749a93c15e55196cf19c302f2a3e08e58643c65d652dcac301000406
+"@rive-app/webgl2@npm:^2.38.1":
+  version: 2.38.1
+  resolution: "@rive-app/webgl2@npm:2.38.1"
+  checksum: 10c0/e62eec23e795ab02a747a8f99c24844c9e74ae8cd04771ea2435e6dfadbd846833e36f9251cc91ee6b816153bbdfcedcbba9e9f3bb8cc7703532e34afee8fc41
   languageName: node
   linkType: hard
 
@@ -3165,6 +3167,20 @@ __metadata:
   version: 3.1.2
   resolution: "@socket.io/component-emitter@npm:3.1.2"
   checksum: 10c0/c4242bad66f67e6f7b712733d25b43cbb9e19a595c8701c3ad99cbeb5901555f78b095e24852f862fffb43e96f1d8552e62def885ca82ae1bb05da3668fd87d7
+  languageName: node
+  linkType: hard
+
+"@standard-schema/spec@npm:^1.0.0":
+  version: 1.1.0
+  resolution: "@standard-schema/spec@npm:1.1.0"
+  checksum: 10c0/d90f55acde4b2deb983529c87e8025fa693de1a5e8b49ecc6eb84d1fd96328add0e03d7d551442156c7432fd78165b2c26ff561b970a9a881f046abb78d6a526
+  languageName: node
+  linkType: hard
+
+"@standard-schema/utils@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@standard-schema/utils@npm:0.3.0"
+  checksum: 10c0/6eb74cd13e52d5fc74054df51e37d947ef53f3ab9e02c085665dcca3c38c60ece8d735cebbdf18fbb13c775fbcb9becb3f53109b0e092a63f0f7389ce0993fd0
   languageName: node
   linkType: hard
 
@@ -5600,15 +5616,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cross-fetch@npm:3.1.5":
-  version: 3.1.5
-  resolution: "cross-fetch@npm:3.1.5"
-  dependencies:
-    node-fetch: "npm:2.6.7"
-  checksum: 10c0/29b457f8df11b46b8388a53c947de80bfe04e6466a59c1628c9870b48505b90ec1d28a05b543a0247416a99f1cfe147d1efe373afdeb46a192334ba5fe91b871
-  languageName: node
-  linkType: hard
-
 "cross-spawn@npm:^6.0.0":
   version: 6.0.6
   resolution: "cross-spawn@npm:6.0.6"
@@ -7681,12 +7688,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next-http-backend@npm:^1.3.1":
-  version: 1.4.5
-  resolution: "i18next-http-backend@npm:1.4.5"
-  dependencies:
-    cross-fetch: "npm:3.1.5"
-  checksum: 10c0/e782ffa581992e42bce664c2f8e760fb3ad8af939e5384e7767d1ddfe3244abefe1c62f32aa2ce8fef9f74c3be1090ca4ff2b11227bd556943e7cfab90587c66
+"i18next-http-backend@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "i18next-http-backend@npm:4.0.0"
+  checksum: 10c0/7342016415d128d7077da659804f277f10e2d1b943cf9c43926faaf71290e0b49a6a1facc90fe7b1b8a54d05e5d91170ab95bcc4773749858c5a50efce5fcbef
   languageName: node
   linkType: hard
 
@@ -7740,10 +7745,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"immer@npm:^9.0.21":
-  version: 9.0.21
-  resolution: "immer@npm:9.0.21"
-  checksum: 10c0/03ea3ed5d4d72e8bd428df4a38ad7e483ea8308e9a113d3b42e0ea2cc0cc38340eb0a6aca69592abbbf047c685dbda04e3d34bf2ff438ab57339ed0a34cc0a05
+"immer@npm:^11.0.0":
+  version: 11.1.8
+  resolution: "immer@npm:11.1.8"
+  checksum: 10c0/df971d8a8f6a5312c6dca4a8437e20b3185d6c9cd6830ad526c18ffd50f4037ef8db4f332b0adbcb9f8c5ee2fbe117cf0623e8554e24777105b3cc9faf866d34
   languageName: node
   linkType: hard
 
@@ -8902,20 +8907,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:2.6.7":
-  version: 2.6.7
-  resolution: "node-fetch@npm:2.6.7"
-  dependencies:
-    whatwg-url: "npm:^5.0.0"
-  peerDependencies:
-    encoding: ^0.1.0
-  peerDependenciesMeta:
-    encoding:
-      optional: true
-  checksum: 10c0/fcae80f5ac52fbf5012f5e19df2bd3915e67d3b3ad51cb5942943df2238d32ba15890fecabd0e166876a9f98a581ab50f3f10eb942b09405c49ef8da36b826c7
-  languageName: node
-  linkType: hard
-
 "node-forge@npm:^1":
   version: 1.4.0
   resolution: "node-forge@npm:1.4.0"
@@ -9758,21 +9749,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"redux-thunk@npm:^2.4.2":
-  version: 2.4.2
-  resolution: "redux-thunk@npm:2.4.2"
+"redux-thunk@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "redux-thunk@npm:3.1.0"
   peerDependencies:
-    redux: ^4
-  checksum: 10c0/e202d6ef7dfa7df08ed24cb221aa89d6c84dbaa7d65fe90dbd8e826d0c10d801f48388f9a7598a4fd970ecbc93d335014570a61ca7bc8bf569eab5de77b31a3c
+    redux: ^5.0.0
+  checksum: 10c0/21557f6a30e1b2e3e470933247e51749be7f1d5a9620069a3125778675ce4d178d84bdee3e2a0903427a5c429e3aeec6d4df57897faf93eb83455bc1ef7b66fd
   languageName: node
   linkType: hard
 
-"redux@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "redux@npm:4.2.1"
-  dependencies:
-    "@babel/runtime": "npm:^7.9.2"
-  checksum: 10c0/136d98b3d5dbed1cd6279c8c18a6a74c416db98b8a432a46836bdd668475de6279a2d4fd9d1363f63904e00f0678a8a3e7fa532c897163340baf1e71bb42c742
+"redux@npm:^5.0.1":
+  version: 5.0.1
+  resolution: "redux@npm:5.0.1"
+  checksum: 10c0/b10c28357194f38e7d53b760ed5e64faa317cc63de1fb95bc5d9e127fab956392344368c357b8e7a9bedb0c35b111e7efa522210cfdc3b3c75e5074718e9069c
   languageName: node
   linkType: hard
 
@@ -9858,6 +9847,13 @@ __metadata:
   version: 4.1.8
   resolution: "reselect@npm:4.1.8"
   checksum: 10c0/06a305a504affcbb67dd0561ddc8306b35796199c7e15b38934c80606938a021eadcf68cfd58e7bb5e17786601c37602a3362a4665c7bf0a96c1041ceee9d0b7
+  languageName: node
+  linkType: hard
+
+"reselect@npm:^5.1.0":
+  version: 5.2.0
+  resolution: "reselect@npm:5.2.0"
+  checksum: 10c0/d0a8497e404b25a769fe792eacae88b9b576c30870450cd243d76ec9427d91a59c4a2cc00d824d283448b444c4c698a8f961d771c8ae39c759313afb31950e2e
   languageName: node
   linkType: hard
 
@@ -10974,13 +10970,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tr46@npm:~0.0.3":
-  version: 0.0.3
-  resolution: "tr46@npm:0.0.3"
-  checksum: 10c0/047cb209a6b60c742f05c9d3ace8fa510bff609995c129a37ace03476a9b12db4dbf975e74600830ef0796e18882b2381fb5fb1f6b4f96b832c374de3ab91a11
-  languageName: node
-  linkType: hard
-
 "tree-dump@npm:^1.0.1, tree-dump@npm:^1.0.3, tree-dump@npm:^1.1.0":
   version: 1.1.0
   resolution: "tree-dump@npm:1.1.0"
@@ -11465,13 +11454,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webidl-conversions@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "webidl-conversions@npm:3.0.1"
-  checksum: 10c0/5612d5f3e54760a797052eb4927f0ddc01383550f542ccd33d5238cfd65aeed392a45ad38364970d0a0f4fea32e1f4d231b3d8dac4a3bdd385e5cf802ae097db
-  languageName: node
-  linkType: hard
-
 "webpack-bundle-analyzer@npm:4.10.2":
   version: 4.10.2
   resolution: "webpack-bundle-analyzer@npm:4.10.2"
@@ -11625,16 +11607,6 @@ __metadata:
   version: 0.1.4
   resolution: "websocket-extensions@npm:0.1.4"
   checksum: 10c0/bbc8c233388a0eb8a40786ee2e30d35935cacbfe26ab188b3e020987e85d519c2009fe07cfc37b7f718b85afdba7e54654c9153e6697301f72561bfe429177e0
-  languageName: node
-  linkType: hard
-
-"whatwg-url@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "whatwg-url@npm:5.0.0"
-  dependencies:
-    tr46: "npm:~0.0.3"
-    webidl-conversions: "npm:^3.0.0"
-  checksum: 10c0/1588bed84d10b72d5eec1d0faa0722ba1962f1821e7539c535558fb5398d223b0c50d8acab950b8c488b4ba69043fd833cc2697056b167d8ad46fac3995a55d5
   languageName: node
   linkType: hard
 
