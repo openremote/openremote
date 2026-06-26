@@ -22,6 +22,7 @@ package org.openremote.manager.notification;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -230,7 +231,13 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
 
         try {
-            var authContext = getAuthContext();
+            AuthContext authContext = getAuthContext();
+            // Non-superusers can only query a realm they can access (i.e. their own); otherwise a non-restricted
+            // user could read another realm's notifications by passing its realmId
+            if (authContext != null && !authContext.isSuperUser()
+                && !managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
+                throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
+            }
             boolean canReadUsers = authContext != null && (authContext.isSuperUser()
                 || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
                 || authContext.hasResourceRole(Constants.READ_USERS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
@@ -276,12 +283,18 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
 
         try {
+            AuthContext authContext = getAuthContext();
+            // Non-superusers can only query a realm they can access (i.e. their own)
+            if (authContext != null && !authContext.isSuperUser()
+                && !managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
+                throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
+            }
             return notificationService.getNotificationsByRealmCount(
                 Collections.singletonList(realmId),
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
                 source,
-                getAuthContext()
+                authContext
             );
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Error retrieving notification count: " + e.getMessage(), BAD_REQUEST);
