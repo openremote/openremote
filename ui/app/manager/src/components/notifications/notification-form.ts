@@ -50,11 +50,7 @@ export class NotificationForm extends LitElement {
         }
 
         .form-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
             height: 100%;
-            padding: 0 16px;
         }
 
         or-vaadin-select,
@@ -78,7 +74,7 @@ export class NotificationForm extends LitElement {
             grid-template-areas:
             "targetContainer messageContentContainer"
             "targetContainer actionButtonContainer";
-            gap: 8px;
+            gap: var(--lumo-space-m);
             height: 100%;
         }
 
@@ -89,32 +85,37 @@ export class NotificationForm extends LitElement {
             grid-template-areas:
             "targetContainer messageContentContainer"
             "propContainer actionButtonContainer";
-            gap: 8px;
+            gap: var(--lumo-space-m);
             height: 100%;
+        }
+
+        [class*="formGridContainer"] > * {
+            background-color: white;
+            border-radius: var(--lumo-border-radius-m);
         }
 
         .targetContainer {
             grid-area: targetContainer;
             position: absolute;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
             width: 100%;
+            height: 100%;
+            padding: 0 var(--lumo-space-l);
         }
 
         .messageContentContainer {
             grid-area: messageContentContainer;
-            display: flex;
-            flex-direction: column;
             height: 100%;
+            padding: 0 var(--lumo-space-l);
         }
 
         .actionButtonContainer {
             grid-area: actionButtonContainer;
+            padding: 0 var(--lumo-space-l);
         }
 
         .propContainer {
             grid-area: propContainer;
+            padding: 0 var(--lumo-space-l);
         }
 
         .section-title {
