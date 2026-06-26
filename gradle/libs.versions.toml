@@ -1,7 +1,7 @@
 [versions]
 angusMail = "2.0.5"
 artemis = "2.54.0"
-apacheSshd = "2.16.0"
+apacheSshd = "2.18.0"
 bouncyCastle = "1.84"
 byteBuddy = "1.18.10"
 bluetooth = "0.64"
