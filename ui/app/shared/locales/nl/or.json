@@ -1127,7 +1127,7 @@
     },
     "target": "Ontvanger",
     "targetType": "Ontvanger type",
-    "failedToCreateNotification": "Notificatie aanmaken mislukt: ",
+    "failedToCreateNotification": "Notificatie versturen mislukt.",
     "successfullySentNotification": "Notificatie verstuurd",
     "missingFields": "Notificatie maken mislukt, niet alle verplichte velden waren gevuld.",
     "details": "Notificatie details",

@@ -1135,7 +1135,7 @@
     },
     "target": "Recipient",
     "targetType": "Recipient type",
-    "failedToCreateNotification": "Failed to create notification: ",
+    "failedToCreateNotification": "Failed to send notification.",
     "successfullySentNotification": "Successfully sent notification.",
     "missingFields": "Failed to create notification, missing required fields.",
     "details": "Notification details",

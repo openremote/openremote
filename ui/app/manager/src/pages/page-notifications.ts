@@ -398,9 +398,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
             // guard is already false, so it won't reload for us. Without this the new notification only
             // appears after the next refetch (e.g. a filter change).
             await this._loadData();
-        } catch (error) {
-            console.error("Error creating notification:", error);
-            showSnackbar(undefined, i18next.t("notifications.failedToCreateNotification", error));
+        } catch (_error) {
+            showSnackbar(undefined, i18next.t("notifications.failedToCreateNotification"));
             await this._loadData();
         }
     }
