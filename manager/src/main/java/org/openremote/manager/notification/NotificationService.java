@@ -552,7 +552,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(source);
         }
 
-        if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
+        // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
+        // any other caller with access (read:notifications / read:admin / superuser) sees all of the realm's notifications
+        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
             String userId = authContext.getUserId();
             String userRealm = authContext.getAuthenticatedRealmName();
             builder.append(" AND (n.sourceId = ?").append(paramIndex++);
@@ -609,7 +611,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(source);
         }
 
-        if (authContext != null && !authContext.isSuperUser() && !authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
+        // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
+        // any other caller with access (read:notifications / read:admin / superuser) sees all of the realm's notifications
+        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
             String userId = authContext.getUserId();
             String userRealm = authContext.getAuthenticatedRealmName();
             builder.append(" AND (n.sourceId = ?").append(paramIndex++);

@@ -1165,13 +1165,13 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         forbiddenResponse.status == 403
         forbiddenResponse.close()
 
-        when: "a user with read:notifications (and read:users) requests notifications for their own realm"
+        when: "a restricted user (read:notifications + read:users) requests notifications for their own realm"
         def ownRealmResponse = requestNotificationsByRealm(buildingRealm, buildingUserAccessToken, buildingRealm)
         def ownNotifications = ownRealmResponse.readEntity(SentNotification[].class)
         ownRealmResponse.close()
         def ownSent = ownNotifications.findAll { it.name == "RealmAccessTest" }
 
-        then: "they can read only the notification that targets them, with full details"
+        then: "a restricted user only sees the notification that targets them, with full details"
         ownRealmResponse.status == 200
         ownSent.size() == 1
         ownSent[0].name == "RealmAccessTest"
@@ -1182,40 +1182,36 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ownSent[0].sourceId == buildingRealm
         ownSent[0].realm == buildingRealm
         (ownSent[0].message as EmailNotificationMessage).subject == "Realm access test"
-        // the ownership filter hides notifications addressed to other users in the realm
+        // being restricted, they don't see notifications addressed to other users in the realm
         !ownNotifications.any { it.targetId == testuser2Id }
         !ownNotifications.any { it.targetId == notifUserId }
 
-        when: "a user whose ONLY granting role is read:notifications requests their realm's notifications"
+        when: "a non-restricted user whose only granting role is read:notifications requests their realm's notifications"
         def notifUserResponse = requestNotificationsByRealm(buildingRealm, notifUserAccessToken, buildingRealm)
         def notifNotifications = notifUserResponse.readEntity(SentNotification[].class)
         notifUserResponse.close()
         def notifSent = notifNotifications.findAll { it.name == "RealmAccessTest" }
 
-        then: "read:notifications alone grants read access to the notification they received, but ids are sanitized away"
+        then: "read:notifications lets a non-restricted user read ALL of the realm's notifications, but ids are sanitized without read:users/read:assets"
         notifUserResponse.status == 200
-        notifSent.size() == 1
-        // the notification and its content remain readable...
-        notifSent[0].name == "RealmAccessTest"
-        notifSent[0].type == EmailNotificationMessage.TYPE
-        notifSent[0].target == Notification.TargetType.USER
-        notifSent[0].source == Notification.Source.REALM_RULESET
-        notifSent[0].realm == buildingRealm
-        (notifSent[0].message as EmailNotificationMessage).subject == "Realm access test"
-        // ...but without read:users/read:assets the recipient and source ids are stripped
-        notifSent[0].targetId == null
-        notifSent[0].sourceId == null
+        // unlike the restricted user, they see every recipient's notification in the realm, not just their own
+        notifSent.size() == 3
+        notifSent.collect { it.target }.toSet() == [Notification.TargetType.USER].toSet()
+        notifSent.every { it.name == "RealmAccessTest" }
+        notifSent.every { it.type == EmailNotificationMessage.TYPE }
+        notifSent.every { it.source == Notification.Source.REALM_RULESET }
+        notifSent.every { it.realm == buildingRealm }
+        notifSent.every { (it.message as EmailNotificationMessage).subject == "Realm access test" }
+        // without read:users/read:assets the recipient and source ids are stripped
+        notifSent.every { it.targetId == null }
+        notifSent.every { it.sourceId == null }
 
-        when: "the building user requests notifications for another realm they cannot access"
-        def otherRealmResponse = requestNotificationsByRealm(buildingRealm, buildingUserAccessToken, MASTER_REALM)
-        def otherNotifications = otherRealmResponse.readEntity(SentNotification[].class)
+        when: "a non-restricted building user requests notifications for the master realm they cannot access"
+        def otherRealmResponse = requestNotificationsByRealm(buildingRealm, notifUserAccessToken, MASTER_REALM)
+
+        then: "access is forbidden — even a non-restricted user cannot read another realm's notifications"
+        otherRealmResponse.status == 403
         otherRealmResponse.close()
-
-        then: "they receive none of that realm's notifications, nor any building-realm notification"
-        // NOTE: the current endpoint returns an empty result here; with the realm-scoped refactor this should become a 403
-        otherRealmResponse.status == 200
-        otherNotifications.findAll { it.name == "RealmAccessTest" }.isEmpty()
-        otherNotifications.every { it.realm != buildingRealm }
 
         when: "a user with read:notifications requests notifications without specifying a realm"
         def badResponse = getClientApiTarget(serverUri(serverPort), buildingRealm, buildingUserAccessToken)
