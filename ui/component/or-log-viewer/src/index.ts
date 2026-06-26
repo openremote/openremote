@@ -15,7 +15,6 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {MDCDataTable} from "@material/data-table";
 import moment from "moment";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import type { GenericAxiosResponse } from "axios";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";

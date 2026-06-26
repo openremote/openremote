@@ -52,16 +52,16 @@
     "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
     "@openremote/theme": "workspace:*",
-    "@reduxjs/toolkit": "^1.8.1",
+    "@reduxjs/toolkit": "^2.12.0",
     "lit": "^3.3.1",
-    "maplibre-gl": "^5.12.0",
+    "maplibre-gl": "~5.19.0",
     "moment": "^2.29.4",
     "reselect": "^4.1.8"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
     "@rsbuild/core": "~1.7.5",
-    "@rsdoctor/rspack-plugin": "~1.4.0",
+    "@rsdoctor/rspack-plugin": "~1.5.13",
     "@rspack/core": "~1.7.10"
   },
   "publishConfig": {

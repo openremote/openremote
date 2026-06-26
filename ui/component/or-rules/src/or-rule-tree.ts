@@ -20,13 +20,12 @@
 import {OrTreeMenu, TreeMenuSelection, TreeMenuSorting, TreeNode} from "@openremote/or-tree-menu";
 import {customElement, property, state} from "lit/decorators.js";
 import {RealmRuleset, RulesetLang, RulesetStatus, RulesetUnion} from "@openremote/model";
+import {createMenuBarItem, MenuBarItem, SubMenuItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {css, html, PropertyValues, TemplateResult} from "lit";
 import manager, {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {
     OrRules,
     OrRulesAddEvent,
@@ -448,26 +447,28 @@ export class OrRuleTree extends OrTreeMenu {
      * Generates a HTML {@link TemplateResult} for the "add" button in the controls menu.
      */
     protected _getAddActionTemplate(): TemplateResult {
-        const menuOptions: (ListItem | null)[] = (this._getAllowedLanguages() || []).map(l =>
-            ({value: l, text: i18next.t("rulesLanguages." + l)} as ListItem)
-        );
-        menuOptions.push(null);
-        menuOptions.push({value: "group", text: i18next.t("group")} as ListItem);
+
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`<or-icon icon="plus"></or-icon>`),
+            children: [
+                ...(this._getAllowedLanguages() ?? []).map(l => ({
+                    component: createMenuBarItem(html`<or-translate value="rulesLanguages.${l}"></or-translate>`),
+                    value: l
+                })),
+                { component: "hr" },
+                { component: createMenuBarItem(html`<or-translate value="group"></or-translate>`), value: "group" } as SubMenuItem
+            ]
+        }];
 
         const onValueChange = (value: string) => {
             value === "group" ? this._onGroupAddClick() : this._onRulesetAddClick(value as RulesetLang);
         };
 
-        return getContentWithMenuTemplate(
-            html`
-                <or-vaadin-button theme="icon" title=${i18next.t("addRule")}>
-                    <or-icon icon="plus"></or-icon>
-                </or-vaadin-button>
-            `,
-            menuOptions,
-            undefined,
-            value => onValueChange(String(value))
-        );
+        return html`
+            <or-vaadin-menu-bar theme="icon" .items=${menuItems}
+                                @item-selected=${(ev: CustomEvent) => onValueChange(ev.detail.value.value)}>
+            </or-vaadin-menu-bar>
+        `;
     }
 
     /**

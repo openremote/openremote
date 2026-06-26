@@ -1122,7 +1122,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _getDefaultTimePrefixOptions(): string[] {
-        return ["this", "last"];
+        return ["this", "last", "next"];
     }
 
     protected _getDefaultTimeWindowOptions(): Map<string, [moment.unitOfTime.DurationConstructor, number]> {
@@ -1172,6 +1172,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                     endDate = moment().startOf(unit);
                 } else { //For multiples like last 5 min
                     endDate = moment();
+                }
+                break;
+            case "next":
+                if (value === 1) { // For singulars like next hour
+                    startDate = moment().add(value, unit).startOf(unit);
+                    endDate = moment().add(value, unit).endOf(unit);
+                } else { // For multiples like next 5 min
+                    startDate = moment();
+                    endDate = moment().add(value, unit);
                 }
                 break;
         }
@@ -1258,6 +1267,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 })];
             } else {
                 this._dataAbortController = new AbortController();
+                const isZoomed = this._zoomStartOfPeriod !== undefined && this._zoomEndOfPeriod !== undefined
                 promises = this.assetAttributes?.map(async ([assetIndex, attribute], index) => {
 
                     const lineData: LineChartData[] = [];
@@ -1285,7 +1295,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     lineData.push(dataset);
 
                     // If necessary, load Extended Data
-                    if (extended) {
+                    if (extended && !isZoomed) {
                         dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, color ?? this.colors[colourIndex], false, false, stacked, false, area, faint, extended, `${asset.name} | ${label} lastKnown`, options, unit);
                         lineData.push(dataset);
                     }
