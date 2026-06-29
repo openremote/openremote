@@ -42,6 +42,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetResource;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
@@ -231,7 +232,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             .append(body);
 
                         if (exception instanceof AssetProcessingException processingException) {
-                            if (processingException.getReason() == ASSET_NOT_FOUND) {
+                            if (processingException.getReason() == ASSET_NOT_FOUND || processingException.getReason() == ASSET_DELETE_PENDING) {
                                 LOG.log(System.Logger.Level.DEBUG, error::toString);
                             } else {
                                 LOG.log(System.Logger.Level.WARNING, error::toString);
@@ -354,6 +355,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                 if (asset == null) {
                     throw new AssetProcessingException(ASSET_NOT_FOUND, event.getId());
+                }
+
+                if (asset.isDeletePending()) {
+                    if (AssetResource.class.getSimpleName().equals(event.getSource())) {
+                        throw new AssetProcessingException(ASSET_DELETE_PENDING, event.getId());
+                    }
+                    return null;
                 }
 
                 Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(() ->

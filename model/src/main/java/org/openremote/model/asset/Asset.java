@@ -306,6 +306,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
     protected boolean accessPublicRead;
 
+    @Column(name = "DELETE_PENDING", nullable = false)
+    protected boolean deletePending;
+
     @Column(name = "PARENT_ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.parentId.Pattern}")
     protected String parentId;
@@ -393,6 +396,15 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
     public T setAccessPublicRead(boolean accessPublicRead) {
         this.accessPublicRead = accessPublicRead;
+        return (T) this;
+    }
+
+    public boolean isDeletePending() {
+        return deletePending;
+    }
+
+    public T setDeletePending(boolean deletePending) {
+        this.deletePending = deletePending;
         return (T) this;
     }
 

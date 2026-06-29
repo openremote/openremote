@@ -440,6 +440,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         if (result.getFailure() != null) {
             Response.Status status = switch (result.getFailure()) {
                 case ASSET_NOT_FOUND, ATTRIBUTE_NOT_FOUND -> NOT_FOUND;
+                case ASSET_DELETE_PENDING -> CONFLICT;
                 case INVALID_VALUE -> NOT_ACCEPTABLE;
                 case QUEUE_FULL -> TOO_MANY_REQUESTS;
                 default -> BAD_REQUEST;

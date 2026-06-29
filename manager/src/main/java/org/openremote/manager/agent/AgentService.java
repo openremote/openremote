@@ -285,7 +285,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         switch (persistenceEvent.getCause()) {
             case CREATE, UPDATE -> deployAgent(agent);
-            case DELETE -> undeployAgent(agent.getId());
+            case DELETE, DELETE_PENDING -> undeployAgent(agent.getId());
         }
     }
 
@@ -349,7 +349,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     attribute -> true)
                     .forEach((agent, attributes) -> linkAttributes(agent, asset.getId(), attributes));
             }
-            case DELETE -> // Unlink any AGENT_LINK attributes from the referenced protocol
+            case DELETE, DELETE_PENDING -> // Unlink any AGENT_LINK attributes from the referenced protocol
                 getGroupedAgentLinkAttributes(asset.getAttributes().stream(), attribute -> true)
                     .forEach((agent, attributes) -> unlinkAttributes(agent.getId(), asset.getId(), attributes));
         }
@@ -688,6 +688,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             if (agentMap == null) {
                 agentMap = assetStorageService.findAll(
                         new AssetQuery().types(Agent.class)
+                            .excludeDeletePending(true)
                     )
                     .stream()
                     .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)

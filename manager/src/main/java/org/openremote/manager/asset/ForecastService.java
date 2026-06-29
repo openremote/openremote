@@ -149,7 +149,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                         new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
                     )
                 )
-            )
+            ).excludeDeletePending(true)
         );
     }
 
@@ -229,6 +229,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
                 break;
             case DELETE:
+            case DELETE_PENDING:
                 forecastAttributes = asset.getAttributes()
                     .stream()
                     .filter(attr -> attr.hasMeta(FORECAST))

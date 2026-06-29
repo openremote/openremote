@@ -281,6 +281,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 }
                 break;
             case DELETE:
+            case DELETE_PENDING:
 
                 consoleIdRealmMap.remove(asset.getId());
                 break;

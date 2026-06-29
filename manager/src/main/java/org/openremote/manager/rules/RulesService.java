@@ -493,7 +493,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected void processAssetChange(Asset<?> asset, PersistenceEvent<Asset<?>> persistenceEvent) {
         switch (persistenceEvent.getCause()) {
-            case DELETE ->
+            case DELETE, DELETE_PENDING ->
                 // Remove any asset rules engines for this asset
                 assetEngines.values().removeIf(re -> {
                     if (re.getId().getAssetId().map(aId -> aId.equals(asset.getId())).orElse(false)) {
@@ -842,7 +842,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected Stream<Pair<Asset<?>, Stream<Attribute<?>>>> findRuleStateAttributes() {
         // Get all assets then filter out any attributes with RULE_STATE=false
-        List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery());
+        List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().excludeDeletePending(true));
 
         return assets.stream()
             .map(asset ->

@@ -651,6 +651,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
            T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
 
            if (existingAsset != null) {
+              if (existingAsset.isDeletePending()) {
+                 String msg = "Asset is pending deletion: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
 
               // Verify type has not been changed
               if (!existingAsset.getType().equals(asset.getType())) {
@@ -705,6 +710,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
               // The parent must exist
               if (parent == null) {
                  String msg = "Asset parent not found: asset=" + asset;
+                 LOG.warning(msg);
+                 throw new IllegalStateException(msg);
+              }
+
+              if (parent.isDeletePending()) {
+                 String msg = "Asset parent is pending deletion: asset=" + asset;
                  LOG.warning(msg);
                  throw new IllegalStateException(msg);
               }
@@ -888,10 +899,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
                     }
 
-                    assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
-                    deleteAssetDatapointsBySegment(em, ids);
-                    assets.forEach(em::remove);
-                    em.flush();
+                    int markedPending = em.createNativeQuery("update asset set delete_pending = true where id in (:ids) and delete_pending is false")
+                        .setParameter("ids", ids)
+                        .executeUpdate();
+
+                    if (LOG.isLoggable(FINE)) {
+                        LOG.fine("Marked assets as pending deletion: count=" + markedPending + ", ids=" + ids);
+                    }
+
+                    assets.forEach(asset -> {
+                        asset.setDeletePending(true);
+                        persistenceService.publishPersistenceEvent(
+                            PersistenceEvent.Cause.DELETE_PENDING,
+                            asset,
+                            null,
+                            Asset.class,
+                            null,
+                            null);
+                    });
                 });
             } catch (Exception e) {
                 LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
@@ -1445,7 +1470,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
 
             // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
-            Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
+            Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ? and delete_pending is false")
                 .setParameter(1, event.getName())
                 .setParameter(2, event.getName())
                 .setParameter(3, "{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
@@ -1556,7 +1581,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         ).setSource(getClass().getSimpleName()));
                     });
             }
-            case DELETE -> {
+            case DELETE, DELETE_PENDING -> {
                 if (LOG.isLoggable(Level.FINEST)) {
                     LOG.finest("Asset deleted: " + asset.toStringAll());
                 } else {
@@ -1631,7 +1656,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         AssetQuery.Select select = query.select;
 
-        sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
+        sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ, A.DELETE_PENDING as DELETE_PENDING");
         sb.append(", A.CREATED_ON AS CREATED_ON, A.TYPE AS TYPE, A.PARENT_ID AS PARENT_ID");
         sb.append(", A.REALM AS REALM, A.VERSION as VERSION");
 
@@ -1849,6 +1874,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (query.access == Access.PUBLIC) {
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
+            }
+
+            if (query.excludeDeletePending) {
+                sb.append(" and A.DELETE_PENDING is false");
             }
 
             if (query.types != null) {

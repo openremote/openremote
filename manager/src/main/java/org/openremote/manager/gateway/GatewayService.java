@@ -230,7 +230,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        List<GatewayAsset> gateways = assetStorageService.findAll(new AssetQuery().types(GatewayAsset.class))
+        List<GatewayAsset> gateways = assetStorageService.findAll(new AssetQuery().types(GatewayAsset.class).excludeDeletePending(true))
             .stream()
             .map(asset -> (GatewayAsset)asset)
             .collect(Collectors.toList());
@@ -298,7 +298,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     if (eventAsset instanceof GatewayAsset
                         && (isLocallyRegisteredGateway(eventAsset.getId()) || getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId()) == null)) {
 
-                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE
+                            && persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE_PENDING) {
                             eventAsset = assetStorageService.find(eventAsset.getId(), true);
                             if (eventAsset == null) {
                                 return;
@@ -312,7 +313,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                         String gatewayId = getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
                         if (gatewayId != null) {
 
-                            if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+                            if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE
+                                && persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE_PENDING) {
                                 eventAsset = assetStorageService.find(eventAsset.getId(), true);
                                 if (eventAsset == null) {
                                     return;
@@ -735,7 +737,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     }
                 }
             }
-            case DELETE -> {
+            case DELETE, DELETE_PENDING -> {
                 // Check if this gateway has a connector
                 GatewayConnector connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
                 if (connector == null) {
@@ -771,7 +773,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     assetIdGatewayIdMap.put(childAsset.getId(), gatewayId);
                 }
             }
-            case DELETE -> {
+            case DELETE, DELETE_PENDING -> {
                 synchronized (assetIdGatewayIdMap) {
                     assetIdGatewayIdMap.remove(childAsset.getId());
                 }

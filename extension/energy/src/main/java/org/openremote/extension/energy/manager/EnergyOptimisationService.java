@@ -170,7 +170,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         LOG.fine("Processing optimisation asset change: " + persistenceEvent);
         stopOptimisation(persistenceEvent.getEntity().getId());
 
-        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE
+            && persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE_PENDING) {
             if (!persistenceEvent.getEntity().isOptimisationDisabled().orElse(false)) {
                 startOptimisation(persistenceEvent.getEntity());
             }

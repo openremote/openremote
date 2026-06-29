@@ -25,7 +25,7 @@ import java.util.List;
 public class PersistenceEvent<T> {
 
     public enum Cause {
-        CREATE, UPDATE, DELETE
+        CREATE, UPDATE, DELETE, DELETE_PENDING
     }
 
     final protected Cause cause;
@@ -99,7 +99,7 @@ public class PersistenceEvent<T> {
         return getClass().getSimpleName() + "{" +
             "cause=" + cause +
             ", entity=" + entity +
-            ", propertyNames=" + String.join(",", propertyNames) +
+            ", propertyNames=" + (propertyNames != null ? String.join(",", propertyNames) : "null") +
             ", currentState=" + Arrays.toString(currentState) +
             ", previousState=" + Arrays.toString(previousState) +
             '}';
