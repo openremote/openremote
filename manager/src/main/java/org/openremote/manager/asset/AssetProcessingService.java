@@ -45,7 +45,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.event.Event;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
@@ -351,7 +351,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             Event result = persistenceService.doReturningTransaction(em -> {
                 // TODO: Retrieve optimised DTO rather than whole asset
-                Asset<?> asset = assetStorageService.find(em, event.getId(), true);
+                Asset<?> asset = assetStorageService.find(em, new AssetQuery().ids(event.getId()).includeDeletePending(true));
 
                 if (asset == null) {
                     throw new AssetProcessingException(ASSET_NOT_FOUND, event.getId());

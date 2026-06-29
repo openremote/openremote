@@ -230,7 +230,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        List<GatewayAsset> gateways = assetStorageService.findAll(new AssetQuery().types(GatewayAsset.class).excludeDeletePending(true))
+        List<GatewayAsset> gateways = assetStorageService.findAll(new AssetQuery().types(GatewayAsset.class))
             .stream()
             .map(asset -> (GatewayAsset)asset)
             .collect(Collectors.toList());

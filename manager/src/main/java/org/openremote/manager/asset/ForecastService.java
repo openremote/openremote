@@ -149,7 +149,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                         new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
                     )
                 )
-            ).excludeDeletePending(true)
+            )
         );
     }
 

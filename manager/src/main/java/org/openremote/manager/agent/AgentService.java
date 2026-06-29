@@ -688,7 +688,6 @@ public class AgentService extends RouteBuilder implements ContainerService {
             if (agentMap == null) {
                 agentMap = assetStorageService.findAll(
                         new AssetQuery().types(Agent.class)
-                            .excludeDeletePending(true)
                     )
                     .stream()
                     .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)

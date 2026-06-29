@@ -842,7 +842,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected Stream<Pair<Asset<?>, Stream<Attribute<?>>>> findRuleStateAttributes() {
         // Get all assets then filter out any attributes with RULE_STATE=false
-        List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().excludeDeletePending(true));
+        List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery());
 
         return assets.stream()
             .map(asset ->

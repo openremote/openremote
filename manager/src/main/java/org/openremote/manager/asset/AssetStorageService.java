@@ -1876,7 +1876,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
-            if (query.excludeDeletePending) {
+            if (!query.isIncludeDeletePending()) {
                 sb.append(" and A.DELETE_PENDING is false");
             }
 
