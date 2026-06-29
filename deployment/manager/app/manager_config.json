@@ -16,6 +16,62 @@
     }
   },
   "pages": {
+    "map": {
+      "filters": [
+        {
+          "label": "CO2 > 100",
+          "realms": [
+            "smartcity"
+          ],
+          "query": {
+            "types": [
+              "EnvironmentSensorAsset"
+            ],
+            "attributes": {
+              "items": [
+                {
+                  "name": {
+                    "predicateType": "number",
+                    "value": "ozoneLevel"
+                  },
+                  "value": {
+                    "predicateType": "number",
+                    "value": 100,
+                    "operator": "GREATER_THAN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "label": "Irrigation water flow > 10",
+          "realms": [
+            "manufacturer"
+          ],
+          "query": {
+            "types": [
+              "IrrigationAsset"
+            ],
+            "attributes": {
+              "items": [
+                {
+                  "name": {
+                    "predicateType": "number",
+                    "value": "flowWater"
+                  },
+                  "value": {
+                    "predicateType": "number",
+                    "value": 10,
+                    "operator": "GREATER_THAN"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
     "assets": {
       "viewer": {
         "assetTypes": {

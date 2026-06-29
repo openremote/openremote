@@ -27,6 +27,7 @@ updates:
       default-days: 7
       exclude:
         - "@openremote/*"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs
     ignore:
       - dependency-name: "@material/*" # Material components are deprecated and no longer maintained
       - dependency-name: "@rsbuild/*"
@@ -38,3 +39,4 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    rebase-strategy: disabled # Prevent unnecessary pipeline runs
