@@ -16,7 +16,7 @@ import {
     type TestFixture,
     withPage,
 } from "@openremote/test";
-import { AssetsPage, InsightsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
+import { AssetsPage, InsightsPage, NotificationsPage, RealmsPage, RolesPage, RulesPage, UsersPage } from "./pages";
 import { AssetViewer } from "../../../../component/or-asset-viewer/test/fixtures";
 import { CollapsiblePanel } from "../../../../component/or-components/test/fixtures";
 import { MwcInput, MwcMenu } from "../../../../component/or-mwc-components/test/fixtures";
@@ -486,6 +486,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; sha
 interface PageFixtures {
     assetsPage: AssetsPage;
     insightsPage: InsightsPage;
+    notificationsPage: NotificationsPage;
     realmsPage: RealmsPage;
     rolesPage: RolesPage;
     rulesPage: RulesPage;
@@ -510,6 +511,7 @@ export const test = base.extend<Fixtures>({
     // Pages
     assetsPage: withManager(AssetsPage),
     insightsPage: withManager(InsightsPage),
+    notificationsPage: withManager(NotificationsPage),
     realmsPage: withManager(RealmsPage),
     rolesPage: withManager(RolesPage),
     rulesPage: withManager(RulesPage),
