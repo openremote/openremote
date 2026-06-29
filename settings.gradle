@@ -26,9 +26,26 @@ plugins {
 rootProject.name = "openremote"
 
 // Include sub-projects dynamically, every directory with a build.gradle (and no .buildignore)
-fileTree(dir: rootDir, include: "**/build.gradle", excludes: ["**/node_modules/**", "**/generic_app/**"])
-        .filter { it.parent != rootDir }
-        .filter { !file("${it.parent}/.buildignore").exists() }
+fileTree(
+        dir: rootDir,
+        include: "**/build.gradle",
+        excludes: [
+                ".git/**",
+                "**/.git/**",
+                ".gradle/**",
+                "**/.gradle/**",
+                "**/build/**",
+                "**/node_modules/**",
+                "**/generic_app/**",
+                "**/dist/**",
+                "**/lib/**"
+        ]
+)
+        .filter { it.parentFile != rootDir }
+        .filter { !new File(it.parentFile, ".buildignore").exists() }
         .each {
-    include it.parent.replace(rootDir.canonicalPath, "").replace("\\", ":").replace("/", ":")
-}
+            include it.parentFile.canonicalPath
+                    .replace(rootDir.canonicalPath, "")
+                    .replace("\\", ":")
+                    .replace("/", ":")
+        }
