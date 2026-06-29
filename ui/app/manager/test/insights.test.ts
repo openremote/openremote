@@ -176,15 +176,15 @@ test("Replace broken chart references while preserving custom colors", async ({ 
     // Drop both widgets while the widget palette is available (no widget selected yet)
     await insightsPage.dragAndDropWidget("Line Chart", [0, 0]);
     await expect(insightsPage.getWidgets()).toHaveCount(1);
-    await insightsPage.dragAndDropWidget("Bar Chart", [0, 4]);
+    await insightsPage.dragAndDropWidget("Bar Chart", [6, 0]);
     await expect(insightsPage.getWidgets()).toHaveCount(2);
     const lineWidget = insightsPage.getWidgets({ hasText: "Line Chart" }).first();
     const barWidget = insightsPage.getWidgets({ hasText: "Bar Chart" }).first();
 
     // Line chart: add the Power attribute and give it a custom red colour
     await insightsPage.selectWidget(lineWidget);
-    await expect(insightsPage.getWidgetSettings({ hasText: "Line Chart" })).toBeVisible({ timeout: 30000 });
-    await insightsPage.resizeWidgetTo(lineWidget, [4, 4]);
+    await expect(insightsPage.getWidgetSettings({ hasText: "Line Chart" })).toBeVisible();
+    await insightsPage.resizeWidgetTo(lineWidget, [6, 6]);
     await insightsPage.addAttributes(referencedAsset.name!, ["Power"]);
     await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
     await insightsPage.setAttributeColor("#ff0000");
@@ -195,8 +195,8 @@ test("Replace broken chart references while preserving custom colors", async ({ 
 
     // Bar chart: add the Power attribute and give it a custom green colour
     await insightsPage.selectWidget(barWidget);
-    await expect(insightsPage.getWidgetSettings({ hasText: "Bar Chart" })).toBeVisible({ timeout: 30000 });
-    await insightsPage.resizeWidgetTo(barWidget, [4, 4]);
+    await expect(insightsPage.getWidgetSettings({ hasText: "Bar Chart" })).toBeVisible();
+    await insightsPage.resizeWidgetTo(barWidget, [12, 6], { force: true });
     await insightsPage.addAttributes(referencedAsset.name!, ["Power"]);
     await expect(insightsPage.getWidgetAttributes()).toHaveCount(1);
     await insightsPage.setAttributeColor("#00ff00");
@@ -213,8 +213,8 @@ test("Replace broken chart references while preserving custom colors", async ({ 
     const adminToken = await manager.getAccessToken("master", "admin", users.admin.password!);
     await manager.deleteAssets({ headers: { Authorization: `Bearer ${adminToken}` } });
     await page.reload();
-    await expect(insightsPage.getBuilder()).toBeVisible({ timeout: 30000 });
-    await expect(insightsPage.getPreview()).toBeVisible({ timeout: 30000 });
+    await expect(insightsPage.getBuilder()).toBeVisible();
+    await expect(insightsPage.getPreview()).toBeVisible();
     await expect(insightsPage.getPreview()).toHaveJSProperty("isLoading", false);
     await expect(insightsPage.getWidgets()).toHaveCount(2);
 
