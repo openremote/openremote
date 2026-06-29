@@ -64,7 +64,7 @@ swagger = "2.2.49"
 typescriptGenerator = "3.2.1263"
 undertow = "2.3.24.Final"
 uuidGenerator = "5.2.0"
-victoolsJsonSchemaGenerator = "4.38.0"
+victoolsJsonSchemaGenerator = "5.0.0"
 zwave = "3.4.0"
 
 [libraries]
