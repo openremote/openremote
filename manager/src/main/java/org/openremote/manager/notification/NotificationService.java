@@ -390,31 +390,93 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
-        StringBuilder builder = new StringBuilder();
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, Integer offset, Integer limit, AuthContext authContext) throws IllegalArgumentException {
+        StringBuilder builder = new StringBuilder("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-
-        builder.append("select n from SentNotification n where 1=1");
-        processCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, false);
-        builder.append(" order by n.sentOn asc");
-
-        LOG.fine("Query builder after processing criteria: " + builder.toString());
-        LOG.fine("Parameters after processing criteria: " + parameters);
-        LOG.info("getNotifications called with: ids=" + ids + 
-             ", types=" + types + 
-             ", fromTimestamp=" + from +
-             ", toTimestamp=" + to +
-             ", realmIds=" + realmIds + 
-             ", userIds=" + userIds + 
-             ", assetIds=" + assetIds);
+        buildNotificationCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, source, authContext);
+        builder.append(" order by n.sentOn desc");
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
             IntStream.rangeClosed(1, parameters.size())
-                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
+                    .forEach(i -> query.setParameter(i, parameters.get(i - 1)));
+            if (offset != null && offset > 0) {
+                query.setFirstResult(offset);
+            }
+            if (limit != null && limit > 0) {
+                query.setMaxResults(limit);
+            }
             return query.getResultList();
         });
-        
+    }
+
+    public long getNotificationsCount(List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext) throws IllegalArgumentException {
+        StringBuilder builder = new StringBuilder("select count(n) from SentNotification n where 1=1");
+        List<Object> parameters = new ArrayList<>();
+        buildNotificationCriteria(builder, parameters, null, types, from, to, realmIds, userIds, assetIds, source, authContext);
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<Long> query = entityManager.createQuery(builder.toString(), Long.class);
+            IntStream.rangeClosed(1, parameters.size())
+                    .forEach(i -> query.setParameter(i, parameters.get(i - 1)));
+            return query.getSingleResult();
+        });
+    }
+
+    /**
+     * Appends the shared filter criteria used by {@link #getNotifications} and {@link #getNotificationsCount}.
+     * Restricted callers are additionally limited to notifications they sent, that target them, or that target
+     * their realm; any other caller with access sees all notifications matching the criteria.
+     */
+    protected void buildNotificationCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, AuthContext authContext) {
+        int idx = 1;
+
+        if (ids != null && !ids.isEmpty()) {
+            builder.append(" AND n.id IN ?").append(idx++);
+            parameters.add(ids);
+        }
+        if (types != null && !types.isEmpty()) {
+            builder.append(" AND n.type IN ?").append(idx++);
+            parameters.add(types);
+        }
+        if (from != null) {
+            builder.append(" AND n.sentOn >= ?").append(idx++);
+            parameters.add(from);
+        }
+        if (to != null) {
+            builder.append(" AND n.sentOn <= ?").append(idx++);
+            parameters.add(to);
+        }
+        if (source != null) {
+            builder.append(" AND n.source = ?").append(idx++);
+            parameters.add(source);
+        }
+        if (realmIds != null && !realmIds.isEmpty()) {
+            builder.append(" AND n.realm IN ?").append(idx++);
+            parameters.add(realmIds);
+        }
+        if (assetIds != null && !assetIds.isEmpty()) {
+            builder.append(" AND n.target = ?").append(idx++).append(" AND n.targetId IN ?").append(idx++);
+            parameters.add(Notification.TargetType.ASSET);
+            parameters.add(assetIds);
+        } else if (userIds != null && !userIds.isEmpty()) {
+            builder.append(" AND n.target = ?").append(idx++).append(" AND n.targetId IN ?").append(idx++);
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(userIds);
+        }
+
+        // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
+        // any other caller with access (read:notifications / read:admin / superuser) sees all of them
+        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+            builder.append(" AND (n.sourceId = ?").append(idx++)
+                .append(" OR (n.target = ?").append(idx++).append(" AND n.targetId = ?").append(idx++).append(")")
+                .append(" OR (n.target = ?").append(idx++).append(" AND n.targetId = ?").append(idx++).append("))");
+            parameters.add(authContext.getUserId());
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(authContext.getUserId());
+            parameters.add(Notification.TargetType.REALM);
+            parameters.add(authContext.getAuthenticatedRealmName());
+        }
     }
 
     public void removeNotification(Long id) {
@@ -525,115 +587,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public List<SentNotification> getNotificationsByRealm(List<String> realmIds, Instant from, Instant to, Notification.Source source, Integer offset, Integer limit, AuthContext authContext) {
-        if (realmIds == null || realmIds.isEmpty()) {
-            throw new IllegalArgumentException("RealmID must be specified");
-        }
-
-        StringBuilder builder = new StringBuilder();
-        List<Object> parameters = new ArrayList<>();
-        int paramIndex = 1;
-
-        builder.append("SELECT n FROM SentNotification n WHERE n.realm IN ?").append(paramIndex++);
-        parameters.add(realmIds);
-
-        if (from != null) {
-            builder.append(" AND n.sentOn >= ?").append(paramIndex++);
-            parameters.add(from);
-        }
-
-        if (to != null) {
-            builder.append(" AND n.sentOn <= ?").append(paramIndex++);
-            parameters.add(to);
-        }
-
-        if (source != null) {
-            builder.append(" AND n.source = ?").append(paramIndex++);
-            parameters.add(source);
-        }
-
-        // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
-        // any other caller with access (read:notifications / read:admin / superuser) sees all of the realm's notifications
-        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
-            String userId = authContext.getUserId();
-            String userRealm = authContext.getAuthenticatedRealmName();
-            builder.append(" AND (n.sourceId = ?").append(paramIndex++);
-            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append(")");
-            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append("))");
-            parameters.add(userId);
-            parameters.add(Notification.TargetType.USER);
-            parameters.add(userId);
-            parameters.add(Notification.TargetType.REALM);
-            parameters.add(userRealm);
-        }
-
-        builder.append(" ORDER BY n.sentOn DESC");
-
-        return persistenceService.doReturningTransaction(entityManager -> {
-            TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-            for (int i = 0; i < parameters.size(); i++) {
-                query.setParameter(i + 1, parameters.get(i));
-            }
-            if (offset != null && offset > 0) {
-                query.setFirstResult(offset);
-            }
-            if (limit != null && limit > 0) {
-                query.setMaxResults(limit);
-            }
-            return query.getResultList();
-        });
-    }
-
-    public long getNotificationsByRealmCount(List<String> realmIds, Instant from, Instant to, Notification.Source source, AuthContext authContext) {
-        if (realmIds == null || realmIds.isEmpty()) {
-            throw new IllegalArgumentException("RealmID must be specified");
-        }
-
-        StringBuilder builder = new StringBuilder();
-        List<Object> parameters = new ArrayList<>();
-        int paramIndex = 1;
-
-        builder.append("SELECT COUNT(n) FROM SentNotification n WHERE n.realm IN ?").append(paramIndex++);
-        parameters.add(realmIds);
-
-        if (from != null) {
-            builder.append(" AND n.sentOn >= ?").append(paramIndex++);
-            parameters.add(from);
-        }
-
-        if (to != null) {
-            builder.append(" AND n.sentOn <= ?").append(paramIndex++);
-            parameters.add(to);
-        }
-
-        if (source != null) {
-            builder.append(" AND n.source = ?").append(paramIndex++);
-            parameters.add(source);
-        }
-
-        // Only restricted users are limited to notifications they sent, that target them, or that target their realm;
-        // any other caller with access (read:notifications / read:admin / superuser) sees all of the realm's notifications
-        if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
-            String userId = authContext.getUserId();
-            String userRealm = authContext.getAuthenticatedRealmName();
-            builder.append(" AND (n.sourceId = ?").append(paramIndex++);
-            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append(")");
-            builder.append(" OR (n.target = ?").append(paramIndex++).append(" AND n.targetId = ?").append(paramIndex++).append("))");
-            parameters.add(userId);
-            parameters.add(Notification.TargetType.USER);
-            parameters.add(userId);
-            parameters.add(Notification.TargetType.REALM);
-            parameters.add(userRealm);
-        }
-
-        return persistenceService.doReturningTransaction(entityManager -> {
-            TypedQuery<Long> query = entityManager.createQuery(builder.toString(), Long.class);
-            for (int i = 0; i < parameters.size(); i++) {
-                query.setParameter(i + 1, parameters.get(i));
-            }
-            return query.getSingleResult();
-        });
-    }
 
     protected Instant getRepeatAfterTimestamp(Notification notification, Instant lastSend) {
         Instant timestamp = null;

@@ -41,8 +41,7 @@ export class NotificationService {
                 {fromDate, toDate} :
                 this.getDefaultTimeRange();
 
-            const response = await manager.rest.api.NotificationResource.getNotificationsByRealm(
-                realm,
+            const response = await manager.rest.api.NotificationResource.getNotifications(
                 {
                     from: timeRange.fromDate,
                     to: timeRange.toDate,
@@ -71,8 +70,7 @@ export class NotificationService {
                 {fromDate, toDate} :
                 this.getDefaultTimeRange();
 
-            const response = await manager.rest.api.NotificationResource.getNotificationsByRealmCount(
-                realm,
+            const response = await manager.rest.api.NotificationResource.getNotificationsCount(
                 {
                     from: timeRange.fromDate,
                     to: timeRange.toDate,
