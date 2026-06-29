@@ -5,7 +5,7 @@ export class RealmsPage implements BasePage {
   constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
-    await this.manager.navigateToMenuItem("Realms");
+    this.manager.navigateToMenuItem("Realms");
   }
 
   /**
@@ -21,7 +21,7 @@ export class RealmsPage implements BasePage {
       await this.page.click("text=Add Realm");
       const realmRow = this.page.locator("#realm-row-1");
       const realmNameInput = realmRow.getByLabel("Realm");
-      const displayNameInput = realmRow.getByLabel(/Friendly name|displayName/i);
+      const displayNameInput = realmRow.getByLabel("Friendly name");
       await realmNameInput.fill(name);
       await realmNameInput.dispatchEvent("change");
       await displayNameInput.fill(name);

@@ -5,6 +5,6 @@ export class RulesPage implements BasePage {
   constructor(private readonly page: Page, private readonly shared: Shared, private readonly manager: Manager) {}
 
   async goto() {
-    await this.manager.navigateToTab("Rules");
+    this.manager.navigateToTab("Rules");
   }
 }

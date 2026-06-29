@@ -25,10 +25,13 @@ assets.forEach(({ type, name, attributes }) => {
         await manager.goToRealmStartPage("smartcity");
         await assetsPage.goto();
         await assetsPage.addAsset(assetMap[name!], name!);
+        await page.click(`#list-container >> text=${name}`);
         await assetViewer.switchMode("modify");
         await assetViewer.getAttributeValueLocator(attribute1).fill(value1);
         await assetViewer.getAttributeValueLocator(attribute2).fill(value2);
-        await assetViewer.save();
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
         await expect(page.locator(`text=${name}`)).toHaveCount(1);
     });
 
@@ -43,10 +46,11 @@ assets.forEach(({ type, name, attributes }) => {
      * @and Saving the changes
      * @then The updated asset is saved and changes are persisted
      */
-    test(`Update a ${name} asset's attributes and location`, async ({ page, manager, assetsPage, assetViewer }) => {
+    test(`Update a ${name} asset's attributes and location`, async ({ page, manager, assetViewer }) => {
         await manager.setup("smartcity", { assets });
         await manager.goToRealmStartPage("smartcity");
-        await assetsPage.gotoAssetId("smartcity", manager.assets.find(asset => asset.name === name)!.id!);
+        await manager.navigateToTab("asset");
+        await page.click(`text=${name}`);
 
         const type = attributes[attribute3 as keyof typeof attributes].type;
         const item = page.locator(`#field-${attribute3} input[type="${type}"]`);
@@ -60,7 +64,9 @@ assets.forEach(({ type, name, attributes }) => {
         await page.mouse.click(x, y, { delay: 1000 });
         await page.getByRole("button", { name: "OK" }).click();
 
-        await assetViewer.save();
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
     });
 
     /**
@@ -74,24 +80,27 @@ assets.forEach(({ type, name, attributes }) => {
      * @and Navigating to the asset's view panel
      * @then The correct read-only indicators should be present for the attributes
      */
-    test(`Toggle read-only for two attributes on a ${name} asset`, async ({ page, manager, assetsPage, assetViewer }) => {
+    test(`Toggle read-only for two attributes on a ${name} asset`, async ({ page, manager, assetViewer }) => {
         await manager.setup("smartcity", { assets });
         await manager.goToRealmStartPage("smartcity");
-        await assetsPage.gotoAssetId("smartcity", manager.assets.find(asset => asset.name === name)!.id!);
+        await manager.navigateToTab("asset");
+        await page.click(`text=${name}`);
 
         await assetViewer.switchMode("modify");
-        await assetViewer.expandAll();
+        await page.getByRole("button", { name: "Expand all" }).click();
 
         await assetViewer.getAttributeLocator(attribute1).click();
-        await assetViewer.getConfigurationItemLocator(attribute1, "Read only").getByRole("checkbox").click();
+        await assetViewer.getConfigurationItemLocator(attribute1, "Read only").locator("label").click();
 
         await assetViewer.getAttributeLocator(attribute2).click();
-        await assetViewer.getConfigurationItemLocator(attribute2, "Read only").getByRole("checkbox").click();
+        await assetViewer.getConfigurationItemLocator(attribute2, "Read only").locator("label").click();
 
-        await assetViewer.save();
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
 
-        await assetViewer.switchMode("view");
-        await expect(page.locator("or-asset-viewer #edit-btn")).toBeVisible();
+        await page.getByRole("button", { name: "View" }).click();
+        await expect(page.getByRole("button", { name: "Modify" })).toBeVisible();
 
         await expect(page.locator(`#field-${attribute1} #send-btn`)).toBeVisible();
         await expect(page.locator(`#field-${attribute2} #send-btn`)).not.toBeVisible();
@@ -110,20 +119,22 @@ assets.forEach(({ type, name, attributes }) => {
     test(`Set "ruleState" and "storeDataPoints" for ${name} asset attributes`, async ({
         page,
         manager,
-        assetsPage,
         assetViewer,
     }) => {
         await manager.setup("smartcity", { assets });
         await manager.goToRealmStartPage("smartcity");
-        await assetsPage.gotoAssetId("smartcity", manager.assets.find(asset => asset.name === name)!.id!);
+        await manager.navigateToTab("asset");
+        await page.click(`text=${name}`);
 
         await assetViewer.switchMode("modify");
-        await assetViewer.expandAll();
+        await page.getByRole("button", { name: "Expand all" }).click();
 
         await assetViewer.addConfigurationItems(attribute1, "ruleState", "storeDataPoints");
         await assetViewer.addConfigurationItems(attribute2, "ruleState", "storeDataPoints");
 
-        await assetViewer.save();
+        const saveBtn = page.getByRole("button", { name: "Save" });
+        await saveBtn.click();
+        await expect(saveBtn).toBeDisabled();
     });
 });
 
@@ -175,13 +186,12 @@ test.describe("Parent asset", () => {
         await page.getByText("Thing").click();
         await assetViewer.switchMode("modify");
 
-        await page.locator("or-edit-asset-panel #change-parent-btn").getByRole("button").click();
-        const parentDialog = page.locator("or-mwc-dialog").last();
-        await parentDialog.locator("or-asset-tree .node-container", { hasText: "Parent" }).click();
-        await parentDialog.getByRole("button", { name: /^OK$|^ok$/i }).click();
-        await assetViewer.save();
+        await page.getByText("Parent Edit").getByRole("button").click();
+        await page.getByLabel("Select parent asset").getByText("Parent").click();
+        await page.getByLabel("Select parent asset").getByRole("button", { name: "OK" }).click();
+        await page.getByRole("button", { name: "Save" }).click();
 
-        await expect(page.locator("or-edit-asset-panel #property-parentId input")).toHaveValue("Parent");
+        await expect(page.getByRole("textbox", { name: "Parent" })).toHaveValue("Parent");
     });
 
     /**
@@ -198,12 +208,11 @@ test.describe("Parent asset", () => {
         await assetTree.getFilterInput().fill("Thing");
         await assetViewer.switchMode("modify");
 
-        await page.locator("or-edit-asset-panel #change-parent-btn").getByRole("button").click();
-        const parentDialog = page.locator("or-mwc-dialog").last();
-        await parentDialog.getByRole("button", { name: /^NONE$|^none$/i }).click();
-        await assetViewer.save();
+        await page.getByText("Parent Edit").getByRole("button").click();
+        await page.getByLabel("Select parent asset").getByRole("button", { name: "NONE" }).click();
+        await page.getByRole("button", { name: "Save" }).click();
 
-        await expect(page.locator("or-edit-asset-panel #property-parentId input")).toBeEmpty();
+        await expect(page.getByRole("textbox", { name: "Parent" })).toBeEmpty();
     });
 });
 
@@ -217,21 +226,21 @@ test.describe("Attributes", () => {
      * @then The attribute should be visible
      * @and be of type "Integer"
      */
-    test("can be added", async ({ page, assetViewer, manager }) => {
+    test("can be added", async ({ page, mwcInput, assetViewer, manager }) => {
         await manager.setup("smartcity", { assets: [thing] });
         await manager.goToRealmStartPage("smartcity");
         await manager.navigateToTab("Assets");
         await page.getByText("Thing").click();
         await assetViewer.switchMode("modify");
 
-        await page.getByRole("button", { name: /Add attribute|addAttribute/i }).click();
+        await page.getByRole("button", { name: "Add attribute" }).click();
 
-        const dialog = page.getByLabel(/Add attribute|addAttribute/i);
-        await dialog.getByLabel(/Name|name/i).fill("test");
-        await dialog.getByRole("combobox", { name: /Value type|valueType/i }).fill("Int");
+        const dialog = page.getByLabel("Add attribute");
+        await dialog.getByLabel("Name").fill("test");
+        await dialog.getByRole("combobox", { name: "Value type", exact: true }).fill("Int");
         await dialog.getByRole("option", { name: "Integer", exact: true }).click();
-        await dialog.getByRole("button", { name: /^Add$|^add$/i }).click();
-        await assetViewer.save();
+        await dialog.getByRole("button", { name: "Add", exact: true }).click();
+        await page.getByRole("button", { name: "Save", exact: true }).click();
 
         await expect(assetViewer.getAttributeLocator("test")).toBeVisible();
         await expect(assetViewer.getAttributeLocator("test")).toContainText(/Integer/);
@@ -262,7 +271,7 @@ test.describe("Attributes", () => {
         const attribute = assetViewer.getAttributeLocator("test");
         await expect(attribute).toBeVisible();
         await attribute.getByRole("button").last().click();
-        await assetViewer.save();
+        await page.getByRole("button", { name: "Save" }).click();
 
         await expect(attribute).not.toBeVisible();
     });
@@ -348,7 +357,7 @@ test.describe("Configuration items", () => {
                 realm: "smartcity",
                 attributes: {
                     ...commonAttrs,
-                    notes: { ...commonAttrs.notes, meta: Object.fromEntries([...primitiveItemsWithValues /*, ...complexItemsWithValues */]) },
+                    notes: { meta: Object.fromEntries([...primitiveItemsWithValues /*, ...complexItemsWithValues */]) },
                 },
             });
             await manager.goToRealmStartPage("smartcity");
@@ -383,7 +392,7 @@ test.describe("Configuration items", () => {
                 }
             }
 
-            await assetViewer.save();
+            await page.getByRole("button", { name: "Save" }).click();
 
             for (const [item, value] of updatedPrimitivesWithValues) {
                 const itemLocator = assetViewer.getConfigurationItemLocator("notes");
@@ -412,7 +421,7 @@ test.describe("Configuration items", () => {
             // Remove complex configuration items
             // await assetViewer.removeConfigurationItems("notes", ...complexItemsWithValues.map(([item]) => item));
 
-            await assetViewer.save();
+            await page.getByRole("button", { name: "Save" }).click();
 
             const configurationItems = AssetModelUtil.getMetaItemDescriptors().map(
                 ({ name }) => name as `${WellknownMetaItems}`
