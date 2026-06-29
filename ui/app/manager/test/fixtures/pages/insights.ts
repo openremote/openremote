@@ -45,13 +45,22 @@ export class InsightsPage implements BasePage {
     }
 
     /**
+     * Gets the parent Gridstack item container for a given widget.
+     * @param widget The `or-dashboard-widget-container` locator
+     * @returns The locator for the Gridstack item container
+     */
+    getWidgetGSContainer(widget: Locator): Locator {
+        return widget.locator("..").locator("..");
+    }
+
+    /**
      * Gets the x and y coordinates for the specified widget
      * @requires the locator to reference a `or-dashboard-widget-container` to be able to get the Gridstack node
      * @param widget The `or-dashboard-widget-container` locator
      * @returns The x and y grid cell coordinates
      */
     getWidgetLocation(widget: Locator): Promise<[number, number]> {
-        return widget.locator("..").locator("..").evaluate((el: any) => [el.gridstackNode.x, el.gridstackNode.y]);
+        return this.getWidgetGSContainer(widget).evaluate((el: any) => [el.gridstackNode.x, el.gridstackNode.y]);
     }
 
     /**
@@ -91,22 +100,25 @@ export class InsightsPage implements BasePage {
      * Resize a widget from its bottom right corner to the specified grid cell coordinates
      * @param widget The locator of the widget
      * @param to The grid cell coordinates to resize the widget to
+     * @param options The resize options (e.g. force will skip dimension assertions)
      */
-    async resizeWidgetTo(widget: Locator, [cellsWidth, cellsHeight] = [8, 8]) {
+    async resizeWidgetTo(widget: Locator, [cellsWidth, cellsHeight] = [8, 8], { force } = { force: false }) {
         const [gridX, gridY] = await this.getWidgetLocation(widget);
         const [cellWidth, cellHeight] = await this.getGridCellDimensions();
         const [width, height] = [cellsWidth * cellWidth, cellsHeight * cellHeight];
 
+        const grid = this.page.locator(".maingrid");
+        await this.getWidgetGSContainer(widget).locator(".ui-resizable-handle.ui-resizable-se").dragTo(grid, {
+            force,
             // We apply -cellWidth/Height / 2 as the handle causes the source position to be offset
-        const handle = widget.locator("..").locator("..").locator(".ui-resizable-handle.ui-resizable-se");
-        const handleBox = await handle.boundingBox();
-        const gridBox = await this.page.locator(".maingrid").boundingBox();
-        const targetX = gridBox!.x + gridX * cellWidth + width - cellWidth / 2;
-        const targetY = gridBox!.y + gridY * cellHeight + height - cellHeight / 2;
-        await this.page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
-        await this.page.mouse.down();
-        await this.page.mouse.move(targetX, targetY, { steps: 10 });
-        await this.page.mouse.up();
+            targetPosition: {
+                x: gridX * cellWidth + width - cellWidth / 2,
+                y: gridY * cellHeight + height - cellHeight / 2,
+            },
+            steps: 10,
+        });
+
+        if (force) return;
 
         const bbox = await widget.boundingBox();
         // The dashboard dimensions should be equal to the specified cells,
