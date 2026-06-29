@@ -485,7 +485,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         switch (cause) {
             case CREATE -> publishPersistenceEvent(cause, currentEntity, null, null, null);
             case DELETE -> publishPersistenceEvent(cause, previousEntity, null, null, null);
-            case DELETE_PENDING -> publishPersistenceEvent(cause, currentEntity, null, null, null);
+            case DELETE_FINISHED -> publishPersistenceEvent(cause, currentEntity, null, null, null);
             case UPDATE -> {
                 List<String> propertyNames = new ArrayList<>(propertyFields.length);
                 List<Object> currentState = new ArrayList<>(propertyFields.length);

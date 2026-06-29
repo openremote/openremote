@@ -298,8 +298,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     if (eventAsset instanceof GatewayAsset
                         && (isLocallyRegisteredGateway(eventAsset.getId()) || getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId()) == null)) {
 
-                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE
-                            && persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE_PENDING) {
+                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
                             eventAsset = assetStorageService.find(eventAsset.getId(), true);
                             if (eventAsset == null) {
                                 return;
@@ -313,8 +312,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                         String gatewayId = getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
                         if (gatewayId != null) {
 
-                            if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE
-                                && persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE_PENDING) {
+                            if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
                                 eventAsset = assetStorageService.find(eventAsset.getId(), true);
                                 if (eventAsset == null) {
                                     return;
@@ -737,7 +735,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     }
                 }
             }
-            case DELETE, DELETE_PENDING -> {
+            case DELETE -> {
                 // Check if this gateway has a connector
                 GatewayConnector connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
                 if (connector == null) {
@@ -773,7 +771,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     assetIdGatewayIdMap.put(childAsset.getId(), gatewayId);
                 }
             }
-            case DELETE, DELETE_PENDING -> {
+            case DELETE -> {
                 synchronized (assetIdGatewayIdMap) {
                     assetIdGatewayIdMap.remove(childAsset.getId());
                 }

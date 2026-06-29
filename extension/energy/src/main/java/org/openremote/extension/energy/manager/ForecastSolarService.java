@@ -249,8 +249,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             electricityProducerSolarAssetMap.put(persistenceEvent.getEntity().getId(), persistenceEvent.getEntity());
             getSolarForecast(persistenceEvent.getEntity());
             updateSolarForecastAttribute(persistenceEvent.getEntity());
-        } else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE
-            || persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE_PENDING) {
+        } else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
             electricityProducerSolarAssetMap.remove(persistenceEvent.getEntity().getId());
         }
     }

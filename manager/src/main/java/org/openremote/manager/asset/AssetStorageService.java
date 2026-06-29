@@ -910,10 +910,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     assets.forEach(asset -> {
                         asset.setDeletePending(true);
                         persistenceService.publishPersistenceEvent(
-                            PersistenceEvent.Cause.DELETE_PENDING,
+                            PersistenceEvent.Cause.DELETE,
                             asset,
                             null,
-                            Asset.class,
                             null,
                             null);
                     });
@@ -1581,7 +1580,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         ).setSource(getClass().getSimpleName()));
                     });
             }
-            case DELETE, DELETE_PENDING -> {
+            case DELETE -> {
                 if (LOG.isLoggable(Level.FINEST)) {
                     LOG.finest("Asset deleted: " + asset.toStringAll());
                 } else {

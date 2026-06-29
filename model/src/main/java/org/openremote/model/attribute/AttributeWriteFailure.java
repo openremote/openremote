@@ -53,11 +53,6 @@ public enum AttributeWriteFailure {
     STATE_STORAGE_FAILED,
 
     /**
-     * The asset is pending deletion and no longer accepts attribute writes.
-     */
-    ASSET_DELETE_PENDING,
-
-    /**
      * The event interceptor/consumer cannot process the event.
      */
     CANNOT_PROCESS,

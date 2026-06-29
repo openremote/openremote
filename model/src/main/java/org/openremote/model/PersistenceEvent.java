@@ -25,7 +25,7 @@ import java.util.List;
 public class PersistenceEvent<T> {
 
     public enum Cause {
-        CREATE, UPDATE, DELETE, DELETE_PENDING
+        CREATE, UPDATE, DELETE, DELETE_FINISHED
     }
 
     final protected Cause cause;

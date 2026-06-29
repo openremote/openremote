@@ -493,7 +493,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected void processAssetChange(Asset<?> asset, PersistenceEvent<Asset<?>> persistenceEvent) {
         switch (persistenceEvent.getCause()) {
-            case DELETE, DELETE_PENDING ->
+            case DELETE ->
                 // Remove any asset rules engines for this asset
                 assetEngines.values().removeIf(re -> {
                     if (re.getId().getAssetId().map(aId -> aId.equals(asset.getId())).orElse(false)) {

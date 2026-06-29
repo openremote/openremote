@@ -238,8 +238,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         LOG.fine("Processing producer wind asset change: " + persistenceEvent);
         stopCalculation(persistenceEvent.getEntity().getId());
 
-        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE
-            && persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE_PENDING) {
+        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
             if (persistenceEvent.getEntity().isIncludeForecastWindService().orElse(false)
                     && persistenceEvent.getEntity().getLocation().isPresent()) {
                 startCalculation(persistenceEvent.getEntity());

@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -399,6 +400,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return (T) this;
     }
 
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public boolean isDeletePending() {
         return deletePending;
     }
