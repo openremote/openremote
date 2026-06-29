@@ -67,17 +67,23 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source, Integer offset, Integer limit) {
+        AuthContext authContext = getAuthContext();
+        realmId = resolveAndAuthoriseRealm(authContext, realmId);
+
         try {
-            return notificationService.getNotifications(
+            List<SentNotification> notifications = notificationService.getNotifications(
                 id != null ? Collections.singletonList(id) : null,
                 type != null ? Collections.singletonList(type) : null,
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null
-            ).toArray(new SentNotification[0]);
+                assetId != null ? Collections.singletonList(assetId) : null,
+                source, offset, limit, authContext
+            );
+            sanitiseNotifications(notifications, authContext);
+            return notifications.toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
@@ -225,80 +231,70 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotificationsByRealm(RequestParams requestParams, Long from, Long to, String realmId, Notification.Source source, Integer offset, Integer limit) {
-        if (realmId == null) {
-            throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
-        }
+    public long getNotificationsCount(RequestParams requestParams, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source) {
+        AuthContext authContext = getAuthContext();
+        realmId = resolveAndAuthoriseRealm(authContext, realmId);
 
         try {
-            AuthContext authContext = getAuthContext();
-            // Non-superusers can only query a realm they can access (i.e. their own); otherwise a non-restricted
-            // user could read another realm's notifications by passing its realmId
-            if (authContext != null && !authContext.isSuperUser()
-                && !managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
-                throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
-            }
-            boolean canReadUsers = authContext != null && (authContext.isSuperUser()
-                || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
-                || authContext.hasResourceRole(Constants.READ_USERS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
-            boolean canReadAssets = authContext != null && (authContext.isSuperUser()
-                || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
-                || authContext.hasResourceRole(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
-
-            List<SentNotification> notifications = notificationService.getNotificationsByRealm(
-                Collections.singletonList(realmId),
+            return notificationService.getNotificationsCount(
+                type != null ? Collections.singletonList(type) : null,
                 from != null ? Instant.ofEpochMilli(from) : null,
                 to != null ? Instant.ofEpochMilli(to) : null,
-                source,
-                offset,
-                limit,
-                authContext
+                realmId != null ? Collections.singletonList(realmId) : null,
+                userId != null ? Collections.singletonList(userId) : null,
+                assetId != null ? Collections.singletonList(assetId) : null,
+                source, authContext
             );
-
-            if (!canReadUsers || !canReadAssets) {
-                notifications.forEach(n -> {
-                    if (!canReadUsers) {
-                        n.setSourceId(null);
-                        if (n.getTarget() == Notification.TargetType.USER) {
-                            n.setTargetId(null);
-                        }
-                    }
-                    if (!canReadAssets && n.getTarget() == Notification.TargetType.ASSET) {
-                        n.setTargetId(null);
-                    }
-                });
-            }
-
-            return notifications.toArray(new SentNotification[0]);
-
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException("Error retrieving notifications: " + e.getMessage(), BAD_REQUEST);
+            throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
-    @Override
-    public long getNotificationsByRealmCount(RequestParams requestParams, Long from, Long to, String realmId, Notification.Source source) {
+    /**
+     * Resolves the realm to query and verifies the caller may access it. Superusers may query any realm (or all
+     * realms when {@code realmId} is null); other callers default to their own realm and may not query a realm they
+     * cannot access (which would otherwise let them read another realm's notifications by passing its ID).
+     */
+    protected String resolveAndAuthoriseRealm(AuthContext authContext, String realmId) {
+        if (authContext == null || authContext.isSuperUser()) {
+            return realmId;
+        }
         if (realmId == null) {
-            throw new WebApplicationException("Realm ID must be specified", BAD_REQUEST);
+            return authContext.getAuthenticatedRealmName();
+        }
+        if (!managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
+            throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
+        }
+        return realmId;
+    }
+
+    /**
+     * Strips identifiers the caller isn't allowed to see: source/target user IDs without read:users and target asset
+     * IDs without read:assets.
+     */
+    protected void sanitiseNotifications(List<SentNotification> notifications, AuthContext authContext) {
+        boolean canReadUsers = authContext != null && (authContext.isSuperUser()
+            || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+            || authContext.hasResourceRole(Constants.READ_USERS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+        boolean canReadAssets = authContext != null && (authContext.isSuperUser()
+            || authContext.hasResourceRole(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)
+            || authContext.hasResourceRole(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID));
+
+        if (canReadUsers && canReadAssets) {
+            return;
         }
 
-        try {
-            AuthContext authContext = getAuthContext();
-            // Non-superusers can only query a realm they can access (i.e. their own)
-            if (authContext != null && !authContext.isSuperUser()
-                && !managerIdentityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realmId)) {
-                throw new WebApplicationException("Realm '" + realmId + "' is nonexistent, inactive or inaccessible", FORBIDDEN);
+        notifications.forEach(n -> {
+            if (!canReadUsers) {
+                n.setSourceId(null);
+                if (n.getTarget() == Notification.TargetType.USER) {
+                    n.setTargetId(null);
+                }
             }
-            return notificationService.getNotificationsByRealmCount(
-                Collections.singletonList(realmId),
-                from != null ? Instant.ofEpochMilli(from) : null,
-                to != null ? Instant.ofEpochMilli(to) : null,
-                source,
-                authContext
-            );
-        } catch (IllegalArgumentException e) {
-            throw new WebApplicationException("Error retrieving notification count: " + e.getMessage(), BAD_REQUEST);
-        }
+            if (!canReadAssets && n.getTarget() == Notification.TargetType.ASSET) {
+                n.setTargetId(null);
+            }
+        });
     }
 
 
