@@ -307,13 +307,11 @@ trait ContainerTrait {
                 } catch (IllegalStateException e) {
                     LOG.info("Failed to clean the existing container so creating a new one", e)
                     stopContainer()
-                    TestFixture.container = null
                 }
             } else {
                 LOG.info("Request to start container with different config and/or services as already running container so restarting")
                 LOG.info("Current config = ${currentConfig}, new config = ${config}")
                 stopContainer()
-                TestFixture.container = null
             }
         }
 
@@ -374,7 +372,7 @@ trait ContainerTrait {
             if (i >= 100) {
                 LOG.info("Agents didn't load correctly so stopping and starting the container")
                 stopContainer()
-                startContainer(config, services)
+                return startContainer(config, services)
             } else {
                 LOG.info("Agents are deployed")
             }
@@ -519,14 +517,27 @@ trait ContainerTrait {
         try {
             if (container != null) {
                 container.stop()
-                // Clear out the Built in JAX-RS client as the executor service it uses will be aggressively shutdown by Camel
-                WebTargetBuilder.BUILT_IN_CLIENT.getAndUpdate {if (it != null) {
-                    it.close()
-                    return null
-                }}
             }
         } catch (Exception e) {
             LOG.warn("Failed to stop container", e)
+        } finally {
+            TestFixture.container = null
+            closeTestClient(testClient, "test JAX-RS client")
+            // Clear out the Built in JAX-RS client as the executor service it uses will be aggressively shutdown by Camel
+            closeTestClient(WebTargetBuilder.BUILT_IN_CLIENT, "built in JAX-RS client")
+        }
+    }
+
+    void closeTestClient(AtomicReference<ResteasyClient> clientReference, String clientName) {
+        try {
+            clientReference.getAndUpdate {
+                if (it != null) {
+                    it.close()
+                }
+                return null
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to close ${clientName}", e)
         }
     }
 

@@ -23,7 +23,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-chart-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
-import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
+import {AttributeAction, AttributeActionEvent, AttributeReplaceEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {BarChartWidgetConfig} from "../widgets/barchart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
@@ -90,7 +90,7 @@ export class BarChartSettings extends WidgetSettings {
             let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace("#", "");
             if(!color) {
                 const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
-                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace("#", "");
+                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index % OrChart.DEFAULT_COLORS.length]?.replace("#", "");
             }
             return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
         };
@@ -101,7 +101,7 @@ export class BarChartSettings extends WidgetSettings {
             let customColor = false;
             if (!color) {
                 const index = this.widgetConfig?.attributeRefs?.findIndex(ref => ref.id === attributeRef.id && ref.name === attributeRef.name);
-                if (index >= 0) color = OrAttributeBarChart.DEFAULT_COLORS[index];
+                if (index >= 0) color = OrAttributeBarChart.DEFAULT_COLORS[index % OrAttributeBarChart.DEFAULT_COLORS.length];
             } else {
                 customColor = true;
             }
@@ -158,6 +158,7 @@ export class BarChartSettings extends WidgetSettings {
                     <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       .attributeIconCallback=${attributeIconCallback} .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
+                                      @attribute-replace="${(ev: AttributeReplaceEvent) => this.onAttributeReplace(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-chart-panel>
                 </settings-panel>
@@ -376,7 +377,7 @@ export class BarChartSettings extends WidgetSettings {
         // Add colors
         this.widgetConfig.attributeColors ??= [];
         ev.detail.attributeRefs.forEach(((attrRef, index) => {
-            const color = this.widgetConfig.attributeColors.find(x => x[0].id === attrRef.id && x[0].name === ref.name);
+            const color = this.widgetConfig.attributeColors.find(x => x[0].id === attrRef.id && x[0].name === attrRef.name);
             if(!color) {
                 const newColor = OrAttributeBarChart.DEFAULT_COLORS[index] ?? "#000000";
                 this.widgetConfig.attributeColors.push([attrRef, newColor]);
@@ -395,6 +396,33 @@ export class BarChartSettings extends WidgetSettings {
                 this.widgetConfig.attributeSettings.methodAvgAttributes.push(ref);
             }
         });
+        this.notifyConfigUpdate();
+    }
+
+    /**
+     * Handles an in-place replacement of an {@link AttributeRef}. All per-attribute configuration
+     * (aggregation method, alignment, custom color, ...) is migrated from the old reference to the
+     * new one, so the new attribute inherits the full configuration of the one it replaces.
+     */
+    protected onAttributeReplace(ev: AttributeReplaceEvent) {
+        const {oldRef, newRef} = ev.detail;
+        const matches = (ar: AttributeRef) => ar.id === oldRef.id && ar.name === oldRef.name;
+
+        // Migrate the attribute settings categories (aggregation methods, alignment, ...)
+        const settings = this.widgetConfig.attributeSettings;
+        (Object.keys(settings) as (keyof typeof settings)[]).forEach(key => {
+            settings[key] = settings[key]!.map((ar: AttributeRef) => matches(ar) ? {id: newRef.id, name: newRef.name} : ar);
+        });
+
+        // Migrate the custom color, if any
+        this.widgetConfig.attributeColors = (this.widgetConfig.attributeColors ?? [])
+            .map(entry => matches(entry[0]) ? [{id: newRef.id, name: newRef.name}, entry[1]] : entry);
+
+        // Swap the reference in place, keeping its position in the list
+        const index = this.widgetConfig.attributeRefs.findIndex(matches);
+        if (index >= 0) {
+            this.widgetConfig.attributeRefs[index] = {id: newRef.id, name: newRef.name};
+        }
         this.notifyConfigUpdate();
     }
 
@@ -436,7 +464,7 @@ export class BarChartSettings extends WidgetSettings {
         const inputElem = this._attributesPanelElem?.shadowRoot?.querySelector(`#chart-color-${attributeRef.id}-${attributeRef.name}`) as HTMLInputElement | undefined;
         if(inputElem) {
 
-            // Listen for changes
+            //Listen for changes
             inputElem.addEventListener("input", debounce(() => {
                 const color = inputElem.value;
                 this.widgetConfig.attributeColors ??= [];
@@ -446,6 +474,7 @@ export class BarChartSettings extends WidgetSettings {
                 } else {
                     this.widgetConfig.attributeColors.push([attributeRef, color]);
                 }
+                this.widgetConfig.attributeColors = [...this.widgetConfig.attributeColors];
                 this.notifyConfigUpdate();
             }, 200));
 
@@ -456,7 +485,7 @@ export class BarChartSettings extends WidgetSettings {
 
 
     protected removeFromAttributeColors(attributeRef: AttributeRef) {
-        this.widgetConfig.attributeColors = this.widgetConfig.attributeColors.filter(
+        this.widgetConfig.attributeColors = (this.widgetConfig.attributeColors ?? []).filter(
             ([ref, _]) => ref.id !== attributeRef.id || ref.name !== attributeRef.name
         );
     }
