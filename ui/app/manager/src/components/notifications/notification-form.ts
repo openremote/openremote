@@ -174,6 +174,12 @@ export class NotificationForm extends LitElement {
     public realm?: string;
 
     async firstUpdated() {
+        // In readonly (details) mode the form only displays an existing notification's stored values; the
+        // asset/user/realm option lists are only used by the editable target selectors, so skip loading them.
+        if (this.readonly) {
+            return;
+        }
+
         const canReadAssets = manager.hasRole("read:assets") || manager.hasRole("read:admin");
 
         const promises = [];
@@ -202,8 +208,9 @@ export class NotificationForm extends LitElement {
         if (changedProps.has('notification') && this.notification) {
             this._populateFromNotification()
         }
-        // Reload target data when the realm changes; skip the initial assignment (handled by firstUpdated)
-        if (changedProps.has('realm') && changedProps.get('realm') !== undefined) {
+        // Reload target data when the realm changes; skip the initial assignment (handled by firstUpdated) and
+        // readonly mode (the details view doesn't use the option lists)
+        if (!this.readonly && changedProps.has('realm') && changedProps.get('realm') !== undefined) {
             this._reloadTargetData();
         }
         // Notify listeners (e.g. the create dialog) so they can re-evaluate form validity
