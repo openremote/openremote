@@ -36,6 +36,7 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
         def persistenceService = container.getService(PersistenceService.class)
+        def originalMaxTuplesDecompressedPerDmlTransaction = getMaxTuplesDecompressedPerDmlTransaction(persistenceService)
 
         and: "the schema name is retrieved"
         def schemaName = persistenceService.persistenceUnitProperties.getProperty(AvailableSettings.DEFAULT_SCHEMA)
@@ -272,6 +273,11 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
 
         then: "No exception should have occurred"
         true
+
+        cleanup: "restore TimescaleDB decompression limit"
+        if (persistenceService != null && originalMaxTuplesDecompressedPerDmlTransaction != null) {
+            setMaxTuplesDecompressedPerDmlTransaction(persistenceService, originalMaxTuplesDecompressedPerDmlTransaction)
+        }
     }
 
     private static Attribute<?>[] numberAttributes(List<String> attributeNames) {
@@ -292,9 +298,17 @@ class AssetDatapointPurgeTest extends Specification implements ManagerContainerT
         }
     }
 
-    private static void setMaxTuplesDecompressedPerDmlTransaction(PersistenceService persistenceService, int limit) {
+    private static String getMaxTuplesDecompressedPerDmlTransaction(PersistenceService persistenceService) {
+        return persistenceService.doReturningTransaction { em ->
+            em.createNativeQuery("SHOW timescaledb.max_tuples_decompressed_per_dml_transaction").getSingleResult() as String
+        }
+    }
+
+    private static void setMaxTuplesDecompressedPerDmlTransaction(PersistenceService persistenceService, Object limit) {
         persistenceService.doTransaction { em ->
-            em.createNativeQuery("SET timescaledb.max_tuples_decompressed_per_dml_transaction = ${limit}").executeUpdate()
+            def query = em.createNativeQuery("SELECT set_config('timescaledb.max_tuples_decompressed_per_dml_transaction', :limit, false)")
+            query.setParameter("limit", limit.toString())
+            query.getSingleResult()
         }
     }
 }
