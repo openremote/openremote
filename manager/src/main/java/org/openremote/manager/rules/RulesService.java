@@ -532,6 +532,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
                 // Must reload from the database, the ruleset might not be completely hydrated on CREATE or UPDATE
                 AssetRuleset assetRuleset = rulesetStorageService.find(AssetRuleset.class, ruleset.getId());
+                if (assetRuleset == null) {
+                    undeployAssetRuleset((AssetRuleset) ruleset);
+                    return;
+                }
                 RulesEngine<AssetRuleset> engine = deployAssetRuleset(assetRuleset);
                 engine.start();
             }

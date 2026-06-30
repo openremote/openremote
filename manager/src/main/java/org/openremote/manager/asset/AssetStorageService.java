@@ -541,7 +541,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         // TODO: Do this in a loop in reasonably sized batches
         return persistenceService.doReturningTransaction(em -> {
-            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids",
+            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids and a.deletePending is false",
                 Object[].class)
                 .setParameter("ids", Arrays.asList(ids))
                 .getResultList();
@@ -1042,7 +1042,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds",
+                    "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds and a.deletePending is false",
                     Long.class)
                     .setParameter("realm", realm)
                     .setParameter("assetIds", assetIds)
@@ -1061,7 +1061,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
             @Override
             public Boolean execute(Connection connection) throws SQLException {
-                try (PreparedStatement st = connection.prepareStatement("select count(*) from Asset a where a.path ~ lquery(?) AND a.id = ANY(?)")) {
+                try (PreparedStatement st = connection.prepareStatement("select count(*) from Asset a where a.path ~ lquery(?) AND a.id = ANY(?) AND a.delete_pending is false")) {
                     st.setString(1, "*." + parentAssetId + ".*");
                     st.setArray(2, st.getConnection().createArrayOf("text", assetIds.toArray()));
                     ResultSet rs = st.executeQuery();
@@ -1086,7 +1086,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             // Get all parent IDs that have children
             List<String> parentsWithChildren = entityManager.createQuery(
-                "select distinct a.parentId from Asset a where a.parentId in :assetIds", String.class)
+                "select distinct a.parentId from Asset a where a.parentId in :assetIds and a.deletePending is false", String.class)
                 .setParameter("assetIds", assetIds)
                 .getResultList();
 
