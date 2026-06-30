@@ -175,8 +175,9 @@ export class BarChartWidget extends OrAssetWidget {
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
                 const assetIndex = assets.findIndex(asset => asset.id === attrRef.id);
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-            }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                const attribute = foundAsset?.attributes?.[attrRef.name!];
+                return attribute ? [assetIndex, attribute] : [-1, { name: attrRef.name } as Attribute<any>];
+            }) as [number, Attribute<any>][];
         }).catch(e => {
             this._error = e.message;
         }).finally(() => {

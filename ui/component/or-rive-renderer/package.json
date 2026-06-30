@@ -21,7 +21,7 @@
   "repository": "https://github.com/openremote/openremote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@rive-app/webgl2": "^2.38.0",
+    "@rive-app/webgl2": "^2.38.1",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8"
   },
