@@ -202,6 +202,17 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     align-items: center;
                     color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
                     justify-content: space-between;
+                    gap: var(--lumo-space-m);
+                }
+
+                /* Once the controls no longer fit beside the title, stack them underneath it. Switching to a
+                   column (rather than flex-wrapping) keeps the title centered against the controls while inline
+                   and avoids the title shifting up when they move below. */
+                @media only screen and (max-width: 1360px) {
+                    #title {
+                        flex-direction: column;
+                        align-items: flex-start;
+                    }
                 }
 
                 #table-container {
@@ -216,6 +227,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 #table-container or-notifications-table {
                     flex: 0 1 auto;
                     min-height: 0;
+                }
+
+                .controls {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: flex-end;
+                    /* gap supplies the row spacing too, so wrapped fields keep their spacing below */
+                    gap: var(--lumo-space-m);
                 }
 
                 .controls or-vaadin-select {
@@ -524,7 +543,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
         return html`
             <div id="title">
-                <div style="display: flex; align-items: center;">
+                <div style="display: flex; align-items: center; min-height: 60px;">
                     <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
                     <span><or-translate value="notification_other"/></span>
                 </div>
