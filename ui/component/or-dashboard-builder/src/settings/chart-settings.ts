@@ -25,7 +25,7 @@ import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import debounce from "lodash.debounce";
 import {AttributesChartPanel} from "../panels/attributes-chart-panel";
-import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
+import {AttributeAction, AttributeActionEvent, AttributeReplaceEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
@@ -85,7 +85,7 @@ export class ChartSettings extends WidgetSettings {
             let color = this.widgetConfig.attributeColors?.find(a => a[0].id === asset.id && a[0].name === attribute.name)?.[1]?.replace('#', '');
             if(!color) {
                 const index = this.widgetConfig.attributeRefs?.findIndex(ref => ref.id === asset.id && ref.name === attribute.name);
-                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index]?.replace('#', '');
+                if(index >= 0) color = OrChart.DEFAULT_COLORS?.[index % OrChart.DEFAULT_COLORS.length]?.replace('#', '');
             }
             return html`<span>${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, color)}</span>`;
         };
@@ -100,7 +100,7 @@ export class ChartSettings extends WidgetSettings {
             let customColor = false;
             if (!color) {
                 const index = this.widgetConfig?.attributeRefs?.findIndex(ref => ref.id === attributeRef.id && ref.name === attributeRef.name);
-                if (index >= 0) color = OrChart.DEFAULT_COLORS?.[index];
+                if (index >= 0) color = OrChart.DEFAULT_COLORS?.[index % OrChart.DEFAULT_COLORS.length];
             } else {
                 customColor = true;
             }
@@ -171,6 +171,7 @@ export class ChartSettings extends WidgetSettings {
                     <attributes-chart-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi onlyDataAttrs includePredictedDataAttrs .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       .attributeIconCallback="${attributeIconCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
+                                      @attribute-replace="${(ev: AttributeReplaceEvent) => this.onAttributeReplace(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-chart-panel>
                 </settings-panel>
@@ -390,6 +391,36 @@ export class ChartSettings extends WidgetSettings {
         });
 
         this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
+        this.notifyConfigUpdate();
+    }
+
+    /**
+     * Handles an in-place replacement of an {@link AttributeRef}. All per-attribute configuration
+     * (axis assignment, smooth/stepped/area/faint/extended flags and custom color) is migrated from
+     * the old reference to the new one, so the new attribute inherits the full configuration of the
+     * one it replaces.
+     */
+    protected onAttributeReplace(ev: AttributeReplaceEvent) {
+        const {oldRef, newRef} = ev.detail;
+        const matches = (ar: AttributeRef) => ar.id === oldRef.id && ar.name === oldRef.name;
+
+        // Migrate the attribute config categories (rightAxis, smooth, stepped, area, faint, extended, ...)
+        const config = this.widgetConfig.attributeConfig;
+        if (config) {
+            (Object.keys(config) as (keyof typeof config)[]).forEach(key => {
+                config[key] = config[key]?.map((ar: AttributeRef) => matches(ar) ? {id: newRef.id, name: newRef.name} : ar);
+            });
+        }
+
+        // Migrate the custom color, if any
+        this.widgetConfig.attributeColors = (this.widgetConfig.attributeColors ?? [])
+            .map(entry => matches(entry[0]) ? [{id: newRef.id, name: newRef.name}, entry[1]] : entry);
+
+        // Swap the reference in place, keeping its position in the list
+        const index = this.widgetConfig.attributeRefs.findIndex(matches);
+        if (index >= 0) {
+            this.widgetConfig.attributeRefs[index] = {id: newRef.id, name: newRef.name};
+        }
         this.notifyConfigUpdate();
     }
 
