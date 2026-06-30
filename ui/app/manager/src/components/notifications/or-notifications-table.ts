@@ -256,7 +256,7 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     protected getTargetContent(notification: SentNotification): TemplateResult {
-        const details = this.targetDetailsMap.get(notification.targetId);
+        const details = this.targetDetailsMap.get(this.getTargetMapKey(notification.targetId, notification.target));
 
         if (!details) {
             // show ID while loading or if we couldn't load details
@@ -340,12 +340,12 @@ export class OrNotificationsTable extends OrMwcTable {
         const userIds = new Set<string>();
 
         notifications.forEach((n) => {
-            if (!n.targetId || this.targetDetailsMap.has(n.targetId)) return;
+            if (!n.targetId || this.targetDetailsMap.has(this.getTargetMapKey(n.targetId, n.target))) return;
             if (n.target === NotificationTargetType.ASSET) assetIds.add(n.targetId);
             else if (n.target === NotificationTargetType.USER) userIds.add(n.targetId);
             else {
                 // REALM or unknown — just display the ID directly, no API lookup needed
-                this.targetDetailsMap.set(n.targetId, { name: n.targetId, type: "realm", link: "" });
+                this.targetDetailsMap.set(this.getTargetMapKey(n.targetId, n.target), { name: n.targetId, type: "realm", link: "" });
             }
         });
 
@@ -357,12 +357,12 @@ export class OrNotificationsTable extends OrMwcTable {
         // Store raw IDs for targets we cannot resolve due to missing permissions
         if (!canReadAssets) {
             assetIds.forEach(id => {
-                this.targetDetailsMap.set(id, { name: "-", type: "asset", link: "" });
+                this.targetDetailsMap.set(this.getTargetMapKey(id, NotificationTargetType.ASSET), { name: "-", type: "asset", link: "" });
             });
         }
         if (!canReadUsers) {
             userIds.forEach(id => {
-                this.targetDetailsMap.set(id, { name: "-", type: "user", link: "" });
+                this.targetDetailsMap.set(this.getTargetMapKey(id, NotificationTargetType.USER), { name: "-", type: "user", link: "" });
             });
         }
 
@@ -377,7 +377,7 @@ export class OrNotificationsTable extends OrMwcTable {
             ]);
 
             assets.forEach((asset) => {
-                this.targetDetailsMap.set(asset.id!, {
+                this.targetDetailsMap.set(this.getTargetMapKey(asset.id!, NotificationTargetType.ASSET), {
                     name: asset.name || asset.id!,
                     type: "asset",
                     link: `#/${getAssetsRoute(false, asset.id!)}`,
@@ -385,7 +385,7 @@ export class OrNotificationsTable extends OrMwcTable {
             });
 
             users.forEach((user) => {
-                this.targetDetailsMap.set(user.id!, {
+                this.targetDetailsMap.set(this.getTargetMapKey(user.id!, NotificationTargetType.USER), {
                     name: user.username,
                     type: "user",
                     link: `#/${getUsersRoute(user.id!)}`,
