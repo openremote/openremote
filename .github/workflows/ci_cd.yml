@@ -277,7 +277,7 @@ jobs:
 
       - name: Set up JDK 21 and gradle cache
         id: java
-        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -578,7 +578,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ steps.deployments.outputs.pushSnapshot == 'true' }}
-        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
         with:
           aws-region: eu-west-1
           role-to-assume: "arn:aws:iam::${{ secrets.OR_AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.OR_GH_AWS_ECR_PUSH_ROLE }}"
