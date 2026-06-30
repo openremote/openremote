@@ -98,6 +98,21 @@ export const preparedAssetsForInsights: Asset[] = [
     },
 ];
 
+/**
+ * Asset with one predicted-datapoint attribute and one stored-datapoint
+ * attribute, for tests that need to distinguish the two datapoint types.
+ */
+export const assetWithPredictedAndStoredDatapoints: Asset = {
+    name: "Import Asset",
+    type: "ThingAsset",
+    realm: "smartcity",
+    attributes: {
+        ...commonAttrs,
+        energyImportTotal: { name: "energyImportTotal", type: "number", meta: { hasPredictedDataPoints: true } },
+        energyExportTotal: { name: "energyExportTotal", type: "number", meta: { storeDataPoints: true } },
+    },
+};
+
 type AssetNames = (typeof assets)[number]["name"];
 
 export const assetPatches: Record<
