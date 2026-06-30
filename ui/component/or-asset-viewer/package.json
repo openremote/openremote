@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "axios": "1.18.0"
+    "axios": "1.18.1"
   },
   "publishConfig": {
     "access": "public"
