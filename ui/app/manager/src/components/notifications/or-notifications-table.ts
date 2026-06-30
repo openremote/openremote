@@ -193,7 +193,7 @@ export class OrNotificationsTable extends OrMwcTable {
         multiSelect: false
     }
 
-    protected sortIndex = 4; // sort by sent date by default
+    protected sortIndex = 5; // sort by sent date by default (column 5 = sentOn)
     protected sortDirection: "ASC" | "DESC" = "DESC";
 
     protected async willUpdate(changedProps: PropertyValues) {
@@ -313,50 +313,26 @@ export class OrNotificationsTable extends OrMwcTable {
         return html`${date ? new Date(date).toLocaleString() : '-'}`;
     }
 
-    protected sortTemplateRows(cellA: any, cellB: any, cIndex: number, sortDirection: "ASC" | "DESC"): number {
-        // first extract the primitive values from the cell content
-        const valueA: string | undefined = (cellA.values as any[])
-        .filter(v => typeof v === 'string')
-        .map(v=> v.toString())?.[0];
+    // The status/date columns render as colored spans / localized date strings, which the base table can't
+    // sort meaningfully. Sort them from the underlying notification on the row instead, using the real column
+    // index that sortObjectRows receives. Other columns fall back to the default sorting.
+    protected sortObjectRows(rowA: TableRow, rowB: TableRow, cIndex: number, sortDirection: "ASC" | "DESC"): number {
+        const notifA = (rowA as NotificationTableRow).data?.notification;
+        const notifB = (rowB as NotificationTableRow).data?.notification;
 
-        const valueB: string | undefined = (cellB.values as any[])
-        .filter(v=> typeof v === 'string')
-        .map(v=> v.toString())?.[0];
-        // second only proceed if we have valid values to compare
-
-        if (valueA !== undefined && valueB !== undefined) {
-            if (cIndex == 2) {
-                const statusA = valueA.includes('status-delivered') ? 1 : 0;
-                const statusB = valueB.includes('status-delivered') ? 1 : 0;
-
-                return sortDirection === 'DESC' ?
-                statusB - statusA : // for desc if B > A, result is positive (B comes first)
-                statusA - statusB; // for asc if A > B, result is positive (A comes first)
+        if (notifA && notifB) {
+            const dir = sortDirection === "DESC" ? -1 : 1;
+            switch (cIndex) {
+                case 2: // Status: pending (no deliveredOn) before delivered
+                    return dir * ((notifA.deliveredOn ? 1 : 0) - (notifB.deliveredOn ? 1 : 0));
+                case 5: // Sent date
+                    return dir * ((notifA.sentOn ?? 0) - (notifB.sentOn ?? 0));
+                case 6: // Delivered date
+                    return dir * ((notifA.deliveredOn ?? 0) - (notifB.deliveredOn ?? 0));
             }
-            if (cIndex === 3 ) {
-                const dateA = new Date(valueA).getTime();
-                const dateB = new Date(valueB).getTime();
-
-                return sortDirection === 'DESC' ?
-                dateB - dateA : 
-                dateA - dateB;
-            }
-
-            if (cIndex === 4 ) {
-                const dateA = new Date(valueA).getTime();
-                const dateB = new Date(valueB).getTime();
-
-                return sortDirection === 'DESC' ?
-                dateB - dateA : 
-                dateA - dateB;
-            }
-
-            // for other columns
-            // fallback
-            return this.sortPrimitiveRows([valueA], [valueB], 0, sortDirection)
-        } else {
-            return 1; // if either value is undefined move it to the end
         }
+
+        return super.sortObjectRows(rowA, rowB, cIndex, sortDirection);
     }
 
     protected async resolveAllTargetDetails(notifications: SentNotification[]) {
