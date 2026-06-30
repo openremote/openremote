@@ -19,6 +19,7 @@
     { "path": "../or-attribute-input" },
     { "path": "../or-attribute-history" },
     { "path": "../or-mwc-components" },
-    { "path": "../or-json-forms" }
+    { "path": "../or-json-forms" },
+    { "path": "../or-vaadin-components" }
   ]
 }

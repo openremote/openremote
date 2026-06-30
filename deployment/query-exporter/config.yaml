@@ -86,6 +86,10 @@ metrics:
     type: gauge
     description: Asset datapoint table size in MB
 
+  pg_datapoint_data_index_ratio:
+    type: gauge
+    description: Asset datapoint table index size to data size ratio (over 1 indicates an possible issue)
+
   pg_datapoint_chunk_count:
     type: gauge
     description: Asset datapoint table hypertable chunk count
@@ -281,14 +285,15 @@ queries:
   datapoint_table_size:
     interval: 3600 # Hourly
     databases: [openremote]
-    metrics: [pg_datapoint_raw_data_size, pg_datapoint_indexes_size, pg_datapoint_toast_size, pg_datapoint_disk_size]
+    metrics: [pg_datapoint_raw_data_size, pg_datapoint_indexes_size, pg_datapoint_toast_size, pg_datapoint_disk_size, pg_datapoint_data_index_ratio]
     sql: |
       SELECT 
         ROUND(table_bytes / 1048576.0, 0) AS pg_datapoint_raw_data_size,
         ROUND(index_bytes / 1048576.0, 0) AS pg_datapoint_indexes_size,
         ROUND(toast_bytes / 1048576.0, 0) AS pg_datapoint_toast_size,
-        ROUND(total_bytes / 1048576.0, 0) AS pg_datapoint_disk_size
-      FROM hypertable_detailed_size('asset_datapoint');
+        ROUND(total_bytes / 1048576.0, 0) AS pg_datapoint_disk_size,
+        ROUND(index_bytes::numeric / NULLIF(table_bytes + toast_bytes, 0), 2) AS pg_datapoint_data_index_ratio
+        FROM hypertable_detailed_size('asset_datapoint');
 
   datapoint_chunks:
     interval: 86400 # Daily

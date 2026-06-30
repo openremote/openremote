@@ -167,7 +167,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Sends an alarm if the given user has access to the alarm realm.
+     * Sends an alarm. Callers are responsible for enforcing realm authorization.
      */
     public SentAlarm sendAlarm(Alarm alarm, List<String> assetIds) {
         Objects.requireNonNull(alarm, "Alarm cannot be null");
@@ -303,7 +303,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Updates an existing alarm if the given user has access to the alarm realm.
+     * Updates an existing alarm. Callers are responsible for enforcing realm authorization.
      */
     public void updateAlarm(SentAlarm oldAlarm, SentAlarm newAlarm) {
         String oldAssigneeId = oldAlarm.getAssigneeId();
@@ -338,7 +338,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Links multiple assets to existing alarms if the given user has access to the alarm realms.
+     * Links multiple assets to existing alarms. Callers are responsible for enforcing realm authorization.
      */
     public void linkAssets(List<AlarmAssetLink> links) {
         Set<Long> alarmIds = links.stream().map(link -> link.getId().getAlarmId()).collect(Collectors.toSet());
@@ -364,7 +364,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Returns the assets linked to an alarm if the given user has access to the alarm realm.
+     * Returns the assets linked to an alarm. Callers are responsible for enforcing realm authorization.
      */
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
@@ -380,7 +380,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Retrieves the details of an existing alarm if the given user has access to the alarm realm.
+     * Retrieves the details of an existing alarm. Callers are responsible for enforcing realm authorization.
      */
     public SentAlarm getAlarm(Long alarmId) throws IllegalArgumentException {
         validateAlarmId(alarmId);
@@ -401,7 +401,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Retrieves the details of existing alarms if the given user has access to the alarm realms.
+     * Retrieves the details of existing alarms. Callers are responsible for enforcing realm authorization.
      */
     public List<SentAlarm> getAlarms(List<Long> alarmIds) throws IllegalArgumentException {
         validateAlarmIds(alarmIds);
@@ -457,7 +457,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Removes an existing alarm if the given user has access to the alarm realm.
+     * Removes an existing alarm. Callers are responsible for enforcing realm authorization.
      */
     public void removeAlarm(SentAlarm alarm) {
         persistenceService.doTransaction(entityManager -> entityManager
@@ -469,7 +469,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Removes existing alarms if the given user has access to the alarm realms.
+     * Removes existing alarms. Callers are responsible for enforcing realm authorization.
      */
     public void removeAlarms(List<SentAlarm> alarms, List<Long> alarmIds) throws IllegalArgumentException {
         persistenceService.doTransaction(entityManager ->

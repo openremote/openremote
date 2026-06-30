@@ -106,7 +106,7 @@ distributions {
     main {
         contents {
             from(project.projectDir) {
-                include("*Dockerfile", "entrypoint.sh")
+                include("*Dockerfile", "entrypoint.sh", "heapdump-rename.sh")
             }
             into ("web") {
                 from("${rootDir}/LICENSE.txt")
@@ -210,7 +210,7 @@ tasks.named("run", JavaExec) {
             def setupProject = project(':setup')
             def targetSourceSet = setupProject.sourceSets.findByName(setupType)
             if (targetSourceSet != null) {
-                return targetSourceSet.runtimeClasspath
+                return targetSourceSet.output
             }
         })
     }

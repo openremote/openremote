@@ -43,7 +43,7 @@ jobs:
       dockerTags: ${{ steps.ci-cd-output.outputs.dockerTags }}
       npmTag: ${{ steps.ci-cd-output.outputs.npmTag }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 2 # Must be 2 for push events to compare to previous commit
 
@@ -53,15 +53,22 @@ jobs:
         with:
           files_yaml: |
             ui:
+              - '.yarn'
               - 'ui/**'
               - '!**/*.md'
               - '!**/*.yml'
+              - '.yarnrc.yml'
+              - 'package.json'
+              - 'yarn.lock'
             backend:
               - '!.ci_cd/**'
+              - '!.yarn'
               - '!deployment/**'
               - '!ui/**'
               - '!**/*.md'
               - '!**/*.yml'
+              - '!.yarnrc.yml'
+              - '!package.json'
               - '!yarn.lock'
 
       - name: Get version details
@@ -74,7 +81,7 @@ jobs:
 
       - name: Process ci_cd.json file
         id: ci-cd-output
-        uses: openremote/openremote/.github/actions/process-cicd-json@fa6f52032b1dea3d4ad080cc6436a3ef3843b0be
+        uses: openremote/openremote/.github/actions/process-cicd-json@e9e87797bed31cdf6c2de6ec30fd6a05753f35f4
         with:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }} # Shouldn't be needed in this context
           MANAGER_VERSION: ${{ steps.is_main_repo.outputs.version }}

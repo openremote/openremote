@@ -80,6 +80,7 @@ runs:
         if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
 
           if dockerPublishTags is not None:
+            dockerPublishTags = ",".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
             if "$version" in dockerPublishTags:
                 firstDockerTag = version
                 dockerPublishTags = dockerPublishTags.replace("$version", version)
@@ -88,8 +89,7 @@ runs:
               firstDockerTag = dockerPublishTags.split(",")[0]
 
             os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-            print("Manager tags to push to docker hub: {dockerPublishTags}")
-            dockerPublishTags = " ".join(map(lambda t: t.strip(), dockerPublishTags.split(",")))
+            print(f"Manager tags to push to docker hub: {dockerPublishTags}")
             if repoOwner == 'openremote':
               os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
