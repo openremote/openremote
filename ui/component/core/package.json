@@ -25,7 +25,7 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "axios": "1.16.1",
+    "axios": "1.18.1",
     "i18next": "^21.5.3",
     "i18next-http-backend": "^4.0.0",
     "keycloak-js": "^25.0.1",
