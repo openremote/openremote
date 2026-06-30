@@ -226,6 +226,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     width: 280px;
                     &::part(label) {
                         padding-bottom: 0.5em; /* TODO: find a structural fix */
+                        /* "from"/"to" share lowercase i18n keys with inline usages elsewhere; capitalize here */
+                        text-transform: capitalize;
                     }
                 }
             `];
