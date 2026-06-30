@@ -186,20 +186,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 // Anonymous clients cannot send notifications
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
-                            // For compatibility with existing tests/code, set realm from auth context first
+                            // Client notifications are scoped to the caller's authenticated realm
                             realm = authContext.getAuthenticatedRealmName();
                             notificationRealm.set(realm);
-                            // If a specific notification realm is provided, use it instead
-                            String specifiedRealm = exchange.getIn().getHeader("NOTIFICATION_REALM_ID", String.class);
-                            if (!TextUtil.isNullOrEmpty(specifiedRealm)) {
-                                // Only allow superusers to override the realm
-                                if (authContext.isSuperUser()) {
-                                    notificationRealm.set(specifiedRealm);
-                                } else {
-                                    LOG.warning("Non-superuser attempted to specify a different realm for notification: " + 
-                                    authContext.getUserId() + " tried to set realm to " + specifiedRealm);
-                                }
-                            }
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
