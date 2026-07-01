@@ -64,22 +64,50 @@ async function createUserAndLogin(
     await page.waitForURL("**/manager/**");
 }
 
+/** Format a Date as the local `YYYY-MM-DDTHH:mm` string the date-range pickers use. */
+function pickerValue(d: Date): string {
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+/** A Date at `days` ago (0 = today) with the given time-of-day. */
+function daysAgo(days: number, hours = 0, minutes = 0): Date {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+}
+
 /**
  * @given Logged into the "master" realm as "admin"
+ * @and A notification has just been sent (REST setup), so it falls within today's default range
  * @and Navigated to the "Notifications" page
- * @then The notifications table is visible
- * @and Both date-range filters are pre-populated with the default range
+ * @then Both date filters are pre-populated and the notification is listed under the default (last day) range
+ * @when The range is moved to a window in the past that excludes today
+ * @then The notification is filtered out, and reappears once the range is widened to include today again
  */
-test("should display the notifications table with populated default date filters", async ({ manager, notificationsPage }) => {
+test("should filter the notifications table by the date range", async ({ manager, notificationsPage }) => {
+    // a REST-sent notification is stamped "now", so it sits inside the default (today) range
+    const subject = await seedNotification(manager);
+
     await manager.goToRealmStartPage("master");
     await notificationsPage.goto();
 
-    await expect(notificationsPage.getTable()).toBeVisible();
-
+    // the default range is pre-populated ...
     const pickers = notificationsPage.getDatePickers();
     await expect(pickers).toHaveCount(2);
     await expect(pickers.nth(0).locator("input").first()).not.toHaveValue("");
     await expect(pickers.nth(1).locator("input").first()).not.toHaveValue("");
+
+    // ... and the just-sent notification falls within it
+    await expect(notificationsPage.getRowByText(subject)).toBeVisible();
+
+    // moving the window to a past range that excludes today filters the notification out
+    await notificationsPage.setDateRange(pickerValue(daysAgo(10)), pickerValue(daysAgo(9, 23, 59)));
+    await expect(notificationsPage.getRowByText(subject)).toHaveCount(0);
+
+    // widening the range back to include today brings it back
+    await notificationsPage.setDateRange(pickerValue(daysAgo(0)), pickerValue(daysAgo(0, 23, 59)));
+    await expect(notificationsPage.getRowByText(subject)).toBeVisible();
 });
 
 /**
