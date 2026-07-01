@@ -1,24 +1,28 @@
 import { expect, Page } from "@openremote/test";
-import { EmailNotificationMessage, Notification, NotificationTargetType, User } from "@openremote/model";
+import { EmailNotificationMessage, Notification, NotificationTargetType } from "@openremote/model";
+import { type AxiosRequestConfig } from "axios";
 import { Manager, adminStatePath, test } from "./fixtures/manager.js";
 
 test.use({ storageState: adminStatePath });
 
+test.afterEach(async ({ manager }) => {
+    await manager.cleanUp();
+});
+
 const RECIPIENT_USERNAME = "e2e-notif-recipient";
 
 /** Ensure a user with an email exists in the given realm, so email notifications resolve to a deliverable target. */
-async function ensureRecipient(manager: Manager, config: { headers: Record<string, string> }, realm = "master") {
-    await manager.api.UserResource.create(realm, {
+async function ensureRecipient(manager: Manager, realm = "master", config?: AxiosRequestConfig) {
+    await manager.provisionUser(realm, {
         username: RECIPIENT_USERNAME,
         email: `${RECIPIENT_USERNAME}@openremote.local`,
-        enabled: true,
-    } as User, config).catch(() => undefined);
+    }, config);
 }
 
 /** Persist a notification via REST (email to the given realm) and return its subject for table lookups. */
 async function seedNotification(manager: Manager, realm = "master", subject = `E2E seed ${Date.now()}`) {
     const config = await manager.adminConfig();
-    await ensureRecipient(manager, config, realm);
+    await ensureRecipient(manager, realm, config);
     await manager.api.NotificationResource.sendNotification({
         name: subject,
         message: { type: "email", subject, html: "<p>seed</p>" } as EmailNotificationMessage,
@@ -36,17 +40,8 @@ async function createUserAndLogin(
     page: Page,
     { realm, username, roles }: { realm: string; username: string; roles: string[] },
 ) {
-    const config = await manager.adminConfig();
-    const user = await manager.api.UserResource.create(realm, {
-        username,
-        enabled: true,
-    } as User, config).then((r) => r.data).catch(() => undefined);
-
-    if (user?.id) {
-        await manager.api.UserResource.updateUserClientRoles(realm, user.id, manager.clientId, roles, config);
-        // set an initial password (== username) so the throwaway user can log in via the UI
-        await manager.api.UserResource.updatePassword(realm, user.id, { value: username }, config);
-    }
+    // set an initial password (== username) so the throwaway user can log in via the UI
+    await manager.provisionUser(realm, { username, roles, password: username });
 
     await manager.goToRealmStartPage(realm);
     await page.getByRole("textbox", { name: "Username or email" }).fill(username);
@@ -111,7 +106,7 @@ test("should filter the notifications table by the date range", async ({ manager
  */
 test("should disable the submit button until valid, then send and show it in the table", async ({ manager, notificationsPage }) => {
     // setup via REST: a recipient with an email so the email notification is deliverable/persisted
-    await ensureRecipient(manager, await manager.adminConfig());
+    await ensureRecipient(manager);
 
     await manager.goToRealmStartPage("master");
     await notificationsPage.goto();

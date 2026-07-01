@@ -28,7 +28,7 @@ export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 
 export class Manager {
-    readonly clientId = "openremote";
+    private readonly clientId = "openremote";
     private readonly managerHost: String;
     readonly api: RestApi["api"];
     readonly axios: RestApi["_axiosInstance"];
@@ -39,6 +39,7 @@ export class Manager {
     public assets: Asset[] = [];
     public rules: number[] = [];
     public dashboards: string[] = [];
+    public provisionedUsers: { realm: string; id: string }[] = [];
 
     constructor(readonly page: Page, readonly baseURL: string) {
         this.managerHost = process.env.managerUrl || "http://localhost:8080";
@@ -169,6 +170,54 @@ export class Manager {
     async adminConfig(): Promise<AxiosRequestConfig<any>> {
         const token = await this.getAccessToken("master", admin.username, admin.password);
         return { headers: { Authorization: `Bearer ${token}` } };
+    }
+
+    /**
+     * Provision a user with client roles (and optionally a password/email) in the given realm via REST, returning
+     * the created user. Unlike {@link createUser} this is stateless (it doesn't touch `this.realm`/`this.user`), so
+     * it can set up arbitrary users for e.g. access-control tests. Defaults to the admin config when none is given.
+     * @param realm The realm to create the user in
+     * @param user The username, client roles, and optional initial password/email
+     * @param config The axios request config
+     */
+    async provisionUser(
+        realm: string,
+        { username, roles = [], password, email }: { username: string; roles?: string[]; password?: string; email?: string },
+        config?: AxiosRequestConfig<any>
+    ): Promise<UserModel | undefined> {
+        config ??= await this.adminConfig();
+        const user = await this.api.UserResource.create(realm, { username, email, enabled: true } as UserModel, config)
+            .then((r) => r.data)
+            .catch(() => undefined);
+
+        if (user?.id) {
+            // track for teardown so provisioned users don't leak between tests/runs
+            this.provisionedUsers.push({ realm, id: user.id });
+            if (roles.length > 0) {
+                await this.api.UserResource.updateUserClientRoles(realm, user.id, this.clientId, roles, config);
+            }
+            if (password) {
+                await this.api.UserResource.updatePassword(realm, user.id, { value: password }, config);
+            }
+        }
+        return user;
+    }
+
+    /**
+     * Deletes all users provisioned via {@link provisionUser} (across realms). Called by {@link cleanUp}.
+     * @param config The axios request config
+     */
+    async deleteUsers(config?: AxiosRequestConfig<any>) {
+        config ??= await this.adminConfig();
+        for (const { realm, id } of this.provisionedUsers) {
+            try {
+                const response = await this.api.UserResource.deleteUser(realm, id, config);
+                expect(response.status).toBe(204);
+            } catch (e) {
+                console.warn("Could not delete user: ", id, e);
+            }
+        }
+        this.provisionedUsers = [];
     }
 
     /**
@@ -465,6 +514,10 @@ export class Manager {
 
         if (this.assets.length > 0) {
             await this.deleteAssets(config);
+        }
+
+        if (this.provisionedUsers.length > 0) {
+            await this.deleteUsers(config);
         }
 
         if (this.role && this.realm) {
