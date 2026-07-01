@@ -3,7 +3,7 @@ import {globals} from "@openremote/theme";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
 import { i18next } from "@openremote/or-translate";
-import manager, {DefaultColor3, Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {
     Asset,
     EmailNotificationMessage,

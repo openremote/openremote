@@ -1,4 +1,4 @@
-import {css, html, PropertyValues, unsafeCSS} from "lit";
+import {css, html, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
@@ -14,7 +14,7 @@ import {
 import manager, {DefaultColor3} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {AxiosError, isAxiosError} from "@openremote/rest";
+import {AxiosError} from "@openremote/rest";
 import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {OrVaadinDateTimePicker} from "@openremote/or-vaadin-components/or-vaadin-date-time-picker";
 import "@openremote/or-vaadin-components/or-vaadin-button";
@@ -96,13 +96,7 @@ export class NotificationService {
             return response.status === 200;
         } catch (err: unknown) {
             const error = err as AxiosError;
-            console.error('Failed to send notification: ', error);
-            if (isAxiosError(error)) {
-                console.error('Full error object:', {
-                    config: error.config,
-                    response: error.response
-                });
-            }
+            console.error("Failed to send notification:", error);
             throw error;
         }
     }
@@ -389,16 +383,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             this.requestUpdate();
         } catch (err: unknown) {
-            const error = err as AxiosError;
-            console.error("Notification load failed with error:", error);
-            if (error.response) {
-                console.error("Error response:", {
-                    status: error.response.status,
-                    statusText: error.response.statusText,
-                    data: error.response.data,
-                    headers: error.response.headers
-                });
-            }
+            console.error("Failed to load notifications:", err);
             showSnackbar(undefined, i18next.t("loadingNotificationFailed"));
         } finally {
             this._loading = false;
