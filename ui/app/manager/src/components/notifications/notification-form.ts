@@ -337,12 +337,15 @@ export class NotificationForm extends LitElement {
         this._message = {...this._message, ...props} as NotificationMessage;
     }
 
+    /**
+     * Humanizes an enum-like ALL_CAPS token (e.g. "REALM_RULESET" -> "Realm_ruleset") for display. Any other
+     * value (IDs, realm names and other case-sensitive strings) is returned unchanged so it isn't corrupted.
+     */
     private _normalizeValue(value: string): string {
-        let normalizedValue = '';
-        if (value) {
-            normalizedValue = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+        if (value && /^[A-Z][A-Z0-9_]*$/.test(value)) {
+            return value.charAt(0) + value.slice(1).toLowerCase();
         }
-        return normalizedValue;
+        return value;
     }
 
     private async _populateFromNotification() {
@@ -421,8 +424,8 @@ export class NotificationForm extends LitElement {
 
         const canReadUsers = manager.hasRole("read:users") || manager.hasRole("read:admin");
         const source = (canReadUsers && this.notification.sourceId) ?
-            `${this.notification.source}, ${this.notification.sourceId}` :
-            this.notification.source;
+            `${this._normalizeValue(this.notification.source)}, ${this.notification.sourceId}` :
+            this._normalizeValue(this.notification.source);
         const status = this.notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending");
         const sent = this.notification.sentOn ? new Date(this.notification.sentOn).toLocaleString() : '-';
         const delivered = this.notification.deliveredOn ? new Date(this.notification.deliveredOn).toLocaleString() : '-';
@@ -430,7 +433,7 @@ export class NotificationForm extends LitElement {
         return html`
             <div class="propContainer">
                 <h4><or-translate value="properties"></or-translate></h4>
-                ${this._renderReadOnlyField("source", this._normalizeValue(source))}
+                ${this._renderReadOnlyField("source", source)}
                 ${this._renderReadOnlyField("status", status)}
                 ${this._renderReadOnlyField("sent", sent)}
                 ${this._renderReadOnlyField("delivered", delivered)}
