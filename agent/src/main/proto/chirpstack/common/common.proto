@@ -1,0 +1,238 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/chirpstack/chirpstack/api/go/v4/common";
+option java_package = "io.chirpstack.api";
+option java_multiple_files = true;
+option java_outer_classname = "CommonProto";
+option csharp_namespace = "Chirpstack.Common";
+option php_namespace = "Chirpstack\\Common";
+option php_metadata_namespace = "GPBMetadata\\Chirpstack\\Common";
+
+import "google/protobuf/timestamp.proto";
+
+enum Modulation {
+  // LoRa
+  LORA = 0;
+
+  // FSK
+  FSK = 1;
+
+  // LR-FHSS
+  LR_FHSS = 2;
+}
+
+enum Region {
+  // EU868
+  EU868 = 0;
+
+  // US915
+  US915 = 2;
+
+  // CN779
+  CN779 = 3;
+
+  // EU433
+  EU433 = 4;
+
+  // AU915
+  AU915 = 5;
+
+  // CN470
+  CN470 = 6;
+
+  // AS923
+  AS923 = 7;
+
+  // AS923 with -1.80 MHz frequency offset
+  AS923_2 = 12;
+
+  // AS923 with -6.60 MHz frequency offset
+  AS923_3 = 13;
+
+  // (AS923 with -5.90 MHz frequency offset).
+  AS923_4 = 14;
+
+  // KR920
+  KR920 = 8;
+
+  // IN865
+  IN865 = 9;
+
+  // RU864
+  RU864 = 10;
+
+  // ISM2400 (LoRaWAN 2.4 GHz)
+  ISM2400 = 11;
+}
+
+enum FType {
+  // JoinRequest.
+  JOIN_REQUEST = 0;
+
+  // JoinAccept.
+  JOIN_ACCEPT = 1;
+
+  // UnconfirmedDataUp.
+  UNCONFIRMED_DATA_UP = 2;
+
+  // UnconfirmedDataDown.
+  UNCONFIRMED_DATA_DOWN = 3;
+
+  // ConfirmedDataUp.
+  CONFIRMED_DATA_UP = 4;
+
+  // ConfirmedDataDown.
+  CONFIRMED_DATA_DOWN = 5;
+
+  // RejoinRequest.
+  REJOIN_REQUEST = 6;
+
+  // Proprietary.
+  PROPRIETARY = 7;
+}
+
+enum MacVersion {
+  LORAWAN_1_0_0 = 0;
+  LORAWAN_1_0_1 = 1;
+  LORAWAN_1_0_2 = 2;
+  LORAWAN_1_0_3 = 3;
+  LORAWAN_1_0_4 = 4;
+  LORAWAN_1_1_0 = 5;
+}
+
+enum RegParamsRevision {
+  A = 0;
+  B = 1;
+  RP002_1_0_0 = 2;
+  RP002_1_0_1 = 3;
+  RP002_1_0_2 = 4;
+  RP002_1_0_3 = 5;
+  RP002_1_0_4 = 6;
+}
+
+enum LocationSource {
+  // Unknown.
+  UNKNOWN = 0;
+
+  // GPS.
+  GPS = 1;
+
+  // Manually configured.
+  CONFIG = 2;
+
+  // Geo resolver (TDOA).
+  GEO_RESOLVER_TDOA = 3;
+
+  // Geo resolver (RSSI).
+  GEO_RESOLVER_RSSI = 4;
+
+  // Geo resolver (GNSS).
+  GEO_RESOLVER_GNSS = 5;
+
+  // Geo resolver (WIFI).
+  GEO_RESOLVER_WIFI = 6;
+}
+
+enum Aggregation {
+  // Hour.
+  HOUR = 0;
+
+  // Day.
+  DAY = 1;
+
+  // Month.
+  MONTH = 2;
+
+  // Minute.
+  MINUTE = 3;
+}
+
+enum MetricKind {
+  // Incrementing counters that never decrease (these are not reset on each
+  // reading).
+  COUNTER = 0;
+
+  // Counters that do get reset upon reading.
+  ABSOLUTE = 1;
+
+  // E.g. a temperature value.
+  GAUGE = 2;
+}
+
+enum Regulation {
+  // Unknown.
+  REGULATION_UNKNOWN = 0;
+
+  // ETSI EN 300 220.
+  ETSI_EN_300_220 = 1;
+}
+
+message Location {
+  // Latitude.
+  double latitude = 1;
+
+  // Longitude.
+  double longitude = 2;
+
+  // Altitude.
+  double altitude = 3;
+
+  // Location source.
+  LocationSource source = 4;
+
+  // Accuracy.
+  float accuracy = 5;
+}
+
+message KeyEnvelope {
+  // KEK label.
+  string kek_label = 1;
+
+  // AES key (when the kek_label is set, this value must first be decrypted).
+  bytes aes_key = 2;
+}
+
+message Metric {
+  // Name.
+  string name = 1;
+
+  // Timestamps.
+  repeated google.protobuf.Timestamp timestamps = 2;
+
+  // Datasets.
+  repeated MetricDataset datasets = 3;
+
+  // Kind.
+  MetricKind kind = 4;
+}
+
+message MetricDataset {
+  // Label.
+  string label = 1;
+
+  // Data.
+  // Each value index corresponds with the same timestamp index of the Metric.
+  repeated float data = 2;
+}
+
+enum DeviceClass {
+  // Class-A.
+  CLASS_A = 0;
+
+  // Class-B.
+  CLASS_B = 1;
+
+  // Class-C.
+  CLASS_C = 2;
+}
+
+// Join-Server context.
+message JoinServerContext {
+  // Session-key ID.
+  string session_key_id = 1;
+
+  // AppSKey envelope.
+  KeyEnvelope app_s_key = 2;
+}

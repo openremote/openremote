@@ -27,7 +27,7 @@
         </elementProp>
       </SetupThreadGroup>
       <hashTree>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Setup">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Setup" enabled="true">
           <stringProp name="scriptLanguage">groovy</stringProp>
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
@@ -57,7 +57,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">startnextloop</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">${__groovy(((props.get(&quot;RECONNECT_ATTEMPTS&quot;) ?: &quot;0&quot;).toString().toInteger() &gt; 0) ? &quot;-1&quot; : &quot;1&quot;,)}</stringProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -72,7 +72,7 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.NameBasedGenerator;
 
 // Generate asset ids to be used in ForEach controller later
-def assetsCount = vars.get(&quot;ASSETS_COUNT&quot;) ?: &quot;5&quot;
+def assetsCount = props.get(&quot;ASSETS_COUNT&quot;) ?: &quot;5&quot;
 def count = assetsCount.toInteger()
 for (int i = 1; i &lt;= count; i++) {
     def assetId = Url62.encode(Generators.nameBasedGenerator().generate(&quot;masterlight-${__threadNum}-${i}&quot;))
@@ -87,11 +87,19 @@ vars.put(&quot;assetId_matchNr&quot;, count.toString())
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="cacheKey">true</stringProp>
-          <stringProp name="script">// Record when this thread started
-vars.putObject(&quot;threadStartTime&quot;, System.currentTimeMillis())
-def duration = (props.get(&quot;DURATION&quot;) ?: &quot;300&quot;).toString().toInteger()
-vars.put(&quot;testDuration&quot;, duration.toString())
-log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} started, will run for ${duration} seconds&quot;)
+          <stringProp name="script">// Keep a fixed per-thread end time so reconnect attempts do not extend runtime.
+if (vars.getObject(&quot;threadEndTime&quot;) == null) {
+    def startTime = System.currentTimeMillis()
+    def duration = (props.get(&quot;DURATION&quot;) ?: &quot;300&quot;).toString().toInteger()
+    def endTime = startTime + (duration * 1000L)
+    vars.putObject(&quot;threadStartTime&quot;, startTime)
+    vars.putObject(&quot;threadEndTime&quot;, endTime)
+    vars.put(&quot;testDuration&quot;, duration.toString())
+    log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} started, will run for ${duration} seconds&quot;)
+} else if (System.currentTimeMillis() &gt;= vars.getObject(&quot;threadEndTime&quot;)) {
+    log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} runtime elapsed before reconnect attempt, stopping thread&quot;)
+    ctx.getThread().stop()
+}
 </stringProp>
         </JSR223Sampler>
         <hashTree/>
@@ -108,17 +116,15 @@ log.info(&quot;&gt;&gt;&gt; Thread ${ctx.getThreadNum()} started, will run for $
           <stringProp name="mqtt.client_id_prefix">device${__threadNum}</stringProp>
           <boolProp name="mqtt.client_id_suffix">false</boolProp>
           <stringProp name="mqtt.conn_keep_alive">30</stringProp>
-          <stringProp name="mqtt.conn_attampt_max">0</stringProp>
-          <stringProp name="mqtt.reconn_attampt_max">0</stringProp>
           <stringProp name="mqtt.conn_clean_session">true</stringProp>
           <stringProp name="mqtt.user_name">master:serviceuser${__threadNum}</stringProp>
           <stringProp name="mqtt.password">serviceuser${__threadNum}</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           <stringProp name="mqtt.conn_attempt_max">0</stringProp>
-          <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
+          <stringProp name="mqtt.reconn_attempt_max">${__P(RECONNECT_ATTEMPTS,0)}</stringProp>
         </net.xmeter.samplers.ConnectSampler>
         <hashTree>
-          <JSR223Timer guiclass="TestBeanGUI" testclass="JSR223Timer" testname="Connect Delay Timer" enabled="false">
+          <JSR223Timer guiclass="TestBeanGUI" testclass="JSR223Timer" testname="Connect Delay Timer" enabled="true">
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
@@ -161,20 +167,14 @@ return delay</stringProp>
           </ConstantTimer>
           <hashTree/>
         </hashTree>
-        <WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="While Controller">
+        <WhileController guiclass="WhileControllerGui" testclass="WhileController" testname="While Controller" enabled="true">
           <stringProp name="WhileController.condition">${__groovy(
-    def startTime = vars.getObject(&quot;threadStartTime&quot;);
-    if (startTime == null) {
-        false
-    } else {
-	   def elapsed = (System.currentTimeMillis() - vars.getObject(&quot;threadStartTime&quot;)) / 1000;
-	   def duration = (vars.get(&quot;testDuration&quot;) ?: &quot;300&quot;).toInteger()
-        elapsed &lt; duration;
-    }
+    def endTime = vars.getObject(&quot;threadEndTime&quot;);
+    endTime != null &amp;&amp; System.currentTimeMillis() &lt; endTime
  )}</stringProp>
         </WhileController>
         <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler">
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler" enabled="true">
             <stringProp name="scriptLanguage">groovy</stringProp>
             <stringProp name="parameters"></stringProp>
             <stringProp name="filename"></stringProp>
@@ -187,7 +187,7 @@ return delay</stringProp>
             </ConstantTimer>
             <hashTree/>
           </hashTree>
-          <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="ForEach Controller">
+          <ForeachController guiclass="ForeachControlPanel" testclass="ForeachController" testname="ForEach Controller" enabled="true">
             <stringProp name="ForeachController.inputVal">assetId</stringProp>
             <stringProp name="ForeachController.returnVal">currentAssetId</stringProp>
             <boolProp name="ForeachController.useSeparator">true</boolProp>
@@ -228,7 +228,7 @@ log.info(&quot;&gt;&gt;&gt;Direct vars.get currentAssetId = &quot; + vars.get(&q
             <hashTree/>
           </hashTree>
         </hashTree>
-        <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Flow Control Action">
+        <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Flow Control Action" enabled="true">
           <intProp name="ActionProcessor.action">1</intProp>
           <intProp name="ActionProcessor.target">0</intProp>
           <stringProp name="ActionProcessor.duration">${__groovy((props.get(&quot;DISCONNECT_DELAY&quot;) ?: &quot;0&quot;).toInteger() * 1000)}</stringProp>
@@ -237,6 +237,12 @@ log.info(&quot;&gt;&gt;&gt;Direct vars.get currentAssetId = &quot; + vars.get(&q
         <net.xmeter.samplers.DisConnectSampler guiclass="net.xmeter.gui.DisConnectSamplerUI" testclass="net.xmeter.samplers.DisConnectSampler" testname="disconnect" enabled="true">
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
+        <hashTree/>
+        <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Stop Thread" enabled="true">
+          <intProp name="ActionProcessor.action">0</intProp>
+          <intProp name="ActionProcessor.target">0</intProp>
+          <stringProp name="ActionProcessor.duration"></stringProp>
+        </TestAction>
         <hashTree/>
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>

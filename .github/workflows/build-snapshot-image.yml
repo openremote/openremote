@@ -1,0 +1,65 @@
+name: Build snapshot image
+
+on:
+  workflow_call:
+    secrets:
+      AWS_DEVELOPERS_ACCOUNT_ID:
+        required: true
+      AWS_ECR_PUSH_ROLE:
+        required: true
+    inputs:
+      PUSH:
+        type: boolean
+
+permissions:
+  id-token: write
+
+jobs:
+  snapshot-image:
+    name: Snapshot image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: or-manager-build
+          path: manager/build
+
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+        with:
+          platforms: linux/amd64,linux/aarch64
+
+      - name: Install Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Configure AWS Credentials
+        if: ${{ inputs.PUSH }}
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-region: eu-west-1
+          role-to-assume: "arn:aws:iam::${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}:role/${{ secrets.AWS_ECR_PUSH_ROLE }}"
+
+      - name: Login to private ECR
+        if: ${{ inputs.PUSH }}
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
+
+      - name: Resolve snapshot image tag
+        id: meta
+        shell: bash
+        run: |
+          COMMIT_SHA_SHORT=$(git rev-parse --short HEAD)
+          echo "shortSha=$COMMIT_SHA_SHORT" >> $GITHUB_OUTPUT
+
+      - name: Build snapshot image
+        timeout-minutes: 20
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: manager/build/install/manager
+          platforms: linux/amd64,linux/aarch64
+          load: false
+          push: ${{ inputs.PUSH }}
+          tags: ${{ secrets.AWS_DEVELOPERS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com/openremote/manager:${{ steps.meta.outputs.shortSha }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}

@@ -47,7 +47,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         expect: "the rules engines to be ready"
         conditions.eventually {

@@ -1,61 +1,101 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufPluginVersion"
+    }
+}
+
 apply plugin: "java-library"
 apply plugin: "groovy"
 apply plugin: "maven-publish"
 apply plugin: "signing"
+apply plugin: "com.google.protobuf"
 
 dependencies {
 
     api project(":container")
 
-    api "io.netty:netty-codec:$nettyVersion"
-    api "io.netty:netty-codec-http:$nettyVersion"
+    api libs.nettyCodec
+    api libs.nettyCodecHttp
 
-    api "com.fazecast:jSerialComm:$jSerialCommVersion"
+    api libs.jserialcomm
 
-    api "com.github.calimero:calimero-core:$calimeroVersion"
+    api libs.calimeroCore
 
-    api ("com.github.calimero:calimero-tools:$calimeroVersion") {
+    api(libs.calimeroTools) {
         // Has a dependency on the SLF4J simple provider
         exclude group: "org.slf4j"
     }
 
-    api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
+    api libs.saxonHe
 
     //IKEA Tradfri agent dependencies
-    api "org.eclipse.californium:californium-core:$californiumCoreVersion"
-    api "org.eclipse.californium:scandium:$californiumScandiumVersion"
+    api libs.californiumCore
+    api libs.californiumScandium
 
-    api("org.openremote:or-zwave:$zwaveVersion") {
+    api(libs.orZwave) {
         exclude group: "org.bidib.com.neuronrobotics"
         exclude group: "jdom" // We don't want to bring jdom 1.x dependency from or-zwave, it contains vulnerabilities
     }
 
-    api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+    api libs.hiveMqttClient
 
-    api("com.github.weliem:blessed-bluez:$bluetoothVersion") {
+    api(libs.blessedBluez) {
         exclude group: "com.github.weliem.blessed-bluez", module: "blessed-test"
     }
 
-    implementation "dev.failsafe:failsafe:$failsafeVersion"
+    implementation libs.failsafe
 
-    implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
+    implementation libs.angusMail
 
-    implementation "org.jdom:jdom2:$jdomVersion"
+    implementation libs.jdom2
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:$jacksonVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation libs.jacksonDataformatCsv
+    implementation libs.jacksonDatabind
 
-    implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
-    implementation "io.grpc:grpc-protobuf:$grpcVersion"
-    implementation "io.grpc:grpc-stub:$grpcVersion"
+    implementation libs.grpcNettyShaded
+    implementation libs.grpcProtobuf
+    implementation libs.grpcStub
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    compileOnly libs.javaxAnnotationApi
+
+    testImplementation libs.junitJupiterApi
+    testImplementation libs.mockitoCore
+    testRuntimeOnly libs.junitJupiterEngine
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
-    implementation files("libs/chirpstack-api-4.14.1.jar")
-    implementation files("libs/tts-api-3.34.3.jar")
+    implementation libs.bouncycastleBcprovJdk18on
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDirs.clear()
+            srcDirs = [
+                'src/main/proto/chirpstack',
+                'src/main/proto/tts',
+                'src/main/proto/shared'
+            ]
+        }
+    }
 }
 
 base {

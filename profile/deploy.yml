@@ -363,11 +363,9 @@ services:
       # When using path based proxying this prefix is added to the URLs returned via the REST API.
       # OR_PATH_PREFIX: /openremote
 
-      # Custom JVM options (override default manager options)
-  #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
-  #  -XX:NativeMemoryTracking=summary
-  #  -Xlog:all=warning:stdout:uptime,level,tags
-  #  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+      # Custom JVM options (override default manager options or append using JAVA_OPTS_APPEND)
+  #JAVA_OPTS:
+  #JAVA_OPTS_APPEND:
   #
   # THE FOLLOWING OPTIONS CAN BE USED TO ENABLE JMX; PORT MUST ALSO BE EXPOSED
   # ACCESS SHOULD BE RESTRICTED BY FIREWALL TO SPECIFIC IPs FOR DIAGNOSTIC PURPOSES
@@ -441,8 +439,22 @@ services:
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
     restart: always
-    # Shared memory should be increased for any reasonable DB size this should be increased further
-    shm_size: 128mb
+    # RAM limits and PostgreSQL memory settings should be set appropriately for the expected load (see documentation)
+    shm_size: ${OR_DB_SHM:-156mb}
+    deploy:
+      resources:
+        limits:
+          memory: ${OR_DB_RAM:-512M}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${OR_DB_SHARED_BUFFERS:-128MB}
+      - -c
+      - effective_cache_size=${OR_DB_CACHE_SIZE:-384MB}
+      - -c
+      - maintenance_work_mem=${OR_DB_MAINTENANCE_WORK_MEM:-56MB}
+      - -c
+      - work_mem=${OR_DB_WORK_MEM:-4MB}
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       # Needs to be available on the same path as the manager for data exports to work
@@ -465,11 +477,6 @@ services:
       # service DB values so the actual max connections are not exhausted
       POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-50}
 
-      # When a newer POSTGRESQL image is used with a higher OR_REINDEX_COUNTER and PGDATA is
-      # preserved then the container will REINDEX the DB automatically unless the following
-      # is set to false
-      #OR_DISABLE_REINDEX=${OR_DISABLE_REINDEX:-false}
-
   # Query Exporter - Prometheus metrics from PostgreSQL queries
   # Documentation: https://github.com/albertodonato/query-exporter
   query-exporter:
@@ -486,7 +493,7 @@ services:
         - deployment-data:/deployment
     ports:
       - "127.0.0.1:8406:9560" # Localhost metrics access
-      - "${PRIVATE_IP:-127.0.0.1}:8406:8404" # Allows to also expose metrics on a given IP address,
+      - "${PRIVATE_IP:-127.0.0.1}:8406:9560" # Allows to also expose metrics on a given IP address,
       # intended to be IP of the interface of the private subnet of the EC2 VM
     environment:
       TZ: ${TZ:-Europe/Amsterdam}
@@ -515,7 +522,7 @@ services:
       test: ["CMD", "/app/app", "-v"]
     ports:
       - "2222:2222"
-      - "9000-10000:9000-10000"
+      - "9000-9100:9000-9100"
     volumes:
       - proxy-data:/etc/letsencrypt
       - deployment-data:/deployment
@@ -529,7 +536,7 @@ services:
       --idle-connection=false
       --authentication-keys-directory=/deployment/sish/pubkeys
       --private-keys-directory=/deployment/sish/keys
-      --port-bind-range="9000-10000"
+      --port-bind-range="9000-9100"
       --bind-random-ports=false
       --bind-random-subdomains=false
       --domain=${OR_HOSTNAME}

@@ -7,6 +7,10 @@
   "asset": "Asset",
   "asset_plural": "Asset",
   "assets": "Asset",
+  "users": "Utenti",
+  "realms": "Regni",
+  "provisioning": "Provisioning automatico",
+  "provisioningConfig": "Configurazione di provisioning",
   "attribute": "Attributo",
   "attributes": "Attributi",
   "attribute_plural": "Attributi",
@@ -106,6 +110,7 @@
   "month": "Mese",
   "year": "Anno",
   "period": "Periodo",
+  "beginning": "Inizio",
   "ending": "Fine",
   "timeframe": "Lasso di tempo",
   "addAttribute": "Aggiungi attributo",
@@ -170,6 +175,7 @@
   "french": "Francese",
   "german": "Tedesco",
   "italian": "Italiana",
+  "polish": "Polacco",
   "portuguese": "Portoghese",
   "romanian": "Rumeno",
   "spanish": "Spagnolo",
@@ -310,6 +316,8 @@
     "cubed": "Â³",
     "peak": "p",
     "mega": "M",
+    "giga": "G",
+    "tera": "T",
     "kilo": "k",
     "centi": "c",
     "milli": "m",
@@ -452,7 +460,7 @@
   "yes": "Sì",
   "no": "No",
   "filter": {
-    "action": "FILTER",
+    "action": "Filter",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
@@ -621,5 +629,6 @@
         }
       }
     }
-  }
+  },
+  "realmAlreadyExists": "Il nome del dominio esiste già"
 }

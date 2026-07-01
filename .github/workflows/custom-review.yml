@@ -1,0 +1,72 @@
+name: Custom review
+
+on:
+  workflow_call:
+    inputs:
+      INPUTS:
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detect whether code changed
+    runs-on: ubuntu-latest
+    outputs: # See https://github.com/tj-actions/changed-files/tree/2bb135777322059ee3a3c9239999b159ff49febc#outputs-
+      any_modified: ${{ steps.changed-files.outputs.backend_any_modified == 'true' || steps.changed-files.outputs.ui_any_modified == 'true' }}
+      backend_any_modified: ${{ steps.changed-files.outputs.backend_any_modified }}
+      ui_any_modified: ${{ steps.changed-files.outputs.ui_any_modified }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 1 # Works for pull_request events
+      - name: Detect changes
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files_yaml: |
+            ui:
+              - 'ui/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+            backend:
+              - '!.ci_cd/**'
+              - '!deployment/**'
+              - '!ui/**'
+              - '!**/*.md'
+              - '!**/*.yml'
+              - '!yarn.lock'
+
+  install-dist:
+    name: Build
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/install-dist.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.any_modified != 'true' }}
+
+  unit-tests:
+    name: Test
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/unit-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
+
+  integration-tests:
+    name: Test
+    needs: detect-changes
+    if: ${{ !failure() && !cancelled() }}
+    uses: "./.github/workflows/integration-tests.yml"
+    with:
+      skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}
+
+  # code-coverage:
+  #   name: Test
+  #   needs: [detect-changes, unit-tests, integration-tests]
+  #   if: ${{ !failure() && !cancelled() }}
+  #   uses: "./.github/workflows/code-coverage.yml"
+  #   with:
+  #     skip: ${{ needs.detect-changes.outputs.backend_any_modified != 'true' }}

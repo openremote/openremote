@@ -1,7 +1,7 @@
 package org.openremote.test.gateway
 
 import io.netty.channel.ChannelHandler
-import jakarta.ws.rs.ForbiddenException
+import jakarta.ws.rs.WebApplicationException
 import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
@@ -116,14 +116,18 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             managerTestSetup.realmBuildingName,
             gateway.getClientId().orElse(""),
             gateway.getClientSecret().orElse("")
-        ).token
+        )
         def assetResource = getClientApiTarget(serverUri(serverPort), managerTestSetup.realmBuildingName, accessToken).proxy(AssetResource.class)
 
         and: "the realm assets are requested"
         def realmAssets = assetResource.queryAssets(null, null)
 
         then: "an exception should be thrown"
-        thrown(ForbiddenException.class)
+        WebApplicationException ex = thrown()
+        ex.response.withCloseable {
+           assert ex.response.status == 403
+           true
+        }
 
         when: "the Gateway client is created"
         def gatewayClient = new WebsocketIOClient(
@@ -139,12 +143,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "we add callback consumers to the client"
         def connectionStatus = gatewayClient.getConnectionStatus()
-        List<String> clientReceivedMessages = []
-        gatewayClient.addMessageConsumer({
-            message -> clientReceivedMessages.add(message as String)
+        List<String> clientReceivedMessages = new CopyOnWriteArrayList<>()
+        gatewayClient.addMessageConsumer({message ->
+           getLOG().info("Message received from central manager: $message")
+           clientReceivedMessages.add(message as String)
         })
-        gatewayClient.addConnectionStatusConsumer({
-            status -> connectionStatus = status
+        gatewayClient.addConnectionStatusConsumer({status ->
+           getLOG().info("Gateway client connection staus changed: $status")
+           connectionStatus = status
         })
 
         and: "the gateway connects to this manager"
@@ -171,10 +177,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway client assets are defined"
-        List<String> agentAssetIds = []
-        List<HTTPAgent> agentAssets = []
-        List<String> assetIds = []
-        List<Asset> assets = []
+        List<String> agentAssetIds = new CopyOnWriteArrayList<>()
+        List<HTTPAgent> agentAssets = new CopyOnWriteArrayList<>()
+        List<String> assetIds = new CopyOnWriteArrayList<>()
+        List<Asset> assets = new CopyOnWriteArrayList<>()
 
         IntStream.rangeClosed(1, 5).forEach { i ->
             agentAssetIds.add(UniqueIdentifierGenerator.generateId("Test Agent $i"))
@@ -238,7 +244,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "the gateway client replies to the central manager with the assets of the gateway"
-        List<Asset> sendAssets = []
+        List<Asset> sendAssets = new CopyOnWriteArrayList<>()
         sendAssets.addAll(agentAssets)
         sendAssets.addAll(assets)
         def readAssetsReplyEvent = new AssetsEvent(sendAssets)
@@ -262,7 +268,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the requested assets"
-        sendAssets = []
+        sendAssets = new CopyOnWriteArrayList<>()
         sendAssets.addAll(agentAssets)
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).filter { !agentAssetIds.contains(it) }.map { id -> assets.stream().filter { asset -> asset.id == id }.findFirst().orElse(null) }.collect(Collectors.toList()))
         readAssetsReplyEvent = new AssetsEvent(sendAssets)
@@ -324,7 +330,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the requested assets"
-        sendAssets = []
+        sendAssets = new CopyOnWriteArrayList<>()
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).map { id -> assets.stream().filter { asset -> asset.id == id }.findFirst().orElse(null) }.collect(Collectors.toList()))
         readAssetsReplyEvent = new AssetsEvent(sendAssets)
         readAssetsReplyEvent.setMessageID(messageId)
@@ -692,7 +698,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway returns the requested assets"
-        sendAssets = []
+        sendAssets = new CopyOnWriteArrayList<>()
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).map { id -> assets.stream().filter { asset -> asset.id == id }.findFirst().orElse(null) }.collect(Collectors.toList()))
         readAssetsReplyEvent = new AssetsEvent(sendAssets)
         readAssetsReplyEvent.setMessageID(messageId)
@@ -779,7 +785,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
 
         and: "the gateway client resource"
@@ -1181,7 +1187,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "the gateway client resource"
         def gatewayClientResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(GatewayClientResource.class)
@@ -1328,7 +1334,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
         def gatewayResource = getClientApiTarget(serverUri((isCentralInstanceSecure), centralInstanceHostname, centralInstancePort), MASTER_REALM, accessToken).proxy(GatewayServiceResource.class)
 
         when: "a new gateway client connection is created to connect to the central instance"
@@ -1403,27 +1409,19 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         * */
         and: "We request a new admin token from the tunnel URL"
 
-        def x = authenticate(true,
+        def token = authenticate(true,
                 centralManagerTunnelInfo.id + "." + centralManagerTunnelInfo.hostname,
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT))
 
-        then: "the request should be successful"
-
-        assert x.error == null
-
-        and: "Response contains a valid access token"
-
-        assert x.getExpiresIn() > 0
-
         when: "We request the info endpoint of the currently running manager"
 
         String scheme   = isCentralInstanceSecure ? "https" : "http"
         String basePath = "/api/master"
         String baseUrl  = "${scheme}://$centralManagerTunnelInfo.id.$centralManagerTunnelInfo.hostname$basePath"
-
+        // TODO: Use WebTarget class and built in client for this
         ResteasyClient client = ResteasyClientBuilder.newBuilder().hostnameVerifier { String h, SSLSession s -> true }.build()
         ResteasyWebTarget target = (ResteasyWebTarget) client.target(baseUrl)
 

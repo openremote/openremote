@@ -38,6 +38,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +56,10 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,T>, T extends VelbusAgent<T, S>> extends AbstractProtocol<T, VelbusAgentLink> implements
     ProtocolAssetImport {
 
+    protected static final String DISALLOW_DOCTYPE_DECL = "http://apache.org/xml/features/disallow-doctype-decl";
+    protected static final String EXTERNAL_GENERAL_ENTITIES = "http://xml.org/sax/features/external-general-entities";
+    protected static final String EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
+    protected static final String LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
     public static final int DEFAULT_TIME_INJECTION_INTERVAL_SECONDS = 3600 * 6;
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractVelbusProtocol.class);
     protected VelbusNetwork network;
@@ -159,8 +164,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
                 String xmlStr = new String(fileData, StandardCharsets.UTF_8);
                 LOG.info("Parsing VELBUS project file");
 
-                xmlDoc = DocumentBuilderFactory
-                    .newInstance()
+                xmlDoc = createSecureDocumentBuilderFactory()
                     .newDocumentBuilder()
                     .parse(new InputSource(new StringReader(xmlStr)));
             } catch (Exception e) {
@@ -238,5 +242,19 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
 
             assetConsumer.accept(devices.stream().map(AssetTreeNode::new).toArray(AssetTreeNode[]::new));
         }, null);
+    }
+
+    protected DocumentBuilderFactory createSecureDocumentBuilderFactory() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature(DISALLOW_DOCTYPE_DECL, true);
+        factory.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
+        factory.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
+        factory.setFeature(LOAD_EXTERNAL_DTD, false);
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+        return factory;
     }
 }

@@ -74,6 +74,7 @@ public interface AgentResource {
     @Path("assetDiscovery/{agentId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     @Operation(operationId = "doProtocolAssetDiscovery", summary = "Do protocol asset discovery")
     AssetTreeNode[] doProtocolAssetDiscovery(
         @BeanParam RequestParams requestParams,
@@ -94,6 +95,7 @@ public interface AgentResource {
     @Path("assetImport/{agentId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     @Operation(operationId = "doProtocolAssetImport", summary = "Do protocol asset import")
     // TODO: File upload should use standard multipart mechanism
     AssetTreeNode[] doProtocolAssetImport(

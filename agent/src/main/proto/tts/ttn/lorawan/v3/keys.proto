@@ -1,0 +1,99 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message KeyEnvelope {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The unencrypted AES key.
+  bytes key = 1 [
+    (validate.rules).bytes = {
+      len: 16,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal16Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New16BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"0123456789ABCDEF0123456789ABCDEF\""
+    }
+  ];
+  // The label of the RFC 3394 key-encryption-key (KEK) that was used to encrypt the key.
+  string kek_label = 2 [(validate.rules).string.max_len = 2048];
+  bytes encrypted_key = 3 [
+    (validate.rules).bytes.max_len = 1024,
+    (thethings.flags.field) = {
+      set_flag_new_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.NewHexBytesFlag",
+      set_flag_getter_func: "github.com/TheThingsIndustries/protoc-gen-go-flags/flagsplugin.GetBytes"
+    }
+  ];
+}
+
+// Root keys for a LoRaWAN device.
+// These are stored on the Join Server.
+message RootKeys {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Join Server issued identifier for the root keys.
+  string root_key_id = 1 [(validate.rules).string.max_len = 2048];
+  // The (encrypted) Application Key.
+  KeyEnvelope app_key = 2;
+  // The (encrypted) Network Key.
+  KeyEnvelope nwk_key = 3;
+}
+
+// Session keys for a LoRaWAN session.
+// Only the components for which the keys were meant, will have the key-encryption-key (KEK) to decrypt the individual keys.
+message SessionKeys {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Join Server issued identifier for the session keys.
+  // This ID can be used to request the keys from the Join Server in case the are lost.
+  bytes session_key_id = 1 [(validate.rules).bytes.max_len = 2048];
+  // The (encrypted) Forwarding Network Session Integrity Key (or Network Session Key in 1.0 compatibility mode).
+  // This key is stored by the (forwarding) Network Server.
+  KeyEnvelope f_nwk_s_int_key = 2;
+  // The (encrypted) Serving Network Session Integrity Key.
+  // This key is stored by the (serving) Network Server.
+  KeyEnvelope s_nwk_s_int_key = 3;
+  // The (encrypted) Network Session Encryption Key.
+  // This key is stored by the (serving) Network Server.
+  KeyEnvelope nwk_s_enc_key = 4;
+  // The (encrypted) Application Session Key.
+  // This key is stored by the Application Server.
+  KeyEnvelope app_s_key = 5;
+}

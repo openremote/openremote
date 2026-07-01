@@ -12,6 +12,8 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
+import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {OrVaadinMultiSelectComboBox} from "@openremote/or-vaadin-components/or-vaadin-multi-select-combo-box";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -66,19 +68,25 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     border-radius: 5px;
                     position: relative;
                     margin: 5px auto;
-                    padding: 24px;
+                    padding: 12px 24px 24px;
                 }
 
                 .panel-title {
+                    display: flex;
+                    align-items: center;
                     text-transform: uppercase;
                     font-weight: bolder;
                     line-height: 1em;
-                    color: var(--internal-or-asset-viewer-title-text-color);
-                    margin-bottom: 20px;
+                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    margin-bottom: 10px;
                     margin-top: 0;
                     flex: 0 0 auto;
                     letter-spacing: 0.025em;
-                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    min-height: 36px;
+                }
+
+                .panel-title p {
+                    margin: 0;
                 }
 
                 #table-users,
@@ -95,11 +103,6 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 td, th {
                     width: 25%
                 }
-                
-                or-mwc-input {
-                    margin-bottom: 20px;
-                    margin-right: 16px;
-                }
 
                 or-icon {
                     vertical-align: middle;
@@ -114,6 +117,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     flex-direction: row;
                     margin: 10px 0;
                     flex: 1 1 0;
+                    gap: 16px;
                 }
 
                 .column {
@@ -122,6 +126,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     margin: 0px;
                     flex: 1 1 0;
                     max-width: 50%;
+                    gap: 16px;
                 }
 
                 .mdc-data-table__header-cell {
@@ -141,7 +146,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     flex-direction: row;
                     overflow: hidden;
                     max-height: 0;
-                    padding-left: 16px;
+                    padding: 0 16px;
                 }
 
                 .item-row.expanded .item-row-content {
@@ -198,9 +203,11 @@ export class PageProvisioning extends Page<AppStateKeyed> {
     @state()
     protected _configs?: ProvisioningConfig<any, any>[];
     @state()
-    protected _roleOptions?: [string, string][];
+    protected _roleOptions?: {value: any, label: string}[];
     @state()
-    protected _realmOptions?: string[];
+    protected _realmOptions?: {value: any, label: string}[];
+    @state()
+    protected _configFilter: (configs: ProvisioningConfig<any, any>[]) => ProvisioningConfig<any, any>[] = (configs) => configs;
 
     get name(): string {
         return "autoProvisioning";
@@ -233,6 +240,13 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 </div>
 
                 <div class="panel">
+                    <div class="panel-title" style="justify-content: space-between;">
+                        <p><or-translate value="provisioningConfigs"></or-translate></p>
+                        <or-vaadin-text-field placeholder=${i18next.t("search")} style="width: 240px;"
+                                              @input=${(ev: InputEvent) => this.onConfigSearch(ev)}>
+                            <or-icon slot="suffix" icon="magnify"></or-icon>
+                        </or-vaadin-text-field>
+                    </div>
                     <div id="table-users" class="mdc-data-table">
                         <table class="mdc-data-table__table" aria-label="attribute list">
                             <thead>
@@ -252,7 +266,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                             </tr>
                             </thead>
                             <tbody class="mdc-data-table__content">
-                            ${this._configs.map((config, index) => this._getConfigTemplate(() => {
+                            ${this._configFilter(this._configs).map((config, index) => this._getConfigTemplate(() => {
                                 this._configs.pop(); this._configs = [...this._configs];
                             }, config))}
                             ${(this._configs.length === 0 || (this._configs.length > 0 && !!this._configs[this._configs.length - 1].id)) ? html`
@@ -260,7 +274,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                         this._configs = [...this._configs, {type: "x509"}];
                                     }}">
                                     <td colspan="100%">
-                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")}</a>
+                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("provisioningConfig")}</a>
                                     </td>
                                 </tr>
                             ` : ``}
@@ -313,8 +327,8 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             return;
         }
 
-        this._realmOptions = realmResponse.data.map(r => r.name);
-        this._roleOptions = rolesResponse.data.filter(role => !role.composite).map(r => [r.name, r.name] as [string, string]).sort();
+        this._realmOptions = realmResponse.data.map(r => ({value: r.name, label: r.displayName}));
+        this._roleOptions = rolesResponse.data.filter(role => !role.composite).map(r => ({value: r.name, label: r.name})).sort();
         this._configs = provisioningResponse.data;
     }
 
@@ -368,16 +382,14 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             const data = config.data as X509ProvisioningData;
 
             typeColumnContents = html`
-                <or-mwc-input .label="${i18next.t("CACertPem")}" required
-                              .type="${InputType.TEXTAREA}"
-                              .value="${data.CACertPEM}"
-                              resizeVertical
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => data.CACertPEM = e.detail.value}"></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("ignoreExpiryDate")}"
-                              .type="${InputType.CHECKBOX}"
-                              .value="${data.ignoreExpiryDate}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => data.ignoreExpiryDate = !e.detail.value}"
-                              style="height: 56px;"></or-mwc-input>
+                <or-vaadin-text-area required value=${data.CACertPEM}
+                                     @change=${(ev: Event) => { data.CACertPEM = (ev.currentTarget as HTMLInputElement).value; this.requestUpdate(); }}>
+                    <or-translate slot="label" value="CACertPem"></or-translate>
+                </or-vaadin-text-area>
+                <or-vaadin-checkbox ?checked=${data.ignoreExpiryDate}
+                                    @change=${(ev: Event) => data.ignoreExpiryDate = !(ev.currentTarget as HTMLInputElement).checked}>
+                    <label slot="label"><or-translate value="ignoreExpiryDate"></or-translate></label>
+                </or-vaadin-checkbox>
             `;
         } else {
             typeColumnContents = html`
@@ -406,41 +418,39 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                     <div class="item-row-content">
                         <div class="row">
                             <div class="column">
-                                <or-mwc-input .label="${i18next.t("name")}"
-                                              .type="${InputType.TEXT}" min="1" required
-                                              .value="${config.name}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.name = e.detail.value}"></or-mwc-input>
-                                <or-mwc-input ?disabled="${!!config.id}" required
-                                              .label="${i18next.t("type")}"
-                                              .type="${InputType.SELECT}"
-                                              .options="${[["x509", "X.509"]]}"
-                                              .value="${!config.type ? "x509" : config.type}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.type = e.detail.value}"></or-mwc-input>
-                                <or-mwc-input ?disabled="${!!config.id}" required
-                                              .label="${i18next.t("realm")}"
-                                              .type="${InputType.SELECT}"
-                                              .options="${this._realmOptions}"
-                                              .value="${config.realm}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.realm = e.detail.value}"></or-mwc-input>
-                                <or-mwc-input ?disabled="${!!config.id}"
-                                              .value="${config.userRoles}"
-                                              .type="${InputType.SELECT}" multiple
-                                              .options="${this._roleOptions}" 
-                                              .label="${i18next.t("role_plural")}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.userRoles = e.detail.value as ClientRole[]}"></or-mwc-input>
-                                <or-mwc-input .label="${i18next.t("assetTemplate")}"
+                                <or-vaadin-text-field required minlength="1" maxlength="255" value=${config.name}
+                                                      @change=${(ev: Event) => { config.name = (ev.currentTarget as HTMLInputElement).value; this.requestUpdate(); }}>
+                                    <or-translate slot="label" value="name"></or-translate>
+                                </or-vaadin-text-field>
+                                <or-vaadin-select required readonly
+                                                  .items=${[{value: "x509", label: "X.509"}]}
+                                                  value=${!config.type ? "x509" : config.type}>
+                                    <or-translate slot="label" value="type"></or-translate>
+                                </or-vaadin-select>
+                                <or-vaadin-select required ?readonly=${!!config.id}
+                                                  .items=${this._realmOptions} value=${config.realm}
+                                                  @change=${(ev: Event) => { config.realm = (ev.currentTarget as OrVaadinSelect).value; this.requestUpdate(); }}>
+                                    <or-translate slot="label" value="realm"></or-translate>
+                                </or-vaadin-select>
+                                <or-vaadin-multi-select-combo-box ?readonly=${!!config.id}
+                                                                  .items=${this._roleOptions}
+                                                                  .selectedItems=${this._roleOptions?.filter(r => config.userRoles?.includes(r.value))}
+                                                                  @change=${(ev: Event) => { config.userRoles = (ev.currentTarget as OrVaadinMultiSelectComboBox).selectedItems.map(i => i.value as ClientRole)}}>
+                                    <or-translate slot="label" value="role_plural"></or-translate>
+                                </or-vaadin-multi-select-combo-box>
+                                <or-mwc-input label="${i18next.t("assetTemplate")}"
                                               .type="${InputType.JSON}"
                                               .value="${config.assetTemplate ? JSON.stringify(JSON.parse(config.assetTemplate), null, 2) : undefined}"
                                               resizeVertical
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value ? JSON.stringify(e.detail.value) : undefined}"></or-mwc-input>
-                                <or-mwc-input .label="${i18next.t("createAsRestrictedUser")}"
-                                              .type="${InputType.CHECKBOX}"
-                                              .value="${config.restrictedUser}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.restrictedUser = e.detail.value}"></or-mwc-input>
-                                <or-mwc-input .label="${i18next.t("disabled")}"
-                                              .type="${InputType.CHECKBOX}"
-                                              .value="${config.disabled}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.disabled = e.detail.value}"></or-mwc-input>
+                                <or-vaadin-checkbox ?checked=${config.restrictedUser}
+                                                    @change=${(ev: Event) => config.restrictedUser = (ev.currentTarget as HTMLInputElement).checked}>
+                                    <label slot="label"><or-translate value="createAsRestrictedUser"></or-translate></label>
+                                </or-vaadin-checkbox>
+                                <or-vaadin-checkbox ?checked=${config.disabled}
+                                                    @change=${(ev: Event) => config.disabled = (ev.currentTarget as HTMLInputElement).checked}>
+                                    <label slot="label"><or-translate value="disabled"></or-translate></label>
+                                </or-vaadin-checkbox>
                             </div>
 
                             <div class="column">                                
@@ -448,23 +458,39 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                             </div>
                         </div>
 
-                        <div class="row" style="margin-bottom: 0;">
-                            ${config.id ? html`<or-mwc-input label="delete"
-                                          .type="${InputType.BUTTON}"
-                                          @or-mwc-input-changed="${() => this._deleteConfig(config)}"></or-mwc-input>
+                        <div class="row" style="justify-content: space-between; margin: 16px 0;">
+                            ${config.id ? html`
+                                <or-vaadin-button @click=${() => this._deleteConfig(config)}>
+                                    <or-translate value="delete"></or-translate>
+                                </or-vaadin-button>
                             ` : ``}              
-                            ${!config.id ? html`<or-mwc-input label="cancel"
-                                      .type="${InputType.BUTTON}"
-                                      @or-mwc-input-changed="${() => addCancel()}"></or-mwc-input>
+                            ${!config.id ? html`
+                                <or-vaadin-button @click=${() => addCancel()}>
+                                    <or-translate value="cancel"></or-translate>
+                                </or-vaadin-button>
                             ` : ``}
-                            <or-mwc-input class="savebtn" style="margin-left: auto;"
-                                  label="${config.id ? "save" : "create"}"
-                                  .type="${InputType.BUTTON}"
-                                  @or-mwc-input-changed="${() => this._createUpdateConfig(config)}"></or-mwc-input>
+                            <or-vaadin-button class="savebtn" theme="primary"
+                                              ?disabled=${!config.id && (!config.name || !config.realm || !config.type || !(config.data as X509ProvisioningData)?.CACertPEM)}
+                                              @click=${() => this._createUpdateConfig(config)}>
+                                <or-translate value=${config.id ? "save" : "create"}></or-translate>
+                            </or-vaadin-button>
                         </div>
                     </div>
                 </td>
             </tr>
         `
+    }
+
+    protected onConfigSearch(ev: InputEvent) {
+        const value = (ev.target as HTMLInputElement).value?.toLowerCase();
+        if (!value) {
+            this._configFilter = (configs) => configs;
+        } else {
+            this._configFilter = (configs) => configs.filter(c =>
+                (c.name as string)?.toLowerCase().includes(value) ||
+                (c.realm as string)?.toLowerCase().includes(value) ||
+                (c.type as string)?.toLowerCase().includes(value)
+            );
+        }
     }
 }

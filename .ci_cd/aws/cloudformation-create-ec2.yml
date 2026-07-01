@@ -917,13 +917,13 @@ Resources:
           - Name: Daily Backup
             CopyTags: true
             CreateRule:
-              CronExpression: 'cron(0 3 * * ? * )'
+              CronExpression: 'cron(0 3 * * ? *)'
             RetainRule:
               Count: 7
           - Name: Weekly Backup
             CopyTags: true
             CreateRule:
-              CronExpression: 'cron(0 3 ? * MON * )'
+              CronExpression: 'cron(0 3 ? * MON *)'
             RetainRule:
               Count: 4
       Tags:

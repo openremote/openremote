@@ -14,6 +14,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
+    "build": "npx tsc -b",
     "analyze": "npx cem analyze --config ../custom-elements-manifest.config.mjs",
     "test": "npx tsc -b && npx playwright test",
     "prepack": "npx rspack"
@@ -32,11 +33,13 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "i18next": "^21.5.3",
     "lit": "^3.3.1"
   },
   "devDependencies": {
-    "axios": "1.13.6"
+    "@openremote/util": "workspace:*",
+    "axios": "1.18.1"
   },
   "publishConfig": {
     "access": "public"

@@ -1,10 +1,14 @@
 package org.openremote.test.assets
 
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider
+import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.asset.impl.LightAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointExportFormat
 import org.openremote.model.datapoint.DatapointQueryTooLargeException
@@ -12,6 +16,7 @@ import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -19,23 +24,36 @@ import spock.util.concurrent.PollingConditions
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.zip.ZipInputStream
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.value.ValueType.NUMBER
 
 class AssetDatapointExportTest extends Specification implements ManagerContainerTrait {
+
+    // Important for test is that we use a different TZ for DB than for JVM
+    private static final String EXPORT_TEST_DATABASE_TIME_ZONE = ZoneId.systemDefault().id == "Europe/Amsterdam" ? "UTC" : "Europe/Amsterdam"
+    private static final int EXPORT_TEST_DATABASE_POOL_SIZE = 5
 
     def "Test CSV export functionality for asset data points"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
-        and: "the container is started"
-        def container = startContainer(defaultConfig(), defaultServices())
+        and: "the container is started with a bounded DB connection pool"
+        def config = defaultConfig()
+        config.put(PersistenceService.OR_DB_POOL_MIN_SIZE, Integer.toString(EXPORT_TEST_DATABASE_POOL_SIZE))
+        config.put(PersistenceService.OR_DB_POOL_MAX_SIZE, Integer.toString(EXPORT_TEST_DATABASE_POOL_SIZE))
+        def container = startContainer(config, defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        def persistenceService = container.getService(PersistenceService.class)
+        setDatabaseSessionTimeZone(persistenceService, EXPORT_TEST_DATABASE_TIME_ZONE, EXPORT_TEST_DATABASE_POOL_SIZE)
         assetDatapointService.datapointExportLimit = 1000
+
+        and: "the database session timezone is different from the JVM timezone"
+        assert getDatabaseSessionTimeZone(persistenceService) == EXPORT_TEST_DATABASE_TIME_ZONE
+        assert ZoneId.systemDefault() != ZoneId.of(EXPORT_TEST_DATABASE_TIME_ZONE)
 
         when: "requesting the first light asset in City realm"
         def asset = assetStorageService.find(
@@ -157,7 +175,12 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         /* ------------------------- */
 
         cleanup: "Remove the limit on datapoint querying"
-        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT;
+        if (assetDatapointService != null) {
+            assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+        }
+        if (persistenceService != null) {
+            setDatabaseSessionTimeZone(persistenceService, "UTC", EXPORT_TEST_DATABASE_POOL_SIZE)
+        }
     }
 
     def "Export query is not vulnerable to SQL injection via attributeRefs"() {
@@ -199,6 +222,68 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
         assert csvExportLines.size() == 1
     }
 
+    def "Crosstab exports treat asset names with SQL delimiters as CSV labels"() {
+
+        given: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.datapointExportLimit = 10000
+
+        and: "ensure there are no datapoints"
+        assetDatapointService.purgeDataPoints()
+
+        and: "an asset name contains SQL delimiter syntax"
+        def asset = assetStorageService.find(
+                new AssetQuery()
+                        .types(LightAsset.class)
+                        .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
+                        .names("Light 1")
+        )
+        assert asset != null
+        def originalName = asset.name
+        def maliciousAssetName = 'SQL "delimiter" $cat$ -- label'
+        def attributeName = "brightness"
+        asset.name = maliciousAssetName
+        asset = assetStorageService.merge(asset)
+
+        and: "the asset has one datapoint for a real exported attribute"
+        def dateTime = LocalDateTime.now()
+        assetDatapointService.upsertValues(
+                asset.getId(),
+                attributeName,
+                [new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)]
+        )
+
+        expect: "both crosstab formats export the datapoint without treating the asset name as SQL"
+        [DatapointExportFormat.CSV_CROSSTAB, DatapointExportFormat.CSV_CROSSTAB_MINUTE].each { format ->
+            def csvExport = assetDatapointService.exportDatapoints(
+                    [new AttributeRef(asset.id, attributeName)] as AttributeRef[],
+                    dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    format
+            ).getText(StandardCharsets.UTF_8.name())
+            def csvExportLines = csvExport.readLines()
+
+            assert csvExportLines.size() == 2
+            assert parseCsvLine(csvExportLines[0]) == ["timestamp", maliciousAssetName + " : " + attributeName]
+            assert csvExportLines[1].contains("42")
+        }
+
+        cleanup: "restore the fixture asset name"
+        if (assetStorageService != null && asset != null && originalName != null) {
+            def currentAsset = assetStorageService.find(asset.id, true)
+            if (currentAsset != null) {
+                currentAsset.name = originalName
+                assetStorageService.merge(currentAsset)
+            }
+        }
+        if (assetDatapointService != null) {
+            assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+        }
+    }
+
     def "Export query is not vulnerable to SQL injection via REST API"() {
 
         given: "the container is started"
@@ -218,7 +303,7 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
                 KEYCLOAK_CLIENT_ID,
                 "smartcity",
                 "smartcity"
-        ).token
+        )
         def response = null
 
         when: "exporting with a malicious attribute name via REST API"
@@ -256,6 +341,213 @@ class AssetDatapointExportTest extends Specification implements ManagerContainer
             response.disconnect()
         }
         assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+    }
+
+    def "Restricted users cannot export datapoints for linked non-restricted attributes"() {
+        given: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.datapointExportLimit = 10000
+
+        and: "a linked asset has historical data for an attribute that is not restricted-readable"
+        assetDatapointService.purgeDataPoints()
+        def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
+        def attributeName = "nonRestrictedHistory"
+        asset.getAttributes().addOrReplace(new Attribute<>(attributeName, NUMBER, 0d))
+        assetStorageService.merge(asset)
+
+        def dateTime = LocalDateTime.now()
+        assetDatapointService.upsertValues(
+                asset.getId(),
+                attributeName,
+                [new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)]
+        )
+
+        and: "a restricted user is authenticated in the asset realm"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+        when: "the restricted user exports the historical datapoints"
+        def response = null
+        def attributeRefsJson = "[{\"id\":\"${asset.id}\",\"name\":\"${attributeName}\"}]"
+        def encodedAttributeRefs = URLEncoder.encode(attributeRefsJson, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        def fromTimestamp = dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        def toTimestamp = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        def baseUri = serverUri(serverPort).clone()
+                .replacePath(ManagerWebService.API_PATH)
+                .path(keycloakTestSetup.realmBuilding.name)
+                .path("asset")
+                .path("datapoint")
+                .path("export")
+                .build()
+        def url = new URL("${baseUri}?attributeRefs=${encodedAttributeRefs}&fromTimestamp=${fromTimestamp}&toTimestamp=${toTimestamp}")
+        response = (HttpURLConnection) url.openConnection()
+        response.setRequestMethod("GET")
+        response.setRequestProperty("Authorization", "Bearer ${accessToken}")
+        response.setRequestProperty("Accept", "application/zip")
+        response.connect()
+
+        then: "the export endpoint should apply the same restricted attribute check"
+        response.responseCode == 403
+
+        cleanup: "Remove the limit on datapoint exporting"
+        if (response != null) {
+            response.disconnect()
+        }
+        assetDatapointService.datapointExportLimit = assetDatapointService.OR_DATA_POINTS_EXPORT_LIMIT_DEFAULT
+    }
+
+    def "Restricted users cannot get datapoint periods for linked non-restricted attributes"() {
+        given: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class)
+
+        and: "a linked asset has historical data for an attribute that is not restricted-readable"
+        assetDatapointService.purgeDataPoints()
+        def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
+        def attributeName = "nonRestrictedHistoryPeriod"
+        asset.getAttributes().addOrReplace(new Attribute<>(attributeName, NUMBER, 0d))
+        assetStorageService.merge(asset)
+
+        def dateTime = LocalDateTime.now()
+        assetDatapointService.upsertValues(
+                asset.getId(),
+                attributeName,
+                [new ValueDatapoint<>(dateTime.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 42d)]
+        )
+
+        and: "a restricted user is authenticated in the asset realm"
+        def accessToken = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        )
+
+        when: "the restricted user requests the historical datapoint period"
+        def response = null
+        def encodedAssetId = URLEncoder.encode(asset.id, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        def encodedAttributeName = URLEncoder.encode(attributeName, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        def baseUri = serverUri(serverPort).clone()
+                .replacePath(ManagerWebService.API_PATH)
+                .path(keycloakTestSetup.realmBuilding.name)
+                .path("asset")
+                .path("datapoint")
+                .path("periods")
+                .build()
+        def url = new URL("${baseUri}?assetId=${encodedAssetId}&attributeName=${encodedAttributeName}")
+        response = (HttpURLConnection) url.openConnection()
+        response.setRequestMethod("GET")
+        response.setRequestProperty("Authorization", "Bearer ${accessToken}")
+        response.setRequestProperty("Accept", "application/json")
+        response.connect()
+
+        then: "the period endpoint should apply the same restricted attribute check"
+        response.responseCode == 403
+
+        cleanup:
+        if (response != null) {
+            response.disconnect()
+        }
+    }
+
+    private static List<String> parseCsvLine(String line) {
+        def fields = []
+        def current = new StringBuilder()
+        boolean quoted = false
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i)
+            if (quoted) {
+                if (c == '"') {
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        current.append('"')
+                        i++
+                    } else {
+                        quoted = false
+                    }
+                } else {
+                    current.append(c)
+                }
+            } else if (c == '"') {
+                quoted = true
+            } else if (c == ',') {
+                fields.add(current.toString())
+                current.setLength(0)
+            } else {
+                current.append(c)
+            }
+        }
+
+        fields.add(current.toString())
+        return fields
+    }
+
+    private static void setDatabaseSessionTimeZone(PersistenceService persistenceService, String timeZone, int connectionCount) {
+        def connectionProvider = getConnectionProvider(persistenceService)
+        def connections = []
+        try {
+            connectionCount.times {
+                connections.add(connectionProvider.getConnection())
+            }
+            connections.each { connection ->
+                def statement = connection.createStatement()
+                try {
+                    statement.execute("set time zone '${timeZone}'")
+                } finally {
+                    statement.close()
+                }
+            }
+        } finally {
+            connections.each { connection ->
+                connectionProvider.closeConnection(connection)
+            }
+        }
+    }
+
+    private static String getDatabaseSessionTimeZone(PersistenceService persistenceService) {
+        withConnection(persistenceService) { connection ->
+            def statement = connection.createStatement()
+            try {
+                def resultSet = statement.executeQuery("select current_setting('TimeZone')")
+                try {
+                    resultSet.next()
+                    return resultSet.getString(1)
+                } finally {
+                    resultSet.close()
+                }
+            } finally {
+                statement.close()
+            }
+        }
+    }
+
+    private static <T> T withConnection(PersistenceService persistenceService, Closure<T> closure) {
+        def connectionProvider = getConnectionProvider(persistenceService)
+        def connection = connectionProvider.getConnection()
+        try {
+            return closure.call(connection)
+        } finally {
+            connectionProvider.closeConnection(connection)
+        }
+    }
+
+    private static ConnectionProvider getConnectionProvider(PersistenceService persistenceService) {
+        return persistenceService.entityManagerFactory
+                .unwrap(SessionFactoryImplementor.class)
+                .serviceRegistry
+                .requireService(ConnectionProvider.class)
     }
 
 }

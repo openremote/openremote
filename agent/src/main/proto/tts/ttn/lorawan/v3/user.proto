@@ -1,0 +1,626 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/contact_info.proto";
+import "ttn/lorawan/v3/enums.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/notification_service.proto";
+import "ttn/lorawan/v3/picture.proto";
+import "ttn/lorawan/v3/rights.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// ConsoleTheme is the theme of the Console.
+enum ConsoleTheme {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "CONSOLE_THEME"
+  };
+  // The user prefers the system mode.
+  CONSOLE_THEME_SYSTEM = 0;
+  // The user prefers the light mode.
+  CONSOLE_THEME_LIGHT = 1;
+  // The user prefers the dark mode.
+  CONSOLE_THEME_DARK = 2;
+}
+
+// Tutorial is a set of possible tutorials in the Console.
+enum Tutorial {
+  option (thethings.json.enum) = {marshal_as_string: true};
+
+  TUTORIAL_UNKNOWN = 0;
+  TUTORIAL_LIVE_DATA_SPLIT_VIEW = 1;
+}
+
+// DashboardLayout is a set of possible layout values to be used in the Console.
+enum DashboardLayout {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "DASHBOARD_LAYOUT"
+  };
+  DASHBOARD_LAYOUT_TABLE = 0;
+  DASHBOARD_LAYOUT_LIST = 1;
+  DASHBOARD_LAYOUT_GRID = 2;
+}
+
+// EmailNotificationPreferences is the message that defines the types of notifications for which the user wants to receive an email.
+message EmailNotificationPreferences {
+  repeated NotificationType types = 1 [(validate.rules).repeated = {
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+}
+
+// UserConsolePreferences is the message that defines the user preferences for the Console.
+message UserConsolePreferences {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ConsoleTheme console_theme = 1;
+
+  message DashboardLayouts {
+    DashboardLayout api_key = 1;
+    DashboardLayout application = 2;
+    DashboardLayout collaborator = 3;
+    DashboardLayout end_device = 4;
+    DashboardLayout gateway = 5;
+    DashboardLayout organization = 6;
+    DashboardLayout overview = 7;
+    DashboardLayout user = 8;
+  }
+  DashboardLayouts dashboard_layouts = 2;
+
+  // SortBy defines the field to which the Console will sort the display of entities.
+  message SortBy {
+    string api_key = 1 [(validate.rules).string = {
+      in: [
+        "",
+        "api_key_id",
+        "-api_key_id",
+        "name",
+        "-name",
+        "created_at",
+        "-created_at",
+        "expires_at",
+        "-expires_at"
+      ]
+    }];
+    string application = 2 [(validate.rules).string = {
+      in: [
+        "",
+        "application_id",
+        "-application_id",
+        "name",
+        "-name",
+        "created_at",
+        "-created_at"
+      ]
+    }];
+    string collaborator = 3 [(validate.rules).string = {
+      in: [
+        "",
+        "id",
+        "-id",
+        "rights",
+        "-rights"
+      ]
+    }];
+    string end_device = 4 [(validate.rules).string = {
+      in: [
+        "",
+        "device_id",
+        "-device_id",
+        "join_eui",
+        "-join_eui",
+        "dev_eui",
+        "-dev_eui",
+        "name",
+        "-name",
+        "description",
+        "-description",
+        "created_at",
+        "-created_at",
+        "last_seen_at",
+        "-last_seen_at"
+      ]
+    }];
+    string gateway = 5 [(validate.rules).string = {
+      in: [
+        "",
+        "gateway_id",
+        "-gateway_id",
+        "gateway_eui",
+        "-gateway_eui",
+        "name",
+        "-name",
+        "created_at",
+        "-created_at"
+      ]
+    }];
+    string organization = 6 [(validate.rules).string = {
+      in: [
+        "",
+        "organization_id",
+        "-organization_id",
+        "name",
+        "-name",
+        "created_at",
+        "-created_at"
+      ]
+    }];
+    string user = 7 [(validate.rules).string = {
+      in: [
+        "",
+        "user_id",
+        "-user_id",
+        "name",
+        "-name",
+        "primary_email_address",
+        "-primary_email_address",
+        "state",
+        "-state",
+        "admin",
+        "-admin",
+        "created_at",
+        "-created_at"
+      ]
+    }];
+  }
+  SortBy sort_by = 3;
+
+  message Tutorials {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    repeated Tutorial seen = 1 [(validate.rules).repeated = {
+      unique: true,
+      items: {
+        enum: {defined_only: true}
+      }
+    }];
+  }
+  Tutorials tutorials = 4;
+}
+
+// User is the message that defines a user on the network.
+message User {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The identifiers of the user. These are public and can be seen by any authenticated user in the network.
+  UserIdentifiers ids = 1 [
+    (validate.rules).message.required = true,
+    (thethings.flags.field) = {
+      select: false,
+      hidden: true
+    }
+  ];
+  // When the user was created. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp created_at = 2 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the user was last updated. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp updated_at = 3 [(thethings.flags.field) = {
+    select: false,
+    set: false
+  }];
+  // When the user was deleted. This information is public and can be seen by any authenticated user in the network.
+  google.protobuf.Timestamp deleted_at = 19 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  // The name of the user. This information is public and can be seen by any authenticated user in the network.
+  string name = 4 [(validate.rules).string.max_len = 50];
+  // A description for the user. This information is public and can be seen by any authenticated user in the network.
+  string description = 5 [(validate.rules).string.max_len = 2000];
+
+  // Key-value attributes for this users. Typically used for storing integration-specific data.
+  map<string, string> attributes = 6 [(validate.rules).map = {
+    max_pairs: 10,
+    keys: {
+      string: {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }
+    },
+    values: {
+      string: {max_len: 200}
+    }
+  }];
+
+  // Contact information for this user. Typically used to indicate who to contact with security/billing questions about the user.
+  // This field is deprecated.
+  repeated ContactInfo contact_info = 7 [
+    deprecated = true,
+    (validate.rules).repeated.max_items = 10
+  ];
+
+  // Primary email address that can be used for logging in.
+  // This address is not public, use contact_info for that.
+  string primary_email_address = 8 [(validate.rules).string.email = true];
+
+  // When the primary email address was validated. Note that email address validation is not required on all networks.
+  google.protobuf.Timestamp primary_email_address_validated_at = 9;
+
+  // The password field is only considered when creating a user.
+  // It is not returned on API calls, and can not be updated by updating the User.
+  // See the UpdatePassword method of the UserRegistry service for more information.
+  string password = 10 [(validate.rules).string.max_len = 1000];
+  google.protobuf.Timestamp password_updated_at = 11 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+  bool require_password_update = 12;
+
+  // The reviewing state of the user.
+  // This information is public and can be seen by any authenticated user in the network.
+  // This field can only be modified by admins.
+  State state = 13 [(validate.rules).enum.defined_only = true];
+  // A description for the state field.
+  // This field can only be modified by admins, and should typically only be updated
+  // when also updating `state`.
+  string state_description = 20 [(validate.rules).string.max_len = 128];
+  // This user is an admin.
+  // This information is public and can be seen by any authenticated user in the network.
+  // This field can only be modified by other admins.
+  bool admin = 14;
+
+  // The temporary password can only be used to update a user's password; never returned on API calls.
+  // It is not returned on API calls, and can not be updated by updating the User.
+  // See the CreateTemporaryPassword method of the UserRegistry service for more information.
+  string temporary_password = 15 [(validate.rules).string.max_len = 1000];
+  google.protobuf.Timestamp temporary_password_created_at = 16 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+  google.protobuf.Timestamp temporary_password_expires_at = 17 [(thethings.flags.field) = {
+    select: true,
+    set: false
+  }];
+
+  // A profile picture for the user.
+  // This information is public and can be seen by any authenticated user in the network.
+  Picture profile_picture = 18;
+
+  reserved 21;
+  reserved "application_limit";
+  reserved 22;
+  reserved "client_limit";
+  reserved 23;
+  reserved "gateway_limit";
+  reserved 24;
+  reserved "organization_limit";
+
+  // Console preferences contains the user's preferences regarding the behavior of the Console.
+  UserConsolePreferences console_preferences = 25;
+
+  EmailNotificationPreferences email_notification_preferences = 26;
+
+  // Universal rights are capable of restricting the user's interactions with the API, be it an admin or not.
+  repeated Right universal_rights = 27;
+
+  // next: 28
+}
+
+message Users {
+  repeated User users = 1;
+}
+
+message GetUserRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // The names of the user fields that should be returned.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message ListUsersRequest {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The names of the user fields that should be returned.
+  google.protobuf.FieldMask field_mask = 1;
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 2 [(validate.rules).string = {
+    in: [
+      "",
+      "user_id",
+      "-user_id",
+      "name",
+      "-name",
+      "primary_email_address",
+      "-primary_email_address",
+      "state",
+      "-state",
+      "admin",
+      "-admin",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 3 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 4;
+  // Only return recently deleted users.
+  bool deleted = 5;
+}
+
+message CreateUserRequest {
+  User user = 1 [(validate.rules).message.required = true];
+  // The invitation token that was sent to the user (some networks require an invitation in order to register new users).
+  string invitation_token = 2;
+}
+
+message UpdateUserRequest {
+  User user = 1 [(validate.rules).message.required = true];
+  // The names of the user fields that should be updated.
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message CreateTemporaryPasswordRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+}
+
+message UpdateUserPasswordRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string new = 2 [(validate.rules).string.max_len = 1000];
+  string old = 3 [(validate.rules).string.max_len = 1000];
+  // Revoke active sessions and access tokens of user if true. To be used if credentials are suspected to be compromised.
+  bool revoke_all_access = 4;
+}
+
+message ListUserAPIKeysRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // Order the results by this field path.
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "api_key_id",
+      "-api_key_id",
+      "name",
+      "-name",
+      "created_at",
+      "-created_at",
+      "expires_at",
+      "-expires_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+}
+
+message GetUserAPIKeyRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // Unique public identifier for the API key.
+  string key_id = 2;
+}
+
+message CreateUserAPIKeyRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string name = 2 [(validate.rules).string.max_len = 50];
+  repeated Right rights = 3 [(validate.rules).repeated = {
+    min_items: 1,
+    unique: true,
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+  google.protobuf.Timestamp expires_at = 4 [(validate.rules).timestamp.gt_now = true];
+}
+
+message UpdateUserAPIKeyRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  APIKey api_key = 2 [(validate.rules).message.required = true];
+  // The names of the api key fields that should be updated.
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message DeleteUserAPIKeyRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string key_id = 2;
+}
+
+message Invitation {
+  string email = 1 [(validate.rules).string.email = true];
+  string token = 2;
+
+  google.protobuf.Timestamp expires_at = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+
+  google.protobuf.Timestamp accepted_at = 6;
+  UserIdentifiers accepted_by = 7;
+}
+
+message ListInvitationsRequest {
+  // Limit the number of results per page.
+  uint32 limit = 1 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 2;
+}
+
+message Invitations {
+  repeated Invitation invitations = 1;
+}
+
+message SendInvitationRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message DeleteInvitationRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message UserSessionIdentifiers {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string session_id = 2 [(validate.rules).string.max_len = 64];
+}
+
+message UserSession {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  string session_id = 2 [(validate.rules).string.max_len = 64];
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  // The session secret is used to compose an authorization key and is never returned.
+  string session_secret = 6;
+}
+
+message UserSessions {
+  repeated UserSession sessions = 1;
+}
+
+message ListUserSessionsRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // Order the results by this field path (must be present in the field mask).
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 2 [(validate.rules).string = {
+    in: [
+      "",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+  // Limit the number of results per page.
+  uint32 limit = 3 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 4;
+}
+
+message LoginToken {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+
+  string token = 5;
+  bool used = 6;
+}
+
+message CreateLoginTokenRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // Skip sending the login token to the user by email.
+  // This field is only effective when the login token is created by an admin user.
+  bool skip_email = 2;
+}
+
+message CreateLoginTokenResponse {
+  // The token that can be used for logging in as the user.
+  // This field is only present if a token was created by an admin user for a non-admin user.
+  string token = 1;
+}
+
+message UserBookmark {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  EntityIdentifiers entity_ids = 2 [(validate.rules).message.required = true];
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message UserBookmarks {
+  repeated UserBookmark bookmarks = 1;
+}
+
+message CreateUserBookmarkRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  EntityIdentifiers entity_ids = 2 [(validate.rules).message.required = true];
+}
+
+message ListUserBookmarksRequest {
+  option (thethings.flags.message) = {
+    select: false,
+    set: true
+  };
+
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  // Limit the number of results per page.
+  uint32 limit = 2 [(validate.rules).uint32.lte = 1000];
+  // Page number for pagination. 0 is interpreted as 1.
+  uint32 page = 3;
+  // Order the results by this field path.
+  // Default ordering is by ID. Prepend with a minus (-) to reverse the order.
+  string order = 4 [(validate.rules).string = {
+    in: [
+      "",
+      "user_id",
+      "-user_id",
+      "entity_type",
+      "-entity_type",
+      "entity_id",
+      "-entity_id",
+      "created_at",
+      "-created_at"
+    ]
+  }];
+
+  // Only return recently deleted bookmarks.
+  bool deleted = 5;
+
+  // Specifies that only bookmarks that reference the given entity type should be returned. If empty the filter is not
+  // applied.
+  repeated string entity_types = 6 [(validate.rules).repeated = {
+    unique: true,
+    items: {
+      string: {
+        // These values are the same as what is specified in the pkg/ttnpb/identifiers_polymorphism
+        in: [
+          "application",
+          "client",
+          "end device",
+          "gateway",
+          "organization",
+          "user"
+        ]
+      }
+    }
+  }];
+}
+
+message DeleteUserBookmarkRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  EntityIdentifiers entity_ids = 2 [(validate.rules).message.required = true];
+}
+
+message BatchDeleteUserBookmarksRequest {
+  UserIdentifiers user_ids = 1 [(validate.rules).message.required = true];
+  repeated EntityIdentifiers entity_ids = 2 [(validate.rules).repeated = {
+    min_items: 1,
+    max_items: 20,
+  }];
+}

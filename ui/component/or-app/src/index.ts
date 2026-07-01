@@ -2,7 +2,6 @@ import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "
 import {customElement, property, query, state} from "lit/decorators.js";
 import {AppConfig, Page, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import "./or-header";
 import "@openremote/or-icon";
@@ -15,8 +14,15 @@ import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {
+    dialogFooterRenderer,
+    dialogHeaderRenderer,
+    dialogRenderer,
+    OrVaadinDialog
+} from "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
+import { ifDefined } from "lit/directives/if-defined.js";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -81,6 +87,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     @state()
     protected _activeMenu?: string;
+
+    @query("#language-dialog")
+    protected _languageDialog?: OrVaadinDialog;
 
     protected _onEvent = (ev: OREvent) => this._handleEvent(ev);
     protected _onVisibilityChanged = (ev: Event) => this._handleVisibilityChange(ev);
@@ -183,12 +192,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
         document.addEventListener("visibilitychange", this._onVisibilityChanged);
+        this.addEventListener("realms-changed", this._onRealmsChanged);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        document.removeEventListener("visibilityChange", this._onVisibilityChanged);
+        document.removeEventListener("visibilitychange", this._onVisibilityChanged);
+        this.removeEventListener("realms-changed", this._onRealmsChanged);
         manager.removeListener(this._onEvent);
         super.disconnectedCallback();
     }
@@ -246,8 +257,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // Load available realm info
-                const response = await manager.rest.api.RealmResource.getAccessible();
-                this._realms = response.data;
+                await this._refreshRealms();
 
                 let realm: string | null | undefined = undefined;
 
@@ -431,6 +441,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}
             
+            ${this._getLanguageDialogTemplate()}
+            
             <!-- Main content -->
             <main role="main" class="main-content d-none"></main>
             
@@ -442,6 +454,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._realm = state.app.realm;
         this._page = state.app!.page;
         this._offline = state.app!.offline;
+    }
+
+    protected _onRealmsChanged = () => this._refreshRealms();
+
+    protected async _refreshRealms() {
+        try {
+            const response = await manager.rest.api.RealmResource.getAccessible();
+            this._realms = response.data;
+            this.requestUpdate();
+        } catch (e) {
+            console.error(e);
+            showErrorDialog("errorOccurred", document.body);
+        }
     }
 
     protected _handleEvent(event: OREvent) {
@@ -457,6 +482,39 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._store.dispatch((setOffline(false)));
             }
         }
+    }
+
+    protected _getLanguageDialogTemplate(): TemplateResult {
+        const languages = Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES);
+        const selected = languages.findIndex(([key]) => key === manager.language);
+        const onchange = (ev: CustomEvent) => {
+            const lang = languages[ev.detail.value]?.[0] ?? languages[0][0];
+            if (lang !== manager.language) {
+                this.setLanguage(lang);
+                this._languageDialog?.close();
+            }
+        }
+        const header = () => html`
+            <h2 style="padding-left: 7px; margin: 0;">
+                <or-translate value="language"></or-translate>
+            </h2>
+        `;
+        const content = () => html`
+            <or-vaadin-list-box selected=${ifDefined(selected)} style="margin: 0 -18px 6px -18px;"
+                                @selected-changed=${(ev: CustomEvent) => onchange(ev)}>
+                ${languages.map(([key, value]) => html`
+                    <or-vaadin-item value=${key}>
+                        <or-translate value=${value}></or-translate>
+                    </or-vaadin-item>
+                `)}
+            </or-vaadin-list-box>
+        `
+        return html`
+            <or-vaadin-dialog id="language-dialog" width="240px" 
+                              ${dialogHeaderRenderer(header)}
+                              ${dialogRenderer(content)}
+            ></or-vaadin-dialog>
+        `
     }
 
     // Offline timer logic
@@ -510,18 +568,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     public showLanguageModal() {
-        showDialog(new OrMwcDialog()
-            .setHeading("language")
-            .setDismissAction(null)
-            .setStyles(html`<style>.selected { color: ${unsafeCSS(DefaultColor4)} }</style>`)
-            .setActions(Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES).map(([key, value]) => {
-                return {
-                    content: html`<span class="${(key === manager.language) ? 'selected' : ''}">${i18next.t(value)}</span>`,
-                    actionName: key,
-                    action: () => {
-                        manager.language = key;
-                    }
-                }})));
+        this._languageDialog?.open();
     }
 
     protected doAppConfigInit() {
@@ -560,8 +607,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             .setHeading(html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`)
             .setContent(html`
                 <div id="login_wrapper">
-                    <or-mwc-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
-                    <or-mwc-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
+                    <or-mwc-input label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
+                    <or-mwc-input label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
                 </div>
             `)
             .setActions([
@@ -575,7 +622,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                             password: p!
                         });
                     },
-                    content: html`<or-mwc-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-mwc-input>`
+                    content: html`<or-mwc-input .type=${InputType.BUTTON} label="${i18next.t("submit")}" raised></or-mwc-input>`
                 }
             ]), document.body); // Attach to document as or-app isn't visible until initialised
 

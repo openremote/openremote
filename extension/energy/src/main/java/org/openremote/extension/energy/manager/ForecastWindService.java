@@ -2,10 +2,11 @@ package org.openremote.extension.energy.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import org.apache.camel.builder.RouteBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.extension.energy.model.ElectricityProducerAsset;
 import org.openremote.extension.energy.model.ElectricityProducerWindAsset;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -32,16 +33,15 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.model.util.MapAccess.getString;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.container.web.WebTargetBuilder.getClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.syslog.SyslogCategory.DATA;
+import static org.openremote.model.util.MapAccess.getString;
 
 /**
  * Calculates power generation for {@link ElectricityProducerWindAsset}.
@@ -111,7 +111,6 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     public static final String OR_OPEN_WEATHER_API_APP_ID = "OR_OPEN_WEATHER_API_APP_ID";
 
     protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastWindService.class.getName());
-    protected static final AtomicReference<ResteasyClient> resteasyClient = new AtomicReference<>();
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected GatewayService gatewayService;
@@ -154,13 +153,12 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
             return;
         }
 
-        initClient();
-
-        weatherForecastWebTarget = resteasyClient.get()
-                .target("https://api.openweathermap.org/data/2.5")
-                .queryParam("units", "metric")
-                .queryParam("exclude", "minutely,daily,alerts")
-                .queryParam("appid", openWeatherAppId);
+        weatherForecastWebTarget = new WebTargetBuilder(
+                getClient(),
+                UriBuilder.fromUri("https://api.openweathermap.org/data/2.5")
+                        .queryParam("units", "metric")
+                        .queryParam("exclude", "minutely,daily,alerts")
+                        .queryParam("appid", openWeatherAppId).build()).build();
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
@@ -190,14 +188,6 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     @Override
     public void stop(Container container) throws Exception {
         new ArrayList<>(calculationFutures.keySet()).forEach(this::stopCalculation);
-    }
-
-    protected static void initClient() {
-        synchronized (resteasyClient) {
-            if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
-            }
-        }
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {

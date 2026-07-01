@@ -1,9 +1,12 @@
 import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
 import {buttonStyle} from "../style";
 import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import {OrVaadinSelect, SelectItem} from "@openremote/or-vaadin-components/or-vaadin-select";
+import {createMenuBarItem, MenuBarItem, SubMenuItem} from "@openremote/or-vaadin-components/or-vaadin-menu-bar";
 import {
     AbstractNotificationMessageUnion,
     AlarmSeverity,
@@ -21,9 +24,6 @@ import {
     WellknownAssets
 } from "@openremote/model";
 import {i18next, translate} from "@openremote/or-translate"
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {manager, Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
@@ -34,7 +34,7 @@ const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 const ALARM_COLOR = "FC2D2D";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[], selectedType?: string): SubMenuItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -65,70 +65,78 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             (x[0] === manager.displayRealm || x[0] === "default") && x[1] !== undefined).length > 0;
     }
 
-    const menu: (ListItem | null)[] = [];
+    const menu: SubMenuItem[] = [];
+
+    const getMenuBarItem = (icon?: string, content?: string | TemplateResult, color?: string) => createMenuBarItem(html`
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <or-icon style=${color ? `--or-icon-fill: #${color}` : undefined}
+                     icon=${icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}
+            ></or-icon>
+            ${when(typeof content === "string",
+                    () => html`<span>${content}</span>`,
+                    () => content
+            )}
+        </div>
+    `);
 
     if (addAssetTypes && assetInfos) {
-        menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
+        menu.push(...assetInfos
+            .filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent")
+            .sort(Util.sortByString(assetTypeInfo => assetTypeInfo.assetDescriptor!.name!))
+            .map((assetTypeInfo) => {
 
-            const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
-            const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
-            const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
-
-            return {
-                text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
-                value: assetTypeInfo.assetDescriptor!.name,
-                icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
-                styleMap: styleMap
-            } as ListItem;
+                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
+                const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
+                return {
+                    checked: selectedType && assetTypeInfo.assetDescriptor!.name === selectedType,
+                    component: getMenuBarItem(icon, Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!), color),
+                    value: assetTypeInfo.assetDescriptor!.name
+                } as SubMenuItem;
         }));
     }
 
-    menu.sort(Util.sortByString((listItem) => listItem?.value!));
-    menu.push(null); // divider
+    menu.push({ component: "hr" }); // divider
 
     if (addEmailNotification) {
+        const value: ActionType = multiLanguage && addEmailLocalizedNotification ? ActionType.EMAIL_LOCALIZED : ActionType.EMAIL
         menu.push({
-            text: i18next.t("email"),
-            icon: "email",
-            value: multiLanguage && addEmailLocalizedNotification ? ActionType.EMAIL_LOCALIZED : ActionType.EMAIL,
-            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        } as ListItem);
+            checked: selectedType && selectedType === value,
+            component: getMenuBarItem("email", html`<or-translate value="email"></or-translate>`, NOTIFICATION_COLOR),
+            value: value,
+        } as SubMenuItem);
     }
     
     if (addPushNotification) {
+        const value: ActionType = multiLanguage && addPushLocalizedNotification ? ActionType.PUSH_LOCALIZED : ActionType.PUSH_NOTIFICATION;
         menu.push({
-            text: i18next.t("push-notification"),
-            icon: "cellphone-message",
-            value: multiLanguage && addPushLocalizedNotification ? ActionType.PUSH_LOCALIZED : ActionType.PUSH_NOTIFICATION,
-            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        } as ListItem);
+            checked: selectedType && selectedType === value,
+            component: getMenuBarItem("cellphone-message", html`<or-translate value="push-notification"></or-translate>`, NOTIFICATION_COLOR),
+            value: value,
+        } as SubMenuItem);
     }
 
     if (addWait) {
         menu.push({
-            text: i18next.t("wait"),
-            icon: "timer",
+            checked: selectedType && selectedType === ActionType.WAIT,
+            component: getMenuBarItem("timer", html`<or-translate value="wait"></or-translate>`, WAIT_COLOR),
             value: ActionType.WAIT,
-            styleMap: {"--or-icon-fill": "#" + WAIT_COLOR}
-        } as ListItem);
+        } as SubMenuItem);
     }
 
     if (addAlarm) {
         menu.push({
-            text: i18next.t("alarm."),
-            icon: "bell-outline",
+            checked: selectedType && selectedType === ActionType.ALARM,
+            component: getMenuBarItem("bell-outline", html`<or-translate value="alarm."></or-translate>`, ALARM_COLOR),
             value: ActionType.ALARM,
-            styleMap: {"--or-icon-fill": "#" + ALARM_COLOR}
-        } as ListItem);
+        } as SubMenuItem);
     }
 
     if (addWebhook) {
         menu.push({
-            text: i18next.t("webhook"),
-            icon: "webhook",
+            checked: selectedType && selectedType === ActionType.WEBHOOK,
+            component: getMenuBarItem("webhook", html`<or-translate value="webhook"></or-translate>`, NOTIFICATION_COLOR),
             value: ActionType.WEBHOOK,
-            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        });
+        } as SubMenuItem);
     }
 
     return menu;
@@ -146,12 +154,12 @@ export enum RecurrenceOption {
     ONCE_PER_WEEK = "oncePerWeek",
 }
 
-function getRecurrenceMenu(config?: RulesConfig): ListItem[] {
+function getRecurrenceOptions(config?: RulesConfig): SelectItem[] {
 
     if (config && config.controls && config.controls.allowedRecurrenceOptions) {
         return config.controls.allowedRecurrenceOptions.map((value) => {
             return {
-                text: i18next.t(value),
+                label: i18next.t(value),
                 value: value
             };
         });
@@ -159,7 +167,7 @@ function getRecurrenceMenu(config?: RulesConfig): ListItem[] {
 
     return Object.values(RecurrenceOption).map((value) => {
         return {
-            text: i18next.t(value),
+            label: i18next.t(value),
             value: value
         };
     });
@@ -178,6 +186,7 @@ const style = css`
     .rule-action {
         display: flex;
         margin: 10px 0;
+        align-items: baseline;
     }
     
     .rule-action-wrapper {
@@ -217,13 +226,8 @@ const style = css`
         margin-right: 6px;
     }
     
-    .add-button-wrapper or-mwc-menu {
-        text-transform: capitalize;
-    }
-    
     #type {
         white-space: nowrap;
-        margin: 4px 3px auto 0;
         text-transform: capitalize;
     }
     
@@ -265,7 +269,6 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined, readonly?: boolean) {
         let recurrenceTemplate: TemplateResult | string = ``;
-        const buttonColor = "inherit";
         let value = RecurrenceOption.ONCE;
 
         if (reset) {
@@ -283,18 +286,18 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         }
         if(readonly) {
             recurrenceTemplate = html`
-                <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
-                    <or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>
+                <div style="margin-right: 6px;">
+                    <or-vaadin-button disabled>
+                        <or-translate value=${value}></or-translate>
+                    </or-vaadin-button>
                 </div>
             `;
         } else {
-        recurrenceTemplate = html`
-                <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
-                    ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>`,
-                        getRecurrenceMenu(this.config),
-                        value,
-                        (value) => this.setRecurrenceOption(value as RecurrenceOption))}
+            recurrenceTemplate = html`
+                <div style="margin-right: 6px; min-width: 180px;">
+                    <or-vaadin-select .items=${getRecurrenceOptions(this.config)} value=${value}
+                                      @change=${(ev: Event) => this.setRecurrenceOption((ev.currentTarget as OrVaadinSelect).value as RecurrenceOption)}>
+                    </or-vaadin-select>
                 </div>
             `;
         }
@@ -357,18 +360,22 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
             if (readonly) {
                 typeTemplate = html`
-                    <div id="type" style="--or-mwc-input-color: #${buttonColor}">
-                        <or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
+                    <div id="type" style="--or-icon-fill: #${buttonColor}">
+                        <or-vaadin-button theme="icon tertiary" disabled>
+                            <or-icon icon=${buttonIcon ?? ""}></or-icon>
+                        </or-vaadin-button>
                     </div>
                 `;
             } else {
+                const menuItems: MenuBarItem[] = [{
+                    component: createMenuBarItem(html`<or-icon icon=${buttonIcon ?? ""}></or-icon>`),
+                    children: getActionTypesMenu(this.config, this.assetInfos, type ?? action.action)
+                }]
                 typeTemplate = html`
-                    <div id="type" style="--or-mwc-input-color: #${buttonColor}">
-                        ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
-                            getActionTypesMenu(this.config, this.assetInfos),
-                            action.action,
-                            (value) => this.setActionType(actions, action, value as string))}
+                    <div id="type" style="--or-icon-fill: #${buttonColor}">
+                        <or-vaadin-menu-bar theme="icon" .items=${menuItems}
+                                            @item-selected=${(ev: CustomEvent) => this.setActionType(actions, action, ev.detail.value.value)}
+                        ></or-vaadin-menu-bar>
                     </div>
                 `;
             }
@@ -415,6 +422,15 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     protected render() {
         const thenAllowAdd = !this.readonly && (this.thenAllowAdd || this.rule.then!.length > 1);
+        const menuItems: MenuBarItem[] = [{
+            component: createMenuBarItem(html`
+                <div style="display: flex; align-items: center; gap: 0.25em;">
+                    <or-icon icon="plus"></or-icon>
+                    <or-translate value="rulesEditorAddAction"></or-translate>
+                </div>
+            `),
+            children: getActionTypesMenu(this.config, this.assetInfos)
+        }]
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">
@@ -423,12 +439,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action, this.readonly))}
                     ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
-                            ${getContentWithMenuTemplate(
-                                html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                                   .label="${i18next.t("rulesEditorAddAction")}"></or-mwc-input>`,
-                                getActionTypesMenu(this.config, this.assetInfos),
-                                undefined,
-                                (value) => this.addAction(value as string))}
+                            <or-vaadin-menu-bar .items=${menuItems}
+                                                @item-selected=${(ev: CustomEvent) => this.addAction(ev.detail.value.value)}
+                            ></or-vaadin-menu-bar>
                         </span>
                     ` : ``}
                 </or-panel>

@@ -1,10 +1,28 @@
+/*
+ * Copyright 2026, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import {customElement, state} from "lit/decorators.js";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {css, html, PropertyValues, TemplateResult} from "lit";
 import {WidgetSettings} from "../util/widget-settings";
-import {AssetWidgetConfig, WidgetConfig} from "../util/widget-config";
+import {AssetWidgetConfig} from "../util/widget-config";
 import {GatewaySettings} from "../settings/gateway-settings";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
 import manager from "@openremote/core";
 import {when} from "lit/directives/when.js";
@@ -141,19 +159,22 @@ export class GatewayWidget extends OrWidget {
                         if (this._activeTunnel) {
                             return html`
                                 <div>
-                                <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}" .disabled="${disabled}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
-                                ></or-mwc-input>
-                                
-                                ${when(this.widgetConfig.type === GatewayTunnelInfoType.TCP, () => html`
-                                    <or-mwc-input .type="${InputType.BUTTON}" icon="content-copy" label="${i18next.t('gatewayTunnels.copyAddress')}" outlined .disabled="${disabled}"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCopyTunnelAddressClick(ev)}"
-                                    ></or-mwc-input>
-                                `, () => html`
-                                    <or-mwc-input .type="${InputType.BUTTON}" icon="open-in-new" label="${i18next.t('gatewayTunnels.open')}" outlined .disabled="${disabled}"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelNavigateClick(ev, this._activeTunnel)}"
-                                    ></or-mwc-input>
-                                `)}
+                                    <or-vaadin-button theme="primary" ?disabled=${disabled} @click=${(ev: Event) => this._onStopTunnelClick(ev)}>
+                                        <or-icon slot="prefix" icon="stop"></or-icon>
+                                        <or-translate value="gatewayTunnels.stop"></or-translate>
+                                    </or-vaadin-button>
+                                    
+                                    ${when(this.widgetConfig.type === GatewayTunnelInfoType.TCP, () => html`
+                                        <or-vaadin-button ?disabled=${disabled} @click=${(ev: Event) => this._onCopyTunnelAddressClick(ev)}>
+                                            <or-icon slot="prefix" icon="content-copy"></or-icon>
+                                            <or-translate value="gatewayTunnels.copyAddress"></or-translate>
+                                        </or-vaadin-button>
+                                    `, () => html`
+                                        <or-vaadin-button ?disabled=${disabled} @click=${(ev: Event) => this._onTunnelNavigateClick(ev, this._activeTunnel)}>
+                                            <or-icon slot="prefix" icon="open-in-new"></or-icon>
+                                            <or-translate value="gatewayTunnels.open"></or-translate>
+                                        </or-vaadin-button>
+                                    `)}
                                 </div>
                                 ${when(this._activeTunnel?.autoCloseTime, () => html`
                                     <div><or-translate value="gatewayTunnels.closesAt"></or-translate>: ${moment(this._activeTunnel?.autoCloseTime).format("lll")}</div>
@@ -161,9 +182,9 @@ export class GatewayWidget extends OrWidget {
                             `;
                         } else {
                             return html`
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${disabled ? i18next.t('gatewayTunnels.offline') : i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
-                                ></or-mwc-input>
+                                <or-vaadin-button ?disabled=${disabled} @click=${(ev: Event) => this._onStartTunnelClick(ev)}>
+                                    <or-translate value=${disabled ? "gatewayTunnels.offline" : "gatewayTunnels.start"}></or-translate>
+                                </or-vaadin-button>
                             `;
                         }
                     })}
@@ -175,7 +196,7 @@ export class GatewayWidget extends OrWidget {
     /**
      * HTML callback function when 'copy address' button is pressed for a TCP tunnel.
      */
-    protected _onCopyTunnelAddressClick(ev: OrInputChangedEvent) {
+    protected _onCopyTunnelAddressClick(_ev: Event) {
         if (this._isConfigComplete(this.widgetConfig)) {
             const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
             const address = this._getTunnelAddress(tunnelInfo);
@@ -196,21 +217,21 @@ export class GatewayWidget extends OrWidget {
     /**
      * HTML callback function when 'start' button is pressed, meant to create / start a new tunnel.
      */
-    protected _onStartTunnelClick(ev: OrInputChangedEvent) {
+    protected _onStartTunnelClick(_ev: Event) {
         this._tryStartTunnel(this.widgetConfig);
     }
 
     /**
      * HTML callback function when 'stop' button is pressed, meant to destroy the active tunnel.
      */
-    protected _onStopTunnelClick(ev: OrInputChangedEvent) {
+    protected _onStopTunnelClick(_ev: Event) {
         this._tryStopTunnel(this.widgetConfig);
     }
 
     /**
      * HTML callback function when 'open' button is pressed, meant to start using the tunnel.
      */
-    protected _onTunnelNavigateClick(ev: OrInputChangedEvent, activeTunnel?: GatewayTunnelInfo) {
+    protected _onTunnelNavigateClick(_ev: Event, activeTunnel?: GatewayTunnelInfo) {
         if(activeTunnel) {
             this._navigateToTunnel(activeTunnel);
         } else {

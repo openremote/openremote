@@ -8,6 +8,7 @@ settings:
     RAMP_RATE: 20
     DURATION: 300
     MILLIS_BETWEEN_PUBLISHES: 1000
+    RECONNECT_ATTEMPTS: 0
     DISCONNECT_DELAY: 0
 
 reporting:
@@ -29,9 +30,11 @@ modules:
     properties:
       MANAGER_HOSTNAME: ${MANAGER_HOSTNAME}
       THREAD_COUNT: ${THREAD_COUNT}
+      ASSETS_COUNT: ${ASSETS_COUNT}
       RAMP_RATE: ${RAMP_RATE}
       DURATION: ${DURATION}
       MILLIS_BETWEEN_PUBLISHES: ${MILLIS_BETWEEN_PUBLISHES}
+      RECONNECT_ATTEMPTS: ${RECONNECT_ATTEMPTS}
       DISCONNECT_DELAY: ${DISCONNECT_DELAY}
 
 execution:
@@ -40,4 +43,3 @@ execution:
 scenarios:
   simple:
     script: connect-and-publish.jmx
-

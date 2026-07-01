@@ -32,6 +32,7 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
     "echarts": "~6.0.0",
     "lit": "^3.3.1",
@@ -39,6 +40,7 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4",
     "@types/offscreencanvas": "^2019.6.4"
   },

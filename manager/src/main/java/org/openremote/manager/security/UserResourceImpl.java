@@ -32,16 +32,19 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 
 import jakarta.ws.rs.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.AbstractMap;
+import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
+    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.API, UserResourceImpl.class.getName());
     protected MQTTBrokerService mqttBrokerService;
 
     public UserResourceImpl(TimerService timerService, ManagerIdentityService identityService, MQTTBrokerService mqttBrokerService) {
@@ -97,6 +100,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User get(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -119,7 +124,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         if (!isAuthenticated()) {
             throw new ForbiddenException("Must be authenticated");
         }
-        return get(requestParams, getRequestRealmName(), getUserId());
+        return get(requestParams, getAuthenticatedRealmName(), getUserId());
     }
 
     @Override
@@ -169,6 +174,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User create(RequestParams requestParams, String realm, User user) {
+        throwIfCannotAdminRealm(realm);
 
         try {
             return identityService.getIdentityProvider().createUpdateUser(realm, user, null, false);
@@ -183,6 +189,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void delete(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotAdminRealm(realm);
         throwIfIllegalMasterAdminUserDeletion(requestParams, realm, userId);
 
         try {
@@ -256,6 +263,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public String resetSecret(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             return identityService.getIdentityProvider().resetSecret(realm, userId, null);
         } catch (ClientErrorException ex) {
@@ -271,7 +280,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new ForbiddenException("Must be authenticated");
         }
 
-        return getUserClientRoles(requestParams, getRequestRealmName(), getUserId(), clientId);
+        return getUserClientRoles(requestParams, getAuthenticatedRealmName(), getUserId(), clientId);
     }
 
     @Override
@@ -280,11 +289,13 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new ForbiddenException("Must be authenticated");
         }
 
-        return getUserRealmRoles(requestParams, getRequestRealmName(), getUserId());
+        return getUserRealmRoles(requestParams, getAuthenticatedRealmName(), getUserId());
     }
 
     @Override
     public String[] getUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String clientId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -304,6 +315,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public String[] getUserRealmRoles(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -323,6 +336,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void updateUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String[] roles, String clientId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             identityService.getIdentityProvider().updateUserClientRoles(
                 realm,
@@ -330,7 +345,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
                 clientId,
                 roles);
         } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
+            LOG.warning("Failed to update user client roles: " + ex.getMessage());
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
@@ -339,13 +354,15 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void updateUserRealmRoles(RequestParams requestParams, String realm, String userId, String[] roles) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             identityService.getIdentityProvider().updateUserRealmRoles(
                 realm,
                 userId,
                 roles);
         } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
+            LOG.warning("Failed to update user realm roles: " + ex.getMessage());
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
@@ -354,6 +371,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public Role[] getClientRoles(RequestParams requestParams, String realm, String clientId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             return identityService.getIdentityProvider().getClientRoles(
                 realm,
@@ -372,13 +391,15 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void updateClientRoles(RequestParams requestParams, String realm, Role[] roles, String clientId) {
+        throwIfCannotAdminRealm(realm);
+
         try {
             identityService.getIdentityProvider().updateClientRoles(
                 realm,
                 clientId,
                 roles);
         } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
+            LOG.warning("Failed to update client roles: " + ex.getMessage());
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new NotFoundException(ex);
@@ -403,6 +424,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public UserSession[] getUserSessions(RequestParams requestParams, String realm, String userId) {
+        throwIfCannotReadUserInRealm(realm, userId);
+
         boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
@@ -464,6 +487,25 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         if (!currentUserId.equals(userId) && !hasResourceRole(Constants.WRITE_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID)) {
             throw new NotAllowedException("Not allowed to mutate another user");
+        }
+    }
+
+    protected void throwIfCannotAdminRealm(String realm) throws WebApplicationException {
+        AuthContext authContext = getAuthContext();
+        if (authContext == null) {
+            throw new NotAuthorizedException("Not authenticated");
+        }
+
+        if (!authContext.isRealmAccessibleByUser(realm)) {
+            throw new NotAllowedException("Cannot administer a different realm");
+        }
+    }
+
+    protected void throwIfCannotReadUserInRealm(String realm, String userId) throws WebApplicationException {
+        throwIfCannotAdminRealm(realm);
+
+        if (!identityService.getIdentityProvider().isUserInRealm(userId, realm)) {
+            throw new NotAllowedException("Cannot read a user in a different realm");
         }
     }
 

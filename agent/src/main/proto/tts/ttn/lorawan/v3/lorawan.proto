@@ -1,0 +1,1588 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+// Message represents a LoRaWAN message
+message Message {
+  MHDR m_hdr = 1 [(validate.rules).message.required = true];
+  bytes mic = 2 [(validate.rules).bytes = {
+    min_len: 0,
+    max_len: 4
+  }];
+
+  // Payload represents either MACPayload, RejoinRequestPayload, JoinRequestPayload or JoinAcceptPayload
+  // - MACPayload length is in range [7:M] bytes, where M is PHY specific.
+  // - JoinRequestPayload length is 18 bytes.
+  // - JoinAcceptPayload length is either 12 or 28 bytes.
+  // - RejoinRequestPayload length is 14 for Type 0 and 2, 19 for Type 1.
+  oneof Payload {
+    option (validate.required) = true;
+
+    MACPayload mac_payload = 3;
+    JoinRequestPayload join_request_payload = 4;
+    JoinAcceptPayload join_accept_payload = 5;
+    RejoinRequestPayload rejoin_request_payload = 6;
+  }
+
+  reserved 7; // Reserved for proprietary payload.
+}
+
+enum MType {
+  option (thethings.json.enum) = {marshal_as_string: true};
+  JOIN_REQUEST = 0;
+  JOIN_ACCEPT = 1;
+  UNCONFIRMED_UP = 2;
+  UNCONFIRMED_DOWN = 3;
+  CONFIRMED_UP = 4;
+  CONFIRMED_DOWN = 5;
+  REJOIN_REQUEST = 6;
+  PROPRIETARY = 7;
+}
+
+enum Major {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "LORAWAN"
+  };
+  LORAWAN_R1 = 0;
+}
+
+enum MACVersion {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "MAC"
+  };
+  option (thethings.flags.enum) = {alias_map: "go.thethings.network/lorawan-stack/v3/pkg/ttnpb.MACVersion_customvalue"};
+
+  MAC_UNKNOWN = 0 [(thethings.json.enum_value) = {
+    aliases: ["unknown"]
+  }];
+  MAC_V1_0 = 1 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.0",
+      "1.0.0"
+    ]
+  }];
+  MAC_V1_0_1 = 2 [(thethings.json.enum_value) = {
+    aliases: ["1.0.1"]
+  }];
+  MAC_V1_0_2 = 3 [(thethings.json.enum_value) = {
+    aliases: ["1.0.2"]
+  }];
+  MAC_V1_1 = 4 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.1",
+      "1.1.0"
+    ]
+  }];
+  MAC_V1_0_3 = 5 [(thethings.json.enum_value) = {
+    aliases: ["1.0.3"]
+  }];
+  MAC_V1_0_4 = 6 [(thethings.json.enum_value) = {
+    aliases: ["1.0.4"]
+  }];
+}
+
+enum PHYVersion {
+  option allow_alias = true;
+  option (thethings.json.enum) = {marshal_as_string: true};
+  option (thethings.flags.enum) = {alias_map: "go.thethings.network/lorawan-stack/v3/pkg/ttnpb.PHYVersion_customvalue"};
+
+  PHY_UNKNOWN = 0 [(thethings.json.enum_value) = {
+    aliases: ["unknown"]
+  }];
+
+  PHY_V1_0 = 1 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.0",
+      "1.0.0",
+      "V1_0"
+    ]
+  }];
+  TS001_V1_0 = 1;
+  PHY_V1_0_1 = 2 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.0.1",
+      "V1_0_1"
+    ]
+  }];
+  TS001_V1_0_1 = 2;
+
+  PHY_V1_0_2_REV_A = 3 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.0.2",
+      "1.0.2-a",
+      "V1_0_2",
+      "V1_0_2_REV_A"
+    ]
+  }];
+  RP001_V1_0_2 = 3;
+  PHY_V1_0_2_REV_B = 4 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.0.2-b",
+      "V1_0_2_REV_B"
+    ]
+  }];
+  RP001_V1_0_2_REV_B = 4;
+  PHY_V1_1_REV_A = 5 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.1-a",
+      "1.1.0-a",
+      "V1_1_REV_A"
+    ]
+  }];
+  RP001_V1_1_REV_A = 5;
+  PHY_V1_1_REV_B = 6 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.1-b",
+      "1.1.0-b",
+      "V1_1_REV_B"
+    ]
+  }];
+  RP001_V1_1_REV_B = 6;
+  PHY_V1_0_3_REV_A = 7 [(thethings.json.enum_value) = {
+    aliases: [
+      "1.0.3-a",
+      "V1_0_3_REV_A"
+    ]
+  }];
+  RP001_V1_0_3_REV_A = 7;
+
+  RP002_V1_0_0 = 8;
+  RP002_V1_0_1 = 9;
+  RP002_V1_0_2 = 10;
+  RP002_V1_0_3 = 11;
+  RP002_V1_0_4 = 12;
+}
+
+enum DataRateIndex {
+  option (thethings.json.enum) = {
+    marshal_as_number: true,
+    prefix: "DATA_RATE"
+  };
+  option (thethings.flags.enum) = {alias_map: "go.thethings.network/lorawan-stack/v3/pkg/ttnpb.DataRateIndex_customvalue"};
+
+  DATA_RATE_0 = 0;
+  DATA_RATE_1 = 1;
+  DATA_RATE_2 = 2;
+  DATA_RATE_3 = 3;
+  DATA_RATE_4 = 4;
+  DATA_RATE_5 = 5;
+  DATA_RATE_6 = 6;
+  DATA_RATE_7 = 7;
+  DATA_RATE_8 = 8;
+  DATA_RATE_9 = 9;
+  DATA_RATE_10 = 10;
+  DATA_RATE_11 = 11;
+  DATA_RATE_12 = 12;
+  DATA_RATE_13 = 13;
+  DATA_RATE_14 = 14;
+  DATA_RATE_15 = 15;
+}
+
+enum DataRateOffset {
+  option (thethings.json.enum) = {
+    marshal_as_number: true,
+    prefix: "DATA_RATE_OFFSET"
+  };
+  option (thethings.flags.enum) = {alias_map: "go.thethings.network/lorawan-stack/v3/pkg/ttnpb.DataRateOffset_customvalue"};
+
+  DATA_RATE_OFFSET_0 = 0;
+  DATA_RATE_OFFSET_1 = 1;
+  DATA_RATE_OFFSET_2 = 2;
+  DATA_RATE_OFFSET_3 = 3;
+  DATA_RATE_OFFSET_4 = 4;
+  DATA_RATE_OFFSET_5 = 5;
+  DATA_RATE_OFFSET_6 = 6;
+  DATA_RATE_OFFSET_7 = 7;
+}
+
+message MHDR {
+  MType m_type = 1 [(validate.rules).enum.defined_only = true];
+  Major major = 2 [(validate.rules).enum.defined_only = true];
+}
+
+message MACPayload {
+  FHDR f_hdr = 1 [(validate.rules).message.required = true];
+  uint32 f_port = 2 [(validate.rules).uint32.lte = 255];
+  bytes frm_payload = 3;
+  google.protobuf.Struct decoded_payload = 4;
+  // Full 32-bit FCnt value. Used internally by Network Server.
+  uint32 full_f_cnt = 5;
+}
+
+message FHDR {
+  bytes dev_addr = 1 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New4BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  FCtrl f_ctrl = 2 [(validate.rules).message.required = true];
+  uint32 f_cnt = 3 [(validate.rules).uint32.lte = 65535];
+  bytes f_opts = 4 [(validate.rules).bytes.max_len = 15];
+}
+
+message FCtrl {
+  bool adr = 1;
+  bool adr_ack_req = 2; // Only on uplink.
+  bool ack = 3;
+  bool f_pending = 4; // Only on downlink.
+  bool class_b = 5; // Only on uplink.
+}
+
+message JoinRequestPayload {
+  bytes join_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New8BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  bytes dev_eui = 2 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New8BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  bytes dev_nonce = 3 [
+    (validate.rules).bytes = {
+      len: 2,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal2Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New2BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"ABCD\""
+    }
+  ];
+}
+
+enum JoinRequestType {
+  option (thethings.json.enum) = {marshal_as_string: true};
+
+  REJOIN_CONTEXT = 0; // Resets DevAddr, Session Keys, Frame Counters, Radio Parameters.
+  REJOIN_SESSION = 1; // Equivalent to the initial JoinRequest.
+  REJOIN_KEYS = 2; // Resets DevAddr, Session Keys, Frame Counters, while keeping the Radio Parameters.
+  JOIN = 255; // Normal join-request.
+}
+
+enum RejoinRequestType {
+  option (thethings.json.enum) = {marshal_as_string: true};
+
+  CONTEXT = 0; // Resets DevAddr, Session Keys, Frame Counters, Radio Parameters.
+  SESSION = 1; // Equivalent to the initial JoinRequest.
+  KEYS = 2; // Resets DevAddr, Session Keys, Frame Counters, while keeping the Radio Parameters.
+}
+
+message RejoinRequestPayload {
+  RejoinRequestType rejoin_type = 1 [(validate.rules).enum.defined_only = true];
+  bytes net_id = 2 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New3BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  bytes join_eui = 3 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New8BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  bytes dev_eui = 4 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New8BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  uint32 rejoin_cnt = 5; // Contains RJCount0 or RJCount1 depending on rejoin_type.
+}
+
+message JoinAcceptPayload {
+  bytes encrypted = 1;
+  bytes join_nonce = 2 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New3BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"ABCDEF\""
+    }
+  ];
+  bytes net_id = 3 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New3BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  bytes dev_addr = 4 [
+    (validate.rules).bytes = {
+      len: 4,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New4BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"2600ABCD\""
+    }
+  ];
+  DLSettings dl_settings = 5 [(validate.rules).message.required = true];
+  RxDelay rx_delay = 6 [(validate.rules).enum.defined_only = true];
+  CFList cf_list = 7;
+}
+
+message DLSettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  DataRateOffset rx1_dr_offset = 1 [(validate.rules).enum.defined_only = true];
+  DataRateIndex rx2_dr = 2 [(validate.rules).enum.defined_only = true];
+  // OptNeg is set if Network Server implements LoRaWAN 1.1 or greater.
+  bool opt_neg = 3;
+}
+
+enum CFListType {
+  option (thethings.json.enum) = {marshal_as_string: true};
+
+  FREQUENCIES = 0;
+  CHANNEL_MASKS = 1;
+}
+
+message CFList {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  CFListType type = 1 [(validate.rules).enum.defined_only = true];
+  // Frequencies to be broadcasted, in hecto-Hz.
+  // These values are broadcasted as 24 bits unsigned integers.
+  // This field should not contain default values.
+  repeated uint32 freq = 2;
+  // ChMasks controlling the channels to be used.
+  // Length of this field must be equal to the amount of uplink channels
+  // defined by the selected frequency plan.
+  repeated bool ch_masks = 3;
+}
+
+enum Class {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "CLASS"
+  };
+
+  CLASS_A = 0;
+  CLASS_B = 1;
+  CLASS_C = 2;
+}
+
+enum TxSchedulePriority {
+  option (thethings.json.enum) = {marshal_as_string: true};
+  LOWEST = 0;
+  LOW = 1;
+  BELOW_NORMAL = 2;
+  NORMAL = 3;
+  ABOVE_NORMAL = 4;
+  HIGH = 5;
+  HIGHEST = 6;
+}
+
+message LoRaDataRate {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Bandwidth (Hz).
+  uint32 bandwidth = 1;
+  uint32 spreading_factor = 2;
+  string coding_rate = 3;
+}
+
+message FSKDataRate {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Bit rate (bps).
+  uint32 bit_rate = 1;
+}
+
+message LRFHSSDataRate {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  uint32 modulation_type = 1;
+  // Operating Channel Width (Hz).
+  uint32 operating_channel_width = 2;
+  string coding_rate = 3;
+}
+
+message DataRate {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  oneof modulation {
+    option (validate.required) = true;
+
+    LoRaDataRate lora = 1;
+    FSKDataRate fsk = 2;
+    LRFHSSDataRate lrfhss = 3;
+  }
+}
+
+// TxSettings contains the settings for a transmission.
+// This message is used on both uplink and downlink.
+// On downlink, this is a scheduled transmission.
+message TxSettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // Transmission settings for downlink.
+  message Downlink {
+    option (thethings.flags.message) = {
+      select: true,
+      set: true
+    };
+    // Index of the antenna on which the uplink was received and/or downlink must be sent.
+    uint32 antenna_index = 1;
+    // Transmission power (dBm). Only on downlink.
+    float tx_power = 2;
+    // Invert LoRa polarization; false for LoRaWAN uplink, true for downlink.
+    bool invert_polarization = 3;
+  }
+
+  // Data rate.
+  DataRate data_rate = 1 [(validate.rules).message.required = true];
+  reserved 2; // data_rate_index
+  reserved 3; // coding_rate
+  // Frequency (Hz).
+  uint64 frequency = 4 [(validate.rules).uint64.gte = 100000];
+  // Send a CRC in the packet; only on uplink; on downlink, CRC should not be enabled.
+  bool enable_crc = 5;
+  // Timestamp of the gateway concentrator when the uplink message was received, or when the downlink message should be transmitted (microseconds).
+  // On downlink, set timestamp to 0 and time to null to use immediate scheduling.
+  uint32 timestamp = 6;
+  // Time of the gateway when the uplink message was received, or when the downlink message should be transmitted.
+  // For downlink, this requires the gateway to have GPS time synchronization.
+  google.protobuf.Timestamp time = 7;
+  // Transmission settings for downlink.
+  Downlink downlink = 8;
+  // Concentrator timestamp for the downlink as calculated by the Gateway Server scheduler.
+  // This value takes into account necessary offsets such as the RTT (Round Trip Time) and TOA (Time Of Arrival).
+  // This field is set and used only by the Gateway Server.
+  int64 concentrator_timestamp = 9;
+}
+
+message GatewayAntennaIdentifiers {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  uint32 antenna_index = 2;
+}
+
+message ClassBCGatewayIdentifiers {
+  GatewayIdentifiers gateway_ids = 1 [(validate.rules).message.required = true];
+  uint32 antenna_index = 2;
+  uint32 group_index = 3;
+}
+
+message UplinkToken {
+  GatewayAntennaIdentifiers ids = 1 [(validate.rules).message.required = true];
+  uint32 timestamp = 2;
+  // Absolute time observed by the server when the uplink message has been received.
+  google.protobuf.Timestamp server_time = 3;
+  // Absolute concentrator time as observed by the Gateway Server, accounting for rollovers.
+  int64 concentrator_time = 4;
+  // Absolute time observed by the gateway when the uplink has been received.
+  google.protobuf.Timestamp gateway_time = 5;
+}
+
+message DownlinkPath {
+  // Set uplink token for class A, B or C downlink to the uplink token received from the corresponding RxMetadata. Uplink tokens are opaque to the Network Server.
+  // Set fixed to force using the specified gateway antenna identifiers for downlink. This can only be used for class B or C downlinks.
+  oneof path {
+    option (validate.required) = true;
+
+    bytes uplink_token = 1;
+    GatewayAntennaIdentifiers fixed = 2;
+  }
+}
+
+// TxRequest is a request for transmission.
+// If sent to a roaming partner, this request is used to generate the DLMetadata Object (see Backend Interfaces 1.0, Table 22).
+// If the gateway has a scheduler, this request is sent to the gateway, in the order of gateway_ids.
+// Otherwise, the Gateway Server attempts to schedule the request and creates the TxSettings.
+message TxRequest {
+  Class class = 1;
+  // Downlink paths used to select a gateway for downlink.
+  // In class A, the downlink paths are required to only contain uplink tokens.
+  // In class B and C, the downlink paths may contain uplink tokens and fixed gateways antenna identifiers.
+  repeated DownlinkPath downlink_paths = 2;
+
+  // Rx1 delay (Rx2 delay is Rx1 delay + 1 second).
+  RxDelay rx1_delay = 3 [(validate.rules).enum.defined_only = true];
+  // LoRaWAN data rate for Rx1.
+  DataRate rx1_data_rate = 12;
+  reserved 4; // rx1_data_rate_index
+  // Frequency (Hz) for Rx1.
+  uint64 rx1_frequency = 5;
+  // LoRaWAN data rate for Rx2.
+  DataRate rx2_data_rate = 13;
+  reserved 6; // rx2_data_rate_index
+  // Frequency (Hz) for Rx2.
+  uint64 rx2_frequency = 7;
+  // Priority for scheduling.
+  // Requests with a higher priority are allocated more channel time than messages with a lower priority, in duty-cycle limited regions.
+  // A priority of HIGH or higher sets the HiPriorityFlag in the DLMetadata Object.
+  TxSchedulePriority priority = 8 [(validate.rules).enum.defined_only = true];
+
+  // Time when the downlink message should be transmitted.
+  // This value is only valid for class C downlink; class A downlink uses uplink tokens and class B downlink is scheduled on ping slots.
+  // This requires the gateway to have GPS time sychronization.
+  // If the absolute time is not set, the first available time will be used that does not conflict or violate regional limitations.
+  google.protobuf.Timestamp absolute_time = 9;
+
+  // Frequency plan ID from which the frequencies in this message are retrieved.
+  string frequency_plan_id = 10 [(validate.rules).string.max_len = 64];
+  reserved 11; // lorawan_phy_version
+
+  // Advanced metadata fields
+  // - can be used for advanced information or experimental features that are not yet formally defined in the API
+  // - field names are written in snake_case
+  google.protobuf.Struct advanced = 99;
+}
+
+enum MACCommandIdentifier {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "CID"
+  };
+
+  CID_RFU_0 = 0;
+  CID_RESET = 1;
+  CID_LINK_CHECK = 2;
+  CID_LINK_ADR = 3;
+  CID_DUTY_CYCLE = 4;
+  CID_RX_PARAM_SETUP = 5;
+  CID_DEV_STATUS = 6;
+  CID_NEW_CHANNEL = 7;
+  CID_RX_TIMING_SETUP = 8;
+  CID_TX_PARAM_SETUP = 9;
+  CID_DL_CHANNEL = 10;
+  CID_REKEY = 11;
+  CID_ADR_PARAM_SETUP = 12;
+  CID_DEVICE_TIME = 13;
+  CID_FORCE_REJOIN = 14;
+  CID_REJOIN_PARAM_SETUP = 15;
+  CID_PING_SLOT_INFO = 16;
+  CID_PING_SLOT_CHANNEL = 17;
+  CID_BEACON_TIMING = 18; // Deprecated
+  CID_BEACON_FREQ = 19;
+  CID_DEVICE_MODE = 32;
+
+  CID_RELAY_CONF = 64;
+  CID_RELAY_END_DEVICE_CONF = 65;
+  CID_RELAY_FILTER_LIST = 66;
+  CID_RELAY_UPDATE_UPLINK_LIST = 67;
+  CID_RELAY_CTRL_UPLINK_LIST = 68;
+  CID_RELAY_CONFIGURE_FWD_LIMIT = 69;
+  CID_RELAY_NOTIFY_NEW_END_DEVICE = 70;
+}
+
+enum RelayCADPeriodicity {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_CAD_PERIODICITY"
+  };
+
+  RELAY_CAD_PERIODICITY_1_SECOND = 0;
+  RELAY_CAD_PERIODICITY_500_MILLISECONDS = 1;
+  RELAY_CAD_PERIODICITY_250_MILLISECONDS = 2;
+  RELAY_CAD_PERIODICITY_100_MILLISECONDS = 3;
+  RELAY_CAD_PERIODICITY_50_MILLISECONDS = 4;
+  RELAY_CAD_PERIODICITY_20_MILLISECONDS = 5; // sic
+}
+
+enum RelaySecondChAckOffset {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_SECOND_CH_ACK_OFFSET"
+  };
+
+  RELAY_SECOND_CH_ACK_OFFSET_0 = 0; // 0 kHz
+  RELAY_SECOND_CH_ACK_OFFSET_200 = 1; // 200 kHz
+  RELAY_SECOND_CH_ACK_OFFSET_400 = 2; // 400 kHz
+  RELAY_SECOND_CH_ACK_OFFSET_800 = 3; // 800 kHz
+  RELAY_SECOND_CH_ACK_OFFSET_1600 = 4; // 1.6 MHz
+  RELAY_SECOND_CH_ACK_OFFSET_3200 = 5; // 3.2 MHz
+}
+
+enum RelayLimitBucketSize {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_LIMIT_BUCKET_SIZE"
+  };
+
+  RELAY_LIMIT_BUCKET_SIZE_1 = 0;
+  RELAY_LIMIT_BUCKET_SIZE_2 = 1;
+  RELAY_LIMIT_BUCKET_SIZE_4 = 2;
+  RELAY_LIMIT_BUCKET_SIZE_12 = 3; // sic
+}
+
+enum RelaySmartEnableLevel {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_SMART_ENABLE_LEVEL"
+  };
+
+  RELAY_SMART_ENABLE_LEVEL_8 = 0;
+  RELAY_SMART_ENABLE_LEVEL_16 = 1;
+  RELAY_SMART_ENABLE_LEVEL_32 = 2;
+  RELAY_SMART_ENABLE_LEVEL_64 = 3;
+}
+
+enum RelayWORChannel {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_WOR_CHANNEL"
+  };
+
+  RELAY_WOR_CHANNEL_DEFAULT = 0;
+  RELAY_WOR_CHANNEL_SECONDARY = 1;
+}
+
+enum RelayResetLimitCounter {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_RESET_LIMIT_COUNTER"
+  };
+
+  RELAY_RESET_LIMIT_COUNTER_ZERO = 0;
+  RELAY_RESET_LIMIT_COUNTER_RELOAD_RATE = 1;
+  RELAY_RESET_LIMIT_COUNTER_MAX_VALUE = 2;
+  RELAY_RESET_LIMIT_COUNTER_NO_RESET = 3;
+}
+
+enum RelayCtrlUplinkListAction {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "RELAY_CTRL_UPLINK_LIST_ACTION"
+  };
+
+  RELAY_CTRL_UPLINK_LIST_ACTION_READ_W_F_CNT = 0;
+  RELAY_CTRL_UPLINK_LIST_ACTION_REMOVE_TRUSTED_END_DEVICE = 1;
+}
+
+message RelaySecondChannel {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // The frequency (Hz) offset used for the WOR acknowledgement.
+  RelaySecondChAckOffset ack_offset = 1 [(validate.rules).enum.defined_only = true];
+  // The data rate index used by the WOR and WOR acknowledgement.
+  DataRateIndex data_rate_index = 2 [(validate.rules).enum.defined_only = true];
+  // The frequency (Hz) used by the wake on radio message.
+  uint64 frequency = 3 [(validate.rules).uint64.gte = 100000];
+}
+
+message RelayUplinkForwardLimits {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // The multiplier used to compute the total bucket size for the limits.
+  // The multiplier is multiplied by the reload rate in order to compute the total bucket size.
+  RelayLimitBucketSize bucket_size = 1 [(validate.rules).enum.defined_only = true];
+  // The number of tokens which are replenished in the bucket every hour.
+  uint32 reload_rate = 2 [(validate.rules).uint32.lte = 62];
+}
+
+message RelayForwardLimits {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // The multiplier used to compute the total bucket size for the limits.
+  // The multiplier is multiplied by the reload rate in order to compute the total bucket size.
+  RelayLimitBucketSize bucket_size = 1 [(validate.rules).enum.defined_only = true];
+  // The number of tokens which are replenished in the bucket every hour.
+  uint32 reload_rate = 2 [(validate.rules).uint32.lte = 126];
+}
+
+message RelayEndDeviceAlwaysMode {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+}
+message RelayEndDeviceDynamicMode {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  // The number of consecutive uplinks without a valid downlink before the end device attempts
+  // to use the relay mode to transmit messages.
+  RelaySmartEnableLevel smart_enable_level = 1 [(validate.rules).enum.defined_only = true];
+}
+message RelayEndDeviceControlledMode {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+}
+
+message MACCommand {
+  MACCommandIdentifier cid = 1 [(validate.rules).enum = {
+    defined_only: true,
+    not_in: [0]
+  }];
+
+  oneof payload {
+    bytes raw_payload = 2;
+    ResetInd reset_ind = 3;
+    ResetConf reset_conf = 4;
+    LinkCheckAns link_check_ans = 5;
+    LinkADRReq link_adr_req = 6;
+    LinkADRAns link_adr_ans = 7;
+    DutyCycleReq duty_cycle_req = 8;
+    RxParamSetupReq rx_param_setup_req = 9;
+    RxParamSetupAns rx_param_setup_ans = 10;
+    DevStatusAns dev_status_ans = 11;
+    NewChannelReq new_channel_req = 12;
+    NewChannelAns new_channel_ans = 13;
+    DLChannelReq dl_channel_req = 14;
+    DLChannelAns dl_channel_ans = 15;
+    RxTimingSetupReq rx_timing_setup_req = 16;
+    TxParamSetupReq tx_param_setup_req = 17;
+    RekeyInd rekey_ind = 18;
+    RekeyConf rekey_conf = 19;
+    ADRParamSetupReq adr_param_setup_req = 20;
+    DeviceTimeAns device_time_ans = 21;
+    ForceRejoinReq force_rejoin_req = 22;
+    RejoinParamSetupReq rejoin_param_setup_req = 23;
+    RejoinParamSetupAns rejoin_param_setup_ans = 24;
+    PingSlotInfoReq ping_slot_info_req = 25;
+    PingSlotChannelReq ping_slot_channel_req = 26;
+    PingSlotChannelAns ping_slot_channel_ans = 27;
+    BeaconTimingAns beacon_timing_ans = 28;
+    BeaconFreqReq beacon_freq_req = 29;
+    BeaconFreqAns beacon_freq_ans = 30;
+    DeviceModeInd device_mode_ind = 31;
+    DeviceModeConf device_mode_conf = 32;
+
+    RelayConfReq relay_conf_req = 33;
+    RelayConfAns relay_conf_ans = 34;
+    RelayEndDeviceConfReq relay_end_device_conf_req = 35;
+    RelayEndDeviceConfAns relay_end_device_conf_ans = 36;
+    RelayUpdateUplinkListReq relay_update_uplink_list_req = 39;
+    RelayUpdateUplinkListAns relay_update_uplink_list_ans = 40;
+    RelayCtrlUplinkListReq relay_ctrl_uplink_list_req = 41;
+    RelayCtrlUplinkListAns relay_ctrl_uplink_list_ans = 42;
+    RelayConfigureFwdLimitReq relay_configure_fwd_limit_req = 43;
+    RelayConfigureFwdLimitAns relay_configure_fwd_limit_ans = 44;
+    RelayNotifyNewEndDeviceReq relay_notify_new_end_device_req = 45;
+  }
+
+  reserved 37;
+  reserved "relay_filter_list_req";
+  reserved 38;
+  reserved "relay_filter_list_ans";
+
+  message ResetInd {
+    Minor minor_version = 1 [(validate.rules).enum = {
+      defined_only: true,
+      in: [1]
+    }];
+  }
+  message ResetConf {
+    Minor minor_version = 1 [(validate.rules).enum = {
+      defined_only: true,
+      in: [1]
+    }];
+  }
+  message LinkCheckAns {
+    // Indicates the link margin in dB of the received LinkCheckReq, relative to the demodulation floor.
+    uint32 margin = 1 [(validate.rules).uint32.lte = 254];
+    uint32 gateway_count = 2 [(validate.rules).uint32.lte = 255];
+  }
+  message LinkADRReq {
+    DataRateIndex data_rate_index = 1 [(validate.rules).enum.defined_only = true];
+    uint32 tx_power_index = 2 [(validate.rules).uint32.lte = 15];
+    repeated bool channel_mask = 3 [(validate.rules).repeated.max_items = 16];
+    reserved 4; // For RFU 7th bit of Redundancy.
+    uint32 channel_mask_control = 5 [(validate.rules).uint32.lte = 7];
+    uint32 nb_trans = 6 [(validate.rules).uint32.lte = 15];
+  }
+  message LinkADRAns {
+    bool channel_mask_ack = 1;
+    bool data_rate_index_ack = 2;
+    bool tx_power_index_ack = 3;
+  }
+  message DutyCycleReq {
+    AggregatedDutyCycle max_duty_cycle = 1 [(validate.rules).enum.defined_only = true];
+  }
+  message RxParamSetupReq {
+    DataRateIndex rx2_data_rate_index = 1 [(validate.rules).enum.defined_only = true];
+    DataRateOffset rx1_data_rate_offset = 2 [(validate.rules).enum.defined_only = true];
+    uint64 rx2_frequency = 3 [(validate.rules).uint64.gte = 100000]; // Rx2 frequency (Hz).
+  }
+  message RxParamSetupAns {
+    bool rx2_data_rate_index_ack = 1;
+    bool rx1_data_rate_offset_ack = 2;
+    bool rx2_frequency_ack = 3;
+  }
+  message DevStatusAns {
+    // Device battery status.
+    // 0 indicates that the device is connected to an external power source.
+    // 1..254 indicates a battery level.
+    // 255 indicates that the device was not able to measure the battery level.
+    uint32 battery = 1 [(validate.rules).uint32.lte = 255];
+    // SNR of the last downlink (dB; [-32, +31]).
+    int32 margin = 2 [(validate.rules).int32 = {
+      gte: -32,
+      lte: 31
+    }];
+  }
+  message NewChannelReq {
+    uint32 channel_index = 1 [(validate.rules).uint32.lte = 255];
+    uint64 frequency = 2 [(validate.rules).uint64 = {
+      lte: 0,
+      gte: 100000
+    }]; // Channel frequency (Hz).
+    DataRateIndex min_data_rate_index = 3 [(validate.rules).enum.defined_only = true];
+    DataRateIndex max_data_rate_index = 4 [(validate.rules).enum.defined_only = true];
+  }
+  message NewChannelAns {
+    bool frequency_ack = 1;
+    bool data_rate_ack = 2;
+  }
+  message DLChannelReq {
+    uint32 channel_index = 1 [(validate.rules).uint32.lte = 255];
+    uint64 frequency = 2 [(validate.rules).uint64.gte = 100000]; // Downlink channel frequency (Hz).
+  }
+  message DLChannelAns {
+    bool channel_index_ack = 1;
+    bool frequency_ack = 2;
+  }
+  message RxTimingSetupReq {
+    RxDelay delay = 1 [(validate.rules).enum.defined_only = true];
+  }
+  message TxParamSetupReq {
+    // Indicates the maximum EIRP value in dBm, indexed by the following vector:
+    // [ 8 10 12 13 14 16 18 20 21 24 26 27 29 30 33 36 ]
+    DeviceEIRP max_eirp_index = 1 [(validate.rules).enum.defined_only = true];
+    bool uplink_dwell_time = 2;
+    bool downlink_dwell_time = 3;
+  }
+  message RekeyInd {
+    Minor minor_version = 1 [(validate.rules).enum.defined_only = true];
+  }
+  message RekeyConf {
+    Minor minor_version = 1 [(validate.rules).enum.defined_only = true];
+  }
+  message ADRParamSetupReq {
+    // Exponent e that configures the ADR_ACK_LIMIT = 2^e messages.
+    ADRAckLimitExponent adr_ack_limit_exponent = 1 [(validate.rules).enum.defined_only = true];
+    // Exponent e that configures the ADR_ACK_DELAY = 2^e messages.
+    ADRAckDelayExponent adr_ack_delay_exponent = 2 [(validate.rules).enum.defined_only = true];
+  }
+  message DeviceTimeAns {
+    google.protobuf.Timestamp time = 7 [(validate.rules).timestamp.required = true];
+  }
+  message ForceRejoinReq {
+    RejoinRequestType rejoin_type = 1 [(validate.rules).enum.defined_only = true];
+    DataRateIndex data_rate_index = 2 [(validate.rules).enum.defined_only = true];
+    uint32 max_retries = 3 [(validate.rules).uint32.lte = 7];
+    // Exponent e that configures the rejoin period = 32 * 2^e + rand(0,32) seconds.
+    RejoinPeriodExponent period_exponent = 4 [(validate.rules).enum.defined_only = true];
+  }
+  message RejoinParamSetupReq {
+    // Exponent e that configures the rejoin counter = 2^(e+4) messages.
+    RejoinCountExponent max_count_exponent = 1 [(validate.rules).enum.defined_only = true];
+    // Exponent e that configures the rejoin timer = 2^(e+10) seconds.
+    RejoinTimeExponent max_time_exponent = 2 [(validate.rules).enum.defined_only = true];
+  }
+  message RejoinParamSetupAns {
+    bool max_time_exponent_ack = 1;
+  }
+  message PingSlotInfoReq {
+    PingSlotPeriod period = 1 [(validate.rules).enum.defined_only = true];
+  }
+  message PingSlotChannelReq {
+    uint64 frequency = 1 [(validate.rules).uint64 = {
+      lte: 0,
+      gte: 100000
+    }]; // Ping slot channel frequency (Hz).
+    DataRateIndex data_rate_index = 2 [(validate.rules).enum.defined_only = true];
+  }
+  message PingSlotChannelAns {
+    bool frequency_ack = 1;
+    bool data_rate_index_ack = 2;
+  }
+  message BeaconTimingAns {
+    uint32 delay = 1 [(validate.rules).uint32.lte = 65535]; // (uint16) See LoRaWAN specification.
+    uint32 channel_index = 2 [(validate.rules).uint32.lte = 255];
+  }
+  message BeaconFreqReq {
+    uint64 frequency = 1 [(validate.rules).uint64 = {
+      lte: 0,
+      gte: 100000
+    }]; // Frequency of the Class B beacons (Hz).
+  }
+  message BeaconFreqAns {
+    bool frequency_ack = 1;
+  }
+  message DeviceModeInd {
+    Class class = 1 [(validate.rules).enum.defined_only = true];
+  }
+  message DeviceModeConf {
+    Class class = 1 [(validate.rules).enum.defined_only = true];
+  }
+
+  message RelayConfReq {
+    message Configuration {
+      RelaySecondChannel second_channel = 1;
+      uint32 default_channel_index = 2 [(validate.rules).uint32.lte = 255];
+      RelayCADPeriodicity cad_periodicity = 3 [(validate.rules).enum.defined_only = true];
+    }
+    Configuration configuration = 1;
+  }
+  message RelayConfAns {
+    bool second_channel_frequency_ack = 1;
+    bool second_channel_ack_offset_ack = 2;
+    bool second_channel_data_rate_index_ack = 3;
+    bool second_channel_index_ack = 4;
+    bool default_channel_index_ack = 5;
+    bool cad_periodicity_ack = 6;
+  }
+  message RelayEndDeviceConfReq {
+    message Configuration {
+      oneof mode {
+        option (validate.required) = true;
+
+        RelayEndDeviceAlwaysMode always = 1;
+        RelayEndDeviceDynamicMode dynamic = 2;
+        RelayEndDeviceControlledMode end_device_controlled = 3;
+      }
+      uint32 backoff = 4 [(validate.rules).uint32.lte = 63];
+      RelaySecondChannel second_channel = 5;
+
+      string serving_device_id = 6 [(validate.rules).string = {
+        pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+        max_len: 36
+      }];
+    }
+    Configuration configuration = 1;
+  }
+  message RelayEndDeviceConfAns {
+    bool second_channel_frequency_ack = 1;
+    reserved 2; // second_channel_ack_offset_ack does not exist in the relay specification.
+    reserved "second_channel_ack_offset_ack";
+    bool second_channel_data_rate_index_ack = 3;
+    bool second_channel_index_ack = 4;
+    bool backoff_ack = 5;
+  }
+  message RelayUpdateUplinkListReq {
+    uint32 rule_index = 1 [(validate.rules).uint32.lte = 15];
+    RelayUplinkForwardLimits forward_limits = 2;
+    bytes dev_addr = 3 [
+      (validate.rules).bytes = {
+        len: 4,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+      },
+      (thethings.flags.field) = {
+        set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New4BytesFlag",
+        set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"2600ABCD\""
+      }
+    ];
+    uint32 w_f_cnt = 4;
+    bytes root_wor_s_key = 5 [
+      (validate.rules).bytes = {
+        len: 16,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal16Bytes"
+      },
+      (thethings.flags.field) = {
+        set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New16BytesFlag",
+        set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"0123456789ABCDEF0123456789ABCDEF\""
+      }
+    ];
+
+    string device_id = 6 [(validate.rules).string = {
+      pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+      max_len: 36
+    }];
+    bytes session_key_id = 7;
+  }
+  message RelayUpdateUplinkListAns {}
+  message RelayCtrlUplinkListReq {
+    uint32 rule_index = 1 [(validate.rules).uint32.lte = 15];
+    RelayCtrlUplinkListAction action = 2;
+  }
+  message RelayCtrlUplinkListAns {
+    bool rule_index_ack = 1;
+    uint32 w_f_cnt = 2;
+  }
+  message RelayConfigureFwdLimitReq {
+    RelayResetLimitCounter reset_limit_counter = 1;
+    RelayForwardLimits join_request_limits = 2;
+    RelayForwardLimits notify_limits = 3;
+    RelayForwardLimits global_uplink_limits = 4;
+    RelayForwardLimits overall_limits = 5;
+  }
+  message RelayConfigureFwdLimitAns {}
+  message RelayNotifyNewEndDeviceReq {
+    bytes dev_addr = 1 [
+      (validate.rules).bytes = {
+        len: 4,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal4Bytes"
+      },
+      (thethings.flags.field) = {
+        set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New4BytesFlag",
+        set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"2600ABCD\""
+      }
+    ];
+    int32 snr = 2 [(validate.rules).int32 = {
+      lte: 11,
+      gte: -20
+    }];
+    int32 rssi = 3 [(validate.rules).int32 = {
+      lte: -15,
+      gte: -142
+    }];
+  }
+}
+
+message MACCommands {
+  repeated MACCommand commands = 1;
+}
+
+enum AggregatedDutyCycle {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "DUTY_CYCLE"
+  };
+
+  DUTY_CYCLE_1 = 0; // 100%.
+  DUTY_CYCLE_2 = 1; // 50%.
+  DUTY_CYCLE_4 = 2; // 25%.
+  DUTY_CYCLE_8 = 3; // 12.5%.
+  DUTY_CYCLE_16 = 4; // 6.25%.
+  DUTY_CYCLE_32 = 5; // 3.125%.
+  DUTY_CYCLE_64 = 6; // 1.5625%.
+  DUTY_CYCLE_128 = 7; // Roughly 0.781%.
+  DUTY_CYCLE_256 = 8; // Roughly 0.390%.
+  DUTY_CYCLE_512 = 9; // Roughly 0.195%.
+  DUTY_CYCLE_1024 = 10; // Roughly 0.098%.
+  DUTY_CYCLE_2048 = 11; // Roughly 0.049%.
+  DUTY_CYCLE_4096 = 12; // Roughly 0.024%.
+  DUTY_CYCLE_8192 = 13; // Roughly 0.012%.
+  DUTY_CYCLE_16384 = 14; // Roughly 0.006%.
+  DUTY_CYCLE_32768 = 15; // Roughly 0.003%.
+}
+
+enum PingSlotPeriod {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "PING_EVERY"
+  };
+
+  PING_EVERY_1S = 0; // Every second.
+  PING_EVERY_2S = 1; // Every 2 seconds.
+  PING_EVERY_4S = 2; // Every 4 seconds.
+  PING_EVERY_8S = 3; // Every 8 seconds.
+  PING_EVERY_16S = 4; // Every 16 seconds.
+  PING_EVERY_32S = 5; // Every 32 seconds.
+  PING_EVERY_64S = 6; // Every 64 seconds.
+  PING_EVERY_128S = 7; // Every 128 seconds.
+}
+
+enum RejoinCountExponent {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "REJOIN_COUNT"
+  };
+
+  REJOIN_COUNT_16 = 0;
+  REJOIN_COUNT_32 = 1;
+  REJOIN_COUNT_64 = 2;
+  REJOIN_COUNT_128 = 3;
+  REJOIN_COUNT_256 = 4;
+  REJOIN_COUNT_512 = 5;
+  REJOIN_COUNT_1024 = 6;
+  REJOIN_COUNT_2048 = 7;
+  REJOIN_COUNT_4096 = 8;
+  REJOIN_COUNT_8192 = 9;
+  REJOIN_COUNT_16384 = 10;
+  REJOIN_COUNT_32768 = 11;
+  REJOIN_COUNT_65536 = 12;
+  REJOIN_COUNT_131072 = 13;
+  REJOIN_COUNT_262144 = 14;
+  REJOIN_COUNT_524288 = 15;
+}
+
+enum RejoinTimeExponent {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "REJOIN_TIME"
+  };
+
+  REJOIN_TIME_0 = 0; // Every ~17.1 minutes.
+  REJOIN_TIME_1 = 1; // Every ~34.1 minutes.
+  REJOIN_TIME_2 = 2; // Every ~1.1 hours.
+  REJOIN_TIME_3 = 3; // Every ~2.3 hours.
+  REJOIN_TIME_4 = 4; // Every ~4.6 hours.
+  REJOIN_TIME_5 = 5; // Every ~9.1 hours.
+  REJOIN_TIME_6 = 6; // Every ~18.2 hours.
+  REJOIN_TIME_7 = 7; // Every ~1.5 days.
+  REJOIN_TIME_8 = 8; // Every ~3.0 days.
+  REJOIN_TIME_9 = 9; // Every ~6.1 days.
+  REJOIN_TIME_10 = 10; // Every ~12.1 days.
+  REJOIN_TIME_11 = 11; // Every ~3.5 weeks.
+  REJOIN_TIME_12 = 12; // Every ~1.6 months.
+  REJOIN_TIME_13 = 13; // Every ~3.2 months.
+  REJOIN_TIME_14 = 14; // Every ~6.4 months.
+  REJOIN_TIME_15 = 15; // Every ~1.1 year.
+}
+
+enum RejoinPeriodExponent {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "REJOIN_PERIOD"
+  };
+
+  REJOIN_PERIOD_0 = 0; // Every 32 to 64 seconds.
+  REJOIN_PERIOD_1 = 1; // Every 64 to 96 seconds.
+  REJOIN_PERIOD_2 = 2; // Every 128 to 160 seconds.
+  REJOIN_PERIOD_3 = 3; // Every 256 to 288 seconds.
+  REJOIN_PERIOD_4 = 4; // Every 512 to 544 seconds.
+  REJOIN_PERIOD_5 = 5; // Every 1024 to 1056 seconds.
+  REJOIN_PERIOD_6 = 6; // Every 2048 to 2080 seconds.
+  REJOIN_PERIOD_7 = 7; // Every 4096 to 4128 seconds.
+}
+
+enum DeviceEIRP {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "DEVICE_EIRP"
+  };
+
+  DEVICE_EIRP_8 = 0; // 8 dBm.
+  DEVICE_EIRP_10 = 1; // 10 dBm.
+  DEVICE_EIRP_12 = 2; // 12 dBm.
+  DEVICE_EIRP_13 = 3; // 13 dBm.
+  DEVICE_EIRP_14 = 4; // 14 dBm.
+  DEVICE_EIRP_16 = 5; // 16 dBm.
+  DEVICE_EIRP_18 = 6; // 18 dBm.
+  DEVICE_EIRP_20 = 7; // 20 dBm.
+  DEVICE_EIRP_21 = 8; // 21 dBm.
+  DEVICE_EIRP_24 = 9; // 24 dBm.
+  DEVICE_EIRP_26 = 10; // 26 dBm.
+  DEVICE_EIRP_27 = 11; // 27 dBm.
+  DEVICE_EIRP_29 = 12; // 29 dBm.
+  DEVICE_EIRP_30 = 13; // 30 dBm.
+  DEVICE_EIRP_33 = 14; // 33 dBm.
+  DEVICE_EIRP_36 = 15; // 36 dBm.
+}
+
+enum ADRAckLimitExponent {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "ADR_ACK_LIMIT"
+  };
+
+  ADR_ACK_LIMIT_1 = 0;
+  ADR_ACK_LIMIT_2 = 1;
+  ADR_ACK_LIMIT_4 = 2;
+  ADR_ACK_LIMIT_8 = 3;
+  ADR_ACK_LIMIT_16 = 4;
+  ADR_ACK_LIMIT_32 = 5;
+  ADR_ACK_LIMIT_64 = 6;
+  ADR_ACK_LIMIT_128 = 7;
+  ADR_ACK_LIMIT_256 = 8;
+  ADR_ACK_LIMIT_512 = 9;
+  ADR_ACK_LIMIT_1024 = 10;
+  ADR_ACK_LIMIT_2048 = 11;
+  ADR_ACK_LIMIT_4096 = 12;
+  ADR_ACK_LIMIT_8192 = 13;
+  ADR_ACK_LIMIT_16384 = 14;
+  ADR_ACK_LIMIT_32768 = 15;
+}
+
+enum ADRAckDelayExponent {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "ADR_ACK_DELAY"
+  };
+
+  ADR_ACK_DELAY_1 = 0;
+  ADR_ACK_DELAY_2 = 1;
+  ADR_ACK_DELAY_4 = 2;
+  ADR_ACK_DELAY_8 = 3;
+  ADR_ACK_DELAY_16 = 4;
+  ADR_ACK_DELAY_32 = 5;
+  ADR_ACK_DELAY_64 = 6;
+  ADR_ACK_DELAY_128 = 7;
+  ADR_ACK_DELAY_256 = 8;
+  ADR_ACK_DELAY_512 = 9;
+  ADR_ACK_DELAY_1024 = 10;
+  ADR_ACK_DELAY_2048 = 11;
+  ADR_ACK_DELAY_4096 = 12;
+  ADR_ACK_DELAY_8192 = 13;
+  ADR_ACK_DELAY_16384 = 14;
+  ADR_ACK_DELAY_32768 = 15;
+}
+
+enum RxDelay {
+  option (thethings.json.enum) = {
+    marshal_as_number: true,
+    prefix: "RX_DELAY"
+  };
+  option (thethings.flags.enum) = {alias_map: "go.thethings.network/lorawan-stack/v3/pkg/ttnpb.RxDelay_customvalue"};
+
+  RX_DELAY_0 = 0; // 1 second.
+  RX_DELAY_1 = 1; // 1 second.
+  RX_DELAY_2 = 2; // 2 seconds.
+  RX_DELAY_3 = 3; // 3 seconds.
+  RX_DELAY_4 = 4; // 4 seconds.
+  RX_DELAY_5 = 5; // 5 seconds.
+  RX_DELAY_6 = 6; // 6 seconds.
+  RX_DELAY_7 = 7; // 7 seconds.
+  RX_DELAY_8 = 8; // 8 seconds.
+  RX_DELAY_9 = 9; // 9 seconds.
+  RX_DELAY_10 = 10; // 10 seconds.
+  RX_DELAY_11 = 11; // 11 seconds.
+  RX_DELAY_12 = 12; // 12 seconds.
+  RX_DELAY_13 = 13; // 13 seconds.
+  RX_DELAY_14 = 14; // 14 seconds.
+  RX_DELAY_15 = 15; // 15 seconds.
+}
+
+enum Minor {
+  option (thethings.json.enum) = {
+    marshal_as_string: true,
+    prefix: "MINOR"
+  };
+
+  MINOR_RFU_0 = 0;
+  MINOR_1 = 1;
+  MINOR_RFU_2 = 2;
+  MINOR_RFU_3 = 3;
+  MINOR_RFU_4 = 4;
+  MINOR_RFU_5 = 5;
+  MINOR_RFU_6 = 6;
+  MINOR_RFU_7 = 7;
+  MINOR_RFU_8 = 8;
+  MINOR_RFU_9 = 9;
+  MINOR_RFU_10 = 10;
+  MINOR_RFU_11 = 11;
+  MINOR_RFU_12 = 12;
+  MINOR_RFU_13 = 13;
+  MINOR_RFU_14 = 14;
+  MINOR_RFU_15 = 15;
+}
+
+message FrequencyValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  uint64 value = 1 [(validate.rules).uint64.gte = 100000];
+}
+
+message ZeroableFrequencyValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  uint64 value = 1 [(validate.rules).uint64 = {
+    lte: 0,
+    gte: 100000
+  }];
+}
+
+message DataRateOffsetValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  DataRateOffset value = 1 [(validate.rules).enum.defined_only = true];
+}
+message DataRateIndexValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  DataRateIndex value = 1 [(validate.rules).enum.defined_only = true];
+}
+message PingSlotPeriodValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  PingSlotPeriod value = 1 [(validate.rules).enum.defined_only = true];
+}
+message AggregatedDutyCycleValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  AggregatedDutyCycle value = 1 [(validate.rules).enum.defined_only = true];
+}
+message RxDelayValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  RxDelay value = 1 [(validate.rules).enum.defined_only = true];
+}
+message ADRAckLimitExponentValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+
+  ADRAckLimitExponent value = 1 [(validate.rules).enum.defined_only = true];
+}
+message ADRAckDelayExponentValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+
+  ADRAckDelayExponent value = 1 [(validate.rules).enum.defined_only = true];
+}
+message DeviceEIRPValue {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true,
+    wrapper: true
+  };
+  option (thethings.json.message) = {wrapper: true};
+  DeviceEIRP value = 1 [(validate.rules).enum.defined_only = true];
+}
+
+message RelayForwardUplinkReq {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  DataRate data_rate = 1 [(validate.rules).message.required = true];
+  int32 snr = 2 [(validate.rules).int32 = {
+    lte: 11,
+    gte: -20
+  }];
+  int32 rssi = 3 [(validate.rules).int32 = {
+    lte: -15,
+    gte: -142
+  }];
+  RelayWORChannel wor_channel = 4 [(validate.rules).enum.defined_only = true];
+  uint64 frequency = 5 [(validate.rules).uint64.gte = 100000]; // Uplink channel frequency (Hz).
+  bytes raw_payload = 6;
+}
+
+message RelayForwardDownlinkReq {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+
+  bytes raw_payload = 1;
+}
+
+message RelayUplinkToken {
+  EndDeviceIdentifiers ids = 1 [(validate.rules).message.required = true];
+  bytes session_key_id = 2;
+  uint32 full_f_cnt = 3;
+}

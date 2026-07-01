@@ -23,9 +23,12 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

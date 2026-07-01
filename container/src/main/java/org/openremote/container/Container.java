@@ -204,6 +204,13 @@ public class Container implements org.openremote.model.Container {
             LOG.log(WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
         }
 
+        try {
+            LOG.log(INFO, "Stopping executor");
+            EXECUTOR.shutdown();
+        }  catch (Exception e) {
+            LOG.log(WARNING, "Exception thrown whilst trying to stop executor", e);
+        }
+
         Metrics.globalRegistry.remove(meterRegistry);
         PrometheusRegistry.defaultRegistry.clear();
         meterRegistry = null;

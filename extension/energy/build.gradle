@@ -8,14 +8,16 @@ base {
 }
 
 dependencies {
-    api "org.apache.camel:camel-core-model:$camelVersion"
-    api "org.jboss.resteasy:resteasy-client-api:$resteasyVersion"
+    api libs.camelCoreModel
+    api libs.resteasyClientApi
 
     api resolveProject(":manager")
     api resolveProject(":model")
 
     testImplementation resolveProject(":test")
 }
+
+test {}
 
 jar {
     from sourceSets.main.allJava

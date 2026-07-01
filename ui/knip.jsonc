@@ -1,23 +1,38 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
-    "ignore": [
-        "**/*.stories.ts"
-    ],
-    "ignoreWorkspaces": [
-        "ui/util", // Many dev dependencies like eslint are considered unused
-        "ui/test" // Only ignoring because the index.js file in the Playwright app doesn't want to parse]
-
-    ],
+    "ignore": ["**/*.stories.ts"],
     "ignoreDependencies": [
         "@types/react", // Required by mdx which is used in Storybook
         "@webcomponents/webcomponentsjs", // Imported through index.html files for apps
         "@types/offscreencanvas", // Referenced in the tsconfig file
+        "inter-ui", // Only imports CSS files
         "@vaadin/vaadin-lumo-styles", // Only imports CSS files
         "@openremote/theme", // Only imports CSS files
-        "@rsdoctor/rspack-plugin" // References in webpack config, and imported using require()
+        // --- HOISTED UTIL PACKAGE TOOLING ---
+        // Ignoring these stops Knip from flagging them as "Unused" in ui/util & ui/test
+        // AND stops Knip from flagging them as "Unlisted" when used by other workspaces.
+        "@custom-elements-manifest/analyzer",
+        "@rspack/cli",
+        "@types/eslint-scope",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser",
+        "@wc-toolkit/cem-inheritance",
+        "@wc-toolkit/jsx-types",
+        "@wc-toolkit/storybook-helpers",
+        "cross-env",
+        "css-loader",
+        "eslint",
+        "eslint-config-prettier",
+        "eslint-config-standard",
+        "eslint-plugin-import",
+        "eslint-plugin-node",
+        "eslint-plugin-promise",
+        "prettier",
+        "shx",
+        "source-map-loader",
+        "ts-loader"
     ],
     "ignoreUnresolved": [
-        "css-loader|ts-loader", // rspack.config.js files depend on the webpack config which uses css and ts-loaders, however these can't be resolved by Knip somehow.
         "./restclient", // Generated file
         "./model" // Generated file
     ],
@@ -27,8 +42,22 @@
         "files": "off"
     },
     "workspaces": {
-        ".": {
-            "project": ["ui"]
-        }
-    }
+        "ui/{app,component,demo}/*": {
+            "paths": {
+                "@openremote/util": ["../../util/webpack.util.js"]
+            }
+        },
+        "ui/util": {},
+        "ui/test": {}
+    },
+    // Explicitly activate the rspack plugin,
+    // because we only indirectly reference @rspack/core through the @openremote/util package
+    "rspack": true,
+    // Webpack loaders resolving doesn't work because they're referenced under the @openremote/util package
+    // "webpack": true,
+    // ESlint plugin resolving doesn't work because they're referenced under the @openremote/util package
+    // "eslint": ["ui/.eslintrc.json"],
+    // Storybook story dependency resolving doesn't work because those reference the @storybook/web-components dependency
+    // installed indirectly throught the @openremote/storybook app
+    // "storybook": true
 }

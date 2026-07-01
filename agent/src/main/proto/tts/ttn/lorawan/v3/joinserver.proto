@@ -1,0 +1,526 @@
+// Copyright © 2019 The Things Network Foundation, The Things Industries B.V.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package ttn.lorawan.v3;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "thethings/flags/annotations.proto";
+import "thethings/json/annotations.proto";
+import "ttn/lorawan/v3/end_device.proto";
+import "ttn/lorawan/v3/identifiers.proto";
+import "ttn/lorawan/v3/join.proto";
+import "ttn/lorawan/v3/keys.proto";
+import "ttn/lorawan/v3/lorawan.proto";
+import "validate/validate.proto";
+
+option go_package = "go.thethings.network/lorawan-stack/v3/pkg/ttnpb";
+
+message SessionKeyRequest {
+  // Join Server issued identifier for the session keys.
+  bytes session_key_id = 1 [(validate.rules).bytes.max_len = 2048];
+  // LoRaWAN DevEUI.
+  bytes dev_eui = 2 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  // The LoRaWAN JoinEUI (AppEUI until LoRaWAN 1.0.3 end devices).
+  bytes join_eui = 3 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+message NwkSKeysResponse {
+  // The (encrypted) Forwarding Network Session Integrity Key (or Network Session Key in 1.0 compatibility mode).
+  KeyEnvelope f_nwk_s_int_key = 1 [(validate.rules).message.required = true];
+  // The (encrypted) Serving Network Session Integrity Key.
+  KeyEnvelope s_nwk_s_int_key = 2 [(validate.rules).message.required = true];
+  // The (encrypted) Network Session Encryption Key.
+  KeyEnvelope nwk_s_enc_key = 3 [(validate.rules).message.required = true];
+}
+
+// The NsJs service connects a Network Server to a Join Server.
+service NsJs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The NsJs service connects a Network Server to a Join Server. This is an inter-component service and is not intended to be used by end users."};
+  // Handle a join-request message.
+  rpc HandleJoin(JoinRequest) returns (JoinResponse);
+  // Request the network session keys for a particular session.
+  rpc GetNwkSKeys(SessionKeyRequest) returns (NwkSKeysResponse);
+}
+
+message AppSKeyResponse {
+  // The (encrypted) Application Session Key.
+  KeyEnvelope app_s_key = 1 [(validate.rules).message.required = true];
+}
+
+// The AsJs service connects an Application Server to a Join Server.
+service AsJs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The AsJs service connects an Application Server to a Join Server. This is an inter-component service and is not intended to be used by end users."};
+  // Request the application session key for a particular session.
+  rpc GetAppSKey(SessionKeyRequest) returns (AppSKeyResponse);
+}
+
+// The AppJs service connects an Application to a Join Server.
+service AppJs {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The AppJs service is used by an external AWS integration to connect to a Join Server instance."};
+  // Request the application session key for a particular session.
+  rpc GetAppSKey(SessionKeyRequest) returns (AppSKeyResponse);
+}
+
+message CryptoServicePayloadRequest {
+  // End device identifiers for the cryptographic operation.
+  EndDeviceIdentifiers ids = 1 [(validate.rules).message.required = true];
+  // LoRaWAN version to use for the cryptographic operation.
+  MACVersion lorawan_version = 2 [(validate.rules).enum.defined_only = true];
+  // Raw input payload.
+  bytes payload = 3 [(validate.rules).bytes.max_len = 256];
+  // Provisioner that provisioned the end device.
+  string provisioner_id = 4 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+  // Provisioning data for the provisioner.
+  google.protobuf.Struct provisioning_data = 5;
+}
+
+message CryptoServicePayloadResponse {
+  // Raw output payload.
+  bytes payload = 1;
+}
+
+message JoinAcceptMICRequest {
+  // Request data for the cryptographic operation.
+  CryptoServicePayloadRequest payload_request = 1 [(validate.rules).message.required = true];
+  // LoRaWAN join-request type.
+  JoinRequestType join_request_type = 2 [(validate.rules).enum.defined_only = true];
+  // LoRaWAN DevNonce.
+  bytes dev_nonce = 3 [
+    (validate.rules).bytes = {
+      len: 2,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal2Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"ABCD\""
+    }
+  ];
+}
+
+message DeriveSessionKeysRequest {
+  // End device identifiers to use for key derivation.
+  // The DevAddr must be set in this request. The DevEUI may need to be set, depending on the provisioner.
+  EndDeviceIdentifiers ids = 1 [(validate.rules).message.required = true];
+  // LoRaWAN key derivation scheme.
+  MACVersion lorawan_version = 2 [(validate.rules).enum.defined_only = true];
+  // LoRaWAN JoinNonce (or AppNonce).
+  bytes join_nonce = 3 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"ABCDEF\""
+    }
+  ];
+  // LoRaWAN DevNonce.
+  bytes dev_nonce = 4 [
+    (validate.rules).bytes = {
+      len: 2,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal2Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"ABCD\""
+    }
+  ];
+  // LoRaWAN NetID.
+  bytes net_id = 5 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  // Provisioner that provisioned the end device.
+  string provisioner_id = 6 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+  // Provisioning data for the provisioner.
+  google.protobuf.Struct provisioning_data = 7;
+}
+
+message GetRootKeysRequest {
+  // End device identifiers to request the root keys for.
+  EndDeviceIdentifiers ids = 1 [(validate.rules).message.required = true];
+  // Provisioner that provisioned the end device.
+  string provisioner_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$|^$",
+    max_len: 36
+  }];
+  // Provisioning data for the provisioner.
+  google.protobuf.Struct provisioning_data = 3;
+}
+
+// Service for network layer cryptographic operations.
+service NetworkCryptoService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The NetworkCryptoService supports network layer cryptographic operations. This service is not intended to be used by end users."};
+  // Calculate the join-request message MIC.
+  rpc JoinRequestMIC(CryptoServicePayloadRequest) returns (CryptoServicePayloadResponse);
+  // Calculate the join-accept message MIC.
+  rpc JoinAcceptMIC(JoinAcceptMICRequest) returns (CryptoServicePayloadResponse);
+  // Encrypt the join-accept payload.
+  rpc EncryptJoinAccept(CryptoServicePayloadRequest) returns (CryptoServicePayloadResponse);
+  // Encrypt the rejoin-accept payload.
+  rpc EncryptRejoinAccept(CryptoServicePayloadRequest) returns (CryptoServicePayloadResponse);
+  // Derive network session keys (NwkSKey, or FNwkSKey, SNwkSKey and NwkSEncKey)
+  rpc DeriveNwkSKeys(DeriveSessionKeysRequest) returns (NwkSKeysResponse);
+  // Get the NwkKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed.
+  rpc GetNwkKey(GetRootKeysRequest) returns (KeyEnvelope);
+}
+
+// Service for application layer cryptographic operations.
+service ApplicationCryptoService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "The ApplicationCryptoService supports application layer cryptographic operations. This service is not intended to be used by end users."};
+  // Derive the application session key (AppSKey).
+  rpc DeriveAppSKey(DeriveSessionKeysRequest) returns (AppSKeyResponse);
+  // Get the AppKey. Crypto Servers may return status code FAILED_PRECONDITION when root keys are not exposed.
+  rpc GetAppKey(GetRootKeysRequest) returns (KeyEnvelope);
+}
+
+message ProvisionEndDevicesRequest {
+  option deprecated = true;
+
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  // ID of the provisioner service as configured in the Join Server.
+  string provisioner_id = 2 [(validate.rules).string = {
+    pattern: "^[a-z0-9](?:[-]?[a-z0-9]){2,}$",
+    max_len: 36
+  }];
+  // Vendor-specific provisioning data.
+  bytes provisioning_data = 3;
+
+  message IdentifiersList {
+    bytes join_eui = 1 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+    repeated EndDeviceIdentifiers end_device_ids = 2;
+  }
+  message IdentifiersRange {
+    bytes join_eui = 1 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+    // DevEUI to start issuing from.
+    bytes start_dev_eui = 2 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+  }
+  message IdentifiersFromData {
+    bytes join_eui = 1 [
+      (validate.rules).bytes = {
+        len: 8,
+        ignore_empty: true
+      },
+      (thethings.json.field) = {
+        marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+        unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        type: STRING,
+        format: "string",
+        example: "\"70B3D57ED000ABCD\""
+      }
+    ];
+  }
+  oneof end_devices {
+    // List of device identifiers that will be provisioned.
+    // The device identifiers must contain device_id and dev_eui.
+    // If set, the application_ids must equal the provision request's application_ids.
+    // The number of entries in data must match the number of given identifiers.
+    IdentifiersList list = 4;
+    // Provision devices in a range.
+    // The device_id will be generated by the provisioner from the vendor-specific data.
+    // The dev_eui will be issued from the given start_dev_eui.
+    IdentifiersRange range = 5;
+    // Provision devices with identifiers from the given data.
+    // The device_id and dev_eui will be generated by the provisioner from the vendor-specific data.
+    IdentifiersFromData from_data = 6;
+  }
+}
+
+// The JsEndDeviceRegistry service allows clients to manage their end devices on the Join Server.
+service JsEndDeviceRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage end devices on The Things Stack Join Server."};
+  // Get returns the device that matches the given identifiers.
+  // If there are multiple matches, an error will be returned.
+  rpc Get(GetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {get: "/js/applications/{end_device_ids.application_ids.application_id}/devices/{end_device_ids.device_id}"};
+  }
+
+  // Set creates or updates the device.
+  rpc Set(SetEndDeviceRequest) returns (EndDevice) {
+    option (google.api.http) = {
+      put: "/js/applications/{end_device.ids.application_ids.application_id}/devices/{end_device.ids.device_id}"
+      body: "*"
+      additional_bindings {
+        post: "/js/applications/{end_device.ids.application_ids.application_id}/devices"
+        body: "*"
+      };
+    };
+  }
+
+  // This rpc is deprecated; use EndDeviceTemplateConverter service instead.
+  // TODO: Remove (https://github.com/TheThingsNetwork/lorawan-stack/issues/999)
+  rpc Provision(ProvisionEndDevicesRequest) returns (stream EndDevice) {
+    option deprecated = true;
+    option (google.api.http) = {
+      put: "/js/applications/{application_ids.application_id}/provision-devices"
+      body: "*"
+    };
+  }
+
+  // Delete deletes the device that matches the given identifiers.
+  // If there are multiple matches, an error will be returned.
+  rpc Delete(EndDeviceIdentifiers) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/js/applications/{application_ids.application_id}/devices/{device_id}"};
+  }
+}
+
+// JsEndDeviceBatchRegistry service allows clients to manage batches of end devices on the Join Server.
+service JsEndDeviceBatchRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage batches of end devices on The Things Stack Join Server."};
+  // Delete a list of devices within the same application.
+  // This operation is atomic; either all devices are deleted or none.
+  // Devices not found are skipped and no error is returned.
+  rpc Delete(BatchDeleteEndDevicesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/js/applications/{application_ids.application_id}/devices/batch"};
+  }
+}
+
+message ApplicationActivationSettings {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  // The KEK label to use for wrapping application keys.
+  string kek_label = 1 [(validate.rules).string.max_len = 2048];
+  // The (encrypted) Key Encryption Key.
+  KeyEnvelope kek = 2;
+  // Home NetID.
+  bytes home_net_id = 3 [
+    (validate.rules).bytes = {
+      len: 3,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal3Bytes"
+    },
+    (thethings.flags.field) = {
+      set_flag_new_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.New3BytesFlag",
+      set_flag_getter_func: "go.thethings.network/lorawan-stack/v3/cmd/ttn-lw-cli/customflags.GetExactBytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"000013\""
+    }
+  ];
+  // The AS-ID of the Application Server to use.
+  string application_server_id = 4 [(validate.rules).string.max_len = 100];
+}
+
+message GetApplicationActivationSettingsRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message SetApplicationActivationSettingsRequest {
+  option (thethings.flags.message) = {
+    select: true,
+    set: true
+  };
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+  ApplicationActivationSettings settings = 2 [(validate.rules).message.required = true];
+  google.protobuf.FieldMask field_mask = 3;
+}
+
+message DeleteApplicationActivationSettingsRequest {
+  ApplicationIdentifiers application_ids = 1 [(validate.rules).message.required = true];
+}
+
+// The ApplicationActivationSettingRegistry service allows clients to manage their application activation settings.
+service ApplicationActivationSettingRegistry {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage application activation settings."};
+  // Get returns application activation settings.
+  rpc Get(GetApplicationActivationSettingsRequest) returns (ApplicationActivationSettings) {
+    option (google.api.http) = {get: "/js/applications/{application_ids.application_id}/settings"};
+  }
+
+  // Set creates or updates application activation settings.
+  rpc Set(SetApplicationActivationSettingsRequest) returns (ApplicationActivationSettings) {
+    option (google.api.http) = {
+      post: "/js/applications/{application_ids.application_id}/settings"
+      body: "*"
+    };
+  }
+
+  // Delete deletes application activation settings.
+  rpc Delete(DeleteApplicationActivationSettingsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/js/applications/{application_ids.application_id}/settings"};
+  }
+}
+
+message JoinEUIPrefix {
+  bytes join_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+  uint32 length = 2;
+}
+
+message JoinEUIPrefixes {
+  repeated JoinEUIPrefix prefixes = 1;
+}
+
+message GetDefaultJoinEUIResponse {
+  bytes join_eui = 1 [
+    (validate.rules).bytes = {
+      len: 8,
+      ignore_empty: true
+    },
+    (thethings.json.field) = {
+      marshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.MarshalHEXBytes",
+      unmarshaler_func: "go.thethings.network/lorawan-stack/v3/pkg/types.Unmarshal8Bytes"
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      type: STRING,
+      format: "string",
+      example: "\"70B3D57ED000ABCD\""
+    }
+  ];
+}
+
+// The Js service returns configuration for a Join Server.
+service Js {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Fetch configuration for The Things Stack Join Server."};
+  // Request the JoinEUI prefixes that are configured for this Join Server.
+  rpc GetJoinEUIPrefixes(google.protobuf.Empty) returns (JoinEUIPrefixes) {
+    option (google.api.http) = {get: "/js/join_eui_prefixes"};
+  }
+
+  // Request the default JoinEUI that is configured for this Join Server.
+  rpc GetDefaultJoinEUI(google.protobuf.Empty) returns (GetDefaultJoinEUIResponse) {
+    option (google.api.http) = {get: "/js/default_join_eui"};
+  }
+}

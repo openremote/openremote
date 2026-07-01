@@ -1,0 +1,39 @@
+name: UI Check Outdated Translations
+on:
+  workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        description: Skip condition to allow branch protection checks to pass
+        default: false
+
+jobs:
+  ui-check-outdated-translations:
+    name: Check for outdated translations
+    if: ${{ !inputs.skip }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up JDK 21 and Gradle cache
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+      - name: Check for outdated translations
+        timeout-minutes: 20
+        run: |
+          # Check Outdated Translations
+          ./gradlew -p ui/app/shared processTranslations --no-parallel
+
+          out=$(git status --porcelain | grep "ui/app/shared/locales" || true)
+          if [[ -z "$out" ]]; then
+            echo "✅ No pipeline changes detected."
+          else
+            echo "❌ Pipeline files have changed. Please run:
+            \`\`\`sh
+            ./gradlew -p ui/app/shared processTranslations --no-parallel
+            \`\`\`
+            $out" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

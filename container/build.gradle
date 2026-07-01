@@ -7,56 +7,56 @@ dependencies {
 
     api project(":model")
 
-    api "org.apache.groovy:groovy:$groovyVersion"
-    api "org.apache.groovy:groovy-json:$groovyVersion"
-    api "org.apache.groovy:groovy-xml:$groovyVersion"
-    api "org.apache.groovy:groovy-yaml:$groovyVersion"
-    api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
+    api libs.groovy
+    api libs.groovyJson
+    api libs.groovyXml
+    api libs.groovyYaml
+    api libs.groovySandbox
 
     // SLF4J JUL provider
-    api "org.slf4j:slf4j-jdk14:$slf4jVersion"
+    api libs.slf4jJdk14
 
-    api "io.undertow:undertow-core:$undertowVersion"
-    api "io.undertow:undertow-websockets-jsr:$undertowVersion"
-    api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
+    api libs.undertowCore
+    api libs.undertowWebsocketsJsr
+    api(libs.resteasyUndertow) {
         exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
     }
-    api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
-    api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
-    api "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
-    api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
+    api libs.resteasyClient
+    api libs.resteasyJackson2Provider
+    api libs.resteasyMultipartProvider
+    api libs.resteasyValidatorProvider
 
-    api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    // This is the generic keycloak adapter that isn't kept up to date - deprecated possibly?
-    // They now only develop keycloak-jboss-adapter-core which is wildfly specific and would need some work to integrate
-    api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
-    api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
-    api "org.keycloak:keycloak-admin-client:$keycloakVersion"
+    api libs.jakartaSecurityEnterpriseApi
+    api libs.glassfishSoteria
+    api libs.nimbusJoseJwt
 
-    api "org.postgresql:postgresql:$postgresJdbcVersion"
-    api "org.flywaydb:flyway-core:$flywaydbVersion"
-    implementation "org.flywaydb:flyway-database-postgresql:$flywaydbVersion"
-    api "org.hibernate.orm:hibernate-core:$hibernateVersion"
-    api "org.hibernate.orm:hibernate-hikaricp:$hibernateVersion"
-    api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
-    api "com.zaxxer:HikariCP:$hikaricpVersion"
 
-    api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
-    api "org.glassfish:jakarta.el:$javaxELVersion"
+    api libs.keycloakAdminClient
 
-    api "org.apache.camel:camel-core:$camelVersion"
-    api "org.apache.camel:camel-jackson:$camelVersion"
-    api "org.apache.camel:camel-snmp:$camelVersion"
-    api "org.apache.camel:camel-health:$camelVersion"
-    api "org.apache.camel:camel-management:$camelVersion"
-    api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
-    api "com.thetransactioncompany:cors-filter:$corsFilterVersion"
+    api libs.postgresql
+    api libs.flywayCore
+    implementation libs.flywayDatabasePostgresql
+    api libs.hibernateCore
+    api libs.hibernateHikaricp
+    api libs.hibernateValidator
+    api libs.hikaricp
+
+    api libs.jakartaElApi
+    api libs.jakartaEl
+
+    api libs.camelCore
+    api libs.camelJackson
+    api libs.camelSnmp
+    api libs.camelHealth
+    api libs.camelManagement
+    api libs.micrometerRegistryPrometheus
+    api libs.corsFilter
 }
 
 dependencies {
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testImplementation libs.junitJupiterParams
+    testImplementation libs.junitJupiterApi
+    testRuntimeOnly libs.junitJupiterEngine
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 

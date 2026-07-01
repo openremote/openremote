@@ -2,9 +2,88 @@ import {expect} from "@openremote/test";
 import {test, userStatePath} from "./fixtures/manager.js";
 import {preparedAssetsForRules as assets} from "./fixtures/data/assets.js";
 import {energyRule} from "./fixtures/data/rules.js";
-import {Asset} from "@openremote/model";
+import {Asset, RealmRuleset, RulesetLang} from "@openremote/model";
 
 test.use({storageState: userStatePath});
+
+function createRealmRule(rule: Partial<RealmRuleset> & Pick<RealmRuleset, "id" | "name" | "lang">): RealmRuleset {
+    return {
+        type: "realm",
+        id: rule.id,
+        version: rule.version ?? 0,
+        realm: rule.realm ?? "smartcity",
+        enabled: rule.enabled ?? true,
+        name: rule.name,
+        lang: rule.lang,
+        rules: rule.rules ?? "SomeRulesCode",
+        meta: rule.meta,
+        status: rule.status,
+        error: rule.error,
+        accessPublicRead: rule.accessPublicRead,
+    };
+}
+
+async function mockRealmRulesApi(page: any, initialRules: RealmRuleset[]) {
+    let rules = [...initialRules];
+    let deleteRequests = 0;
+    let postRequests = 0;
+    let putRequests = 0;
+
+    await page.route("**/api/**/rules/realm**", async (route: any) => {
+        const request = route.request();
+        const method = request.method();
+        const url = new URL(request.url());
+
+        if (method === "GET") {
+            if (/\/rules\/realm\/\d+$/.test(url.pathname)) {
+                const id = Number(url.pathname.split("/").pop());
+                const rule = rules.find((r) => r.id === id);
+                await route.fulfill(rule ? { status: 200, json: rule } : { status: 404, json: { message: "Not found" } });
+                return;
+            }
+
+            await route.fulfill({ status: 200, json: rules });
+            return;
+        }
+
+        if (method === "DELETE") {
+            deleteRequests += 1;
+            const id = Number(url.pathname.split("/").pop());
+            rules = rules.filter((rule) => rule.id !== id);
+            await route.fulfill({ status: 204, body: "" });
+            return;
+        }
+
+        if (method === "POST") {
+            postRequests += 1;
+            await route.fulfill({ status: 500, json: { message: "Unexpected create request" } });
+            return;
+        }
+
+        if (method === "PUT") {
+            putRequests += 1;
+            await route.fulfill({ status: 500, json: { message: "Unexpected update request" } });
+            return;
+        }
+
+        await route.fallback();
+    });
+
+    return {
+        get deleteRequests() {
+            return deleteRequests;
+        },
+        get postRequests() {
+            return postRequests;
+        },
+        get putRequests() {
+            return putRequests;
+        },
+        get rules() {
+            return rules;
+        }
+    };
+}
 
 /**
  * Simple function that generates assets based on {@link assets}
@@ -29,26 +108,30 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("Rules");
     await page.click(".mdi-plus >> nth=0");
-    await page.locator("li").filter({hasText: "When-Then"}).click();
-    await page.fill("text=Rule name", energyRule.name);
+    await page.getByRole("menuitem", {name: "When-Then", exact: true}).click();
+    await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
 
-    await page.click("or-rule-when #component span");
-    await page.locator("or-rule-when li").filter({hasText: energyRule.asset_type}).click();
-    await page.click("text=Asset Any of this type");
-    await page.click(`#idSelect >> text=${energyRule.asset}`);
-    await page.getByRole("button", {name: "Attribute", exact: true}).click();
-    await page.click(`li[role="option"]:has-text("${energyRule.attribute_when}")`);
-    await page.getByRole("button", {name: "Operator", exact: true}).click();
-    await page.click("text=Less than or equal to");
-    await page.getByRole("spinbutton", {name: "Energy level"}).fill(energyRule.value.toString());
+    // When clause
+    const when = page.locator("or-rule-when");
+    await when.getByRole("menuitem", {name: "Add condition"}).click();
+    await when.getByRole("menuitem", {name: energyRule.asset_type}).click();
+    await when.getByRole("combobox", { name: "Asset", exact: true }).click();
+    await when.getByRole("option", { name: energyRule.asset, exact: true }).click();
+    await when.getByRole("combobox", { name: "Attribute", exact: true }).click();
+    await when.getByRole("option", { name: energyRule.attribute_when, exact: true }).click();
+    await when.getByRole("combobox", { name: "Operator", exact: true }).click();
+    await when.getByRole("option", { name: "Less than or equal to", exact: true }).click();
+    await when.getByRole("spinbutton", {name: "Energy level"}).fill(energyRule.value.toString());
 
-    await page.getByRole("button", {name: "Add action"}).click();
-    await page.click(`or-rule-then-otherwise li[role="menuitem"]:has-text("${energyRule.asset_type}")`);
-    await page.click("text=Asset Matched");
-    await page.click(`#matchSelect li[role="option"]:has-text("${energyRule.asset}")`);
-    await page.getByRole("button", {name: "Attribute", exact: true}).click();
-    await page.click(`li[role="option"]:has-text("${energyRule.attribute_then}")`);
-    await page.getByRole("spinbutton", {name: "Value"}).fill(energyRule.value.toString());
+    // Then clause
+    const then = page.locator("or-rule-then-otherwise")
+    await then.getByRole("menuitem", {name: "Add action"}).click();
+    await then.getByRole("menuitem", {name: energyRule.asset_type}).click();
+    await then.getByRole("combobox", { name: "Asset", exact: true }).click();
+    await then.getByRole("option", { name: energyRule.asset, exact: true }).click();
+    await then.getByRole("combobox", {name: "Attribute", exact: true}).click();
+    await then.getByRole("option", {name: energyRule.attribute_then, exact: true}).click();
+    await then.getByRole("spinbutton", {name: "Value"}).fill(energyRule.value.toString());
 
     await shared.interceptResponse<number>("**/rules/realm", (rule) => {
         if (rule) manager.rules.push(rule);
@@ -67,7 +150,7 @@ test("Create a When-Then rule for an asset with a trigger and action", async ({p
  * @then The When-Then rule should appear in the rule list
  */
 test("Create a When-Then rule by searching for an asset", async ({page, manager, shared}) => {
-    const multiplier = 100;
+    const multiplier = 200; // Using a multiplier above 100, which is the default querying limit
     const aLotOfAssets = generateALotOfAssets(multiplier);
     await manager.setup("smartcity", {assets: aLotOfAssets});
     await manager.goToRealmStartPage("smartcity");
@@ -81,36 +164,30 @@ test("Create a When-Then rule by searching for an asset", async ({page, manager,
     expect(lastAssetName).toContain(energyRule.asset);
 
     await page.click(".mdi-plus >> nth=0");
-    await page.locator("li").filter({hasText: "When-Then"}).click();
-    await page.fill("text=Rule name", energyRule.name);
+    await page.getByRole("menuitem", {name: "When-Then", exact: true}).click();
+    await page.getByRole("textbox", { name: "Rule name" }).fill(energyRule.name);
 
     // Select asset type of the When clause, search for the last asset in the list, and select the attribute
-    await page.click("or-rule-when #component span");
-    await page.locator("or-rule-when li").filter({hasText: energyRule.asset_type}).click();
-    await page.click(`text=Asset Any of this type`);
-    await expect(page.getByRole('textbox', { name: 'Search'})).toBeVisible();
-    await page.getByRole('textbox', {name: 'Search'}).click();
-    await page.keyboard.type(lastAssetName);
-    await expect(page.locator("or-rule-asset-query or-mwc-input li[role=option]").getByText(lastAssetName, { exact: true })).toBeVisible();
-    await page.locator("or-rule-asset-query or-mwc-input li[role=option]").filter({hasText: lastAssetName}).click();
-    await page.getByRole("button", {name: "Attribute", exact: true}).click();
-    await page.click(`or-rule-asset-query or-mwc-input li[role="option"]:has-text("${energyRule.attribute_when}")`);
-    await page.getByRole("button", {name: "Operator", exact: true}).click();
-    await page.click("text=Less than or equal to");
-    await page.getByRole("spinbutton", {name: "Energy level"}).fill(energyRule.value.toString());
+    const when = page.locator("or-rule-when")
+    await when.getByRole("menuitem", {name: "Add condition"}).click();
+    await when.getByRole("menuitem", {name: energyRule.asset_type}).click();
+    await when.getByRole("combobox", {name: "Asset", exact: true}).fill(lastAssetName);
+    await when.getByRole("option", { name: lastAssetName, exact: true }).click();
+    await when.getByRole("combobox", {name: "Attribute", exact: true}).fill(energyRule.attribute_when);
+    await when.getByRole("option", {name: energyRule.attribute_when, exact: true}).click();
+    await when.getByRole("combobox", { name: "Operator", exact: true }).fill("Less than or");
+    await when.getByRole("option", {name: "Less than or equal to", exact: true}).click();
+    await when.getByRole("spinbutton", {name: "Energy level"}).fill(energyRule.value.toString());
 
     // Configure Then clause
-    await page.getByRole("button", {name: "Add action"}).click();
-    await page.click(`or-rule-then-otherwise li[role="menuitem"]:has-text("${energyRule.asset_type}")`);
-    await page.click("text=Matched");
-    await expect(page.getByRole('textbox', { name: 'Search'})).toBeVisible();
-    await page.getByRole('textbox', {name: 'Search'}).click();
-    await page.keyboard.type(firstAssetName);
-    await expect(page.locator("or-rule-action-attribute or-mwc-input li[role=option]").getByText(firstAssetName, { exact: true })).toBeVisible();
-    await page.locator("or-rule-action-attribute or-mwc-input li[role=option]").filter({hasText: firstAssetName}).click();
-    await page.getByRole("button", {name: "Attribute", exact: true}).click();
-    await page.click(`or-rule-action-attribute or-mwc-input li[role=option]:has-text("${energyRule.attribute_then}")`);
-    await page.getByRole("spinbutton", {name: "Value"}).fill(energyRule.value.toString());
+    const then = page.locator("or-rule-then-otherwise");
+    await then.getByRole("menuitem", {name: "Add action"}).click();
+    await then.getByRole("menuitem", {name: energyRule.asset_type}).click();
+    await then.getByRole("combobox", {name: "Asset", exact: true}).fill(firstAssetName);
+    await then.getByRole("option", {name: firstAssetName, exact: true}).click();
+    await then.getByRole("combobox", {name: "Attribute", exact: true}).fill(energyRule.attribute_then);
+    await then.getByRole("option", {name: energyRule.attribute_then, exact: true}).click();
+    await then.getByRole("spinbutton", {name: "Value"}).fill(energyRule.value.toString());
 
     await shared.interceptResponse<number>("**/rules/realm", (rule) => {
         if (rule) manager.rules.push(rule);
@@ -134,8 +211,8 @@ test("Create a Flow rule for an asset with logic connections", async ({page, sha
     await manager.goToRealmStartPage("smartcity");
     await manager.navigateToTab("Rules");
     await page.click(".mdi-plus >> nth=0");
-    await page.locator("li", {hasText: "Flow"}).click();
-    await page.fill("text=Rule name", "Solar panel");
+    await page.getByRole("menuitem", {name: "Flow", exact: true}).click();
+    await page.getByRole("textbox", { name: "Rule name" }).fill("Solar panel");
 
     await page.locator(".node-item.input-node", {hasText: "Attribute value"}).hover();
     await shared.drag(450, 250);
@@ -194,6 +271,115 @@ test("Create a Flow rule for an asset with logic connections", async ({page, sha
 
     await page.getByRole("button", {name: "Save"}).click();
     await expect(page.locator("or-rule-tree").getByText("Solar panel")).toHaveCount(1);
+});
+
+test("Legacy JavaScript rules are visible but read-only in the rules UI", async ({page, manager}) => {
+    const legacyJavascriptRule = createRealmRule({
+        id: 71001,
+        name: "Legacy JS rule",
+        lang: RulesetLang.JAVASCRIPT,
+        rules: "console.log('legacy');"
+    });
+    const api = await mockRealmRulesApi(page, [legacyJavascriptRule]);
+
+    await manager.setup("smartcity");
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("Rules");
+
+    await expect(page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!)).toHaveCount(1);
+    await page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!).click();
+
+    await expect(page.locator("or-rule-viewer")).toContainText("JavaScript rules are legacy and can only be viewed or deleted.");
+    await expect(page.getByRole("button", {name: "Save"})).toBeDisabled();
+    await expect(page.locator("or-rule-tree").locator("or-mwc-input[icon='content-copy']")).toHaveCount(0);
+
+    await page.click(".mdi-plus >> nth=0");
+    await expect(page.getByRole("menuitem", {name: "JavaScript", exact: true})).toHaveCount(0);
+
+    expect(api.postRequests).toBe(0);
+    expect(api.putRequests).toBe(0);
+});
+
+test("Legacy JavaScript rules can still be deleted from the rules UI", async ({page, manager}) => {
+    const legacyJavascriptRule = createRealmRule({
+        id: 71002,
+        name: "Legacy JS deletable rule",
+        lang: RulesetLang.JAVASCRIPT,
+        rules: "console.log('delete me');"
+    });
+    const api = await mockRealmRulesApi(page, [legacyJavascriptRule]);
+
+    await manager.setup("smartcity");
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("Rules");
+
+    await page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!).click();
+    await page.locator("or-rule-tree").getByRole("button").filter({ has: page.locator('*[icon="delete"]') }).click();
+    await page.getByRole("button", {name: "Delete"}).click();
+
+    await expect(page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!)).toHaveCount(0);
+    expect(api.deleteRequests).toBe(1);
+});
+
+test("Groups containing legacy JavaScript rules cannot be renamed", async ({page, manager}) => {
+    const groupedLegacyJavascriptRule = createRealmRule({
+        id: 71003,
+        name: "Legacy JS grouped rule",
+        lang: RulesetLang.JAVASCRIPT,
+        meta: {groupId: "Legacy JS group"},
+        rules: "console.log('grouped');"
+    });
+    const api = await mockRealmRulesApi(page, [groupedLegacyJavascriptRule]);
+
+    await manager.setup("smartcity");
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("Rules");
+
+    await expect(page.locator("or-rule-tree").getByText("Legacy JS group", { exact: true })).toHaveCount(1);
+    await page.locator("or-rule-tree").getByText("Legacy JS group", { exact: true }).click();
+    await page.getByRole("textbox", { name: "Group name"}).fill("Renamed JS group");
+    await page.getByRole("button", {name: "Save"}).isDisabled();
+    expect(api.putRequests).toBe(0);
+});
+
+test("Dragging a legacy JavaScript rule is blocked", async ({page, manager}) => {
+    const legacyJavascriptRule = createRealmRule({
+        id: 71004,
+        name: "Legacy JS drag rule",
+        lang: RulesetLang.JAVASCRIPT,
+        rules: "console.log('drag');"
+    });
+    const api = await mockRealmRulesApi(page, [legacyJavascriptRule]);
+
+    await manager.setup("smartcity");
+    await manager.goToRealmStartPage("smartcity");
+    await manager.navigateToTab("Rules");
+
+    await expect(page.locator("or-rule-tree").getByText(legacyJavascriptRule.name!)).toHaveCount(1);
+
+    const dispatchSucceeded = await page.locator("or-rules").evaluate((element, ruleName) => {
+        const tree = element.shadowRoot?.querySelector("or-rule-tree") as any;
+        const rule = tree?.rules?.find((candidate: any) => candidate.name === ruleName);
+
+        if (!rule) {
+            throw new Error(`Could not find ruleset '${ruleName}' in tree state`);
+        }
+
+        return element.dispatchEvent(new CustomEvent("or-tree-drag", {
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+            detail: {
+                nodes: [{id: String(rule.id), label: rule.name, ruleset: rule}],
+                groupNode: {id: "Target Group", label: "Target Group", children: []},
+                newNodes: []
+            }
+        }));
+    }, legacyJavascriptRule.name!);
+
+    expect(dispatchSucceeded).toBe(false);
+    await expect(page.locator("or-mwc-snackbar")).toContainText("JavaScript rules are legacy and cannot be updated.");
+    expect(api.putRequests).toBe(0);
 });
 
 test.afterEach(async ({manager}) => {

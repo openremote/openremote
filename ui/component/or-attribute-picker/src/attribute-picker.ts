@@ -2,15 +2,14 @@ import {html, TemplateResult, unsafeCSS} from "lit";
 import {property, query} from "lit/decorators.js";
 import "@openremote/or-asset-tree";
 import "@openremote/or-translate";
-import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-mwc-components/or-mwc-list";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import {Attribute, AttributeDescriptor} from "@openremote/model";
 import {DialogAction, DialogActionBase, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {when} from "lit/directives/when.js";
-import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
+import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import {ListItem} from "@openremote/or-vaadin-components/or-vaadin-list-box";
+import {styleMap} from "lit/directives/style-map.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 export abstract class AttributePickerPickedEvent extends CustomEvent<any> {
 
@@ -22,6 +21,7 @@ export abstract class AttributePickerPickedEvent extends CustomEvent<any> {
  * @attribute {boolean} multiSelect - Whether selecting multiple attributes is allowed or not.
  * @attribute {boolean} showOnlyDatapointAttrs - Whether only attributes with the 'STORE_DATAPOINT' meta item should be shown.
  * @attribute {boolean} showOnlyRuleStateAttrs - Whether only attributes with the 'RULE_STATE' meta item should be shown.
+ * @attribute {boolean} showPredictedDataAttrs - Whether attributes with the 'HAS_PREDICTED_DATA_POINTS' meta item should be shown. Composes additively with the other flags.
  *
  * @remarks This class is abstract
  */
@@ -41,8 +41,11 @@ export abstract class AttributePicker extends OrMwcDialog {
     @property({type: Boolean})
     public showOnlyRuleStateAttrs?: boolean = false;
 
+    @property({type: Boolean})
+    public showPredictedDataAttrs?: boolean = false;
+
     @query("#add-btn")
-    protected addBtn!: OrMwcInput;
+    protected addBtn!: OrVaadinButton;
 
     connectedCallback() {
         super.connectedCallback();
@@ -61,6 +64,11 @@ export abstract class AttributePicker extends OrMwcDialog {
 
     public setShowOnlyRuleStateAttrs(showOnlyRuleStateAttrs: boolean | undefined): this {
         this.showOnlyRuleStateAttrs = showOnlyRuleStateAttrs;
+        return this;
+    }
+
+    public setShowPredictedDataAttrs(showPredictedDataAttrs: boolean | undefined): this {
+        this.showPredictedDataAttrs = showPredictedDataAttrs;
         return this;
     }
 
@@ -120,7 +128,7 @@ export abstract class AttributePicker extends OrMwcDialog {
 
     /**
      * Function that creates the HTML template for selecting attributes.
-     * Currently uses {@link OrMwcList} with or without checkboxes, and uses {@link Util.getAttributeLabel} to formulate the text.
+     * Currently uses {@link OrVaadinListBox} with or without checkboxes, and uses {@link Util.getAttributeLabel} to formulate the text.
      *
      * @remarks TODO: Move this template into a separate component, such as an "or-attribute-list"
      */
@@ -133,17 +141,17 @@ export abstract class AttributePicker extends OrMwcDialog {
                 value: (attributes?.[i].name || descriptors?.[i].name),
             });
         }
+        const selectedIndexes = selectedNames?.map(name => listItems.findIndex(i => i.value === name));
         return html`
-            ${when(multi, () => html`
-                <or-mwc-list id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}" .values="${selectedNames}"
-                             @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => onSelect?.(ev.detail.map(item => item.value))}"
-                </or-mwc-list>
-            `, () => html`
-                <or-mwc-input id="attribute-selector" .type="${InputType.LIST}" .options="${listItems?.map(item => ([item, item.text]))}"
-                              style="display:flex;" .label="${i18next.t("attribute")}"
-                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onSelect?.([(ev.detail.value as ListItem).value])}"
-                ></or-mwc-input>
-            `)}
+            <or-vaadin-list-box id="attribute-selector" ?multiple=${multi} .selectedValues=${ifDefined(selectedIndexes)}
+                                @selected-changed=${(ev: CustomEvent) => onSelect?.([listItems[ev.detail.value as number].value])}
+                                @selected-values-changed=${(ev: CustomEvent) => onSelect?.((ev.detail.value as number[])?.map(n => listItems[n].value) ?? [])}>
+                ${listItems.map(item => html`
+                    <or-vaadin-item style=${styleMap(item.styleMap ?? {})}>
+                        ${item.text ?? item.value ?? html`<or-translate value="unknown"></or-translate>`}
+                    </or-vaadin-item>
+                `)}
+            </or-vaadin-list-box>
         `;
     }
 

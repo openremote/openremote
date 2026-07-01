@@ -41,7 +41,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        )
 
         and: "a test client target set"
         clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
@@ -146,7 +146,10 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
             .post(Entity.entity(Files.readAllBytes(Path.of("manager/src/map/mapsettings.json")), MediaType.APPLICATION_OCTET_STREAM_TYPE))
 
         then: "an internal server error should occur"
-        response.status == 500
+        response.withCloseable { r ->
+            assert r.status == 500
+            return true
+        }
 
         when: "illegal filename was specified"
         response = clientTarget
@@ -156,7 +159,10 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 .post(Entity.entity(Files.readAllBytes(Path.of("manager/src/map/mapdata.mbtiles")), MediaType.APPLICATION_OCTET_STREAM_TYPE))
 
         then: "bad request error should occur"
-        response.status == 400
+        response.withCloseable { r ->
+            assert r.status == 400
+            return true
+        }
 
         when: "the tiles are too large"
         container.getService(MapService.class).customMapLimit = 10
@@ -167,7 +173,10 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
                 .post(Entity.entity(Files.readAllBytes(Path.of("manager/src/map/mapdata.mbtiles")), MediaType.APPLICATION_OCTET_STREAM_TYPE))
 
         then: "request entity too large error should occur"
-        response.status == 413
+        response.withCloseable { r ->
+            assert r.status == 413
+            return true
+        }
     }
 
     def "Configure custom tile server URL"() {

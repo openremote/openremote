@@ -3,7 +3,6 @@
 		"master": {
 			"distribute": {
 				"docker": "develop",
-				"maven": "$version-SNAPSHOT",
 				"npm": "$version-snapshot"
 			},
 			"deploy": {
@@ -15,7 +14,6 @@
 	"release": {
 		"distribute": {
 			"docker": "latest,$version",
-			"maven": "$version",
 			"npm": "$version"
 		},
 		"deploy": {

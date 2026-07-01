@@ -62,6 +62,7 @@ Two scenarios are provided:
 
 Runs for a given duration, publishing attribute value changes over MQTT once connected.  
 For each connection, it publishes ASSETS_COUNT values at the same time (50ms interval), then pauses for MILLIS_BETWEEN_PUBLISHES.  
+If a publish fails because the connection is lost and `RECONNECT_ATTEMPTS` is greater than 0, the thread returns to the connect step and retries only while its original per-thread runtime has not yet elapsed. If `RECONNECT_ATTEMPTS` is 0, the thread does not retry and its load is lost.  
 At the end of publish loop, it waits for DISCONNECT_DELAY before disconnecting from MQTT.
 
 The parameters are:  
@@ -71,6 +72,7 @@ ASSETS_COUNT: Number of Light assets for which to publish an attribute during ea
 RAMP_RATE: Number of thread to add per second during ramp-up. Default is 20.  
 DURATION: Total duration to run the test for, in seconds. Default is 300.  
 MILLIS_BETWEEN_PUBLISHES: Delay between each publishing iteration. Default is 1000.  
+RECONNECT_ATTEMPTS: Reconnect control. Default is 0. With the current HiveMQ-based xmeter client, 0 disables automatic reconnect and any positive value enables it using the client's default reconnect configuration. The scenario also uses this setting to control JMeter-level retry behavior: 0 means no reconnect retry loop, any positive value means failed publish loops return to the connect step and retry only until the original per-thread runtime expires, even if connect attempts keep timing out.  
 DISCONNECT_DELAY: Delay before closing the MQTT connection after publishing loop, in seconds. Default is 0.
 
 #### connect-settle-test

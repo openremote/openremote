@@ -28,14 +28,15 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@material/elevation": "^9.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-translate": "workspace:*",
     "ace-builds": "^1.41.0",
-    "lit": "^3.3.1",
-    "simplebar": "^5.3.6"
+    "lit": "^3.3.1"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

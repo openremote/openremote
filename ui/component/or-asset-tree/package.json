@@ -27,11 +27,13 @@
     "@openremote/or-icon": "workspace:*",
     "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8",
     "qs": "^6.8.0"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4"
   },
   "publishConfig": {

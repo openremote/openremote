@@ -21,48 +21,44 @@ package org.openremote.container.web;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.syslog.SyslogCategory;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * This is a factory for creating JAX-RS {@link WebTarget} instances. The instances share a common
- * {@link jakarta.ws.rs.client.Client} that uses a connection pool and has the following
- * {@link jakarta.ws.rs.ext.ContextResolver}s registered (additional filters etc. should be registered on the
- * {@link WebTargetBuilder} instances):
- * <ul>
- * <li>{@link org.openremote.container.json.JacksonConfig}.</li>
- * </ul>
+ * This is a factory for creating JAX-RS {@link WebTarget} client instances that provide built-in authentication:
  */
-// TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API and a default
-//  client should be made available on the Container
 public class WebTargetBuilder {
 
-    public static final int CONNECTION_POOL_SIZE = 10;
-    public static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
-    public static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
+    protected static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.AGENT, WebTargetBuilder.class.getName());
+    protected static final int CONNECTION_POOL_SIZE = 10;
+    protected static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
+    protected static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
+    protected static final AtomicReference<ResteasyClient> BUILT_IN_CLIENT = new AtomicReference<>();
     protected ResteasyClient client;
-    protected static ExecutorService executorService;
     protected BasicAuthentication basicAuthentication;
     protected OAuthGrant oAuthGrant;
     protected URI baseUri;
@@ -125,7 +121,7 @@ public class WebTargetBuilder {
         failureResponses.removeAll(
             Arrays.stream(responseStatus)
                 .map(Response.Status::getStatusCode)
-                .collect(Collectors.toList())
+                .toList()
         );
         return this;
     }
@@ -168,6 +164,20 @@ public class WebTargetBuilder {
         return target;
     }
 
+    public static ResteasyClient getClient() {
+        return BUILT_IN_CLIENT.updateAndGet(client -> {
+            if (client == null) {
+                return createClient(org.openremote.container.Container.EXECUTOR,
+                        CONNECTION_POOL_SIZE,
+                        CONNECTION_TIMEOUT_MILLISECONDS,
+                        (resteasyClientBuilder ->
+                                // Don't limit pool usage by request route
+                                resteasyClientBuilder.maxPooledPerRoute(CONNECTION_POOL_SIZE)));
+            }
+            return client;
+        });
+    }
+
     public static ResteasyClient createClient(ExecutorService executorService) {
         return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS, null);
     }
@@ -179,7 +189,8 @@ public class WebTargetBuilder {
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .register(new JacksonConfig());
+            .register(new JacksonConfig())
+            .register(new GZIPDecodingInterceptor());
 
         if (executorService != null) {
             clientBuilder.executorService(executorService);
@@ -187,6 +198,24 @@ public class WebTargetBuilder {
 
         if (builderConfigurator != null) {
             clientBuilder = builderConfigurator.apply(clientBuilder);
+        }
+
+        if (LOG.isLoggable(Level.FINEST)) {
+            clientBuilder.register((ClientResponseFilter) (clientRequestContext, clientResponseContext) -> {
+                int status = clientResponseContext.getStatus();
+                if (status < 400) return;
+
+                byte[] bytes = null;
+                String body = "<no body>";
+
+                if (clientResponseContext.hasEntity()) {
+                    InputStream is = clientResponseContext.getEntityStream();
+                    bytes = is.readAllBytes();
+                    clientResponseContext.setEntityStream(new ByteArrayInputStream(bytes)); // allow RESTEasy to read it later
+                    body = new String(bytes, StandardCharsets.UTF_8);
+                }
+                LOG.log(Level.FINEST, "Received {0} response from {1} with body: {2}", new Object[]{status, clientRequestContext.getUri().getPath(), body});
+            });
         }
 
         return clientBuilder.build();

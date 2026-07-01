@@ -26,8 +26,8 @@
     "@openremote/model": "workspace:*",
     "@openremote/or-chart": "workspace:*",
     "@openremote/or-components": "workspace:*",
-    "@openremote/or-mwc-components": "workspace:*",
     "@openremote/or-translate": "workspace:*",
+    "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
     "echarts": "~6.0.0",
     "jsonpath-plus": "^10.3.0",
@@ -36,6 +36,7 @@
     "moment": "^2.29.4"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/lodash.debounce": "^4"
   },
   "publishConfig": {

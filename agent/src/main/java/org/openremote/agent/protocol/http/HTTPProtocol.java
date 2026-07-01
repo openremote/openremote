@@ -29,7 +29,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.specimpl.BuiltResponse;
 import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
@@ -61,7 +60,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -69,7 +67,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebTargetBuilder.addHeaders;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -277,18 +274,19 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     public static final String DEFAULT_HTTP_METHOD = HttpMethod.GET;
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HTTPProtocol.class);
+    // Cannot be final due to adjustment needed in tests to speed up tests
     public static int MIN_POLLING_MILLIS = 5000;
-    protected static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
+    public static final int DEFAULT_READ_TIMEOUT_MILLIS = 10000;
 
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
     protected final Map<AttributeRef, Set<AttributeRef>> pollingLinkedAttributeMap = new HashMap<>();
-    protected ResteasyWebTarget webTarget;
+    protected ResteasyClient client;
+    protected WebTarget webTarget;
 
     public HTTPProtocol(HTTPAgent agent) {
         super(agent);
-
-        initClient();
+        client = createClient();
     }
 
     @Override
@@ -296,6 +294,10 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         pollingMap.forEach((attributeRef, scheduledFuture) -> scheduledFuture.cancel(true));
         pollingMap.clear();
         requestMap.clear();
+
+        if (client != null) {
+            client.close();
+        }
     }
 
     @Override
@@ -322,14 +324,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         Optional<OAuthGrant> oAuthGrant = agent.getOAuthGrant();
         Optional<UsernamePassword> usernameAndPassword = agent.getUsernamePassword();
         boolean followRedirects = agent.getFollowRedirects().orElse(false);
-        Integer readTimeout = agent.getRequestTimeoutMillis().orElse(null);
-
-        WebTargetBuilder webTargetBuilder;
-        if (readTimeout != null) {
-            webTargetBuilder = new WebTargetBuilder(WebTargetBuilder.createClient(executorService, WebTargetBuilder.CONNECTION_POOL_SIZE, readTimeout.longValue(), null), uri);
-        } else {
-            webTargetBuilder = new WebTargetBuilder(client.get(), uri);
-        }
+        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
 
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");
@@ -376,11 +371,6 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                     return links;
                 });
             }
-        }
-
-        if (client == null) {
-            LOG.warning("Client is undefined: " + this);
-            return;
         }
 
         // We pass in the combined headers as they can only be set on the invocation builder
@@ -459,14 +449,6 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     @Override
     public String getProtocolInstanceUri() {
         return webTarget != null ? webTarget.getUri().toString() : agent.getBaseURI().orElse("");
-    }
-
-    protected static void initClient() {
-        synchronized (client) {
-            if (client.get() == null) {
-                client.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
-            }
-        }
     }
 
     protected HttpClientRequest buildClientRequest(String path, String method, MultivaluedMap<String, ?> headers, MultivaluedMap<String, ?> queryParams, boolean pagingEnabled, String contentType, TimerService timerService) {
@@ -564,17 +546,11 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                                                 Object attributeValue,
                                                 Consumer<Response> responseConsumer) {
         String valueStr = attributeValue == null ? null : ValueUtil.convert(attributeValue, String.class);
-        Response response = null;
 
-        try {
-            response = clientRequest.invoke(valueStr);
+        try (Response response = clientRequest.invoke(valueStr)) {
             responseConsumer.accept(response);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing attribute write request", e);
-        } finally {
-            if (response != null) {
-                response.close();
-            }
         }
     }
 
@@ -635,4 +611,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
+    protected ResteasyClient createClient() {
+        Integer readTimeout = agent.getRequestTimeoutMillis().orElse(null);
+        return WebTargetBuilder.createClient(executorService, 1, Optional.ofNullable(readTimeout).orElse(DEFAULT_READ_TIMEOUT_MILLIS).longValue(), null);
+    }
 }

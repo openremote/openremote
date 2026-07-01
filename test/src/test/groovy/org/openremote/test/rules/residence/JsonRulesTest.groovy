@@ -1,6 +1,5 @@
 package org.openremote.test.rules.residence
 
-
 import com.google.firebase.messaging.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.client.ClientRequestContext
@@ -11,13 +10,11 @@ import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.transform.recurrence.Frequency
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
-import org.openremote.manager.notification.LocalizedNotificationHandler
-import org.openremote.model.notification.EmailNotificationMessage
-import org.openremote.model.notification.LocalizedNotificationMessage
-import org.openremote.model.util.UniqueIdentifierGenerator
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
+import org.openremote.manager.notification.LocalizedNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.JsonRulesBuilder
@@ -30,8 +27,8 @@ import org.openremote.manager.webhook.WebhookService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ConsoleAsset
-import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.asset.impl.LightAsset
+import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
@@ -40,13 +37,11 @@ import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.geo.GeoJSONPoint
-import org.openremote.model.notification.AbstractNotificationMessage
-import org.openremote.model.notification.Notification
-import org.openremote.model.notification.NotificationSendResult
-import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.notification.*
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.json.JsonRulesetDefinition
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
@@ -60,6 +55,7 @@ import spock.util.concurrent.PollingConditions
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
@@ -73,12 +69,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     def mockServer = new ClientRequestFilter() {
-
+        boolean finished = false
         private int successCount = 0
         private int failureCount = 0
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
+            if (finished) {
+                return
+            }
             def requestUri = requestContext.uri
             def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
 
@@ -106,17 +105,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
     }
 
-    def cleanup() {
-        mockServer.successCount = 0
-        mockServer.failureCount = 0
-    }
-
     def "Turn all lights off when console exits the residence geofence"() {
 
-        List<Tuple2<Notification.Target, PushNotificationMessage>> pushTargetsAndMessages = []
-        List<jakarta.mail.Message> emailMessages = []
-        List<Notification.Target> emailTargets = []
-        List<LocalizedNotificationMessage> localizedMessages = []
+        List<Tuple2<Notification.Target, PushNotificationMessage>> pushTargetsAndMessages = new CopyOnWriteArrayList<>()
+        List<jakarta.mail.Message> emailMessages = new CopyOnWriteArrayList<>()
+        List<Notification.Target> emailTargets = new CopyOnWriteArrayList<>()
+        List<LocalizedNotificationMessage> localizedMessages = new CopyOnWriteArrayList<>()
 
         given: "the geofence notifier debounce is set to a small value for testing"
         Integer originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
@@ -214,7 +208,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
-        ).token
+        )
 
         and: "another user authenticates"
         def accessToken2 = authenticate(
@@ -223,7 +217,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 KEYCLOAK_CLIENT_ID,
                 "building",
                 "building"
-        ).token
+        )
 
         and: "a console is registered by the first user"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
@@ -1705,10 +1699,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         RulesEngine realmBuildingEngine
 
         and: "the web target builder is configured to use the mock server"
-        if (!webhookService.clientBuilder.configuration.isRegistered(mockServer)) {
-            webhookService.clientBuilder.register(mockServer, Integer.MAX_VALUE)
-        }
-        assert webhookService.clientBuilder.configuration.isRegistered(mockServer)
+        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
 
         and: "a thing asset is added to the building realm"
         def thingId = UniqueIdentifierGenerator.generateId("TestThing")
@@ -1767,5 +1758,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert mockServer.successCount == 2
             assert mockServer.failureCount == 0
         }
+
+        cleanup: "disable mock filter"
+        mockServer.finished = true
     }
 }
