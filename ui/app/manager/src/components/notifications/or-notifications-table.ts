@@ -5,7 +5,6 @@ import {DefaultColor4} from "@openremote/core";
 import { SentNotification, SentNotificationSortField, PushNotificationMessage, EmailNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { NotificationService } from "../../pages/page-notifications";
 import { getAssetsRoute, getUsersRoute } from "../../routes";
 
@@ -421,35 +420,10 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     async getPaginationControls(): Promise<TemplateResult> {
-        const max = this.totalCount ?? await super.getRowCount();
-        const start = this.currentPage * this.paginationSize + 1;
-        const end = Math.min((this.currentPage + 1) * this.paginationSize, max);
-        const isFirst = this.currentPage === 0;
-        const isLast = end >= max;
-        const lastPage = Math.max(0, Math.ceil(max / this.paginationSize) - 1);
-        return html`
-            <div class="mdc-data-table__pagination-navigation">
-                <div class="mdc-data-table__pagination-total">
-                    <span>${start}-${end} of ${max}</span>
-                </div>
-                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                    data-first-page="true" icon="page-first" .disabled="${isFirst}"
-                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(0, this.paginationSize))}">
-                </or-mwc-input>
-                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                    data-prev-page="true" icon="chevron-left" .disabled="${isFirst}"
-                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(this.currentPage - 1, this.paginationSize))}">
-                </or-mwc-input>
-                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                    data-next-page="true" icon="chevron-right" .disabled="${isLast}"
-                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(this.currentPage + 1, this.paginationSize))}">
-                </or-mwc-input>
-                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}"
-                    data-last-page="true" icon="page-last" .disabled="${isLast}"
-                    @or-mwc-input-changed="${() => this.dispatchEvent(new OrNotificationsPageChangedEvent(lastPage, this.paginationSize))}">
-                </or-mwc-input>
-            </div>
-        `;
+        // Reuse the base template but drive pagination server-side: emit a page-changed event instead of
+        // mutating the local paginationIndex. `max` comes from the overridden getRowCount() (the total count).
+        return this.renderPaginationControls(this.currentPage, (page) =>
+            this.dispatchEvent(new OrNotificationsPageChangedEvent(page, this.paginationSize)));
     }
 
     protected updated(changedProperties: Map<string, any>) {
