@@ -21,7 +21,7 @@ import { OrElement } from "@openremote/or-element";
 import { customElement, property, query } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next, translate } from "@openremote/or-translate";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-vaadin-components/or-vaadin-toggle";
 import type { PushNotificationMessage, PushNotificationButton } from "@openremote/model";
 import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 import { until } from "lit/directives/until.js";
@@ -117,14 +117,11 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) {
         </or-vaadin-text-field>
 
         <!-- Open in browser switch -->
-        <or-mwc-input
-          .value="${message.action?.openInBrowser}"
-          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(ev, msg))}"
+        <or-vaadin-toggle
+          .checked="${!!message.action?.openInBrowser}"
+          @change="${(ev: Event) => onchange(ev, message).then((msg) => this._onOpenInBrowserChange(ev, msg))}"
           .label="${i18next.t("openInBrowser")}"
-          type="${InputType.SWITCH}"
-          fullWidth
-          placeholder=" "
-        ></or-mwc-input>
+        ></or-vaadin-toggle>
 
         <!-- Button controls -->
         <div style="display: flex; gap: 20px;">
@@ -183,9 +180,10 @@ export class OrRuleFormPushNotification extends translate(i18next)(OrElement) {
   /**
    * HTML callback function when the "open in browser switch" of a notification has changed.
    */
-  protected _onOpenInBrowserChange(ev: OrInputChangedEvent, message: PushNotificationMessage) {
+  protected _onOpenInBrowserChange(ev: Event, message: PushNotificationMessage) {
     message.action = message.action || {};
-    message.action.openInBrowser = ev.detail.value;
+    // Read from ev.target (the native input) because this runs after an async gap, where ev.currentTarget is already null.
+    message.action.openInBrowser = (ev.target as HTMLInputElement).checked;
     this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
   }
 

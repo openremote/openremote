@@ -20,7 +20,7 @@ import { css, html, type TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import type { AttributeInputWidgetConfig } from "../widgets/attribute-input-widget";
 import type { AttributesSelectEvent } from "../panels/attributes-panel";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { AssetWidgetSettings } from "../util/or-asset-widget";
 
 const styling = css`
@@ -57,22 +57,20 @@ export class AttributeInputSettings extends AssetWidgetSettings {
             <!-- Toggle readonly -->
             <div class="switch-container">
               <span><or-translate value="dashboard.userCanEdit"></or-translate></span>
-              <or-mwc-input
-                .type="${InputType.SWITCH}"
+              <or-vaadin-toggle
                 style="margin: 0 -10px;"
-                .value="${!this.widgetConfig.readonly}"
-                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onReadonlyToggle(ev)}"
-              ></or-mwc-input>
+                .checked="${!this.widgetConfig.readonly}"
+                @change="${(ev: Event) => this.onReadonlyToggle(ev)}"
+              ></or-vaadin-toggle>
             </div>
             <!-- Toggle helper text -->
             <div class="switch-container">
               <span><or-translate value="dashboard.showHelperText"></or-translate></span>
-              <or-mwc-input
-                .type="${InputType.SWITCH}"
+              <or-vaadin-toggle
                 style="margin: 0 -10px;"
-                .value="${this.widgetConfig.showHelperText}"
-                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}"
-              ></or-mwc-input>
+                .checked="${this.widgetConfig.showHelperText}"
+                @change="${(ev: Event) => this.onHelperTextToggle(ev)}"
+              ></or-vaadin-toggle>
             </div>
           </div>
         </settings-panel>
@@ -91,13 +89,13 @@ export class AttributeInputSettings extends AssetWidgetSettings {
     this.notifyConfigUpdate();
   }
 
-  protected onReadonlyToggle(ev: OrInputChangedEvent) {
-    this.widgetConfig.readonly = !ev.detail.value;
+  protected onReadonlyToggle(ev: Event) {
+    this.widgetConfig.readonly = !(ev.currentTarget as OrVaadinToggle).checked;
     this.notifyConfigUpdate();
   }
 
-  protected onHelperTextToggle(ev: OrInputChangedEvent) {
-    this.widgetConfig.showHelperText = ev.detail.value;
+  protected onHelperTextToggle(ev: Event) {
+    this.widgetConfig.showHelperText = (ev.currentTarget as OrVaadinToggle).checked;
     this.notifyConfigUpdate();
   }
 }
