@@ -379,11 +379,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, Integer offset, Integer limit, AuthContext authContext) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Instant from, Instant to, List<String> realmIds, List<String> userIds, List<String> assetIds, Notification.Source source, SentNotification.SortField sort, boolean descending, Integer offset, Integer limit, AuthContext authContext) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
         buildNotificationCriteria(builder, parameters, ids, types, from, to, realmIds, userIds, assetIds, source, authContext);
-        builder.append(" order by n.sentOn desc");
+        builder.append(buildOrderBy(sort, descending));
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
@@ -410,6 +410,26 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     .forEach(i -> query.setParameter(i, parameters.get(i - 1)));
             return query.getSingleResult();
         });
+    }
+
+    /**
+     * Builds the {@code order by} clause for {@link #getNotifications}. Each {@link SentNotification.SortField} maps
+     * to a fixed persisted column (never a caller-supplied string) so ordering is injection-safe; a null sort keeps
+     * the default of newest-sent first. Status orders by whether the notification has been delivered.
+     */
+    protected String buildOrderBy(SentNotification.SortField sort, boolean descending) {
+        if (sort == null) {
+            return " order by n.sentOn desc";
+        }
+        String direction = descending ? " desc" : " asc";
+        return switch (sort) {
+            case TITLE -> " order by n.name" + direction;
+            case SOURCE -> " order by n.source" + direction;
+            // pending (no deliveredOn) sorts before delivered when ascending
+            case STATUS -> " order by case when n.deliveredOn is null then 0 else 1 end" + direction;
+            case SENT_ON -> " order by n.sentOn" + direction;
+            case DELIVERED_ON -> " order by n.deliveredOn" + direction;
+        };
     }
 
     /**

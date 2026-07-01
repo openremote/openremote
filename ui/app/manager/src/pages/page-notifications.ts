@@ -8,6 +8,7 @@ import {
     NotificationSource,
     NotificationTargetType,
     SentNotification,
+    SentNotificationSortField,
     User
 } from "@openremote/model";
 import manager, {DefaultColor3} from "@openremote/core";
@@ -21,7 +22,7 @@ import {dialogRenderer, dialogFooterRenderer, dialogHeaderRenderer} from "@openr
 import "@openremote/or-vaadin-components/or-vaadin-dialog";
 import {NotificationForm} from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
-import {NotificationTableClickEvent, OrNotificationsPageChangedEvent} from "../components/notifications/or-notifications-table";
+import {NotificationTableClickEvent, OrNotificationsPageChangedEvent, OrNotificationsSortChangedEvent} from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 
 type NotificationSourceKeys = keyof typeof NotificationSource
@@ -35,7 +36,7 @@ const sources = [
 
 export class NotificationService {
 
-    async getNotifications(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource, offset?: number, limit?: number): Promise<SentNotification[]> {
+    async getNotifications(realm: string, fromDate?: number, toDate?: number, source?: NotificationSource, offset?: number, limit?: number, sort?: SentNotificationSortField, descending?: boolean): Promise<SentNotification[]> {
         try {
             const timeRange = fromDate && toDate ?
                 {fromDate, toDate} :
@@ -47,6 +48,8 @@ export class NotificationService {
                     to: timeRange.toDate,
                     realmId: realm,
                     source,
+                    sort,
+                    descending,
                     offset,
                     limit
                 });
@@ -287,6 +290,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
     @state()
     protected _pageSize: number = 10;
 
+    // Server-side sort; defaults to newest-sent first (matches the table's default sort indicator on "Sent")
+    protected _sortField: SentNotificationSortField = SentNotificationSortField.SENT_ON;
+    protected _sortDescending: boolean = true;
+
     @state()
     protected _createDialogOpen: boolean = false;
 
@@ -373,7 +380,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             const offset = this._currentPage * this._pageSize;
 
             const [data, count] = await Promise.all([
-                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, source, offset, this._pageSize),
+                this.notificationService.getNotifications(this.realm, timeRange.fromDate, timeRange.toDate, source, offset, this._pageSize, this._sortField, this._sortDescending),
                 this.notificationService.getNotificationsCount(this.realm, timeRange.fromDate, timeRange.toDate, source)
             ]);
 
@@ -609,6 +616,12 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     @or-notifications-page-changed="${(e: OrNotificationsPageChangedEvent) => {
                         this._currentPage = e.detail.page;
                         this._pageSize = e.detail.size;
+                        this._loadData();
+                    }}"
+                    @or-notifications-sort-changed="${(e: OrNotificationsSortChangedEvent) => {
+                        this._sortField = e.detail.sort;
+                        this._sortDescending = e.detail.descending;
+                        this._currentPage = 0; // sorting spans all pages, so restart from the first
                         this._loadData();
                     }}"
                     @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"

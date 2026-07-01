@@ -52,6 +52,8 @@ public interface NotificationResource {
                                         @QueryParam("userId") String userId,
                                         @QueryParam("assetId") String assetId,
                                         @QueryParam("source") Notification.Source source,
+                                        @QueryParam("sort") SentNotification.SortField sort,
+                                        @QueryParam("descending") Boolean descending,
                                         @QueryParam("offset") Integer offset,
                                         @QueryParam("limit") Integer limit);
     // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
