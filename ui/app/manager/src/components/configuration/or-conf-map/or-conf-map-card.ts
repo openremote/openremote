@@ -24,7 +24,7 @@ import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
 import {MapRealmConfig} from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinToggle} from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { OrMapLongPressEvent } from "@openremote/or-map";
 import { LngLat } from "maplibre-gl";
 import "./or-conf-map-geojson";
@@ -289,12 +289,11 @@ export class OrConfMapCard extends LitElement {
                         </div>
 
                         <div class="input" style="height: 56px;">
-                            <or-mwc-input .value="${map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
-                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                map.boxZoom = e.detail.value;
+                            <or-vaadin-toggle .checked="${map.boxZoom}" label="BoxZoom"
+                                            @change="${(e: Event) => {
+                                                map.boxZoom = (e.currentTarget as OrVaadinToggle).checked;
                                                 this.notifyConfigChange(map);
-                                            }}"
-                                            .step="${1}"></or-mwc-input>
+                                            }}"></or-vaadin-toggle>
                         </div>
                     </div>
                 </div>

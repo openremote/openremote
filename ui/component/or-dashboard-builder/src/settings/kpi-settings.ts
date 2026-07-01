@@ -24,7 +24,7 @@ import {i18next} from "@openremote/or-translate";
 import {KpiWidgetConfig} from "../widgets/kpi-widget";
 import {AttributesSelectEvent} from "../panels/attributes-panel";
 import {Attribute} from "@openremote/model";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinToggle} from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import {OrVaadinSelect} from "@openremote/or-vaadin-components/or-vaadin-select";
 import {OrVaadinNumberField} from "@openremote/or-vaadin-components/or-vaadin-number-field";
 
@@ -67,9 +67,9 @@ export class KpiSettings extends AssetWidgetSettings {
                         </or-vaadin-select>
                         <div class="switchMwcInputContainer">
                             <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showTimestampControls}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeframeToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="margin: 0 -10px;" .checked="${this.widgetConfig.showTimestampControls}"
+                                          @change="${(ev: Event) => this.onTimeframeToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                     </div>
                 </settings-panel>
@@ -109,8 +109,8 @@ export class KpiSettings extends AssetWidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onTimeframeToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showTimestampControls = ev.detail.value;
+    protected onTimeframeToggle(ev: Event) {
+        this.widgetConfig.showTimestampControls = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 

@@ -15,6 +15,7 @@ import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-componen
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrVaadinTextField} from "@openremote/or-vaadin-components/or-vaadin-text-field";
 import {OrVaadinButton} from "@openremote/or-vaadin-components/or-vaadin-button";
+import {OrVaadinToggle} from "@openremote/or-vaadin-components/or-vaadin-toggle";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -343,9 +344,9 @@ export class PageRealms extends Page<AppStateKeyed> {
                                                               @change=${(ev: Event) => realm.loginTheme = (ev.currentTarget as HTMLInputElement).value}>
                                             <or-translate slot="label" value="loginTheme"></or-translate>
                                         </or-vaadin-text-field>
-                                        <or-mwc-input ?readonly="${readonly}" label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
-                                        <or-mwc-input ?readonly="${readonly}" label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
-                                        <or-mwc-input ?readonly="${readonly}" label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
+                                        <or-vaadin-toggle ?readonly="${readonly}" label="${i18next.t("resetPasswordAllowed")}" .checked="${realm.resetPasswordAllowed}" @change="${(e: Event) => realm.resetPasswordAllowed = (e.currentTarget as OrVaadinToggle).checked}"></or-vaadin-toggle>
+                                        <or-vaadin-toggle ?readonly="${readonly}" label="${i18next.t("enabled")}" .checked="${realm.enabled}" @change="${(e: Event) => realm.enabled = (e.currentTarget as OrVaadinToggle).checked}"></or-vaadin-toggle>
+                                        <or-vaadin-toggle ?readonly="${readonly}" label="${i18next.t("rememberMe")}" .checked="${realm.rememberMe}" @change="${(e: Event) => realm.rememberMe = (e.currentTarget as OrVaadinToggle).checked}"></or-vaadin-toggle>
                                     </div>
                                     <div class="column">
                                         <or-vaadin-text-field ?readonly=${readonly} minlength="1" maxlength="255" required value=${realm.displayName} error-message=${i18next.t("invalidRealm")}

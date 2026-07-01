@@ -28,7 +28,7 @@ import {AttributesChartPanel} from "../panels/attributes-chart-panel";
 import {AttributeAction, AttributeActionEvent, AttributeReplaceEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDescriptor, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinToggle} from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import {when} from "lit/directives/when.js";
 import moment from "moment/moment";
 import {ChartAttributeConfig, OrChart} from "@openremote/or-chart";
@@ -194,28 +194,28 @@ export class ChartSettings extends WidgetSettings {
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <div class="switch-container">
                             <span><or-translate value="dashboard.toggleStackView"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.stacked}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onStackViewToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="margin: 0 -10px;" .checked="${this.widgetConfig.stacked}"
+                                          @change="${(ev: Event) => this.onStackViewToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                         <div class="switch-container">
                             <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="margin: 0 -10px;" .checked="${!this.widgetConfig.showTimestampControls}"
+                                          @change="${(ev: Event) => this.onTimestampControlsToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                         <div class="switch-container">
                             <span><or-translate value="dashboard.showLegend"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="margin: 0 -10px;" .checked="${this.widgetConfig.showLegend}"
+                                          @change="${(ev: Event) => this.onShowLegendToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                         <!-- Datazoombar -->
                         <div class="switch-container">
                             <span><or-translate value="dashboard.showZoomBar"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showZoomBar}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowZoomBarToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="margin: 0 -10px;" .checked="${this.widgetConfig.showZoomBar}"
+                                          @change="${(ev: Event) => this.onShowZoomBarToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                     </div>
                 </settings-panel>
@@ -240,9 +240,9 @@ export class ChartSettings extends WidgetSettings {
                                         <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
                                     </or-vaadin-text-field>
                                 `}
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'max', ev)}"
-                                ></or-mwc-input>
+                                <or-vaadin-toggle style="margin: 0 -10px 0 0;" .checked="${max !== undefined}"
+                                              @change="${(ev: Event) => this.onMinMaxValueToggle('left', 'max', ev)}"
+                                ></or-vaadin-toggle>
                             </div>
                             <div style="display: flex; margin-top: 12px;">
                                 ${min !== undefined ? html`
@@ -254,9 +254,9 @@ export class ChartSettings extends WidgetSettings {
                                         <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
                                     </or-vaadin-text-field>
                                 `}
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'min', ev)}"
-                                ></or-mwc-input>
+                                <or-vaadin-toggle style="margin: 0 -10px 0 0;" .checked="${min !== undefined}"
+                                              @change="${(ev: Event) => this.onMinMaxValueToggle('left', 'min', ev)}"
+                                ></or-vaadin-toggle>
                             </div>
                         </div>
 
@@ -279,9 +279,9 @@ export class ChartSettings extends WidgetSettings {
                                                 <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="max"></or-translate></span>
                                             </or-vaadin-text-field>
                                         `}
-                                        <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMax !== undefined}"
-                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'max', ev)}"
-                                        ></or-mwc-input>
+                                        <or-vaadin-toggle style="margin: 0 -10px 0 0;" .checked="${rightMax !== undefined}"
+                                                      @change="${(ev: Event) => this.onMinMaxValueToggle('right', 'max', ev)}"
+                                        ></or-vaadin-toggle>
                                     </div>
                                     <div style="display: flex; margin-top: 12px; align-items: baseline;">
                                         ${rightMin !== undefined ? html`
@@ -293,9 +293,9 @@ export class ChartSettings extends WidgetSettings {
                                                 <span slot="label"><or-translate value="yAxis"></or-translate> <or-translate value="min"></or-translate></span>
                                             </or-vaadin-text-field>
                                         `}
-                                        <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMin !== undefined}"
-                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'min', ev)}"
-                                        ></or-mwc-input>
+                                        <or-vaadin-toggle style="margin: 0 -10px 0 0;" .checked="${rightMin !== undefined}"
+                                                      @change="${(ev: Event) => this.onMinMaxValueToggle('right', 'min', ev)}"
+                                        ></or-vaadin-toggle>
                                     </div>
                                 </div>
                             `;
@@ -559,23 +559,23 @@ export class ChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onStackViewToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.stacked = ev.detail.value;
+    protected onStackViewToggle(ev: Event) {
+        this.widgetConfig.stacked = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
-    protected onTimestampControlsToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showTimestampControls = !ev.detail.value;
+    protected onTimestampControlsToggle(ev: Event) {
+        this.widgetConfig.showTimestampControls = !(ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
-    protected onShowLegendToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showLegend = ev.detail.value;
+    protected onShowLegendToggle(ev: Event) {
+        this.widgetConfig.showLegend = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
-    protected onShowZoomBarToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showZoomBar = ev.detail.value;
+    protected onShowZoomBarToggle(ev: Event) {
+        this.widgetConfig.showZoomBar = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
@@ -603,8 +603,8 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
-    protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
-        this.setAxisMinMaxValue(axis, type, (ev.detail.value ? (type === 'min' ? 0 : 100) : undefined));
+    protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: Event) {
+        this.setAxisMinMaxValue(axis, type, ((ev.currentTarget as OrVaadinToggle).checked ? (type === 'min' ? 0 : 100) : undefined));
     }
 
     protected onSamplingQueryChange(ev: Event) {

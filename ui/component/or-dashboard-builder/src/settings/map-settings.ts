@@ -20,7 +20,7 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrVaadinToggle} from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import {MapWidgetConfig} from "../widgets/map-widget";
 import {LngLatLike, MapMarkerColours, LngLat} from "@openremote/or-map";
 import "../panels/assettypes-panel";
@@ -79,10 +79,10 @@ export class MapSettings extends AssetWidgetSettings {
                         </or-vaadin-text-field>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span><or-translate value="dashboard.showGeoJson"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                          .value="${this.widgetConfig.showGeoJson}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onGeoJsonToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="width: 70px;"
+                                          .checked="${this.widgetConfig.showGeoJson}"
+                                          @change="${(ev: Event) => this.onGeoJsonToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                     </div>
                 </settings-panel>
@@ -101,17 +101,17 @@ export class MapSettings extends AssetWidgetSettings {
                     <div>
                         <div class="switchMwcInputContainer">
                             <span><or-translate value="dashboard.showLabels"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                          .value="${this.widgetConfig.showLabels}" .disabled="${!this.widgetConfig.assetType}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLabelsToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="width: 70px;"
+                                          .checked="${this.widgetConfig.showLabels}" .disabled="${!this.widgetConfig.assetType}"
+                                          @change="${(ev: Event) => this.onShowLabelsToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                         <div class="switchMwcInputContainer">
                             <span><or-translate value="dashboard.showUnits"></or-translate></span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                          .value="${this.widgetConfig.showUnits}" .disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowUnitsToggle(ev)}"
-                            ></or-mwc-input>
+                            <or-vaadin-toggle style="width: 70px;"
+                                          .checked="${this.widgetConfig.showUnits}" .disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
+                                          @change="${(ev: Event) => this.onShowUnitsToggle(ev)}"
+                            ></or-vaadin-toggle>
                         </div>
                     </div>
                 </settings-panel>
@@ -163,8 +163,8 @@ export class MapSettings extends AssetWidgetSettings {
         }
     }
 
-    protected onGeoJsonToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showGeoJson = ev.detail.value;
+    protected onGeoJsonToggle(ev: Event) {
+        this.widgetConfig.showGeoJson = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
@@ -231,13 +231,13 @@ export class MapSettings extends AssetWidgetSettings {
         }
      }
 
-    protected onShowLabelsToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showLabels = ev.detail.value;
+    protected onShowLabelsToggle(ev: Event) {
+        this.widgetConfig.showLabels = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
-    protected onShowUnitsToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showUnits = ev.detail.value;
+    protected onShowUnitsToggle(ev: Event) {
+        this.widgetConfig.showUnits = (ev.currentTarget as OrVaadinToggle).checked;
         this.notifyConfigUpdate();
     }
 
