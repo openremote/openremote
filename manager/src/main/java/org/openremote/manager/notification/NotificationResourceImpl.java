@@ -67,7 +67,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source, Integer offset, Integer limit) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long from, Long to, String realmId, String userId, String assetId, Notification.Source source, SentNotification.SortField sort, Boolean descending, Integer offset, Integer limit) {
         AuthContext authContext = getAuthContext();
         realmId = resolveAndAuthoriseRealm(authContext, realmId);
 
@@ -80,7 +80,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                 realmId != null ? Collections.singletonList(realmId) : null,
                 userId != null ? Collections.singletonList(userId) : null,
                 assetId != null ? Collections.singletonList(assetId) : null,
-                source, offset, limit, authContext
+                source, sort, descending != null && descending, offset, limit, authContext
             );
             sanitiseNotifications(notifications, authContext);
             return notifications.toArray(new SentNotification[0]);

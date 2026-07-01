@@ -2,7 +2,7 @@ import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {DefaultColor4} from "@openremote/core";
-import { SentNotification, PushNotificationMessage, EmailNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
+import { SentNotification, SentNotificationSortField, PushNotificationMessage, EmailNotificationMessage, NotificationTargetType, NotificationSource } from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -38,6 +38,27 @@ export class OrNotificationsPageChangedEvent extends CustomEvent<{page: number, 
         });
     }
 }
+
+export class OrNotificationsSortChangedEvent extends CustomEvent<{sort: SentNotificationSortField, descending: boolean}> {
+    static readonly NAME = "or-notifications-sort-changed";
+
+    constructor(sort: SentNotificationSortField, descending: boolean) {
+        super(OrNotificationsSortChangedEvent.NAME, {
+            detail: {sort, descending},
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+// Maps a sortable column index to the server-side sort field. Columns absent here (body, target) aren't sortable.
+const SORT_FIELD_BY_COLUMN: Record<number, SentNotificationSortField> = {
+    0: SentNotificationSortField.TITLE,
+    2: SentNotificationSortField.STATUS,
+    3: SentNotificationSortField.SOURCE,
+    5: SentNotificationSortField.SENT_ON,
+    6: SentNotificationSortField.DELIVERED_ON,
+};
 
 @customElement("or-notifications-table")
 export class OrNotificationsTable extends OrMwcTable {
@@ -313,26 +334,16 @@ export class OrNotificationsTable extends OrMwcTable {
         return html`${date ? new Date(date).toLocaleString() : '-'}`;
     }
 
-    // The status/date columns render as colored spans / localized date strings, which the base table can't
-    // sort meaningfully. Sort them from the underlying notification on the row instead, using the real column
-    // index that sortObjectRows receives. Other columns fall back to the default sorting.
-    protected sortObjectRows(rowA: TableRow, rowB: TableRow, cIndex: number, sortDirection: "ASC" | "DESC"): number {
-        const notifA = (rowA as NotificationTableRow).data?.notification;
-        const notifB = (rowB as NotificationTableRow).data?.notification;
+    // Sorting is done server-side (across all pages) rather than on the current page's rows: emit the chosen
+    // column/direction so the page can re-query. Rows are already returned in sorted order, so we don't sort locally.
+    async onColumnSort(_ev: MouseEvent, index: number, sortDirection: "ASC" | "DESC") {
+        const sort = SORT_FIELD_BY_COLUMN[index];
+        if (!sort) return; // body/target columns aren't sortable
 
-        if (notifA && notifB) {
-            const dir = sortDirection === "DESC" ? -1 : 1;
-            switch (cIndex) {
-                case 2: // Status: pending (no deliveredOn) before delivered
-                    return dir * ((notifA.deliveredOn ? 1 : 0) - (notifB.deliveredOn ? 1 : 0));
-                case 5: // Sent date
-                    return dir * ((notifA.sentOn ?? 0) - (notifB.sentOn ?? 0));
-                case 6: // Delivered date
-                    return dir * ((notifA.deliveredOn ?? 0) - (notifB.deliveredOn ?? 0));
-            }
-        }
-
-        return super.sortObjectRows(rowA, rowB, cIndex, sortDirection);
+        const descending = sortDirection === "ASC"; // toggle relative to the current direction
+        this.sortIndex = index;
+        this.sortDirection = descending ? "DESC" : "ASC";
+        this.dispatchEvent(new OrNotificationsSortChangedEvent(sort, descending));
     }
 
     protected async resolveAllTargetDetails(notifications: SentNotification[]) {

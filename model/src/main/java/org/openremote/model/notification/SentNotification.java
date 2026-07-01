@@ -32,6 +32,18 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @Table(name = "NOTIFICATION")
 public class SentNotification {
 
+    /**
+     * Columns that {@link SentNotification}s can be ordered by server-side; each maps to a fixed persisted column
+     * (see the notification service) so ordering stays injection-safe and consistent across paginated results.
+     */
+    public enum SortField {
+        TITLE,
+        SOURCE,
+        STATUS,
+        SENT_ON,
+        DELIVERED_ON
+    }
+
     @Id
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)

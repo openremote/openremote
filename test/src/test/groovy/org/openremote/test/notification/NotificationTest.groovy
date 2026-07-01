@@ -395,7 +395,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         and: "the notification should be recorded in the DB with the exception set as the error"
         conditions.eventually {
-            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null)
+            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null)
             notifications.first().error == "Failed to send notification"
         }
 
@@ -406,8 +406,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         and: "all notifications sent to consoles in the building realm should be available via the REST API"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id, null, null, null).length == 3
-            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null)
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id, null, null, null, null, null).length == 3
+            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null)
             assert notifications.length == 6
             assert notifications.every {n ->
                 PushNotificationMessage pushMessage = n.message as PushNotificationMessage
@@ -417,8 +417,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                         n.deliveredOn == null &&
                         n.acknowledgedOn == null
             }
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 8
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null).length == 4
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 8
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 4
         }
 
         when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
@@ -426,7 +426,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notification should have been updated"
         conditions.eventually {
-            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null)
+            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null)
             assert notifications.length == 6
             assert notifications.count {n -> n.deliveredOn != null} == 1
         }
@@ -436,7 +436,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notification should have been updated"
         conditions.eventually {
-            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null)
+            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null)
             assert notifications.length == 6
             assert notifications.count {n -> n.deliveredOn != null && n.acknowledgedOn != null && n.acknowledgement == "\"dismissed\""} == 1
         }
@@ -456,7 +456,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notification should have been updated"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null).count {it.deliveredOn != null} == 1
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null).count {it.deliveredOn != null} == 1
         }
 
 // TODO: Update once console permissions model finalised
@@ -470,12 +470,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 //        }
 
         when: "an anonymous user marks a console notification for their own console as delivered"
-        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null)
         anonymousNotificationResource.notificationDelivered(null, anonymousConsole.id, notifications.find {n -> n.targetId == anonymousConsole.id}.id)
 
         then: "the notification should have been updated"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null).count {it.deliveredOn != null} == 1
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).count {it.deliveredOn != null} == 1
         }
 
         when: "a regular user tries to remove notifications"
@@ -499,14 +499,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the admin user removes notifications by timestamp and the notifications are retrieved again"
-        notifications = adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null, null, null, null)
+        notifications = adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null, null, null, null, null, null)
         def sentNotification = notifications[0]
         def removeCount = notifications.count {it.sentOn >= sentNotification.sentOn}
         adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, sentNotification.sentOn.toEpochMilli(), null, null, null, null)
 
         then: "notifications sent after or at that time should have been removed"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null, null, null, null).length == (notifications.length - removeCount)
+            assert adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null, null, null, null, null, null).length == (notifications.length - removeCount)
         }
 
         when: "the admin user removes notifications sent to specific console assets without other constraints and the notifications are retrieved again"
@@ -515,9 +515,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "all notifications sent to those consoles should have been removed"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null).length == 0
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 0
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null).length == 4
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id, null, null, null, null, null).length == 0
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 0
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 4
         }
 
         when: "the admin user removes notifications by type and the notifications are retrieved again"
@@ -525,7 +525,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notifications should have been removed"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, anonymousConsole.id, null, null, null).length == 0
+            assert adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, anonymousConsole.id, null, null, null, null, null).length == 0
         }
 
         when: "the admin user removes notifications without sufficient constraints"
@@ -557,7 +557,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notification should have been sent to the console"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 1
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 1
         }
 
         when: "a repeat frequency is set and a notification with the same name and scope as a previous notification is sent within the repeat window"
@@ -565,7 +565,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 1
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 1
         }
 
         when: "a repeat frequency is set and a notification with the same name but different scope is sent within the repeat window"
@@ -573,7 +573,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 2
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 2
         }
 
         when: "time advances less than the repeat frequency and the notification is sent again"
@@ -582,7 +582,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 2
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 2
         }
 
         when: "time advances more than the repeat frequency and the notification is sent again"
@@ -591,7 +591,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 3
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 3
         }
 
         when: "a repeat interval is used and a notification with the same name and scope is sent within the repeat window"
@@ -601,7 +601,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 3
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 3
         }
 
         when: "time advances more than the repeat interval and the notification is sent again"
@@ -610,17 +610,17 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null).length == 4
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id, null, null, null, null, null).length == 4
         }
 
         and: "notifications are retrieved only for the past day only the relevant notifications should have been returned"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console2.id, null, null, null).length == 1
+            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console2.id, null, null, null, null, null).length == 1
         }
 
         and: "notifications are retrieved only for the past 40 days only the relevant notifications should have been returned"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console2.id, null, null, null).length == 4
+            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console2.id, null, null, null, null, null).length == 4
         }
 
         cleanup: "the mock is removed"
