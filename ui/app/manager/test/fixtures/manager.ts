@@ -28,7 +28,7 @@ export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
 export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 
 export class Manager {
-    private readonly clientId = "openremote";
+    readonly clientId = "openremote";
     private readonly managerHost: String;
     readonly api: RestApi["api"];
     readonly axios: RestApi["_axiosInstance"];
@@ -161,6 +161,14 @@ export class Manager {
             })
         ).data;
         return access_token;
+    }
+
+    /**
+     * Build an axios request config authenticated as the master-realm admin, for REST setup calls.
+     */
+    async adminConfig(): Promise<AxiosRequestConfig<any>> {
+        const token = await this.getAccessToken("master", admin.username, admin.password);
+        return { headers: { Authorization: `Bearer ${token}` } };
     }
 
     /**
@@ -305,8 +313,7 @@ export class Manager {
      */
     async createAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
-            const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { headers: { Authorization: `Bearer ${access_token}` } };
+            config = await this.adminConfig();
         }
         await rest.api.AssetResource.create(asset, config)
             .then((response) => {
@@ -325,8 +332,7 @@ export class Manager {
      */
     async updateAsset(asset: Asset, config?: AxiosRequestConfig<any>) {
         if (!config) {
-            const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-            config = { headers: { Authorization: `Bearer ${access_token}` } };
+            config = await this.adminConfig();
         }
         await rest.api.AssetResource.update(asset.id!, asset, config)
             .then((response) => {
@@ -350,8 +356,7 @@ export class Manager {
         realm: string,
         { user, role, assets }: { user?: UserModel; role?: Role; assets?: Asset[] | DefaultAssets } = {}
     ) {
-        const access_token = await this.getAccessToken("master", admin.username, admin.password);
-        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const config = await this.adminConfig();
 
         this.realm = realm;
 
@@ -448,8 +453,7 @@ export class Manager {
      *  Clean up the environment
      */
     async cleanUp() {
-        const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
-        const config = { headers: { Authorization: `Bearer ${access_token}` } };
+        const config = await this.adminConfig();
 
         if (this.dashboards.length > 0) {
             await this.deleteDashboards(config);
