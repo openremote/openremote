@@ -418,13 +418,13 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         WebpushConfig.Builder webpushConfigBuilder = WebpushConfig.builder();
 
         if (!dataOnly) {
-            // Don't set basic notification on Android if there is data so even if app is in background we can show a custom notification
-            // with actions that use the actions from the data
-            if (pushMessage.getData() != null || pushMessage.getAction() != null || pushMessage.getButtons() != null) {
-                androidConfigBuilder.putData("or-title", pushMessage.getTitle());
-                if (pushMessage.getBody() != null) {
-                    androidConfigBuilder.putData("or-body", pushMessage.getBody());
-                }
+            // The OpenRemote console builds the Android notification from this data (rather than a basic FCM
+            // notification) so it can show a custom notification with actions even when the app is in the background.
+            // Always include the title/body: a plain push with no data/action/buttons would otherwise arrive with
+            // nothing for the Android console to display.
+            androidConfigBuilder.putData("or-title", pushMessage.getTitle());
+            if (pushMessage.getBody() != null) {
+                androidConfigBuilder.putData("or-body", pushMessage.getBody());
             }
 
             // Use alert dictionary for apns
