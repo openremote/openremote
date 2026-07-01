@@ -19,19 +19,108 @@
  */
 import {customElement} from "lit/decorators.js";
 import {Checkbox} from "@vaadin/checkbox";
+import {registerStyles, css} from "@vaadin/vaadin-themable-mixin/register-styles.js";
 import {OrVaadinComponent} from "./util";
-import {css, type LitElement} from "lit";
+import {type LitElement} from "lit";
 
-type WithLit<T> = T & typeof LitElement;
+/*
+ * The toggle reuses the Vaadin `<vaadin-checkbox>` as its base, so it inherits the checkbox's
+ * behaviour, form participation, accessibility and `checked` / `readonly` / `disabled` states.
+ * Only the visuals differ: the `checkbox` part is restyled into a pill-shaped track with a
+ * sliding knob.
+ *
+ * The styles are applied through Vaadin's `registerStyles()` rather than a `static get styles()`
+ * override, because `finalizeStyles()` injects `static` styles BEFORE the (Lumo) theme injector,
+ * meaning a themed environment would override them. Styles registered via `registerStyles()` are
+ * injected AFTER the theme, so they always take effect - both when the OpenRemote theme is applied
+ * and when the component is used standalone (hence every value below has a hard-coded fallback
+ * alongside its theme variable).
+ *
+ * `registerStyles()` targets a component by its `is` tag name and must run before the element is
+ * finalized. It is therefore called at module load, and `is` is overridden to `or-vaadin-toggle`
+ * (the base class would otherwise report `vaadin-checkbox`, causing these styles to leak onto every
+ * checkbox, or not match at all).
+ */
+registerStyles("or-vaadin-toggle", css`
+    :host {
+        /* Theme variables with standalone fallbacks */
+        --_or-toggle-track-width: 30px;
+        --_or-toggle-track-height: 20px;
+        --_or-toggle-knob-size: 14px;
+        --_or-toggle-knob-inset: 3px;
+        --_or-toggle-radius: var(--lumo-border-radius-l, 12px);
+        --_or-toggle-track-off-color: var(--lumo-contrast-30pct, #c4c8c4);
+        --_or-toggle-track-on-color: var(--lumo-primary-color, #47a942);
+        --_or-toggle-knob-color: var(--lumo-base-color, #ffffff);
+        --_or-toggle-gap: 6px;
+
+        align-items: center;
+        --vaadin-checkbox-gap: var(--_or-toggle-gap);
+    }
+
+    /*
+     * Turn the square checkbox part into a pill-shaped track. Selectors are deliberately prefixed
+     * with :host(...) to out-specify the Vaadin/Lumo base rules (e.g. the base hides the ::after
+     * marker with a high-specificity ':host(:not([checked])) [part=checkbox]::after { opacity: 0 }'
+     * rule, which would otherwise hide the knob in the off state).
+     */
+    :host [part='checkbox'] {
+        box-sizing: border-box;
+        width: var(--_or-toggle-track-width);
+        min-width: var(--_or-toggle-track-width);
+        height: var(--_or-toggle-track-height);
+        border: none;
+        border-radius: var(--_or-toggle-radius);
+        background: var(--_or-toggle-track-off-color);
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    :host([checked]) [part='checkbox'],
+    :host([indeterminate]) [part='checkbox'] {
+        background: var(--_or-toggle-track-on-color);
+    }
+
+    :host([disabled]) {
+        opacity: 0.5;
+    }
+
+    /* Replace the checkmark with a sliding knob */
+    :host [part='checkbox']::after {
+        content: "";
+        position: absolute;
+        inset: auto;
+        top: 50%;
+        width: var(--_or-toggle-knob-size);
+        height: var(--_or-toggle-knob-size);
+        min-width: 0;
+        border-radius: 50%;
+        background: var(--_or-toggle-knob-color);
+        mask: none;
+        -webkit-mask: none;
+        filter: none;
+        transform: translateY(-50%);
+        transition: left 0.15s ease-in-out;
+    }
+
+    :host(:not([checked], [indeterminate])) [part='checkbox']::after {
+        opacity: 1;
+        left: var(--_or-toggle-knob-inset);
+    }
+
+    :host([checked]) [part='checkbox']::after,
+    :host([indeterminate]) [part='checkbox']::after {
+        opacity: 1;
+        left: calc(var(--_or-toggle-track-width) - var(--_or-toggle-knob-size) - var(--_or-toggle-knob-inset));
+    }
+
+    :host([focus-ring]) [part='checkbox'] {
+        outline: 2px solid var(--_or-toggle-track-on-color);
+        outline-offset: 2px;
+    }
+`);
 
 /**
  * A toggle (switch) component representing a binary on/off choice.
- *
- * Vaadin does not ship a native toggle/switch web component, so this extends the
- * Vaadin {@link Checkbox} - inheriting its `checked`, `disabled`, `readonly` and
- * `label` behaviour, form participation, and `change` / `checked-changed` events -
- * and restyles the `checkbox` part into a pill-shaped track with a sliding knob to
- * match the OpenRemote design system.
  *
  * @customElement "or-vaadin-toggle"
  * @fires {Event} change - Fired when the toggle is switched on or off by the user.
@@ -40,64 +129,7 @@ type WithLit<T> = T & typeof LitElement;
 @customElement("or-vaadin-toggle")
 export class OrVaadinToggle extends (Checkbox as new () => Checkbox & LitElement) implements OrVaadinComponent {
 
-    static get styles() {
-        return [
-            (Checkbox as WithLit<typeof Checkbox>).styles,
-            css`
-                :host {
-                    --_track-width: 30px;
-                    --_track-height: 20px;
-                    --_knob-size: 14px;
-                    /* Vertical/horizontal inset of the knob within the track */
-                    --_knob-inset: 3px;
-                    align-items: center;
-                    /* Gap between the track and the label */
-                    --vaadin-checkbox-gap: 6px;
-                }
-
-                /* Turn the square checkbox part into a pill-shaped track */
-                [part='checkbox'] {
-                    width: var(--_track-width);
-                    min-width: var(--_track-width);
-                    height: var(--_track-height);
-                    border: none;
-                    border-radius: var(--lumo-border-radius-l, 12px);
-                    background: var(--lumo-contrast-30pct, #c4c8c4);
-                    transition: background-color 0.15s ease-in-out;
-                }
-
-                :host([checked]) [part='checkbox'] {
-                    background: var(--lumo-primary-color, #47a942);
-                }
-
-                :host([disabled]) [part='checkbox'] {
-                    opacity: 0.5;
-                }
-
-                /* The sliding knob (overrides the inherited checkmark) */
-                [part='checkbox']::after,
-                :host(:not([checked], [indeterminate])) [part='checkbox']::after {
-                    content: "";
-                    position: absolute;
-                    inset: auto;
-                    top: 50%;
-                    left: var(--_knob-inset);
-                    width: var(--_knob-size);
-                    height: var(--_knob-size);
-                    border-radius: 50%;
-                    background: var(--lumo-base-color, #ffffff);
-                    mask: none;
-                    filter: none;
-                    opacity: 1;
-                    transform: translateY(-50%);
-                    transition: left 0.15s ease-in-out;
-                }
-
-                :host([checked]) [part='checkbox']::after,
-                :host([indeterminate]) [part='checkbox']::after {
-                    left: calc(var(--_track-width) - var(--_knob-size) - var(--_knob-inset));
-                }
-            `
-        ];
+    static get is() {
+        return "or-vaadin-toggle";
     }
 }
