@@ -34,7 +34,7 @@
     "@openremote/or-translate": "workspace:*",
     "@openremote/or-vaadin-components": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "echarts": "~6.0.0",
+    "echarts": "~6.1.0",
     "lit": "^3.3.1",
     "lodash.debounce": "^4.0.8",
     "moment": "^2.29.4"
