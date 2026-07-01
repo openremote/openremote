@@ -27,6 +27,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
@@ -129,11 +131,11 @@ public class RealmPathExtractorFilter implements Filter {
                 // Rebuild from original URL but swap path. Keep scheme/host/port.
                 StringBuffer original = super.getRequestURL();
                 try {
-                    URL url = new URL(original.toString());
+                    URL url = new URI(original.toString()).toURL();
                     int port = url.getPort();
                     String authority = port == -1 ? url.getHost() : (url.getHost() + ":" + port);
                     return new StringBuffer(url.getProtocol() + "://" + authority + getRequestURI());
-                } catch (MalformedURLException ex) {
+                } catch (MalformedURLException | URISyntaxException ex) {
                     // Fallback: best-effort
                     return new StringBuffer(original.substring(0, original.indexOf(super.getRequestURI())) + getRequestURI());
                 }
