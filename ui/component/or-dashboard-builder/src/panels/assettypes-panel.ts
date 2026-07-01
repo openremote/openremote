@@ -20,7 +20,7 @@ import { css, html, LitElement, type PropertyValues, type TemplateResult } from 
 import { customElement, property, state } from "lit/decorators.js";
 import { type AssetDescriptor, AssetModelUtil, type AssetTypeInfo } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { Util } from "@openremote/core";
 import { when } from "lit/directives/when.js";
 import { createRef, type Ref, ref } from "lit/directives/ref.js";
@@ -192,13 +192,12 @@ export class AssettypesPanel extends LitElement {
           return html`
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span><or-translate value="allAssetsofType"></or-translate></span>
-              <or-mwc-input
-                .type="${InputType.SWITCH}"
+              <or-vaadin-toggle
                 style="width: 70px;"
-                .value="${this.allOfType}"
+                .checked="${this.allOfType}"
                 .disabled="${!this.assetType}"
-                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onAssetAllOfTypeToggle(ev)}"
-              ></or-mwc-input>
+                @change="${(ev: Event) => this.onAssetAllOfTypeToggle(ev)}"
+              ></or-vaadin-toggle>
             </div>
           `;
         })}
@@ -303,8 +302,8 @@ export class AssettypesPanel extends LitElement {
     }
   }
 
-  protected onAssetAllOfTypeToggle(ev: OrInputChangedEvent) {
-    this.allOfType = ev.detail.value;
+  protected onAssetAllOfTypeToggle(ev: Event) {
+    this.allOfType = (ev.currentTarget as OrVaadinToggle).checked;
   }
 
   protected _openAssetSelector(assetType: string, assetIds?: string[], multi = false) {

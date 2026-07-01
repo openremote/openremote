@@ -23,7 +23,7 @@ import {
   type Webhook,
   type OAuthPasswordGrant,
 } from "@openremote/model";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
 import { i18next } from "@openremote/or-translate";
 import { css, html, LitElement, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -158,13 +158,11 @@ export class OrRuleFormWebhook extends LitElement {
           <div
             style="display: flex; flex-direction: column; gap: 10px; margin-bottom: ${this.webhook.oAuthGrant || this.webhook.usernamePassword ? "28px" : "0"};"
           >
-            <or-mwc-input
-              type="${InputType.SWITCH}"
-              fullwidth
+            <or-vaadin-toggle
               label="${i18next.t("requiresAuthorization")}"
-              .value="${this.webhook.oAuthGrant || this.webhook.usernamePassword}"
-              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                this.webhook.usernamePassword = ev.detail.value
+              .checked="${!!(this.webhook.oAuthGrant || this.webhook.usernamePassword)}"
+              @change="${(ev: Event) => {
+                this.webhook.usernamePassword = (ev.currentTarget as OrVaadinToggle).checked
                   ? {
                       username: "admin",
                       password: "secret",
@@ -172,7 +170,7 @@ export class OrRuleFormWebhook extends LitElement {
                   : undefined;
                 this.notifyWebhookUpdate();
               }}"
-            ></or-mwc-input>
+            ></or-vaadin-toggle>
             ${when(this.webhook.oAuthGrant || this.webhook.usernamePassword, () => {
               const values: SelectItem[] = Array.from(this.authMethodOptions.entries()).map(([value, label]) => ({
                 value,
@@ -198,13 +196,11 @@ export class OrRuleFormWebhook extends LitElement {
             ${when(
               this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE,
               () => html`
-                <or-mwc-input
-                  type="${InputType.SWITCH}"
-                  fullwidth
+                <or-vaadin-toggle
                   label="${i18next.t("includeBodyInRequest")}"
-                  .value="${this.webhook.payload != undefined}"
-                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                    this.webhook.payload = ev.detail.value
+                  .checked="${this.webhook.payload != undefined}"
+                  @change="${(ev: Event) => {
+                    this.webhook.payload = (ev.currentTarget as OrVaadinToggle).checked
                       ? JSON.stringify(
                           {
                             rule: "%RULESET_NAME%",
@@ -216,7 +212,7 @@ export class OrRuleFormWebhook extends LitElement {
                       : undefined;
                     this.notifyWebhookUpdate();
                   }}"
-                ></or-mwc-input>
+                ></or-vaadin-toggle>
                 ${when(this.webhook.payload != undefined, () => {
                   return html`
                     <or-vaadin-text-area

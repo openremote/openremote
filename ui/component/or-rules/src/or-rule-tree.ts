@@ -27,7 +27,8 @@ import {
 import { css, html, type PropertyValues, type TemplateResult } from "lit";
 import manager, { Util } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
-import { InputType, type OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import type { OrVaadinToggle } from "@openremote/or-vaadin-components/or-vaadin-toggle";
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {
   OrRules,
   OrRulesAddEvent,
@@ -209,7 +210,7 @@ export class OrRuleTree extends OrTreeMenu {
         () => html`
           <div id="rules-tree-global-header">
             <or-translate value="realmRules"></or-translate>
-            <or-mwc-input type=${InputType.SWITCH} @or-mwc-input-changed=${this._onGlobalSwitch}></or-mwc-input>
+            <or-vaadin-toggle @change=${this._onGlobalSwitch}></or-vaadin-toggle>
             <or-translate value="globalRules"></or-translate>
           </div>
         `
@@ -253,8 +254,8 @@ export class OrRuleTree extends OrTreeMenu {
    * HTML callback on when the global switch is toggled.
    * It normally toggles between 'global' and 'realm' rulesets when the user is a superuser.
    */
-  protected _onGlobalSwitch(ev: OrInputChangedEvent) {
-    this.global = ev.detail.value;
+  protected _onGlobalSwitch(ev: Event) {
+    this.global = (ev.currentTarget as OrVaadinToggle).checked;
     this.refresh();
   }
 
