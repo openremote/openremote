@@ -114,18 +114,8 @@ export class NotificationsPage implements BasePage {
         await this.pickOverlayOption(label);
     }
 
-    async fillPushMessage(title: string, body: string) {
-        // The fields commit on `change` (blur), so blur after filling to update the form model.
-        const titleInput = this.getCreateForm().locator("#notificationTitle input");
-        await titleInput.fill(title);
-        await titleInput.blur();
-
-        const bodyInput = this.getCreateForm().locator("#notificationBody textarea");
-        await bodyInput.fill(body);
-        await bodyInput.blur();
-    }
-
     async fillEmailMessage(subject: string, body: string) {
+        // The fields commit on `change` (blur), so blur after filling to update the form model.
         const subjectInput = this.getCreateForm().locator("#notificationSubject input");
         await subjectInput.fill(subject);
         await subjectInput.blur();
