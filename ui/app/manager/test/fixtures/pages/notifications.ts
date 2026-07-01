@@ -46,6 +46,24 @@ export class NotificationsPage implements BasePage {
     }
 
     /**
+     * Set the from/to date-range filter. Values are local `YYYY-MM-DDTHH:mm` strings (as the picker uses).
+     * The picker only commits on `change`, which isn't fired by a programmatic value assignment, so we set the
+     * value and dispatch `change` ourselves to trigger the page's reload.
+     */
+    async setDateRange(fromValue: string, toValue: string) {
+        const pickers = this.getDatePickers();
+        await this.setPickerValue(pickers.nth(0), fromValue);
+        await this.setPickerValue(pickers.nth(1), toValue);
+    }
+
+    private async setPickerValue(picker: Locator, value: string) {
+        await picker.evaluate((el, val) => {
+            (el as unknown as { value: string }).value = val;
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+        }, value);
+    }
+
+    /**
      * Click the option with the given exact label in the currently-open Vaadin select overlay.
      *
      * Vaadin teleports the items into a `<vaadin-select-overlay>` and positions the currently-selected item

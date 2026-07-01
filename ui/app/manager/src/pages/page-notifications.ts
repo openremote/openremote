@@ -137,9 +137,8 @@ export class NotificationService {
         const toDate = new Date(now);
         toDate.setHours(23, 59, 59, 999);
 
-        // start date is set to 30 days ago, beginning of the day
+        // default to the last day only (beginning of today); the range can be extended manually
         const fromDate = new Date(now);
-        fromDate.setDate(fromDate.getDate() - 30);
         fromDate.setHours(0, 0, 0, 0);
 
         const fromTimestamp = fromDate.getTime();
