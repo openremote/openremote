@@ -1,17 +1,8 @@
 import { expect, Page } from "@openremote/test";
 import { EmailNotificationMessage, Notification, NotificationTargetType, User } from "@openremote/model";
 import { Manager, adminStatePath, test } from "./fixtures/manager.js";
-import { users } from "./fixtures/data/users.js";
 
 test.use({ storageState: adminStatePath });
-
-const CLIENT_ID = "openremote";
-
-/** Admin-authenticated axios config for REST setup calls. */
-async function adminConfig(manager: Manager) {
-    const token = await manager.getAccessToken("master", "admin", users.admin.password!);
-    return { headers: { Authorization: `Bearer ${token}` } };
-}
 
 const RECIPIENT_USERNAME = "e2e-notif-recipient";
 
@@ -26,7 +17,7 @@ async function ensureRecipient(manager: Manager, config: { headers: Record<strin
 
 /** Persist a notification via REST (email to the given realm) and return its subject for table lookups. */
 async function seedNotification(manager: Manager, realm = "master", subject = `E2E seed ${Date.now()}`) {
-    const config = await adminConfig(manager);
+    const config = await manager.adminConfig();
     await ensureRecipient(manager, config, realm);
     await manager.api.NotificationResource.sendNotification({
         name: subject,
@@ -45,14 +36,14 @@ async function createUserAndLogin(
     page: Page,
     { realm, username, roles }: { realm: string; username: string; roles: string[] },
 ) {
-    const config = await adminConfig(manager);
+    const config = await manager.adminConfig();
     const user = await manager.api.UserResource.create(realm, {
         username,
         enabled: true,
     } as User, config).then((r) => r.data).catch(() => undefined);
 
     if (user?.id) {
-        await manager.api.UserResource.updateUserClientRoles(realm, user.id, CLIENT_ID, roles, config);
+        await manager.api.UserResource.updateUserClientRoles(realm, user.id, manager.clientId, roles, config);
         // set an initial password (== username) so the throwaway user can log in via the UI
         await manager.api.UserResource.updatePassword(realm, user.id, { value: username }, config);
     }
@@ -120,7 +111,7 @@ test("should filter the notifications table by the date range", async ({ manager
  */
 test("should disable the submit button until valid, then send and show it in the table", async ({ manager, notificationsPage }) => {
     // setup via REST: a recipient with an email so the email notification is deliverable/persisted
-    await ensureRecipient(manager, await adminConfig(manager));
+    await ensureRecipient(manager, await manager.adminConfig());
 
     await manager.goToRealmStartPage("master");
     await notificationsPage.goto();
