@@ -142,7 +142,7 @@ test("should disable the submit button until valid, then send and show it in the
     await expect(notificationsPage.getSubmitButton()).toBeEnabled();
 
     // submitting closes the dialog and the notification appears in the table
-    await notificationsPage.submitCreate();
+    await notificationsPage.getSubmitButton().click();
     await expect(notificationsPage.getCreateForm()).not.toBeVisible();
     await expect(notificationsPage.getRowByText(subject)).toBeVisible();
 });
@@ -201,7 +201,7 @@ test("should show the correct data in the notification details dialog", async ({
     await expect(notificationsPage.getDetailsFieldByLabel("Recipient type")).toHaveValue("User");
     await expect(notificationsPage.getDetailsFieldByLabel("Source")).toHaveValue(/Client/i);
 
-    await notificationsPage.closeDetailsViaCross();
+    await notificationsPage.getDetailsCloseButton().click();
     await expect(details).not.toBeVisible();
 });
 

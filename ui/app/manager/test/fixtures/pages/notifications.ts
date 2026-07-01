@@ -97,10 +97,6 @@ export class NotificationsPage implements BasePage {
         return this.page.getByRole("button", { name: "Create", exact: true });
     }
 
-    getCancelButton(): Locator {
-        return this.page.getByRole("button", { name: "Cancel", exact: true });
-    }
-
     async openCreateDialog() {
         await this.getCreateButton().click();
         await expect(this.getCreateForm()).toBeVisible();
@@ -116,11 +112,6 @@ export class NotificationsPage implements BasePage {
     async selectTargetType(label: string) {
         await this.getCreateForm().locator("#targetType").click();
         await this.pickOverlayOption(label);
-    }
-
-    /** Tick the first available recipient in the (Users/Realms) checkbox list. */
-    async checkFirstTarget() {
-        await this.getCreateForm().locator("#target").getByRole("checkbox").first().check();
     }
 
     async fillPushMessage(title: string, body: string) {
@@ -149,10 +140,6 @@ export class NotificationsPage implements BasePage {
         await this.getCreateForm().locator("#target").getByRole("checkbox", { name: label }).check();
     }
 
-    async submitCreate() {
-        await this.getSubmitButton().click();
-    }
-
     // --- Details dialog ----------------------------------------------------
 
     /** The details dialog renders a read-only notification-form (reflected `readonly` attribute). */
@@ -171,22 +158,16 @@ export class NotificationsPage implements BasePage {
             .locator("input, textarea");
     }
 
-    async openDetails(index = 0) {
-        await this.getRows().nth(index).click();
-        await expect(this.getDetailsForm()).toBeVisible();
-    }
-
     /** Open the details dialog for the (first) row containing the given text. */
     async openDetailsByText(text: string) {
         await this.getRowByText(text).first().click();
         await expect(this.getDetailsForm()).toBeVisible();
     }
 
-    /** Close the details dialog via the top-right close cross. */
-    async closeDetailsViaCross() {
-        await this.page
+    /** The details dialog's top-right close cross (an or-vaadin-button wrapping the mdi:close icon). */
+    getDetailsCloseButton(): Locator {
+        return this.page
             .locator("or-vaadin-button")
-            .filter({ has: this.page.locator("or-icon[icon='mdi:close']") })
-            .click();
+            .filter({ has: this.page.locator("or-icon[icon='mdi:close']") });
     }
 }
