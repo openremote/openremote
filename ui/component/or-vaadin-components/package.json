@@ -51,6 +51,7 @@
     "@vaadin/text-area": "~25.1.4",
     "@vaadin/text-field": "~25.1.4",
     "@vaadin/time-picker": "~25.1.4",
+    "@vaadin/vaadin-themable-mixin": "~25.1.4",
     "lit": "^3.3.1"
   },
   "publishConfig": {
