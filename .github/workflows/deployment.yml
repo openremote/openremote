@@ -4,6 +4,9 @@ on:
     inputs:
       INPUTS:
         type: string
+      COMMIT:
+        type: string
+        description: 'Repo branch or commit SHA to checkout'
 
 jobs:
   deployment:
@@ -12,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: ${{ inputs.COMMIT }}
           lfs: true # Enable Git LFS plugin to fetch *.mbtiles
 
       - name: Get version details
