@@ -80,9 +80,12 @@ signing {
     }
 }
 
+def setupJar = providers.gradleProperty("SETUP_JAR")
+def installDemoSetup = setupJar.map { it == "demo" }.orElse(true)
+
 tasks.register('installDist', Copy) {
     dependsOn resolveTask(":manager:installDist")
-    onlyIf { !project.hasProperty("SETUP_JAR") || project.getProperties().get("SETUP_JAR") == "demo" }
-    from jar.archiveFile
+    onlyIf { installDemoSetup.get() }
+    from tasks.named('jar', Jar).flatMap { it.archiveFile }
     into project(":manager").layout.buildDirectory.dir("install/manager/deployment/manager/extensions")
 }
