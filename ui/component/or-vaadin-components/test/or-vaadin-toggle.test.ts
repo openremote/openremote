@@ -152,9 +152,9 @@ ct("State: renders without a label", async ({ mount }) => {
 
 // --- Toggle group ----------------------------------------------------------
 
-ct("Group (vertical): renders grouped toggles with their checked state", async ({ mount }) => {
+ct("Group (vertical): stacks grouped toggles and reflects their checked state", async ({ mount }) => {
   const component = await mount(OrVaadinCheckboxGroup, {
-    props: { label: "Notifications", theme: "vertical" },
+    props: { label: "Notifications" },
     slots: {
       // The default slot must be an array: the CT runner keeps only `fragment.firstChild` per string.
       default: [
@@ -165,18 +165,30 @@ ct("Group (vertical): renders grouped toggles with their checked state", async (
     },
   });
 
+  // `theme` is attribute-driven (there is no writable reflecting property), and mount `props` set JS
+  // properties which Vaadin's theme handling ignores - so set the vertical theme as an attribute.
+  await component.evaluate((el) => el.setAttribute("theme", "vertical"));
+
   await expect(component).toContainText("Notifications");
   await expect(component.getByRole("checkbox")).toHaveCount(3);
   await expect(component.getByRole("checkbox", { name: "Email" })).toBeChecked();
   await expect(component.getByRole("checkbox", { name: "SMS" })).not.toBeChecked();
   await expect(component.getByRole("checkbox", { name: "Push" })).toBeChecked();
+
+  // The vertical theme stacks the toggles: shared left edge, increasing top.
+  const email = await component.getByRole("checkbox", { name: "Email" }).boundingBox();
+  const sms = await component.getByRole("checkbox", { name: "SMS" }).boundingBox();
+  expect(email).not.toBeNull();
+  expect(sms).not.toBeNull();
+  expect(Math.abs(email!.x - sms!.x)).toBeLessThan(4);
+  expect(sms!.y).toBeGreaterThan(email!.y);
 });
 
-ct("Group (vertical): a child toggle switches independently when clicked", async ({ mount }) => {
+ct("Group: a child toggle switches independently when clicked", async ({ mount }) => {
   // Note: Vaadin's `checked-changed` is dispatched without `bubbles`/`composed`, so it does not
   // reach a group-level listener - the per-toggle event flow is covered by the "Events" test above.
   const component = await mount(OrVaadinCheckboxGroup, {
-    props: { label: "Notifications", theme: "vertical" },
+    props: { label: "Notifications" },
     slots: {
       default: [
         '<or-vaadin-toggle label="Email" value="email"></or-vaadin-toggle>',
